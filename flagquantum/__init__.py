@@ -26,7 +26,7 @@ from .devices import *  # noqa: F403
 from .encoding import *  # noqa: F403
 from .measurement import *  # noqa: F403
 from .ops import *  # noqa: F403
-from .version import __version__, check_version_compatibility, get_version
+from .version import __version__, get_version
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -59,7 +59,7 @@ def hello() -> None:
 
 __all__ = (
     # Version
-    ["__version__", "get_version", "check_version_compatibility", "info", "hello"]
+    ["__version__", "get_version", "info", "hello"]
     +
     # Submodules
     ["devices", "ops", "encoding", "measurement", "utils"]
