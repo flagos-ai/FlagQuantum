@@ -1,0 +1,68 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flagquantum"
+version = "0.1.0"
+description = "A distributed quantum computing framework built on PyTorch"
+authors = [
+    {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.5.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "ruff>=0.1.0",
+    "black>=23.0",
+    "mypy>=1.0",
+]
+invertible = [
+    "torch>=2.5.0",  # Nightly build recommended for invertible backprop
+]
+
+[project.urls]
+Homepage = "https://github.com/flagquantum/flagquantum"
+Repository = "https://github.com/flagquantum/flagquantum"
+Issues = "https://github.com/flagquantum/flagquantum/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flagquantum*"]
+exclude = ["tests*", "docs*", "scripts*", "examples*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "distributed: marks tests that require multiple processes",
+]
