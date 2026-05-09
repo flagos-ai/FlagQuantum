@@ -11,7 +11,6 @@ VERSION_INFO = {
     "release_level": "alpha",  # "alpha", "beta", "rc", "final"
 }
 
-
 def get_version() -> str:
     """Return the current version as a string."""
     return __version__
