@@ -1,5 +1,5 @@
-# tests/test_gates.py
-"""Tests for quantum gates."""
+# tests/test_measurement.py
+"""Tests for quantum measurement."""
 
 import pytest
 import torch
