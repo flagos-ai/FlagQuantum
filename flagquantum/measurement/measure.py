@@ -189,13 +189,14 @@ def measure_allZ(  # noqa: N802
                 )
             else:
                 group_size = state_mag.shape[wire_info[0].item()]
+                n_group_qubits = int(np.log2(group_size))
                 group_bool = torch.zeros(
                     group_size, device=local_mask.device, dtype=bool
-                ).reshape((2,) * int(np.log(group_size) / np.log(2)))
+                ).reshape((2,) * n_group_qubits)
                 group_bool[
                     (slice(None),) * wire_info[1].item()
                     + (1 - post_bits[i],)
-                    + (slice(None),) * (group_size - wire_info[1].item() - 1)
+                    + (slice(None),) * (n_group_qubits - wire_info[1].item() - 1)
                 ] = True
                 slice_idx = (
                     (slice(None),) * wire_info[0].item()
