@@ -14,13 +14,14 @@ def has_hygon_dcu():
         # 2. 运行 hy-smi 并检查返回码，确认驱动是否正常工作
         result = subprocess.run(
             ["hy-smi", "-u"],  # -u 参数用于查看使用率，可用来测试
-            capture_output=True, 
-            text=True, 
-            check=True
+            capture_output=True,
+            text=True,
+            check=True,
         )
         return result.returncode == 0
     except (FileNotFoundError, subprocess.SubprocessError):
         return False
+
 
 def has_gpu():
     """统一检测是否有可用的加速卡 (NVIDIA GPU 或 海光 DCU)"""
