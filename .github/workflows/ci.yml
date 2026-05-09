@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install ruff black mypy
+
+      - name: Run linting
+        run: |
+          ruff check .
+          black --check .
+          # mypy flagquantum/ --ignore-missing-imports
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy pytest pytest-cov
+          pip install datasets transformers
+          pip install -e .
+
+      - name: Run tests with run_tests.py
+        run: |
+          # run_tests.py 会自动检测 GPU 并选择运行方式
+          # 在 CI 环境中没有 GPU，会自动使用 pytest
+          python run_tests.py --cov=flagquantum --cov-report=xml
+        env:
+          FLAGQUANTUM_SKIP_VERSION_CHECK: 1
+          CUDA_VISIBLE_DEVICES: ""
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
