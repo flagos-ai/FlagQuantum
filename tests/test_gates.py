@@ -125,22 +125,15 @@ class TestTwoQubitGates:
         assert torch.abs(result[0, 1] + 1.0) < 1e-5  # Qubit 1 in |1>
 
     def test_bell_state(self, device):
-        """Test creating Bell state with correlations."""
+        """Test Bell state: individual Z expectations should be zero."""
         device.reset_states()
         device.h(wires=[0])
         device.cx(wires=[0, 1])
 
-        # In Bell state, measurements should be correlated
-        result = fq.measure_allZ(device, shots=1000)
-        # Expectations should be 0 for both
-        assert torch.abs(result[0, 0]) < 0.1
-        assert torch.abs(result[0, 1]) < 0.1
-        # Take actual measurement outcomes
-        outcomes = fq.measure_allZ(device, shots=1000)
-        # Correlation should be high (both 00 or both 11)
-        # This is a simplified check
-        assert outcomes is not None
-
+        # 期望值 ⟨Z₀⟩ 和 ⟨Z₁⟩ 应该接近 0
+        exp_vals = fq.measure_allZ(device)  # 不需要 shots
+        assert torch.abs(exp_vals[0, 0]) < 1e-5
+        assert torch.abs(exp_vals[0, 1]) < 1e-5
 
 class TestParameterizedGates:
     """Test parameterized gates with gradients."""
