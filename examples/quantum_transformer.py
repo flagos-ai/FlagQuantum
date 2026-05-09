@@ -154,7 +154,7 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
                     ]
                 )
 
-            self.unitary_mod = fq.invertible.InvertibleUnitary(base_mod)
+            self.unitary_mod = fq.InvertibleUnitary(base_mod)
 
         def forward(
             self, x: torch.Tensor, q_device: fq.DistributedQuantumDevice
@@ -286,7 +286,7 @@ class FeedForwardQuantum(FeedForwardBase):
                     ]
                 )
 
-            self.unitary_mod = fq.invertible.InvertibleUnitary(base_mod)
+            self.unitary_mod = fq.InvertibleUnitary(base_mod)
 
         def forward(
             self, x: torch.Tensor, q_device: fq.DistributedQuantumDevice
