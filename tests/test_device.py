@@ -124,9 +124,6 @@ class TestProbabilityDistribution:
 class TestDeviceConstants:
     """Test device constants and properties."""
 
-    def test_group_constants(self):
-        """Test grouping constants are correctly set."""
-
     def test_device_properties(self):
         """Test device properties."""
         device = fq.DistributedQuantumDevice(n_wires=5, bsz=3, device="cpu")
