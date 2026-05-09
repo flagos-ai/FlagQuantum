@@ -11,7 +11,7 @@ description = "A distributed quantum computing framework built on PyTorch"
 authors = [
     {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
 ]
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

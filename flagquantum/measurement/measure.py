@@ -181,14 +181,16 @@ def measure_allZ(  # noqa: N802
         post_groups = groupings[:, post_wires]
         for i in range(len(post_wires)):
             wire_info = post_groups[:, i].flatten()
-            if wire_info[1].item() == -1:
+            group_idx = wire_info[0].item()
+            qubit_idx = wire_info[1].item()
+            if qubit_idx == -1:
                 slice_idx = (
-                    (slice(None),) * wire_info[0].item()
+                    (slice(None),) * group_idx
                     + (1 - post_bits[i],)
-                    + (slice(None),) * (len(local_mask_size) - wire_info[0].item() - 1)
+                    + (slice(None),) * (len(local_mask_size) - group_idx - 1)
                 )
             else:
-                group_size = state_mag.shape[wire_info[0].item()]
+                group_size = state_mag.shape[group_idx]
                 n_group_qubits = int(np.log2(group_size))
                 group_bool = torch.zeros(
                     group_size, device=local_mask.device, dtype=bool
@@ -196,12 +198,12 @@ def measure_allZ(  # noqa: N802
                 group_bool[
                     (slice(None),) * wire_info[1].item()
                     + (1 - post_bits[i],)
-                    + (slice(None),) * (n_group_qubits - wire_info[1].item() - 1)
+                    + (slice(None),) * (n_group_qubits - qubit_idx - 1)
                 ] = True
                 slice_idx = (
                     (slice(None),) * wire_info[0].item()
                     + (group_bool.flatten(),)
-                    + (slice(None),) * (len(local_mask_size) - wire_info[0].item() - 1)
+                    + (slice(None),) * (len(local_mask_size) - group_idx - 1)
                 )
             local_mask[slice_idx] = False
 

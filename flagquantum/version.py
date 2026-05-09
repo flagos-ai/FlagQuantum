@@ -15,10 +15,3 @@ VERSION_INFO = {
 def get_version() -> str:
     """Return the current version as a string."""
     return __version__
-
-
-def check_version_compatibility(min_version: str) -> bool:
-    """Check if current version meets minimum requirement."""
-    from packaging import version
-
-    return version.parse(__version__) >= version.parse(min_version)
