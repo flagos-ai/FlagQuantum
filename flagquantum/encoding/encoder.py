@@ -282,29 +282,42 @@ def basis_encoder(q_dev, x: torch.Tensor, wires: List[int]) -> None:
     q_dev : QuantumDevice
         Quantum device instance
     x : torch.Tensor
-        Binary input tensor (batch_size, n_bits)
+        Binary input tensor of shape ``(n_bits,)`` or ``(batch_size, n_bits)``
     wires : List[int]
         Qubit wires to encode into (first n_bits wires are used)
 
     Examples
     --------
     >>> device = DistributedQuantumDevice(n_wires=4, bsz=2)
-    >>> binary_data = torch.tensor([[1, 0, 1, 0], [0, 1, 0, 1]])
+    >>> binary_data = torch.tensor([[1, 0, 1, 0], [1, 0, 1, 0]])
     >>> basis_encoder(device, binary_data, wires=[0, 1, 2, 3])
 
     Notes
     -----
     - Values are treated as binary (non-zero values become 1)
     - This is a non-parameterized, non-differentiable encoding
-    - For batch processing, this applies the same bits to all batches
+    - If ``x`` is batched, all rows must be identical because gates are applied
+      uniformly to the whole device batch
     """
-    n_bits = min(x.shape[-1], len(wires))
+    if x.dim() == 1:
+        bitstring = x
+    elif x.dim() == 2:
+        if x.shape[0] > 1 and not torch.equal(x, x[0].unsqueeze(0).expand_as(x)):
+            raise ValueError(
+                "basis_encoder requires all batch rows to be identical because "
+                "X gates are applied uniformly across the whole batch."
+            )
+        bitstring = x[0]
+    else:
+        raise ValueError(
+            f"basis_encoder expected a 1D or 2D tensor, but got shape {tuple(x.shape)}."
+        )
+
+    n_bits = min(bitstring.shape[-1], len(wires))
 
     for i, wire in enumerate(wires[:n_bits]):
-        # Apply X gate if bit is 1
-        # Note: This applies to all batches equally based on first batch
-        # For per-batch conditioning, use a different approach
-        if torch.any(x[:, i] == 1):
+        # Apply X gate if the validated bitstring has a 1 at this position.
+        if bitstring[i] == 1:
             functional.x(q_dev, wires=[wire])
 
 
