@@ -135,6 +135,7 @@ class TestTwoQubitGates:
         assert torch.abs(exp_vals[0, 0]) < 1e-5
         assert torch.abs(exp_vals[0, 1]) < 1e-5
 
+
 class TestParameterizedGates:
     """Test parameterized gates with gradients."""
 
