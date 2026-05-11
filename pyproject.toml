@@ -28,8 +28,17 @@ dev = [
     "black>=23.0",
     "mypy>=1.0",
 ]
+
+viz = [
+    "matplotlib>=3.5.0",
+]
+
 invertible = [
     "torch>=2.5.0",  # Nightly build recommended for invertible backprop
+]
+
+all = [
+    "flagquantum[dev,viz,invertible]",
 ]
 
 [project.urls]
