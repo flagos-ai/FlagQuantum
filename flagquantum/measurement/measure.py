@@ -151,6 +151,21 @@ def measure_allZ(  # noqa: N802
 ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     """Measure all qubits in Pauli Z basis."""
 
+    """Measure all qubits in Pauli Z basis."""
+
+    # ========== 添加这段：记录测量操作 ==========
+    # 将所有量子比特添加到 op_history
+    all_wires = list(range(q_device.n_wires))
+    measurement_op = {
+        "name_or_mat": "measure_allZ",
+        "wires": all_wires,
+        "params": None,
+        "trainable": False,
+        "shots": shots,
+        "postselect_cond": postselect_cond,
+    }
+    q_device.op_history.append(measurement_op)
+
     if postselect_cond is None:
         postselect_cond = {}
 

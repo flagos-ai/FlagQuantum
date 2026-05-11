@@ -38,7 +38,7 @@ flagquantum/
 
 ```bash
 # Clone the repository
-git clone https://github.com/flagquantum/flagquantum.git
+git clone https://github.com/flagos-ai/flagquantum.git
 cd flagquantum
 
 # Install in development mode
@@ -62,8 +62,8 @@ print(fq.__version__)
 
 ### Basic Usage
 ```python
-import torch
 import flagquantum as fq
+import torch
 
 # Create a distributed quantum device
 device = fq.DistributedQuantumDevice(n_wires=4, bsz=2, world_sz=1)
@@ -116,8 +116,8 @@ encoder(device, x)
 
 ### Register Custom Gates
 ```python
-import torch
 from flagquantum.ops import register_gate
+import torch
 
 # Define custom gate matrix
 my_gate = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64)
