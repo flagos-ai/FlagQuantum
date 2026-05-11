@@ -156,6 +156,19 @@ pip install pytest pytest-cov
 python run_tests.py
 ```
 
+## Tutorials
+
+Explore our tutorial series to learn how to use FlagQuantum effectively:
+
+| 00 | [Understanding States](examples/tutorials/00_understanding_states.ipynb) | Quantum state representations and initialization |
+| 01 | [Basic Operations](examples/tutorials/01_basic_operations.ipynb) | Single-qubit and two-qubit gates |
+| 02 | [Measurement](examples/tutorials/02_measurement.ipynb) | Quantum measurement and expectation values |
+| 03 | [Parameterized Gates](examples/tutorials/03_parameterized_gates.ipynb) | Trainable gates with automatic differentiation |
+| 04 | [Quantum Circuit Builder](examples/tutorials/04_quantum_circuit_builder.ipynb) | Building and visualizing circuits |
+| 05 | [Quantum Machine Learning](examples/tutorials/05_quantum_machine_learning.ipynb) | End-to-end QML training pipeline |
+
+[→ View all tutorials](examples/tutorials/)
+
 ## License
 
 Apache License 2.0
