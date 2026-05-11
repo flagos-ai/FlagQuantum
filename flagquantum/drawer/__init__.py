@@ -6,13 +6,6 @@ from .mpl_drawer import draw_mpl
 from .style import available_styles, use_style
 from .text_drawer import draw_text
 
-__all__ = [
-    "draw_text",
-    "draw_mpl",
-    "available_styles",
-    "use_style",
-]
-
 
 def draw(qdev, format="text", **kwargs):
     """
@@ -30,3 +23,6 @@ def draw(qdev, format="text", **kwargs):
         return draw_mpl(qdev, **kwargs)
     else:
         return draw_text(qdev, **kwargs)
+
+
+__all__ = ["draw_text", "draw_mpl", "available_styles", "use_style", "draw"]
