@@ -37,7 +37,7 @@ files = [
     "pytest.ini",
     "examples/models/imdb_dataset/README.md",
     "examples/models/bert-base-uncased/tokenizer.json",
-    ".gitignore"
+    ".gitignore",
 ]
 
 for f in files:
