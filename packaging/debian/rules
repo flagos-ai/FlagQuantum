@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+export PYBUILD_NAME = flagquantum
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+# Smoke import test — don't blanket-skip. See FlagAttention rules
+# for rationale.
+override_dh_auto_test:
+	@echo "=== smoke import test ==="
+	@for d in .pybuild/cpython3_*/build $(CURDIR)/src $(CURDIR); do \
+	    if [ -d "$$d/flagquantum" ]; then \
+	        echo "Found build dir: $$d"; \
+	        PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$$d" python3 -c \
+	            "import flagquantum; print('OK', getattr(flagquantum, '__version__', 'unknown'))"; \
+	        exit 0; \
+	    fi; \
+	done; \
+	echo "ERROR: could not find a built flagquantum module"; exit 1

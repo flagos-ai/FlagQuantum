@@ -1,0 +1,21 @@
+Source: flagquantum
+Section: python
+Priority: optional
+Maintainer: FlagOS Contributors <contact@flagos.io>
+Build-Depends: debhelper-compat (= 13),
+               dh-python,
+               python3-all,
+               python3-setuptools,
+               python3-wheel,
+               pybuild-plugin-pyproject
+Standards-Version: 4.6.2
+Homepage: https://github.com/flagos-ai/FlagQuantum
+Vcs-Browser: https://github.com/flagos-ai/FlagQuantum
+Vcs-Git: https://github.com/flagos-ai/FlagQuantum.git
+Rules-Requires-Root: no
+
+Package: python3-flagquantum
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}, python3-torch, python3-numpy
+Description: FlagQuantum — quantum state-vector simulator for FlagOS
+ High-performance distributed quantum statevector simulator built on the FlagOS unified multi-chip backend.
