@@ -17,12 +17,13 @@ Examples
 import logging
 
 # Also expose submodules for advanced users
-from . import devices, encoding, measurement, ops, utils
+from . import devices, drawer, encoding, measurement, ops, utils
 
 # ============================================================================
 # Import from submodules (__all__ is automatically aggregated)
 # ============================================================================
 from .devices import *  # noqa: F403
+from .drawer import *  # noqa: F403
 from .encoding import *  # noqa: F403
 from .measurement import *  # noqa: F403
 from .ops import *  # noqa: F403
@@ -62,7 +63,7 @@ __all__ = (
     ["__version__", "get_version", "info", "hello"]
     +
     # Submodules
-    ["devices", "ops", "encoding", "measurement", "utils"]
+    ["devices", "ops", "encoding", "measurement", "utils", "drawer"]
     +
     # Devices exports
     (devices.__all__ if hasattr(devices, "__all__") else [])
@@ -75,4 +76,7 @@ __all__ = (
     +
     # Measurement exports
     (measurement.__all__ if hasattr(measurement, "__all__") else [])
+    +
+    # Drawer exports
+    (drawer.__all__ if hasattr(drawer, "__all__") else [])
 )

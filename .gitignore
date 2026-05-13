@@ -1,4 +1,31 @@
-__pycache__
-.vscode
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Distribution / packaging
 build/
-*.egg-info
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+
+# Coverage
+.coverage
+htmlcov/

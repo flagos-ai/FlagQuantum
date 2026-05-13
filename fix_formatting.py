@@ -3,11 +3,11 @@ import re
 
 
 def fix_trailing_whitespace(filepath):
-    """删除行尾空格"""
+    """Remove trailing whitespace from each line"""
     with open(filepath, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    # 删除行尾空格，但保留换行符
+    # Remove trailing spaces/tabs, but preserve newlines
     lines = [re.sub(r"[ \t]+$", "", line.rstrip("\n")) + "\n" for line in lines]
 
     with open(filepath, "w", encoding="utf-8") as f:
@@ -16,7 +16,7 @@ def fix_trailing_whitespace(filepath):
 
 
 def add_newline_at_end(filepath):
-    """添加文件末尾换行符"""
+    """Add a newline at the end of the file if missing"""
     with open(filepath, "rb") as f:
         content = f.read()
 
@@ -26,7 +26,7 @@ def add_newline_at_end(filepath):
         print(f"Added newline at end: {filepath}")
 
 
-# 需要修复的文件列表
+# List of files to fix
 files = [
     ".github/workflows/cd.yml",
     ".github/workflows/ci.yml",
@@ -37,6 +37,7 @@ files = [
     "pytest.ini",
     "examples/models/imdb_dataset/README.md",
     "examples/models/bert-base-uncased/tokenizer.json",
+    ".gitignore",
 ]
 
 for f in files:

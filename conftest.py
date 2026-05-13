@@ -1,7 +1,7 @@
 # flagquantum/conftest.py
 import os
 
-# 必须在任何导入之前设置
+# Must be set before any imports
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")

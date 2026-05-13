@@ -1,4 +1,4 @@
-# ruff: noqa: E501  # 忽略行过长检查
+# ruff: noqa: E501  # Ignore line length warnings
 import argparse
 import math
 import os
@@ -16,11 +16,11 @@ from transformers import AutoTokenizer
 
 import flagquantum as fq
 
-# ==================== 基础模块 ====================
+# ==================== Core Modules ====================
 
 
 class MultiHeadAttentionBase(nn.Module):
-    """多头注意力基类"""
+    """Base class for multi-head attention"""
 
     def __init__(
         self,
@@ -49,7 +49,7 @@ class MultiHeadAttentionBase(nn.Module):
         self.combine_heads = None
 
     def separate_heads(self, x: torch.Tensor) -> torch.Tensor:
-        """分离多头"""
+        """Separate into multiple heads"""
         batch_size = x.size(0)
         x = x.view(batch_size, -1, self.num_heads, self.d_k)
         return x.transpose(1, 2)
@@ -62,7 +62,7 @@ class MultiHeadAttentionBase(nn.Module):
         mask: Optional[torch.Tensor] = None,
         dropout: Optional[nn.Dropout] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """计算注意力"""
+        """Compute attention scores and weighted sum"""
         d_k = query.size(-1)
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
 
@@ -86,7 +86,7 @@ class MultiHeadAttentionBase(nn.Module):
         batch_size: int,
         mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        """下游处理"""
+        """Downstream processing after attention computation"""
         q = self.separate_heads(query)
         k = self.separate_heads(key)
         v = self.separate_heads(value)
@@ -97,7 +97,7 @@ class MultiHeadAttentionBase(nn.Module):
 
 
 class MultiHeadAttentionClassical(MultiHeadAttentionBase):
-    """经典多头注意力"""
+    """Classical multi-head attention"""
 
     def __init__(
         self,
@@ -130,7 +130,7 @@ class MultiHeadAttentionClassical(MultiHeadAttentionBase):
 
 
 class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
-    """量子多头注意力"""
+    """Quantum multi-head attention"""
 
     class QLayer(nn.Module):
         def __init__(self, n_wires: int = 8, n_layers: int = 3):
@@ -187,7 +187,7 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
         self.norm = nn.LayerNorm(embed_dim)
 
     def _get_device(self, bsz: int) -> fq.DistributedQuantumDevice:
-        """获取或创建量子设备"""
+        """Get or create a quantum device"""
         if self.q_device is None or self.last_bsz != bsz:
             if self.q_device is not None:
                 del self.q_device
@@ -216,7 +216,7 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
 
         current_dev = self._get_device(batch_size * seq_len)
 
-        # 并行计算 Q, K, V
+        # Parallel computation of Q, K, V
         k_flat = self.q_layer(x_qubit, current_dev)
         q_flat = self.q_layer(x_qubit, current_dev)
         v_flat = self.q_layer(x_qubit, current_dev)
@@ -239,11 +239,11 @@ class MultiHeadAttentionQuantum(MultiHeadAttentionBase):
         return self.proj_out(output_flat).view(batch_size, seq_len, embed_dim)
 
 
-# ==================== 前馈网络模块 ====================
+# ==================== Feed-Forward Network Modules ====================
 
 
 class FeedForwardBase(nn.Module):
-    """前馈网络基类"""
+    """Base class for feed-forward network"""
 
     def __init__(self, embed_dim: int, ffn_dim: int, dropout: float = 0.1):
         super().__init__()
@@ -253,7 +253,7 @@ class FeedForwardBase(nn.Module):
 
 
 class FeedForwardClassical(FeedForwardBase):
-    """经典前馈网络"""
+    """Classical feed-forward network"""
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.linear_1(x))
@@ -262,7 +262,7 @@ class FeedForwardClassical(FeedForwardBase):
 
 
 class FeedForwardQuantum(FeedForwardBase):
-    """量子前馈网络"""
+    """Quantum feed-forward network"""
 
     class QL(nn.Module):
         def __init__(self, n_wires: int = 8, n_layers: int = 3):
@@ -319,7 +319,7 @@ class FeedForwardQuantum(FeedForwardBase):
         self.norm = nn.LayerNorm(embed_dim)
 
     def _get_device(self, bsz: int) -> fq.DistributedQuantumDevice:
-        """获取或创建量子设备"""
+        """Get or create a quantum device"""
         if self.q_device is None or self.last_bsz != bsz:
             if self.q_device is not None:
                 del self.q_device
@@ -355,11 +355,11 @@ class FeedForwardQuantum(FeedForwardBase):
         return self.norm(x + residual)
 
 
-# ==================== Transformer 模块 ====================
+# ==================== Transformer Modules ====================
 
 
 class TransformerBlockBase(nn.Module):
-    """Transformer块基类"""
+    """Base class for transformer block"""
 
     def __init__(
         self,
@@ -390,7 +390,7 @@ class TransformerBlockBase(nn.Module):
 
 
 class TransformerBlockClassical(TransformerBlockBase):
-    """经典Transformer块"""
+    """Classical transformer block"""
 
     def __init__(
         self,
@@ -406,7 +406,7 @@ class TransformerBlockClassical(TransformerBlockBase):
 
 
 class TransformerBlockQuantum(TransformerBlockBase):
-    """量子Transformer块"""
+    """Quantum transformer block"""
 
     def __init__(
         self,
@@ -437,11 +437,11 @@ class TransformerBlockQuantum(TransformerBlockBase):
             self.ffn = FeedForwardClassical(embed_dim, ffn_dim, dropout)
 
 
-# ==================== 位置编码 ====================
+# ==================== Positional Encoding ====================
 
 
 class PositionalEncoder(nn.Module):
-    """位置编码"""
+    """Positional encoding for transformer"""
 
     def __init__(self, embed_dim: int, max_seq_len: int = 512):
         super().__init__()
@@ -464,11 +464,11 @@ class PositionalEncoder(nn.Module):
         return x + self.pe[:, :seq_len]
 
 
-# ==================== 文本分类器 ====================
+# ==================== Text Classifier ====================
 
 
 class TextClassifier(nn.Module):
-    """文本分类器"""
+    """Text classifier with optional quantum components"""
 
     def __init__(
         self,
@@ -537,16 +537,16 @@ class TextClassifier(nn.Module):
         return self.class_logits(x)
 
 
-# ==================== 工具函数 ====================
+# ==================== Utility Functions ====================
 
 
 def count_parameters(model: nn.Module) -> int:
-    """计算可训练参数数量"""
+    """Count the number of trainable parameters in a model"""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def setup_distributed() -> Optional[int]:
-    """初始化分布式环境"""
+    """Initialize distributed training environment"""
     if "RANK" in os.environ:
         rank = int(os.environ["RANK"])
         local_rank = int(os.environ.get("LOCAL_RANK", rank % torch.cuda.device_count()))
@@ -557,7 +557,7 @@ def setup_distributed() -> Optional[int]:
 
 
 def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
-    """计算训练时间"""
+    """Calculate training epoch time in minutes and seconds"""
     elapsed_time = end_time - start_time
     elapsed_mins = int(elapsed_time / 60)
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
@@ -567,7 +567,7 @@ def epoch_time(start_time: float, end_time: float) -> Tuple[int, int]:
 def get_dataset_loaders(
     tokenizer, max_seq_len: int, batch_size: int
 ) -> Tuple[DataLoader, DataLoader]:
-    """获取数据集加载器"""
+    """Get train and test data loaders for IMDB dataset"""
     local_path = "./models/imdb_dataset"
     raw_datasets = load_dataset(local_path)
 
@@ -592,7 +592,7 @@ def get_dataset_loaders(
     return train_loader, test_loader
 
 
-# ==================== 训练和评估函数 ====================
+# ==================== Training and Evaluation Functions ====================
 
 
 def train(
@@ -602,7 +602,7 @@ def train(
     criterion: nn.Module,
     max_batches: int = 10,
 ) -> Tuple[float, float]:
-    """训练一个epoch"""
+    """Train the model for one epoch"""
     epoch_loss = 0
     epoch_acc = 0
     model.train()
@@ -634,7 +634,7 @@ def train(
         epoch_loss += loss.item()
         epoch_acc += acc.item()
 
-        # 清理中间变量
+        # Clean up intermediate variables
         del predictions, loss, probs, predicted_labels, correct
 
         if i % 2 == 0:
@@ -647,7 +647,7 @@ def train(
 def evaluate(
     model: nn.Module, iterator: DataLoader, criterion: nn.Module, max_batches: int = 2
 ) -> Tuple[float, float]:
-    """评估模型"""
+    """Evaluate the model on validation/test set"""
     epoch_loss = 0
     epoch_acc = 0
     model.eval()
@@ -682,20 +682,20 @@ def evaluate(
     return epoch_loss / step_count, epoch_acc / step_count
 
 
-# ==================== 主函数 ====================
+# ==================== Main Function ====================
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数"""
+    """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="Quantum Text Classifier")
 
-    # 数据参数
+    # Data arguments
     parser.add_argument("-B", "--batch_size", default=4, type=int, help="Batch size")
     parser.add_argument(
         "-s", "--max_seq_len", default=16, type=int, help="Maximum sequence length"
     )
 
-    # 模型参数
+    # Model arguments
     parser.add_argument(
         "-e", "--embed_dim", default=8, type=int, help="Embedding dimension"
     )
@@ -714,7 +714,7 @@ def parse_args() -> argparse.Namespace:
         "-d", "--dropout_rate", default=0.1, type=float, help="Dropout rate"
     )
 
-    # 量子参数
+    # Quantum arguments
     parser.add_argument(
         "-q",
         "--n_qubits_transformer",
@@ -732,7 +732,7 @@ def parse_args() -> argparse.Namespace:
         "-D", "--q_device", default="default.qubit", type=str, help="Quantum device"
     )
 
-    # 训练参数
+    # Training arguments
     parser.add_argument(
         "-E", "--n_epochs", default=100, type=int, help="Number of epochs"
     )
@@ -745,10 +745,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main():
-    """主函数"""
+    """Main function"""
     args = parse_args()
 
-    # 初始化分布式环境
+    # Initialize distributed environment
     local_rank = setup_distributed()
 
     if local_rank is not None:
@@ -758,7 +758,7 @@ def main():
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(f"Single GPU training on {device}")
 
-    # 准备数据
+    # Prepare data
     print("Loading tokenizer and datasets...")
     local_model_path = "./models/bert-base-uncased"
     tokenizer = AutoTokenizer.from_pretrained(local_model_path)
@@ -766,7 +766,7 @@ def main():
         tokenizer, args.max_seq_len, args.batch_size
     )
 
-    # 初始化模型
+    # Initialize model
     print("Initializing model...")
     model = TextClassifier(
         embed_dim=args.embed_dim,
@@ -784,14 +784,14 @@ def main():
 
     print(f"The model has {count_parameters(model):,} trainable parameters")
 
-    # 包装为 DDP
+    # Wrap with DDP
     if local_rank is not None and torch.cuda.device_count() > 1:
         model = DistributedDataParallel(
             model, device_ids=[local_rank], output_device=local_rank
         )
         print(f"Distributed training with world size: {dist.get_world_size()}")
 
-    # 训练设置
+    # Training setup
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = (
         torch.nn.BCEWithLogitsLoss()
@@ -799,7 +799,7 @@ def main():
         else torch.nn.CrossEntropyLoss()
     )
 
-    # 训练循环
+    # Training loop
     best_valid_loss = float("inf")
 
     for epoch in range(args.n_epochs):
@@ -826,7 +826,7 @@ def main():
             )
             print(f"\tVal. Loss: {valid_loss:.10g} |  Val. Acc: {valid_acc * 100:.2f}%")
 
-    # 清理
+    # Clean up
     if local_rank is not None:
         dist.destroy_process_group()
 

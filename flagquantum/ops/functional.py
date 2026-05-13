@@ -25,19 +25,12 @@ GROUP_UNSHARDED = -1
 EPS = 1e-8
 
 
-def _ensure_tensor(
-    params: Union[float, List[float], torch.Tensor, None],
-) -> Optional[torch.Tensor]:
-    """Ensure params is a torch.Tensor."""
+def _ensure_tensor(params):
     if params is None:
         return None
     if isinstance(params, torch.Tensor):
         return params
-    if isinstance(params, (float, int)):
-        return torch.tensor([float(params)])
-    if isinstance(params, list):
-        return torch.tensor(params)
-    return torch.tensor(params)  # fallback
+    return torch.tensor(params, requires_grad=True)
 
 
 class InvertibleUnitaryBMM(Function):
@@ -313,15 +306,37 @@ def gate(
     else:
         raise TypeError("Invalid gate type provided.")
 
+    # Multi-parameter gate list (parameter shape must remain unchanged)
+    multi_param_gates = ["u2", "u3"]
+
+    # Handling shapes in the gate function
     if params is not None:
         if not isinstance(params, torch.Tensor):
-            # this is for directly inputting parameters as a number
-            params = torch.tensor(params, dtype=torch.float32)
+            params = torch.tensor(params, requires_grad=True)
 
-        if params.dim() == 1:
-            params = params.unsqueeze(-1).expand((q_device.bsz, -1))
-        elif params.dim() == 0:
-            params = params.unsqueeze(-1).unsqueeze(-1).expand((q_device.bsz, -1))
+        if name_or_mat in multi_param_gates:
+            # Ensure it is 2D
+            if params.dim() == 1:
+                params = params.unsqueeze(0)
+
+            # Expand to batch size
+            if params.shape[0] == 1 and q_device.bsz > 1:
+                params = params.expand(q_device.bsz, -1)
+            # Ensure that the size of the last dimension is correct
+            expected = 2 if name_or_mat == "u2" else 3
+            if params.shape[-1] != expected:
+                raise ValueError(
+                    f"{name_or_mat} expects {expected} parameters per group, but now there are {params.shape[-1]} parameters."
+                )
+        else:
+            # Single parameter gate: shape [batch, 1]
+            if params.dim() == 0:
+                params = params.reshape(1, 1)  # 标量 -> [1, 1]
+            elif params.dim() == 1:
+                params = params.reshape(-1, 1)  # [n] -> [n, 1]
+            # Expand to batch size
+            if params.shape[0] == 1 and q_device.bsz > 1:
+                params = params.expand(q_device.bsz, -1)
 
     wires = _ensure_wires_list(wires)
 

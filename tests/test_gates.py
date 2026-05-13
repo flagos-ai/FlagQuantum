@@ -130,7 +130,7 @@ class TestTwoQubitGates:
         device.h(wires=[0])
         device.cx(wires=[0, 1])
 
-        # 期望值 ⟨Z₀⟩ 和 ⟨Z₁⟩ 应该接近 0
+        # The expected values ⟨Z₀⟩ and ⟨Z₁⟩ should be close to 0
         exp_vals = fq.measure_allZ(device)  # 不需要 shots
         assert torch.abs(exp_vals[0, 0]) < 1e-5
         assert torch.abs(exp_vals[0, 1]) < 1e-5

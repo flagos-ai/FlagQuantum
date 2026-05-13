@@ -3,7 +3,6 @@
 
 __version__ = "0.1.0"
 
-# 可选：版本元数据
 VERSION_INFO = {
     "major": 0,
     "minor": 1,
