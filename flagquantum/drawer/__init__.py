@@ -1,11 +1,11 @@
 """
-FlagQuantum 电路绘图模块
+FlagQuantum circuit drawing module
 """
 
 from .style import available_styles, use_style
 from .text_drawer import TextDrawer, draw_text
 
-# mpl 是可选依赖，未安装 matplotlib 时不影响 text 模式
+# mpl is an optional dependency; text mode works fine without matplotlib
 try:
     from .mpl_drawer import MPLDrawer, draw_mpl
 
@@ -18,17 +18,17 @@ except ImportError:
 
 def draw(qdev, format="text", **kwargs):
     """
-    绘制电路图
+    Draw a circuit diagram
 
     Args:
-        qdev: FlagQuantum 设备对象（包含 op_history 和 n_wires）
-        format: "text" 或 "mpl"
-        **kwargs: 其他参数传递给具体的绘图器
+        qdev: FlagQuantum device object (contains op_history and n_wires)
+        format: "text" or "mpl"
+        **kwargs: Additional arguments passed to the specific drawer
 
     Returns:
-        text模式返回字符串，mpl模式返回 (fig, ax)
+        For text mode: returns a string; for mpl mode: returns (fig, ax)
     Raises:
-        ImportError: 当 format="mpl" 但 matplotlib 未安装时
+        ImportError: When format="mpl" is used but matplotlib is not installed
     """
     if format == "mpl":
         if not _has_mpl:

@@ -1,5 +1,5 @@
 """
-文本模式电路绘图器
+Text mode circuit drawer
 """
 
 from dataclasses import dataclass
@@ -8,27 +8,27 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class _CurrentTotals:
-    """累积的电路字符串"""
+    """Accumulated circuit strings"""
 
-    finished_lines: List[str]  # 已完成的行（换行时使用）
-    wire_totals: List[str]  # 量子线累积字符串
-    bit_totals: List[str]  # 经典线累积字符串
+    finished_lines: List[str]  # Completed lines (used when wrapping)
+    wire_totals: List[str]  # Accumulated quantum wire strings
+    bit_totals: List[str]  # Accumulated classical bit strings
 
 
 @dataclass
 class _Config:
-    """绘图配置"""
+    """Drawing configuration"""
 
-    wire_map: Dict[Any, int]  # 线标签 -> 显示位置
-    wire_order: List[Any]  # 线顺序（从上到下）
-    num_op_layers: int  # 操作层数
-    cur_layer: int = -1  # 当前层索引
-    decimals: Optional[int] = None  # 参数精度
-    show_wire_labels: bool = True  # 是否显示线标签
+    wire_map: Dict[Any, int]  # Wire label -> display position
+    wire_order: List[Any]  # Wire order (top to bottom)
+    num_op_layers: int  # Number of operation layers
+    cur_layer: int = -1  # Current layer index
+    decimals: Optional[int] = None  # Parameter precision
+    show_wire_labels: bool = True  # Whether to show wire labels
 
     @property
     def wire_filler(self) -> str:
-        """填充字符：操作层用'─'，测量层用空格"""
+        """Filler character: '─' for operation layers, space for measurement layers"""
         return "─" if self.cur_layer < self.num_op_layers else " "
 
     @property
@@ -38,17 +38,17 @@ class _Config:
 
 class TextDrawer:
     """
-    文本电路绘图器
+    Text circuit drawer
 
-    核心机制：
-    1. 维护 totals.wire_totals 作为累积字符串
-    2. 每层通过 filler.join([t, s]) 连接
-    3. _left_justify 确保所有线等长
+    Core mechanism:
+    1. Maintain totals.wire_totals as accumulated strings
+    2. Each layer is connected via filler.join([t, s])
+    3. _left_justify ensures all wires have equal length
     """
 
-    # 门名称到符号的映射
+    # Gate name to symbol mapping
     GATE_SYMBOLS = {
-        # 单量子门
+        # Single-qubit gates
         "rx": "RX",
         "ry": "RY",
         "rz": "RZ",
@@ -68,7 +68,7 @@ class TextDrawer:
         "u1": "U1",
         "u2": "U2",
         "u3": "U3",
-        # 两量子门
+        # Two-qubit gates
         "cx": "●",
         "cnot": "●",
         "cy": "●",
@@ -81,12 +81,12 @@ class TextDrawer:
         "rxx": "RXX",
         "ryy": "RYY",
         "rzz": "RZZ",
-        # 三量子门
+        # Three-qubit gates
         "ccx": "Toffoli",
         "toffoli": "Toffoli",
         "cswap": "CSWAP",
         "fredkin": "CSWAP",
-        # 测量
+        # Measurements
         "measure": "Meas",
         "measurement": "M",
         "measure_allz": "MZ",
@@ -109,19 +109,19 @@ class TextDrawer:
         self.decimals = decimals
         self.max_length = max_length
         self.show_all_wires = show_all_wires
-        self.show_initial_state = show_initial_state  # 新增
+        self.show_initial_state = show_initial_state
 
-        # 确定线序
+        # Determine wire order
         self.wire_order = self._create_wire_order(wire_order)
         self.wire_map = {wire: idx for idx, wire in enumerate(self.wire_order)}
         self.reverse_wire_map = {idx: wire for wire, idx in self.wire_map.items()}
 
-        # 创建分层
+        # Create layers
         self.layers = self._create_layers()
         self.num_op_layers = len(self.layers)
 
     def _detect_n_wires(self) -> int:
-        """自动检测量子比特数"""
+        """Automatically detect the number of qubits"""
         max_wire = -1
         for op in self.op_history:
             wires = op.get("wires", [])
@@ -133,7 +133,7 @@ class TextDrawer:
         return max_wire + 1 if max_wire >= 0 else 0
 
     def _create_wire_order(self, wire_order):
-        """创建线顺序"""
+        """Create wire order"""
         if wire_order is None:
             wire_order = list(range(self.n_wires))
 
@@ -149,7 +149,7 @@ class TextDrawer:
         return wire_order
 
     def _is_parameterized_gate(self, name: str) -> bool:
-        """判断是否为参数门（有可训练参数）"""
+        """Check if the gate has trainable parameters"""
         return name in [
             "rx",
             "ry",
@@ -170,9 +170,9 @@ class TextDrawer:
 
     def _create_layers(self) -> List[List[Dict]]:
         """
-        分层算法
+        Layering algorithm
 
-        多量子门会占用中间的所有线，防止其他操作重叠
+        Multi-qubit gates occupy all wires in between to prevent overlap with other operations
         """
         last_layer = {}  # wire -> last_layer_index
         layers = []
@@ -183,15 +183,15 @@ class TextDrawer:
                 wires = [wires]
 
             if not wires:
-                # 无 wires 的操作（如全局操作）占用所有线
+                # Operations without wires (e.g., global operations) occupy all wires
                 wires = list(range(self.n_wires))
 
-            # 获取操作占用的所有线（包括中间线）
+            # Get all wires occupied by this operation (including intermediate wires)
             min_wire = min(wires)
             max_wire = max(wires)
             occupied_wires = set(range(min_wire, max_wire + 1))
 
-            # 映射到显示线索引
+            # Map to display wire indices
             mapped_occupied = set()
             for w in occupied_wires:
                 if w in self.wire_map:
@@ -200,7 +200,7 @@ class TextDrawer:
             if not mapped_occupied:
                 continue
 
-            # 找到这些线上最后一层的最大索引
+            # Find the maximum layer index among the last layers of these wires
             max_layer = -1
             for w in mapped_occupied:
                 if w in last_layer:
@@ -208,37 +208,39 @@ class TextDrawer:
 
             new_layer = max_layer + 1
 
-            # 确保层列表足够长
+            # Ensure the layer list is long enough
             while len(layers) <= new_layer:
                 layers.append([])
 
             layers[new_layer].append(op)
 
-            # 更新这些线的最后层
+            # Update the last layer for these wires
             for w in mapped_occupied:
                 last_layer[w] = new_layer
 
         return layers
 
     def _get_param_str(self, params) -> str:
-        """格式化参数字符串（固定小数位数，保留末尾0）"""
-        if not params or self.decimals is None:
+        """Format parameter string (fixed decimal places, preserve trailing zeros)"""
+        if self.decimals is None or params is None:
             return ""
 
         if isinstance(params, list):
-            p = params[0] if params else None
+            if params == []:
+                return ""
+            p = params[0]
         else:
             p = params
 
         if isinstance(p, (int, float)):
-            # 固定小数位数，保留末尾0
+            # Fixed decimal places, preserve trailing zeros
             return f"{p:.{self.decimals}f}"
         elif p is not None:
             return f"{p}"
         return ""
 
     def _render_single_gate(self, name: str, params) -> str:
-        """渲染单量子门：─RX(0.31)─"""
+        """Render single-qubit gate: ─RX(0.31)─"""
         symbol = self.GATE_SYMBOLS.get(name.lower(), name.upper() if name else "?")
         param_str = self._get_param_str(params)
         if param_str:
@@ -247,12 +249,12 @@ class TextDrawer:
 
     def _render_toffoli(self, wires: List[int]) -> List[tuple]:
         """
-        渲染 Toffoli (CCX) 门
+        Render Toffoli (CCX) gate
 
-        格式：
-        控制线1: ╭●
-        控制线2: ├●
-        目标线:  ╰X
+        Format:
+        Control line 1: ╭●
+        Control line 2: ├●
+        Target line:    ╰X
         """
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
@@ -267,28 +269,28 @@ class TextDrawer:
             abs_idx = min_wire + i
 
             if i == 0:
-                # 第一个控制线
+                # First control line
                 lines.append((abs_idx, "╭●"))
             elif i == n_lines - 2:
-                # 第二个控制线（如果是3线，这是中间线）
+                # Second control line (for 3 lines, this is the middle line)
                 lines.append((abs_idx, "├●"))
             elif i == n_lines - 1:
-                # 目标线
+                # Target line
                 lines.append((abs_idx, "╰X"))
             else:
-                # 其他中间线：连接线
+                # Other intermediate lines: connector
                 lines.append((abs_idx, "│"))
 
         return lines
 
     def _render_cswap(self, wires: List[int]) -> List[tuple]:
         """
-        渲染 Fredkin (CSWAP) 门
+        Render Fredkin (CSWAP) gate
 
-        格式：
-        控制线:  ╭●
-        目标线1: ├╳
-        目标线2: ╰╳
+        Format:
+        Control line:   ╭●
+        Target line 1:  ├╳
+        Target line 2:  ╰╳
         """
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
@@ -303,31 +305,31 @@ class TextDrawer:
             abs_idx = min_wire + i
 
             if i == 0:
-                # 控制线
+                # Control line
                 lines.append((abs_idx, "╭●"))
             elif i == n_lines - 2:
-                # 第一个目标线
+                # First target line
                 lines.append((abs_idx, "├╳"))
             elif i == n_lines - 1:
-                # 第二个目标线
+                # Second target line
                 lines.append((abs_idx, "╰╳"))
             else:
-                # 其他中间线：连接线
+                # Other intermediate lines: connector
                 lines.append((abs_idx, "│"))
 
         return lines
 
     def _render_swap_gate(self, wires: List[int]) -> List[tuple]:
         """
-        渲染 SWAP 门（避免误导：只画两端，中间用连接线）
+        Render SWAP gate (avoid misleading: draw only ends, connectors in between)
 
-        相邻线 SWAP(wires=[0,1]):
+        Adjacent wires SWAP(wires=[0,1]):
             0: ╳
             1: ╳
 
-        不相邻线 SWAP(wires=[0,2]):
+        Non-adjacent wires SWAP(wires=[0,2]):
             0: ╳
-            1: │   (只是连接线)
+            1: │   (just a connector)
             2: ╳
         """
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
@@ -343,16 +345,16 @@ class TextDrawer:
             abs_idx = min_wire + i
 
             if i == 0 or i == n_lines - 1:
-                # 两端：画 X
+                # Ends: draw X
                 lines.append((abs_idx, "╳"))
             else:
-                # 中间线：只画连接线
+                # Middle lines: draw only connector
                 lines.append((abs_idx, "│"))
 
         return lines
 
     def _render_controlled_gate(self, wires, target_symbol):
-        """渲染受控门（CZ, CY, CX 等）"""
+        """Render controlled gate (CZ, CY, CX, etc.)"""
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
             return []
@@ -366,19 +368,19 @@ class TextDrawer:
             abs_idx = min_wire + i
 
             if i == 0:
-                # 顶部：控制线
+                # Top: control line
                 lines.append((abs_idx, "╭●"))
             elif i == n_lines - 1:
-                # 底部：目标线（显示 Z、X 或 Y）
+                # Bottom: target line (display Z, X, or Y)
                 lines.append((abs_idx, f"╰{target_symbol}"))
             else:
-                # 中间线：连接线
+                # Middle lines: connector
                 lines.append((abs_idx, "│"))
 
         return lines
 
     def _render_controlled_gate_with_param(self, wires, gate_name, params):
-        """渲染带参数的受控门（CRX, CRY, CRZ）"""
+        """Render parameterized controlled gate (CRX, CRY, CRZ)"""
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
             return []
@@ -407,7 +409,7 @@ class TextDrawer:
         return lines
 
     def _render_ising_gate(self, wires, gate_name, params):
-        """渲染 Ising 门（RXX, RYY, RZZ）"""
+        """Render Ising gate (RXX, RYY, RZZ)"""
         mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
         if not mapped_wires:
             return []
@@ -437,12 +439,12 @@ class TextDrawer:
 
     def _render_multi_gate(self, name: str, wires: List[int], params) -> List[tuple]:
         """
-        渲染多量子门（如 QFT）
+        Render multi-qubit gate (e.g., QFT)
 
-        格式：
-        顶部: ╭QFT─
-        中间: ├QFT─
-        底部: ╰QFT─
+        Format:
+        Top:    ╭QFT─
+        Middle: ├QFT─
+        Bottom: ╰QFT─
         """
         symbol = self.GATE_SYMBOLS.get(name.lower(), name.upper() if name else "?")
         param_str = self._get_param_str(params)
@@ -475,10 +477,10 @@ class TextDrawer:
 
     def _render_op(self, op: Dict) -> List[tuple]:
         """
-        渲染单个操作，返回 [(wire_index, string), ...]
+        Render a single operation, returning [(wire_index, string), ...]
 
-        注意：这里只返回添加的内容，不包含 filler 字符
-        filler 字符由 _initialize_layer_str 和 _left_justify 处理
+        Note: Only the content to be added is returned here, not including filler characters
+        Filler characters are handled by _initialize_layer_str and _left_justify
         """
         name = op.get("name_or_mat", "").lower()
         wires = op.get("wires", [])
@@ -487,32 +489,32 @@ class TextDrawer:
         if isinstance(wires, int):
             wires = [wires]
 
-        # 跳过测量操作（在 _finalize_layers 中统一处理）
+        # Skip measurement operations (handled uniformly in _finalize_layers)
         if name == "measure_allz":
             return []
 
         if not wires:
             return []
 
-        # 过滤出存在的线
+        # Filter existing wires
         valid_wires = [w for w in wires if w in self.wire_map]
         if not valid_wires:
             return []
 
-        # 单量子门
+        # Single-qubit gate
         if len(valid_wires) == 1:
             wire_idx = self.wire_map[valid_wires[0]]
             return [(wire_idx, self._render_single_gate(name, params))]
 
-        # Toffoli (CCX) - 3 个量子比特
+        # Toffoli (CCX) - 3 qubits
         if name in ["ccx", "toffoli"] and len(valid_wires) == 3:
             return self._render_toffoli(valid_wires)
 
-        # Fredkin (CSWAP) - 3 个量子比特
+        # Fredkin (CSWAP) - 3 qubits
         if name in ["cswap", "fredkin"] and len(valid_wires) == 3:
             return self._render_cswap(valid_wires)
 
-        # CZ 门（受控-Z）
+        # CZ gate (controlled-Z)
         if name == "cz":
             return self._render_controlled_gate(valid_wires, "Z")
 
@@ -520,15 +522,15 @@ class TextDrawer:
         if name in ["cx", "cnot"]:
             return self._render_controlled_gate(valid_wires, "X")
 
-        # CY 门（受控-Y）
+        # CY gate (controlled-Y)
         if name == "cy":
             return self._render_controlled_gate(valid_wires, "Y")
 
-        # CPhase 门
+        # CPhase gate
         if name in ["cphase", "controlledphase"]:
             return self._render_controlled_gate_with_param(valid_wires, "CP", params)
 
-        # CRX, CRY, CRZ 受控旋转门
+        # CRX, CRY, CRZ controlled rotation gates
         if name == "crx":
             return self._render_controlled_gate_with_param(valid_wires, "CRX", params)
         if name == "cry":
@@ -536,23 +538,23 @@ class TextDrawer:
         if name == "crz":
             return self._render_controlled_gate_with_param(valid_wires, "CRZ", params)
 
-        # Ising 门 (RXX, RYY, RZZ)
+        # Ising gates (RXX, RYY, RZZ)
         if name in ["rxx", "ryy", "rzz"]:
             return self._render_ising_gate(valid_wires, name.upper(), params)
 
-        # SWAP 门
+        # SWAP gate
         if name == "swap":
             return self._render_swap_gate(valid_wires)
 
-        # 默认多量子门
+        # Default multi-qubit gate
         return self._render_multi_gate(name, valid_wires, params)
 
     def _initialize_layer_str(self, config: _Config) -> List[str]:
-        """初始化新层的字符串数组"""
+        """Initialize the string array for a new layer"""
         return [config.wire_filler] * config.n_wires
 
     def _left_justify(self, layer_str: List[str], config: _Config) -> List[str]:
-        """将这一层中所有线填充到相同长度"""
+        """Pad all wires in this layer to the same length"""
         if not layer_str:
             return layer_str
 
@@ -566,7 +568,7 @@ class TextDrawer:
     def _add_layer_str_to_totals(
         self, totals: _CurrentTotals, layer_str: List[str], config: _Config
     ) -> _CurrentTotals:
-        """将当前层合并到累积字符串中"""
+        """Merge the current layer into accumulated strings"""
         totals.wire_totals = [
             config.wire_filler.join([t, s])
             for t, s in zip(totals.wire_totals, layer_str[: config.n_wires])
@@ -577,7 +579,7 @@ class TextDrawer:
     def _add_to_finished_lines(
         self, totals: _CurrentTotals, config: _Config, add_measurement: bool = False
     ) -> _CurrentTotals:
-        """当前行超过 max_length 时，保存到 finished_lines 并开始新行"""
+        """Save current line to finished_lines when exceeding max_length and start a new line"""
         suffix = " ···"
 
         saved_lines = [line + suffix for line in totals.wire_totals]
@@ -585,7 +587,7 @@ class TextDrawer:
         totals.finished_lines += saved_lines
         totals.finished_lines[-1] += "\n"
 
-        # 重置 totals（新行）
+        # Reset totals (new line)
         prefix = "··· "
 
         if config.show_wire_labels:
@@ -600,20 +602,20 @@ class TextDrawer:
     def _finalize_layers(
         self, totals: _CurrentTotals, config: _Config
     ) -> _CurrentTotals:
-        """添加行尾标记（测量符号）"""
+        """Add end-of-line markers (measurement symbols)"""
 
-        # 检查是否有 measure_allZ 操作
+        # Check if there is a measure_allZ operation
         has_all_measure = any(
             op.get("name_or_mat", "").lower() == "measure_allz"
             for op in self.op_history
         )
 
         if has_all_measure:
-            # 所有线都测量
+            # All wires are measured
             for i in range(len(totals.wire_totals)):
                 totals.wire_totals[i] = f"{totals.wire_totals[i]}─┤  <Z>"
         else:
-            # 逐线检查测量
+            # Check measurement per wire
             for i, wire in enumerate(config.wire_order):
                 has_measure = any(
                     op.get("name_or_mat", "").lower()
@@ -633,9 +635,9 @@ class TextDrawer:
         return totals
 
     def _initialize_wire_totals(self, config: _Config) -> List[str]:
-        """初始化 wire_totals（包含线标签，可选显示初始状态）"""
+        """Initialize wire_totals (include wire labels, optionally show initial state)"""
         if config.show_wire_labels:
-            # 检查是否需要显示初始状态（可以通过属性控制）
+            # Check whether to show initial state (can be controlled via attribute)
             show_initial_state = getattr(self, "show_initial_state", False)
 
             if show_initial_state:
@@ -643,7 +645,7 @@ class TextDrawer:
             else:
                 wire_totals = [f"{wire}: " for wire in config.wire_order]
 
-            # 右对齐线标签（使所有线的标签等宽）
+            # Right-align wire labels (make all wire labels equal width)
             line_length = max(len(s) for s in wire_totals)
             wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
         else:
@@ -652,7 +654,7 @@ class TextDrawer:
         return wire_totals
 
     def draw(self) -> str:
-        """绘制电路图（支持自动换行）"""
+        """Draw the circuit diagram (supports automatic line wrapping)"""
         if not self.op_history:
             return "Empty circuit"
 
@@ -667,32 +669,32 @@ class TextDrawer:
             show_wire_labels=True,
         )
 
-        # 初始化累加器（包含线标签）
+        # Initialize accumulator (include wire labels)
         wire_totals = self._initialize_wire_totals(config)
 
         totals = _CurrentTotals(
             finished_lines=[], wire_totals=wire_totals, bit_totals=[]
         )
 
-        len_suffix = 4  # " ···" 的长度
+        len_suffix = 4  # Length of " ···"
 
-        # 逐层处理
+        # Process layer by layer
         for layer_idx, layer in enumerate(self.layers):
             config.cur_layer = layer_idx
 
-            # 初始化这一层
+            # Initialize this layer
             layer_str = self._initialize_layer_str(config)
 
-            # 添加这一层的所有操作
+            # Add all operations in this layer
             for op in layer:
                 rendered = self._render_op(op)
                 for wire_idx, s in rendered:
                     layer_str[wire_idx] += s
 
-            # 左对齐（填充到相同长度）
+            # Left justify (pad to same length)
             layer_str = self._left_justify(layer_str, config)
 
-            # 检查是否需要换行
+            # Check if line wrap is needed
             is_last_layer = layer_idx == len(self.layers) - 1
             cur_max_length = (
                 self.max_length - len_suffix if not is_last_layer else self.max_length
@@ -706,16 +708,16 @@ class TextDrawer:
                     totals, config, add_measurement=False
                 )
 
-            # 合并到累积字符串
+            # Merge into accumulated strings
             totals = self._add_layer_str_to_totals(totals, layer_str, config)
 
-        # 所有层处理完成后，最后添加测量标记
+        # After processing all layers, add measurement markers at the end
         totals = self._finalize_layers(totals, config)
 
-        # 合并最终结果
+        # Merge final results
         result_lines = totals.finished_lines + totals.wire_totals + totals.bit_totals
 
-        # 过滤空行
+        # Filter empty lines
         result_lines = [line for line in result_lines if line.strip() or line == "\n"]
 
         return "\n".join(result_lines)
@@ -730,18 +732,18 @@ def draw_text(
     show_initial_state=False,
 ):
     """
-    绘制文本电路图
+    Draw a text circuit diagram
 
     Args:
-        qdev: FlagQuantum 设备对象
-        wire_order: 线顺序（从上到下），例如 [0, 1, 2, 3] 或 ["q0", "q1"]
-        show_all_wires: 是否显示所有线（包括未使用的）
-        decimals: 参数显示精度
-        max_length: 单行最大宽度
-        show_initial_state: 是否显示初始状态（如 "0: |0⟩"）
+        qdev: FlagQuantum device object
+        wire_order: Wire order (top to bottom), e.g., [0, 1, 2, 3] or ["q0", "q1"]
+        show_all_wires: Whether to show all wires (including unused ones)
+        decimals: Precision for parameter display
+        max_length: Maximum width per line
+        show_initial_state: Whether to show initial state (e.g., "0: |0⟩")
 
     Returns:
-        str: 电路图字符串
+        str: Circuit diagram string
     """
     drawer = TextDrawer(
         qdev, wire_order, show_all_wires, decimals, max_length, show_initial_state

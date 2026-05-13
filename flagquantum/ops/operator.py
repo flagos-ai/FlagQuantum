@@ -133,8 +133,13 @@ class Op(torch.nn.Module):
         self.trainable = trainable
         self.init_scale = init_scale
         self.init_params = init_params
-        self.n_params = self._infer_num_params()
         self.params: Optional[torch.Tensor] = None  # Lazy initialized
+
+        if n_params is not None:
+            self.n_params = n_params
+        else:
+            self.n_params = self._infer_num_params()
+
         self._initialized_bsz: Optional[int] = (
             None  # Track which batch size we initialized for
         )
@@ -172,7 +177,7 @@ class Op(torch.nn.Module):
         if not isinstance(init_params, torch.Tensor):
             init_params = torch.tensor(init_params, dtype=torch.float32)
 
-        # 处理标量情况 (0维张量)
+        # Handle scalar case (0-dimensional tensor)
         if init_params.dim() == 0:
             init_params = init_params.reshape(1, 1)
 
@@ -232,15 +237,87 @@ class Op(torch.nn.Module):
         Raises:
             ValueError: If batch size mismatch and no override provided.
         """
-        # User provided params - use directly
+        # User provided params - validate and normalize shape
         if params_override is not None:
-            # Validate shape against qdev batch size
-            if params_override.shape[0] != qdev.bsz:
+            expected_bsz = qdev.bsz
+            expected_n_params = self.n_params
+            normalized_params = params_override
+
+            # Handle scalar case (0-dimensional)
+            if normalized_params.ndim == 0:
+                if expected_bsz == 1 and expected_n_params == 1:
+                    normalized_params = normalized_params.reshape(1, 1)
+                else:
+                    raise ValueError(
+                        f"Gate {self.name}: Scalar parameter provided but expected "
+                        f"shape ({expected_bsz}, {expected_n_params}). "
+                        f"Please provide a tensor with shape ({expected_bsz}, {expected_n_params})"
+                    )
+
+            # Handle 1D case: could be [n_params] for bsz=1 or [bsz] for n_params=1
+            elif normalized_params.ndim == 1:
+                if (
+                    expected_bsz == 1
+                    and normalized_params.shape[0] == expected_n_params
+                ):
+                    # Case: [phi, lam] for U2 gate with batch size 1
+                    normalized_params = normalized_params.reshape(1, expected_n_params)
+                elif (
+                    expected_n_params == 1
+                    and normalized_params.shape[0] == expected_bsz
+                ):
+                    # Case: [theta1, theta2, ...] for single-parameter gates
+                    normalized_params = normalized_params.reshape(expected_bsz, 1)
+                else:
+                    raise ValueError(
+                        f"Gate {self.name}: Provided 1D params shape {tuple(params_override.shape)} "
+                        f"is invalid. Expected shape ({expected_bsz}, {expected_n_params})"
+                        + (
+                            f" or ({expected_n_params},) for batch size 1."
+                            if expected_bsz == 1
+                            else ""
+                        )
+                        + (
+                            f" or ({expected_bsz},) for single-parameter gates."
+                            if expected_n_params == 1
+                            else ""
+                        )
+                    )
+
+            # Handle 2D case: should match exactly the expected shape
+            elif normalized_params.ndim == 2:
+                if normalized_params.shape != (expected_bsz, expected_n_params):
+                    raise ValueError(
+                        f"Gate {self.name}: Provided params shape {tuple(params_override.shape)} "
+                        f"doesn't match expected shape ({expected_bsz}, {expected_n_params})"
+                    )
+
+            # Handle higher dimensions
+            else:
                 raise ValueError(
-                    f"Gate {self.name}: Provided params batch size ({params_override.shape[0]}) "
-                    f"doesn't match qdev batch size ({qdev.bsz})"
+                    f"Gate {self.name}: Provided params shape {tuple(params_override.shape)} "
+                    f"is invalid (maximum 2 dimensions allowed). Expected shape "
+                    f"({expected_bsz}, {expected_n_params})"
                 )
-            self.params = params_override
+
+            # Validate for gates with unknown n_params (e.g., custom gates)
+            if expected_n_params is None:
+                # For gates without predefined parameter count (like custom gates),
+                # we just ensure batch dimension matches
+                if normalized_params.ndim == 0:
+                    if expected_bsz != 1:
+                        raise ValueError(
+                            f"Gate {self.name}: Provided scalar parameter but batch size "
+                            f"is {expected_bsz}. Please provide a tensor with first dimension {expected_bsz}"
+                        )
+                    normalized_params = normalized_params.reshape(1)
+                elif normalized_params.shape[0] != expected_bsz:
+                    raise ValueError(
+                        f"Gate {self.name}: Provided params batch size ({normalized_params.shape[0]}) "
+                        f"doesn't match qdev batch size ({expected_bsz})"
+                    )
+
+            self.params = normalized_params
             return self.params
 
         # No parameters for this gate
@@ -257,16 +334,6 @@ class Op(torch.nn.Module):
         if self.params is None:
             # First time: initialize with current batch size
             return self._initialize_params(qdev.bsz)
-
-        # Check batch size consistency
-        # if self._initialized_bsz != qdev.bsz:
-        #     raise ValueError(
-        #         f"Gate {self.name}: Internal parameters were initialized for batch size "
-        #         f"{self._initialized_bsz}, but current qdev has batch size {qdev.bsz}. "
-        #         f"Either:\n"
-        #         f"  1. Pass explicit `params` argument with shape ({qdev.bsz}, {self.n_params}), or\n"
-        #         f"  2. Create a new operator instance for batch size {qdev.bsz}"
-        #     )
 
         return self.params
 

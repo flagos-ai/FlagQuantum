@@ -5,15 +5,15 @@ import sys
 
 
 def has_hygon_dcu():
-    """检测是否有海光 DCU"""
-    # 1. 检查 hy-smi 工具是否存在
+    """Check if Hygon DCU is available"""
+    # 1. Check if hy-smi tool exists
     if shutil.which("hy-smi") is None:
         return False
 
     try:
-        # 2. 运行 hy-smi 并检查返回码，确认驱动是否正常工作
+        # 2. Run hy-smi and check return code to verify driver is working
         result = subprocess.run(
-            ["hy-smi", "-u"],  # -u 参数用于查看使用率，可用来测试
+            ["hy-smi", "-u"],  # -u flag queries utilization, used for testing
             capture_output=True,
             text=True,
             check=True,
@@ -24,8 +24,8 @@ def has_hygon_dcu():
 
 
 def has_gpu():
-    """统一检测是否有可用的加速卡 (NVIDIA GPU 或 海光 DCU)"""
-    # 先尝试检测 NVIDIA GPU
+    """Unified check for available accelerator (NVIDIA GPU or Hygon DCU)"""
+    # First try to detect NVIDIA GPU
     if shutil.which("nvidia-smi"):
         try:
             result = subprocess.run(
@@ -35,9 +35,9 @@ def has_gpu():
                 print("✓ NVIDIA GPU detected")
                 return True
         except (FileNotFoundError, subprocess.SubprocessError):
-            pass  # 不是 NVIDIA，继续尝试其他
+            pass  # Not NVIDIA, continue to try other options
 
-    # 再尝试检测海光 DCU
+    # Then try to detect Hygon DCU
     if shutil.which("hy-smi"):
         try:
             result = subprocess.run(
@@ -49,7 +49,7 @@ def has_gpu():
         except (FileNotFoundError, subprocess.SubprocessError):
             pass
 
-    # 都没有检测到
+    # No accelerator detected
     print("✗ No supported accelerator (NVIDIA GPU / Hygon DCU) detected")
     return False
 

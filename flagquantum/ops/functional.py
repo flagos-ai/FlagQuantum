@@ -25,13 +25,12 @@ GROUP_UNSHARDED = -1
 EPS = 1e-8
 
 
-# _ensure_tensor 保持简单
 def _ensure_tensor(params):
     if params is None:
         return None
     if isinstance(params, torch.Tensor):
         return params
-    return torch.tensor(params, requires_grad=True)  # 统一转换
+    return torch.tensor(params, requires_grad=True)
 
 
 class InvertibleUnitaryBMM(Function):
@@ -307,35 +306,35 @@ def gate(
     else:
         raise TypeError("Invalid gate type provided.")
 
-    # 多参数门列表（需要保持参数形状不变）
+    # Multi-parameter gate list (parameter shape must remain unchanged)
     multi_param_gates = ["u2", "u3"]
 
-    # 在 gate 函数中处理形状
+    # Handling shapes in the gate function
     if params is not None:
         if not isinstance(params, torch.Tensor):
             params = torch.tensor(params, requires_grad=True)
 
         if name_or_mat in multi_param_gates:
-            # 确保是 2D
+            # Ensure it is 2D
             if params.dim() == 1:
                 params = params.unsqueeze(0)
 
-            # 扩展到 batch size
+            # Expand to batch size
             if params.shape[0] == 1 and q_device.bsz > 1:
                 params = params.expand(q_device.bsz, -1)
-            # 确保最后一维大小正确
+            # Ensure that the size of the last dimension is correct
             expected = 2 if name_or_mat == "u2" else 3
             if params.shape[-1] != expected:
                 raise ValueError(
-                    f"{name_or_mat} 期望每组 {expected} 个参数, 但现在是 {params.shape[-1]} 个。"
+                    f"{name_or_mat} expects {expected} parameters per group, but now there are {params.shape[-1]} parameters."
                 )
         else:
-            # 单参数门：形状 [batch, 1]
+            # Single parameter gate: shape [batch, 1]
             if params.dim() == 0:
                 params = params.reshape(1, 1)  # 标量 -> [1, 1]
             elif params.dim() == 1:
                 params = params.reshape(-1, 1)  # [n] -> [n, 1]
-            # 扩展到 batch size
+            # Expand to batch size
             if params.shape[0] == 1 and q_device.bsz > 1:
                 params = params.expand(q_device.bsz, -1)
 

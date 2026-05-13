@@ -1,5 +1,5 @@
 """
-绘图样式管理
+Drawing style management
 """
 
 _has_mpl = True
@@ -24,7 +24,7 @@ def _needs_mpl(func):
 
 @_needs_mpl
 def _black_white():
-    """黑白风格 - 适合打印"""
+    """Black and white style - suitable for printing"""
     plt.rcParams["savefig.facecolor"] = "white"
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["axes.facecolor"] = "white"
@@ -40,7 +40,7 @@ def _black_white():
 
 @_needs_mpl
 def _black_white_dark():
-    """黑白深色风格"""
+    """Black and white dark style"""
     almost_black = "#151515"
     plt.rcParams["savefig.facecolor"] = almost_black
     plt.rcParams["figure.facecolor"] = almost_black
@@ -55,7 +55,7 @@ def _black_white_dark():
 
 @_needs_mpl
 def _sketch():
-    """手绘风格"""
+    """Hand-drawn sketch style"""
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["savefig.facecolor"] = "white"
     plt.rcParams["axes.facecolor"] = "#D6F5E2"
@@ -71,7 +71,7 @@ def _sketch():
 
 @_needs_mpl
 def _flagquantum():
-    """FlagQuantum 特色风格"""
+    """FlagQuantum signature style"""
     almost_black = "#151515"
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["savefig.facecolor"] = "white"
@@ -88,14 +88,14 @@ def _flagquantum():
 
 @_needs_mpl
 def _flagquantum_sketch():
-    """FlagQuantum 手绘风格"""
+    """FlagQuantum hand-drawn sketch style"""
     _flagquantum()
     plt.rcParams["path.sketch"] = (1, 250, 1)
 
 
 @_needs_mpl
 def _sketch_dark():
-    """手绘深色风格"""
+    """Hand-drawn dark sketch style"""
     almost_black = "#151515"
     plt.rcParams["figure.facecolor"] = almost_black
     plt.rcParams["savefig.facecolor"] = almost_black
@@ -112,7 +112,7 @@ def _sketch_dark():
 
 @_needs_mpl
 def _solarized_light():
-    """Solarized 亮色主题"""
+    """Solarized light theme"""
     plt.rcParams["savefig.facecolor"] = "#fdf6e3"
     plt.rcParams["figure.facecolor"] = "#fdf6e3"
     plt.rcParams["axes.facecolor"] = "#eee8d5"
@@ -127,7 +127,7 @@ def _solarized_light():
 
 @_needs_mpl
 def _solarized_dark():
-    """Solarized 暗色主题"""
+    """Solarized dark theme"""
     plt.rcParams["savefig.facecolor"] = "#002b36"
     plt.rcParams["figure.facecolor"] = "#002b36"
     plt.rcParams["axes.facecolor"] = "#002b36"
@@ -140,7 +140,7 @@ def _solarized_dark():
     plt.rcParams["path.sketch"] = None
 
 
-# 样式映射表
+# Style mapping table
 _STYLES_MAP = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
@@ -157,12 +157,12 @@ _current_style = _black_white
 
 
 def available_styles():
-    """获取所有可用样式"""
+    """Get all available styles"""
     return tuple(_STYLES_MAP.keys())
 
 
 def use_style(style: str):
-    """设置全局绘图样式"""
+    """Set the global drawing style"""
     global _current_style
     if style in _STYLES_MAP:
         _current_style = _STYLES_MAP[style]
@@ -171,7 +171,7 @@ def use_style(style: str):
 
 
 def _apply_style(style: str = None):
-    """应用样式（内部使用）"""
+    """Apply style (for internal use)"""
     if style is None:
         _current_style()
     elif style in _STYLES_MAP:

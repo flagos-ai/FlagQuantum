@@ -1,4 +1,5 @@
-"""Quantum gate matrices for statevector simulation.
+"""
+Quantum gate matrices for statevector simulation.
 
 This module provides quantum gate matrices and precision control utilities.
 
@@ -63,6 +64,7 @@ class PrecisionConfig:
 
     @classmethod
     def set_precision(cls, dtype: torch.dtype):
+        """Set the global complex precision for quantum operations."""
         if dtype not in [torch.complex64, torch.complex128]:
             raise ValueError(
                 f"Unsupported complex dtype: {dtype}. Use complex64 or complex128."
@@ -73,24 +75,29 @@ class PrecisionConfig:
 
     @classmethod
     def get_dtype(cls) -> torch.dtype:
+        """Get the current global complex precision."""
         return cls._dtype
 
     @classmethod
     def get_real_dtype(cls) -> torch.dtype:
+        """Get the corresponding real precision for the current complex precision."""
         return cls._real_dtype
 
     @classmethod
     def to_dtype(cls, tensor: torch.Tensor) -> torch.Tensor:
+        """Convert a tensor to the current global precision."""
         return tensor.to(dtype=cls._dtype)
 
     @classmethod
     def _create_fixed_gate(cls, matrix):
+        """Create a fixed gate matrix with the current precision."""
         if isinstance(matrix, torch.Tensor):
             return matrix.to(dtype=cls._dtype)
         return torch.tensor(matrix, dtype=cls._dtype)
 
     @classmethod
     def _reconvert_fixed_gates(cls):
+        """Reconvert all fixed gate matrices to the current precision."""
         global I_MATRIX, X_MATRIX, Y_MATRIX, Z_MATRIX, H_MATRIX
         global S_MATRIX, T_MATRIX, SDAG_MATRIX, TDAG_MATRIX
         global SX_MATRIX, SXDAG_MATRIX
@@ -162,6 +169,7 @@ class PrecisionConfig:
 
     @classmethod
     def _update_gate_dict(cls):
+        """Update the global gate dictionary with current precision matrices."""
         global GATE_MAT_DICT
         GATE_MAT_DICT.update(
             {
@@ -191,14 +199,17 @@ _precision = PrecisionConfig()
 
 
 def set_global_precision(dtype: torch.dtype):
+    """Set the global precision for all quantum gate matrices."""
     _precision.set_precision(dtype)
 
 
 def get_global_precision() -> torch.dtype:
+    """Get the current global precision setting."""
     return _precision.get_dtype()
 
 
 def reconvert_gates() -> None:
+    """Manually reconvert all fixed gate matrices to the current precision."""
     _precision._reconvert_fixed_gates()
 
 
@@ -210,16 +221,19 @@ def reconvert_gates() -> None:
 def _to_complex(
     tensor: Union[torch.Tensor, np.ndarray, complex, float],
 ) -> torch.Tensor:
+    """Convert a tensor to the current global complex precision."""
     if not isinstance(tensor, torch.Tensor):
         tensor = torch.tensor(tensor)
     return tensor.to(dtype=_precision.get_dtype())
 
 
 def _create_2x2_matrix(a, b, c, d) -> torch.Tensor:
+    """Create a batch of 2x2 matrices from four tensors."""
     return torch.stack([torch.cat([a, b], dim=-1), torch.cat([c, d], dim=-1)], dim=-2)
 
 
 def _create_4x4_matrix(a, b, c, d) -> torch.Tensor:
+    """Create a batch of 4x4 matrices from four tensor blocks."""
     top = torch.cat([a, b], dim=-1)
     bottom = torch.cat([c, d], dim=-1)
     return torch.stack([top, bottom], dim=-2)
@@ -231,6 +245,7 @@ def _create_4x4_matrix(a, b, c, d) -> torch.Tensor:
 
 
 def rx_mat(params: torch.Tensor) -> torch.Tensor:
+    """Generate RX gate matrix: RX(θ) = [[cos(θ/2), -i sin(θ/2)], [-i sin(θ/2), cos(θ/2)]]"""
     theta = params.to(dtype=_precision.get_dtype())
     half_theta = theta / 2
     cos = torch.cos(half_theta)
@@ -239,6 +254,7 @@ def rx_mat(params: torch.Tensor) -> torch.Tensor:
 
 
 def ry_mat(params: torch.Tensor) -> torch.Tensor:
+    """Generate RY gate matrix: RY(θ) = [[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]"""
     theta = params.to(dtype=_precision.get_dtype())
     half_theta = theta / 2
     cos = torch.cos(half_theta)
@@ -247,6 +263,7 @@ def ry_mat(params: torch.Tensor) -> torch.Tensor:
 
 
 def rz_mat(params: torch.Tensor) -> torch.Tensor:
+    """Generate RZ gate matrix: RZ(θ) = [[e^{-iθ/2}, 0], [0, e^{iθ/2}]]"""
     theta = params.to(dtype=_precision.get_dtype())
     exp_neg = torch.exp(-0.5j * theta)
     exp_pos = torch.conj(exp_neg)
@@ -266,72 +283,73 @@ def phase_mat(params: torch.Tensor) -> torch.Tensor:
 
 
 def u1_mat(params: torch.Tensor) -> torch.Tensor:
-    """U1 gate: U1(θ) = [[1, 0], [0, e^{iθ}]]"""
+    """U1 gate: U1(θ) = [[1, 0], [0, e^{iθ}]] (alias for phase gate)"""
     return phase_mat(params)
 
 
 def _ensure_batch_dim(params: torch.Tensor, n_params: int) -> torch.Tensor:
     """
-    确保参数张量具有正确的形状用于多参数门
+    Ensure parameter tensor has the correct shape for multi-parameter gates.
 
     Args:
-        params: 输入参数张量
-        n_params: 期望的参数数量 (2 或 3)
+        params: Input parameter tensor
+        n_params: Expected number of parameters (2 or 3)
 
     Returns:
-        形状为 [batch, n_params] 的张量
+        Tensor of shape [batch, n_params]
     """
     import logging
 
     logger = logging.getLogger(__name__)
 
-    # 记录输入信息
+    # Log input information
     logger.debug(
-        f"_ensure_batch_dim 输入: params={params}, type={type(params)}, n_params={n_params}"
+        f"_ensure_batch_dim input: params={params}, type={type(params)}, n_params={n_params}"
     )
 
-    # 如果 params 是标量或 Python 数字
+    # Handle scalar or Python numeric input
     if not isinstance(params, torch.Tensor):
-        logger.debug("params 不是张量，转换为张量")
+        logger.debug("params is not a tensor, converting to tensor")
         params = torch.tensor(params)
 
-    logger.debug(f"转换后 params: shape={params.shape}, dtype={params.dtype}")
+    logger.debug(f"After conversion: params shape={params.shape}, dtype={params.dtype}")
 
-    # 展平为一维
+    # Flatten to 1D
     original_shape = params.shape
     params = params.flatten()
-    logger.debug(f"展平后: 原形状 {original_shape} -> 新形状 {params.shape}")
+    logger.debug(
+        f"After flatten: original shape {original_shape} -> new shape {params.shape}"
+    )
 
-    # 检查参数数量
+    # Check parameter count
     if params.shape[0] % n_params != 0:
         error_msg = (
-            f"参数数量必须是 {n_params} 的倍数，但得到 {params.shape[0]}. "
-            f"原始输入: shape={original_shape}, 值={params.tolist() if params.numel() < 10 else '...'}"
+            f"Number of parameters must be a multiple of {n_params}, but got {params.shape[0]}. "
+            f"Original input: shape={original_shape}, values={params.tolist() if params.numel() < 10 else '...'}"
         )
         logger.error(error_msg)
         raise ValueError(error_msg)
 
-    # 重塑为 [batch, n_params]
+    # Reshape to [batch, n_params]
     batch_size = params.shape[0] // n_params
     params = params.reshape(batch_size, n_params)
-    logger.debug(f"重塑后: batch_size={batch_size}, final shape={params.shape}")
+    logger.debug(f"After reshape: batch_size={batch_size}, final shape={params.shape}")
 
     return params
 
 
 def u2_mat(params: torch.Tensor) -> torch.Tensor:
-    """U2 gate: U2(φ, λ) = [[1, -e^{iλ}], [e^{iφ}, e^{i(φ+λ)}]] / √2
+    """
+    U2 gate: U2(φ, λ) = [[1, -e^{iλ}], [e^{iφ}, e^{i(φ+λ)}]] / √2
 
     Args:
-        params: 可以接受多种格式
-            - 标量: 不支持（需要 2 个参数）
-            - 列表/元组: [phi, lam]
-            - 1D 张量: [phi, lam]
-            - 2D 张量: [[phi1, lam1], [phi2, lam2], ...] 批量模式
+        params: Accepts multiple formats
+            - Scalar: Not supported (requires 2 parameters)
+            - List/tuple: [phi, lam]
+            - 1D tensor: [phi, lam]
+            - 2D tensor: [[phi1, lam1], [phi2, lam2], ...] for batch mode
     """
-    """
-    U2(φ, λ) = 1/√2 [[1, -e^{iλ}], [e^{iφ}, e^{i(φ+λ)}]]
-    """
+    params = torch.as_tensor(params, dtype=_precision.get_dtype())
     params = _ensure_batch_dim(params, n_params=2)
 
     phi = params[..., 0]
@@ -339,14 +357,14 @@ def u2_mat(params: torch.Tensor) -> torch.Tensor:
 
     one_over_sqrt2 = 1.0 / np.sqrt(2)
 
-    # 逐元素构造矩阵元素
-    a = one_over_sqrt2 * torch.ones_like(phi)  # 位置 [0,0]
-    b = -one_over_sqrt2 * torch.exp(1j * lam)  # 位置 [0,1]
-    c = one_over_sqrt2 * torch.exp(1j * phi)  # 位置 [1,0]
-    d = one_over_sqrt2 * torch.exp(1j * (phi + lam))  # 位置 [1,1]
+    # Construct matrix elements element-wise
+    a = one_over_sqrt2 * torch.ones_like(phi)  # position [0,0]
+    b = -one_over_sqrt2 * torch.exp(1j * lam)  # position [0,1]
+    c = one_over_sqrt2 * torch.exp(1j * phi)  # position [1,0]
+    d = one_over_sqrt2 * torch.exp(1j * (phi + lam))  # position [1,1]
 
-    # 构造 2x2 矩阵 [a, b; c, d]
-    # 批量版本：形状 [batch, 2, 2]
+    # Construct 2x2 matrix [a, b; c, d]
+    # Batch version: shape [batch, 2, 2]
     matrices = torch.stack(
         [torch.stack([a, b], dim=-1), torch.stack([c, d], dim=-1)], dim=-2
     )
@@ -355,16 +373,18 @@ def u2_mat(params: torch.Tensor) -> torch.Tensor:
 
 
 def u3_mat(params: torch.Tensor) -> torch.Tensor:
-    """U3 gate: U3(θ, φ, λ) = [[cos(θ/2), -e^{iλ} sin(θ/2)], [e^{iφ} sin(θ/2), e^{i(φ+λ)} cos(θ/2)]]
+    """
+    U3 gate: U3(θ, φ, λ) = [[cos(θ/2), -e^{iλ} sin(θ/2)], [e^{iφ} sin(θ/2), e^{i(φ+λ)} cos(θ/2)]]
 
     Args:
-        params: 可以接受多种格式
-            - 标量: 不支持（需要 3 个参数）
-            - 列表/元组: [theta, phi, lam]
-            - 1D 张量: [theta, phi, lam]
-            - 2D 张量: [[theta1, phi1, lam1], [theta2, phi2, lam2], ...] 批量模式
+        params: Accepts multiple formats
+            - Scalar: Not supported (requires 3 parameters)
+            - List/tuple: [theta, phi, lam]
+            - 1D tensor: [theta, phi, lam]
+            - 2D tensor: [[theta1, phi1, lam1], [theta2, phi2, lam2], ...] for batch mode
     """
-    # 确保形状正确
+    # Ensure correct shape
+    params = torch.as_tensor(params, dtype=_precision.get_dtype())
     params = _ensure_batch_dim(params, n_params=3)
 
     theta = params[..., 0]
@@ -375,13 +395,13 @@ def u3_mat(params: torch.Tensor) -> torch.Tensor:
     cos_half = torch.cos(half_theta)
     sin_half = torch.sin(half_theta)
 
-    # 逐元素构造矩阵元素
-    a = cos_half  # 位置 [0,0]
-    b = -torch.exp(1j * lam) * sin_half  # 位置 [0,1]
-    c = torch.exp(1j * phi) * sin_half  # 位置 [1,0]
-    d = torch.exp(1j * (phi + lam)) * cos_half  # 位置 [1,1]
+    # Construct matrix elements element-wise
+    a = cos_half  # position [0,0]
+    b = -torch.exp(1j * lam) * sin_half  # position [0,1]
+    c = torch.exp(1j * phi) * sin_half  # position [1,0]
+    d = torch.exp(1j * (phi + lam)) * cos_half  # position [1,1]
 
-    # 构造 2x2 矩阵 [a, b; c, d]
+    # Construct 2x2 matrix [a, b; c, d]
     matrices = torch.stack(
         [torch.stack([a, b], dim=-1), torch.stack([c, d], dim=-1)], dim=-2
     )
@@ -393,8 +413,8 @@ def crx_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled RX gate: CRX(θ)"""
     theta = params.to(dtype=_precision.get_dtype())
 
-    # 确保是 1D [batch]
-    theta = theta.flatten()  # 关键：展平为 1D
+    # Ensure it's 1D [batch]
+    theta = theta.flatten()  # Key: flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
@@ -419,7 +439,7 @@ def crx_mat(params: torch.Tensor) -> torch.Tensor:
 def cry_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled RY gate: CRY(θ)"""
     theta = params.to(dtype=_precision.get_dtype())
-    theta = theta.flatten()  # 展平为 1D
+    theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
@@ -444,7 +464,7 @@ def cry_mat(params: torch.Tensor) -> torch.Tensor:
 def crz_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled RZ gate: CRZ(θ)"""
     theta = params.to(dtype=_precision.get_dtype())
-    theta = theta.flatten()  # 展平为 1D
+    theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
@@ -466,7 +486,7 @@ def crz_mat(params: torch.Tensor) -> torch.Tensor:
 def cphase_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled Phase gate: CPhase(θ)"""
     theta = params.to(dtype=_precision.get_dtype())
-    theta = theta.flatten()  # 展平为 1D
+    theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
@@ -487,7 +507,7 @@ def cphase_mat(params: torch.Tensor) -> torch.Tensor:
 def rxx_mat(params: torch.Tensor) -> torch.Tensor:
     """Ising XX gate: RXX(θ)"""
     theta = params.to(dtype=_precision.get_dtype())
-    theta = theta.flatten()  # 展平为 1D
+    theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
@@ -641,17 +661,21 @@ GATE_MAT_DICT: Dict[str, Union[torch.Tensor, Callable]] = {
 
 
 # ============================================================================
-# QFT (动态生成，支持任意比特数)
+# QFT (Dynamically generated, supports arbitrary number of qubits)
 # ============================================================================
 
 
 def qft_matrix(n_qubits: int) -> torch.Tensor:
     """Generate QFT matrix for n qubits."""
     n = 2**n_qubits
-    omega = torch.exp(2j * torch.pi / n)
-    k = torch.arange(n, dtype=torch.complex128)
-    q = omega ** torch.outer(k, k)
-    return q / torch.sqrt(torch.tensor(n, dtype=torch.complex128))
+    complex_dtype = _precision.get_dtype()
+    real_dtype = _precision.get_real_dtype()
+
+    k = torch.arange(n, dtype=real_dtype)
+    phase_angles = (2 * torch.pi / n) * torch.outer(k, k)
+    imag_unit = torch.tensor(1j, dtype=complex_dtype)
+    q = torch.exp(imag_unit * phase_angles.to(dtype=complex_dtype))
+    return q / torch.sqrt(torch.tensor(n, dtype=real_dtype))
 
 
 # ============================================================================
@@ -660,6 +684,7 @@ def qft_matrix(n_qubits: int) -> torch.Tensor:
 
 
 def get_gate_matrix(gate_name: str) -> Union[torch.Tensor, Callable]:
+    """Retrieve the gate matrix or matrix generation function for a given gate name."""
     if gate_name not in GATE_MAT_DICT:
         available = ", ".join(GATE_MAT_DICT.keys())
         raise KeyError(f"Gate '{gate_name}' not found. Available gates: {available}")
@@ -667,15 +692,18 @@ def get_gate_matrix(gate_name: str) -> Union[torch.Tensor, Callable]:
 
 
 def list_available_gates() -> list:
+    """Return a sorted list of all available gate names."""
     return sorted(GATE_MAT_DICT.keys())
 
 
 def is_parameterized_gate(gate_name: str) -> bool:
+    """Check if a gate is parameterized (requires parameters at call time)."""
     gate = GATE_MAT_DICT.get(gate_name)
     return callable(gate) if gate is not None else False
 
 
 def get_gate_size(gate_name: str) -> int:
+    """Get the number of qubits a gate acts on."""
     gate = get_gate_matrix(gate_name)
     if callable(gate):
         if gate_name in ["crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz"]:

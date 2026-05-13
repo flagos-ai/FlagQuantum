@@ -151,23 +151,23 @@ def measure_allZ(  # noqa: N802
 ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
     """Measure all qubits in Pauli Z basis."""
 
-    """Measure all qubits in Pauli Z basis."""
-
-    # ========== 添加这段：记录测量操作 ==========
-    # 将所有量子比特添加到 op_history
-    all_wires = list(range(q_device.n_wires))
-    measurement_op = {
-        "name_or_mat": "measure_allZ",
-        "wires": all_wires,
-        "params": None,
-        "trainable": False,
-        "shots": shots,
-        "postselect_cond": postselect_cond,
-    }
-    q_device.op_history.append(measurement_op)
-
     if postselect_cond is None:
         postselect_cond = {}
+
+    # ========== Add this section: record measurement operation ==========
+    # Add all qubits to op_history
+
+    if q_device.record_op:
+        all_wires = list(range(q_device.n_wires))
+        measurement_op = {
+            "name_or_mat": "measure_allZ",
+            "wires": all_wires,
+            "params": None,
+            "trainable": False,
+            "shots": shots,
+            "postselect_cond": postselect_cond,
+        }
+        q_device.op_history.append(measurement_op)
 
     if not len(postselect_cond) < q_device.n_wires - q_device.log2_devices:
         raise RuntimeError(
@@ -259,7 +259,7 @@ def measure_allZ(  # noqa: N802
         (state_mag_noisy.shape[0], q_device.n_wires, 2), device=state_mag_noisy.device
     )
 
-    # 保持原始的梯度传播方式
+    # Keep the original gradient propagation method
     sharded_reduce_list = list(groupings[0, sharded_wires])
     if sharded_reduce_list:
         shard_reduced_state_mag = state_mag_noisy.sum(list(groupings[0, sharded_wires]))

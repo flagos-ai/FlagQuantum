@@ -1,10 +1,13 @@
-# ----------------- 优化版 MPLDrawer -----------------
+"""
+Matplotlib mode circuit drawer
+"""
+
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, FancyBboxPatch
 
 
 class MPLDrawer:
-    """Matplotlib 电路绘图器（优化版，专业配色）"""
+    """Matplotlib circuit drawer"""
 
     _box_length = 0.8
     _circ_rad = 0.25
@@ -15,21 +18,21 @@ class MPLDrawer:
     _boxstyle = f"round, pad={_pad}"
 
     GATE_COLORS = {
-        "single": "#7B9EC2",  # 固定单量子门（X, Y, Z, H, S, T 等）- 蓝色
-        "param": "#E15759",  # 参数门（RX, RY, RZ, U1, U2, U3 等）- 红色
-        "multi": "#F28E2B",  # 多量子门（QFT, Toffoli 等）- 橙色
-        "ctrl": "#000000",  # 控制点 - 黑色
-        "target": "#E15759",  # 目标点 - 红色
-        "swap": "#76B7B2",  # SWAP 门 - 青色
-        "measure": "#59A14F",  # 测量 - 绿色
-        "cr": "#F28E2B",  # crx/cry/crz
-        "cp": "#76B7B2",  # cphase
-        "p": "#DDA0DD",  # phase
-        "ising": "#FFB6C1",
+        "single": "#7B9EC2",  # Fixed single-qubit gates (X, Y, Z, H, S, T, etc.) - blue
+        "param": "#E15759",  # Parameterized gates (RX, RY, RZ, U1, U2, U3, etc.) - red
+        "multi": "#F28E2B",  # Multi-qubit gates (QFT, Toffoli, etc.) - orange
+        "ctrl": "#000000",  # Control point - black
+        "target": "#E15759",  # Target point - red
+        "swap": "#76B7B2",  # SWAP gates - teal
+        "measure": "#59A14F",  # Measurement - green
+        "cr": "#F28E2B",  # CRX/CRY/CRZ - orange
+        "cp": "#76B7B2",  # CPhase - teal
+        "p": "#DDA0DD",  # Phase gate - plum
+        "ising": "#FFB6C1",  # RXX/RYY/RZZ - light pink
     }
 
     GATE_SYMBOLS = {
-        # 单量子门
+        # Single-qubit gates
         "rx": "RX",
         "ry": "RY",
         "rz": "RZ",
@@ -49,7 +52,7 @@ class MPLDrawer:
         "u1": "U1",
         "u2": "U2",
         "u3": "U3",
-        # 两量子门
+        # Two-qubit gates
         "cx": "●",
         "cnot": "●",
         "cy": "●",
@@ -62,12 +65,12 @@ class MPLDrawer:
         "rxx": "RXX",
         "ryy": "RYY",
         "rzz": "RZZ",
-        # 三量子门
+        # Three-qubit gates
         "ccx": "Toffoli",
         "toffoli": "Toffoli",
         "cswap": "CSWAP",
         "fredkin": "CSWAP",
-        # 测量
+        # Measurement
         "measure": "Meas",
         "measurement": "M",
         "measure_allz": "MZ",
@@ -92,6 +95,7 @@ class MPLDrawer:
             self._crop_labels()
 
     def _detect_n_wires(self):
+        """Detect the number of qubits from operation history"""
         max_wire = -1
         for op in self.op_history:
             wires = op.get("wires", [])
@@ -103,6 +107,7 @@ class MPLDrawer:
         return max_wire + 1 if max_wire >= 0 else 0
 
     def _create_wire_map(self, wire_order):
+        """Create a mapping from wire labels to display indices"""
         if wire_order is None:
             wire_order = list(range(self.n_wires))
         for w in range(self.n_wires):
@@ -111,7 +116,11 @@ class MPLDrawer:
         return {wire: idx for idx, wire in enumerate(wire_order)}
 
     def _create_layers(self):
-        """分层算法 - 确保同一层的操作共享 x 坐标"""
+        """
+        Layer assignment algorithm
+
+        Ensures that operations in the same layer share the same x-coordinate
+        """
         last_op_layer = {}
         layers = []
         for op in self.op_history:
@@ -121,12 +130,12 @@ class MPLDrawer:
             if not wires:
                 continue
 
-            # 获取操作占用的所有线（包括中间线）
+            # Get all wires occupied by this operation (including intermediate wires)
             min_w = min(wires)
             max_w = max(wires)
             occupied_wires = set(range(min_w, max_w + 1))
 
-            # 映射到显示线索引
+            # Map to display wire indices
             mapped_occupied = [
                 self.wire_map[w] for w in occupied_wires if w in self.wire_map
             ]
@@ -145,6 +154,7 @@ class MPLDrawer:
         return layers
 
     def _setup_figure(self, fig, figsize):
+        """Initialize the matplotlib figure and axes"""
         if figsize is None:
             figsize = (self.n_layers + 3, self.n_wires + 1)
         self._fig = fig if fig else plt.figure(figsize=figsize)
@@ -160,6 +170,7 @@ class MPLDrawer:
         self._ax.invert_yaxis()
 
     def _draw_wires(self, wire_options):
+        """Draw horizontal quantum wire lines"""
         opts = wire_options or {}
         for wire_label, idx in self.wire_map.items():
             line = plt.Line2D(
@@ -172,7 +183,10 @@ class MPLDrawer:
             self._ax.add_line(line)
 
     def _get_param_str(self, params):
-        if not params or self.decimals is None:
+        """Format parameter string for display"""
+        if params is None or self.decimals is None:
+            return ""
+        if isinstance(params, list) and len(params) == 0:
             return ""
         p = params[0] if isinstance(params, list) else params
         if isinstance(p, (int, float)):
@@ -182,7 +196,7 @@ class MPLDrawer:
         return f"({p})"
 
     def _is_parameterized_gate(self, name: str) -> bool:
-        """判断是否为参数门（有可训练参数）"""
+        """Check if the gate has trainable parameters"""
         return name in [
             "rx",
             "ry",
@@ -196,20 +210,24 @@ class MPLDrawer:
             "cry",
             "crz",
             "cphase",
-            "xx",
-            "yy",
-            "zz",
+            "rxx",
+            "ryy",
+            "rzz",
         ]
 
     def _draw_operations(self):
-        """绘制所有操作 - 同一层的操作共享相同的 x 坐标"""
+        """
+        Draw all operations
+
+        Operations in the same layer share the same x-coordinate
+        """
         for layer_idx, layer in enumerate(self.layers):
             x = layer_idx
             for op in layer:
                 self._draw_operation(op, x)
 
     def _draw_operation(self, op, x):
-        """绘制单个操作 - 使用指定的 x 坐标"""
+        """Draw a single operation at the specified x-coordinate"""
         name = op.get("name_or_mat", "").lower()
         wires = op.get("wires", [])
         params = op.get("params", [])
@@ -218,40 +236,39 @@ class MPLDrawer:
         if not wires:
             return
 
-        # 测量操作单独处理
+        # Measurement operations are handled separately
         if name == "measure_allz":
             return
 
         symbol = self.GATE_SYMBOLS.get(name, name.upper() if name else "?")
         param_str = self._get_param_str(params)
 
-        # 判断是否有参数
+        # Build label with parameter if present
         if param_str:
             param_clean = param_str.strip("()")
             label = f"{symbol}\n{param_clean}"
         else:
             label = symbol
 
-        # 判断门类型（参数门用特殊颜色）
+        # Determine gate type (special color for parameterized gates)
         is_param_gate = self._is_parameterized_gate(name)
         gate_type = "param" if is_param_gate else "single"
 
-        # 单量子门
+        # Single-qubit gate
         if len(wires) == 1:
             if name in ["rx", "ry", "rz"]:
                 self._draw_box(x, wires[0], label, gate_type)
             elif name in ["p", "phase"]:
                 self._draw_box(x, wires[0], label, "p")
-
             else:
                 self._draw_box(x, wires[0], label, gate_type)
 
-        # Toffoli (CCX) - 3 个量子比特
+        # Toffoli (CCX) - 3 qubits
         elif name in ["ccx", "toffoli"] and len(wires) == 3:
             control1, control2, target = wires[0], wires[1], wires[2]
             self._draw_toffoli(x, control1, control2, target)
 
-        # Fredkin (CSWAP) - 3 个量子比特
+        # Fredkin (CSWAP) - 3 qubits
         elif name in ["cswap", "fredkin"] and len(wires) == 3:
             control, target1, target2 = wires[0], wires[1], wires[2]
             self._draw_cswap(x, control, target1, target2)
@@ -260,21 +277,21 @@ class MPLDrawer:
         elif name in ["cx", "cnot"] and len(wires) >= 2:
             self._draw_controlled_gate(x, wires[0], wires[1], target_symbol="X")
 
-        # CY 门
+        # CY
         elif name == "cy" and len(wires) >= 2:
             self._draw_controlled_gate(x, wires[0], wires[1], target_symbol="Y")
 
-        # CZ 门
+        # CZ
         elif name == "cz" and len(wires) >= 2:
             self._draw_controlled_gate(x, wires[0], wires[1], target_symbol="Z")
 
-        # CPhase 门
+        # CPhase
         elif name in ["cphase", "controlledphase"] and len(wires) >= 2:
             self._draw_controlled_phase_gate_with_param(
                 x, wires[0], wires[1], params, "CP"
             )
 
-        # CRX, CRY, CRZ 受控旋转门
+        # CRX, CRY, CRZ
         elif name == "crx" and len(wires) >= 2:
             self._draw_controlled_gate_with_param(x, wires[0], wires[1], params, "CRX")
         elif name == "cry" and len(wires) >= 2:
@@ -282,27 +299,27 @@ class MPLDrawer:
         elif name == "crz" and len(wires) >= 2:
             self._draw_controlled_gate_with_param(x, wires[0], wires[1], params, "CRZ")
 
-        # Ising 门 (RXX, RYY, RZZ)
+        # Ising (RXX, RYY, RZZ)
         elif name in ["rxx", "ryy", "rzz"] and len(wires) >= 2:
             self._draw_ising_gate(x, wires, name.upper(), params)
 
-        # SWAP - 支持跨越中间线
+        # SWAP
         elif name == "swap" and len(wires) >= 2:
             self._draw_swap_gate(x, wires)
 
-        # 多量子门
+        # Multi-qubit gate
         elif len(wires) > 1:
             self._draw_multi_gate(x, wires, label)
 
     def _draw_controlled_gate_with_param(self, x, control, target, params, gate_name):
-        """绘制带参数的受控门 (CRX, CRY, CRZ)"""
-        # 连接线
+        """Draw parameterized controlled gates (CRX, CRY, CRZ)"""
+        # Connecting wire
         line = plt.Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
 
-        # 控制点
+        # Control point
         ctrl_circ = Circle(
             (x, control),
             self._ctrl_rad,
@@ -313,7 +330,7 @@ class MPLDrawer:
         )
         self._ax.add_patch(ctrl_circ)
 
-        # 参数化目标门
+        # Parameterized target gate
         param_str = self._get_param_str(params)
         if param_str:
             param_clean = param_str.strip("()")
@@ -321,20 +338,20 @@ class MPLDrawer:
         else:
             label = gate_name
 
-        # 绘制带参数的目标框
+        # Draw target box with parameters
         self._draw_box(x, target, label, "cr")
 
     def _draw_controlled_phase_gate_with_param(
         self, x, control, target, params, gate_name
     ):
-        """绘制带参数的受控Phase门 (CP)"""
-        # 连接线
+        """Draw parameterized controlled phase gate (CP)"""
+        # Connecting wire
         line = plt.Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
 
-        # 控制点
+        # Control point
         ctrl_circ = Circle(
             (x, control),
             self._ctrl_rad,
@@ -345,7 +362,7 @@ class MPLDrawer:
         )
         self._ax.add_patch(ctrl_circ)
 
-        # 参数化目标门
+        # Parameterized target gate
         param_str = self._get_param_str(params)
         if param_str:
             param_clean = param_str.strip("()")
@@ -353,41 +370,11 @@ class MPLDrawer:
         else:
             label = gate_name
 
-        # 绘制带参数的目标框
+        # Draw target box with parameters
         self._draw_box(x, target, label, "cp")
 
-    def _draw_controlled_gate_with_param(self, x, control, target, params, gate_name):
-        """绘制带参数的受控门 (CRX, CRY, CRZ)"""
-        # 连接线
-        line = plt.Line2D(
-            (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
-        )
-        self._ax.add_line(line)
-
-        # 控制点
-        ctrl_circ = Circle(
-            (x, control),
-            self._ctrl_rad,
-            facecolor=self.GATE_COLORS["ctrl"],
-            edgecolor="black",
-            linewidth=1,
-            zorder=2,
-        )
-        self._ax.add_patch(ctrl_circ)
-
-        # 参数化目标门
-        param_str = self._get_param_str(params)
-        if param_str:
-            param_clean = param_str.strip("()")
-            label = f"{gate_name}\n{param_clean}"
-        else:
-            label = gate_name
-
-        # 绘制带参数的目标框
-        self._draw_box(x, target, label, "cr")
-
     def _draw_ising_gate(self, x, wires, gate_name, params):
-        """绘制 Ising 门 (RXX, RYY, RZZ) - 用方框覆盖所有线"""
+        """Draw Ising gates (RXX, RYY, RZZ) - boxes spanning all involved wires"""
         min_w = min(wires)
         max_w = max(wires)
         half = self._box_length / 2
@@ -427,7 +414,7 @@ class MPLDrawer:
         )
 
     def _draw_toffoli(self, x, control1, control2, target):
-        """绘制 Toffoli (CCX) 门"""
+        """Draw Toffoli gate (CCX)"""
         min_wire = min(control1, control2, target)
         max_wire = max(control1, control2, target)
 
@@ -477,7 +464,7 @@ class MPLDrawer:
         )
 
     def _draw_cswap(self, x, control, target1, target2):
-        """绘制 Fredkin (CSWAP) 门"""
+        """Draw Fredkin gate (CSWAP)"""
         min_wire = min(control, target1, target2)
         max_wire = max(control, target1, target2)
 
@@ -516,7 +503,7 @@ class MPLDrawer:
             self._ax.add_line(l2)
 
     def _draw_controlled_gate(self, x, control, target, target_symbol="X"):
-        """绘制受控门 (CX, CY, CZ, CPhase)"""
+        """Draw controlled gates (CX, CY, CZ, CPhase)"""
         line = plt.Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
@@ -562,7 +549,7 @@ class MPLDrawer:
                 )
             )
         elif target_symbol == "P":
-            # CPhase 门：显示 P
+            # CPhase gate: display P
             circ = Circle(
                 (x, target),
                 self._circ_rad,
@@ -606,7 +593,7 @@ class MPLDrawer:
             )
 
     def _draw_swap_gate(self, x, wires):
-        """绘制 SWAP 门（只画两端，中间用线连接）"""
+        """Draw SWAP gate - draw X at both ends, connect with a line in between"""
         if len(wires) < 2:
             return
 
@@ -624,7 +611,7 @@ class MPLDrawer:
 
         d = self._swap_dx
 
-        # 顶部 X
+        # Top X
         l1 = plt.Line2D(
             (x - d, x + d),
             (min_wire - d, min_wire + d),
@@ -642,7 +629,7 @@ class MPLDrawer:
         self._ax.add_line(l1)
         self._ax.add_line(l2)
 
-        # 底部 X
+        # Bottom X
         l1 = plt.Line2D(
             (x - d, x + d),
             (max_wire - d, max_wire + d),
@@ -661,7 +648,7 @@ class MPLDrawer:
         self._ax.add_line(l2)
 
     def _draw_box(self, x, y, text, gate_type="single"):
-        """绘制单量子门方框"""
+        """Draw a single-qubit gate box"""
         half = self._box_length / 2
         box = FancyBboxPatch(
             (x - half + self._pad, y - half + self._pad),
@@ -687,7 +674,7 @@ class MPLDrawer:
         )
 
     def _draw_multi_gate(self, x, wires, text):
-        """绘制多量子门方框"""
+        """Draw multi-qubit gate box spanning multiple wires"""
         min_w, max_w = min(wires), max(wires)
         half = self._box_length / 2
         height = max_w - min_w + self._box_length
@@ -716,7 +703,7 @@ class MPLDrawer:
         )
 
     def _draw_measurements(self):
-        """绘制测量门"""
+        """Draw measurement gates"""
         has_measure = any(
             op.get("name_or_mat", "").lower() in ["measure_allz"]
             for op in self.op_history
@@ -727,7 +714,7 @@ class MPLDrawer:
                 self._draw_box(x, wire, "MZ", "measure")
 
     def _draw_labels(self, label_options):
-        """绘制线标签（可显示初始状态）"""
+        """Draw wire labels (can optionally display initial state)"""
         opts = label_options or {}
         show_initial_state = (
             opts.pop("show_initial_state", False) if isinstance(opts, dict) else False
@@ -751,33 +738,36 @@ class MPLDrawer:
             )
 
     def _crop_labels(self):
+        """Remove label area from view"""
         xlim = self._ax.get_xlim()
         self._ax.set_xlim((-1, xlim[1]))
 
     @property
     def fig(self):
+        """Return the matplotlib figure"""
         return self._fig
 
     @property
     def ax(self):
+        """Return the matplotlib axes"""
         return self._ax
 
 
 def draw_mpl(qdev, show_initial_state=False, **kwargs):
     """
-    绘制 matplotlib 格式电路图
+    Draw a circuit diagram in matplotlib format
 
     Args:
-        qdev: FlagQuantum 设备对象
-        show_initial_state: 是否显示初始状态（如 "0: |0⟩"）
-        **kwargs: 其他参数
-            - decimals: 参数显示精度
-            - wire_order: 线顺序
-            - fig: 现有的 matplotlib figure
-            - figsize: 图形大小
-            - wire_options: 线样式选项
-            - label_options: 标签样式选项
-            - show_wire_labels: 是否显示线标签
+        qdev: FlagQuantum device object
+        show_initial_state: Whether to show the initial state (e.g., "0: |0⟩")
+        **kwargs: Additional parameters
+            - decimals: Precision for parameter display
+            - wire_order: Wire order
+            - fig: Existing matplotlib figure
+            - figsize: Figure size
+            - wire_options: Wire style options
+            - label_options: Label style options
+            - show_wire_labels: Whether to show wire labels
     """
     label_options = kwargs.get("label_options", {})
     if isinstance(label_options, dict):

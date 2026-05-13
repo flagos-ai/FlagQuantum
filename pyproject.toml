@@ -38,7 +38,14 @@ invertible = [
 ]
 
 all = [
-    "flagquantum[dev,viz,invertible]",
+    "pytest>=7.0.0",
+     "pytest-cov>=4.0.0",
+     "pytest-xdist>=3.0.0",
+     "ruff>=0.1.0",
+     "black>=23.0",
+     "mypy>=1.0",
+     "matplotlib>=3.5.0",
+     "torch>=2.5.0",  # Nightly build recommended for invertible backprop
 ]
 
 [project.urls]
