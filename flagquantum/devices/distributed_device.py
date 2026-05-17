@@ -216,7 +216,9 @@ class DistributedQuantumDevice:
         self.num_dims = max_dtensor_dims
         self.reset_states(bsz)
 
-    def reset_states(self, bsz: Optional[int] = None):
+    def reset_states(
+        self, bsz: Optional[int] = None, dtype: torch.dtype = torch.float32
+    ):
         """Resets quantum states to the initial |0...0> state.
 
         Args:
@@ -238,7 +240,7 @@ class DistributedQuantumDevice:
             self.bsz = bsz
         # shard along designated initial wires
         sharded_wires = (self._groupings[:, (self._groupings[1] == -2)][0]).tolist()
-        self._states = torch.zeros(self.local_shape, device=self.device)
+        self._states = torch.zeros(self.local_shape, device=self.device, dtype=dtype)
         if self.global_rank == 0:
             self._states[(slice(None),) + (0,) * (self._states.ndim - 1)] = 1
         if self.world_sz > 1:
@@ -282,10 +284,15 @@ class DistributedQuantumDevice:
             >>> amps_real = torch.randn(2, 4)
             >>> qdev.load_amplitudes(amps_real)
         """
-        self.reset_states(bsz=amplitudes.shape[0])
+
         if amplitudes.is_complex():
+            real_dtype = (
+                torch.float32 if amplitudes.dtype == torch.complex64 else torch.float64
+            )
+            self.reset_states(bsz=amplitudes.shape[0], dtype=real_dtype)
             loading = torch.view_as_real(amplitudes).to(self.device)
         else:
+            self.reset_states(bsz=amplitudes.shape[0], dtype=amplitudes.dtype)
             loading = torch.stack(
                 (amplitudes, torch.zeros_like(amplitudes)), dim=-1
             ).to(self.device)
