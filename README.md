@@ -21,6 +21,7 @@ A high-performance distributed quantum statevector simulator built on PyTorch, e
 ```
 flagquantum/
 ├── devices/          # Quantum device implementations
+├── drawer/           # Quantum circuit visualization
 ├── ops/              # Quantum operations (gates, matrices, operators)
 ├── encoding/         # Data encoding methods
 ├── measure/          # Measurement utilities
@@ -65,8 +66,8 @@ print(fq.__version__)
 import flagquantum as fq
 import torch
 
-# Create a distributed quantum device
-device = fq.DistributedQuantumDevice(n_wires=4, bsz=2, world_sz=1)
+# Create a distributed quantum device (default: device='cuda' if GPU available)
+device = fq.DistributedQuantumDevice(n_wires=4, bsz=2, world_sz=1, device='cpu')
 
 # Apply gates (functional style)
 fq.h(device, wires=[0])
@@ -98,11 +99,11 @@ for _ in range(100):
 ### Quantum Encoding
 ```python
 # Angle encoding
-x = torch.randn(4, 4)  # batch=4, features=4
+x = torch.randn(2, 4)  # batch=2, features=4
 fq.angle_encoder(device, x, wires=[0, 1, 2, 3])
 
 # Amplitude encoding
-amplitudes = torch.randn(4, 16)  # 2^4 = 16 amplitudes
+amplitudes = torch.randn(2, 16)  # 2^4 = 16 amplitudes
 fq.amplitude_encoder(device, amplitudes)
 
 # Custom encoding circuit
