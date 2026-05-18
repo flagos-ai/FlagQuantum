@@ -1,4 +1,3 @@
-```markdown
 <div align="center">
   <img src="assets/logo.png" alt="FlagQuantum Logo" width="380">
 </div>
@@ -232,4 +231,3 @@ We would like to thank the following projects and organizations for their inspir
 - **[OpenQASM](https://github.com/openqasm/openqasm)** - For the industry-standard quantum circuit representation enabling cross-platform compatibility
 
 This project is built with PyTorch's `DTensor` for distributed tensor operations, enabling scalable quantum state simulation across multiple devices. We are grateful to the broader quantum computing community whose open-source efforts continue to bridge classical and quantum machine learning.
-```
