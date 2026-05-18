@@ -19,7 +19,7 @@ A high-performance distributed quantum statevector simulator built on PyTorch, e
 - **Custom Gate Registration**: Extend the library with your own gates without modifying the core
 - **Post-Selection & Noise Models**: Built-in support for measurement post-selection and depolarizing noise
 - **Flexible Encoding**: Multiple encoding schemes (angle, amplitude, basis) for classical data embedding
-- **🌍 OpenQASM 3.0 Export**: Run circuits on real quantum hardware (IBM, AWS Braket, Azure Quantum, IonQ, Rigetti)
+- **OpenQASM 3.0 Export**: Run circuits on real quantum hardware (IBM, AWS Braket, Azure Quantum, IonQ, Rigetti)
 
 ## 🏗️ Architecture
 
