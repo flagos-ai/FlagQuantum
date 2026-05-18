@@ -26,6 +26,7 @@ import logging
 # Import all from submodules (__all__ is automatically aggregated)
 from .interchange import *  # noqa: F403
 from .maybe_dtensor import *  # noqa: F403
+from .qasm_exporter import *  # noqa: F403
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
