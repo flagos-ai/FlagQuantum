@@ -75,9 +75,9 @@ import torch
 qdev = fq.DistributedQuantumDevice(n_wires=4, bsz=2, world_sz=1, device='cpu')
 
 # Apply gates (functional style)
-fq.h(device, wires=[0])
-fq.rx(device, wires=[1], params=0.5)
-fq.cx(device, wires=[0, 1])
+fq.h(qdev, wires=[0])
+fq.rx(qdev, wires=[1], params=0.5)
+fq.cx(qdev, wires=[0, 1])
 
 # Measure all qubits
 expectations = fq.measure_allZ(qdev)
