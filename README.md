@@ -120,7 +120,7 @@ encoder = fq.GeneralEncoder([
 encoder(device, x)
 ```
 
-### 🌍 Export to Real Quantum Hardware
+### Export to Real Quantum Hardware
 
 FlagQuantum circuits can be exported to OpenQASM 3.0 and run on **all major quantum computing platforms**:
 
