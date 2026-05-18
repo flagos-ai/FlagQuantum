@@ -51,7 +51,7 @@ cd flagquantum
 pip install -e .
 ```
 
-### Install with pip (when available)
+### Install with pip
 
 ```bash
 pip install flagquantum
