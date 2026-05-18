@@ -72,7 +72,7 @@ import flagquantum as fq
 import torch
 
 # Create a distributed quantum device
-device = fq.DistributedQuantumDevice(n_wires=4, bsz=2, world_sz=1, device='cpu')
+qdev = fq.DistributedQuantumDevice(n_wires=4, bsz=2, world_sz=1, device='cpu')
 
 # Apply gates (functional style)
 fq.h(device, wires=[0])
@@ -80,7 +80,7 @@ fq.rx(device, wires=[1], params=0.5)
 fq.cx(device, wires=[0, 1])
 
 # Measure all qubits
-expectations = fq.measure_allZ(device)
+expectations = fq.measure_allZ(qdev)
 print(expectations.shape)  # (2, 4)
 ```
 
@@ -88,15 +88,15 @@ print(expectations.shape)  # (2, 4)
 ```python
 # Create a gate with trainable parameter
 rx_gate = fq.RX(wires=[0], trainable=True)
-rx_gate(device)  # Apply to device
+rx_gate(qdev)  # Apply to quantum device
 
 # Optimize the parameter
 optimizer = torch.optim.Adam([rx_gate.params])
 for _ in range(100):
     optimizer.zero_grad()
-    device.reset_states()
-    rx_gate(device)
-    loss = fq.measure_allZ(device).sum()
+    qdev.reset_states()
+    rx_gate(qdev)
+    loss = fq.measure_allZ(qdev).sum()
     loss.backward()
     optimizer.step()
 ```
@@ -105,11 +105,11 @@ for _ in range(100):
 ```python
 # Angle encoding
 x = torch.randn(2, 4)  # batch=2, features=4
-fq.angle_encoder(device, x, wires=[0, 1, 2, 3])
+fq.angle_encoder(qdev, x, wires=[0, 1, 2, 3])
 
 # Amplitude encoding
 amplitudes = torch.randn(2, 16)  # 2^4 = 16 amplitudes
-fq.amplitude_encoder(device, amplitudes)
+fq.amplitude_encoder(qdev, amplitudes)
 
 # Custom encoding circuit
 encoder = fq.GeneralEncoder([
@@ -117,7 +117,7 @@ encoder = fq.GeneralEncoder([
     {"func": "ry", "wires": [1], "input_idx": 1},
     {"func": "cx", "wires": [0, 1]},
 ])
-encoder(device, x)
+encoder(qdev, x)
 ```
 
 ### Export to Real Quantum Hardware
@@ -177,12 +177,12 @@ torchrun --nproc_per_node=4 your_script.py
 
 ```python
 # In your script, world_sz is set automatically via torchrun
-device = fq.DistributedQuantumDevice(n_wires=20, bsz=32, world_sz=4)
+qdev = fq.DistributedQuantumDevice(n_wires=20, bsz=32, world_sz=4)
 ```
 
 ### Invertible Mode (Memory Efficient)
 ```python
-device = fq.DistributedQuantumDevice(n_wires=10, bsz=64, invertible=True)
+qdev = fq.DistributedQuantumDevice(n_wires=10, bsz=64, invertible=True)
 # Uses less memory during backpropagation
 ```
 
