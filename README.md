@@ -44,7 +44,7 @@ flagquantum/
 
 ```bash
 # Clone the repository
-git clone https://github.com/flagos-ai/flagquantum.git
+git clone https://github.com/flagos-ai/FlagQuantum.git
 cd flagquantum
 
 # Install in development mode
