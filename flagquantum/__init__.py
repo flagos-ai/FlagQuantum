@@ -27,6 +27,7 @@ from .drawer import *  # noqa: F403
 from .encoding import *  # noqa: F403
 from .measurement import *  # noqa: F403
 from .ops import *  # noqa: F403
+from .utils import *  # noqa: F403
 from .version import __version__, get_version
 
 logger = logging.getLogger(__name__)
@@ -79,4 +80,7 @@ __all__ = (
     +
     # Drawer exports
     (drawer.__all__ if hasattr(drawer, "__all__") else [])
+    +
+    # Utils exports
+    (utils.__all__ if hasattr(utils, "__all__") else [])
 )

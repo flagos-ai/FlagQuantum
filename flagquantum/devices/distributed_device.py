@@ -9,6 +9,7 @@ from torch.distributed.device_mesh import init_device_mesh
 from torch.distributed.tensor import DTensor, Shard
 
 from ..ops import functional, matrices
+from ..ops.matrices import PrecisionConfig, get_global_precision, set_global_precision
 from ..utils.interchange import interchange_qubits
 from ..utils.maybe_dtensor import maybe_distribute_tensor, maybe_get_dtensor_info
 
@@ -77,6 +78,7 @@ class DistributedQuantumDevice:
         shared_seed: int = 20740,
         invertible: bool = False,
         max_dtensor_dims: int = 16,
+        precision: Optional[torch.dtype] = None,
     ):
         """Initializes the distributed quantum device.
 
@@ -96,6 +98,7 @@ class DistributedQuantumDevice:
                 Defaults to False.
             max_dtensor_dims: Maximum dimensions for distributed tensor. Used for
                 grouping large numbers of qubits. Defaults to 16.
+            precision: Optional precision parameters.
 
         Raises:
             KeyError: If WORLD_SIZE or RANK environment variables are not set when
@@ -113,6 +116,7 @@ class DistributedQuantumDevice:
             ...     invertible=True
             ... )
         """
+
         # number of qubits
         # the states are represented in a multi-dimension tensor
         # from left to right: qubit 0 to n
@@ -214,19 +218,85 @@ class DistributedQuantumDevice:
             qubit_idx  # last unsharded group always contains one qubit
         )
         self.num_dims = max_dtensor_dims
+        self._init_precision(precision)
         self.reset_states(bsz)
 
-    def reset_states(self, bsz: Optional[int] = None):
-        """Resets quantum states to the initial |0...0> state.
+    def _init_precision(self, precision: Optional[torch.dtype] = None):
+        """Initialize precision settings and synchronize with global PrecisionConfig.
+
+        Args:
+            precision: Optional precision specification. Accepts complex64/complex128
+                    or float32/float64 (will be converted to corresponding complex type).
+        """
+        if precision is not None:
+            # User-specified precision
+            if precision in [torch.complex64, torch.complex128]:
+                target_precision = precision
+            elif precision in [torch.float32, torch.float64]:
+                # Convert real precision to corresponding complex precision
+                target_precision = (
+                    torch.complex64 if precision == torch.float32 else torch.complex128
+                )
+            else:
+                raise ValueError(f"Unsupported precision: {precision}")
+
+            # Sync global precision if needed
+            if get_global_precision() != target_precision:
+                set_global_precision(target_precision)
+
+        # Get current precision from global config
+        self._complex_dtype = get_global_precision()
+        self._real_dtype = PrecisionConfig.get_real_dtype()
+
+    @property
+    def real_dtype(self) -> torch.dtype:
+        """Get the current real data type (float32 or float64)."""
+        return self._real_dtype
+
+    @property
+    def complex_dtype(self) -> torch.dtype:
+        """Get the current complex data type (complex64 or complex128)."""
+        return self._complex_dtype
+
+    @property
+    def current_precision(self) -> tuple:
+        """Get current precision as a tuple (real_dtype, complex_dtype).
+
+        Returns:
+            Tuple of (real_dtype, complex_dtype), e.g., (torch.float32, torch.complex64)
+        """
+        return self._real_dtype, self._complex_dtype
+
+    def reset_states(
+        self, bsz: Optional[int] = None, dtype: Optional[torch.dtype] = None
+    ):
+        """Reset quantum states to the initial |0...0⟩ state.
+
+        This method reinitializes the quantum state tensor to the computational
+        basis ground state (all qubits in |0⟩). The state tensor is reshaped
+        according to the batch size and precision settings.
 
         Args:
             bsz: New batch size. If provided, updates the batch size and reshapes
-                the local tensor accordingly. Defaults to None.
+                the local tensor accordingly. Defaults to None (keep current batch size).
+            dtype: Data type for the state tensor. Accepts float32/float64 or
+                complex64/complex128 (will be converted to the corresponding real type).
+                If None, uses the current device precision.
 
         Example:
             >>> qdev = DistributedQuantumDevice(n_wires=3)
-            >>> qdev.reset_states()  # Reset to |000>
-            >>> qdev.reset_states(bsz=4)  # Reset with batch size 4
+            >>> # Reset to |000⟩ with double precision
+            >>> qdev.reset_states(dtype=torch.float64)
+            >>> # Reset with batch size 4
+            >>> qdev.reset_states(bsz=4)
+
+        Notes:
+            - The state tensor is stored as real numbers (real/imag pairs).
+            - When complex types are passed via `dtype`, they are automatically
+            converted to the corresponding real type (complex64 → float32,
+            complex128 → float64).
+            - This method automatically synchronizes the global precision setting
+            if the requested precision differs from the current one.
         """
         if bsz:
             self.local_shape = tuple(
@@ -236,63 +306,109 @@ class DistributedQuantumDevice:
                 ]
             )
             self.bsz = bsz
+
+        # Resolve data type
+        if dtype is None:
+            dtype = self._real_dtype
+        elif dtype in [torch.complex64, torch.complex128]:
+            # Convert complex types to corresponding real types
+            dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+
+        # Check if global precision needs to be synchronized
+        target_complex = torch.complex64 if dtype == torch.float32 else torch.complex128
+        if get_global_precision() != target_complex:
+            set_global_precision(target_complex)
+            self._complex_dtype = target_complex
+            self._real_dtype = dtype
+
         # shard along designated initial wires
         sharded_wires = (self._groupings[:, (self._groupings[1] == -2)][0]).tolist()
-        self._states = torch.zeros(self.local_shape, device=self.device)
+        self._states = torch.zeros(self.local_shape, device=self.device, dtype=dtype)
+
+        # Initialize the state to |0...0⟩ (only rank 0 initializes, others get zeros)
         if self.global_rank == 0:
+            # Set the first element (all qubits in |0⟩) to 1
+            # The index (slice(None),) + (0,) * (ndim - 1) sets the first
+            # position along all qubit dimensions while preserving batch dimension
             self._states[(slice(None),) + (0,) * (self._states.ndim - 1)] = 1
+
+        # Distribute the state tensor across devices if running in distributed mode
         if self.world_sz > 1:
             placements = [Shard(i) for i in sharded_wires]
             self._states = DTensor.from_local(
                 self._states, self.device_mesh, placements
             )
 
+        # Initialize invertible dummy tensor for memory-efficient backpropagation
         if self.invertible:
+            # Dummy tensor (value doesn't matter, only shape and dtype are important)
+            # It acts as a placeholder for gradient flow in invertible computations
             self._invertible_dummy = torch.tensor(
                 0, dtype=self._states.dtype, device=self._states.device
             )
             if self.world_sz > 1:
+                # Create distributed version matching the state's sharding
                 self._invertible_dummy = DTensor.from_local(
                     self._invertible_dummy.expand_as(self._states.to_local()),
                     self.device_mesh,
                     placements,
                 )
             else:
+                # Expand to match the full state shape (broadcasting)
                 self._invertible_dummy = self._invertible_dummy.expand_as(self._states)
         else:
             self._invertible_dummy = None
 
     def load_amplitudes(self, amplitudes: torch.Tensor):
-        """Loads custom amplitudes into the quantum state.
+        """Load custom amplitudes directly into the quantum state.
+
+        This method allows direct initialization of the quantum state with
+        arbitrary amplitude vectors. The amplitudes are automatically normalized
+        to unit norm.
 
         Args:
             amplitudes: Complex or real tensor representing quantum state amplitudes.
-                Shape should be (batch_size, 2**n_wires) for complex or
-                (batch_size, 2**n_wires) for real (imaginary part set to zero).
+                Shape should be (batch_size, 2**n_wires) for complex tensors, or
+                (batch_size, 2**n_wires) for real tensors (imaginary part set to zero).
+                For real tensors, the imaginary part is implicitly zero.
 
         Raises:
             ValueError: If amplitudes shape is incompatible with n_wires.
 
         Example:
             >>> qdev = DistributedQuantumDevice(n_wires=2)
-            >>> # Load custom amplitudes for 2 qubits
+            >>> # Load custom amplitudes for 2 qubits (complex)
             >>> amps = torch.tensor([[0.5, 0.5, 0.5, 0.5]], dtype=torch.complex64)
             >>> qdev.load_amplitudes(amps)
             >>> # Load real amplitudes (imaginary part set to zero)
             >>> amps_real = torch.randn(2, 4)
             >>> qdev.load_amplitudes(amps_real)
+
+        Notes:
+            - The device state is reset before loading new amplitudes.
+            - Precision is automatically inferred from the input tensor.
+            - Amplitudes are normalized so that sum(|amplitude|^2) = 1.
+            - For complex inputs, the real and imaginary parts are separated
+            and stored as a real tensor with shape (batch_size, ..., 2).
         """
-        self.reset_states(bsz=amplitudes.shape[0])
         if amplitudes.is_complex():
+            real_dtype = (
+                torch.float32 if amplitudes.dtype == torch.complex64 else torch.float64
+            )
+            self.reset_states(bsz=amplitudes.shape[0], dtype=real_dtype)
             loading = torch.view_as_real(amplitudes).to(self.device)
         else:
+            self.reset_states(bsz=amplitudes.shape[0], dtype=amplitudes.dtype)
             loading = torch.stack(
                 (amplitudes, torch.zeros_like(amplitudes)), dim=-1
             ).to(self.device)
+
+        # Normalize the amplitudes to unit norm
         norms = torch.sqrt(
             (loading**2).sum(dim=tuple(range(1, loading.ndim)))
         ).reshape((-1,) + (1,) * (loading.ndim - 1))
 
+        # Distribute the tensor across devices if needed
         maybe_mesh, maybe_placements = maybe_get_dtensor_info(self._states)
         self._states = maybe_distribute_tensor(
             (loading / norms).reshape(self._states.shape),
