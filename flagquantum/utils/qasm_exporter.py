@@ -311,7 +311,7 @@ class QASMExporter:
             "",
             f"qubit[{qdev.n_wires}] q;",
             "",
-            "// Initialize to |0...0⟩",
+            "// Initialize to |0...0>",
             "",
         ]
 
@@ -343,7 +343,7 @@ class QASMExporter:
         qasm_str = "\n".join(lines)
 
         if filename:
-            with open(filename, "w") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 f.write(qasm_str)
             print(f"✅ QASM 3.0 exported to {filename}")
 
@@ -436,7 +436,7 @@ class QASMExporter:
         qasm_str = "\n".join(lines)
 
         if filename:
-            with open(filename, "w") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 f.write(qasm_str)
             print(f"✅ QASM 2.0 exported to {filename}")
 
