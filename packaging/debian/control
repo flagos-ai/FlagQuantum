@@ -16,6 +16,7 @@ Rules-Requires-Root: no
 
 Package: python3-flagquantum
 Architecture: all
-Depends: ${python3:Depends}, ${misc:Depends}, python3-torch, python3-numpy
+Depends: ${python3:Depends}, ${misc:Depends}, python3-numpy
+Recommends: python3-torch
 Description: FlagQuantum — quantum state-vector simulator for FlagOS
  High-performance distributed quantum statevector simulator built on the FlagOS unified multi-chip backend.
