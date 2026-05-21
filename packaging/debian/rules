@@ -14,13 +14,21 @@ export PYBUILD_NAME = flagquantum
 # on import failures. Fixed with && short-circuit.
 override_dh_auto_test:
 	@echo "=== smoke find_spec test ==="
-	@for d in .pybuild/cpython3_*/build; do \
+	# Use found_dir + break (not `&& exit 0` inside the loop) so future
+	# multi-Python builds verify every interpreter rather than stopping
+	# at the first match.
+	@found_dir=""; \
+	for d in .pybuild/cpython3_*/build; do \
 	    if [ -d "$$d/flagquantum" ]; then \
-	        echo "Found build dir: $$d"; \
-	        PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$$d" python3 -c \
-	            "import importlib.util; s = importlib.util.find_spec('flagquantum'); assert s and s.origin, 'flagquantum not findable'; print('OK: flagquantum at', s.origin)" \
-	            && exit 0; \
-	        echo "ERROR: find_spec failed"; exit 1; \
+	        found_dir="$$d"; \
+	        break; \
 	    fi; \
 	done; \
-	echo "ERROR: could not find a built flagquantum module"; exit 1
+	if [ -z "$$found_dir" ]; then \
+	    echo "ERROR: could not find a built flagquantum module"; \
+	    exit 1; \
+	fi; \
+	echo "Found build dir: $$found_dir"; \
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$$found_dir" python3 -c \
+	    "import importlib.util; s = importlib.util.find_spec('flagquantum'); assert s and s.origin, 'flagquantum not findable'; print('OK: flagquantum at', s.origin)"
+

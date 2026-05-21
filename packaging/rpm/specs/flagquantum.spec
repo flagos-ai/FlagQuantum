@@ -7,8 +7,7 @@ Summary:        FlagQuantum — quantum state-vector simulator for FlagOS
 
 License:        Apache-2.0
 URL:            https://github.com/flagos-ai/FlagQuantum
-Source0:        flagquantum-%{version}.tar.gz
-
+Source0:        %{url}/archive/v%{version}/flagquantum-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools >= 60
