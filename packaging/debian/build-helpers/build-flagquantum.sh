@@ -2,7 +2,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
-BASE_IMAGE_VERSION="${1:-22.04}"
+BASE_IMAGE_VERSION="${1:-24.04}"
 IMAGE_TAG="flagquantum-deb:${BASE_IMAGE_VERSION}"
 OUTPUT_DIR="${PROJECT_DIR}/debian-packages"
 
