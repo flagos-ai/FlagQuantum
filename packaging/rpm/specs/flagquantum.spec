@@ -16,6 +16,8 @@ BuildRequires:  python3-wheel
 BuildRequires:  python3-pip
 BuildRequires:  pyproject-rpm-macros
 
+Requires:       python3-numpy
+
 %description
 High-performance distributed quantum statevector simulator built on the FlagOS unified multi-chip backend.
 
