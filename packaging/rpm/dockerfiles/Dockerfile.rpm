@@ -14,9 +14,10 @@ COPY . /workspace/FlagQuantum
 
 RUN SPEC_VERSION=$(grep '^Version:' /workspace/FlagQuantum/packaging/rpm/specs/flagquantum.spec | awk '{print $2}') && \
     tar czf /root/rpmbuild/SOURCES/flagquantum-${SPEC_VERSION}.tar.gz \
-        -C /workspace \
-        --transform "s|^FlagQuantum|flagquantum-${SPEC_VERSION}|" \
-        FlagQuantum
+        -C /workspace/FlagQuantum \
+        --exclude='./.git' \
+        --transform "s|^\./|flagquantum-${SPEC_VERSION}/|" \
+        .
 
 RUN rpmbuild -ba /workspace/FlagQuantum/packaging/rpm/specs/flagquantum.spec 2>&1 || \
     { echo "=== build failed ==="; \
