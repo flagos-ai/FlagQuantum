@@ -16,7 +16,8 @@ Rules-Requires-Root: no
 
 Package: python3-flagquantum
 Architecture: all
-Depends: ${python3:Depends}, ${misc:Depends}, python3-numpy
-# Note: python3-torch is auto-injected via ${python3:Depends} based on pyproject.toml.
+Depends: python3:any, ${misc:Depends}, python3-numpy
+# python3-torch is intentionally NOT declared. The distro 'python3-torch' is
+# CPU-only; users install matching CUDA torch via pip — see packaging/INSTALL.md.
 Description: FlagQuantum — quantum state-vector simulator for FlagOS
  High-performance distributed quantum statevector simulator built on the FlagOS unified multi-chip backend.
