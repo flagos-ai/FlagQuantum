@@ -46,7 +46,7 @@ PYTHONDONTWRITEBYTECODE=1 \
     python3 -c "import importlib.util; s = importlib.util.find_spec('flagquantum'); assert s and s.origin, 'flagquantum not findable'; print('OK: flagquantum at', s.origin)"
 
 %files -f %{pyproject_files}
-%license LICENSE*
+%license LICENSE
 
 %changelog
 * Wed May 13 2026 FlagOS Contributors <contact@flagos.io> - 0.1.0-1
