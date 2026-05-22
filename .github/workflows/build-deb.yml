@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - 'packaging/debian/**'
+      - 'flagquantum/**'
+      - 'pyproject.toml'
       - '.github/workflows/build-deb.yml'
   workflow_dispatch:
 
