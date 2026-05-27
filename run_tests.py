@@ -1,26 +1,9 @@
+# flagquantum/run_tests.py
 #!/usr/bin/env python
+import os
 import shutil
 import subprocess
 import sys
-
-
-def has_hygon_dcu():
-    """Check if Hygon DCU is available"""
-    # 1. Check if hy-smi tool exists
-    if shutil.which("hy-smi") is None:
-        return False
-
-    try:
-        # 2. Run hy-smi and check return code to verify driver is working
-        result = subprocess.run(
-            ["hy-smi", "-u"],  # -u flag queries utilization, used for testing
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.SubprocessError):
-        return False
 
 
 def has_gpu():
@@ -49,8 +32,21 @@ def has_gpu():
         except (FileNotFoundError, subprocess.SubprocessError):
             pass
 
+    # Then try to detect Mthreads GPU
+    if shutil.which("mthreads-gmi"):
+        try:
+            result = subprocess.run(
+                ["mthreads-gmi", "-L"], capture_output=True, text=True, check=True
+            )
+            if result.returncode == 0:
+                print("✓ Mthreads GPU detected")
+                os.environ["HAS_MTHREADS"] = "1"
+                return True
+        except (FileNotFoundError, subprocess.SubprocessError):
+            pass
+
     # No accelerator detected
-    print("✗ No supported accelerator (NVIDIA GPU / Hygon DCU) detected")
+    print("✗ No supported accelerator (NVIDIA GPU / Hygon DCU / Mthreads GPU) detected")
     return False
 
 
