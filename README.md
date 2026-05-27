@@ -126,7 +126,7 @@ FlagQuantum circuits can be exported to OpenQASM 3.0 and run on **all major quan
 
 ```python
 # Build your circuit
-qdev = fq.DistributedQuantumDevice(n_wires=3, record_op=True)
+qdev = fq.DistributedQuantumDevice(n_wires=3, record_op=True, device='cpu')
 fq.H(wires=[0])(qdev)
 fq.RX(wires=[1], init_params=torch.tensor([0.5]))(qdev)
 fq.CNOT(wires=[0, 1])(qdev)
@@ -175,14 +175,9 @@ register_gate("my_gate", my_gate)
 torchrun --nproc_per_node=4 your_script.py
 ```
 
-```python
-# In your script, world_sz is set automatically via torchrun
-qdev = fq.DistributedQuantumDevice(n_wires=20, bsz=32, world_sz=4)
-```
-
 ### Invertible Mode (Memory Efficient)
 ```python
-qdev = fq.DistributedQuantumDevice(n_wires=10, bsz=64, invertible=True)
+qdev = fq.DistributedQuantumDevice(n_wires=10, bsz=64, invertible=True, device="cpu")
 # Uses less memory during backpropagation
 ```
 

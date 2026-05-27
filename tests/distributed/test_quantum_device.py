@@ -1,5 +1,13 @@
 import os
 
+if os.environ.get("HAS_MTHREADS") == "1":
+    try:
+        import torchada  # noqa: F401
+
+        print("✓ torchada imported for Mthreads GPU")
+    except ImportError:
+        print("⚠ torchada not available, falling back to default")
+
 import torch
 from torch.distributed.tensor import DTensor, Partial
 
