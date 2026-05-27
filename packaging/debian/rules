@@ -10,8 +10,6 @@ export PYBUILD_NAME = flagquantum
 # because module-level deps (torch, triton, cupy, ...) are install-
 # time concerns not satisfied in the build container. Catches:
 # wrong install path, missing __init__.py, dh_python install bugs.
-# Note: prior version used `import ; exit 0` which silently passed
-# on import failures. Fixed with && short-circuit.
 override_dh_auto_test:
 	@echo "=== smoke find_spec test ==="
 	# Use found_dir + break (not `&& exit 0` inside the loop) so future
