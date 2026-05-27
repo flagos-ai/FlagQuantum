@@ -40,7 +40,10 @@ High-performance distributed quantum statevector simulator built on the FlagOS u
 # lands at the expected sitelib path. Doesn't import the module so
 # missing runtime deps (torch, triton, ...) don't trip the check;
 # those are user-install-time concerns, not packaging concerns.
-PYTHONDONTWRITEBYTECODE=1 \
+# PYTHONSAFEPATH=1 keeps the cwd (the unpacked source tree, which also
+# contains flagquantum/) off sys.path, so find_spec resolves against the
+# installed copy under PYTHONPATH, not the source tree.
+PYTHONDONTWRITEBYTECODE=1 PYTHONSAFEPATH=1 \
     PYTHONPATH=%{buildroot}%{python3_sitelib} \
     python3 -c "import importlib.util; s = importlib.util.find_spec('flagquantum'); assert s and s.origin, 'flagquantum not findable'; print('OK: flagquantum at', s.origin)"
 

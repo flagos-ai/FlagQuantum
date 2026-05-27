@@ -27,6 +27,6 @@ override_dh_auto_test:
 	    exit 1; \
 	fi; \
 	echo "Found build dir: $$found_dir"; \
-	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$$found_dir" python3 -c \
+	PYTHONDONTWRITEBYTECODE=1 PYTHONSAFEPATH=1 PYTHONPATH="$$found_dir" python3 -c \
 	    "import importlib.util; s = importlib.util.find_spec('flagquantum'); assert s and s.origin, 'flagquantum not findable'; print('OK: flagquantum at', s.origin)"
 
