@@ -175,14 +175,9 @@ register_gate("my_gate", my_gate)
 torchrun --nproc_per_node=4 your_script.py
 ```
 
-```python
-# In your script, world_sz is set automatically via torchrun
-qdev = fq.DistributedQuantumDevice(n_wires=20, bsz=32, world_sz=4)
-```
-
 ### Invertible Mode (Memory Efficient)
 ```python
-qdev = fq.DistributedQuantumDevice(n_wires=10, bsz=64, invertible=True)
+qdev = fq.DistributedQuantumDevice(n_wires=10, bsz=64, invertible=True, device="cpu")
 # Uses less memory during backpropagation
 ```
 
