@@ -126,7 +126,7 @@ FlagQuantum circuits can be exported to OpenQASM 3.0 and run on **all major quan
 
 ```python
 # Build your circuit
-qdev = fq.DistributedQuantumDevice(n_wires=3, record_op=True)
+qdev = fq.DistributedQuantumDevice(n_wires=3, record_op=True, device='cpu')
 fq.H(wires=[0])(qdev)
 fq.RX(wires=[1], init_params=torch.tensor([0.5]))(qdev)
 fq.CNOT(wires=[0, 1])(qdev)
