@@ -13,6 +13,7 @@ A high-performance distributed quantum statevector simulator built on PyTorch, e
 ## ✨ Features
 
 - **Distributed Statevector Simulation**: Leverage multiple GPUs to simulate large quantum circuits using `DTensor` from `torch.distributed`
+- **Multi-Chip Backend Support**: NVIDIA CUDA, Hygon DCU, Moore Threads MUSA
 - **Automatic Resharding**: Intelligently redistributes statevectors to minimize communication overhead during gate operations
 - **Comprehensive Gate Set**: Includes Pauli, Clifford, rotation, and controlled gates with parameterized support
 - **Invertible Backpropagation**: Memory-efficient gradient computation for trainable quantum circuits
