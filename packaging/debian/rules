@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+export PYBUILD_NAME = flagquantum
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+# Smoke find_spec test (not actual import) — verifies the built
+# module lands at the expected path. Doesn't import the module
+# because module-level deps (torch, triton, cupy, ...) are install-
+# time concerns not satisfied in the build container. Catches:
+# wrong install path, missing __init__.py, dh_python install bugs.
+override_dh_auto_test:
+	@echo "=== smoke find_spec test ==="
+	# Use found_dir + break (not `&& exit 0` inside the loop) so future
+	# multi-Python builds verify every interpreter rather than stopping
+	# at the first match.
+	@found_dir=""; \
+	for d in .pybuild/cpython3_*/build; do \
+	    if [ -d "$$d/flagquantum" ]; then \
+	        found_dir="$$d"; \
+	        break; \
+	    fi; \
+	done; \
+	if [ -z "$$found_dir" ]; then \
+	    echo "ERROR: could not find a built flagquantum module"; \
+	    exit 1; \
+	fi; \
+	echo "Found build dir: $$found_dir"; \
+	PYTHONDONTWRITEBYTECODE=1 PYTHONSAFEPATH=1 PYTHONPATH="$$found_dir" python3 -c \
+	    "import importlib.util; s = importlib.util.find_spec('flagquantum'); assert s and s.origin, 'flagquantum not findable'; print('OK: flagquantum at', s.origin)"
