@@ -856,6 +856,8 @@ class ShardedMPSState:
         }
         if self.context is None or not self.context.initialized:
             return local_payload
+        if self.context.world_size == 1:
+            return local_payload
         gathered: list[Any] = [None for _ in range(self.context.world_size)]
         dist.all_gather_object(gathered, local_payload)
         out: dict[int, torch.Tensor] = {}

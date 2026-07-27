@@ -10,6 +10,11 @@ from flagquantum.runtime.backends.mps.training import (
     MPSTrainingError,
     ShardedMPSTrainingResult,
 )
+from flagquantum.runtime.distributed.models import (
+    DistributedShardPlan,
+    ShardedMPSState,
+    TorchDistributedContext,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -17,6 +22,45 @@ pytestmark = pytest.mark.unit
 def _circuit():
     theta = torch.tensor(0.31, requires_grad=True)
     return fq.Circuit(3).ry(0, theta).rxx(0, 1, theta), theta
+
+
+def test_single_rank_sharded_mps_gather_avoids_object_collective(monkeypatch):
+    mps = fq.MPSState.zero(1)
+    context = TorchDistributedContext(
+        rank=0,
+        world_size=1,
+        local_rank=0,
+        backend="gloo",
+        device=torch.device("cpu"),
+        initialized=True,
+    )
+    sharded = ShardedMPSState(
+        n_wires=1,
+        bsz=1,
+        config=mps.config,
+        local_tensors={0: mps.tensors[0]},
+        shards=(
+            DistributedShardPlan(
+                rank=0,
+                world_size=1,
+                wires=(0,),
+                left_boundary=None,
+                right_boundary=None,
+            ),
+        ),
+        context=context,
+    )
+
+    monkeypatch.setattr(
+        torch.distributed,
+        "all_gather_object",
+        lambda *_args, **_kwargs: pytest.fail("single rank must not gather objects"),
+    )
+
+    gathered = sharded.gather_tensors()
+
+    assert tuple(gathered) == (0,)
+    torch.testing.assert_close(gathered[0], mps.tensors[0])
 
 
 def test_requires_explicit_distributed_lifecycle():
