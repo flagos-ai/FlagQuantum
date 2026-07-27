@@ -22,6 +22,11 @@ from flagquantum.runtime.backends.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_cache_policy,
 )
+from flagquantum.runtime.distributed.models import (
+    DistributedShardPlan,
+    ShardedMPSState,
+    TorchDistributedContext,
+)
 from flagquantum.simulation.mps import run_mps
 
 
@@ -68,6 +73,50 @@ def main() -> None:
             wire in result.shard_state.ownership[rank]
             for wire in result.shard_state.local_tensors
         )
+        reference_mps = run_mps(circuit, max_bond=8)
+        shards = tuple(
+            DistributedShardPlan(
+                rank=owner,
+                world_size=world,
+                wires=tuple(result.shard_state.ownership[owner]),
+                left_boundary=None,
+                right_boundary=None,
+            )
+            for owner in range(world)
+        )
+        sharded = ShardedMPSState(
+            n_wires=circuit.n_wires,
+            bsz=reference_mps.bsz,
+            config=reference_mps.config,
+            local_tensors={
+                wire: reference_mps.tensors[wire].to(device=device)
+                for wire in result.shard_state.ownership[rank]
+            },
+            shards=shards,
+            context=TorchDistributedContext(
+                rank=rank,
+                world_size=world,
+                local_rank=int(os.environ["LOCAL_RANK"]),
+                backend=args.backend,
+                device=device,
+                initialized=True,
+            ),
+        )
+        original_object_gather = dist.all_gather_object
+
+        def forbidden_object_gather(*_args, **_kwargs):
+            raise AssertionError("MPS tensor reconstruction must use tensor collectives")
+
+        dist.all_gather_object = forbidden_object_gather
+        try:
+            reconstructed = sharded.gather_tensors()
+        finally:
+            dist.all_gather_object = original_object_gather
+        assert tuple(reconstructed) == tuple(range(circuit.n_wires))
+        for wire, tensor in reconstructed.items():
+            torch.testing.assert_close(
+                tensor.to(device=device), reference_mps.tensors[wire]
+            )
         try:
             result.full_state()
         except MPSFullMaterializationError:

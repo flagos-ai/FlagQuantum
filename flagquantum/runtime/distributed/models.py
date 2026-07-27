@@ -816,6 +816,52 @@ class DistributedMPSState:
         return attach_mps_runtime_summary(summary)
 
 
+def _broadcast_mps_site_tensor(
+    tensor: torch.Tensor | None,
+    *,
+    src: int,
+    context: TorchDistributedContext,
+    wire: int,
+) -> torch.Tensor:
+    """Broadcast one MPS site without pickle or host staging under NCCL."""
+    transport_device = (
+        context.device if context.backend.lower() == "nccl" else torch.device("cpu")
+    )
+    if context.rank == src:
+        if tensor is None:
+            raise RuntimeError(f"Rank {src} does not hold its owned MPS wire {wire}.")
+        tensor = tensor.detach().to(device=transport_device)
+        if tensor.dtype == torch.complex64:
+            dtype_code = 0
+        elif tensor.dtype == torch.complex128:
+            dtype_code = 1
+        else:
+            raise RuntimeError(f"MPS wire {wire} has unsupported dtype {tensor.dtype}.")
+        metadata = torch.tensor(
+            (tensor.ndim, dtype_code, *tensor.shape),
+            dtype=torch.int64,
+            device=transport_device,
+        )
+    else:
+        tensor = None
+        metadata = torch.empty(6, dtype=torch.int64, device=transport_device)
+    dist.broadcast(metadata, src=src)
+    ndim = int(metadata[0].item())
+    if ndim != 4:
+        raise RuntimeError(f"MPS wire {wire} must have rank 4, received rank {ndim}.")
+    dtype_code = int(metadata[1].item())
+    if dtype_code not in {0, 1}:
+        raise RuntimeError(f"MPS wire {wire} has unsupported dtype code {dtype_code}.")
+    dtype = torch.complex64 if dtype_code == 0 else torch.complex128
+    shape = tuple(int(size) for size in metadata[2 : ndim + 2].tolist())
+    if tensor is None:
+        tensor = torch.empty(shape, dtype=dtype, device=transport_device)
+    elif tuple(tensor.shape) != shape:
+        raise RuntimeError(f"MPS wire {wire} metadata does not match its local tensor.")
+    dist.broadcast(tensor, src=src)
+    return tensor
+
+
 class ShardedMPSState:
     """Rank-local MPS tensor storage with explicit distributed reconstruction."""
 
@@ -858,12 +904,39 @@ class ShardedMPSState:
             return local_payload
         if self.context.world_size == 1:
             return local_payload
-        gathered: list[Any] = [None for _ in range(self.context.world_size)]
-        dist.all_gather_object(gathered, local_payload)
+
+        owner_by_wire: dict[int, int] = {}
+        for shard in self.shards:
+            for wire in shard.wires:
+                if wire in owner_by_wire:
+                    raise RuntimeError(f"MPS wire {wire} has multiple shard owners.")
+                owner_by_wire[wire] = shard.rank
+        missing_owners = [
+            wire for wire in range(self.n_wires) if wire not in owner_by_wire
+        ]
+        if missing_owners:
+            raise RuntimeError(
+                f"MPS shard plan has no owner for wires {missing_owners}."
+            )
+
         out: dict[int, torch.Tensor] = {}
-        for payload in gathered:
-            if payload:
-                out.update(payload)
+        for wire in range(self.n_wires):
+            owner = owner_by_wire[wire]
+            if self.rank == owner:
+                try:
+                    tensor = self.local_tensors[wire]
+                except KeyError as exc:
+                    raise RuntimeError(
+                        f"Rank {owner} does not hold its owned MPS wire {wire}."
+                    ) from exc
+            else:
+                tensor = None
+            out[wire] = _broadcast_mps_site_tensor(
+                tensor,
+                src=owner,
+                context=self.context,
+                wire=wire,
+            )
         return out
 
     def apply_one_local(self, matrix: torch.Tensor, wire: int) -> None:

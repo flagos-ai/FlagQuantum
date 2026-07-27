@@ -45,6 +45,7 @@ from .models import (
     DistributedTensorNetworkState,
     ShardedMPSState,
     TorchDistributedContext,
+    _broadcast_mps_site_tensor,
     _mps_shards,
     _resolve_backend_policy,
     _should_use_torch_distributed,
@@ -526,7 +527,6 @@ def _boundary_touched_wires(instruction: Instruction) -> tuple[int, ...]:
 
 def _mps_payload(mps: MPSState) -> dict[str, Any]:
     return {
-        "tensors": [tensor.detach().cpu() for tensor in mps.tensors],
         "local_swap_count": mps.local_swap_count,
         "truncation_errors": tuple(mps.truncation_errors),
         "truncation_records": tuple(
@@ -536,10 +536,7 @@ def _mps_payload(mps: MPSState) -> dict[str, Any]:
     }
 
 
-def _load_mps_payload(
-    mps: MPSState, payload: Mapping[str, Any], device: torch.device | str
-) -> None:
-    mps.tensors = [tensor.to(device=device) for tensor in payload["tensors"]]
+def _load_mps_payload(mps: MPSState, payload: Mapping[str, Any]) -> None:
     mps.local_swap_count = int(payload["local_swap_count"])
     mps.truncation_errors = [float(value) for value in payload["truncation_errors"]]
     mps.truncation_records = [
@@ -555,7 +552,16 @@ def _broadcast_mps(
     objects: list[Any] = [_mps_payload(mps) if context.rank == src else None]
     dist.broadcast_object_list(objects, src=src)
     if context.rank != src:
-        _load_mps_payload(mps, objects[0], context.device)
+        _load_mps_payload(mps, objects[0])
+    mps.tensors = [
+        _broadcast_mps_site_tensor(
+            tensor if context.rank == src else None,
+            src=src,
+            context=context,
+            wire=wire,
+        ).to(device=context.device)
+        for wire, tensor in enumerate(mps.tensors)
+    ]
 
 
 def _broadcast_mps_tensors(
@@ -566,18 +572,13 @@ def _broadcast_mps_tensors(
     context: TorchDistributedContext,
 ) -> None:
     wire_tuple = tuple(dict.fromkeys(int(wire) for wire in wires))
-    objects: list[Any] = [
-        (
-            {wire: mps.tensors[wire].detach().cpu() for wire in wire_tuple}
-            if context.rank == src
-            else None
-        )
-    ]
-    dist.broadcast_object_list(objects, src=src)
-    if context.rank != src:
-        payload = objects[0]
-        for wire, tensor in payload.items():
-            mps.tensors[int(wire)] = tensor.to(device=context.device)
+    for wire in wire_tuple:
+        mps.tensors[wire] = _broadcast_mps_site_tensor(
+            mps.tensors[wire] if context.rank == src else None,
+            src=src,
+            context=context,
+            wire=wire,
+        ).to(device=context.device)
 
 
 def _sync_boundary_mps_tensors(
@@ -652,18 +653,28 @@ def _gather_boundary_mps_tensors(
     *,
     context: TorchDistributedContext,
 ) -> dict[int, torch.Tensor]:
-    local_payload: dict[int, torch.Tensor] = {}
-    if context.rank == record.left_rank:
-        local_payload[record.left_wire] = mps.tensors[record.left_wire].detach().cpu()
-    if context.rank == record.right_rank:
-        local_payload[record.right_wire] = mps.tensors[record.right_wire].detach().cpu()
-    gathered: list[Any] = [None for _ in range(context.world_size)]
-    dist.all_gather_object(gathered, local_payload)
-    out: dict[int, torch.Tensor] = {}
-    for payload in gathered:
-        if payload:
-            out.update(payload)
-    return out
+    return {
+        record.left_wire: _broadcast_mps_site_tensor(
+            (
+                mps.tensors[record.left_wire]
+                if context.rank == record.left_rank
+                else None
+            ),
+            src=record.left_rank,
+            context=context,
+            wire=record.left_wire,
+        ),
+        record.right_wire: _broadcast_mps_site_tensor(
+            (
+                mps.tensors[record.right_wire]
+                if context.rank == record.right_rank
+                else None
+            ),
+            src=record.right_rank,
+            context=context,
+            wire=record.right_wire,
+        ),
+    }
 
 
 def _scatter_boundary_mps_tensors(
@@ -672,24 +683,22 @@ def _scatter_boundary_mps_tensors(
     *,
     context: TorchDistributedContext,
 ) -> None:
-    recipients = {record.left_rank, record.right_rank}
-    payload = None
-    if context.rank == record.owner_rank:
-        payload = {
-            record.left_rank: {
-                record.left_wire: mps.tensors[record.left_wire].detach().cpu()
-            },
-            record.right_rank: {
-                record.right_wire: mps.tensors[record.right_wire].detach().cpu()
-            },
-        }
-    objects: list[Any] = [payload]
-    dist.broadcast_object_list(objects, src=record.owner_rank)
-    if context.rank not in recipients:
-        return
-    rank_payload = objects[0].get(context.rank, {})
-    for wire, tensor in rank_payload.items():
-        mps.tensors[int(wire)] = tensor.to(device=context.device)
+    left = _broadcast_mps_site_tensor(
+        mps.tensors[record.left_wire] if context.rank == record.owner_rank else None,
+        src=record.owner_rank,
+        context=context,
+        wire=record.left_wire,
+    )
+    right = _broadcast_mps_site_tensor(
+        mps.tensors[record.right_wire] if context.rank == record.owner_rank else None,
+        src=record.owner_rank,
+        context=context,
+        wire=record.right_wire,
+    )
+    if context.rank == record.left_rank:
+        mps.tensors[record.left_wire] = left.to(device=context.device)
+    if context.rank == record.right_rank:
+        mps.tensors[record.right_wire] = right.to(device=context.device)
 
 
 def _sync_mps_from_sharded(
