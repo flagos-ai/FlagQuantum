@@ -17,6 +17,7 @@ from flagquantum.runtime.backends.statevector.reverse import (
     _all_reduce_packed_gradients,
     _analytic_rotation_derivative,
     execute_torch_distributed_statevector_reverse,
+    resolve_checkpoint_policy,
 )
 from flagquantum.runtime.backends.statevector.reverse_adjoint import (
     _compact_reverse_global_indices,
@@ -149,6 +150,12 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     assert result.ownership[0].occurrence_count == 2
     completed = result.summary()
     assert completed["backward_uses_full_state_replay"] is False
+    assert completed["saved_forward_state_reused"] is True
+    assert completed["checkpoint_policy"]["strategy"] == "reversible_adjoint"
+    assert (
+        completed["checkpoint_policy"]["selection_reason"]
+        == "forward_state_reuse_fits_budget"
+    )
     assert completed["parameter_gradient_ready"] is True
     assert completed["backward_status"] == "completed"
     assert completed["gradient_distribution"] == "local"
@@ -178,10 +185,48 @@ def test_parameter_shift_and_finite_difference_match_native_vjp():
 
 
 def test_checkpoint_policy_is_versioned_and_fail_closed():
-    assert StatevectorCheckpointPolicy().strategy == "full_rematerialization"
+    assert StatevectorCheckpointPolicy().strategy == "auto"
+    assert StatevectorCheckpointPolicy().version == "statevector_checkpoint_v2"
     assert StatevectorCheckpointPolicy(strategy="interval", interval=8).interval == 8
     with pytest.raises(ValueError, match="interval > 0"):
         StatevectorCheckpointPolicy(strategy="interval", interval=0)
+
+
+def test_auto_checkpoint_reuses_forward_state_when_working_set_fits():
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(memory_budget_bytes=4096),
+        local_state_bytes=1024,
+        device=torch.device("cpu"),
+    )
+
+    assert policy.strategy == "reversible_adjoint"
+    assert policy.selection_reason == "forward_state_reuse_fits_budget"
+    assert policy.estimated_required_bytes == 4096
+
+
+def test_auto_checkpoint_fails_over_to_rematerialization_when_budget_is_tight():
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(memory_budget_bytes=4095),
+        local_state_bytes=1024,
+        device=torch.device("cpu"),
+    )
+
+    assert policy.strategy == "full_rematerialization"
+    assert policy.selection_reason == "reversible_working_set_exceeds_budget"
+    assert policy.estimated_required_bytes == 4096
+
+
+def test_explicit_checkpoint_strategy_has_priority_over_auto_budget():
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(
+            strategy="full_rematerialization", memory_budget_bytes=1
+        ),
+        local_state_bytes=1024,
+        device=torch.device("cpu"),
+    )
+
+    assert policy.strategy == "full_rematerialization"
+    assert policy.selection_reason == "explicit_strategy"
 
 
 def test_reverse_exchange_chunk_is_configurable_and_audited(monkeypatch):

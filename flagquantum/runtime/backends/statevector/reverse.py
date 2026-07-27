@@ -12,6 +12,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ...builder_compilation import detached_ir_snapshot
+from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .environment import get_bool
 from .forward import (
     communication_aware_wire_layout,
@@ -133,25 +134,6 @@ def _communication_aware_wire_layout(
         preferred_local_wires=(observable_wire,),
     )
     return remapped, permutation[observable_wire], permutation
-
-
-@dataclass(frozen=True)
-class StatevectorCheckpointPolicy:
-    """Versioned rematerialization policy for deep sharded circuits."""
-
-    version: str = "statevector_checkpoint_v1"
-    strategy: str = "full_rematerialization"
-    interval: int = 0
-
-    def __post_init__(self) -> None:
-        if self.strategy not in {
-            "full_rematerialization",
-            "interval",
-            "reversible_adjoint",
-        }:
-            raise ValueError(f"unknown checkpoint strategy {self.strategy!r}")
-        if self.strategy == "interval" and self.interval <= 0:
-            raise ValueError("interval checkpoint strategy requires interval > 0")
 
 
 @dataclass
@@ -537,7 +519,7 @@ def execute_torch_distributed_statevector_reverse(
     backend = (
         dist.get_backend(process_group) if dist.is_initialized() else "single_process"
     )
-    policy = checkpoint_policy or StatevectorCheckpointPolicy()
+    requested_policy = checkpoint_policy or StatevectorCheckpointPolicy()
     world_size = dist.get_world_size(process_group) if dist.is_initialized() else 1
     rank = dist.get_rank(process_group) if dist.is_initialized() else 0
     if process_group is not None:
@@ -563,8 +545,19 @@ def execute_torch_distributed_statevector_reverse(
             else parameters[0].device
         )
     resolved_device = torch.device(device)
+    complex_bytes = (
+        16 if any(parameter.dtype == torch.float64 for parameter in parameters) else 8
+    )
     plan = plan_distributed_statevector(
-        execution_ir, world_size=world_size, local_world_size=local_world_size
+        execution_ir,
+        world_size=world_size,
+        local_world_size=local_world_size,
+        complex_bytes=complex_bytes,
+    )
+    policy = resolve_checkpoint_policy(
+        requested_policy,
+        local_state_bytes=plan.shards[rank].local_state_bytes,
+        device=resolved_device,
     )
     ownership = tuple(
         ParameterGradientOwnership(
@@ -612,4 +605,5 @@ __all__ = (
     "StatevectorCheckpointPolicy",
     "TorchDistributedStatevectorGradientResult",
     "execute_torch_distributed_statevector_reverse",
+    "resolve_checkpoint_policy",
 )
