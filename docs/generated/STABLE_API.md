@@ -24,7 +24,6 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.ObservableNode` | Stable | executable contract |
 | `fq.Parameter` | Stable | executable contract |
 | `fq.ParameterExpression` | Stable | executable contract |
-| `fq.QuantumModule` | Stable | executable contract |
 | `fq.RuntimePolicy` | Stable | executable contract |
 | `fq.TrainingResult` | Stable | executable contract |
 | `fq.__version__` | Stable | executable contract |

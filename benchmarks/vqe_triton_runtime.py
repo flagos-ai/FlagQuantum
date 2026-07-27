@@ -38,7 +38,7 @@ def _build_module(
     local_depth: int,
     hamiltonian,
     backend: str = "pytorch",
-) -> fq.QuantumModule:
+) -> fq.Module:
     def ansatz(parameters: torch.Tensor) -> fq.Circuit:
         circuit = fq.Circuit(n_wires, device=parameters.device)
         for wire in range(n_wires):
@@ -51,7 +51,7 @@ def _build_module(
             circuit.cx(wire, wire + 1)
         return circuit
 
-    return fq.QuantumModule(
+    return fq.Module(
         ansatz,
         tuple(initial.shape),
         init=initial.detach().clone(),
@@ -67,7 +67,7 @@ def _build_module(
 
 
 def _train(
-    module: fq.QuantumModule,
+    module: fq.Module,
     *,
     iterations: int,
     lr: float,
@@ -105,7 +105,7 @@ def _train(
     }
 
 
-def _warmup(module: fq.QuantumModule, *, fused: bool = False) -> float:
+def _warmup(module: fq.Module, *, fused: bool = False) -> float:
     os.environ["FQ_TRITON_SINGLE_QUBIT_LOOP"] = "1" if fused else "0"
     module.zero_grad(set_to_none=True)
     torch.cuda.synchronize()
@@ -274,7 +274,7 @@ def main() -> None:
         "device": torch.cuda.get_device_name(),
         "torch_version": torch.__version__,
         "task": "end_to_end_vqe_training",
-        "api": "fq.QuantumModule -> FlagQuantum IR -> statevector -> Hamiltonian",
+        "api": "fq.Module -> FlagQuantum IR -> statevector -> Hamiltonian",
         "hamiltonian": "0.7 sum ZZ - 0.25 sum X + 0.05 Z0",
         "optimizer": "torch.optim.Adam",
         "n_wires": args.n_wires,

@@ -1,5 +1,5 @@
 {
-  "api": "fq.QuantumModule -> FlagQuantum IR -> statevector -> Hamiltonian",
+  "api": "fq.Module -> FlagQuantum IR -> statevector -> Hamiltonian",
   "benchmark": "flagquantum_vqe_triton_ir_runtime",
   "benchmark_evidence_class": "local_non_release",
   "claim_evidence_type": "development_smoke",

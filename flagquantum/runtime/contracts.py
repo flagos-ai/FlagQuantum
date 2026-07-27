@@ -5,7 +5,7 @@ from .distributed.protocols import (
     DistributedExecutionRequest,
     DistributedExecutor,
 )
-from .module import Module, QuantumModule
+from .module import Module
 from .policy import RuntimePolicy
 from .result import ExecutionResult, normalize_execution_result
 
@@ -15,7 +15,6 @@ __all__ = (
     "DistributedExecutor",
     "ExecutionResult",
     "Module",
-    "QuantumModule",
     "RuntimePolicy",
     "normalize_execution_result",
 )

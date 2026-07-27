@@ -207,7 +207,7 @@ Learning content should be organized by user intent instead of source module.
 | Track | User question | Content to build |
 | --- | --- | --- |
 | Getting started | How do I build and measure my first circuit? | Install, first `fq.Circuit`, states, gates, measurements |
-| Differentiable circuits | How do I train parameters? | PyTorch gradients, `fq.QuantumModule`, runtime policies |
+| Differentiable circuits | How do I train parameters? | PyTorch gradients, `fq.Module`, runtime policies |
 | Runtime choice | Should I use statevector, MPS, or TN? | Decision guide, memory estimates, examples by circuit structure |
 | Algorithms | How do I implement VQE/QAOA/kernel/QNN workflows? | VQE, QAOA, quantum classifier, kernel methods |
 | Large structured simulation | How do I use MPS/TN responsibly? | Bond dimension, truncation, contraction path, structured 1000q demo |
@@ -269,7 +269,7 @@ FlagQuantum should meet users where they already work.
 
 | Integration | User value | Ecosystem artifact |
 | --- | --- | --- |
-| PyTorch | Standard AI training loops | `fq.QuantumModule` tutorials and examples |
+| PyTorch | Standard AI training loops | `fq.Module` tutorials and examples |
 | JAX | Fast quantum kernels | `compile_quantum_kernel` guides and fallback notes |
 | OpenQASM/QCIS | Hardware and cloud portability | Export tutorials and deployment examples |
 | Provider adapters | Real or mock cloud execution | Provider matrix, credential-free mock demos |

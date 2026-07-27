@@ -223,7 +223,7 @@ def _current_workload_signature(owner: torch.nn.Module) -> str:
         )
         if not callable(builder) or parameters is None:
             raise TrainingStateError(
-                "checkpoint restore requires an executable fq.QuantumModule workload"
+                "checkpoint restore requires an executable fq.Module workload"
             )
         try:
             ir = ensure_circuit_ir(builder(None, parameters))

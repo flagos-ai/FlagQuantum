@@ -17,7 +17,7 @@ FlagQuantum's long-term runtime philosophy is:
 User code should remain ordinary PyTorch:
 
 ```python
-layer = fq.QuantumModule(
+layer = fq.Module(
     circuit_builder,
     n_parameters=8,
     policy=fq.RuntimePolicy(
@@ -121,7 +121,7 @@ Backend selection is an execution concern, not a different product identity.
 1. Extend the JAX bridge from statevector to MPS and tensor-network kernels.
 2. Add rank-local JAX quantum-kernel tests under `torchrun`.
 3. Add benchmark reporting for PyTorch MPS, FlagQuantum JAX bridge, and external JAX baselines.
-4. Extend cloud deployment export from trained `fq.QuantumModule` parameters.
+4. Extend cloud deployment export from trained `fq.Module` parameters.
 5. Add production examples for classical PyTorch models producing batched quantum parameters.
 
 ## Verification Commands

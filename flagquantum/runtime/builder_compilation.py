@@ -1,4 +1,4 @@
-"""Reusable builder-program state for ``QuantumModule`` compilation."""
+"""Reusable builder-program state for ``Module`` compilation."""
 
 from __future__ import annotations
 

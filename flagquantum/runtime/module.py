@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 CircuitBuilder = Callable[..., Circuit | CircuitIR]
 
 
-class QuantumModule(torch.nn.Module):
+class Module(torch.nn.Module):
     """A normal ``torch.nn.Module`` whose quantum execution is policy-driven.
 
     ``circuit`` receives the owned parameter tensor, and optionally the input
@@ -60,16 +60,14 @@ class QuantumModule(torch.nn.Module):
     ) -> None:
         super().__init__()
         if not callable(circuit) and not isinstance(circuit, Circuit):
-            raise TypeError(
-                "fq.QuantumModule circuit must be a callable builder or Circuit"
-            )
+            raise TypeError("fq.Module circuit must be a callable builder or Circuit")
         if parameters is not None and n_parameters is not None:
             raise ValueError("pass either n_parameters or parameters, not both")
         if isinstance(circuit, Circuit) and parameters is None:
             parameters = {name: () for name in circuit.parameter_names}
         if parameters is None and n_parameters is None:
             raise ValueError(
-                "QuantumModule requires n_parameters, named parameters, or a "
+                "Module requires n_parameters, named parameters, or a "
                 "parameterized Circuit"
             )
 
@@ -187,7 +185,7 @@ class QuantumModule(torch.nn.Module):
         """Replace runtime policy and synchronize policy-dependent resources."""
 
         if not isinstance(policy, RuntimePolicy):
-            raise TypeError("fq.QuantumModule runtime policy must be a RuntimePolicy")
+            raise TypeError("fq.Module runtime policy must be a RuntimePolicy")
         self.policy = policy
         self._jax_kernel = None
         self._jax_kernel_signature = None
@@ -195,20 +193,20 @@ class QuantumModule(torch.nn.Module):
 
     def _apply(
         self, fn: Callable[[torch.Tensor], torch.Tensor], recurse: bool = True
-    ) -> "QuantumModule":
+    ) -> "Module":
         if hasattr(self, "parameters_tensor"):
             parameter = self._parameter_tensors()[0]
             probe = fn(torch.empty(0, dtype=parameter.dtype, device=parameter.device))
             if probe.dtype not in {torch.float32, torch.float64}:
                 raise TypeError(
-                    "fq.QuantumModule trainable parameters must use float32 or float64"
+                    "fq.Module trainable parameters must use float32 or float64"
                 )
         super()._apply(fn, recurse=recurse)
         if hasattr(self, "precision"):
             dtype = self._parameter_tensors()[0].dtype
             if dtype not in {torch.float32, torch.float64}:
                 raise TypeError(
-                    "fq.QuantumModule trainable parameters must use float32 or float64"
+                    "fq.Module trainable parameters must use float32 or float64"
                 )
             name = str(dtype).removeprefix("torch.")
             self.precision = replace(
@@ -338,7 +336,7 @@ class QuantumModule(torch.nn.Module):
             program = make_fx(extract)(*tensor_inputs)
         except Exception as error:
             raise RuntimeError(
-                "QuantumModule builder compilation requires static circuit topology; "
+                "Module builder compilation requires static circuit topology; "
                 "do not branch on Tensor values when choosing gates or wires"
             ) from error
         program.graph.eliminate_dead_code()
@@ -780,7 +778,7 @@ class QuantumModule(torch.nn.Module):
         else:
             if not isinstance(circuit, Circuit):
                 raise TypeError(
-                    "local fq.QuantumModule execution requires a Circuit builder result"
+                    "local fq.Module execution requires a Circuit builder result"
                 )
             if self.policy.mode == "statevector":
                 state = circuit.state(refresh=True)
@@ -810,9 +808,7 @@ class QuantumModule(torch.nn.Module):
                 values = backend_state.expectation_z(wires)
                 executor = "pytorch_native_tensor_network"
             else:
-                raise RuntimeError(
-                    f"unhandled fq.QuantumModule mode {self.policy.mode!r}"
-                )
+                raise RuntimeError(f"unhandled fq.Module mode {self.policy.mode!r}")
             if self.policy.observable == "hamiltonian":
                 if self.policy.mode not in {"statevector", "mps"}:
                     raise NotImplementedError(
@@ -958,7 +954,7 @@ class QuantumModule(torch.nn.Module):
         return _LegacyLayerAdapter(layer)
 
 
-class _LegacyLayerAdapter(QuantumModule):
+class _LegacyLayerAdapter(Module):
     def __init__(self, layer: torch.nn.Module) -> None:
         torch.nn.Module.__init__(self)
         self.layer = layer
@@ -971,7 +967,7 @@ class _LegacyLayerAdapter(QuantumModule):
             compatibility={
                 "fallback_used": False,
                 "source": "QuantumTorchLayer",
-                "migration": "construct fq.QuantumModule with a circuit builder and RuntimePolicy",
+                "migration": "construct fq.Module with a circuit builder and RuntimePolicy",
             },
         )
 
@@ -981,15 +977,9 @@ class _LegacyLayerAdapter(QuantumModule):
         return result.value
 
 
-# ``Module`` is retained as a source-compatible alias. New user-facing code
-# should use the unambiguous ``QuantumModule`` name.
-Module = QuantumModule
-
-
 __all__ = [
     "ExecutionResult",
     "Module",
-    "QuantumModule",
     "RuntimePolicy",
     "normalize_execution_result",
 ]

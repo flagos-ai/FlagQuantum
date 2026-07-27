@@ -22,11 +22,9 @@ def test_generated_documentation_and_claims_are_current():
 
 def test_stable_api_includes_module_contract():
     api = DOCS.load(ROOT / "docs/public_api_v1.json")
-    assert {"Module", "QuantumModule", "ExecutionResult", "RuntimePolicy"} <= set(
-        api["stable_exports"]
-    )
+    assert {"Module", "ExecutionResult", "RuntimePolicy"} <= set(api["stable_exports"])
     assert issubclass(fq.Module, __import__("torch").nn.Module)
-    assert fq.Module is fq.QuantumModule
+    assert not hasattr(fq, "QuantumModule")
     for name in api["stable_exports"]:
         assert hasattr(fq, name)
 

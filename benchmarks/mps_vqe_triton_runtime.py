@@ -26,7 +26,7 @@ def _build_module(
     batch_size: int,
     max_bond: int,
     cutoff: float,
-) -> fq.QuantumModule:
+) -> fq.Module:
     def ansatz(parameters: torch.Tensor) -> fq.Circuit:
         circuit = fq.Circuit(n_wires, bsz=batch_size, device=parameters.device)
         for layer in range(layers):
@@ -38,7 +38,7 @@ def _build_module(
                 circuit.cx(wire, wire + 1)
         return circuit
 
-    return fq.QuantumModule(
+    return fq.Module(
         ansatz,
         tuple(initial.shape),
         init=initial.detach().clone(),
@@ -56,7 +56,7 @@ def _build_module(
     )
 
 
-def _step(module: fq.QuantumModule, optimizer: torch.optim.Optimizer) -> tuple:
+def _step(module: fq.Module, optimizer: torch.optim.Optimizer) -> tuple:
     torch.cuda.reset_peak_memory_stats()
     started = time.perf_counter()
     optimizer.zero_grad(set_to_none=True)
@@ -74,7 +74,7 @@ def _step(module: fq.QuantumModule, optimizer: torch.optim.Optimizer) -> tuple:
 
 
 def _train(
-    module: fq.QuantumModule,
+    module: fq.Module,
     *,
     backend: str,
     iterations: int,

@@ -7,7 +7,7 @@ from typing import Callable
 
 import torch
 
-from .module import ExecutionResult, QuantumModule
+from .module import ExecutionResult, Module
 
 TrainingObjective = Callable[[torch.Tensor], torch.Tensor]
 TrainingInputs = torch.Tensor | Callable[[int], torch.Tensor | None] | None
@@ -33,7 +33,7 @@ class TrainingResult:
 
 
 def train(
-    module: QuantumModule,
+    module: Module,
     *,
     optimizer: torch.optim.Optimizer,
     objective: TrainingObjective,
@@ -42,7 +42,7 @@ def train(
     log_interval: int | None = None,
     callback: TrainingCallback | None = None,
 ) -> TrainingResult:
-    """Optimize an ``fq.QuantumModule`` and return a stable training summary.
+    """Optimize an ``fq.Module`` and return a stable training summary.
 
     ``objective`` receives the tensor in ``ExecutionResult.value`` and must
     return a scalar loss. Pass a callable as ``inputs`` to provide one batch per
@@ -51,8 +51,8 @@ def train(
     with a one-based step number, scalar loss, and detached execution result.
     """
 
-    if not isinstance(module, QuantumModule):
-        raise TypeError("fq.train() requires an fq.QuantumModule")
+    if not isinstance(module, Module):
+        raise TypeError("fq.train() requires an fq.Module")
     if not isinstance(optimizer, torch.optim.Optimizer):
         raise TypeError("fq.train() optimizer must be a torch.optim.Optimizer")
     if not callable(objective):

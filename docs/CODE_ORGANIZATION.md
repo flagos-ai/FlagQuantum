@@ -182,7 +182,7 @@ plugins, benchmarks, or serialized artifacts.
 - Backend-neutral distributed request, record, and executor protocols are
   physically owned by `flagquantum.runtime.distributed.protocols`; executor
   adapters and public contracts consume this canonical definition.
-- `QuantumModule` implementation ownership has moved to
+- `Module` implementation ownership has moved to
   `flagquantum.runtime.module`; the historical module is a thin façade.
   Consumers use the dedicated `runtime.policy`, `runtime.result`, and
   `runtime.contracts` boundaries rather than the implementation module.

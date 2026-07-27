@@ -4,7 +4,7 @@ Architecture
 ------------
 classical data x
     -> torch.nn.Linear classical encoder
-    -> fq.QuantumModule quantum layer
+    -> fq.Module quantum layer
     -> Z expectation values
     -> classical loss
     -> PyTorch backward + optimizer
@@ -79,7 +79,7 @@ def main() -> None:
             self.classical = nn.Linear(1, args.n_qubits)
             nn.init.ones_(self.classical.weight)
             nn.init.zeros_(self.classical.bias)
-            self.quantum = fq.QuantumModule(
+            self.quantum = fq.Module(
                 quantum_circuit,
                 parameters={"angles": (args.n_qubits,)},
                 init="uniform",

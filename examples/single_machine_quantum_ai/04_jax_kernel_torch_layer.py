@@ -56,7 +56,7 @@ def main() -> None:
         ]
     )
     exact_energy = exact_ground_energy(hamiltonian, 3)
-    layer = fq.QuantumModule(
+    layer = fq.Module(
         circuit_builder,
         n_parameters=5,
         init=torch.linspace(-0.2, 0.2, steps=5),

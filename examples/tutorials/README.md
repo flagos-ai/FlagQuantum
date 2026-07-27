@@ -15,7 +15,7 @@ in order by new users, but each notebook should also stand alone.
 | 05 | `05_quantum_machine_learning.ipynb` | Train a small QML model end to end | Executable modern API contract |
 | 06 | `06_vqe_statevector.ipynb` | Train a small VQE model with local statevector simulation | Executable modern API contract |
 | 07 | `07_runtime_selection_statevector_mps_tn.ipynb` | Compare statevector, MPS, and tensor-network summaries | Executable modern API contract |
-| 08 | `08_pytorch_jax_qml_layer.ipynb` | Train an `fq.QuantumModule` backed by a JAX quantum kernel | Executable modern API contract |
+| 08 | `08_pytorch_jax_qml_layer.ipynb` | Train an `fq.Module` backed by a JAX quantum kernel | Executable modern API contract |
 | 09 | `09_gradient_precision_speed_benchmark.ipynb` | Compare gradient precision and value+gradient speed across FlagQuantum runtimes | New benchmark tutorial |
 
 ## Target Tutorial Shape

@@ -2,7 +2,7 @@
 
 This benchmark compares two equivalent training workloads:
 
-1. ``static``: ``fq.QuantumModule`` captures the circuit once and only updates
+1. ``static``: ``fq.Module`` captures the circuit once and only updates
    parameter slots on later steps.
 2. ``rebuild``: the Python builder creates a new Circuit and Instructions on
    every step, matching FlagQuantum's previous execution path.
@@ -90,7 +90,7 @@ def main() -> None:
                 circuit.cx(wire, wire + 1)
         return circuit
 
-    static_module = fq.QuantumModule(
+    static_module = fq.Module(
         circuit_builder,
         parameter_count,
         init=initial,
@@ -101,13 +101,13 @@ def main() -> None:
             observable_wires=wires,
         ),
     )
-    class RebuildQuantumModule(fq.QuantumModule):
+    class RebuildModule(fq.Module):
         """Reference path that deliberately bypasses builder compilation."""
 
         def _build(self, current_inputs, current_parameters):
             return self._invoke_circuit_builder(current_parameters, current_inputs)
 
-    rebuild_module = RebuildQuantumModule(
+    rebuild_module = RebuildModule(
         circuit_builder,
         parameter_count,
         init=initial,

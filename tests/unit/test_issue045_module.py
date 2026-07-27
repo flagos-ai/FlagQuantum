@@ -20,14 +20,14 @@ def build_circuit(
 
 
 def test_module_is_normal_trainable_pytorch_module() -> None:
-    module = fq.QuantumModule(build_circuit, 2, init=torch.tensor([0.2, -0.3]))
+    module = fq.Module(build_circuit, 2, init=torch.tensor([0.2, -0.3]))
     optimizer = torch.optim.SGD(module.parameters(), lr=0.1)
     before = module.parameters_tensor.detach().clone()
     loss = module(torch.tensor(0.1)).sum()
     loss.backward()
     optimizer.step()
     assert isinstance(module, torch.nn.Module)
-    assert fq.Module is fq.QuantumModule
+    assert not hasattr(fq, "QuantumModule")
     assert module.parameters_tensor.grad is not None
     assert not torch.equal(before, module.parameters_tensor)
     module.eval()
@@ -45,7 +45,7 @@ def test_quantum_module_supports_named_parameter_groups() -> None:
             .cx(0, 1)
         )
 
-    module = fq.QuantumModule(
+    module = fq.Module(
         build_named,
         parameters={"encoder": (2,), "readout": ()},
         init={"encoder": [0.2, -0.1], "readout": 0.3},
@@ -71,7 +71,7 @@ def test_quantum_module_mps_hamiltonian_uses_policy_and_reports_bonds() -> None:
             circuit.ry(wire, parameters[wire])
         return circuit.cx(0, 1).cx(2, 3)
 
-    module = fq.QuantumModule(
+    module = fq.Module(
         build,
         4,
         init=torch.linspace(0.1, 0.4, 4),
@@ -98,7 +98,7 @@ def test_quantum_module_automatically_binds_symbolic_circuit_parameters() -> Non
     phi = fq.Parameter("phi")
     template = fq.Circuit(2).ry(0, theta).rx(1, 2 * phi).cx(0, 1)
 
-    module = fq.QuantumModule(template, init={"theta": 0.2, "phi": -0.1})
+    module = fq.Module(template, init={"theta": 0.2, "phi": -0.1})
     value = module().sum()
     value.backward()
 
@@ -112,9 +112,9 @@ def test_quantum_module_automatically_binds_symbolic_circuit_parameters() -> Non
 
 @pytest.mark.parametrize("strategy", ("uniform", "normal"))
 def test_quantum_module_random_initialization_is_seeded(strategy: str) -> None:
-    first = fq.QuantumModule(build_circuit, 2, init=strategy, seed=17)
-    second = fq.QuantumModule(build_circuit, 2, init=strategy, seed=17)
-    different = fq.QuantumModule(build_circuit, 2, init=strategy, seed=18)
+    first = fq.Module(build_circuit, 2, init=strategy, seed=17)
+    second = fq.Module(build_circuit, 2, init=strategy, seed=17)
+    different = fq.Module(build_circuit, 2, init=strategy, seed=18)
 
     torch.testing.assert_close(first.parameters_tensor, second.parameters_tensor)
     assert not torch.equal(first.parameters_tensor, different.parameters_tensor)
@@ -124,13 +124,13 @@ def test_quantum_module_random_initialization_is_seeded(strategy: str) -> None:
 
 
 def test_named_groups_accept_global_and_per_group_init_strategies() -> None:
-    global_init = fq.QuantumModule(
+    global_init = fq.Module(
         lambda p: fq.Circuit(1).ry(0, p["angles"][0]),
         parameters={"angles": (3,), "bias": ()},
         init="uniform",
         seed=9,
     )
-    mixed_init = fq.QuantumModule(
+    mixed_init = fq.Module(
         lambda p: fq.Circuit(1).ry(0, p["angles"][0] + p["bias"]),
         parameters={"angles": (3,), "bias": ()},
         init={"angles": "normal", "bias": 0.25},
@@ -140,7 +140,7 @@ def test_named_groups_accept_global_and_per_group_init_strategies() -> None:
     assert torch.all(global_init.parameter_groups["angles"] >= 0)
     torch.testing.assert_close(mixed_init.parameter_groups["bias"], torch.tensor(0.25))
     with pytest.raises(ValueError, match="init strategy"):
-        fq.QuantumModule(build_circuit, 2, init="unknown")
+        fq.Module(build_circuit, 2, init="unknown")
 
 
 def test_execution_result_fields_and_backend_selection_are_stable() -> None:
@@ -159,7 +159,7 @@ def test_execution_result_fields_and_backend_selection_are_stable() -> None:
     else:
         assert result.state is not None
     assert result.detach().value is not None
-    with pytest.raises(ValueError, match="unsupported fq.QuantumModule backend"):
+    with pytest.raises(ValueError, match="unsupported fq.Module backend"):
         fq.Module(
             build_circuit,
             2,
@@ -201,7 +201,7 @@ def test_fq_run_is_the_uniform_execution_entry_point() -> None:
 
 
 def test_quantum_module_tracks_static_topology_cache_hits() -> None:
-    module = fq.QuantumModule(build_circuit, 2)
+    module = fq.Module(build_circuit, 2)
 
     first = module.execute()
     second = module.execute()
@@ -225,7 +225,7 @@ def test_compiled_builder_runs_once_and_rebinds_dynamic_tensor_slots(
         calls += 1
         return fq.Circuit(1, bsz=len(inputs)).ry(0, inputs + parameters["angle"])
 
-    module = fq.QuantumModule(
+    module = fq.Module(
         counted_builder,
         parameters={"angle": ()},
         init={"angle": 0.2},
@@ -265,7 +265,7 @@ def test_compiled_builder_rejects_tensor_dependent_topology() -> None:
             circuit.x(0)
         return circuit.ry(0, parameters[0])
 
-    module = fq.QuantumModule(dynamic_builder, 1, init=torch.tensor([0.2]))
+    module = fq.Module(dynamic_builder, 1, init=torch.tensor([0.2]))
     with pytest.raises(RuntimeError, match="requires static circuit topology"):
         module()
 
@@ -302,7 +302,7 @@ def test_fq_train_owns_the_optimizer_loop_and_returns_training_result() -> None:
 
 
 def test_fq_train_log_interval_and_callback_are_unambiguous(capsys) -> None:
-    module = fq.QuantumModule(build_circuit, 2)
+    module = fq.Module(build_circuit, 2)
     optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
     events = []
 
@@ -323,7 +323,7 @@ def test_fq_train_log_interval_and_callback_are_unambiguous(capsys) -> None:
 
 
 def test_fq_train_is_silent_by_default_and_validates_logging(capsys) -> None:
-    module = fq.QuantumModule(build_circuit, 2)
+    module = fq.Module(build_circuit, 2)
     optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
     options = dict(
         module=module,
@@ -345,7 +345,7 @@ def test_fq_train_rejects_ambiguous_or_invalid_training_inputs() -> None:
     module = fq.Module(build_circuit, 2)
     optimizer = torch.optim.SGD(module.parameters(), lr=0.1)
 
-    with pytest.raises(TypeError, match="requires an fq.QuantumModule"):
+    with pytest.raises(TypeError, match="requires an fq.Module"):
         fq.train(
             fq.Circuit(1), optimizer=optimizer, objective=lambda x: x.sum(), steps=1
         )
@@ -424,7 +424,7 @@ def test_structured_modes_execute_the_selected_backend(mode, executor) -> None:
 
 
 def test_policy_rejects_unknown_modes_and_ambiguous_z_observables() -> None:
-    with pytest.raises(ValueError, match="unsupported fq.QuantumModule mode"):
+    with pytest.raises(ValueError, match="unsupported fq.Module mode"):
         fq.RuntimePolicy(mode="bogus")
     with pytest.raises(ValueError, match="exactly one"):
         fq.RuntimePolicy(observable="z", observable_wires=(0, 1))

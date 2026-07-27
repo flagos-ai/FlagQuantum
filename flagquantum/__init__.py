@@ -24,7 +24,6 @@ __all__ = (
     "HybridParallelPlan",
     "MeasurementNode",
     "Module",
-    "QuantumModule",
     "GateInfo",
     "ObservableNode",
     "Parameter",
@@ -84,7 +83,7 @@ def __getattr__(name: str) -> Any:
         return import_module(".experimental", __name__)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
-    if name in {"ExecutionResult", "Module", "QuantumModule", "RuntimePolicy"}:
+    if name in {"ExecutionResult", "Module", "RuntimePolicy"}:
         return getattr(import_module(".runtime.contracts", __name__), name)
     if name == "run":
         return getattr(import_module(".runtime.execution", __name__), name)

@@ -1,6 +1,6 @@
-# `fq.QuantumModule` And `ExecutionResult`
+# `fq.Module` And `ExecutionResult`
 
-`fq.QuantumModule` is the stable PyTorch-native owner of quantum parameters, circuit
+`fq.Module` is the stable PyTorch-native owner of quantum parameters, circuit
 construction, observable selection, runtime policy, and deployment binding.
 Its `forward()` method returns a tensor, so optimizers and ordinary PyTorch
 training loops work without adapters. `execute()` returns `fq.ExecutionResult`
@@ -15,7 +15,7 @@ def circuit(parameters, inputs=None):
     program = fq.Circuit(2, device=parameters.device)
     return program.ry(0, parameters[0]).cx(0, 1).ry(1, parameters[1])
 
-model = fq.QuantumModule(circuit, 2, policy=fq.RuntimePolicy(observable_wires=(1,)))
+model = fq.Module(circuit, 2, policy=fq.RuntimePolicy(observable_wires=(1,)))
 optimizer = torch.optim.Adam(model.parameters())
 loss = model().sum()
 loss.backward()
@@ -29,9 +29,9 @@ native sharded statevector runtime. PyTorch is always the stable default. A
 non-PyTorch backend request either fails explicitly or records the selected
 PyTorch compatibility fallback in the result.
 
-New code should construct `fq.QuantumModule` directly. Historical
+New code should construct `fq.Module` directly. Historical
 `QuantumTorchLayer` objects can be wrapped temporarily with
-`fq.QuantumModule.from_quantum_torch_layer(layer)`; this adapter is a migration
+`fq.Module.from_quantum_torch_layer(layer)`; this adapter is a migration
 aid rather than the recommended training surface.
 
 `fq.Module` remains a compatibility alias for existing applications.
@@ -49,7 +49,7 @@ def named_circuit(parameters):
             .ry(0, parameters["encoder"][0])
             .rx(1, parameters["readout"]))
 
-model = fq.QuantumModule(
+model = fq.Module(
     named_circuit,
     parameters={"encoder": (4,), "readout": ()},
     init={"encoder": "uniform", "readout": 0.1},
@@ -68,7 +68,7 @@ registered as scalar PyTorch parameters, and bound automatically on execution:
 ```python
 theta = fq.Parameter("theta")
 template = fq.Circuit(1).ry(0, theta)
-model = fq.QuantumModule(template, init={"theta": 0.2})
+model = fq.Module(template, init={"theta": 0.2})
 ```
 
 Gate requirements are discoverable without reading implementation code:

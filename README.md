@@ -150,7 +150,7 @@ interfaces that may expose native result objects.
 Training is a separate operation because it updates parameters:
 
 ```python
-module = fq.QuantumModule(build_circuit, n_parameters=2)
+module = fq.Module(build_circuit, n_parameters=2)
 optimizer = torch.optim.Adam(module.parameters(), lr=0.01)
 
 training = fq.train(
@@ -264,7 +264,7 @@ pullback is restricted to explicitly approximate-gradient work.
 For larger variational circuits, parameters can be organized into named groups:
 
 ```python
-module = fq.QuantumModule(
+module = fq.Module(
     build_circuit,
     parameters={"encoder": (4,), "entangler": (3, 2), "readout": ()},
     init={"encoder": "uniform", "entangler": "normal", "readout": 0.1},

@@ -12,7 +12,6 @@ from typing import Any
 __all__ = (
     "ExecutionResult",
     "Module",
-    "QuantumModule",
     "RuntimePolicy",
     "TrainingResult",
     "run",
@@ -29,7 +28,6 @@ __all__ = (
 _EXPORTS = {
     "ExecutionResult": (".contracts", "ExecutionResult"),
     "Module": (".contracts", "Module"),
-    "QuantumModule": (".contracts", "QuantumModule"),
     "RuntimePolicy": (".contracts", "RuntimePolicy"),
     "TrainingResult": (".training", "TrainingResult"),
     "run": (".execution", "run"),

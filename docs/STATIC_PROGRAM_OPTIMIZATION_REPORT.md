@@ -4,7 +4,7 @@
 
 ## 1. 报告范围
 
-本文记录 `QuantumModule` 参数化量子电路训练路径从“每步调用 builder 并重建
+本文记录 `Module` 参数化量子电路训练路径从“每步调用 builder 并重建
 Circuit”演进到“静态程序、参数槽位、后端编译计划和融合 CUDA kernel”的过程。
 
 本报告覆盖：
@@ -42,7 +42,7 @@ CUDA_VISIBLE_DEVICES=0 python examples/benchmark_static_program.py \
   --repeats 2
 ```
 
-基准比较两条完整 `QuantumModule` 训练路径：
+基准比较两条完整 `Module` 训练路径：
 
 - `static`：builder 捕获一次，后续复用 Circuit、Instruction 和后端程序；
 - `rebuild`：每步重新调用 builder，重新创建 Circuit 和 Instruction。
@@ -76,7 +76,7 @@ classical preprocessing
 
 ## 4. 阶段一：builder 捕获与静态参数槽位
 
-`QuantumModule` 使用 `make_fx` 捕获 builder 中生成动态门参数的经典 Tensor 图。
+`Module` 使用 `make_fx` 捕获 builder 中生成动态门参数的经典 Tensor 图。
 Circuit 拓扑只捕获一次，后续步骤只执行经典前处理并生成参数槽位 Tensor tuple。
 
 核心结构：
@@ -370,7 +370,7 @@ label，希望一次直接输出多个 Z expectation。CPU 小规模正确性和
 
 当前修复：
 
-- 恢复 QuantumModule 在 12 qubits 以内的 dense-state observable fast path；
+- 恢复 Module 在 12 qubits 以内的 dense-state observable fast path；
 - direct observable batch 执行前计算 contraction profile；
 - peak 超过 `2**24` elements 时回退逐 observable direct contraction；
 - 保留 program 和正确性测试，作为后续 environment-prefix 实现的基础。
@@ -856,7 +856,7 @@ benchmarks/results/local/single_qubit_loop_backward_b16_p65536_d64_a800.json
 
 这组结果验证 persistent RX/RZ loop 在命中特定融合模式时具有训练 latency 和有界反向
 activation memory 优势。它仍是隔离 kernel microbenchmark，尚未接入 Circuit IR，也不
-代表任意单比特门序列、完整 QuantumModule 训练或多卡 scalability 加速。
+代表任意单比特门序列、完整 Module 训练或多卡 scalability 加速。
 
 ## 27. 阶段十七：Circuit IR 融合与端到端 VQE
 
@@ -869,7 +869,7 @@ gate 路径。runtime summary 报告开关状态、融合 region 数和融合 ga
 新增 `benchmarks/vqe_triton_runtime.py`，通过以下完整产品路径比较两种执行策略：
 
 ```text
-fq.QuantumModule -> static builder -> FlagQuantum IR -> statevector
+fq.Module -> static builder -> FlagQuantum IR -> statevector
                  -> Hamiltonian expectation -> backward -> torch.optim.Adam
 ```
 
