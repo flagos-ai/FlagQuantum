@@ -186,3 +186,55 @@ def test_batched_factorization_matches_individual_pair_splits(max_bond) -> None:
                 torch.abs(singular_values[:, rank - 1] - singular_values[:, rank])
             ).item()
             assert info["singular_value_gap"] == pytest.approx(expected_gap, abs=2e-6)
+
+
+def test_regular_pair_split_uses_one_batched_qr_launch(monkeypatch) -> None:
+    import flagquantum.simulation.mps_factorization as factorization
+
+    calls = []
+    original = torch.linalg.qr
+
+    def counted_qr(matrix, **kwargs):
+        calls.append(tuple(matrix.shape))
+        return original(matrix, **kwargs)
+
+    monkeypatch.setattr(factorization.torch.linalg, "qr", counted_qr)
+    matrix = torch.randn(7, 4, 4, dtype=torch.complex64)
+
+    left, right, info = _split_pair_matrix(
+        matrix,
+        left_dim=2,
+        right_dim=2,
+        config=MPSConfig(max_bond=None, cutoff=0.0),
+    )
+
+    assert calls == [(7, 4, 4)]
+    assert left.shape == (7, 2, 2, 4)
+    assert right.shape == (7, 4, 2, 2)
+    assert info["method"] == "qr"
+
+
+def test_regular_pair_split_uses_one_batched_svd_launch(monkeypatch) -> None:
+    import flagquantum.simulation.mps_factorization as factorization
+
+    calls = []
+    original = factorization._cuda_svd
+
+    def counted_svd(matrix, *, driver):
+        calls.append(tuple(matrix.shape))
+        return original(matrix, driver=driver)
+
+    monkeypatch.setattr(factorization, "_cuda_svd", counted_svd)
+    matrix = torch.randn(7, 4, 4, dtype=torch.complex64)
+
+    left, right, info = _split_pair_matrix(
+        matrix,
+        left_dim=2,
+        right_dim=2,
+        config=MPSConfig(max_bond=2, cutoff=0.0),
+    )
+
+    assert calls == [(7, 4, 4)]
+    assert left.shape == (7, 2, 2, 2)
+    assert right.shape == (7, 2, 2, 2)
+    assert info["method"] == "svd"

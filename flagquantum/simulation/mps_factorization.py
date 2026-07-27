@@ -76,16 +76,11 @@ def _split_pair_matrix(
                     right_dim=right_dim,
                     full_rank=full_rank,
                 )
-            left_parts = []
-            right_parts = []
-            for item in matrix:
-                q, r = torch.linalg.qr(item, mode="reduced")
-                rank = int(q.shape[-1])
-                left_parts.append(q.reshape(left_dim, 2, rank))
-                right_parts.append(r.reshape(rank, 2, right_dim))
+            q, r = torch.linalg.qr(matrix, mode="reduced")
+            rank = int(q.shape[-1])
             return (
-                torch.stack(left_parts, dim=0),
-                torch.stack(right_parts, dim=0),
+                q.reshape(matrix.shape[0], left_dim, 2, rank),
+                r.reshape(matrix.shape[0], rank, 2, right_dim),
                 {
                     "method": "qr",
                     "rank": full_rank,
@@ -95,10 +90,8 @@ def _split_pair_matrix(
             )
 
     with record_function("flagquantum::mps::svd"):
-        svds = [
-            _cuda_svd(matrix[b], driver=config.svd_driver)
-            for b in range(matrix.shape[0])
-        ]
+        batched_u, batched_s, batched_vh = _cuda_svd(matrix, driver=config.svd_driver)
+    svds = tuple(zip(batched_u, batched_s, batched_vh))
     ranks = [_select_rank(s, config.max_bond, config.cutoff) for _, s, _ in svds]
     rank = min(ranks) if config.cutoff > 0 else ranks[0]
     original_rank = max(int(s.shape[0]) for _, s, _ in svds)
