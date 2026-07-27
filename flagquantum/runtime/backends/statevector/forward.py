@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import math
 import os
 from dataclasses import dataclass, field, replace
@@ -14,6 +13,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from .environment import get, get_bool, mode
+from .kernel_dispatch import select_triton_kernel, triton_available
 from .state import (
     DistributedStatevectorPlan,
     StatevectorShardState,
@@ -44,24 +44,23 @@ def _runtime_index_validation_enabled() -> bool:
 
 
 def _triton_local_1q_enabled() -> bool:
-    return os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
+    requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
         "1",
         "true",
         "on",
         "yes",
     }
+    return select_triton_kernel("local_1q", requested=requested).accelerated
 
 
 def _triton_local_cx_enabled() -> bool:
-    if not _triton_available():
-        return False
-    if mode() == "portable":
-        return False
-    return get_bool("FQ_SV_TRITON_LOCAL_CX", True)
+    return select_triton_kernel(
+        "local_cx", requested=get_bool("FQ_SV_TRITON_LOCAL_CX", True)
+    ).accelerated
 
 
 def _triton_available() -> bool:
-    return importlib.util.find_spec("triton") is not None
+    return triton_available()
 
 
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
@@ -69,25 +68,30 @@ def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
     if not raw:
         raw = None
     if raw is None:
-        return bool(
+        requested = bool(
             ir is not None
             and ir.metadata.get("statevector_dependency_schedule_changed", False)
         )
-    return raw.strip().lower() in {
-        "1",
-        "true",
-        "on",
-        "yes",
-    }
+    else:
+        requested = raw.strip().lower() in {
+            "1",
+            "true",
+            "on",
+            "yes",
+        }
+    return select_triton_kernel("local_cx_segment", requested=requested).accelerated
 
 
 def _triton_transpose_1q_enabled() -> bool:
-    return os.getenv("FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", "1").strip().lower() not in {
+    requested = os.getenv(
+        "FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q", "1"
+    ).strip().lower() not in {
         "0",
         "false",
         "off",
         "no",
     }
+    return select_triton_kernel("transpose_1q", requested=requested).accelerated
 
 
 def _local_block_fusion_enabled() -> bool:
