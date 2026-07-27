@@ -171,6 +171,44 @@ def test_communication_aware_layout_moves_inactive_wire_to_rank_bits():
     )
 
 
+def test_training_layout_accounts_for_forward_reverse_and_parameter_work():
+    theta = torch.tensor(0.23, requires_grad=True)
+    circuit = fq.Circuit(5)
+    for _ in range(4):
+        circuit.ry(0, theta)
+    for _ in range(5):
+        circuit.x(1)
+    ir = circuit.to_ir()
+
+    _, forward_mapping = communication_aware_wire_layout(
+        ir,
+        world_size=2,
+        preferred_local_wires=(2, 3, 4),
+        optimization_target="forward",
+    )
+    remapped, training_mapping = communication_aware_wire_layout(
+        ir,
+        world_size=2,
+        preferred_local_wires=(2, 3, 4),
+        optimization_target="training_step",
+    )
+
+    assert forward_mapping[0] == 4
+    assert training_mapping[1] == 4
+    assert (
+        remapped.metadata["statevector_layout_optimization_target"] == "training_step"
+    )
+
+
+def test_communication_aware_layout_rejects_unknown_optimization_target():
+    with pytest.raises(ValueError, match="forward or training_step"):
+        communication_aware_wire_layout(
+            fq.Circuit(3).to_ir(),
+            world_size=2,
+            optimization_target="backward_only",
+        )
+
+
 def test_communication_aware_layout_penalizes_full_shard_subgroup_alignment():
     circuit = fq.Circuit(6)
     for wire in range(6):

@@ -136,6 +136,8 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     assert pending["backward_distribution_semantics"] == "pending"
     assert pending["local_world_size"] == 1
     assert pending["node_count"] == 1
+    assert pending["layout_optimization_target"] == "training_step"
+    assert len(pending["logical_to_physical_wires"]) == 3
     assert pending["local_state_bytes"] > 0
     assert pending["backward_communication_count"] == 0
     assert pending["backward_communication_bytes"] == 0

@@ -132,6 +132,7 @@ def _communication_aware_wire_layout(
         ir,
         world_size=world_size,
         preferred_local_wires=(observable_wire,),
+        optimization_target="training_step",
     )
     return remapped, permutation[observable_wire], permutation
 
@@ -196,6 +197,8 @@ class TorchDistributedStatevectorGradientResult:
     rank: int
     local_amplitudes: int
     total_amplitudes: int
+    logical_to_physical_wires: tuple[int, ...]
+    layout_optimization_target: str
     backward_evidence: BackwardExecutionEvidence
 
     def backward(self) -> None:
@@ -234,6 +237,8 @@ class TorchDistributedStatevectorGradientResult:
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
             "backend": self.backend,
+            "logical_to_physical_wires": self.logical_to_physical_wires,
+            "layout_optimization_target": self.layout_optimization_target,
             "distribution_semantics": (
                 "sharded_across_ranks"
                 if self.world_size > 1
@@ -530,7 +535,11 @@ def execute_torch_distributed_statevector_reverse(
             or os.environ.get("NPROC_PER_NODE")
             or world_size
         )
-    execution_ir, execution_observable_wire, _ = _communication_aware_wire_layout(
+    (
+        execution_ir,
+        execution_observable_wire,
+        execution_mapping,
+    ) = _communication_aware_wire_layout(
         ir, observable_wire=observable_wire, world_size=world_size
     )
     if _persistent_wire_layout_enabled() and world_size > 1:
@@ -595,6 +604,8 @@ def execute_torch_distributed_statevector_reverse(
         rank=rank,
         local_amplitudes=plan.shards[rank].local_amplitudes,
         total_amplitudes=plan.total_amplitudes,
+        logical_to_physical_wires=execution_mapping,
+        layout_optimization_target="training_step",
         backward_evidence=evidence,
     )
 

@@ -165,11 +165,14 @@ def communication_aware_wire_layout(
     *,
     world_size: int,
     preferred_local_wires: Sequence[int] = (),
+    optimization_target: str = "forward",
 ) -> tuple[CircuitIR, tuple[int, ...]]:
-    """Relabel wires so low-activity wires carry distributed rank bits."""
+    """Relabel wires to minimize forward or full-training-step communication."""
 
     rank_bits = int(world_size).bit_length() - 1
     identity = tuple(range(ir.n_wires))
+    if optimization_target not in {"forward", "training_step"}:
+        raise ValueError("optimization_target must be forward or training_step")
     if world_size <= 1 or world_size & (world_size - 1) or rank_bits >= ir.n_wires:
         return ir, identity
     preferred = {int(wire) for wire in preferred_local_wires}
@@ -186,6 +189,7 @@ def communication_aware_wire_layout(
         int(world_size),
         local_world_size,
         topology_aware,
+        optimization_target,
         tuple(sorted(preferred)),
         tuple(
             (
@@ -212,12 +216,13 @@ def communication_aware_wire_layout(
                 if not any(int(wire) in sharded for wire in instruction.wires):
                     continue
                 width_weight = 2 ** max(0, len(instruction.wires) - 1)
-                trainable_weight = (
-                    4
-                    if any(
-                        isinstance(value, torch.Tensor) and value.requires_grad
-                        for value in instruction.params.values()
-                    )
+                trainable = any(
+                    isinstance(value, torch.Tensor) and value.requires_grad
+                    for value in instruction.params.values()
+                )
+                execution_weight = (
+                    (4 if trainable else 3)
+                    if optimization_target == "training_step"
                     else 1
                 )
                 local_wires = [
@@ -233,7 +238,7 @@ def communication_aware_wire_layout(
                         for wire in local_wires
                     )
                     alignment = 1 << (highest_position + 1)
-                cost += width_weight * trainable_weight * alignment
+                cost += width_weight * execution_weight * alignment
             if sharded & preferred:
                 cost += 1 << (ir.n_wires + rank_bits + 4)
             return cost, candidate
@@ -244,16 +249,15 @@ def communication_aware_wire_layout(
         wire_activity = [0] * ir.n_wires
         for instruction in ir.instructions:
             width_weight = 2 ** max(0, len(instruction.wires) - 1)
-            trainable_weight = (
-                4
-                if any(
-                    isinstance(value, torch.Tensor) and value.requires_grad
-                    for value in instruction.params.values()
-                )
-                else 1
+            trainable = any(
+                isinstance(value, torch.Tensor) and value.requires_grad
+                for value in instruction.params.values()
+            )
+            execution_weight = (
+                (4 if trainable else 3) if optimization_target == "training_step" else 1
             )
             for wire in instruction.wires:
-                wire_activity[int(wire)] += width_weight * trainable_weight
+                wire_activity[int(wire)] += width_weight * execution_weight
         local_logical = [
             wire for wire in range(ir.n_wires) if wire not in sharded_logical
         ]
@@ -296,6 +300,7 @@ def communication_aware_wire_layout(
             metadata={
                 **ir.metadata,
                 "statevector_logical_to_physical_wires": permutation,
+                "statevector_layout_optimization_target": optimization_target,
             },
         ),
         permutation,
