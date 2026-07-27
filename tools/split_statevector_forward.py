@@ -31,8 +31,7 @@ prior = [
 imports = (
     "from .forward import (\n" + "".join(f"    {name},\n" for name in prior) + ")\n\n"
 )
-header = (
-    '''"""Torch-distributed statevector forward execution loop."""
+header = '''"""Torch-distributed statevector forward execution loop."""
 
 from __future__ import annotations
 
@@ -43,9 +42,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR, Instruction
 from .state import DistributedStatevectorPlan
-'''
-    + imports
-)
+''' + imports
 wrapper = '''def execute_torch_distributed_statevector(
     *args: Any, **kwargs: Any
 ) -> TorchDistributedStatevectorResult:

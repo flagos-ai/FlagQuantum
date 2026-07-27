@@ -76,11 +76,11 @@ Repository = "https://github.com/flagquantum/flagquantum"
 Issues = "https://github.com/flagquantum/flagquantum/issues"
 
 [project.scripts]
-flagquantum-benchmark = "benchmarks.runners.__main__:main"
+flagquantum-benchmark = "flagquantum.benchmarking.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["flagquantum*", "benchmarks*"]
+include = ["flagquantum*"]
 exclude = ["tests*", "docs*", "scripts*", "examples*"]
 
 [tool.setuptools.dynamic]

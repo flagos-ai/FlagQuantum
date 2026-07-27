@@ -722,9 +722,8 @@ def test_runtime_selection_projects_jax_statevector_shard_map_blockers():
         == "jax_shard_map_backward"
     )
     assert "all_to_all" in jax_statevector["communication_plan"]["transport_patterns"]
-    assert (
-        "shard_map_statevector_multi_sharded_wire_transport_pending:all_to_all"
-        in (jax_statevector["communication_plan"]["collective_blockers"])
+    assert "shard_map_statevector_multi_sharded_wire_transport_pending:all_to_all" in (
+        jax_statevector["communication_plan"]["collective_blockers"]
     )
     assert (
         jax_statevector["communication_plan"]["statevector_route_source"]

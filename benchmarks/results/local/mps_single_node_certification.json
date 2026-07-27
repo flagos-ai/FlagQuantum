@@ -1,7 +1,19 @@
 {
   "schema": "flagquantum.mps_single_node_certification.v1",
+  "benchmark": "mps_single_node_certification",
   "date": "2026-07-27",
   "scope": "development_evidence",
+  "distribution_semantics": "requires_runtime_summary",
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "claim_evidence_type": "development_evidence",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "runtime_summary_not_sealed",
+    "single_node_development_scope"
+  ],
   "hardware": {
     "accelerator": "NVIDIA A800-SXM4-80GB",
     "accelerator_count": 8,

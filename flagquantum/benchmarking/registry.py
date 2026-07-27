@@ -26,7 +26,7 @@ class RunnerSpec:
 _RUNNERS: dict[str, RunnerSpec] = {
     "environment_probe": RunnerSpec(
         name="environment_probe",
-        module="benchmarks.runners.environment_probe",
+        module="flagquantum.benchmarking.environment_probe",
         attribute="main",
         category="environment",
         summary="Record the runtime, package, CPU, and accelerator environment.",
@@ -38,7 +38,7 @@ _RUNNERS: dict[str, RunnerSpec] = {
     ),
     "statevector_local": RunnerSpec(
         name="statevector_local",
-        module="benchmarks.statevector_local_performance",
+        module="flagquantum.benchmarking.statevector_local",
         attribute="main",
         category="statevector",
         summary="Measure local statevector execution on CPU or one GPU.",
@@ -49,22 +49,9 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--iterations 10 --json-output results/statevector.json"
         ),
     ),
-    "mps_training": RunnerSpec(
-        name="mps_training",
-        module="benchmarks.flagship_mps_training",
-        attribute="main",
-        category="mps",
-        summary="Run the maintained single-device MPS training benchmark.",
-        hardware="CPU or one GPU; JAX optional",
-        example=(
-            "flagquantum-benchmark run mps_training --cases dimer:20 "
-            "--steps 1 --iters 1 --warmup 0 "
-            "--json-output results/mps.json"
-        ),
-    ),
     "statevector_weak_scaling": RunnerSpec(
         name="statevector_weak_scaling",
-        module="benchmarks.runners.statevector_weak_scaling",
+        module="flagquantum.benchmarking.statevector_weak_scaling",
         attribute="main",
         category="statevector",
         summary="Aggregate audited weak-scaling result payloads.",
@@ -76,7 +63,7 @@ _RUNNERS: dict[str, RunnerSpec] = {
     ),
     "statevector_strong_scaling": RunnerSpec(
         name="statevector_strong_scaling",
-        module="benchmarks.runners.statevector_strong_scaling",
+        module="flagquantum.benchmarking.statevector_strong_scaling",
         attribute="main",
         category="statevector",
         summary="Aggregate audited strong-scaling result payloads.",
@@ -88,7 +75,7 @@ _RUNNERS: dict[str, RunnerSpec] = {
     ),
     "statevector_training_scaling": RunnerSpec(
         name="statevector_training_scaling",
-        module="benchmarks.runners.statevector_training_scaling",
+        module="flagquantum.benchmarking.statevector_training_scaling",
         attribute="main",
         category="statevector",
         summary="Aggregate distributed statevector training results.",

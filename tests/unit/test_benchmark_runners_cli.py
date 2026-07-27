@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.runners.registry import describe, names, register, resolve
+from flagquantum.benchmarking.registry import describe, names, register, resolve
 
 ROOT = Path(__file__).parents[2]
 
@@ -13,7 +13,6 @@ ROOT = Path(__file__).parents[2]
 def test_runner_registry_is_lazy_and_sorted():
     assert names() == (
         "environment_probe",
-        "mps_training",
         "statevector_local",
         "statevector_strong_scaling",
         "statevector_training_scaling",
@@ -29,12 +28,12 @@ def test_runner_registry_rejects_unknown_name():
 
 def test_runner_registry_rejects_duplicate_registration():
     with pytest.raises(ValueError, match="already registered"):
-        register("environment_probe", "benchmarks.runners.environment_probe")
+        register("environment_probe", "flagquantum.benchmarking.environment_probe")
 
 
 def test_runner_registry_enforces_name_convention():
     with pytest.raises(ValueError, match="lowercase snake_case"):
-        register("BadRunner", "benchmarks.runners.environment_probe")
+        register("BadRunner", "flagquantum.benchmarking.environment_probe")
 
 
 def test_runner_cli_writes_contract_payload(tmp_path):
@@ -43,7 +42,7 @@ def test_runner_cli_writes_contract_payload(tmp_path):
         [
             sys.executable,
             "-m",
-            "benchmarks.runners",
+            "flagquantum.benchmarking",
             "environment_probe",
             "--json-output",
             str(output),
@@ -60,7 +59,7 @@ def test_runner_cli_writes_contract_payload(tmp_path):
 
 def test_runner_package_lists_available_runner():
     result = subprocess.run(
-        [sys.executable, "-m", "benchmarks.runners"],
+        [sys.executable, "-m", "flagquantum.benchmarking"],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -68,7 +67,6 @@ def test_runner_package_lists_available_runner():
     )
     assert "environment_probe" in result.stdout
     assert "statevector_local" in result.stdout
-    assert "mps_training" in result.stdout
 
 
 def test_runner_info_is_discoverable_without_importing_implementation():
@@ -76,7 +74,7 @@ def test_runner_info_is_discoverable_without_importing_implementation():
     assert spec.category == "statevector"
     assert "CPU or one GPU" in spec.hardware
     result = subprocess.run(
-        [sys.executable, "-m", "benchmarks.runners", "info", "statevector_local"],
+        [sys.executable, "-m", "flagquantum.benchmarking", "info", "statevector_local"],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -91,7 +89,7 @@ def test_explicit_run_subcommand_writes_contract_payload(tmp_path):
         [
             sys.executable,
             "-m",
-            "benchmarks.runners",
+            "flagquantum.benchmarking",
             "run",
             "environment_probe",
             "--json-output",
@@ -107,10 +105,8 @@ def test_explicit_run_subcommand_writes_contract_payload(tmp_path):
 
 def test_pyproject_installs_benchmark_command_and_runner_namespace():
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert (
-        'flagquantum-benchmark = "benchmarks.runners.__main__:main"' in text
-    )
-    assert '"benchmarks*"' in text
+    assert 'flagquantum-benchmark = "flagquantum.benchmarking.__main__:main"' in text
+    assert 'include = ["flagquantum*"]' in text
 
 
 def test_benchmark_root_stays_free_of_internal_assets():

@@ -13,20 +13,14 @@ import argparse
 import json
 import platform
 import statistics
-import sys
 import time
 from pathlib import Path
 from typing import Any, Callable
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-import flagquantum as fq  # noqa: E402, I001
-from flagquantum.circuit import _apply_matrix, _gate_matrix  # noqa: E402
-
+import flagquantum as fq
+from flagquantum.circuit import _apply_matrix, _gate_matrix
 
 SCHEMA = "flagquantum.statevector.local_performance.v1"
 
@@ -75,9 +69,7 @@ def sequential_reference(circuit: fq.Circuit) -> torch.Tensor:
             device=state.device,
             dtype=state.dtype,
         )
-        state = _apply_matrix(
-            state, matrix, instruction.wires, circuit.n_wires
-        )
+        state = _apply_matrix(state, matrix, instruction.wires, circuit.n_wires)
     return state
 
 
@@ -230,7 +222,9 @@ def main() -> None:
     parser.add_argument("--n-wires", type=int, default=12)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--layers", type=int, default=2)
-    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--device", default="cuda" if torch.cuda.is_available() else "cpu"
+    )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--json-output", type=Path)

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path("benchmarks/statevector_scaling_report.py")
+SCRIPT = Path("flagquantum/benchmarking/statevector_scaling_report.py")
 SPEC = importlib.util.spec_from_file_location("statevector_scaling_report", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

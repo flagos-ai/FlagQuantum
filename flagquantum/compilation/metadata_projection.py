@@ -383,9 +383,7 @@ def _jax_mps_runtime_metadata_from_training_summary(
             "backward_preflight_ready",
             "production_backward_evidence",
         }
-        else "claimable_production_execution"
-        if claimable
-        else "blocked"
+        else "claimable_production_execution" if claimable else "blocked"
     )
     metadata = {
         "execution_plan": {

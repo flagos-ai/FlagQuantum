@@ -15,7 +15,7 @@ Library tooling may inspect the lazy registry without importing heavy
 benchmark implementations:
 
 ```python
-import benchmarks.runners as runners
+import flagquantum.benchmarking as runners
 
 for spec in runners.specs():
     print(spec.name, spec.hardware)

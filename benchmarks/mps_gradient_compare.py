@@ -517,7 +517,7 @@ def main() -> None:
         fuse_single_qubit=not args.no_fq_single_qubit_fusion,
         dense_observable_wires=args.fq_dense_observable_wires,
         compile_step=args.fq_compile,
-        
+
         compile_backend=args.fq_compile_backend or None,
         compile_mode=args.fq_compile_mode or None,
         warmup=args.warmup,

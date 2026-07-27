@@ -18,8 +18,7 @@ if TARGET.exists():
     raise SystemExit(f"{TARGET} already exists")
 
 helpers = text[start:end]
-target = (
-    '''"""Private statevector compilation and tensor helpers for :mod:`circuit`."""
+target = '''"""Private statevector compilation and tensor helpers for :mod:`circuit`."""
 
 from __future__ import annotations
 
@@ -35,10 +34,7 @@ from .core.operator_schema import canonical_opcode
 from .core.parameters import value_to_tensor
 from .ops.matrices import GATE_MAT_DICT
 
-'''
-    + helpers
-    + "\n"
-)
+''' + helpers + "\n"
 
 exports = """from .circuit_statevector import (
     _DIAGONAL_STATEVECTOR_GATES,

@@ -863,9 +863,7 @@ def execute_torch_distributed_mps_reverse(
             (
                 "reduce_sum_to_optimizer_owner"
                 if gradient_owner_ranks is not None and world > 1
-                else "all_reduce_sum"
-                if world > 1
-                else "local"
+                else "all_reduce_sum" if world > 1 else "local"
             ),
         )
         for index in range(len(parameters))

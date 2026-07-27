@@ -1629,9 +1629,8 @@ def test_repository_scalability_payload_preserves_issue007_capacity_evidence():
         payload["memory_plan"]["single_device_reference_bytes"]
         == payload["total_state_bytes"]
     )
-    assert (
-        payload["memory_plan"]["capacity_baseline_device_memory_bytes"]
-        == (payload["capacity_baseline_device_memory_bytes"])
+    assert payload["memory_plan"]["capacity_baseline_device_memory_bytes"] == (
+        payload["capacity_baseline_device_memory_bytes"]
     )
     assert world_size == 8
     assert payload["local_world_size"] == 8

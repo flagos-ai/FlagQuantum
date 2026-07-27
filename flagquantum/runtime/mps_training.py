@@ -121,7 +121,9 @@ class MPSTrainingStep:
                 loss, grad = self._compiled_value_and_grad(parameters)
                 self.status = "compiled"
                 return loss, grad
-            except Exception as exc:  # noqa: BLE001 - compiled execution must be recoverable.
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 - compiled execution must be recoverable.
                 self.compile_error = f"{type(exc).__name__}: {exc}"
                 if not self.fallback:
                     raise
@@ -187,7 +189,9 @@ class MPSTrainingStep:
                 self._eager_value_and_grad, **kwargs
             )
             self.status = "compile_ready"
-        except Exception as exc:  # noqa: BLE001 - optional compiler should not break eager training.
+        except (
+            Exception
+        ) as exc:  # noqa: BLE001 - optional compiler should not break eager training.
             self.compile_error = f"{type(exc).__name__}: {exc}"
             self.status = (
                 "compile_failed_fallback" if self.fallback else "compile_failed"

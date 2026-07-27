@@ -43,8 +43,7 @@ def main() -> int:
             parser.error("info requires a benchmark name")
         if args.name not in names():
             parser.error(
-                f"unknown benchmark {args.name!r}; "
-                "use `flagquantum-benchmark list`"
+                f"unknown benchmark {args.name!r}; " "use `flagquantum-benchmark list`"
             )
         _print_info(args.name)
         return 0
@@ -54,7 +53,7 @@ def main() -> int:
         runner_name = args.name
     else:
         # Backward-compatible shorthand:
-        # ``python -m benchmarks.runners environment_probe ...``.
+        # ``python -m flagquantum.benchmarking environment_probe ...``.
         runner_name = args.command
         remainder = raw_arguments[1:]
     if runner_name not in names():

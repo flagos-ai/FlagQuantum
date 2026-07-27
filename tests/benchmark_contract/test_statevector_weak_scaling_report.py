@@ -4,7 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-SCRIPT = Path("benchmarks/statevector_weak_scaling_report.py")
+SCRIPT = Path("flagquantum/benchmarking/statevector_weak_scaling_report.py")
 sys.path.insert(0, str(SCRIPT.parent.resolve()))
 SPEC = importlib.util.spec_from_file_location("statevector_weak_scaling_report", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -39,9 +39,7 @@ def _point(world: int) -> dict:
             "route_classification": (
                 "none"
                 if world == 1
-                else "inter_node_collective"
-                if world == 4
-                else "intra_node_collective"
+                else "inter_node_collective" if world == 4 else "intra_node_collective"
             )
         },
     }

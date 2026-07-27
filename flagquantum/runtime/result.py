@@ -128,9 +128,7 @@ def normalize_execution_result(
     state = (
         output
         if isinstance(output, torch.Tensor)
-        else native_state
-        if isinstance(native_state, torch.Tensor)
-        else None
+        else native_state if isinstance(native_state, torch.Tensor) else None
     )
     samples = getattr(output, "samples", None)
     if not isinstance(samples, torch.Tensor):

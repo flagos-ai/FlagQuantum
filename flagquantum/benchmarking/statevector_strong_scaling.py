@@ -4,14 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-try:
-    from benchmarks.statevector_scaling_report import build_report
-except ModuleNotFoundError:  # direct execution from the runners directory
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from benchmarks.statevector_scaling_report import build_report
+from .statevector_scaling_report import build_report
 
 try:
     from .contract import runtime_metadata, write_json_atomic

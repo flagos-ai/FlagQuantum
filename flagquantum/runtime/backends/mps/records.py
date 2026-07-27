@@ -365,9 +365,11 @@ class TorchDistributedMPSForwardResult:
             "claim_evidence_type": (
                 "accelerator_semantics"
                 if self.backend == "nccl"
-                else "local_semantics"
-                if self.shard_state.world_size == 1
-                else "development_semantics"
+                else (
+                    "local_semantics"
+                    if self.shard_state.world_size == 1
+                    else "development_semantics"
+                )
             ),
             "world_size": self.shard_state.world_size,
             "local_world_size": local_world_size,

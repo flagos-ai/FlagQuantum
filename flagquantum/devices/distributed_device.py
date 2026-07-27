@@ -401,9 +401,9 @@ class DistributedQuantumDevice:
             ).to(self.device)
 
         # Normalize the amplitudes to unit norm
-        norms = torch.sqrt((loading**2).sum(dim=tuple(range(1, loading.ndim)))).reshape(
-            (-1,) + (1,) * (loading.ndim - 1)
-        )
+        norms = torch.sqrt(
+            (loading**2).sum(dim=tuple(range(1, loading.ndim)))
+        ).reshape((-1,) + (1,) * (loading.ndim - 1))
 
         # Distribute the tensor across devices if needed
         maybe_mesh, maybe_placements = maybe_get_dtensor_info(self._states)

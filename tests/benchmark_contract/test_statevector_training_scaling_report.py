@@ -4,7 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-SCRIPT = Path("benchmarks/statevector_training_scaling_report.py")
+SCRIPT = Path("flagquantum/benchmarking/statevector_training_scaling_report.py")
 sys.path.insert(0, str(SCRIPT.parent.resolve()))
 SPEC = importlib.util.spec_from_file_location(
     "statevector_training_scaling_report", SCRIPT
@@ -42,7 +42,7 @@ def _point(world: int) -> dict:
 def test_build_report_accepts_differentiable_weak_scaling() -> None:
     report = MODULE.build_report([_point(1), _point(2), _point(4)])
     assert report["source_world_sizes"] == [1, 2, 4]
-    assert report["definition"] == "constant_2^30_amplitudes_per_rank"
+    assert report["definition"] == "constant_2^10_amplitudes_per_rank"
     assert report["points"][-1]["n_wires"] == 12
     assert (
         report["points"][-1]["phases"]["backward"]["weak_scaling_efficiency"]["speedup"]

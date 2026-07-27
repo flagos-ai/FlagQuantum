@@ -97,9 +97,9 @@ def build_mps_critical_path_report(
                 {
                     "rank": rank,
                     "step": step,
-                    "sample_class": "warm"
-                    if step >= warmup_steps
-                    else "cold_or_warmup",
+                    "sample_class": (
+                        "warm" if step >= warmup_steps else "cold_or_warmup"
+                    ),
                     "end_to_end_seconds": end_to_end,
                     "phase_seconds": phases,
                     "reconciliation_relative_error": error,

@@ -22,7 +22,7 @@ per-rank execution is not described as capacity scaling.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the runtime and benchmark layout.
 User-facing imports belong in `flagquantum.api`; reproducible benchmark
-drivers belong in `benchmarks.runners`; exploratory plots stay in
+drivers belong in `flagquantum.benchmarking`; exploratory plots stay in
 `benchmarks.research`.
 
 - [FlagQuantum vision](docs/FLAGQUANTUM_VISION.md)

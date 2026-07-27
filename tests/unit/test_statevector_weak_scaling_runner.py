@@ -1,6 +1,6 @@
 import json
 
-from benchmarks.runners.statevector_weak_scaling import main
+from flagquantum.benchmarking.statevector_weak_scaling import main
 
 
 def test_weak_scaling_adapter_emits_runner_contract(tmp_path, monkeypatch):

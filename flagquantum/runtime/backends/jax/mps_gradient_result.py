@@ -389,17 +389,13 @@ class JAXShardedMPSParameterGradientResult:
             "boundary_gradient_ownership": (
                 exchange_ownership
                 if exchange_ownership
-                else "not_required"
-                if not self.boundary_protocols
-                else "unknown"
+                else "not_required" if not self.boundary_protocols else "unknown"
             ),
             "boundary_adjoint_exchange": exchange_evidence,
             "boundary_gradient_routes": (
                 exchange_routes
                 if exchange_routes
-                else "not_required"
-                if not self.boundary_protocols
-                else ()
+                else "not_required" if not self.boundary_protocols else ()
             ),
             "boundary_adjoint_exchange_evidence": exchange_evidence,
             "boundary_adjoint_exchange_records": exchange_records,
@@ -420,9 +416,7 @@ class JAXShardedMPSParameterGradientResult:
                 "boundary_gradient_routes": (
                     exchange_routes
                     if exchange_routes
-                    else "not_required"
-                    if not self.boundary_protocols
-                    else ()
+                    else "not_required" if not self.boundary_protocols else ()
                 ),
             },
             "parameter_ownership_semantics": self.parameter_ownership_semantics,

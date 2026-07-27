@@ -1,4 +1,4 @@
-from benchmarks.statevector_local_performance import SCHEMA, run_benchmark
+from flagquantum.benchmarking.statevector_local import SCHEMA, run_benchmark
 
 
 def test_local_statevector_performance_payload_is_correct_and_fail_closed():

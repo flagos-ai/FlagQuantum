@@ -54,7 +54,7 @@ level = "development_evidence"
 owner = "MPS maintainers"
 limitations = "Single-node 2/4/8-GPU forward and boundary transport plus a 100-step 8-GPU SGD soak are validated; other optimizers, multi-node operation, and release payload evidence remain incomplete."
 focused_tests = "tests/unit/test_issue052_mps_training.py"
-development_artifact = "benchmarks/results/mps_single_node_certification.json"
+development_artifact = "benchmarks/results/local/mps_single_node_certification.json"
 
 [capabilities.tensor_network_training]
 level = "experimental"

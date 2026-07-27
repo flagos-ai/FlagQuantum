@@ -746,9 +746,11 @@ class MPSState(MPSPlanningMixin):
         ):
             self.apply_parametric_one(
                 instruction.name,
-                direct_theta
-                if direct_theta is not None
-                else instruction.params["theta"],
+                (
+                    direct_theta
+                    if direct_theta is not None
+                    else instruction.params["theta"]
+                ),
                 wires[0],
             )
             return self
@@ -987,9 +989,11 @@ class MPSState(MPSPlanningMixin):
             right = torch.stack([self.tensors[wire + 1] for wire in wires])
             gates = torch.stack(
                 [
-                    matrices[position].expand(self.bsz, -1, -1)
-                    if matrices[position].ndim == 2
-                    else matrices[position]
+                    (
+                        matrices[position].expand(self.bsz, -1, -1)
+                        if matrices[position].ndim == 2
+                        else matrices[position]
+                    )
                     for position in positions
                 ]
             )

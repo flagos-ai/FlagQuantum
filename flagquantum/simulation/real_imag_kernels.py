@@ -37,9 +37,7 @@ def _bmm_real_imag_eager(
     return torch.stack((real, imag), dim=-1)
 
 
-def _canonical_bmm_layout(
-    equation: str, left: torch.Tensor, right: torch.Tensor
-) -> (
+def _canonical_bmm_layout(equation: str, left: torch.Tensor, right: torch.Tensor) -> (
     tuple[
         tuple[int, ...],
         tuple[int, ...],

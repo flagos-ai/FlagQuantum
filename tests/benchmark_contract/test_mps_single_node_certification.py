@@ -5,7 +5,7 @@ import pytest
 
 pytestmark = pytest.mark.benchmark_contract
 ROOT = Path(__file__).resolve().parents[2]
-ARTIFACT = ROOT / "benchmarks/results/mps_single_node_certification.json"
+ARTIFACT = ROOT / "benchmarks/results/local/mps_single_node_certification.json"
 
 
 def test_mps_single_node_certification_is_fail_closed() -> None:

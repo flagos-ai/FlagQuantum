@@ -13,10 +13,7 @@ def test_issue107_benchmark_entrypoint_resolves_repository_imports() -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            str(
-                ROOT
-                / "benchmarks/internal/evidence/mps_forward_memory_plateau.py"
-            ),
+            str(ROOT / "benchmarks/internal/evidence/mps_forward_memory_plateau.py"),
             "--help",
         ],
         cwd=ROOT,

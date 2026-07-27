@@ -316,9 +316,7 @@ def _resolve_jax_device(device: str | None = None) -> Any | None:
     platform = (
         "gpu"
         if requested.startswith(("cuda", "gpu"))
-        else "cpu"
-        if requested == "cpu"
-        else requested
+        else "cpu" if requested == "cpu" else requested
     )
     devices = jax.devices(platform)
     if not devices:

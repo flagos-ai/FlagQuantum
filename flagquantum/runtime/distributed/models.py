@@ -627,9 +627,7 @@ class DistributedMPSState:
                 "storage": (
                     "sharded_development"
                     if self.local_simulation
-                    else "sharded"
-                    if self.sharded_state is not None
-                    else "replicated"
+                    else "sharded" if self.sharded_state is not None else "replicated"
                 ),
                 "gradient_execution": (
                     "replicated_mps_autograd"

@@ -45,9 +45,9 @@ def _artifact(
     return {
         "schema": "flagquantum_runtime_evidence_v1",
         "artifact_class": "measured_production_run",
-        "evidence_scope": "one_gpu_local"
-        if world_size == 1
-        else "scheduled_4_8_gpu_scale",
+        "evidence_scope": (
+            "one_gpu_local" if world_size == 1 else "scheduled_4_8_gpu_scale"
+        ),
         "provenance": {
             "commit": "a" * 40,
             "workload_sha256": workload_sha256,

@@ -12,7 +12,7 @@ from typing import Any
 
 try:
     from .statevector_scaling_report import bootstrap_median_speedup
-except ImportError:  # direct ``python benchmarks/statevector_weak_scaling_report.py``
+except ImportError:  # pragma: no cover - direct script compatibility
     from statevector_scaling_report import bootstrap_median_speedup
 
 SCHEMA = "flagquantum.statevector.weak_scaling_report.v1"
@@ -90,9 +90,7 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
                 "communication_route": item["communication_tiers"][
                     "route_classification"
                 ],
-                "coefficient_of_variation": item["timing"][
-                    "coefficient_of_variation"
-                ],
+                "coefficient_of_variation": item["timing"]["coefficient_of_variation"],
             }
         )
     return {

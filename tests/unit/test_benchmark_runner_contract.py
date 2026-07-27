@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from benchmarks.runners.contract import (
+from flagquantum.benchmarking.contract import (
     runtime_metadata,
     validate_payload,
     write_json_atomic,

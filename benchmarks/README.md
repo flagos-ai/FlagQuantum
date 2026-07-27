@@ -11,7 +11,6 @@ Inspect a benchmark before running it:
 
 ```bash
 flagquantum-benchmark info statevector_local
-flagquantum-benchmark info mps_training
 ```
 
 Every maintained runner accepts its existing benchmark arguments after
@@ -26,7 +25,7 @@ flagquantum-benchmark run statevector_local \
   --warmup 1 --iterations 3 \
   --json-output benchmarks/results/local/statevector_cpu.json
 
-flagquantum-benchmark run mps_training \
+python benchmarks/flagship_mps_training.py \
   --cases dimer:20 --steps 1 --iters 1 --warmup 0 \
   --json-output benchmarks/results/local/mps_smoke.json
 ```
@@ -48,7 +47,7 @@ flagquantum-benchmark run statevector_training_scaling INPUT... \
 
 | Directory | Stability | Purpose |
 | --- | --- | --- |
-| `benchmarks/runners/` | Supported | Public CLI, registry, result contract, and maintained runners. |
+| `flagquantum/benchmarking/` | Supported | Packaged CLI, registry, result contract, and maintained runners. |
 | `benchmarks/results/` | Evidence | Structured local, comparison, smoke, and certified scalability results. |
 | `benchmarks/research/` | Experimental | Plotting, analysis, and exploratory report generation. |
 | `benchmarks/internal/evidence/` | Internal | Historical development-evidence generators. |

@@ -11,6 +11,28 @@ import torch
 import flagquantum as fq
 
 
+def acceptance_summary(
+    *,
+    model: str,
+    policy: dict[str, object],
+    correctness: dict[str, object],
+    accuracy: dict[str, object],
+    performance: dict[str, object],
+    deployment: dict[str, object],
+) -> dict[str, object]:
+    """Build the public, fail-closed acceptance payload used by this example."""
+    return {
+        "model": model,
+        "policy": policy,
+        "correctness": correctness,
+        "accuracy": accuracy,
+        "performance": performance,
+        "deployment": deployment,
+        "accuracy_is_performance_claim": False,
+        "scalability_claim_allowed": False,
+    }
+
+
 def classifier_run(steps: int) -> dict[str, object]:
     fq.seed_everything(480)
     model = fq.HybridQuantumClassifier(
@@ -29,14 +51,14 @@ def classifier_run(steps: int) -> dict[str, object]:
         losses.append(float(loss.detach()))
     elapsed = time.perf_counter() - started
     accuracy = float((torch.sign(model(inputs).detach()) == targets).float().mean())
-    return {
-        "model": "HybridQuantumClassifier",
-        "policy": model.quantum.policy.__dict__,
-        "correctness": {"finite": bool(torch.isfinite(torch.tensor(losses)).all())},
-        "accuracy": {"classification_accuracy": accuracy, "losses": losses},
-        "performance": {"elapsed_seconds": elapsed, "steps": steps},
-        "deployment": model.deployment_parameters()["binding"],
-    }
+    return acceptance_summary(
+        model="HybridQuantumClassifier",
+        policy=model.quantum.policy.__dict__,
+        correctness={"finite": bool(torch.isfinite(torch.tensor(losses)).all())},
+        accuracy={"classification_accuracy": accuracy, "losses": losses},
+        performance={"elapsed_seconds": elapsed, "steps": steps},
+        deployment=model.deployment_parameters()["binding"],
+    )
 
 
 def energy_run(steps: int, backend: str) -> dict[str, object]:
@@ -59,19 +81,21 @@ def energy_run(steps: int, backend: str) -> dict[str, object]:
         energies.append(float(energy.detach()))
     elapsed = time.perf_counter() - started
     runtime = model.quantum.execute().runtime
-    return {
-        "model": "VariationalEnergyModel",
-        "policy": policy.__dict__,
-        "correctness": {"finite": bool(torch.isfinite(torch.tensor(energies)).all())},
-        "accuracy": {"energies": energies},
-        "performance": {"elapsed_seconds": elapsed, "steps": steps},
-        "deployment": {"runtime_backend": runtime.get("backend", backend)},
-    }
+    return acceptance_summary(
+        model="VariationalEnergyModel",
+        policy=policy.__dict__,
+        correctness={"finite": bool(torch.isfinite(torch.tensor(energies)).all())},
+        accuracy={"energies": energies},
+        performance={"elapsed_seconds": elapsed, "steps": steps},
+        deployment={"runtime_backend": runtime.get("backend", backend)},
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", choices=("classifier", "energy"), default="classifier")
+    parser.add_argument(
+        "--model", choices=("classifier", "energy"), default="classifier"
+    )
     parser.add_argument("--backend", choices=("pytorch", "jax"), default="pytorch")
     parser.add_argument("--steps", type=int, default=2)
     args = parser.parse_args()

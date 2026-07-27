@@ -5,6 +5,7 @@ scalability result when one logical workload is actually sharded across ranks.
 They are intentionally lightweight so runtime summaries, benchmark payloads,
 and tests can share the same checks.
 """
+
 # ruff: noqa: F401
 
 from __future__ import annotations

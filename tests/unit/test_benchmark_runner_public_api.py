@@ -1,4 +1,4 @@
-import benchmarks.runners as runners
+import flagquantum.benchmarking as runners
 
 
 def test_runner_package_exposes_stable_registry_api():

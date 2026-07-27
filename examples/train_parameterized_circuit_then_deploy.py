@@ -56,7 +56,7 @@ def main() -> None:
         steps=100,
         lr=0.1,
     )
-    
+
     # This is the key deployment step: bind the optimized values into the same
     # named-parameter template before exporting/submitting to a real backend.
     optimized_parameters = training_result.parameters

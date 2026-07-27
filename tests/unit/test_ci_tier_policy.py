@@ -79,9 +79,9 @@ def test_ci_tier_commands_preserve_arg_boundaries_and_python_substitution():
         for command in tier.commands:
             assert command[0] == "{python}", tier.name
             assert all(token for token in command), tier.name
-            assert not any(token in {"&&", "||", "|", ";"} for token in command), (
-                tier.name
-            )
+            assert not any(
+                token in {"&&", "||", "|", ";"} for token in command
+            ), tier.name
             benchmark_scripts = [
                 token
                 for token in command

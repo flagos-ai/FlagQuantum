@@ -211,9 +211,7 @@ class TorchDistributedStatevectorGradientResult:
         backward_semantics = (
             "sharded_across_ranks"
             if ready and self.world_size > 1
-            else "single_device_fast_path"
-            if ready
-            else self.backward_evidence.status
+            else "single_device_fast_path" if ready else self.backward_evidence.status
         )
         ownership = tuple(
             {
@@ -230,9 +228,7 @@ class TorchDistributedStatevectorGradientResult:
                 "distribution": (
                     "replicated_after_all_reduce"
                     if ready and self.world_size > 1
-                    else "local"
-                    if ready
-                    else "pending"
+                    else "local" if ready else "pending"
                 ),
             }
             for index, item in enumerate(self.ownership)
@@ -266,16 +262,12 @@ class TorchDistributedStatevectorGradientResult:
             "gradient_distribution": (
                 "replicated_after_all_reduce"
                 if ready and self.world_size > 1
-                else "local"
-                if ready
-                else "pending"
+                else "local" if ready else "pending"
             ),
             "gradient_reduction": (
                 "all_reduce_sum"
                 if ready and self.world_size > 1
-                else "local"
-                if ready
-                else "pending"
+                else "local" if ready else "pending"
             ),
             "parameter_ownership": ownership,
             "checkpoint_policy": self.checkpoint_policy.__dict__,

@@ -19,5 +19,5 @@ benchmarks/
 ```
 
 New user code should use `import flagquantum as fq` or the named runtime
-subpackages. New benchmark code should use `benchmarks.runners`; research
+subpackages. New benchmark code should use `flagquantum.benchmarking`; research
 scripts must not become runtime dependencies.

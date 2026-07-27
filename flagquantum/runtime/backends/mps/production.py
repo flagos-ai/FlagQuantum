@@ -225,9 +225,7 @@ def plan_production_mps(
 ) -> MPSProductionPlan:
     """Choose local/speed/capacity execution from measured evidence only."""
 
-    del (
-        available_gpu_count
-    )  # availability is checked by launch, never used as rationale
+    del available_gpu_count  # availability is checked by launch, never used as rationale
     if estimated_workload_bytes <= 0 or single_gpu_capacity_bytes <= 0:
         raise ValueError("MPS workload and single-GPU capacity bytes must be positive")
     resolved_gates = (
@@ -236,9 +234,11 @@ def plan_production_mps(
         else MPSAcceptanceGates.from_mapping(gates)
     )
     measurements = tuple(
-        item
-        if isinstance(item, MPSCrossoverMeasurement)
-        else MPSCrossoverMeasurement.from_mapping(item)
+        (
+            item
+            if isinstance(item, MPSCrossoverMeasurement)
+            else MPSCrossoverMeasurement.from_mapping(item)
+        )
         for item in crossover
     )
     if not resolved_gates.production_passed:

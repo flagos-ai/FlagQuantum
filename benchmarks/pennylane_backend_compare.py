@@ -63,7 +63,7 @@ CPU default.qubit vs FlagQuantum JAX tensor network:
 
 CPU default.tensor MPS vs FlagQuantum JAX MPS:
   python benchmarks/pennylane_backend_compare.py --device cpu --dist-backend none --pennylane-device default.tensor --pennylane-interface torch --pennylane-diff-method parameter-shift --pennylane-tensor-method mps --pennylane-max-bond-dim 32 --flagquantum-mode mps --flagquantum-max-bond 32 --n-wires 8 --layers 2 --batch-size 16 --observable ising --iters 3 --warmup 1 --pennylane-early-stop-speedup 30000 --pennylane-run-timeout-seconds 600 --json-output cpu_pennylane_default_tensor_mps_vs_fq_jax_mps.json
- 
+
 CPU default.tensor TN vs FlagQuantum JAX tensor network:
   python benchmarks/pennylane_backend_compare.py --device cpu --dist-backend none --pennylane-device default.tensor --pennylane-interface torch --pennylane-diff-method parameter-shift --pennylane-tensor-method tn --flagquantum-mode tensor_network --n-wires 8 --layers 2 --batch-size 16 --observable ising --iters 3 --warmup 1 --pennylane-early-stop-speedup 30000 --pennylane-run-timeout-seconds 600 --json-output cpu_pennylane_default_tensor_tn_vs_fq_jax_tn.json
 

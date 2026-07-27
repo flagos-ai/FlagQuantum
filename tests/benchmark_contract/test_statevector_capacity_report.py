@@ -22,15 +22,17 @@ def _rank(rank: int, world: int, *, oom: bool) -> dict:
             "peak_reserved_bytes": 12,
             "total_memory_bytes": 16,
         },
-        "training": None
-        if oom
-        else {
-            "distribution_semantics": "sharded_across_ranks",
-            "completed_steps": 2,
-            "losses": [0.9, 0.8],
-            "communication_bytes": 100,
-            "node_count": world,
-        },
+        "training": (
+            None
+            if oom
+            else {
+                "distribution_semantics": "sharded_across_ranks",
+                "completed_steps": 2,
+                "losses": [0.9, 0.8],
+                "communication_bytes": 100,
+                "node_count": world,
+            }
+        ),
         "parameters": [0.1, -0.2],
         "oom_type": "OutOfMemoryError" if oom else None,
     }

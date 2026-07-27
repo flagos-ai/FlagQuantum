@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from benchmarks.statevector_scaling_report import (  # noqa: E402
+from flagquantum.benchmarking.statevector_scaling_report import (  # noqa: E402
     bootstrap_median_speedup,
 )
 

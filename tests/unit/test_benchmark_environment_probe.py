@@ -1,4 +1,4 @@
-from benchmarks.runners.environment_probe import build_payload
+from flagquantum.benchmarking.environment_probe import build_payload
 
 
 def test_environment_probe_has_runner_schema(monkeypatch):

@@ -91,9 +91,10 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
         node_count = int(item.get("node_count", 1))
         if node_count > 1:
             placements = item.get("rank_placement", [])
-            if len(placements) != world_size or len(
-                {row.get("hostname") for row in placements}
-            ) != node_count:
+            if (
+                len(placements) != world_size
+                or len({row.get("hostname") for row in placements}) != node_count
+            ):
                 raise ValueError("multi-node source has incomplete rank placement")
             tiers = item.get("communication_tiers", {})
             if not (

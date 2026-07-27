@@ -245,9 +245,9 @@ def add_distributed_candidates(
         semantics="requires_runtime_summary",
         intended_semantics="sharded_across_ranks",
         memory=max(1, (mps_bytes + world_size - 1) // world_size),
-        gradient="distributed_backward_pending"
-        if require_gradients
-        else "forward_only",
+        gradient=(
+            "distributed_backward_pending" if require_gradients else "forward_only"
+        ),
         deployment=True,
         base_score=70,
         reasons=("site_or_bond_sharding_target",),
@@ -285,9 +285,9 @@ def add_distributed_candidates(
                 else ((mps_bytes + world_size - 1) // world_size,)
             ),
         ),
-        gradient="distributed_backward_pending"
-        if require_gradients
-        else "forward_only",
+        gradient=(
+            "distributed_backward_pending" if require_gradients else "forward_only"
+        ),
         deployment=True,
         base_score=76 if prefer_jax else 68,
         reasons=("jax_site_sharded_mps_target",),
@@ -323,9 +323,9 @@ def add_distributed_candidates(
         semantics="requires_runtime_summary",
         intended_semantics="manual_sliced_tensor_contraction",
         memory=distributed_tn_bytes,
-        gradient="distributed_backward_pending"
-        if require_gradients
-        else "forward_only",
+        gradient=(
+            "distributed_backward_pending" if require_gradients else "forward_only"
+        ),
         deployment=True,
         base_score=68,
         reasons=("sliced_tensor_contraction_target",),
