@@ -1,0 +1,71 @@
+{
+  "benchmark": "tn_stage_contraction",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device": "NVIDIA A100-SXM4-40GB",
+  "distribution_semantics": "single_device_fast_path",
+  "forward_speedup": 0.7995825174765946,
+  "fused": {
+    "median_step_seconds": 0.0003426224831491709,
+    "peak_memory_bytes": 25296896,
+    "samples_seconds": [
+      0.0003426224831491709,
+      0.00034198730252683163,
+      0.0003424395527690649,
+      0.0003440149314701557,
+      0.0003434097953140736
+    ]
+  },
+  "fused_cold_seconds": 0.8839280121028423,
+  "fused_forward": {
+    "median_step_seconds": 6.0477154329419135e-05,
+    "peak_memory_bytes": 29622272,
+    "samples_seconds": [
+      6.127888336777687e-05,
+      6.013531237840653e-05,
+      6.017177365720272e-05,
+      6.06653094291687e-05,
+      6.0477154329419135e-05
+    ]
+  },
+  "iterations": 100,
+  "max_abs_error": 2.86737376882229e-05,
+  "native": {
+    "median_step_seconds": 0.0003397450409829617,
+    "peak_memory_bytes": 33816576,
+    "samples_seconds": [
+      0.0003397900238633156,
+      0.00034062680788338184,
+      0.00033935110084712503,
+      0.0003392749559134245,
+      0.0003397450409829617
+    ]
+  },
+  "native_forward": {
+    "median_step_seconds": 4.8356475308537486e-05,
+    "peak_memory_bytes": 29622272,
+    "samples_seconds": [
+      4.854163154959679e-05,
+      4.848892800509929e-05,
+      4.827783443033695e-05,
+      4.8356475308537486e-05,
+      4.824807867407799e-05
+    ]
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "repeats": 5,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "shape": [
+    16,
+    128,
+    128,
+    128
+  ],
+  "speedup": 0.99160171235769,
+  "torch_version": "2.13.0+cu130",
+  "warmup": 10
+}

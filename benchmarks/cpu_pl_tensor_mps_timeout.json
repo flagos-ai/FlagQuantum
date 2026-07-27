@@ -1,0 +1,54 @@
+{
+  "benchmark": "pennylane_tensor_compare",
+  "comparison": {
+    "reason": {
+      "message": "PennyLane subprocess exceeded 10.000 seconds.",
+      "timeout_seconds": 10.0,
+      "type": "TimeoutError"
+    },
+    "speedup_lower_bound_flagquantum_over_pennylane": 540.4821101425383,
+    "status": "timeout"
+  },
+  "device": "cpu",
+  "environment": {
+    "cuda_available": false,
+    "pennylane": "0.45.1",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "torch_float32_matmul_precision": "highest"
+  },
+  "flagquantum": {
+    "avg_seconds": 0.01850199999656373,
+    "backend": "pytorch",
+    "kernel": null,
+    "loss": 3.7495036125183105,
+    "max_bond": null,
+    "mode": "mps"
+  },
+  "forward_only": false,
+  "iters": 3,
+  "layers": 1,
+  "method": "mps",
+  "n_wires": 4,
+  "observable": "z_sum",
+  "pennylane": {
+    "avg_seconds": null,
+    "backend": "default.tensor",
+    "completed_iters": null,
+    "cutoff": null,
+    "diff_method": "parameter-shift",
+    "early_stop_reason": null,
+    "early_stopped": null,
+    "error": {
+      "message": "PennyLane subprocess exceeded 10.000 seconds.",
+      "timeout_seconds": 10.0,
+      "type": "TimeoutError"
+    },
+    "loss": null,
+    "max_bond_dim": null,
+    "method": "mps",
+    "requested_iters": null
+  },
+  "warmup": 0
+}

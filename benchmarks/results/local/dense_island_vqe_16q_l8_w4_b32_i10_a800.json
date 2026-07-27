@@ -1,0 +1,2073 @@
+{
+  "batch_size": 1,
+  "benchmark": "dense_island_vqe_runtime",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "dense_island": {
+    "energies": [
+      -13.118853569030762,
+      -13.264912605285645,
+      -13.327879905700684,
+      -13.344583511352539,
+      -13.340788841247559,
+      -13.33995246887207,
+      -13.345273971557617,
+      -13.339509010314941,
+      -13.33967399597168,
+      -13.340131759643555
+    ],
+    "peak_memory_bytes": [
+      26014208,
+      29591040,
+      29591040,
+      29591040,
+      29591040,
+      29591040,
+      29591040,
+      29591040,
+      29591040,
+      29591040
+    ],
+    "step_seconds": [
+      2.1698814178816974,
+      0.311614653095603,
+      0.2380352569743991,
+      0.23252244014292955,
+      0.23614033497869968,
+      0.22694454761222005,
+      0.22096958896145225,
+      0.22872198186814785,
+      0.23474984196946025,
+      0.22383935283869505
+    ],
+    "summaries": [
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 2.3682248091051284e-19,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.4421716438826708e-24,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.4491388143081654e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.123296505957873e-19,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 9.555421254860751e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.9196107987578662e-25,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 8.890559841939816e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 8.666346074558782e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 4.305044799170676e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.040261261472666e-25,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.1116050996371316e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 4.0938738865943483e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 2.0501919504038305e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 4.124079023872007e-25,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.1939790408329152e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.8307528055303002e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 7.086525918755844e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.239548006752704e-25,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.9523599070236026e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 6.891267532573416e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 6.764651989537166e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.4718224303572747e-25,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 3.472276009814948e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 6.417399670331368e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 1.9496750293592054e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.4869410533238704e-25,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.083533667340572e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.741306793214615e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 1.7413503226160644e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 5.951733662762941e-27,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.5529681882733042e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.5860529086153677e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 1.69454921807957e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 4.019258021755117e-26,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 2.0578698637702957e-21,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.4887582124445187e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      },
+      {
+        "compression_interval": 1,
+        "cross_island_gate_count": 12,
+        "gradient_method": "retained_subspace_adjoint",
+        "hamiltonian_environment": "shared_block_z_zz",
+        "intervals": [
+          [
+            0,
+            4
+          ],
+          [
+            4,
+            8
+          ],
+          [
+            8,
+            12
+          ],
+          [
+            12,
+            16
+          ]
+        ],
+        "local_gate_count": 304,
+        "max_bond": 32,
+        "max_dense_width": 4,
+        "merge_count": 12,
+        "n_wires": 16,
+        "split_count": 12,
+        "state_mode": "dense_island_mps_experimental",
+        "truncation_error": 1.2793714089953053e-20,
+        "truncation_records": [
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 4.0075141631774303e-26,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 7.21659599131887e-22,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 0,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          },
+          {
+            "boundary": 1,
+            "discarded_weight": 1.2072014415679535e-20,
+            "kept_rank": 32,
+            "method": "retained_subspace_adjoint",
+            "original_rank": 256
+          },
+          {
+            "boundary": 2,
+            "discarded_weight": 0.0,
+            "kept_rank": 16,
+            "method": "exact_autograd",
+            "original_rank": 16
+          }
+        ],
+        "truncation_steps": 3
+      }
+    ]
+  },
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "evidence_class": "local_non_release",
+  "final_energy_abs_delta": 0.015032768249511719,
+  "island_width": 4,
+  "iterations": 10,
+  "layers": 8,
+  "max_bond": 32,
+  "mps": {
+    "energies": [
+      -13.11851978302002,
+      -13.260418891906738,
+      -13.334190368652344,
+      -13.348102569580078,
+      -13.337818145751953,
+      -13.341398239135742,
+      -13.350362777709961,
+      -13.356819152832031,
+      -13.354079246520996,
+      -13.355164527893066
+    ],
+    "peak_memory_bytes": [
+      19521024,
+      19523584,
+      19523584,
+      19523584,
+      19523584,
+      19523584,
+      19523584,
+      19523584,
+      19523584,
+      19523584
+    ],
+    "step_seconds": [
+      0.48069959692656994,
+      0.3265758487395942,
+      0.3198075923137367,
+      0.3267309661023319,
+      0.32282987982034683,
+      0.3213922083377838,
+      0.3253711792640388,
+      0.3206819109618664,
+      0.3130545509047806,
+      0.32644330197945237
+    ],
+    "summaries": [
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.000000238418579,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 9.357987995617378e-11,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.000000238418579,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0000004768371582,
+        "state_mode": "mps",
+        "state_norm_max": 0.9997692704200745,
+        "state_norm_min": 0.9997692704200745,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            9.36110844229458e-11
+          ],
+          [
+            6,
+            3.8804267958603145e-12
+          ],
+          [
+            7,
+            3.40150871900779e-11
+          ],
+          [
+            8,
+            1.2818899587652144e-11
+          ],
+          [
+            9,
+            3.585755215635849e-15
+          ]
+        ],
+        "truncation_error": 1.443290837517518e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.0000009536743164,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 1.1470782657063694e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.0000009536743164,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0000009536743164,
+        "state_mode": "mps",
+        "state_norm_max": 0.9997267127037048,
+        "state_norm_min": 0.9997267127037048,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            1.1475046845892123e-10
+          ],
+          [
+            6,
+            1.1678198338915813e-11
+          ],
+          [
+            7,
+            1.2900786963272558e-11
+          ],
+          [
+            8,
+            8.747871676172136e-13
+          ],
+          [
+            9,
+            2.4002626582683884e-15
+          ]
+        ],
+        "truncation_error": 1.4020664119138508e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.0000004768371582,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 3.180218310916416e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.0000004768371582,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.000000238418579,
+        "state_mode": "mps",
+        "state_norm_max": 0.9997577667236328,
+        "state_norm_min": 0.9997577667236328,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            3.1802232594470067e-10
+          ],
+          [
+            6,
+            2.887335336099195e-12
+          ],
+          [
+            7,
+            6.412723434215076e-11
+          ],
+          [
+            8,
+            3.67262192879636e-11
+          ],
+          [
+            9,
+            6.443205883836217e-15
+          ]
+        ],
+        "truncation_error": 4.2176955811679806e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.0000004768371582,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 5.922495827093144e-11,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.0000004768371582,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0000152587890625,
+        "state_mode": "mps",
+        "state_norm_max": 1.0000128746032715,
+        "state_norm_min": 1.0000128746032715,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            5.792162480156045e-13
+          ],
+          [
+            6,
+            1.5688222476748642e-14
+          ],
+          [
+            7,
+            5.923606855053179e-11
+          ],
+          [
+            8,
+            1.1982788893083463e-12
+          ],
+          [
+            9,
+            1.8032868096654054e-17
+          ]
+        ],
+        "truncation_error": 6.102926994320058e-11,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.0000007152557373,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 1.2061646126326764e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.0000007152557373,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0000114440917969,
+        "state_mode": "mps",
+        "state_norm_max": 0.9998704791069031,
+        "state_norm_min": 0.9998704791069031,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            1.206290474749087e-10
+          ],
+          [
+            6,
+            1.0442104125818474e-10
+          ],
+          [
+            7,
+            5.518961224045034e-13
+          ],
+          [
+            8,
+            3.27037250412958e-16
+          ],
+          [
+            9,
+            9.803192373522028e-17
+          ]
+        ],
+        "truncation_error": 2.2560240992467208e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.0000004768371582,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 1.0877412859322533e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.0000004768371582,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0,
+        "state_mode": "mps",
+        "state_norm_max": 0.9997987151145935,
+        "state_norm_min": 0.9997987151145935,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            1.0882096968800321e-10
+          ],
+          [
+            6,
+            5.451665594652377e-12
+          ],
+          [
+            7,
+            1.0325433384380127e-11
+          ],
+          [
+            8,
+            5.880728846593963e-13
+          ],
+          [
+            9,
+            1.7829929233682125e-16
+          ]
+        ],
+        "truncation_error": 1.2518631985098745e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.000000238418579,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 1.3818296507039918e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.000000238418579,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.000000238418579,
+        "state_mode": "mps",
+        "state_norm_max": 0.9997215270996094,
+        "state_norm_min": 0.9997215270996094,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            1.381919185694877e-10
+          ],
+          [
+            6,
+            8.526044453782688e-12
+          ],
+          [
+            7,
+            3.084548564057218e-11
+          ],
+          [
+            8,
+            2.468687147066939e-12
+          ],
+          [
+            9,
+            2.1316078896384101e-16
+          ]
+        ],
+        "truncation_error": 1.8003234897169846e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.000000238418579,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 3.2622890500100254e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.000000238418579,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0,
+        "state_mode": "mps",
+        "state_norm_max": 0.9999114871025085,
+        "state_norm_min": 0.9999114871025085,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            3.2622898533094043e-10
+          ],
+          [
+            6,
+            1.702826074589936e-11
+          ],
+          [
+            7,
+            8.001850728077658e-11
+          ],
+          [
+            8,
+            7.731461304505416e-11
+          ],
+          [
+            9,
+            4.701852536864416e-17
+          ]
+        ],
+        "truncation_error": 5.005904134211959e-10,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.000000238418579,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 1.1019509749132794e-09,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.000000238418579,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.0000004768371582,
+        "state_mode": "mps",
+        "state_norm_max": 0.9998692274093628,
+        "state_norm_min": 0.9998692274093628,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            2.475097752315349e-10
+          ],
+          [
+            6,
+            2.6169810762866064e-10
+          ],
+          [
+            7,
+            1.1019511894737395e-09
+          ],
+          [
+            8,
+            4.319282431719529e-11
+          ],
+          [
+            9,
+            3.2083019642637263e-16
+          ]
+        ],
+        "truncation_error": 1.6543522174813268e-09,
+        "truncation_steps": 8
+      },
+      {
+        "adaptive_hot_bonds": [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "adaptive_suggested_max_bond": 64,
+        "batch_size": 1,
+        "bond_dims": [
+          2,
+          4,
+          8,
+          16,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          16,
+          8,
+          4,
+          2
+        ],
+        "device": "cuda:0",
+        "dtype": "torch.complex64",
+        "eager_mps_two_site_regions": 60,
+        "fixed_rank_qr_regions": 0,
+        "left_canonical_residual": 1.0000004768371582,
+        "local_refinement_windows": [
+          [
+            4,
+            11
+          ]
+        ],
+        "local_swap_count": 0,
+        "max_bond": 32,
+        "max_truncation_error": 2.4812696342024765e-10,
+        "mean_bond": 18.933333333333334,
+        "mixed_canonical_residual": 1.0000004768371582,
+        "n_wires": 16,
+        "orthogonality_center": 14,
+        "parameter_count": 15016,
+        "right_canonical_residual": 1.000000238418579,
+        "state_mode": "mps",
+        "state_norm_max": 0.9999296069145203,
+        "state_norm_min": 0.9999296069145203,
+        "svd_gradient_method": "projected_stop_subspace",
+        "triton_mps_two_site_enabled": false,
+        "triton_mps_two_site_regions": 0,
+        "truncation_by_bond": [
+          [
+            5,
+            2.4814996501667055e-10
+          ],
+          [
+            6,
+            1.6856566489864555e-11
+          ],
+          [
+            7,
+            1.9714676936877286e-11
+          ],
+          [
+            8,
+            9.198435199295196e-13
+          ],
+          [
+            9,
+            3.4294382715101e-16
+          ]
+        ],
+        "truncation_error": 2.8564139490716905e-10,
+        "truncation_steps": 8
+      }
+    ]
+  },
+  "n_wires": 16,
+  "non_release_evidence": true,
+  "observable": "-sum(ZZ)+0.1sum(Z), shared environments",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "steady_speedup_mps_over_dense_island": 1.3479620236673726
+}

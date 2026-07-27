@@ -1,0 +1,209 @@
+{
+  "benchmark": "statevector_capacity_31q_adam2_2xa800_development",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "non_release_evidence": true,
+  "ranks": [
+    {
+      "artifact_classification": "development_capacity_probe",
+      "capacity_claim_allowed": false,
+      "capacity_classification": "measured_completion",
+      "commit": "unversioned-worktree",
+      "device": {
+        "capability": [
+          8,
+          0
+        ],
+        "name": "NVIDIA A800-SXM4-80GB",
+        "peak_allocated_bytes": 77393567744,
+        "peak_reserved_bytes": 81707139072,
+        "total_memory_bytes": 85093777408
+      },
+      "elapsed_seconds": 42.33937875786796,
+      "expectation": "completion",
+      "expectation_met": true,
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "measured": true,
+      "multi_node_claim": false,
+      "parameters": [
+        0.3300401568412781,
+        -0.4700678288936615
+      ],
+      "rank": 0,
+      "release_evidence": false,
+      "schema": "flagquantum.single_node_training_acceptance.v2",
+      "single_device_oom_observed": false,
+      "software": {
+        "cuda": "13.0",
+        "torch": "2.13.0+cu130"
+      },
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_capacity_and_multinode_acceptance_pending"
+        ],
+        "checkpoint_files": [],
+        "communication_bytes": 137438953520,
+        "communication_events": 4108,
+        "completed_steps": 2,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_statevector_training_v1",
+        "gradient_ownership_semantics": "reduced_across_ranks",
+        "local_world_size": 2,
+        "losses": [
+          0.90777587890625,
+          0.8775291442871094
+        ],
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_reduction": "all_reduce_sum",
+            "optimizer_state_local": true,
+            "owner_rank": 0,
+            "parameter": "parameter:0",
+            "update_route": "owner_step_then_broadcast"
+          },
+          {
+            "gradient_reduction": "all_reduce_sum",
+            "optimizer_state_local": false,
+            "owner_rank": 1,
+            "parameter": "parameter:1",
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "peak_memory_bytes": 77393567744,
+        "progress_event_count": 19,
+        "rank": 0,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "start_step": 0,
+        "world_size": 2
+      },
+      "workload": {
+        "dtype": "complex64",
+        "gates": [
+          "RY(n-1,theta)",
+          "CX(n-1,n-2)",
+          "RY(n-2,phi)"
+        ],
+        "n_wires": 31,
+        "name": "issue044_single_node_capacity_v1",
+        "observable": "Z(n-2)",
+        "optimizer": "adam",
+        "steps": 2
+      },
+      "workload_sha256": "5f2103ace667c0cf44a5c6c70421a3dc744fcdf7b59e03cbab4d8dae9ae6862b",
+      "world_size": 2
+    },
+    {
+      "artifact_classification": "development_capacity_probe",
+      "capacity_claim_allowed": false,
+      "capacity_classification": "measured_completion",
+      "commit": "unversioned-worktree",
+      "device": {
+        "capability": [
+          8,
+          0
+        ],
+        "name": "NVIDIA A800-SXM4-80GB",
+        "peak_allocated_bytes": 77393567744,
+        "peak_reserved_bytes": 81707139072,
+        "total_memory_bytes": 85093777408
+      },
+      "elapsed_seconds": 42.337251846212894,
+      "expectation": "completion",
+      "expectation_met": true,
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "measured": true,
+      "multi_node_claim": false,
+      "parameters": [
+        0.3300401568412781,
+        -0.4700678288936615
+      ],
+      "rank": 1,
+      "release_evidence": false,
+      "schema": "flagquantum.single_node_training_acceptance.v2",
+      "single_device_oom_observed": false,
+      "software": {
+        "cuda": "13.0",
+        "torch": "2.13.0+cu130"
+      },
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_capacity_and_multinode_acceptance_pending"
+        ],
+        "checkpoint_files": [],
+        "communication_bytes": 137438953520,
+        "communication_events": 4108,
+        "completed_steps": 2,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_statevector_training_v1",
+        "gradient_ownership_semantics": "reduced_across_ranks",
+        "local_world_size": 2,
+        "losses": [
+          0.90777587890625,
+          0.8775291442871094
+        ],
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_reduction": "all_reduce_sum",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter": "parameter:0",
+            "update_route": "owner_step_then_broadcast"
+          },
+          {
+            "gradient_reduction": "all_reduce_sum",
+            "optimizer_state_local": true,
+            "owner_rank": 1,
+            "parameter": "parameter:1",
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_semantics": "sharded_across_ranks",
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "peak_memory_bytes": 77393567744,
+        "progress_event_count": 19,
+        "rank": 1,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "start_step": 0,
+        "world_size": 2
+      },
+      "workload": {
+        "dtype": "complex64",
+        "gates": [
+          "RY(n-1,theta)",
+          "CX(n-1,n-2)",
+          "RY(n-2,phi)"
+        ],
+        "n_wires": 31,
+        "name": "issue044_single_node_capacity_v1",
+        "observable": "Z(n-2)",
+        "optimizer": "adam",
+        "steps": 2
+      },
+      "workload_sha256": "5f2103ace667c0cf44a5c6c70421a3dc744fcdf7b59e03cbab4d8dae9ae6862b",
+      "world_size": 2
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "workload_sha256": "5f2103ace667c0cf44a5c6c70421a3dc744fcdf7b59e03cbab4d8dae9ae6862b"
+}

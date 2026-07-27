@@ -1,0 +1,102 @@
+{
+  "benchmark": "flagquantum_31q_16xa800_layout_swap_profile",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "half_shard_bytes": 536870912,
+  "local_amplitudes": 134217728,
+  "local_world_size": 8,
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "results": {
+    "inter_node": {
+      "p2p": {
+        "median_seconds": 0.09764823410660028,
+        "samples_seconds": [
+          0.0987236388027668,
+          0.10207706037908792,
+          0.0970501541160047,
+          0.09498884528875351,
+          0.09764823410660028
+        ]
+      },
+      "pack": {
+        "median_seconds": 0.0009483029134571552,
+        "samples_seconds": [
+          0.0010490911081433296,
+          0.0009481119923293591,
+          0.0009609255939722061,
+          0.0009446321055293083,
+          0.0009483029134571552
+        ]
+      },
+      "total": {
+        "median_seconds": 0.10019411565735936,
+        "samples_seconds": [
+          0.1013667699880898,
+          0.10479645105078816,
+          0.09961722558364272,
+          0.09750970732420683,
+          0.10019411565735936
+        ]
+      },
+      "unpack": {
+        "median_seconds": 0.0015975786373019218,
+        "samples_seconds": [
+          0.0015940400771796703,
+          0.0017712786793708801,
+          0.0016061458736658096,
+          0.0015762299299240112,
+          0.0015975786373019218
+        ]
+      }
+    },
+    "intra_node": {
+      "p2p": {
+        "median_seconds": 0.029067945200949907,
+        "samples_seconds": [
+          0.030119629111140966,
+          0.03335020178928971,
+          0.029003231786191463,
+          0.029067945200949907,
+          0.02880225097760558
+        ]
+      },
+      "pack": {
+        "median_seconds": 0.0009460272267460823,
+        "samples_seconds": [
+          0.0019670063629746437,
+          0.0009600170888006687,
+          0.0009387140162289143,
+          0.0009460272267460823,
+          0.0009422833099961281
+        ]
+      },
+      "total": {
+        "median_seconds": 0.031594502273947,
+        "samples_seconds": [
+          0.033680797554552555,
+          0.03587161470204592,
+          0.03152640396729112,
+          0.031594502273947,
+          0.03130347095429897
+        ]
+      },
+      "unpack": {
+        "median_seconds": 0.001580529846251011,
+        "samples_seconds": [
+          0.001594162080436945,
+          0.0015613958239555359,
+          0.001584458164870739,
+          0.001580529846251011,
+          0.0015589366666972637
+        ]
+      }
+    }
+  },
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "world_size": 16
+}

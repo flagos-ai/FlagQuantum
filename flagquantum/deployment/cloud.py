@@ -1,0 +1,509 @@
+"""Provider-neutral quantum deployment primitives.
+
+This layer turns a trained FlagQuantum circuit into a portable deployment
+asset. Real quantum-cloud SDKs can implement ``QuantumProvider`` while the
+training, compilation, and algorithm layers keep using the same FlagQuantum
+Circuit and IR objects.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Mapping, Sequence
+
+import torch
+
+from ..algorithms import Hamiltonian
+from ..circuit import Circuit
+from ..compilation.compiler import CouplingMap, compile_for_backend
+from ..core.ir import CircuitIR
+from ..utils.qasm_exporter import export_to_qasm_str
+from ..utils.qcis_exporter import export_to_qcis_str
+from .routing_evidence import (
+    DEPLOYMENT_PACKAGE_SCHEMA,
+    build_deployment_routing_evidence,
+    deployment_artifact_sha256,
+    stable_payload_sha256,
+)
+
+DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA = "flagquantum_submission_receipt_v1"
+
+
+@dataclass(frozen=True)
+class CloudBackendProfile:
+    """Provider-neutral description of a quantum-cloud target."""
+
+    provider: str
+    name: str
+    n_wires: int
+    basis_gates: tuple[str, ...] = ()
+    coupling_map: CouplingMap | None = None
+    supports_openqasm: bool = True
+    supports_qcis: bool = False
+    is_simulator: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def simulator(
+        cls, n_wires: int, *, provider: str = "local"
+    ) -> "CloudBackendProfile":
+        return cls(
+            provider=provider,
+            name="simulator",
+            n_wires=int(n_wires),
+            basis_gates=("x", "y", "z", "h", "rx", "ry", "rz", "cx", "cz", "swap"),
+            coupling_map=None,
+            is_simulator=True,
+        )
+
+
+@dataclass(frozen=True)
+class DeploymentPackage:
+    """Portable circuit artifact ready for cloud submission."""
+
+    name: str
+    ir: CircuitIR
+    qasm: str
+    shots: int
+    qasm_version: float
+    backend: CloudBackendProfile
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def n_wires(self) -> int:
+        return int(self.ir.n_wires)
+
+
+class DeploymentPackageIdentityError(ValueError):
+    """Raised when a deployment package no longer matches its sealed identity."""
+
+
+def _native_program(package: DeploymentPackage) -> tuple[str, str]:
+    if package.backend.supports_qcis and not package.backend.supports_openqasm:
+        qcis = package.metadata.get("qcis")
+        if not isinstance(qcis, str) or not qcis.strip():
+            raise DeploymentPackageIdentityError(
+                "QCIS-native deployment package is missing its QCIS program"
+            )
+        return "qcis", qcis
+    return f"openqasm-{package.qasm_version:g}", package.qasm
+
+
+def validate_deployment_package(
+    package: DeploymentPackage,
+) -> DeploymentPackage:
+    """Fail closed when provider-facing package identity has been altered."""
+
+    metadata = package.metadata
+    if metadata.get("deployment_package_schema") != DEPLOYMENT_PACKAGE_SCHEMA:
+        raise DeploymentPackageIdentityError("unsupported deployment package schema")
+    if (
+        metadata.get("target_provider") != package.backend.provider
+        or metadata.get("target_backend") != package.backend.name
+    ):
+        raise DeploymentPackageIdentityError(
+            "deployment package target metadata does not match its backend"
+        )
+    evidence = metadata.get("routing_evidence")
+    if not isinstance(evidence, Mapping):
+        raise DeploymentPackageIdentityError("deployment routing evidence is missing")
+    if evidence.get("schema") != "flagquantum_deployment_routing_evidence_v1":
+        raise DeploymentPackageIdentityError(
+            "unsupported deployment routing evidence schema"
+        )
+    routing_plan = evidence.get("routing_plan")
+    if not isinstance(routing_plan, Mapping):
+        raise DeploymentPackageIdentityError("deployment routing plan is missing")
+    routing_reused = evidence.get("routing_reused")
+    if not isinstance(routing_reused, bool):
+        raise DeploymentPackageIdentityError(
+            "deployment routing reuse marker must be boolean"
+        )
+    validated_plan = build_deployment_routing_evidence(
+        routing_plan,
+        routing_reused=routing_reused,
+        n_wires=package.n_wires,
+        coupling_map=package.backend.coupling_map,
+    )
+    if dict(evidence) != validated_plan:
+        raise DeploymentPackageIdentityError(
+            "deployment routing evidence is inconsistent"
+        )
+    if metadata.get("routing_plan") != routing_plan or metadata.get(
+        "routing_reused"
+    ) != evidence.get("routing_reused"):
+        raise DeploymentPackageIdentityError(
+            "deployment routing metadata disagrees with its evidence"
+        )
+    evidence_digest = stable_payload_sha256(evidence)
+    if metadata.get("routing_evidence_sha256") != evidence_digest:
+        raise DeploymentPackageIdentityError(
+            "deployment routing evidence digest mismatch"
+        )
+    expected_qasm = export_to_qasm_str(package.ir, version=package.qasm_version)
+    if package.qasm != expected_qasm:
+        raise DeploymentPackageIdentityError(
+            "deployment QASM does not match the packaged IR"
+        )
+    program_format, program = _native_program(package)
+    if metadata.get("deployment_program_format") != program_format:
+        raise DeploymentPackageIdentityError(
+            "deployment program format does not match its backend"
+        )
+    expected_artifact = deployment_artifact_sha256(
+        name=package.name,
+        backend_provider=package.backend.provider,
+        backend_name=package.backend.name,
+        shots=package.shots,
+        program_format=program_format,
+        program=program,
+        routing_evidence_sha256=evidence_digest,
+    )
+    if metadata.get("deployment_artifact_sha256") != expected_artifact:
+        raise DeploymentPackageIdentityError("deployment artifact digest mismatch")
+    return package
+
+
+@dataclass(frozen=True)
+class ProviderTaskHandle:
+    provider: str
+    task_id: str
+    backend_name: str
+    payload: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class DeploymentResult:
+    handle: ProviderTaskHandle
+    counts: Mapping[str, int]
+    shots: int
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_submission_receipt(
+    package: DeploymentPackage,
+    payload: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Attach immutable package identity to a provider submission receipt."""
+
+    validate_deployment_package(package)
+    return dict(payload or {}) | {
+        "deployment_receipt_schema": DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
+        "deployment_package_schema": package.metadata["deployment_package_schema"],
+        "deployment_program_format": package.metadata["deployment_program_format"],
+        "routing_evidence_sha256": package.metadata["routing_evidence_sha256"],
+        "deployment_artifact_sha256": package.metadata["deployment_artifact_sha256"],
+    }
+
+
+def build_result_metadata(
+    handle: ProviderTaskHandle,
+    metadata: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Carry submission identity into provider result metadata."""
+
+    identity_keys = (
+        "deployment_receipt_schema",
+        "deployment_package_schema",
+        "deployment_program_format",
+        "routing_evidence_sha256",
+        "deployment_artifact_sha256",
+    )
+    identity = {key: handle.payload.get(key) for key in identity_keys}
+    if identity["deployment_receipt_schema"] != DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA:
+        raise DeploymentPackageIdentityError(
+            "deployment handle is missing a supported submission receipt"
+        )
+    for key in identity_keys[1:]:
+        if not identity[key]:
+            raise DeploymentPackageIdentityError(
+                f"deployment handle is missing identity field {key!r}"
+            )
+    return dict(metadata or {}) | identity
+
+
+def validate_deployment_result(result: DeploymentResult) -> DeploymentResult:
+    """Validate the receipt-to-result identity chain and shot accounting."""
+
+    expected = build_result_metadata(result.handle)
+    for key, value in expected.items():
+        if result.metadata.get(key) != value:
+            raise DeploymentPackageIdentityError(
+                f"deployment result identity mismatch for {key!r}"
+            )
+    if result.shots != sum(int(count) for count in result.counts.values()):
+        raise DeploymentPackageIdentityError(
+            "deployment result shots do not match its counts"
+        )
+    return result
+
+
+class QuantumProvider:
+    """Minimal adapter protocol for quantum-cloud providers."""
+
+    provider: str = "provider"
+
+    def discover_backends(
+        self, n_wires: int | None = None
+    ) -> tuple[CloudBackendProfile, ...]:
+        raise NotImplementedError(
+            f"{self.provider} discover_backends is not implemented"
+        )
+
+    def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
+        raise NotImplementedError(f"{self.provider} submit is not implemented")
+
+    def query_status(self, handle: ProviderTaskHandle) -> str:
+        raise NotImplementedError(f"{self.provider} query_status is not implemented")
+
+    def fetch_result(self, handle: ProviderTaskHandle) -> DeploymentResult:
+        raise NotImplementedError(f"{self.provider} fetch_result is not implemented")
+
+    def run(self, package: DeploymentPackage) -> DeploymentResult:
+        handle = self.submit(package)
+        status = self.query_status(handle)
+        if status not in {"Finished", "Completed", "Done"}:
+            raise RuntimeError(
+                f"Deployment task {handle.task_id} ended with status {status!r}."
+            )
+        return validate_deployment_result(self.fetch_result(handle))
+
+
+def create_deployment_package(
+    circuit_or_ir: Circuit | CircuitIR,
+    *,
+    backend: CloudBackendProfile | None = None,
+    name: str = "flagquantum_job",
+    shots: int = 1024,
+    qasm_version: float = 2.0,
+    optimize: bool = True,
+    routing_strategy: str = "restore_after_each_gate",
+    metadata: Mapping[str, Any] | None = None,
+) -> DeploymentPackage:
+    """Compile and serialize a trained circuit for cloud deployment."""
+
+    ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    if backend is None:
+        backend = CloudBackendProfile.simulator(ir.n_wires)
+    if ir.n_wires > backend.n_wires:
+        raise ValueError("Circuit uses more wires than the deployment backend exposes.")
+    existing_routing = ir.metadata.get("routing")
+    routing_reused = bool(
+        isinstance(existing_routing, Mapping)
+        and backend.coupling_map is not None
+        and tuple(existing_routing.get("coupling_edges", ()))
+        == backend.coupling_map.edges
+        and existing_routing.get("mapping_restored") is True
+    )
+    compiled_ir = compile_for_backend(
+        ir,
+        coupling_map=None if routing_reused else backend.coupling_map,
+        routing_strategy=routing_strategy,
+        optimize=optimize,
+    )
+    qasm = export_to_qasm_str(compiled_ir, version=qasm_version)
+    package_metadata = {
+        "source": "flagquantum",
+        "compiled": True,
+        "target_provider": backend.provider,
+        "target_backend": backend.name,
+    }
+    package_metadata.update(dict(metadata or {}))
+    routing_plan = dict(compiled_ir.metadata.get("routing", {}) or {})
+    strategy_selection = compiled_ir.metadata.get("routing_strategy_selection")
+    if strategy_selection:
+        routing_plan["strategy_selection"] = strategy_selection
+    routing_evidence = build_deployment_routing_evidence(
+        routing_plan,
+        routing_reused=routing_reused,
+        n_wires=compiled_ir.n_wires,
+        coupling_map=backend.coupling_map,
+    )
+    package_metadata["routing_evidence"] = routing_evidence
+    package_metadata["routing_plan"] = routing_evidence["routing_plan"]
+    package_metadata["routing_reused"] = routing_evidence["routing_reused"]
+    routing_evidence_sha256 = stable_payload_sha256(routing_evidence)
+    package_metadata["deployment_package_schema"] = DEPLOYMENT_PACKAGE_SCHEMA
+    package_metadata["routing_evidence_sha256"] = routing_evidence_sha256
+    if backend.supports_qcis and "qcis" not in package_metadata:
+        package_metadata["qcis"] = export_to_qcis_str(compiled_ir)
+    program_format = (
+        "qcis"
+        if backend.supports_qcis and not backend.supports_openqasm
+        else f"openqasm-{float(qasm_version):g}"
+    )
+    program = str(package_metadata["qcis"]) if program_format == "qcis" else qasm
+    package_metadata["deployment_program_format"] = program_format
+    package_metadata["deployment_artifact_sha256"] = deployment_artifact_sha256(
+        name=name,
+        backend_provider=backend.provider,
+        backend_name=backend.name,
+        shots=shots,
+        program_format=program_format,
+        program=program,
+        routing_evidence_sha256=routing_evidence_sha256,
+    )
+    return DeploymentPackage(
+        name=name,
+        ir=compiled_ir,
+        qasm=qasm,
+        shots=int(shots),
+        qasm_version=float(qasm_version),
+        backend=backend,
+        metadata=package_metadata,
+    )
+
+
+class LocalSimulatorProvider(QuantumProvider):
+    """Local provider used to validate the deployment contract without network IO."""
+
+    provider = "local"
+
+    def __init__(self) -> None:
+        self._packages: dict[str, DeploymentPackage] = {}
+        self._results: dict[str, DeploymentResult] = {}
+        self._counter = 0
+
+    def discover_backends(
+        self, n_wires: int | None = None
+    ) -> tuple[CloudBackendProfile, ...]:
+        return (CloudBackendProfile.simulator(n_wires or 32, provider=self.provider),)
+
+    def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
+        validate_deployment_package(package)
+        self._counter += 1
+        task_id = f"local-{self._counter}"
+        handle = ProviderTaskHandle(
+            provider=self.provider,
+            task_id=task_id,
+            backend_name=package.backend.name,
+            payload=build_submission_receipt(package, {"name": package.name}),
+        )
+        circuit = Circuit.from_ir(package.ir)
+        counts = circuit.counts(package.shots)[0]
+        result = DeploymentResult(
+            handle=handle,
+            counts=counts,
+            shots=package.shots,
+            metadata=build_result_metadata(
+                handle,
+                {
+                    "qasm_version": package.qasm_version,
+                    "backend": package.backend.name,
+                    "simulated": True,
+                },
+            ),
+        )
+        self._packages[task_id] = package
+        self._results[task_id] = result
+        return handle
+
+    def query_status(self, handle: ProviderTaskHandle) -> str:
+        return "Finished" if handle.task_id in self._results else "Unknown"
+
+    def fetch_result(self, handle: ProviderTaskHandle) -> DeploymentResult:
+        if handle.task_id not in self._results:
+            raise KeyError(f"Unknown deployment task {handle.task_id!r}.")
+        return self._results[handle.task_id]
+
+
+def deploy_circuit(
+    circuit_or_ir: Circuit | CircuitIR,
+    provider: QuantumProvider,
+    *,
+    backend: CloudBackendProfile | None = None,
+    name: str = "flagquantum_job",
+    shots: int = 1024,
+    qasm_version: float = 2.0,
+    optimize: bool = True,
+    routing_strategy: str = "restore_after_each_gate",
+    metadata: Mapping[str, Any] | None = None,
+) -> DeploymentResult:
+    """Package a circuit and run it on a provider."""
+
+    package = create_deployment_package(
+        circuit_or_ir,
+        backend=backend,
+        name=name,
+        shots=shots,
+        qasm_version=qasm_version,
+        optimize=optimize,
+        routing_strategy=routing_strategy,
+        metadata=metadata,
+    )
+    return provider.run(package)
+
+
+def expectation_z_from_counts(
+    counts: Mapping[str, int],
+    wires: int | Sequence[int] | None = None,
+) -> torch.Tensor:
+    """Estimate Z expectations from cloud measurement counts."""
+
+    if not counts:
+        raise ValueError("Counts cannot be empty.")
+    first_key = next(iter(counts))
+    n_wires = len(str(first_key))
+    if wires is None:
+        wire_tuple = tuple(range(n_wires))
+    elif isinstance(wires, int):
+        wire_tuple = (wires,)
+    else:
+        wire_tuple = tuple(int(wire) for wire in wires)
+
+    shots = float(sum(int(value) for value in counts.values()))
+    values = []
+    for wire in wire_tuple:
+        total = 0.0
+        for bitstring, count in counts.items():
+            bit = int(str(bitstring)[wire])
+            total += (1.0 if bit == 0 else -1.0) * int(count)
+        values.append(total / shots)
+    return torch.tensor([values], dtype=torch.float32)
+
+
+def hamiltonian_expectation_from_counts(
+    counts: Mapping[str, int],
+    hamiltonian: Hamiltonian,
+) -> torch.Tensor:
+    """Estimate an I/Z-only Hamiltonian from computational-basis counts."""
+
+    if not counts:
+        raise ValueError("Counts cannot be empty.")
+    shots = float(sum(int(value) for value in counts.values()))
+    total = 0.0
+    for term in hamiltonian.terms:
+        coeff = float(torch.real(torch.as_tensor(term.coefficient)).detach())
+        term_total = 0.0
+        for bitstring, count in counts.items():
+            parity = 1.0
+            for wire, name in term.ops:
+                if name != "z":
+                    raise ValueError(
+                        "Counts-based Hamiltonian estimation currently supports only I/Z terms. "
+                        "Use basis-rotated deployment packages for X/Y observables."
+                    )
+                parity *= 1.0 if str(bitstring)[wire] == "0" else -1.0
+            term_total += parity * int(count)
+        total += coeff * term_total / shots
+    return torch.tensor([total], dtype=torch.float32)
+
+
+__all__ = [
+    "CloudBackendProfile",
+    "DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA",
+    "DeploymentPackage",
+    "DeploymentPackageIdentityError",
+    "DeploymentResult",
+    "LocalSimulatorProvider",
+    "ProviderTaskHandle",
+    "QuantumProvider",
+    "build_result_metadata",
+    "build_submission_receipt",
+    "create_deployment_package",
+    "deploy_circuit",
+    "hamiltonian_expectation_from_counts",
+    "expectation_z_from_counts",
+    "validate_deployment_package",
+    "validate_deployment_result",
+]

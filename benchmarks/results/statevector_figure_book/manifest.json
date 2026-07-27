@@ -1,0 +1,15 @@
+{
+  "artifact_class": "derived_development_visualization",
+  "claim_scope": "Measured development evidence on NVIDIA A800; external cuStateVec is isolated single-device forward-only evidence.",
+  "figure_book": "benchmarks/results/statevector_figure_book/FlagQuantum_Distributed_Statevector_Figure_Book.pdf",
+  "figures": [
+    "fig01_same_host_strong_scaling",
+    "fig02_compute_communication_topology_ablations",
+    "fig03_circuit_family_generality",
+    "fig04_science_training_and_capacity",
+    "fig05_external_custatevec_baseline",
+    "fig06_statistical_training_speed",
+    "fig07_parameter_synchronization"
+  ],
+  "schema": "flagquantum.distributed_statevector.figure_book.v1"
+}

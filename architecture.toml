@@ -1,0 +1,13 @@
+[layers]
+order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "executor_protocols", "planner", "compiler", "ir"]
+
+[boundaries]
+core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
+executor_policy_forbidden = ["audit", "release_policy"]
+default_module_line_ceiling = 1250
+root_init_line_ceiling = 140
+
+[legacy_exceptions."flagquantum/api.py"]
+line_ceiling = 800
+owner = "FlagQuantum core maintainers"
+removal_version = "0.3.0"

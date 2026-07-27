@@ -1,0 +1,132 @@
+{
+  "artifact_class": "measured_local_comparison",
+  "benchmark": "flagquantum_native_vs_custatevec_forward",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "max_abs_error": 1.3328003944934608e-07,
+    "passed": true
+  },
+  "custatevec": {
+    "coefficient_of_variation": 0.03875465596778507,
+    "cupy_pool_growth_bytes": 16777216,
+    "mean_seconds": 0.001915091648697853,
+    "median_seconds": 0.0018923815805464983,
+    "samples_seconds": [
+      0.0022865431383252144,
+      0.0019520199857652187,
+      0.001891524065285921,
+      0.0018751020543277264,
+      0.0019581099040806293,
+      0.0018954910337924957,
+      0.0018946840427815914,
+      0.001884483266621828,
+      0.001947551965713501,
+      0.0018908889032900333,
+      0.0018932390958070755,
+      0.001949177123606205,
+      0.0018890127539634705,
+      0.0018730410374701023,
+      0.001881163101643324,
+      0.0019307918846607208,
+      0.0018865293823182583,
+      0.0018867519684135914,
+      0.0018791682086884975,
+      0.001933219376951456,
+      0.0018833060748875141,
+      0.0018585422076284885,
+      0.0019378061406314373,
+      0.001881319098174572,
+      0.0018824650906026363,
+      0.0018814359791576862,
+      0.001948046963661909,
+      0.0018992191180586815,
+      0.001898476853966713,
+      0.0019036396406590939
+    ],
+    "workspace_bytes": 0
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda": "13.0",
+    "cupy": "14.1.1",
+    "cuquantum": "26.6.0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "flagquantum": {
+    "coefficient_of_variation": 0.012383654358476015,
+    "mean_seconds": 0.038430539037411414,
+    "median_seconds": 0.038283911533653736,
+    "peak_memory_allocated_bytes": 37749760,
+    "samples_seconds": [
+      0.03845357894897461,
+      0.03865496627986431,
+      0.03827260108664632,
+      0.038295221980661154,
+      0.038157652132213116,
+      0.040460146963596344,
+      0.038212964311242104,
+      0.03826705692335963,
+      0.03855353407561779,
+      0.038642449770122766,
+      0.03815282275900245,
+      0.0381684391759336,
+      0.03829618217423558,
+      0.03826796682551503,
+      0.03804646572098136,
+      0.03838864108547568,
+      0.03968923492357135,
+      0.03848873730748892,
+      0.03824179293587804,
+      0.03819709084928036,
+      0.03839486977085471,
+      0.03839651681482792,
+      0.0381876933388412,
+      0.03834510874003172,
+      0.038465794175863266,
+      0.03852347796782851,
+      0.038217172026634216,
+      0.038164820056408644,
+      0.038084186147898436,
+      0.038228985853493214
+    ]
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.custatevec_statevector_compare.v1",
+  "speedup_custatevec_over_flagquantum": 20.23054542868557,
+  "speedup_flagquantum_over_custatevec": 0.04943020461435836,
+  "timing_protocol": {
+    "execution_order": "flagquantum_then_custatevec",
+    "scope": "state_initialization_plus_all_gate_applications",
+    "setup_excluded": [
+      "circuit_construction",
+      "gate_matrix_construction",
+      "custatevec_handle_creation",
+      "workspace_allocation"
+    ],
+    "synchronization": "device_synchronized_wall_clock"
+  },
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 118,
+    "gate_set": [
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "initial_state": "zero",
+    "iterations": 30,
+    "layers": 2,
+    "n_wires": 20,
+    "warmup": 5
+  },
+  "world_size": 1
+}

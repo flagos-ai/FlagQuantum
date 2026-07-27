@@ -1,0 +1,58 @@
+{
+  "schema": "flagquantum.issue095.predeclaration.v1",
+  "frozen_at": "2026-07-12",
+  "statistics": {
+    "confidence_level": 0.95,
+    "minimum_steady_samples": 20,
+    "warmup_steps": 5,
+    "speedup_gate": "lower_95_percent_confidence_bound_gt_1",
+    "maximum_coefficient_of_variation": 0.10
+  },
+  "world_sizes": [1, 2, 4, 8],
+  "scaling_modes": ["strong", "weak"],
+  "local_crossover_control": {
+    "family": "circuit_training",
+    "sites": 2,
+    "depth": 2,
+    "max_bond": 32,
+    "world_sizes": [1, 2]
+  },
+  "dimensions": [
+    "sites",
+    "max_bond",
+    "depth",
+    "boundary_rate",
+    "truncation_policy",
+    "topology"
+  ],
+  "workload_families": [
+    {
+      "id": "tfim_time_evolution",
+      "sites_per_rank_weak": 4,
+      "strong_sites": 16,
+      "depth": 2,
+      "max_bond": 32,
+      "boundary_rate": "brickwork_every_layer",
+      "truncation_policy": {"cutoff": 0.0, "max_bond": 32}
+    },
+    {
+      "id": "circuit_training",
+      "sites_per_rank_weak": 4,
+      "strong_sites": 16,
+      "depth": 2,
+      "max_bond": 32,
+      "boundary_rate": "alternating_brickwork",
+      "truncation_policy": {"cutoff": 0.0, "max_bond": 32}
+    },
+    {
+      "id": "variable_bond_training",
+      "sites_per_rank_weak": 4,
+      "strong_sites": 16,
+      "depth": 2,
+      "max_bond": 32,
+      "boundary_rate": "alternating_brickwork",
+      "truncation_policy": {"cutoff": 0.0, "max_bond": 32},
+      "bond_profile": "dynamically varying exact Schmidt rank"
+    }
+  ]
+}

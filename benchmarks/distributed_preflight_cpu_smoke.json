@@ -1,0 +1,59 @@
+{
+  "benchmark": "distributed_backend_preflight",
+  "communication_probes": [
+    {
+      "all_gather_object_seconds": null,
+      "all_reduce_expected_sum": 1.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": null,
+      "all_reduce_sum": 1.0,
+      "barrier_seconds": null,
+      "initialized": false
+    }
+  ],
+  "device": "cpu",
+  "dist_backend": null,
+  "dist_timeout_seconds": 30.0,
+  "environment": {
+    "cuda_available": false,
+    "cuda_device_count": 0,
+    "diagnostic_env": {
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu"
+  },
+  "local_rank": 0,
+  "rank": 0,
+  "rank_diagnostics": [
+    {
+      "backend": null,
+      "cuda": {
+        "available": false
+      },
+      "device": "cpu",
+      "env": {
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "LAPTOP-2D36ANJ9",
+      "local_rank": 0,
+      "pid": 19688,
+      "python": "3.12.13",
+      "rank": 0,
+      "torch": "2.11.0+cpu",
+      "world_size": 1
+    }
+  ],
+  "rank_summary": {
+    "gpu_counts": {},
+    "gpu_names": [],
+    "host_count": 1,
+    "ranks_by_host": {
+      "LAPTOP-2D36ANJ9": 1
+    },
+    "warnings": []
+  },
+  "status": "ok",
+  "world_size": 1
+}

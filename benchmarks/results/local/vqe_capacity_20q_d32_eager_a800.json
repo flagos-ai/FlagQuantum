@@ -1,0 +1,40 @@
+{
+  "backend": "eager",
+  "benchmark": "flagquantum_vqe_triton_capacity",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "energy": -4.262866020202637,
+  "local_rx_rz_depth": 32,
+  "n_wires": 20,
+  "non_release_evidence": true,
+  "peak_memory_bytes": 11133317120,
+  "release_gate_allowed": false,
+  "runtime": {
+    "backend": "pytorch",
+    "builder_cache_hits": 1,
+    "builder_compile_count": 1,
+    "builder_compiled": true,
+    "compile_count": 1,
+    "compiled": true,
+    "distribution_semantics": "single_device_fast_path",
+    "executor": "pytorch_native_module_v1",
+    "local_world_size": 1,
+    "mode": "statevector",
+    "node_count": 1,
+    "program_cache_hits": 1,
+    "static_program_reused": true,
+    "topology_hash": "e1cf8462a7ed6c9e81748ee4106b4fed645b23925dcc01cf1fae2a99948f1532",
+    "triton_single_qubit_loop_enabled": false,
+    "triton_single_qubit_loop_gates": 0,
+    "triton_single_qubit_loop_regions": 0,
+    "world_size": 1
+  },
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "status": "success",
+  "step_seconds": 11.230128484312445
+}

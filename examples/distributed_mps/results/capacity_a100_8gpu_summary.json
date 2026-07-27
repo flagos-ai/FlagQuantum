@@ -1,0 +1,26 @@
+{
+  "schema": "flagquantum.example.variable_bond_capacity_8gpu.summary.v1",
+  "measured_date": "2026-07-12",
+  "device": "NVIDIA A100-SXM4-40GB",
+  "batch_size": 1,
+  "n_sites": 12288,
+  "max_bond": 512,
+  "logical_mps_bytes": 51469702464,
+  "single_gpu": {
+    "status": "cuda_oom",
+    "elapsed_seconds": 4.336,
+    "peak_memory_bytes": 41859156992
+  },
+  "eight_gpu": {
+    "status": "passed",
+    "distribution_semantics": "sharded_across_ranks",
+    "elapsed_seconds_by_rank": [47.266, 47.089, 47.071, 47.112, 47.077, 47.099, 47.281, 47.111],
+    "peak_memory_bytes_by_rank": [25669413376, 25807819264, 25807819264, 25807819264, 25807819264, 25807819264, 25807819264, 25666616320],
+    "rank_useful_work": [true, true, true, true, true, true, true, true],
+    "completed_steps": 1,
+    "loss": -0.0016579709481447935,
+    "full_mps_materialization": false
+  },
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false
+}

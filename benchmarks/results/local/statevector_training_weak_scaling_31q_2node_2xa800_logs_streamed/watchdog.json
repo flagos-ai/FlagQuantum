@@ -1,0 +1,36 @@
+{
+  "all_launchers_exited": true,
+  "benchmark": "watchdog",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "cleanup_elapsed_seconds": 0.11379855824634433,
+  "cleanup_failures": [],
+  "cleanup_required": true,
+  "cleanup_results": {},
+  "cleanup_verified": false,
+  "distribution_semantics": "single_device_fast_path",
+  "elapsed_seconds": 11.628276688978076,
+  "failure_detected_seconds": 11.514480010606349,
+  "first_failure_job": "node-171",
+  "jobs": [
+    {
+      "log": "benchmarks/results/local/statevector_training_weak_scaling_31q_2node_2xa800_logs_streamed/node-172.log",
+      "name": "node-172",
+      "returncode": 1
+    },
+    {
+      "log": "benchmarks/results/local/statevector_training_weak_scaling_31q_2node_2xa800_logs_streamed/node-171.log",
+      "name": "node-171",
+      "returncode": 1
+    }
+  ],
+  "non_release_evidence": true,
+  "reason": "peer_launcher_failure",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.multinode_watchdog.v1",
+  "status": "failed_closed"
+}

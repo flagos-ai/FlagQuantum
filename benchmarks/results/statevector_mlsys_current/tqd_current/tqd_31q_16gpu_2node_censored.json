@@ -1,0 +1,36 @@
+{
+  "schema": "flagquantum.benchmark.censored-run.v1",
+  "system": "TorchQuantum-Dist",
+  "workload": {
+    "n_wires": 31,
+    "layers": 8,
+    "gates": 488,
+    "trainable_parameters": 248,
+    "measurement": "value_and_gradient",
+    "warmup": 2,
+    "repetitions": 5
+  },
+  "resources": {
+    "nodes": 2,
+    "gpus_per_node": 8,
+    "total_gpus": 16,
+    "gpu": "NVIDIA A800"
+  },
+  "status": "running_right_censored",
+  "completed_warmups": 2,
+  "completed_measured_repetitions": 3,
+  "runtime_lower_bound_seconds": 6460,
+  "observation_time": "2026-07-23T23:33:32+08:00",
+  "result_json_present": false,
+  "observed_stage": "fourth measured value_and_grad after measurement 3 completed",
+  "completed_samples_seconds": {
+    "forward": [176.821375, 298.250664, 21.655867],
+    "backward": [179.804876, 143.537753, 78.739725],
+    "end_to_end": [356.626251, 441.788417, 100.395592]
+  },
+  "gpu_state_at_observation": {
+    "memory_used_mib_per_gpu": 16021,
+    "utilization_percent": 0
+  },
+  "censoring_note": "The run was still alive at the observation time. The lower bound is wall-clock time since launcher start, not a completed iteration time. Update this record at completion or final termination."
+}

@@ -1,0 +1,35 @@
+{
+  "benchmark": "statevector_triton_local_1q_26q_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "forward": {
+    "break_even_calls": 63.48552826547981,
+    "cache_entries_after_cold": 1,
+    "cache_entries_after_parameter_and_bit_updates": 1,
+    "cold_wall_ms": 558.0090149305761,
+    "max_abs_error": 5.331201577973843e-07,
+    "pytorch_median_ms": 9.432064056396484,
+    "speedup": 14.448627016005142,
+    "warm_median_ms": 0.6528000235557556
+  },
+  "fused_vjp_adjoint": {
+    "adjoint_max_abs_error": 5.331201577973843e-07,
+    "cache_entries_after_cold": 1,
+    "cache_entries_after_parameter_and_bit_updates": 1,
+    "cold_wall_ms": 16.38610800728202,
+    "gradient_abs_error": 0.00390625,
+    "gradient_relative_error": 3.485471248783353e-07,
+    "materialized_derivative_state": false,
+    "warm_median_ms": 0.9789440035820007
+  },
+  "non_release_evidence": true,
+  "qubits": 26,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "state_gib": 0.5
+}

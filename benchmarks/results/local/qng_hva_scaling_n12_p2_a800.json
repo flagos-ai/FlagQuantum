@@ -1,0 +1,71 @@
+{
+  "benchmark": "qng_hva_scaling_n12_p2_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 2,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "execution_semantics": "single_device_fast_path",
+  "n_wires": 12,
+  "non_release_evidence": true,
+  "parameter_count": 90,
+  "release_gate_allowed": false,
+  "repeats": 1,
+  "results": {
+    "reference_geometry": {
+      "median_seconds": 73.98548470670357,
+      "peak_memory_bytes": 495003136,
+      "samples_seconds": [
+        73.98548470670357
+      ]
+    },
+    "reference_qng_direction": {
+      "median_seconds": 77.7169791138731,
+      "peak_memory_bytes": 495003136,
+      "samples_seconds": [
+        77.7169791138731
+      ]
+    },
+    "reference_tangent": {
+      "median_seconds": 74.20106327207759,
+      "peak_memory_bytes": 495003136,
+      "samples_seconds": [
+        74.20106327207759
+      ]
+    },
+    "triton_geometry": {
+      "median_seconds": 0.02003275603055954,
+      "peak_memory_bytes": 24054784,
+      "samples_seconds": [
+        0.02003275603055954
+      ]
+    },
+    "triton_qng_direction": {
+      "median_seconds": 0.1523230359889567,
+      "peak_memory_bytes": 24054784,
+      "samples_seconds": [
+        0.1523230359889567
+      ]
+    },
+    "triton_tangent": {
+      "median_seconds": 0.6805414911359549,
+      "peak_memory_bytes": 14551552,
+      "samples_seconds": [
+        0.6805414911359549
+      ]
+    }
+  },
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_hva_scaling.v1",
+  "speedups": {
+    "geometry": 3693.2254650253967,
+    "qng_direction": 510.21159478141914,
+    "tangent": 109.03238706022424
+  },
+  "state_dimension": 4096,
+  "warmup": 0
+}

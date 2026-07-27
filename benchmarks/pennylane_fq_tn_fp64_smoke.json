@@ -1,0 +1,96 @@
+{
+  "batch_size": 1,
+  "benchmark": "pennylane_backend_compare",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error_max": 5.960464477539063e-08,
+    "grad_max_abs_error_rank0": 5.960464477539063e-08,
+    "loss_abs_error_max": 1.6050528262034902e-07,
+    "loss_abs_error_rank0": 1.6050528262034902e-07,
+    "loss_atol": 0.0001,
+    "speedup_flagquantum_over_pennylane_mean_rank_time": 0.03718770887261632,
+    "speedup_flagquantum_over_pennylane_slowest_rank_time": 0.03718770887261632,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX matches PennyLane gradient precision for this workload.",
+    "recommended_claim": "Against PennyLane default.qubit, on 1 rank(s), device=cpu, pennylane_interface=torch, pennylane_device_kwargs={}, flagquantum_mode=tensor_network, 2 wires, 1 layers, batch_size=1, observable=z_sum, FlagQuantum is 0.04x faster by mean rank time with max loss_abs_error=1.605e-07 and max grad_abs_error=5.960e-08."
+  },
+  "device": "cpu",
+  "dist_backend": null,
+  "environment": {
+    "cuda_available": false,
+    "cuda_device_count": 0,
+    "jax": "0.10.2",
+    "pennylane": "0.45.1",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "torch_cuda_matmul_allow_tf32": null,
+    "torch_cudnn_allow_tf32": null,
+    "torch_float32_matmul_precision": "highest",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.39811809999810066,
+      "mean_seconds": 0.39811809999810066,
+      "min_seconds": 0.39811809999810066,
+      "rank0_seconds": 0.39811809999810066
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "compute_dtype": "complex128",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_terms": [],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": null,
+      "mode": "tensor_network",
+      "observable": "z_sum",
+      "observable_wires": null,
+      "parameter_shape": [
+        1,
+        2,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 1.7886580228805542,
+    "mode": "tensor_network",
+    "rank0_avg_seconds": 0.39811809999810066,
+    "requested_compute_dtype": "complex128",
+    "requested_matmul_precision": "highest"
+  },
+  "iters": 1,
+  "layers": 1,
+  "local_rank": 0,
+  "n_wires": 2,
+  "observable": "z_sum",
+  "pennylane": {
+    "backend": "default.qubit",
+    "device_kwargs": {},
+    "diff_method": "backprop",
+    "distributed_seconds": {
+      "max_seconds": 0.014805099999648519,
+      "mean_seconds": 0.014805099999648519,
+      "min_seconds": 0.014805099999648519,
+      "rank0_seconds": 0.014805099999648519
+    },
+    "error": null,
+    "interface": "torch",
+    "jit": false,
+    "loss_rank0": 1.7886581833858368,
+    "rank0_avg_seconds": 0.014805099999648519,
+    "status": "ok"
+  },
+  "rank": 0,
+  "warmup": 0,
+  "world_size": 1
+}

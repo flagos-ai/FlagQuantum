@@ -1,0 +1,89 @@
+{
+  "benchmark": "mps_gradient_compare",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 8.493661880493164e-07,
+    "loss_abs_error": 1.9073486328125e-06,
+    "loss_atol": 0.0001,
+    "slowdown_flagquantum_vs_tensorcircuit_ng": 0.04162938115346053,
+    "speedup_flagquantum_over_tensorcircuit_ng": 24.0214956910757,
+    "status": "ok"
+  },
+  "flagquantum": {
+    "avg_seconds": 0.07294019999972079,
+    "gradient_fastpath": true,
+    "loss": 2.6250696182250977
+  },
+  "flagquantum_distributed_mps": {
+    "avg_seconds": 0.07294019999972079,
+    "gradient_fastpath": true,
+    "loss": 2.6250696182250977
+  },
+  "flagquantum_local_mps": {
+    "avg_seconds": 0.009862700004305225,
+    "loss": 2.6250696182250977
+  },
+  "iters": 1,
+  "jax_baseline_comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 4.76837158203125e-07,
+    "loss_abs_error": 1.430511474609375e-06,
+    "loss_atol": 0.0001,
+    "slowdown_flagquantum_vs_tensorcircuit_ng_jax": 0.04997820739568755,
+    "speedup_flagquantum_over_tensorcircuit_ng_jax": 20.008720842722475,
+    "status": "ok"
+  },
+  "layers": 1,
+  "local_mps_comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 8.493661880493164e-07,
+    "loss_abs_error": 1.9073486328125e-06,
+    "loss_atol": 0.0001,
+    "slowdown_flagquantum_local_mps_vs_tensorcircuit_ng": 0.005628968630234502,
+    "speedup_flagquantum_local_mps_over_tensorcircuit_ng": 177.65243789577488,
+    "status": "ok"
+  },
+  "local_mps_jax_baseline_comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 4.76837158203125e-07,
+    "loss_abs_error": 1.430511474609375e-06,
+    "loss_atol": 0.0001,
+    "slowdown_flagquantum_local_mps_vs_tensorcircuit_ng_jax": 0.006757865570679843,
+    "speedup_flagquantum_local_mps_over_tensorcircuit_ng_jax": 147.9757165248553,
+    "status": "ok"
+  },
+  "local_vs_distributed_mps_comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 0.0,
+    "loss_abs_error": 0.0,
+    "loss_atol": 0.0001,
+    "slowdown_flagquantum_distributed_mps_vs_flagquantum_local_mps": 7.395561050004688,
+    "speedup_flagquantum_distributed_mps_over_flagquantum_local_mps": 0.13521624569637838,
+    "status": "ok"
+  },
+  "max_bond": 32,
+  "n_wires": 3,
+  "rank": 0,
+  "tensorcircuit_ng": {
+    "autograd_fallback_error": null,
+    "autograd_fallback_error_type": null,
+    "avg_seconds": 1.7521326999994926,
+    "backend": "pytorch",
+    "backend_note": null,
+    "gradient_method": "autograd",
+    "jit": false,
+    "loss": 2.625067710876465,
+    "requested_backend": "pytorch",
+    "status": "ok"
+  },
+  "tensorcircuit_ng_jax_baseline": {
+    "avg_seconds": 1.4594401000067592,
+    "backend": "jax",
+    "gradient_method": "autograd",
+    "jit": true,
+    "loss": 2.625068187713623,
+    "status": "ok"
+  },
+  "warmup": 0,
+  "world_size": 1
+}

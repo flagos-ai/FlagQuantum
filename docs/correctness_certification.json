@@ -1,0 +1,1330 @@
+{
+  "cases": [
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "amplitude_damping",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "bit_flip",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "depolarizing",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "phase_flip",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    }
+  ],
+  "claim_boundary": "foundation_only_not_release_certification",
+  "hardware_lanes": {
+    "four_to_eight_gpu": "scheduled topology, partition and collective behavior",
+    "one_gpu": "local numerical parity",
+    "two_gpu": "required true-sharding semantics"
+  },
+  "phase_exit_gates": {
+    "distributed_change": [
+      "cpu_semantics",
+      "healthy_required_local_gpu_lane"
+    ],
+    "operator_or_backend_change": [
+      "generated_operator_backend_matrix"
+    ],
+    "production_release": [
+      "ISSUE-062_release_wide_certification"
+    ]
+  },
+  "schema_version": "flagquantum_correctness_certification_v1",
+  "tolerances": [
+    {
+      "approximation": "none",
+      "atol": 1e-05,
+      "dtype": "complex64",
+      "max_depth": 16,
+      "method": "exact",
+      "rtol": 1e-05,
+      "version": "tolerance_v1"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-docstring-first
+      - id: check-yaml
+      - id: debug-statements
+      - id: check-ast
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.12.7"
+    hooks:
+      - id: ruff
+        files: ^(flagquantum|tests|tools)/.*\.py$
+        args: ["--fix"]
+  - repo: local
+    hooks:
+      - id: architecture-boundaries
+        name: architecture boundaries
+        entry: python tools/check_architecture.py
+        language: system
+        pass_filenames: false
+      - id: repository-hygiene
+        name: repository hygiene
+        entry: python tools/check_repository_hygiene.py
+        language: system
+        pass_filenames: false
+      - id: operator-manifest
+        name: operator manifest
+        entry: python tools/operator_manifest.py --check
+        language: system
+        pass_filenames: false
+      - id: runtime-contract-schema
+        name: runtime contract schema
+        entry: python tools/runtime_contract_schema.py --check
+        language: system
+        pass_filenames: false
+      - id: documentation-source-of-truth
+        name: documentation source of truth
+        entry: python tools/docs_source_of_truth.py --check
+        language: system
+        pass_filenames: false
+      - id: correctness-certification
+        name: correctness certification matrix
+        entry: python tools/correctness_certification.py --check
+        language: system
+        pass_filenames: false
+      - id: black-production-surface
+        name: black production and test surface
+        entry: black --workers 1 --check
+        language: system
+        files: ^(flagquantum|tests|tools)/.*\.py$
+      - id: mypy-foundation
+        name: mypy typed foundation subset
+        entry: >-
+          mypy --no-site-packages --ignore-missing-imports --follow-imports skip
+          flagquantum/version.py flagquantum/core/ir.py
+          flagquantum/core/parameters.py flagquantum/compilation
+          tools/ci_tier.py
+        language: system
+        pass_filenames: false
+      - id: mypy-runtime-contracts
+        name: mypy strict runtime contracts
+        entry: >-
+          mypy --strict --no-site-packages --follow-imports skip
+          flagquantum/core/contracts.py flagquantum/runtime/records.py
+          flagquantum/runtime/audit/contracts.py
+        language: system
+        pass_filenames: false
+        files: ^(flagquantum|tools)/.*\.py$

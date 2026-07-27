@@ -1,0 +1,107 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flagquantum"
+dynamic = ["version"]
+description = "A distributed quantum computing framework built on PyTorch"
+authors = [
+    {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
+]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "torch>=2.5,<2.14",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "ruff>=0.1.0",
+    "black>=23.0",
+    "mypy>=1.0",
+    "build>=1.2.0",
+    "pre-commit>=3.7.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+jax = [
+    "jax>=0.10,<0.11",
+]
+
+cuda = [
+    "triton>=3.1,<4",
+]
+
+examples = [
+    "datasets>=2.20.0",
+    "transformers>=4.40.0",
+]
+
+viz = [
+    "matplotlib>=3.5.0",
+]
+
+invertible = [
+    "torch>=2.5,<2.14",
+]
+
+all = [
+    "pytest>=7.0.0",
+     "pytest-cov>=4.0.0",
+     "pytest-xdist>=3.0.0",
+     "ruff>=0.1.0",
+     "black>=23.0",
+     "mypy>=1.0",
+     "build>=1.2.0",
+     "pre-commit>=3.7.0",
+     "tomli>=2.0; python_version < '3.11'",
+     "matplotlib>=3.5.0",
+     "jax>=0.10,<0.11",
+     "datasets>=2.20.0",
+     "transformers>=4.40.0",
+     "triton>=3.1,<4",
+]
+
+[project.urls]
+Homepage = "https://github.com/flagquantum/flagquantum"
+Repository = "https://github.com/flagquantum/flagquantum"
+Issues = "https://github.com/flagquantum/flagquantum/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flagquantum*"]
+exclude = ["tests*", "docs*", "scripts*", "examples*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "flagquantum.version.__version__"}
+
+[tool.black]
+line-length = 88
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"flagquantum/__init__.py" = ["F401", "F403"]
+"flagquantum/api.py" = ["F401"]
+"flagquantum/runtime/backends/mps/reverse_z_observables.py" = ["F811"]
+"flagquantum/simulation/tensor.py" = ["F822"]
+"tests/distributed/test_quantum_device.py" = ["E402"]
+"tests/distributed/test_quantum_gradients.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true

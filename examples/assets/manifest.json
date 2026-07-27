@@ -1,0 +1,37 @@
+{
+  "schema": "flagquantum_example_assets_v1",
+  "assets": [
+    {
+      "id": "imdb-test",
+      "revision": "e628166",
+      "url": "https://huggingface.co/datasets/stanfordnlp/imdb/resolve/e628166/plain_text/test-00000-of-00001.parquet",
+      "sha256": "b52e26e2f872d282ffac460bf9770b25ac6f102cda0e6ca7158df98c94e8b3da",
+      "bytes": 20470363,
+      "path": "imdb/plain_text/test.parquet"
+    },
+    {
+      "id": "imdb-train",
+      "revision": "e628166",
+      "url": "https://huggingface.co/datasets/stanfordnlp/imdb/resolve/e628166/plain_text/train-00000-of-00001.parquet",
+      "sha256": "db47d16b5c297cc0dd625e519c81319c24c9149e70e8496de5475f6fa928342c",
+      "bytes": 20979968,
+      "path": "imdb/plain_text/train.parquet"
+    },
+    {
+      "id": "bert-tokenizer-json",
+      "revision": "b644e1d1cc3f080c2e6d4db69cfdfac83719c814",
+      "url": "https://huggingface.co/google-bert/bert-base-uncased/resolve/b644e1d1cc3f080c2e6d4db69cfdfac83719c814/tokenizer.json",
+      "sha256": "8c44811352cd5a8d7afd7ab03898c4b3f30246527fb15c51efab6a9f8901391e",
+      "bytes": 711397,
+      "path": "bert-base-uncased/tokenizer.json"
+    },
+    {
+      "id": "bert-vocab",
+      "revision": "b644e1d1cc3f080c2e6d4db69cfdfac83719c814",
+      "url": "https://huggingface.co/google-bert/bert-base-uncased/resolve/b644e1d1cc3f080c2e6d4db69cfdfac83719c814/vocab.txt",
+      "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+      "bytes": 231508,
+      "path": "bert-base-uncased/vocab.txt"
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "batch_size": 16,
+  "benchmark": "pennylane_backend_compare",
+  "comparison": {
+    "pennylane_early_stop_speedup": 30000.0,
+    "pennylane_effective_warmup": 0,
+    "pennylane_run_timeout_seconds": 600.0,
+    "reason": {
+      "message": "PennyLane subprocess exceeded 600.000 seconds.",
+      "timeout_seconds": 600.0,
+      "type": "TimeoutError"
+    },
+    "speedup_lower_bound_flagquantum_over_pennylane_min_rank": 367536.43310720375,
+    "speedup_lower_bound_flagquantum_over_pennylane_rank0": 369496.8781505871,
+    "status": "timeout"
+  },
+  "conclusion": {
+    "headline": "PennyLane did not finish within the configured timeout for this workload.",
+    "recommended_claim": "Against PennyLane lightning.tensor, on 8 rank(s), device=cuda:0, pennylane_interface=torch, pennylane_device_kwargs={'method': 'mps', 'max_bond_dim': 32}, flagquantum_mode=mps, 8 wires, 2 layers, batch_size=16, observable=ising, FlagQuantum is at least 367536.43x faster before the PennyLane timeout."
+  },
+  "device": "cuda:0",
+  "dist_backend": "nccl",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 8,
+    "jax": "0.10.2",
+    "pennylane": "0.45.1",
+    "platform": "Linux-5.15.0-1053-nvidia-x86_64-with-glibc2.35",
+    "python": "3.12.9",
+    "torch": "2.6.0+cu124",
+    "torch_cuda_matmul_allow_tf32": false,
+    "torch_cudnn_allow_tf32": false,
+    "torch_float32_matmul_precision": "highest",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.0016324912197887898,
+      "mean_seconds": 0.0016278134076856076,
+      "min_seconds": 0.0016178092453628778,
+      "rank0_seconds": 0.0016238296870142222
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "compute_dtype": "complex64",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_term_count": 23,
+      "hamiltonian_terms": [
+        [
+          0.7,
+          [
+            [
+              0,
+              "z"
+            ],
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              1,
+              "z"
+            ],
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              2,
+              "z"
+            ],
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              3,
+              "z"
+            ],
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              4,
+              "z"
+            ],
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              5,
+              "z"
+            ],
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              6,
+              "z"
+            ],
+            [
+              7,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              0,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              0,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              1,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              2,
+              "x"
+            ]
+          ]
+        ]
+      ],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": 32,
+      "mode": "mps",
+      "observable": "hamiltonian",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 52.627201080322266,
+    "mode": "mps",
+    "rank0_avg_seconds": 0.0016238296870142222,
+    "requested_compute_dtype": "complex64",
+    "requested_matmul_precision": "highest"
+  },
+  "iters": 20,
+  "layers": 2,
+  "local_rank": 0,
+  "n_wires": 8,
+  "observable": "ising",
+  "pennylane": {
+    "backend": "lightning.tensor",
+    "completed_iters": null,
+    "device_kwargs": {
+      "max_bond_dim": 32,
+      "method": "mps"
+    },
+    "diff_method": "parameter-shift",
+    "distributed_seconds": null,
+    "early_stop_reason": null,
+    "early_stop_speedup": 30000.0,
+    "early_stopped": null,
+    "effective_warmup": 0,
+    "error": {
+      "message": "PennyLane subprocess exceeded 600.000 seconds.",
+      "timeout_seconds": 600.0,
+      "type": "TimeoutError"
+    },
+    "interface": "torch",
+    "jit": false,
+    "loss_rank0": null,
+    "rank0_avg_seconds": null,
+    "requested_iters": null,
+    "run_timeout_seconds": 600.0,
+    "speedup_lower_bound_over_flagquantum": 369496.8781505871,
+    "status": "timeout"
+  },
+  "pennylane_effective_warmup": 0,
+  "rank": 0,
+  "warmup": 5,
+  "world_size": 8
+}

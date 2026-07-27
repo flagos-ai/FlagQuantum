@@ -1,0 +1,3902 @@
+{
+  "artifact_class": "measured_development_run",
+  "backward": {
+    "coefficient_of_variation": 0.0015514161520907503,
+    "mean_seconds": 64.36478743609041,
+    "median_seconds": 64.29810562636703,
+    "sample_count": 3,
+    "samples_seconds": [
+      64.50593443680555,
+      64.29810562636703,
+      64.29032224509865
+    ]
+  },
+  "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "initial_gradients": [
+      -0.0008133562514558434,
+      -0.001110393670387566,
+      -0.0009613297297619283,
+      -0.0008507906459271908,
+      -0.0010309439385309815,
+      -0.0010026127565652132,
+      -0.0013578033540397882,
+      -0.0016060256166383624,
+      -0.0015929758083075285,
+      -0.001651622005738318,
+      -0.0014678778825327754,
+      -0.0011850803857669234,
+      -0.0011939675314351916,
+      -0.0026147286407649517,
+      -0.002045460045337677,
+      0.007067358121275902,
+      -5.5560435612278525e-06,
+      -0.003751319134607911,
+      -0.004670663736760616,
+      -0.012834664434194565,
+      -0.004382024984806776,
+      -0.0035565830767154694,
+      -0.0023901229724287987,
+      0.007516339886933565,
+      0.0008289552642963827,
+      -0.00013972386659588665,
+      -0.0029014060273766518,
+      -0.02332000434398651,
+      -0.006371119525283575,
+      -0.008768619038164616,
+      -0.010226507671177387,
+      -0.00014222346362657845,
+      0.00028028356609866023,
+      -2.6173016522079706e-05,
+      -0.00011815049947472289,
+      0.00016434364079032093,
+      6.180707714520395e-05,
+      -0.00015949003864079714,
+      -0.0001257812837138772,
+      7.144903065636754e-06,
+      0.0002377675409661606,
+      0.00010955570178339258,
+      -6.646574183832854e-05,
+      -0.00021020203712396324,
+      0.000697981973644346,
+      0.0012230242136865854,
+      0.0037978170439600945,
+      6.491056410595775e-06,
+      -0.001197137637063861,
+      -0.009231404401361942,
+      -0.01193233672529459,
+      -0.0008104587905108929,
+      0.0006060921004973352,
+      0.0037504443898797035,
+      -0.001082232454791665,
+      -0.001651589060202241,
+      -0.007955772802233696,
+      -0.011211961507797241,
+      -0.011666180565953255,
+      -0.003357986221089959,
+      -0.001816372387111187,
+      -0.006936680059880018,
+      -0.0002681383048184216,
+      6.178792682476342e-05,
+      0.0003648328420240432,
+      0.0004103691317141056,
+      0.0003750860341824591,
+      0.000714536290615797,
+      0.000805236806627363,
+      0.00049361283890903,
+      8.444102422799915e-05,
+      -2.881774344132282e-05,
+      5.6769029470160604e-05,
+      -2.379571014898829e-06,
+      -0.0002728248364292085,
+      0.00045619328739121556,
+      0.0012493086978793144,
+      -0.0004245774180162698,
+      0.005254414398223162,
+      -0.0013857786543667316,
+      -0.006592271383851767,
+      -0.0038454881869256496,
+      -0.0035029530990868807,
+      -0.0003996926825493574,
+      0.0002934071235358715,
+      -0.0009393743239343166,
+      0.004165794234722853,
+      -0.00447032181546092,
+      -0.010930967517197132,
+      -0.0046837180852890015,
+      -0.006413859780877829,
+      -0.011058761738240719,
+      -0.006902516819536686,
+      -0.00012789345055352896,
+      0.00036066363099962473,
+      4.1101669921772555e-05,
+      -0.00010324740287614986,
+      -4.145030470681377e-05,
+      0.000748255115468055,
+      9.234591561835259e-05,
+      4.283925227355212e-05,
+      8.910527685657144e-05,
+      0.0005865002749487758,
+      -0.0001827655651140958,
+      -0.00033879210241138935,
+      -1.5358531527454033e-05,
+      0.0016893516294658184,
+      0.0014181156875565648,
+      0.004435152281075716,
+      0.0013473648577928543,
+      -0.00557189155369997,
+      -0.005120586603879929,
+      -0.005636891350150108,
+      -0.006258833222091198,
+      0.0002915876393672079,
+      -4.334899131208658e-05,
+      0.0041985041461884975,
+      0.004937870427966118,
+      -0.009631037712097168,
+      -0.010733052156865597,
+      -0.007438705302774906,
+      -0.010260025970637798,
+      -0.0030627010855823755,
+      -0.003754981094971299,
+      -7.169364835135639e-05,
+      -7.29170860722661e-05,
+      -0.00012122309999540448,
+      0.00013291824143379927,
+      4.071505827596411e-05,
+      -3.701850801007822e-06,
+      -0.00011249215458519757,
+      -3.9629096136195585e-05,
+      -7.308467320399359e-05,
+      0.00010754875256679952,
+      -3.525019565131515e-07,
+      0.00033303670352324843,
+      0.00016548976418562233,
+      0.00050742132589221,
+      -0.0006808685138821602,
+      -0.0010935224127024412,
+      0.0016751156654208899,
+      -0.014901680871844292,
+      -0.0012781987898051739,
+      -0.006396017502993345,
+      -0.0010664472356438637,
+      0.005582521669566631,
+      0.0007995768100954592,
+      0.005933423992246389,
+      0.00655651418492198,
+      -0.002618212718516588,
+      -0.0036863575223833323,
+      -0.015979191288352013,
+      -0.002261713147163391,
+      0.0010155515046790242,
+      0.0005180458538234234,
+      0.000258829677477479,
+      5.0653412472456694e-05,
+      0.00018894404638558626,
+      5.505277658812702e-05,
+      0.00047362971235997975,
+      0.00010375304555054754,
+      0.0001204225336550735,
+      -1.3925637176726013e-06,
+      0.0004379451274871826,
+      0.00012617131869774312,
+      0.00021143352205399424,
+      -5.653069820255041e-06,
+      0.0005605464684776962,
+      0.00023384433006867766,
+      0.0008705292129889131,
+      -0.00010968410060741007,
+      -0.013907046988606453,
+      -0.009324399754405022,
+      9.665352263255045e-05,
+      -0.001621998380869627,
+      -0.011647910811007023,
+      -0.015964416787028313,
+      -0.0021618760656565428,
+      -0.0017421450465917587,
+      -0.021998971700668335,
+      -0.009924639947712421,
+      -0.006490563973784447,
+      -0.0005647882353514433,
+      -0.004023199435323477,
+      -0.005706639029085636,
+      -0.0043395282700657845,
+      -0.0001505085383541882,
+      0.00011889963934663683,
+      -1.537671050755307e-05,
+      1.1304600775474682e-05,
+      0.0002156180707970634,
+      0.00021412986097857356,
+      0.0001795243879314512,
+      0.0002054451178992167,
+      8.43950838316232e-05,
+      0.00012741502723656595,
+      0.0002444863202981651,
+      0.0003007621562574059,
+      0.00017946105799637735,
+      9.816140664042905e-05,
+      0.0006127619417384267,
+      0.001844596117734909,
+      -0.012954091653227806,
+      -0.0030466364696621895,
+      -0.009052271023392677,
+      -0.003946289420127869,
+      -0.007990232668817043,
+      -0.00012326217256486416,
+      -0.008225789293646812,
+      0.0003351374762132764,
+      -0.005560221616178751,
+      -0.00019983664969913661,
+      0.0032659044954925776,
+      -0.010164277628064156,
+      -0.010008194483816624,
+      -0.00021879226551391184,
+      -0.016430554911494255,
+      4.547473508864641e-12,
+      -2.3646862246096134e-11,
+      -8.617462299298495e-11,
+      -4.297362465877086e-11,
+      2.4101609596982598e-11,
+      0.0,
+      2.9103830456733704e-11,
+      1.8189894035458565e-11,
+      -7.73070496506989e-12,
+      -1.6370904631912708e-11,
+      2.1827872842550278e-11,
+      -2.1827872842550278e-11,
+      2.1827872842550278e-11,
+      -3.2741809263825417e-11,
+      -3.637978807091713e-11,
+      -0.005992365535348654,
+      -0.006549125537276268,
+      -0.01137944869697094,
+      -0.00703256344422698,
+      -0.007307312451303005,
+      -0.01746213808655739,
+      -0.016954168677330017,
+      -0.011073538102209568,
+      -0.003382285824045539,
+      -0.011349528096616268,
+      -0.015528745949268341,
+      -0.004012241493910551,
+      -0.013229114934802055,
+      -0.01775883138179779,
+      -0.02408544346690178,
+      -0.014031420461833477
+    ],
+    "initial_value": 0.031925298273563385,
+    "values_and_gradients_finite": true
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "environment": {
+    "cuda": "13.0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "forward": {
+    "coefficient_of_variation": 0.01703086263772194,
+    "mean_seconds": 40.83375694804514,
+    "median_seconds": 40.34378535300493,
+    "sample_count": 3,
+    "samples_seconds": [
+      41.81724715977907,
+      40.34378535300493,
+      40.34023833135143
+    ]
+  },
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 4,
+  "memory": {
+    "exclusive_gpu_required": true,
+    "measurement": "NVML device-used bytes sampled every 20 ms",
+    "peak_bytes_aggregate_max": 83865632768,
+    "peak_bytes_per_rank_max": 20966408192,
+    "samples_aggregate_bytes": [
+      83865632768,
+      83865632768,
+      83865632768
+    ],
+    "samples_per_rank_max_bytes": [
+      20966408192,
+      20966408192,
+      20966408192
+    ]
+  },
+  "node_count": 1,
+  "non_release_evidence": true,
+  "protocol": {
+    "communication_aware_layout": true,
+    "distributed_sample_reduction": "rank_max",
+    "fixed_parameters_across_samples": true,
+    "gradient_method": "reversible_adjoint",
+    "optimizer_included": false,
+    "packed_gradient_all_reduce": true,
+    "repetitions": 3,
+    "synchronization": "cuda_device_synchronized_wall_clock",
+    "triton_vjp_adjoint": true,
+    "warmup": 0
+  },
+  "rank_placement": [
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    }
+  ],
+  "release_gate_allowed": false,
+  "runtime_summary": {
+    "backend": "nccl",
+    "backward_communication_bytes": 481036338152,
+    "backward_communication_count": 14338,
+    "backward_distribution_semantics": "sharded_across_ranks",
+    "backward_error": null,
+    "backward_exchange_chunk_amplitudes": 4194304,
+    "backward_exchange_chunk_bytes": 33554432,
+    "backward_exchange_pipeline_prefetch_count": 8128,
+    "backward_exchange_workspace_allocation_count": 6,
+    "backward_exchange_workspace_reserved_bytes": 201326592,
+    "backward_exchange_workspace_reuse_count": 14330,
+    "backward_inter_node_communication_bytes": 0,
+    "backward_inter_node_communication_count": 0,
+    "backward_intra_node_communication_bytes": 481036337152,
+    "backward_intra_node_communication_count": 12288,
+    "backward_status": "completed",
+    "backward_uses_full_state_replay": false,
+    "blockers": [
+      "sharded_optimizer_update_pending"
+    ],
+    "checkpoint_policy": {
+      "interval": 0,
+      "strategy": "reversible_adjoint",
+      "version": "statevector_checkpoint_v1"
+    },
+    "distribution_semantics": "sharded_across_ranks",
+    "executor": "pytorch_native_sharded_statevector_reverse_v1",
+    "forward_distribution_semantics": "sharded_across_ranks",
+    "full_state_materialization": false,
+    "gradient_collective_bytes": 992,
+    "gradient_collective_count": 1,
+    "gradient_distribution": "replicated_after_all_reduce",
+    "gradient_reduction": "all_reduce_sum",
+    "local_state_bytes": 4294967296,
+    "local_world_size": 4,
+    "node_count": 1,
+    "optimizer_update_ready": false,
+    "parameter_gradient_ready": true,
+    "parameter_ownership": [
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:0",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:1",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:2",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:3",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:4",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:5",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:6",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:7",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:8",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:9",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:10",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:11",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:12",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:13",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:14",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:15",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:16",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:17",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:18",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:19",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:20",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:21",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:22",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:23",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:24",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:25",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:26",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:27",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:28",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:29",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:30",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:31",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:32",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:33",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:34",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:35",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:36",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:37",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:38",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:39",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:40",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:41",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:42",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:43",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:44",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:45",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:46",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:47",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:48",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:49",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:50",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:51",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:52",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:53",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:54",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:55",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:56",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:57",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:58",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:59",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:60",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:61",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:62",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:63",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:64",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:65",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:66",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:67",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:68",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:69",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:70",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:71",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:72",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:73",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:74",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:75",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:76",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:77",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:78",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:79",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:80",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:81",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:82",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:83",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:84",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:85",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:86",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:87",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:88",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:89",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:90",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:91",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:92",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:93",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:94",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:95",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:96",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:97",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:98",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:99",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:100",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:101",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:102",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:103",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:104",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:105",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:106",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:107",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:108",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:109",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:110",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:111",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:112",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:113",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:114",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:115",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:116",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:117",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:118",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:119",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:120",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:121",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:122",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:123",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:124",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:125",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:126",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:127",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:128",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:129",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:130",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:131",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:132",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:133",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:134",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:135",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:136",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:137",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:138",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:139",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:140",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:141",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:142",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:143",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:144",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:145",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:146",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:147",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:148",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:149",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:150",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:151",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:152",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:153",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:154",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:155",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:156",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:157",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:158",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:159",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:160",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:161",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:162",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:163",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:164",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:165",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:166",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:167",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:168",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:169",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:170",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:171",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:172",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:173",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:174",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:175",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:176",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:177",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:178",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:179",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:180",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:181",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:182",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:183",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:184",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:185",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:186",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:187",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:188",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:189",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:190",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:191",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:192",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:193",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:194",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:195",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:196",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:197",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:198",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:199",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:200",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:201",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:202",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:203",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:204",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:205",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:206",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:207",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:208",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:209",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:210",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:211",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:212",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:213",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:214",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:215",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:216",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:217",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:218",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:219",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:220",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:221",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:222",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:223",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:224",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:225",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:226",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:227",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:228",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:229",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:230",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:231",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:232",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:233",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:234",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:235",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:236",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:237",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:238",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:239",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:240",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:241",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:242",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:243",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:244",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:245",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:246",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "replicated_after_all_reduce",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:247",
+        "participating_ranks": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "reduction": "all_reduce_sum",
+        "reduction_count": 1
+      }
+    ],
+    "peak_backward_scratch_bytes": 4529848320,
+    "rank_ownership": {
+      "full_state_owned": false,
+      "local_amplitudes": 536870912,
+      "rank": 0,
+      "total_amplitudes": 2147483648
+    },
+    "release_gate_allowed": false,
+    "saved_forward_state_reused": true,
+    "scalability_claim_allowed": false,
+    "world_size": 4
+  },
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.statevector.value_and_full_gradient.v1",
+  "value_and_grad": {
+    "coefficient_of_variation": 0.0075595347503942985,
+    "mean_seconds": 105.19854438413556,
+    "median_seconds": 104.64189097937196,
+    "sample_count": 3,
+    "samples_seconds": [
+      106.32318159658462,
+      104.64189097937196,
+      104.63056057645008
+    ]
+  },
+  "workload": {
+    "dtype": "complex64",
+    "entanglement": "directed_cnot_linear",
+    "gate_count": 488,
+    "gate_set": [
+      "RY",
+      "CNOT"
+    ],
+    "layers": 8,
+    "n_wires": 31,
+    "name": "full_width_linear_hea",
+    "observable": "Z(15)",
+    "parameter_count": 248,
+    "parameter_dtype": "float32",
+    "seed": 440044
+  },
+  "world_size": 4
+}

@@ -1,0 +1,238 @@
+{
+  "accelerator_overlap_measured": true,
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "benchmark": "statevector_exchange_overlap",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 2e-05,
+    "max_abs_error": 0.0,
+    "passed": true
+  },
+  "device_timing": {
+    "method": "cuda_events_with_device_synchronization",
+    "paired_improvement": {
+      "benefit_demonstrated": false,
+      "confidence_interval_seconds": [
+        -0.006132670418429458,
+        0.008227763191866926
+      ],
+      "confidence_level": 0.95,
+      "mean_improvement_seconds": 0.001047546386718734,
+      "paired_improvements_seconds": [
+        0.021524475097656204,
+        -0.005591064453124961,
+        -0.001934326171875056,
+        -0.009614318847656289,
+        0.010244079589843746,
+        -0.01124047851562504,
+        0.018101257324218745,
+        -0.007990234375000016,
+        -0.0009195556640624325,
+        -0.0021043701171875595
+      ]
+    },
+    "pipeline": {
+      "coefficient_of_variation": 0.01251125600058747,
+      "mean_seconds": 0.5429159851074219,
+      "median_seconds": 0.5417425842285156,
+      "sample_count": 10,
+      "samples_seconds": [
+        0.5414194946289063,
+        0.542065673828125,
+        0.5463695068359375,
+        0.5516461791992188,
+        0.536521728515625,
+        0.5570078735351562,
+        0.53517822265625,
+        0.5446604614257813,
+        0.5379512329101562,
+        0.5363394775390625
+      ]
+    },
+    "synchronous": {
+      "coefficient_of_variation": 0.015534657156541211,
+      "mean_seconds": 0.5439635314941407,
+      "median_seconds": 0.5432335205078125,
+      "sample_count": 10,
+      "samples_seconds": [
+        0.5629439697265625,
+        0.536474609375,
+        0.5444351806640625,
+        0.5420318603515625,
+        0.5467658081054687,
+        0.5457673950195312,
+        0.5532794799804688,
+        0.5366702270507813,
+        0.5370316772460938,
+        0.534235107421875
+      ]
+    }
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "environment": {
+    "cuda_device_names": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1",
+      "cuda:2",
+      "cuda:3"
+    ],
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "host_paired_improvement": {
+    "benefit_demonstrated": false,
+    "confidence_interval_seconds": [
+      -0.006143537644006755,
+      0.008203589651443507
+    ],
+    "confidence_level": 0.95,
+    "mean_improvement_seconds": 0.0010300260037183762,
+    "paired_improvements_seconds": [
+      0.021523538045585155,
+      -0.005590633489191532,
+      -0.0019361013546586037,
+      -0.00962092773988843,
+      0.010240210220217705,
+      -0.011301445309072733,
+      0.01799251465126872,
+      -0.007987418677657843,
+      -0.0009180987253785133,
+      -0.002101377584040165
+    ]
+  },
+  "host_speedup": 1.002646837594657,
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 4,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "overlap_benefit_demonstrated": false,
+  "peak_memory_bytes": 47336448,
+  "pipeline": {
+    "coefficient_of_variation": 0.01252241082269824,
+    "mean_seconds": 0.5429827742278576,
+    "median_seconds": 0.5418295357376337,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.5415615597739816,
+      0.5420975117012858,
+      0.5464010620489717,
+      0.5516833080910146,
+      0.5365638858638704,
+      0.5571473981253803,
+      0.5353200337849557,
+      0.5446937973611057,
+      0.5379859488457441,
+      0.536373236682266
+    ]
+  },
+  "pipeline_recommendation": "keep_disabled_pending_measured_benefit",
+  "rank_ownership": [
+    {
+      "amplitude_end": 262144,
+      "amplitude_start": 0,
+      "compact_global_indices": false,
+      "device": "cuda:0",
+      "dtype": "torch.complex64",
+      "global_index_count": 262144,
+      "local_amplitudes": 262144,
+      "rank": 0,
+      "shape": [
+        1,
+        262144
+      ]
+    },
+    {
+      "amplitude_end": 524288,
+      "amplitude_start": 262144,
+      "compact_global_indices": false,
+      "device": "cuda:1",
+      "dtype": "torch.complex64",
+      "global_index_count": 262144,
+      "local_amplitudes": 262144,
+      "rank": 1,
+      "shape": [
+        1,
+        262144
+      ]
+    },
+    {
+      "amplitude_end": 786432,
+      "amplitude_start": 524288,
+      "compact_global_indices": false,
+      "device": "cuda:2",
+      "dtype": "torch.complex64",
+      "global_index_count": 262144,
+      "local_amplitudes": 262144,
+      "rank": 2,
+      "shape": [
+        1,
+        262144
+      ]
+    },
+    {
+      "amplitude_end": 1048576,
+      "amplitude_start": 786432,
+      "compact_global_indices": false,
+      "device": "cuda:3",
+      "dtype": "torch.complex64",
+      "global_index_count": 262144,
+      "local_amplitudes": 262144,
+      "rank": 3,
+      "shape": [
+        1,
+        262144
+      ]
+    }
+  ],
+  "release_gate_allowed": false,
+  "runtime": {
+    "communication_bytes": 44040192,
+    "communication_count": 42,
+    "pipeline_prefetch_count": 13,
+    "pipelined_gate_count": 13,
+    "subgroup_pipelined_gate_count": 4,
+    "workspace_allocations": 6,
+    "workspace_reuses": 36
+  },
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.exchange_overlap.v1",
+  "synchronous": {
+    "coefficient_of_variation": 0.015578492075377317,
+    "mean_seconds": 0.5440128002315759,
+    "median_seconds": 0.5432636705227196,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.5630850978195667,
+      0.5365068782120943,
+      0.544464960694313,
+      0.5420623803511262,
+      0.5468040960840881,
+      0.5458459528163075,
+      0.5533125484362245,
+      0.5367063786834478,
+      0.5370678501203656,
+      0.5342718590982258
+    ]
+  },
+  "validation_blockers": [],
+  "workload": {
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 4194304,
+    "gate_count": 36,
+    "layers": 4,
+    "n_wires": 20,
+    "sha256": "0484cefa3a267332cadd342dff8674c73feb775e71ac0c4538b14a51a1306023"
+  },
+  "world_size": 4
+}

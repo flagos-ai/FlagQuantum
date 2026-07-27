@@ -1,0 +1,46 @@
+{
+  "benchmark": "qng_hva_forward_tangent_n4_p2_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 2,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "execution_semantics": "single_device_fast_path",
+  "maximum_state_error": 8.948454421897623e-08,
+  "n_wires": 4,
+  "non_release_evidence": true,
+  "parameter_count": 26,
+  "qng_direction_cosine_similarity": 1.0,
+  "relative_l2_metric_error": 3.637830445768486e-07,
+  "relative_l2_tangent_error": 1.3246811647604773e-07,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_hva_forward_tangent_triton.v1",
+  "speedup_vectorized_reverse_over_triton": 113.23016981120522,
+  "triton": {
+    "median_seconds": 0.0013687564060091972,
+    "peak_memory_bytes": 17068032,
+    "samples_seconds": [
+      0.0014484338462352753,
+      0.0013821800239384174,
+      0.0013687564060091972,
+      0.0012624519877135754,
+      0.0007203128188848495
+    ]
+  },
+  "vectorized_reverse": {
+    "median_seconds": 0.15498452028259635,
+    "peak_memory_bytes": 17115648,
+    "samples_seconds": [
+      0.15511808963492513,
+      0.15914366720244288,
+      0.15263718739151955,
+      0.15166169218719006,
+      0.15498452028259635
+    ]
+  }
+}

@@ -1,0 +1,235 @@
+{
+  "batch_size": 16,
+  "benchmark": "distributed_backend_compare",
+  "benchmark_evidence_class": "comparison_non_release",
+  "benchmark_hygiene_note": "comparison_or_rank_local_result_not_release_scalability_evidence",
+  "claim_evidence_type": "development_smoke",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error_max": 4.376517608761787e-06,
+    "grad_max_abs_error_rank0": 4.2263418436050415e-06,
+    "loss_abs_error_max": 1.9073486328125e-05,
+    "loss_abs_error_rank0": 3.814697265625e-06,
+    "loss_atol": 0.0001,
+    "slowdown_jax_vs_pytorch_mean_rank_time": 0.0022390363456704938,
+    "speedup_jax_over_pytorch_mean_rank_time": 446.62070891955244,
+    "speedup_jax_over_pytorch_slowest_rank_time": 427.42509643563073,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX quantum-kernel backend matches PyTorch gradients on the GPU cluster.",
+    "recommended_claim": "On 8 rank(s), device=cuda:0, 8 wires, 2 layers, batch_size=16, observable=ising, FlagQuantum JAX is 446.62x faster than FlagQuantum PyTorch by mean rank time, with max loss_abs_error=1.907e-05 and max grad_abs_error=4.377e-06."
+  },
+  "device": "cuda:0",
+  "dist_backend": "nccl",
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 8,
+    "platform": "Linux-5.15.0-1053-nvidia-x86_64-with-glibc2.35",
+    "python": "3.12.9",
+    "torch": "2.6.0+cu124",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.0020920530054718257,
+      "mean_seconds": 0.001972627902869135,
+      "min_seconds": 0.0018358198553323746,
+      "rank0_seconds": 0.001914775874465704
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_term_count": 23,
+      "hamiltonian_terms": [
+        [
+          0.7,
+          [
+            [
+              0,
+              "z"
+            ],
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              1,
+              "z"
+            ],
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              2,
+              "z"
+            ],
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              3,
+              "z"
+            ],
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              4,
+              "z"
+            ],
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              5,
+              "z"
+            ],
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              6,
+              "z"
+            ],
+            [
+              7,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              0,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              0,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              1,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              2,
+              "x"
+            ]
+          ]
+        ]
+      ],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "observable": "hamiltonian",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 52.627220153808594,
+    "mode": "statevector",
+    "rank0_avg_seconds": 0.001914775874465704,
+    "status": "ok"
+  },
+  "flagquantum_pytorch": {
+    "backend": "pytorch",
+    "distributed_seconds": {
+      "max_seconds": 0.8941959576122462,
+      "mean_seconds": 0.8810164724139031,
+      "min_seconds": 0.8623659666255117,
+      "rank0_seconds": 0.8673669066466391
+    },
+    "loss_rank0": 52.62721633911133,
+    "mode": "statevector",
+    "rank0_avg_seconds": 0.8673669066466391
+  },
+  "iters": 100,
+  "layers": 2,
+  "local_rank": 0,
+  "n_wires": 8,
+  "non_release_evidence": true,
+  "observable": "ising",
+  "payload_kind": "comparison_non_release",
+  "rank": 0,
+  "rank_local_jax_kernel_allowed_for_capacity_claim": false,
+  "rank_offset_parameters": false,
+  "release_gate_allowed": false,
+  "release_payload": false,
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence",
+    "rank_local_or_comparison_world_size_not_capacity_scaling"
+  ],
+  "scalability_claim_allowed": false,
+  "warmup": 20,
+  "world_size": 8
+}

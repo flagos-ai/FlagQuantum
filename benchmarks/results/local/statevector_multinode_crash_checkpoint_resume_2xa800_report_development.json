@@ -1,0 +1,70 @@
+{
+  "artifact_classification": "measured_development_recovery",
+  "benchmark": "statevector_multinode_crash_checkpoint_resume_2xa800_report_development",
+  "benchmark_evidence_class": "local_non_release",
+  "blockers": [
+    "development_recovery_campaign_not_preregistered",
+    "repeated_fault_and_checkpoint_corruption_matrix_not_measured"
+  ],
+  "checkpoint_generation": 2,
+  "claim_evidence_type": "development_smoke",
+  "completed_steps": 4,
+  "crash_cleanup_seconds": 7.349436060059816,
+  "crash_detection_seconds": 24.827829606365412,
+  "development_multinode_recovery_observed": true,
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "losses": [
+    0.8638389706611633,
+    0.8503185510635376
+  ],
+  "node_count": 2,
+  "non_release_evidence": true,
+  "parameters": [
+    0.5101346969604492,
+    -0.29021456837654114
+  ],
+  "rank_optimizer_ownership": [
+    [
+      {
+        "gradient_reduction": "all_reduce_sum",
+        "optimizer_state_local": true,
+        "owner_rank": 0,
+        "parameter": "parameter:0",
+        "update_route": "owner_step_then_broadcast"
+      },
+      {
+        "gradient_reduction": "all_reduce_sum",
+        "optimizer_state_local": false,
+        "owner_rank": 1,
+        "parameter": "parameter:1",
+        "update_route": "owner_step_then_broadcast"
+      }
+    ],
+    [
+      {
+        "gradient_reduction": "all_reduce_sum",
+        "optimizer_state_local": false,
+        "owner_rank": 0,
+        "parameter": "parameter:0",
+        "update_route": "owner_step_then_broadcast"
+      },
+      {
+        "gradient_reduction": "all_reduce_sum",
+        "optimizer_state_local": true,
+        "owner_rank": 1,
+        "parameter": "parameter:1",
+        "update_route": "owner_step_then_broadcast"
+      }
+    ]
+  ],
+  "recovery_claim_allowed": false,
+  "release_evidence": false,
+  "release_gate_allowed": false,
+  "resume_elapsed_seconds": 27.92983816890046,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.statevector.multinode_recovery.v1",
+  "world_size": 2
+}

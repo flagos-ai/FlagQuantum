@@ -1,0 +1,258 @@
+{
+  "batch_size": 16,
+  "benchmark": "pennylane_backend_compare",
+  "benchmark_evidence_class": "comparison_non_release",
+  "benchmark_hygiene_note": "comparison_result_not_release_scalability_evidence",
+  "claim_evidence_type": "development_smoke",
+  "comparison": {
+    "pennylane_early_stop_speedup": 30000.0,
+    "pennylane_effective_warmup": 0,
+    "pennylane_run_timeout_seconds": 600.0,
+    "reason": {
+      "message": "PennyLane subprocess exceeded 600.000 seconds.",
+      "timeout_seconds": 600.0,
+      "type": "TimeoutError"
+    },
+    "speedup_lower_bound_flagquantum_over_pennylane_min_rank": 201036.4545788895,
+    "speedup_lower_bound_flagquantum_over_pennylane_rank0": 201036.4545788895,
+    "status": "timeout"
+  },
+  "conclusion": {
+    "headline": "PennyLane did not finish within the configured timeout for this workload.",
+    "recommended_claim": "Against PennyLane default.tensor, on 1 rank(s), device=cpu, pennylane_interface=torch, pennylane_device_kwargs={'method': 'tn'}, flagquantum_mode=tensor_network, 8 wires, 2 layers, batch_size=16, observable=ising, FlagQuantum is at least 201036.45x faster before the PennyLane timeout."
+  },
+  "device": "cpu",
+  "dist_backend": null,
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda_available": false,
+    "cuda_device_count": 0,
+    "jax": "0.10.2",
+    "pennylane": "0.45.1",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "torch_cuda_matmul_allow_tf32": null,
+    "torch_cudnn_allow_tf32": null,
+    "torch_float32_matmul_precision": "highest",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.0029845333338016644,
+      "mean_seconds": 0.0029845333338016644,
+      "min_seconds": 0.0029845333338016644,
+      "rank0_seconds": 0.0029845333338016644
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "compute_dtype": "complex64",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_term_count": 23,
+      "hamiltonian_terms": [
+        [
+          0.7,
+          [
+            [
+              0,
+              "z"
+            ],
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              1,
+              "z"
+            ],
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              2,
+              "z"
+            ],
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              3,
+              "z"
+            ],
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              4,
+              "z"
+            ],
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              5,
+              "z"
+            ],
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              6,
+              "z"
+            ],
+            [
+              7,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              0,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              0,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              1,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              2,
+              "x"
+            ]
+          ]
+        ]
+      ],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": null,
+      "mode": "tensor_network",
+      "observable": "hamiltonian",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 52.62721252441406,
+    "mode": "tensor_network",
+    "rank0_avg_seconds": 0.0029845333338016644,
+    "requested_compute_dtype": "complex64",
+    "requested_matmul_precision": "highest"
+  },
+  "iters": 3,
+  "layers": 2,
+  "local_rank": 0,
+  "n_wires": 8,
+  "non_release_evidence": true,
+  "observable": "ising",
+  "payload_kind": "comparison_non_release",
+  "pennylane": {
+    "backend": "default.tensor",
+    "completed_iters": null,
+    "device_kwargs": {
+      "method": "tn"
+    },
+    "diff_method": "parameter-shift",
+    "distributed_seconds": null,
+    "early_stop_reason": null,
+    "early_stop_speedup": 30000.0,
+    "early_stopped": null,
+    "effective_warmup": 0,
+    "error": {
+      "message": "PennyLane subprocess exceeded 600.000 seconds.",
+      "timeout_seconds": 600.0,
+      "type": "TimeoutError"
+    },
+    "interface": "torch",
+    "jit": false,
+    "loss_rank0": null,
+    "rank0_avg_seconds": null,
+    "requested_iters": null,
+    "run_timeout_seconds": 600.0,
+    "speedup_lower_bound_over_flagquantum": 201036.4545788895,
+    "status": "timeout"
+  },
+  "pennylane_effective_warmup": 0,
+  "rank": 0,
+  "release_gate_allowed": false,
+  "release_payload": false,
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "warmup": 1,
+  "world_size": 1
+}

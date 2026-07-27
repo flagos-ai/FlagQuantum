@@ -1,0 +1,58 @@
+{
+  "benchmark": "pennylane_tensor_compare",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 1.1920928955078125e-07,
+    "loss_abs_error": 4.76837158203125e-07,
+    "loss_atol": 0.0001,
+    "pennylane_early_stop_reason": null,
+    "pennylane_early_stopped": false,
+    "speedup_flagquantum_over_pennylane": 25.724895806515164,
+    "speedup_lower_bound_flagquantum_over_pennylane": 25.724895806515164,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum matches PennyLane tensor-device precision for this workload.",
+    "recommended_claim": "On cpu, method=mps, 4 wires, 1 layers, observable=z_sum, FlagQuantum pytorch is 25.72x faster than PennyLane default.tensor."
+  },
+  "device": "cpu",
+  "environment": {
+    "cuda_available": false,
+    "pennylane": "0.45.1",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "torch_float32_matmul_precision": "highest"
+  },
+  "flagquantum": {
+    "avg_seconds": 0.00397510000038892,
+    "backend": "pytorch",
+    "kernel": null,
+    "loss": 3.7495036125183105,
+    "max_bond": null,
+    "mode": "mps"
+  },
+  "forward_only": false,
+  "iters": 3,
+  "layers": 1,
+  "method": "mps",
+  "n_wires": 4,
+  "observable": "z_sum",
+  "pennylane": {
+    "avg_seconds": 0.10225903333048336,
+    "backend": "default.tensor",
+    "completed_iters": 3,
+    "cutoff": null,
+    "diff_method": "parameter-shift",
+    "early_stop_reason": null,
+    "early_stopped": false,
+    "error": null,
+    "interface": "jax",
+    "jit": true,
+    "loss": 3.7495031356811523,
+    "max_bond_dim": null,
+    "method": "mps",
+    "requested_iters": 3
+  },
+  "warmup": 1
+}

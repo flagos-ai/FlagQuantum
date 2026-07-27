@@ -1,0 +1,83 @@
+{
+  "benchmark": "qng_hva_scaling_n2_p2_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 2,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "execution_semantics": "single_device_fast_path",
+  "n_wires": 2,
+  "non_release_evidence": true,
+  "parameter_count": 10,
+  "release_gate_allowed": false,
+  "repeats": 3,
+  "results": {
+    "reference_geometry": {
+      "median_seconds": 0.04565811576321721,
+      "peak_memory_bytes": 17077248,
+      "samples_seconds": [
+        0.03732648305594921,
+        0.04888793919235468,
+        0.04565811576321721
+      ]
+    },
+    "reference_qng_direction": {
+      "median_seconds": 0.06825664499774575,
+      "peak_memory_bytes": 17083392,
+      "samples_seconds": [
+        0.06825664499774575,
+        0.07328272704035044,
+        0.06503199599683285
+      ]
+    },
+    "reference_tangent": {
+      "median_seconds": 0.040448598098009825,
+      "peak_memory_bytes": 17077248,
+      "samples_seconds": [
+        0.044310315046459436,
+        0.03864064672961831,
+        0.040448598098009825
+      ]
+    },
+    "triton_geometry": {
+      "median_seconds": 0.0012223981320858002,
+      "peak_memory_bytes": 17047040,
+      "samples_seconds": [
+        0.0012942790053784847,
+        0.0012223981320858002,
+        0.0012114881537854671
+      ]
+    },
+    "triton_qng_direction": {
+      "median_seconds": 0.020427424926310778,
+      "peak_memory_bytes": 17067520,
+      "samples_seconds": [
+        0.018251317087560892,
+        0.020427424926310778,
+        0.022480966057628393
+      ]
+    },
+    "triton_tangent": {
+      "median_seconds": 0.0009589390829205513,
+      "peak_memory_bytes": 8524288,
+      "samples_seconds": [
+        0.0020095612853765488,
+        0.0009589390829205513,
+        0.00036743609234690666
+      ]
+    }
+  },
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_hva_scaling.v1",
+  "speedups": {
+    "geometry": 37.35126434242004,
+    "qng_direction": 3.3414218994304243,
+    "tangent": 42.180571027326685
+  },
+  "state_dimension": 4,
+  "warmup": 1
+}

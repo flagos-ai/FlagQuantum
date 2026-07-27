@@ -1,0 +1,10 @@
+{
+  "status": "measured_development_evidence",
+  "figures": [
+    "fig0_final_scaling",
+    "fig1_current_performance",
+    "fig2_optimization_journey",
+    "fig3_multinode_diagnosis"
+  ],
+  "note": "The matched final 1/2/4/8/16-GPU FlagQuantum matrix and 2/4/8/16-GPU Lightning matrix use two warmups and five measured samples. Profiler and capacity/OOM evidence remain pending."
+}

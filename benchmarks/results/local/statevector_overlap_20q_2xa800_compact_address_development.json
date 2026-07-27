@@ -1,0 +1,206 @@
+{
+  "accelerator_overlap_measured": true,
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "benchmark": "statevector_exchange_overlap",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 2e-05,
+    "max_abs_error": 0.0,
+    "passed": true
+  },
+  "device_timing": {
+    "method": "cuda_events_with_device_synchronization",
+    "paired_improvement": {
+      "benefit_demonstrated": false,
+      "confidence_interval_seconds": [
+        -0.22396813432370272,
+        0.07179968492184724
+      ],
+      "confidence_level": 0.95,
+      "mean_improvement_seconds": -0.07608422470092774,
+      "paired_improvements_seconds": [
+        0.0005150718688964849,
+        -0.7551344699859619,
+        0.0002447357177734373,
+        -0.0026337280273437506,
+        6.348800659179699e-05,
+        0.0006113281249999977,
+        -0.0026040325164794938,
+        0.00010956764221191351,
+        -0.0011089916229248056,
+        -0.0009052162170410175
+      ]
+    },
+    "pipeline": {
+      "coefficient_of_variation": 2.2773414039236046,
+      "mean_seconds": 0.09937715263366699,
+      "median_seconds": 0.023824383735656738,
+      "sample_count": 10,
+      "samples_seconds": [
+        0.022774784088134766,
+        0.7783147583007812,
+        0.023742464065551756,
+        0.026423295974731444,
+        0.023165952682495116,
+        0.02271334457397461,
+        0.025820159912109376,
+        0.02287615966796875,
+        0.02390630340576172,
+        0.024034303665161134
+      ]
+    },
+    "synchronous": {
+      "coefficient_of_variation": 0.014362168864535379,
+      "mean_seconds": 0.02329292793273926,
+      "median_seconds": 0.023222784042358398,
+      "sample_count": 10,
+      "samples_seconds": [
+        0.02328985595703125,
+        0.023180288314819338,
+        0.023987199783325194,
+        0.023789567947387694,
+        0.023229440689086913,
+        0.02332467269897461,
+        0.023216127395629883,
+        0.022985727310180663,
+        0.022797311782836914,
+        0.023129087448120117
+      ]
+    }
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "environment": {
+    "cuda_device_names": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "devices": [
+      "cuda:0",
+      "cuda:1"
+    ],
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "host_paired_improvement": {
+    "benefit_demonstrated": false,
+    "confidence_interval_seconds": [
+      -0.22397068472887316,
+      0.0717963773229245
+    ],
+    "confidence_level": 0.95,
+    "mean_improvement_seconds": -0.07608715370297432,
+    "paired_improvements_seconds": [
+      0.0005169687792658806,
+      -0.7551355976611376,
+      0.00024487683549523354,
+      -0.002656653057783842,
+      6.085820496082306e-05,
+      0.0006121094338595867,
+      -0.0026035793125629425,
+      0.00010821688920259476,
+      -0.0011118259280920029,
+      -0.0009069112129509449
+    ]
+  },
+  "host_speedup": 0.9747637860071541,
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "overlap_benefit_demonstrated": false,
+  "peak_memory_bytes": 50482176,
+  "pipeline": {
+    "coefficient_of_variation": 2.27655204396342,
+    "mean_seconds": 0.09941150536760687,
+    "median_seconds": 0.023855767911300063,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.02280651079490781,
+      0.7783483238890767,
+      0.02377440221607685,
+      0.026475865859538317,
+      0.023197177797555923,
+      0.022745479829609394,
+      0.02585302060469985,
+      0.02290819911286235,
+      0.023937133606523275,
+      0.024068939965218306
+    ]
+  },
+  "pipeline_recommendation": "keep_disabled_pending_measured_benefit",
+  "rank_ownership": [
+    {
+      "amplitude_end": 524288,
+      "amplitude_start": 0,
+      "compact_global_indices": true,
+      "device": "cuda:0",
+      "dtype": "torch.complex64",
+      "global_index_count": 524288,
+      "local_amplitudes": 524288,
+      "rank": 0,
+      "shape": [
+        1,
+        524288
+      ]
+    },
+    {
+      "amplitude_end": 1048576,
+      "amplitude_start": 524288,
+      "compact_global_indices": true,
+      "device": "cuda:1",
+      "dtype": "torch.complex64",
+      "global_index_count": 524288,
+      "local_amplitudes": 524288,
+      "rank": 1,
+      "shape": [
+        1,
+        524288
+      ]
+    }
+  ],
+  "release_gate_allowed": false,
+  "runtime": {
+    "communication_bytes": 37748736,
+    "communication_count": 36,
+    "pipeline_prefetch_count": 27,
+    "pipelined_gate_count": 9,
+    "subgroup_pipelined_gate_count": 4,
+    "workspace_allocations": 4,
+    "workspace_reuses": 32
+  },
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.exchange_overlap.v1",
+  "synchronous": {
+    "coefficient_of_variation": 0.014358541469970352,
+    "mean_seconds": 0.023324351664632557,
+    "median_seconds": 0.023253738647326827,
+    "sample_count": 10,
+    "samples_seconds": [
+      0.02332347957417369,
+      0.02321272622793913,
+      0.024019279051572084,
+      0.023819212801754475,
+      0.023258036002516747,
+      0.02335758926346898,
+      0.023249441292136908,
+      0.023016416002064943,
+      0.022825307678431273,
+      0.02316202875226736
+    ]
+  },
+  "validation_blockers": [],
+  "workload": {
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 4194304,
+    "gate_count": 36,
+    "layers": 4,
+    "n_wires": 20,
+    "sha256": "0484cefa3a267332cadd342dff8674c73feb775e71ac0c4538b14a51a1306023"
+  },
+  "world_size": 2
+}

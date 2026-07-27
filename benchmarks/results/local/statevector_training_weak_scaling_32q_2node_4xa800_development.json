@@ -1,0 +1,142 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.0012691552038931915,
+    "mean_seconds": 23.366232816750806,
+    "median_seconds": 23.35234311176464,
+    "sample_count": 3,
+    "samples_seconds": [
+      23.35234311176464,
+      23.338907141704112,
+      23.407448196783662
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 146028888080,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.380182683467865,
+      -0.5202473402023315
+    ],
+    "gradient_absolute_error_max": 3.3531009357989916e-08,
+    "passed": true,
+    "value_absolute_error_max": 7.591082795688209e-08
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 0.003657571381901673,
+    "mean_seconds": 5.92734753449137,
+    "median_seconds": 5.913502879906446,
+    "sample_count": 3,
+    "samples_seconds": [
+      5.957960746716708,
+      5.910578976850957,
+      5.913502879906446
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 0.0018981230613025323,
+    "mean_seconds": 29.322437705937773,
+    "median_seconds": 29.32435259083286,
+    "peak_memory_bytes_max": 42916122624,
+    "sample_count": 3,
+    "samples_seconds": [
+      29.389626442920417,
+      29.253334084060043,
+      29.32435259083286
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.019620066624527897,
+    "mean_seconds": 5.874209486568968,
+    "median_seconds": 5.797082118690014,
+    "peak_memory_bytes_max": 19327356416,
+    "sample_count": 3,
+    "samples_seconds": [
+      6.037124262191355,
+      5.788422078825533,
+      5.797082118690014
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 2,
+  "node_count": 2,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.239181923109163,
+    "mean_seconds": 0.02879018352056543,
+    "median_seconds": 0.003619363997131586,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.07924401387572289,
+      0.0035071726888418198,
+      0.003619363997131586
+    ]
+  },
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 0,
+      "rank": 2
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 1,
+      "rank": 3
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 0,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 1073741824,
+    "n_wires": 32,
+    "observable": "Z(30)",
+    "optimizer": "adam"
+  },
+  "world_size": 4
+}

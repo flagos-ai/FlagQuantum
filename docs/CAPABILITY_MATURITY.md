@@ -1,0 +1,19 @@
+# Capability maturity
+
+`capability-maturity.toml` is the authoritative, machine-validated capability
+matrix. Marketing text, benchmark summaries, and release notes must not assign
+a stronger status than this matrix.
+
+The levels are deliberately non-interchangeable:
+
+| Level | Meaning | Permitted claim |
+| --- | --- | --- |
+| `experimental` | Unstable research implementation. | The implementation is available for evaluation. |
+| `development_evidence` | Executed development or semantic evidence. | The constrained path was executed; no production or scalability claim. |
+| `production_supported` | Supported path with integration, hardware, and operational evidence. | The documented workload and environment are supported in production. |
+| `release_certified` | Audited and reproducible release evidence with a release gate. | The named release artifact is certified for its exact declared scope. |
+
+Status is capability-specific. A stable public API does not promote an
+experimental backend, and CPU semantic evidence does not promote a distributed
+runtime. Promotion requires adding every evidence field required by the target
+level and passing `python tools/check_capability_maturity.py`.

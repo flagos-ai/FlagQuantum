@@ -1,0 +1,83 @@
+{
+  "benchmark": "qng_hva_scaling_n8_p2_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 2,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "execution_semantics": "single_device_fast_path",
+  "n_wires": 8,
+  "non_release_evidence": true,
+  "parameter_count": 58,
+  "release_gate_allowed": false,
+  "repeats": 3,
+  "results": {
+    "reference_geometry": {
+      "median_seconds": 3.149569352157414,
+      "peak_memory_bytes": 19336192,
+      "samples_seconds": [
+        3.142563519999385,
+        3.163941716309637,
+        3.149569352157414
+      ]
+    },
+    "reference_qng_direction": {
+      "median_seconds": 3.402314188890159,
+      "peak_memory_bytes": 19336192,
+      "samples_seconds": [
+        3.40551319392398,
+        3.402314188890159,
+        3.4022728013806045
+      ]
+    },
+    "reference_tangent": {
+      "median_seconds": 3.1564951222389936,
+      "peak_memory_bytes": 19336192,
+      "samples_seconds": [
+        3.16056005936116,
+        3.1518072211183608,
+        3.1564951222389936
+      ]
+    },
+    "triton_geometry": {
+      "median_seconds": 0.0017303191125392914,
+      "peak_memory_bytes": 17325056,
+      "samples_seconds": [
+        0.001846608705818653,
+        0.0017303191125392914,
+        0.001707904040813446
+      ]
+    },
+    "triton_qng_direction": {
+      "median_seconds": 0.07279666000977159,
+      "peak_memory_bytes": 17340416,
+      "samples_seconds": [
+        0.07279666000977159,
+        0.07058987021446228,
+        0.07312030671164393
+      ]
+    },
+    "triton_tangent": {
+      "median_seconds": 0.0030670720152556896,
+      "peak_memory_bytes": 8779776,
+      "samples_seconds": [
+        0.0037213480100035667,
+        0.0030670720152556896,
+        0.003035780042409897
+      ]
+    }
+  },
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_hva_scaling.v1",
+  "speedups": {
+    "geometry": 1820.2245639738287,
+    "qng_direction": 46.737229268945335,
+    "tangent": 1029.1558550104176
+  },
+  "state_dimension": 256,
+  "warmup": 1
+}

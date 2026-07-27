@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="900" viewBox="0 0 1680 900">
+<rect width="100%" height="100%" fill="#F8FAFC"/>
+<rect x="24" y="24" width="1632" height="852" rx="20" fill="#FFFFFF" stroke="#E2E8F0"/>
+<rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
+<style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
+<text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
+<text x="58" y="91" class="title">PyTorch与JAX的1000步收敛一致性</text>
+<text x="58" y="119" class="sub">每个点对应一个Qubits×Depth配置 · 横轴PyTorch最终误差 · 纵轴JAX最终误差 · 双对数坐标</text>
+<rect x="310" y="180" width="600" height="600" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+<line x1="310" y1="780" x2="910" y2="180" stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 6"/>
+<circle cx="588.224562723037" cy="501.8470924262262" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="616.2993958478467" cy="473.7145334336796" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="451.0104947664007" cy="637.5160503541022" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="469.77213875200596" cy="618.6306688664638" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="426.1675386129226" cy="659.4730204529415" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="348.4366676711587" cy="763.384315186868" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="746.1865172640057" cy="343.8232762315709" r="7" fill="#2E7D4F" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="727.4382366287658" cy="362.5287563652912" r="7" fill="#2E7D4F" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="743.4160215362781" cy="346.58519344763306" r="7" fill="#2E7D4F" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="572.2450560580817" cy="517.7225208017726" r="7" fill="#2E7D4F" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="474.83071489039855" cy="616.0172241545147" r="7" fill="#2E7D4F" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="512.0106374387692" cy="579.984551515322" r="7" fill="#2E7D4F" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="800.6070167872435" cy="289.4217805392015" r="7" fill="#D07124" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="790.1581151885043" cy="299.8374254575312" r="7" fill="#D07124" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="796.7996042821194" cy="293.21566553874067" r="7" fill="#D07124" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="694.7701278681309" cy="395.3876970329251" r="7" fill="#D07124" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="531.7805395304109" cy="557.1725338473684" r="7" fill="#D07124" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="598.3807138786365" cy="548.4156168140773" r="7" fill="#D07124" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="827.4567906675485" cy="262.4633350794064" r="7" fill="#54319B" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="824.5181444067362" cy="265.4951838490109" r="7" fill="#54319B" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="820.4849259602618" cy="269.54249445551466" r="7" fill="#54319B" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="671.7663660200408" cy="420.38666620888137" r="7" fill="#54319B" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="744.0990762493624" cy="346.29090367911465" r="7" fill="#54319B" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<circle cx="590.2797920796299" cy="501.44646435700207" r="7" fill="#54319B" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
+<text x="310.0" y="805" text-anchor="middle" class="axis">1e-5</text>
+<text x="296" y="784.0" text-anchor="end" class="axis">1e-5</text>
+<text x="430.0" y="805" text-anchor="middle" class="axis">1e-4</text>
+<text x="296" y="664.0" text-anchor="end" class="axis">1e-4</text>
+<text x="550.0" y="805" text-anchor="middle" class="axis">1e-3</text>
+<text x="296" y="544.0" text-anchor="end" class="axis">1e-3</text>
+<text x="670.0" y="805" text-anchor="middle" class="axis">1e-2</text>
+<text x="296" y="424.0" text-anchor="end" class="axis">1e-2</text>
+<text x="790.0" y="805" text-anchor="middle" class="axis">1e-1</text>
+<text x="296" y="304.0" text-anchor="end" class="axis">1e-1</text>
+<text x="910.0" y="805" text-anchor="middle" class="axis">1e0</text>
+<text x="296" y="184.0" text-anchor="end" class="axis">1e0</text>
+<text x="610.0" y="838" text-anchor="middle" class="axis">PyTorch 最终误差</text>
+<circle cx="1080" cy="260" r="8" fill="#3478C5"/><text x="1103" y="265" class="panel">8 QUBITS</text>
+<circle cx="1080" cy="332" r="8" fill="#2E7D4F"/><text x="1103" y="337" class="panel">12 QUBITS</text>
+<circle cx="1080" cy="404" r="8" fill="#D07124"/><text x="1103" y="409" class="panel">16 QUBITS</text>
+<circle cx="1080" cy="476" r="8" fill="#54319B"/><text x="1103" y="481" class="panel">20 QUBITS</text>
+<text x="1030" y="610" class="panel">点越接近对角线</text><text x="1030" y="640" class="axis">表示两个后端的按步优化结果越一致</text>
+<line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
+<circle cx="74" cy="850" r="5" fill="#54319B"/>
+<text x="90" y="855" class="note">结论：所有配置紧贴y=x，JAX主要改变训练速度，不改变VQE按步收敛语义。</text>
+</svg>

@@ -1,0 +1,48 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.fq_jax_cache/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Saved local verification artifacts
+test-results/*.log
+examples/.assets/
+
+# Runtime logs, checkpoints, and profiler captures
+*.log
+*.pt
+*.pth
+*.ckpt
+*.nsys-rep
+*.sqlite
+benchmarks/results/heisenberg_vqe/forward_operator_trace_*/
+benchmarks/results/heisenberg_vqe/neel_n16_p16_chi256_lrdecay.json
+benchmarks/results/heisenberg_vqe/neel_n16_p16_chi256_lrdecay099_100.json

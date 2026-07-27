@@ -1,0 +1,80 @@
+{
+  "benchmark": "mps_system_id_512q_compiled_8xa100_summary",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_boundary": "Eight GPUs process distinct probe batches; this measures compiled observable-parallel training, not rank-sharded MPS capacity scaling.",
+  "claim_evidence_type": "development_smoke",
+  "comparison": {
+    "compiled_speedup": 4.54671194088082,
+    "eager_projected_seconds_for_315_steps": 2193.9583858195692,
+    "eager_seconds_per_step": 6.964947256570061,
+    "measured_time_saved_seconds": 1711.4210237991063
+  },
+  "configuration": {
+    "cutoff": 0.0,
+    "early_stopping_min_delta": 1e-08,
+    "early_stopping_patience": 50,
+    "early_stopping_target_loss": 1e-07,
+    "learning_rate": 0.01,
+    "max_bond": 128,
+    "n_wires": 512,
+    "observation_stride": 16,
+    "probe_batch_size_per_gpu": 32,
+    "probe_count": 256,
+    "requested_steps": 1000,
+    "time_steps": [
+      3
+    ]
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "execution": {
+    "brickwork": "torch_compile_real_imag_shape_bucket_triton_bmm",
+    "cache_state": "warm_inductor_cache",
+    "distribution_semantics": "observable_term_parallel",
+    "mps_state_sharded_across_ranks": false,
+    "scalability_claim_allowed": false
+  },
+  "gpu_sampling": {
+    "interval_seconds": 1,
+    "maximum_sm_utilization_percent": 100.0,
+    "mean_power_watts_range": [
+      100.0,
+      108.1
+    ],
+    "mean_sm_utilization_percent_range": [
+      31.2,
+      38.5
+    ],
+    "median_sm_utilization_percent_range": [
+      16.0,
+      18.0
+    ],
+    "p95_sm_utilization_percent_range": [
+      98.0,
+      100.0
+    ],
+    "peak_nvidia_smi_memory_mb_range": [
+      4780,
+      4820
+    ]
+  },
+  "hardware": "8x NVIDIA A100-SXM4-40GB NVSwitch",
+  "measured_date": "2026-07-12",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_hamiltonian_identification.benchmark.v1",
+  "task": "nonuniform_1d_hamiltonian_identification",
+  "training": {
+    "completed_steps": 315,
+    "end_to_end_seconds": 496.66198723576963,
+    "final_loss": 9.990773719437129e-08,
+    "initial_loss": 0.0018377744127064943,
+    "seconds_per_step": 1.5318646413348025,
+    "stop_reason": "target_loss_reached",
+    "target_generation_seconds": 14.1242561545223,
+    "training_seconds": 482.53736202046275
+  }
+}

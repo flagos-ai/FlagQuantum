@@ -1,0 +1,80 @@
+{
+  "artifact_classification": "development_capacity_calibration",
+  "benchmark": "statevector_capacity_31q_adam2_1gpu_2node_report_development",
+  "benchmark_evidence_class": "local_non_release",
+  "blockers": [
+    "development_threshold_was_not_preregistered_before_measurement",
+    "release_correctness_and_recovery_evidence_not_attached"
+  ],
+  "capacity_claim_allowed": false,
+  "claim_evidence_type": "development_smoke",
+  "development_capacity_expansion_observed": true,
+  "distributed": {
+    "communication_bytes_by_rank": [
+      137438953520,
+      137438953520
+    ],
+    "completed_steps": 2,
+    "losses": [
+      0.90777587890625,
+      0.8775291442871094
+    ],
+    "node_count": 2,
+    "peak_allocated_bytes_by_rank": [
+      77393567744,
+      77393567744
+    ],
+    "peak_reserved_bytes_by_rank": [
+      81707139072,
+      81707139072
+    ],
+    "rank_placement": [
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 0,
+        "rank": 0
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 0,
+        "rank": 1
+      }
+    ],
+    "updated_parameters": [
+      0.3300401568412781,
+      -0.4700678288936615
+    ],
+    "world_size": 2
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "multi_node_capacity_completion_observed": true,
+  "non_release_evidence": true,
+  "release_evidence": false,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.statevector.capacity_report.v1",
+  "single_device": {
+    "oom_type": "OutOfMemoryError",
+    "peak_allocated_bytes": 68728000512,
+    "peak_reserved_bytes": 77311508480,
+    "status": "expected_oom",
+    "total_memory_bytes": 85093777408
+  },
+  "workload": {
+    "dtype": "complex64",
+    "gates": [
+      "RY(n-1,theta)",
+      "CX(n-1,n-2)",
+      "RY(n-2,phi)"
+    ],
+    "n_wires": 31,
+    "name": "issue044_single_node_capacity_v1",
+    "observable": "Z(n-2)",
+    "optimizer": "adam",
+    "steps": 2
+  },
+  "workload_sha256": "5f2103ace667c0cf44a5c6c70421a3dc744fcdf7b59e03cbab4d8dae9ae6862b"
+}

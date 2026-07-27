@@ -1,0 +1,418 @@
+"""Native execution planning for FlagQuantum IR."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from ..core.ir import CircuitIR
+from .candidates import (
+    CandidateBuildContext,
+    RuntimeCandidate,
+    RuntimeCandidateBuilder,
+)
+from .compiler import compile_for_backend, schedule_layers
+from .estimates import (
+    estimate_density_bytes,
+    estimate_mps_bytes,
+    estimate_state_bytes,
+    estimate_tensor_network_bytes,
+)
+from .execution_plan_builder import build_execution_plan
+from .execution_policy import (
+    estimate_execution_state_bytes,
+    normalize_execution_state_mode,
+    recommend_execution_mode,
+)
+from .metadata_projection import (
+    _jax_mps_runtime_metadata_from_training_summary,
+    _jax_statevector_runtime_metadata_from_training_summary,
+)
+from .models import CircuitAnalysis, ExecutionPlan, LayerPlan, RuntimeSelectionPlan
+from .providers import (
+    add_distributed_candidates,
+    add_local_state_candidates,
+    add_mps_candidates,
+    add_tensor_network_candidates,
+)
+from .selection_context import build_runtime_selection_context
+from .selection_result import finalize_runtime_selection
+from .training_preflight import collect_distributed_training_preflight
+
+
+def analyze(ir: CircuitIR) -> CircuitAnalysis:
+    """Analyze circuit structure without executing it."""
+
+    gate_counts: dict[str, int] = {}
+    wire_usage = [0] * ir.n_wires
+    max_gate_width = 0
+    two_qubit_gates = 0
+    multi_qubit_gates = 0
+    channel_count = 0
+
+    for instruction in ir:
+        gate_counts[instruction.name] = gate_counts.get(instruction.name, 0) + 1
+        if instruction.metadata.get("is_channel"):
+            channel_count += 1
+        width = len(instruction.wires)
+        max_gate_width = max(max_gate_width, width)
+        if width == 2:
+            two_qubit_gates += 1
+        elif width > 2:
+            multi_qubit_gates += 1
+        for wire in instruction.wires:
+            wire_usage[wire] += 1
+
+    return CircuitAnalysis(
+        n_wires=ir.n_wires,
+        n_instructions=len(ir),
+        depth=len(schedule_layers(ir)),
+        gate_counts=gate_counts,
+        wire_usage=tuple(wire_usage),
+        max_gate_width=max_gate_width,
+        two_qubit_gates=two_qubit_gates,
+        multi_qubit_gates=multi_qubit_gates,
+        channel_count=channel_count,
+        has_noise=channel_count > 0,
+    )
+
+
+def plan_runtime_selection(
+    circuit_or_ir: Any,
+    *,
+    bsz: int = 1,
+    world_size: int = 1,
+    local_world_size: int | None = None,
+    node_count: int | None = None,
+    complex_bytes: int = 8,
+    memory_limit_bytes: int | None = None,
+    noise_model: Any | None = None,
+    max_bond: int | None = None,
+    cutoff: float = 0.0,
+    prefer_jax: bool = False,
+    prefer_distributed: bool | None = None,
+    require_gradients: bool = True,
+    require_deployment: bool = False,
+    allow_approximate: bool = True,
+    state_mode: str = "auto",
+    max_intermediate_size: int | None = None,
+    distributed_profile: str | None = None,
+    jax_backward_backend: str = "auto",
+    inspect_jax_devices: bool = False,
+    assume_jax_devices_ready: bool = False,
+) -> RuntimeSelectionPlan:
+    """Explain how FlagQuantum should run one workload.
+
+    This is an advisory product planner: it does not execute kernels, import JAX,
+    initialize process groups, or turn rank-local acceleration into a scalability
+    claim.  It gives UI, benchmarks, cloud deployment, and training code one
+    shared place to ask "what should run, what is fast, and what is still
+    blocked?"
+    """
+
+    ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    analysis = analyze(ir)
+    selection = build_runtime_selection_context(
+        analysis,
+        bsz=bsz,
+        world_size=world_size,
+        local_world_size=local_world_size,
+        node_count=node_count,
+        complex_bytes=complex_bytes,
+        max_bond=max_bond,
+        max_intermediate_size=max_intermediate_size,
+        state_mode=state_mode,
+        prefer_jax=prefer_jax,
+        prefer_distributed=prefer_distributed,
+        require_gradients=require_gradients,
+        require_deployment=require_deployment,
+    )
+    world_size = selection.world_size
+    local_world_size = selection.local_world_size
+    node_count = selection.node_count
+    prefer_distributed = selection.prefer_distributed
+    dense_bytes = selection.dense_bytes
+    density_bytes = selection.density_bytes
+    mps_bytes = selection.mps_bytes
+    tn_peak = selection.tensor_network_peak_bytes
+
+    candidates: list[RuntimeCandidate] = []
+
+    builder = RuntimeCandidateBuilder(
+        CandidateBuildContext(
+            analysis=analysis,
+            candidates=candidates,
+            require_gradients=require_gradients,
+            require_deployment=require_deployment,
+            memory_limit_bytes=memory_limit_bytes,
+            density_bytes=density_bytes,
+            mps_bytes=mps_bytes,
+            tensor_network_peak_bytes=tn_peak,
+            dense_bytes=dense_bytes,
+            world_size=world_size,
+            local_world_size=local_world_size,
+            node_count=node_count,
+            complex_bytes=complex_bytes,
+            prefer_jax=prefer_jax,
+            prefer_distributed=prefer_distributed,
+            requested_state_mode=selection.requested_state_mode,
+            statevector_metadata_projector=_jax_statevector_runtime_metadata_from_training_summary,
+            mps_metadata_projector=_jax_mps_runtime_metadata_from_training_summary,
+        )
+    )
+    noisy_warning = add_local_state_candidates(
+        builder,
+        analysis=analysis,
+        world_size=world_size,
+        dense_bytes=dense_bytes,
+        density_bytes=density_bytes,
+        require_gradients=require_gradients,
+        noise_model_present=noise_model is not None,
+    )
+    mps_warnings = add_mps_candidates(
+        builder,
+        analysis=analysis,
+        world_size=world_size,
+        mps_bytes=mps_bytes,
+        require_gradients=require_gradients,
+        max_bond=max_bond,
+        cutoff=cutoff,
+        allow_approximate=allow_approximate,
+        memory_limit_bytes=memory_limit_bytes,
+        prefer_jax=prefer_jax,
+        noisy_warning=noisy_warning,
+    )
+    add_tensor_network_candidates(
+        builder,
+        world_size=world_size,
+        peak_bytes=tn_peak,
+        require_gradients=require_gradients,
+        prefer_jax=prefer_jax,
+        noisy_warning=noisy_warning,
+    )
+
+    if world_size > 1 or prefer_distributed:
+        training_preflight = collect_distributed_training_preflight(
+            ir,
+            enabled=require_gradients,
+            world_size=world_size,
+            local_world_size=local_world_size,
+            bsz=bsz,
+            complex_bytes=complex_bytes,
+            max_bond=max_bond,
+            cutoff=cutoff,
+            backward_backend=jax_backward_backend,
+            distributed_profile=distributed_profile,
+            inspect_devices=inspect_jax_devices,
+            assume_devices_ready=assume_jax_devices_ready,
+        )
+        add_distributed_candidates(
+            builder,
+            world_size=world_size,
+            sharded_dense_bytes=selection.sharded_dense_bytes,
+            mps_bytes=mps_bytes,
+            tensor_network_peak_bytes=tn_peak,
+            require_gradients=require_gradients,
+            prefer_jax=prefer_jax,
+            mps_warnings=mps_warnings,
+            statevector_summary=training_preflight.statevector_summary,
+            statevector_blockers=training_preflight.statevector_blockers,
+            statevector_claim_allowed=training_preflight.statevector_claim_allowed,
+            mps_summary=training_preflight.mps_summary,
+            mps_blockers=training_preflight.mps_blockers,
+        )
+
+    return finalize_runtime_selection(
+        analysis=analysis,
+        candidates=candidates,
+        objective=selection.objective,
+        prefer_distributed=prefer_distributed,
+        world_size=world_size,
+        local_world_size=local_world_size,
+        node_count=node_count,
+    )
+
+
+def select_execution_mode(
+    circuit_or_ir: Any,
+    *,
+    bsz: int = 1,
+    world_size: int = 1,
+    complex_bytes: int = 8,
+    memory_limit_bytes: int | None = None,
+    noise_model: Any | None = None,
+    max_bond: int | None = None,
+    cutoff: float = 0.0,
+    trajectories: int | None = None,
+) -> str:
+    """Choose the native execution mode for automatic dispatch."""
+
+    ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    if noise_model is not None:
+        if trajectories is not None or max_bond is not None or cutoff > 0:
+            return "noisy_mps"
+        density_bytes = estimate_density_bytes(
+            ir.n_wires,
+            bsz=bsz,
+            complex_bytes=complex_bytes,
+        )
+        if memory_limit_bytes is not None and density_bytes > int(memory_limit_bytes):
+            return "noisy_mps"
+        return "density_matrix"
+    if int(world_size) > 1:
+        if max_bond is not None or cutoff > 0:
+            return "distributed_mps"
+        return "distributed_statevector"
+    if max_bond is not None or cutoff > 0:
+        return "mps"
+    state_bytes = estimate_state_bytes(
+        ir.n_wires,
+        bsz=bsz,
+        complex_bytes=complex_bytes,
+    )
+    if memory_limit_bytes is not None and state_bytes > int(memory_limit_bytes):
+        return "mps"
+    return "statevector"
+
+
+def plan(
+    circuit_or_ir: Any,
+    *,
+    bsz: int = 1,
+    world_size: int = 1,
+    complex_bytes: int = 8,
+    memory_limit_bytes: int | None = None,
+    state_mode: str = "auto",
+    noise_model: Any | None = None,
+    max_bond: int | None = None,
+    cutoff: float = 0.0,
+    trajectories: int | None = None,
+    coupling_map: Any | None = None,
+    routing_strategy: str = "restore_after_each_gate",
+    optimize: bool = True,
+    config: Any | None = None,
+) -> ExecutionPlan:
+    """Build a simple backend-neutral execution plan."""
+
+    ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    from ..core.runtime_config import get_runtime_config
+
+    selected_config = config or get_runtime_config()
+    ir = compile_for_backend(
+        ir,
+        coupling_map=coupling_map,
+        routing_strategy=routing_strategy,
+        optimize=optimize,
+        config=selected_config,
+    )
+    if noise_model is not None:
+        from ..simulation.noise import lower_noise_model
+
+        ir = lower_noise_model(ir, noise_model)
+    analysis = analyze(ir)
+    auto_selected_mode = None
+    if state_mode == "auto":
+        auto_selected_mode = select_execution_mode(
+            circuit_or_ir,
+            bsz=bsz,
+            world_size=world_size,
+            complex_bytes=complex_bytes,
+            memory_limit_bytes=memory_limit_bytes,
+            noise_model=noise_model,
+            max_bond=max_bond,
+            cutoff=cutoff,
+            trajectories=trajectories,
+        )
+    state_mode = normalize_execution_state_mode(
+        state_mode,
+        auto_selected_mode=auto_selected_mode,
+    )
+    state_bytes = estimate_execution_state_bytes(
+        state_mode,
+        n_wires=ir.n_wires,
+        bsz=bsz,
+        complex_bytes=complex_bytes,
+        max_bond=max_bond,
+    )
+    recommended_mode = recommend_execution_mode(
+        state_mode,
+        world_size=world_size,
+        has_noise=analysis.has_noise,
+        state_bytes=state_bytes,
+        memory_limit_bytes=memory_limit_bytes,
+    )
+
+    return build_execution_plan(
+        ir=ir,
+        analysis=analysis,
+        state_bytes=state_bytes,
+        recommended_mode=recommended_mode,
+        world_size=world_size,
+        state_mode=state_mode,
+        runtime_config=selected_config.to_manifest(),
+    )
+
+
+def plan_for_backend(
+    circuit_or_ir: Any,
+    *,
+    backend: str | None = None,
+    device: str | None = "auto",
+    dtype: str | None = None,
+    mode: str = "auto",
+    **options: Any,
+) -> ExecutionPlan:
+    """Build an execution plan after normalizing backend policy."""
+
+    from ..runtime.planner_adapter import backend_execution_options
+
+    backend_options = backend_execution_options(
+        mode=mode,
+        backend=backend,
+        device=device,
+        dtype=dtype,
+        world_size=int(options.get("world_size", options.get("world_sz", 1))),
+    )
+    normalized_mode = "distributed_statevector" if mode == "distributed" else mode
+    state_mode = (
+        normalized_mode
+        if normalized_mode
+        in {
+            "statevector",
+            "density_matrix",
+            "mps",
+            "adaptive_mps",
+            "distributed_mps",
+            "tensor_network",
+            "distributed_tensor_network",
+            "tn",
+        }
+        else "auto"
+    )
+    complex_bytes = (
+        16 if str(backend_options["complex_dtype"]).endswith("complex128") else 8
+    )
+    return plan(
+        circuit_or_ir,
+        state_mode=state_mode,
+        complex_bytes=complex_bytes,
+        world_size=backend_options["world_size"],
+        **options,
+    )
+
+
+__all__ = [
+    "LayerPlan",
+    "CircuitAnalysis",
+    "ExecutionPlan",
+    "RuntimeCandidate",
+    "RuntimeSelectionPlan",
+    "analyze",
+    "estimate_density_bytes",
+    "estimate_mps_bytes",
+    "estimate_tensor_network_bytes",
+    "estimate_state_bytes",
+    "plan",
+    "plan_for_backend",
+    "plan_runtime_selection",
+    "select_execution_mode",
+]

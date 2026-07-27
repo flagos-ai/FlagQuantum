@@ -1,0 +1,953 @@
+{
+  "lowerings": {
+    "jax": {
+      "supported": [
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "phase_flip"
+      ]
+    },
+    "mps": {
+      "supported": [
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "phase_flip"
+      ]
+    },
+    "provider": {
+      "supported": [
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "phase_flip"
+      ]
+    },
+    "pytorch": {
+      "supported": [
+        "amplitude_damping",
+        "bit_flip",
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "depolarizing",
+        "h",
+        "i",
+        "phase",
+        "phase_flip",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": []
+    },
+    "qasm": {
+      "supported": [
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "phase_flip"
+      ]
+    },
+    "qcis": {
+      "supported": [
+        "ccx",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "depolarizing",
+        "phase_flip"
+      ]
+    },
+    "tensor_network": {
+      "supported": [
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "phase_flip"
+      ]
+    }
+  },
+  "operators": [
+    {
+      "adjoint": "self_inverse",
+      "aliases": [
+        "id"
+      ],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "i",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "x",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "y",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "z",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [
+        "hadamard"
+      ],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "h",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "s",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [
+        "sd"
+      ],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "sdg",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "t",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [
+        "td"
+      ],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "tdg",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "sx",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "sxdg",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "rx",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "ry",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "rz",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [
+        "p"
+      ],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "phase",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "u1",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "u2",
+      "parameters": [
+        "phi",
+        "lbd"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [
+        "u"
+      ],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "u3",
+      "parameters": [
+        "theta",
+        "phi",
+        "lbd"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [
+        "cnot"
+      ],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "cx",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "cy",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "cz",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "swap",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "crx",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "cry",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "crz",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "cphase",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "rxx",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "ryy",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "matrix_adjoint",
+      "aliases": [],
+      "arity": 2,
+      "decomposition": [],
+      "differentiable": true,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "rzz",
+      "parameters": [
+        "theta"
+      ],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_or_left",
+        "target_or_right"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [
+        "ccnot",
+        "toffoli"
+      ],
+      "arity": 3,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "ccx",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_0",
+        "control_1_or_target_0",
+        "target_or_target_1"
+      ]
+    },
+    {
+      "adjoint": "self_inverse",
+      "aliases": [
+        "fredkin"
+      ],
+      "arity": 3,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "cswap",
+      "parameters": [],
+      "semantic_kind": "unitary",
+      "wire_convention": [
+        "control_0",
+        "control_1_or_target_0",
+        "target_or_target_1"
+      ]
+    },
+    {
+      "adjoint": "not_applicable",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "bit_flip",
+      "parameters": [],
+      "semantic_kind": "channel",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "not_applicable",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "phase_flip",
+      "parameters": [],
+      "semantic_kind": "channel",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "not_applicable",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "depolarizing",
+      "parameters": [],
+      "semantic_kind": "channel",
+      "wire_convention": [
+        "target"
+      ]
+    },
+    {
+      "adjoint": "not_applicable",
+      "aliases": [],
+      "arity": 1,
+      "decomposition": [],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "amplitude_damping",
+      "parameters": [],
+      "semantic_kind": "channel",
+      "wire_convention": [
+        "target"
+      ]
+    }
+  ],
+  "schema_version": "flagquantum_operator_manifest_v1"
+}

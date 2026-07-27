@@ -1,0 +1,3166 @@
+{
+  "artifact_class": "measured_development_run",
+  "backward": {
+    "coefficient_of_variation": 0.00012549802894645822,
+    "mean_seconds": 16.58159760357812,
+    "median_seconds": 16.58117296313867,
+    "sample_count": 5,
+    "samples_seconds": [
+      16.58117296313867,
+      16.583752925042063,
+      16.580223527736962,
+      16.584146435838193,
+      16.578692166134715
+    ]
+  },
+  "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+  "claim_evidence_type": "value_and_gradient_comparison",
+  "correctness": {
+    "initial_gradients": [
+      0.0002805172116495669,
+      -5.986370888422243e-05,
+      -2.2138709027785808e-05,
+      0.0002281790366396308,
+      -0.00013204403512645513,
+      -8.203915785998106e-05,
+      -7.52281048335135e-05,
+      -0.0002745712408795953,
+      -0.00020448716531973332,
+      -0.00037665775744244456,
+      5.873835470993072e-05,
+      3.889253639499657e-05,
+      0.00025901527260430157,
+      -0.0003051240637432784,
+      -0.00015239416097756475,
+      -0.0008302495698444545,
+      -0.00040840363362804055,
+      -0.00042617760482244194,
+      -0.00014820051728747785,
+      -0.0007937319460324943,
+      1.2995024007977918e-05,
+      -0.00017833260062616318,
+      0.0001810133398976177,
+      2.000678978220094e-05,
+      -0.00042509028571657836,
+      0.0009276993223465979,
+      0.00013543515524361283,
+      -0.0010206695878878236,
+      0.0008493083878420293,
+      -0.00043828602065332234,
+      0.0005058583919890225,
+      0.0003889333747792989,
+      -0.0008199653821066022,
+      0.000669082161039114,
+      -0.0001452508440706879,
+      -0.0001741181331453845,
+      -5.837223397975322e-06,
+      -0.00013374665286391973,
+      -0.00023768511891830713,
+      -0.00010221701086265966,
+      1.9447914382908493e-05,
+      0.0001325389021076262,
+      0.0001635901426197961,
+      -5.748461262555793e-06,
+      4.162885306868702e-05,
+      -0.0003495671262498945,
+      -0.0004970122245140374,
+      -9.605490049580112e-05,
+      0.00011261699546594173,
+      -0.0008107963367365301,
+      -0.00040622209780849516,
+      -0.0001402051275363192,
+      0.00033950014039874077,
+      -0.0004481367068365216,
+      1.2378266546875238e-05,
+      0.00016196112846955657,
+      -0.00015729895676486194,
+      -0.00031908450182527304,
+      -0.00039756123442202806,
+      3.763443237403408e-05,
+      -0.00010099756764248013,
+      -0.00023350067203864455,
+      0.000465289136627689,
+      -0.00030970622901804745,
+      0.0012175353476777673,
+      -0.0009503461187705398,
+      4.822929986403324e-05,
+      0.0003762302512768656,
+      -7.753125100862235e-05,
+      -0.00014573149383068085,
+      -7.839899626560509e-05,
+      3.9188693335745484e-05,
+      -9.522076288703829e-05,
+      8.197472197934985e-05,
+      2.1122719772392884e-05,
+      0.00013239307736512274,
+      -0.0003256393247283995,
+      -8.93957621883601e-05,
+      0.0002718328614719212,
+      -3.530508911353536e-05,
+      -0.0006309252930805087,
+      -5.811694063595496e-05,
+      -0.0004645836306735873,
+      -1.215475276694633e-05,
+      -0.0005535235977731645,
+      0.00015018806152511388,
+      0.00024126257630996406,
+      -7.244843436637893e-05,
+      -0.0001460037165088579,
+      -0.00047719289432279766,
+      -0.0002621401217766106,
+      0.0021370549220591784,
+      -0.0001498423662269488,
+      4.028945113532245e-06,
+      -0.0005458552623167634,
+      0.0003039081348106265,
+      -0.00010325508628739044,
+      8.916072692954913e-05,
+      -3.1595496693626046e-05,
+      -0.0002974275848828256,
+      6.299225788097829e-05,
+      0.00011830989387817681,
+      -0.0003625241806730628,
+      -0.0001473363081458956,
+      8.013215847313404e-05,
+      -0.0003853097150567919,
+      -0.00037328011239878833,
+      -0.00027420325204730034,
+      -0.0001341773895546794,
+      8.156540570780635e-05,
+      -5.058197712060064e-05,
+      -3.6394027119968086e-05,
+      -0.00037842680467292666,
+      0.0001347269571851939,
+      0.00018050667131319642,
+      -8.093145152088255e-05,
+      -0.0005113536608405411,
+      -0.00016965133545454592,
+      0.0006214059540070593,
+      -0.0002626175992190838,
+      -0.00010071219003293663,
+      2.383117680437863e-05,
+      0.0003382396243978292,
+      -0.0005047395825386047,
+      0.0006557841552421451,
+      -0.0005512068164534867,
+      0.00018261557852383703,
+      -0.00016905285883694887,
+      0.0002611912786960602,
+      -0.0003602067590691149,
+      0.00016088761913124472,
+      0.0003409747441764921,
+      0.00010392247349955142,
+      -0.00021110210218466818,
+      7.21943360986188e-05,
+      -0.00018624038784764707,
+      8.398009231314063e-05,
+      -0.0007486284011974931,
+      0.0002639730810187757,
+      0.00019458140013739467,
+      -7.139208173612133e-05,
+      -0.0007855133153498173,
+      6.435881368815899e-05,
+      -0.0003897318383678794,
+      0.00033841838012449443,
+      0.0006347637390717864,
+      0.0006532337283715606,
+      6.03260996285826e-05,
+      9.040175064001232e-05,
+      -0.00030664645601063967,
+      0.00018095514678861946,
+      -0.000888529815711081,
+      -9.22573744901456e-05,
+      -2.9121729312464595e-06,
+      -0.00047942943638190627,
+      -0.00024960708105936646,
+      9.822534047998488e-05,
+      -9.898576536215842e-05,
+      8.867180440574884e-06,
+      0.00021091842791065574,
+      0.00026211453950963914,
+      -9.515813871985301e-05,
+      3.6701414501294494e-05,
+      0.00035797193413600326,
+      0.0002467564772814512,
+      -4.1939885704778135e-05,
+      0.0002838736982084811,
+      5.729115946451202e-05,
+      0.00040719035314396024,
+      -1.6543199308216572e-06,
+      0.00038579979445785284,
+      -6.288057920755818e-05,
+      -0.000463410367956385,
+      0.00024226642563007772,
+      4.3163643567822874e-05,
+      -0.00015959571464918554,
+      -0.00019718162366189063,
+      -0.00019073623116128147,
+      9.019947174238041e-05,
+      -0.000602645450271666,
+      -0.0005940255941823125,
+      -0.0006876322440803051,
+      -0.000233427548664622,
+      -0.001618990208953619,
+      9.934799163602293e-05,
+      -0.0002456131624057889,
+      -0.0002196885907324031,
+      0.0003930121019948274,
+      4.976509080734104e-05,
+      -0.00014421797823160887,
+      0.00017768799443729222,
+      1.8133014236809686e-06,
+      8.3201564848423e-05,
+      6.862055306555703e-05,
+      7.886368985055014e-05,
+      -7.87780008977279e-05,
+      0.0001575465576024726,
+      -1.1693038686644286e-05,
+      5.9735641116276383e-05,
+      4.362445179140195e-05,
+      -2.505620250303764e-05,
+      0.00032694468973204494,
+      -0.0002611206436995417,
+      -0.00022193603217601776,
+      0.00031704676803201437,
+      -2.8573449526447803e-05,
+      0.0003797010285779834,
+      2.3947417503222823e-05,
+      6.771770131308585e-05,
+      0.00022981154324952513,
+      -0.00022134228493086994,
+      0.00035880113136954606,
+      0.0005948517937213182,
+      -0.0004300974542275071,
+      0.0013739336282014847,
+      0.00029480189550668,
+      0.001620387309230864,
+      9.627854069549358e-12,
+      -2.184563641094428e-11,
+      1.3269385590319871e-11,
+      -2.660982545421575e-12,
+      -3.2931879445641243e-11,
+      3.0659919048048323e-12,
+      -1.858957432432362e-11,
+      -3.107203383478918e-11,
+      2.3071322630130453e-11,
+      -1.4017231819707376e-11,
+      -3.083400201830955e-11,
+      2.1152857243578183e-11,
+      -1.5365486660812167e-11,
+      3.134559278805682e-11,
+      6.643574579356937e-12,
+      -0.00015303771942853928,
+      -0.00014772568829357624,
+      -0.0005676826112903655,
+      -4.784303018823266e-05,
+      0.00012287692516110837,
+      -0.0005228797672316432,
+      6.821774877607822e-05,
+      -7.362026371993124e-05,
+      -3.389807534404099e-05,
+      -0.0007666916353628039,
+      0.0005072044441476464,
+      -0.0004277553816791624,
+      -0.0007683899602852762,
+      -0.0014041813556104898,
+      -0.0021280422806739807,
+      -0.001157417893409729
+    ],
+    "initial_value": 0.0007186129223555326,
+    "values_and_gradients_finite": true
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda": "13.0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "forward": {
+    "coefficient_of_variation": 0.00021400268622911843,
+    "mean_seconds": 12.658338170312344,
+    "median_seconds": 12.656720500905067,
+    "sample_count": 5,
+    "samples_seconds": [
+      12.656437526922673,
+      12.662421009037644,
+      12.660666747950017,
+      12.656720500905067,
+      12.655445066746324
+    ]
+  },
+  "local_world_size": 1,
+  "memory": {
+    "exclusive_gpu_required": true,
+    "measurement": "NVML device-used bytes sampled every 20 ms",
+    "peak_bytes_aggregate_max": 36791517184,
+    "peak_bytes_per_rank_max": 36791517184,
+    "samples_aggregate_bytes": [
+      36791517184,
+      36791517184,
+      36791517184,
+      36791517184,
+      36791517184
+    ],
+    "samples_per_rank_max_bytes": [
+      36791517184,
+      36791517184,
+      36791517184,
+      36791517184,
+      36791517184
+    ]
+  },
+  "node_count": 1,
+  "protocol": {
+    "communication_aware_layout": true,
+    "distributed_sample_reduction": "rank_max",
+    "fixed_parameters_across_samples": true,
+    "gradient_method": "reversible_adjoint",
+    "ket_checkpoint_mode": "inter_node",
+    "local_block_fusion": "1",
+    "local_block_fusion_width": "4",
+    "nccl_min_p2p_nchannels": "16",
+    "nccl_nchannels_per_net_peer": "16",
+    "optimizer_included": false,
+    "packed_gradient_all_reduce": true,
+    "persistent_inplace_local": "1",
+    "persistent_wire_layout": "1",
+    "repetitions": 5,
+    "single_pass_reversible_rotation_vjp": true,
+    "synchronization": "cuda_device_synchronized_wall_clock",
+    "triton_cx_segment": "0",
+    "triton_local_cx": "1",
+    "triton_transpose_1q": "1",
+    "triton_vjp_adjoint": true,
+    "warmup": 2
+  },
+  "rank_placement": [
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    }
+  ],
+  "release_gate_allowed": false,
+  "runtime_summary": {
+    "analytic_rotation_derivative_count": 248,
+    "backend": "nccl",
+    "backward_communication_bytes": 0,
+    "backward_communication_count": 0,
+    "backward_distribution_semantics": "single_device_fast_path",
+    "backward_error": null,
+    "backward_exchange_chunk_amplitudes": 4194304,
+    "backward_exchange_chunk_bytes": 33554432,
+    "backward_exchange_pipeline_prefetch_count": 0,
+    "backward_exchange_workspace_allocation_count": 0,
+    "backward_exchange_workspace_reserved_bytes": 0,
+    "backward_exchange_workspace_reuse_count": 0,
+    "backward_inter_node_communication_bytes": 0,
+    "backward_inter_node_communication_count": 0,
+    "backward_intra_node_communication_bytes": 0,
+    "backward_intra_node_communication_count": 0,
+    "backward_status": "completed",
+    "backward_uses_full_state_replay": false,
+    "blockers": [
+      "sharded_optimizer_update_pending"
+    ],
+    "checkpoint_policy": {
+      "interval": 0,
+      "strategy": "reversible_adjoint",
+      "version": "statevector_checkpoint_v1"
+    },
+    "distribution_semantics": "single_device_fast_path",
+    "executor": "pytorch_native_sharded_statevector_reverse_v1",
+    "forward_distribution_semantics": "single_device_fast_path",
+    "full_state_materialization": false,
+    "fused_parameter_adjoint_count": 248,
+    "gradient_collective_bytes": 0,
+    "gradient_collective_count": 0,
+    "gradient_distribution": "local",
+    "gradient_reduction": "local",
+    "local_state_bytes": 17179869184,
+    "local_world_size": 1,
+    "node_count": 1,
+    "optimizer_update_ready": false,
+    "parameter_gradient_ready": true,
+    "parameter_ownership": [
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:0",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:1",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:2",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:3",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:4",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:5",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:6",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:7",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:8",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:9",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:10",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:11",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:12",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:13",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:14",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:15",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:16",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:17",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:18",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:19",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:20",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:21",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:22",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:23",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:24",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:25",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:26",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:27",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:28",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:29",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:30",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:31",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:32",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:33",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:34",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:35",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:36",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:37",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:38",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:39",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:40",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:41",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:42",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:43",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:44",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:45",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:46",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:47",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:48",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:49",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:50",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:51",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:52",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:53",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:54",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:55",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:56",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:57",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:58",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:59",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:60",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:61",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:62",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:63",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:64",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:65",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:66",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:67",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:68",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:69",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:70",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:71",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:72",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:73",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:74",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:75",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:76",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:77",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:78",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:79",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:80",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:81",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:82",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:83",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:84",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:85",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:86",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:87",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:88",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:89",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:90",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:91",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:92",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:93",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:94",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:95",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:96",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:97",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:98",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:99",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:100",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:101",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:102",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:103",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:104",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:105",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:106",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:107",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:108",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:109",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:110",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:111",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:112",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:113",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:114",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:115",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:116",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:117",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:118",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:119",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:120",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:121",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:122",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:123",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:124",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:125",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:126",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:127",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:128",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:129",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:130",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:131",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:132",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:133",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:134",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:135",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:136",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:137",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:138",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:139",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:140",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:141",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:142",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:143",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:144",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:145",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:146",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:147",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:148",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:149",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:150",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:151",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:152",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:153",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:154",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:155",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:156",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:157",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:158",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:159",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:160",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:161",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:162",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:163",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:164",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:165",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:166",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:167",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:168",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:169",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:170",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:171",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:172",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:173",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:174",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:175",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:176",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:177",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:178",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:179",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:180",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:181",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:182",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:183",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:184",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:185",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:186",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:187",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:188",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:189",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:190",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:191",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:192",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:193",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:194",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:195",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:196",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:197",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:198",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:199",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:200",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:201",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:202",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:203",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:204",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:205",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:206",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:207",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:208",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:209",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:210",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:211",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:212",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:213",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:214",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:215",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:216",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:217",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:218",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:219",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:220",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:221",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:222",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:223",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:224",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:225",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:226",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:227",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:228",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:229",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:230",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:231",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:232",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:233",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:234",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:235",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:236",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:237",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:238",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:239",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:240",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:241",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:242",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:243",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:244",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:245",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:246",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      },
+      {
+        "distribution": "local",
+        "occurrence_count": 1,
+        "owner_rank": null,
+        "parameter": "parameter:247",
+        "participating_ranks": [
+          0
+        ],
+        "reduction": "local",
+        "reduction_count": 1
+      }
+    ],
+    "peak_backward_scratch_bytes": 17179869184,
+    "persistent_inplace_local_enabled": true,
+    "persistent_layout_buffer_allocation_count": 0,
+    "persistent_layout_buffer_reserved_bytes": 0,
+    "persistent_layout_enabled": true,
+    "persistent_layout_swap_bytes": 0,
+    "persistent_layout_swap_count": 0,
+    "rank_ownership": {
+      "full_state_owned": true,
+      "local_amplitudes": 2147483648,
+      "rank": 0,
+      "total_amplitudes": 2147483648
+    },
+    "release_gate_allowed": false,
+    "saved_forward_state_reused": true,
+    "scalability_claim_allowed": false,
+    "world_size": 1
+  },
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.statevector.value_and_full_gradient.v1",
+  "value_and_grad": {
+    "coefficient_of_variation": 0.0001365619985521296,
+    "mean_seconds": 29.239935773890465,
+    "median_seconds": 29.24086693674326,
+    "sample_count": 5,
+    "samples_seconds": [
+      29.237610490061343,
+      29.246173934079707,
+      29.24089027568698,
+      29.24086693674326,
+      29.23413723288104
+    ]
+  },
+  "workload": {
+    "dtype": "complex64",
+    "entanglement": "directed_cnot_ring",
+    "gate_count": 496,
+    "gate_set": [
+      "RY",
+      "CNOT"
+    ],
+    "layers": 8,
+    "n_wires": 31,
+    "name": "full_width_ring_hea",
+    "observable": "Z(15)",
+    "parameter_count": 248,
+    "parameter_dtype": "float32",
+    "seed": 440044
+  },
+  "world_size": 1
+}

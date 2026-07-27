@@ -1,0 +1,220 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.01729938708943788,
+    "mean_seconds": 0.20137568128605685,
+    "median_seconds": 0.20016374392434955,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.20611715503036976,
+      0.1978461449034512,
+      0.20016374392434955
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 335544424,
+  "backward_communication_count_max": 33,
+  "backward_exchange_chunk_amplitudes": 4194304,
+  "backward_exchange_chunk_bytes": 33554432,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "comparison_non_release",
+  "benchmark_protocol": {
+    "full_state_materialization": false,
+    "initial_state": "dense_storage_zero_basis_then_all_wire_rotations",
+    "statistics": "median_of_three_with_coefficient_of_variation",
+    "timing_scope": "barrier_to_global_max_cuda_synchronized",
+    "wire_layout": "communication-aware"
+  },
+  "checkpoint_policy": {
+    "interval": 0,
+    "strategy": "reversible_adjoint",
+    "version": "statevector_checkpoint_v1"
+  },
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "all_values_and_gradients_finite": true,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.2992178201675415,
+      0.3122045397758484,
+      0.325182169675827,
+      0.3381541669368744,
+      0.35112279653549194,
+      0.364089697599411,
+      0.3770558536052704,
+      0.39002206921577454,
+      0.4029887318611145,
+      0.4159562885761261,
+      0.4289248287677765,
+      0.4418945610523224,
+      0.45486560463905334,
+      0.2847932279109955,
+      0.262973427772522,
+      0.3480585515499115,
+      0.41677892208099365,
+      0.30011406540870667,
+      0.32446545362472534,
+      0.3895585238933563,
+      0.40306875109672546,
+      0.4205014705657959,
+      0.44379401206970215,
+      0.48073598742485046
+    ],
+    "gradient_absolute_error_max": null,
+    "passed": true,
+    "validation_method": "dense_autograd_small_scale_plus_distributed_invariants",
+    "value_absolute_error_max": null
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 1.2720806045724233,
+    "mean_seconds": 0.8473116783425212,
+    "median_seconds": 0.08923163684085011,
+    "sample_count": 3,
+    "samples_seconds": [
+      2.3716127551160753,
+      0.08923163684085011,
+      0.08109064307063818
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 1.031728916867461,
+    "mean_seconds": 1.07828836205105,
+    "median_seconds": 0.2946170591749251,
+    "peak_memory_bytes_max": 1090821632,
+    "sample_count": 3,
+    "samples_seconds": [
+      2.651598992757499,
+      0.2946170591749251,
+      0.2886490342207253
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.675414088083898,
+    "communication_bytes_per_rank_max": 134217728,
+    "communication_count_max": 2,
+    "distributed_gate_count": 2,
+    "mean_seconds": 1.6798497767498095,
+    "median_seconds": 2.351555068977177,
+    "peak_memory_bytes_max": 1015190016,
+    "sample_count": 3,
+    "samples_seconds": [
+      2.605965836904943,
+      2.351555068977177,
+      0.08202842436730862
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 2,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.1076073874518664,
+    "mean_seconds": 0.028466410003602505,
+    "median_seconds": 0.006443575955927372,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.07305490504950285,
+      0.005900749005377293,
+      0.006443575955927372
+    ]
+  },
+  "peak_backward_scratch_bytes_max": 402653184,
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.2992178201675415,
+        0.3122045397758484,
+        0.325182169675827,
+        0.3381541669368744,
+        0.35112279653549194,
+        0.364089697599411,
+        0.3770558536052704,
+        0.39002206921577454,
+        0.4029887318611145,
+        0.4159562885761261,
+        0.4289248287677765,
+        0.4418945610523224,
+        0.45486560463905334,
+        0.2847932279109955,
+        0.262973427772522,
+        0.3480585515499115,
+        0.41677892208099365,
+        0.30011406540870667,
+        0.32446545362472534,
+        0.3895585238933563,
+        0.40306875109672546,
+        0.4205014705657959,
+        0.44379401206970215,
+        0.48073598742485046
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.2992178201675415,
+        0.3122045397758484,
+        0.325182169675827,
+        0.3381541669368744,
+        0.35112279653549194,
+        0.364089697599411,
+        0.3770558536052704,
+        0.39002206921577454,
+        0.4029887318611145,
+        0.4159562885761261,
+        0.4289248287677765,
+        0.4418945610523224,
+        0.45486560463905334,
+        0.2847932279109955,
+        0.262973427772522,
+        0.3480585515499115,
+        0.41677892208099365,
+        0.30011406540870667,
+        0.32446545362472534,
+        0.3895585238933563,
+        0.40306875109672546,
+        0.4205014705657959,
+        0.44379401206970215,
+        0.48073598742485046
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "saved_forward_state_reused": true,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 0,
+  "workload": {
+    "active_wire_count": 24,
+    "dtype": "complex64",
+    "entanglement": "directed_cnot_linear",
+    "gate_count": 47,
+    "initialization": "deterministic_nonzero_ry_angles",
+    "layers": 1,
+    "learning_rate": 0.05,
+    "local_amplitudes": 8388608,
+    "n_wires": 24,
+    "name": "full_width_linear_hea",
+    "observable": "Z(12)",
+    "optimizer": "adam",
+    "parameter_count": 24,
+    "seed": 20260722,
+    "validation": "dense_autograd_small_scale_plus_distributed_invariants"
+  },
+  "world_size": 2
+}

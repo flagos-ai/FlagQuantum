@@ -1,0 +1,314 @@
+{
+  "batch_size": 16,
+  "benchmark": "backend_compare",
+  "benchmark_evidence_class": "comparison_non_release",
+  "benchmark_hygiene_note": "comparison_result_not_release_scalability_evidence",
+  "claim_evidence_type": "development_smoke",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 1.9073486328125e-06,
+    "loss_abs_error": 3.814697265625e-06,
+    "loss_atol": 0.0001,
+    "slowdown_jax_vs_pytorch": 5.525414737429561e-05,
+    "speedup_jax_over_pytorch": 18098.18895993322,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX quantum-kernel backend matches PyTorch precision and is faster.",
+    "precision_status": "ok",
+    "recommended_claim": "On cpu, 8 wires, 2 layers, batch_size=16, observable=ising, FlagQuantum JAX is 18098.19x faster than FlagQuantum PyTorch with loss_abs_error=3.815e-06 and grad_max_abs_error=1.907e-06."
+  },
+  "device": "cpu",
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda_available": false,
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu"
+  },
+  "flagquantum_jax": {
+    "avg_seconds": 0.003631683999847155,
+    "backend": "jax",
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "compute_dtype": "complex64",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_terms": [
+        [
+          0.7,
+          [
+            [
+              0,
+              "z"
+            ],
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              1,
+              "z"
+            ],
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              2,
+              "z"
+            ],
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              3,
+              "z"
+            ],
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              4,
+              "z"
+            ],
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              5,
+              "z"
+            ],
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              6,
+              "z"
+            ],
+            [
+              7,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              0,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              0,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              1,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              2,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              3,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              4,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              5,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              6,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              7,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              7,
+              "z"
+            ]
+          ]
+        ]
+      ],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": null,
+      "mode": "tensor_network",
+      "observable": "hamiltonian",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss": 52.62721252441406,
+    "mode": "tensor_network",
+    "status": "ok"
+  },
+  "flagquantum_pytorch": {
+    "avg_seconds": 65.7269032719999,
+    "backend": "pytorch",
+    "loss": 52.6272087097168,
+    "mode": "tensor_network"
+  },
+  "iters": 50,
+  "layers": 2,
+  "mode": "tensor_network",
+  "n_wires": 8,
+  "non_release_evidence": true,
+  "observable": "ising",
+  "payload_kind": "comparison_non_release",
+  "release_gate_allowed": false,
+  "release_payload": false,
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "warmup": 10
+}

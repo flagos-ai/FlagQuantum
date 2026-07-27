@@ -1,0 +1,90 @@
+{
+  "benchmark": "single_machine_1000q_structured_mps_training",
+  "benchmark_evidence_class": "local_non_release",
+  "benchmark_hygiene_note": "single_device_fast_path_not_distributed_scalability_evidence",
+  "claim_boundaries": {
+    "do_not_claim": "This result does not show arbitrary 1000-qubit circuit training and does not show distributed sharded scalability.",
+    "recommended_claim": "FlagQuantum trains a structured 1000-qubit low-bond MPS quantum AI model through a PyTorch-facing JAX kernel, reaching near-zero teacher-student loss with sub-millisecond steady-state loss+gradient evaluation on CPU."
+  },
+  "claim_evidence_type": "development_smoke",
+  "command": "python examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py --steps 1000 --n-wires 1000 --jax-cache-dir .fq_jax_cache",
+  "comparison_context": [
+    {
+      "memory": "O(n)",
+      "path": "FlagQuantum structured JAX MPS",
+      "supports_1000q_for_this_task": true,
+      "trainable": true
+    },
+    {
+      "memory": "O(2^n)",
+      "path": "dense statevector/default.qubit",
+      "supports_1000q_for_this_task": false,
+      "trainable": false
+    },
+    {
+      "memory": "O(n chi^2)",
+      "path": "generic MPS without structure",
+      "supports_1000q_for_this_task": "compile-heavy",
+      "trainable": "maybe"
+    }
+  ],
+  "date": "2026-07-08",
+  "distribution": {
+    "distributed_backend": null,
+    "distribution_semantics": "single_device_fast_path",
+    "note": "This is a single-device structured MPS result. It is not evidence of distributed capacity scaling.",
+    "scalability_claim_allowed": false,
+    "world_size": 1
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "flagquantum": {
+    "device": "cpu",
+    "example": "single_machine_1000q_dimer_mps_training",
+    "final_loss": 6.00411e-11,
+    "first_loss_grad_seconds": 0.228844,
+    "initial_loss": 0.262918,
+    "interface": "torch",
+    "jax_cache_dir": "D:\\BAAI\\FQ1.0\\FlagQuantum-next\\.fq_jax_cache",
+    "jax_cache_enabled": true,
+    "mode": "structured_mps",
+    "mps_bond": 2,
+    "n_pairs": 500,
+    "n_wires": 1000,
+    "parameters": 1500,
+    "quantum_kernel": "jax",
+    "steady_grad_norm": 2.13537e-09,
+    "steady_loss_grad_seconds": 0.00060505,
+    "training_backend": "jax_kernel_torch_autograd"
+  },
+  "non_release_evidence": true,
+  "payload_kind": "local_non_release",
+  "release_gate_allowed": false,
+  "release_payload": false,
+  "result_type": "user_provided_example_run",
+  "scalability_blockers": [
+    "single_device_fast_path_not_distributed_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "training_trace": [
+    {
+      "loss": 1.210092932524276e-06,
+      "step": 200
+    },
+    {
+      "loss": 6.193686119537745e-10,
+      "step": 400
+    },
+    {
+      "loss": 1.7134449414868413e-10,
+      "step": 600
+    },
+    {
+      "loss": 7.465328355493739e-11,
+      "step": 800
+    },
+    {
+      "loss": 6.007960101639398e-11,
+      "step": 1000
+    }
+  ]
+}

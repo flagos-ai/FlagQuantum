@@ -1,0 +1,42 @@
+{
+  "artifact_class": "measured_development_capacity_probe",
+  "benchmark": "statevector_training_science_35q_1xa800_oom_v12",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "device": {
+    "name": "NVIDIA A800-SXM4-80GB",
+    "peak_allocated_bytes": 53248,
+    "peak_reserved_bytes": 2097152,
+    "total_memory_bytes": 85093777408
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "elapsed_seconds": 0.08687767898663878,
+  "expectation_met": true,
+  "expected_outcome": "cuda_oom",
+  "non_release_evidence": true,
+  "observed_outcome": "cuda_oom",
+  "oom_message": "CUDA out of memory. Tried to allocate 256.00 GiB. GPU 0 has a total capacity of 79.25 GiB of which 78.76 GiB is free. Including non-PyTorch memory, this process has 494.00 MiB memory in use. Of the allocated memory 52.00 KiB is allocated by PyTorch, and 1.95 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+  "oom_type": "OutOfMemoryError",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.full_width_capacity.v1",
+  "single_device_oom_observed": true,
+  "workload": {
+    "active_wire_count": 35,
+    "dtype": "complex64",
+    "entanglement": "directed_cnot_linear",
+    "gate_count": 69,
+    "initialization": "deterministic_nonzero_ry_angles",
+    "layers": 1,
+    "n_wires": 35,
+    "name": "full_width_linear_hea",
+    "observable_wire": 17,
+    "parameter_count": 35,
+    "seed": 20260722,
+    "validation": "dense_autograd_small_scale_plus_distributed_invariants"
+  },
+  "workload_sha256": "ba1fa9e975fd78cf9175d47ffea74d20edb5603fe634c4d0a633005b185a8278"
+}

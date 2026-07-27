@@ -1,0 +1,211 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Ruff production and test surface
+        run: ruff check flagquantum tests tools
+      - name: Black production and test surface
+        run: black --workers 1 --check flagquantum tests tools
+      - name: Typed foundation subset
+        run: >-
+          mypy --no-site-packages --ignore-missing-imports --follow-imports skip
+          flagquantum/version.py flagquantum/core/ir.py
+          flagquantum/core/parameters.py flagquantum/compilation
+          tools/ci_tier.py
+      - name: Strict typed runtime contracts
+        run: >-
+          mypy --strict --no-site-packages --follow-imports skip
+          flagquantum/core/contracts.py flagquantum/runtime/records.py
+          flagquantum/runtime/audit/contracts.py
+      - name: Strict typed execution mainline
+        run: >-
+          mypy --strict --no-site-packages --ignore-missing-imports
+          --follow-imports skip
+          flagquantum/compilation
+          flagquantum/runtime/execution.py
+          flagquantum/runtime/distributed/protocols.py
+          flagquantum/runtime/backend_registry.py
+          flagquantum/deployment
+      - name: Enforce package boundaries and module budgets
+        run: python tools/check_architecture.py
+      - name: Verify operator capability manifest
+        run: python tools/operator_manifest.py --check
+      - name: Verify runtime contract schema
+        run: python tools/runtime_contract_schema.py --check
+      - name: Verify documentation sources of truth
+        run: python tools/docs_source_of_truth.py --check
+      - name: Verify correctness certification matrix
+        run: python tools/correctness_certification.py --check
+      - name: Verify capability maturity claims
+        run: python tools/check_capability_maturity.py
+      - name: Verify branch-protection required-check contract
+        run: python tools/validate_required_checks.py
+      - name: Repository size and forbidden artifacts
+        run: python tools/check_repository_hygiene.py
+      - name: Lazy import budget
+        run: python tools/check_import_time.py
+
+  cpu-core:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - run: python tools/ci_tier.py pr-default
+      - run: python tools/ci_tier.py pr-runtime
+      - name: Prove JAX is absent from the PyTorch-only environment
+        run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
+      - name: Prove core import does not load JAX
+        run: python -m pytest tests/smoke/test_no_jax_core.py -q
+      - name: Prove native distributed runtime does not require JAX
+        run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
+
+  jax-optional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,jax]'
+      - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
+
+  dependency-bounds:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python: "3.10"
+            torch: "torch==2.5.*"
+          - python: "3.12"
+            torch: "torch>=2.5,<2.14"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e . --no-deps
+      - run: python -m pytest tests/smoke tests/test_gates.py -q
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      - name: Reproducible wheel and sdist builds
+        run: |
+          SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-a
+          SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-b
+          python tools/verify_reproducible_builds.py dist-a dist-b
+          mkdir -p dist
+          cp dist-a/* dist/
+      - name: Verify artifact contents
+        run: python tools/verify_distribution_artifacts.py dist
+      - name: Clean-install wheel and run quick start
+        run: |
+          python -m venv /tmp/fq-wheel
+          /tmp/fq-wheel/bin/python -m pip install dist/*.whl
+          /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
+          /tmp/fq-wheel/bin/python -c "import importlib.util; assert importlib.util.find_spec('jax') is None; assert importlib.util.find_spec('datasets') is None; assert importlib.util.find_spec('transformers') is None; assert importlib.util.find_spec('matplotlib') is None"
+      - name: Clean-install sdist and run quick start
+        run: |
+          python -m venv /tmp/fq-sdist
+          /tmp/fq-sdist/bin/python -m pip install dist/*.tar.gz
+          /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
+      - name: Write checksummed artifact manifest
+        run: python tools/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist/
+
+  distributed-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,jax]'
+      - run: python tools/ci_tier.py pr-distributed
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev]'
+      - name: Enforce maintained-runtime coverage floor
+        run: >-
+          python -m pytest -m "smoke or unit or integration"
+          --cov=flagquantum
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=50
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage.xml
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project and security tooling
+        run: >-
+          python -m pip install -e '.[dev]'
+          pip-audit bandit cyclonedx-bom
+      - name: Audit installed dependencies
+        run: |
+          python -m pip list --format freeze --exclude flagquantum > audit-requirements.txt
+          pip-audit --strict --no-deps --requirement audit-requirements.txt
+      - name: Static security analysis
+        run: bandit -q -lll -r flagquantum -x flagquantum/testing
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
+      - name: Validate SBOM
+        run: python tools/validate_sbom.py sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.cdx.json

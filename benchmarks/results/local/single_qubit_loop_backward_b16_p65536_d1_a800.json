@@ -1,0 +1,57 @@
+{
+  "batch": 16,
+  "benchmark": "single_qubit_loop",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 1,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "gradient_max_abs_error": {
+    "rx": 0.0001678466796875,
+    "rz": 7.62939453125e-05,
+    "state": 4.805480102731963e-07
+  },
+  "iterations": 50,
+  "jax_scan": null,
+  "max_abs_error": 5.331201577973843e-07,
+  "mode": "training",
+  "non_release_evidence": true,
+  "norm_error": 0.015625,
+  "pairs": 65536,
+  "relative_norm_error": 1.1908399955018467e-07,
+  "release_gate_allowed": false,
+  "repeats": 5,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "speedup": 4.045895746645955,
+  "torch_compile": null,
+  "torch_eager": {
+    "median_seconds": 0.0015502570383250714,
+    "peak_increment_bytes": 83889152,
+    "peak_memory_bytes": 167779840,
+    "samples": [
+      0.0016047133971005677,
+      0.0015502570383250714,
+      0.0015242883190512658,
+      0.0015960637386888265,
+      0.0015220997668802738
+    ]
+  },
+  "torch_version": "2.13.0+cu130",
+  "triton": {
+    "median_seconds": 0.00038316781632602215,
+    "peak_increment_bytes": 33555456,
+    "peak_memory_bytes": 117446144,
+    "samples": [
+      0.015462965816259383,
+      0.00038316781632602215,
+      0.0004050292819738388,
+      0.00034906160086393354,
+      0.00035868966020643713
+    ]
+  },
+  "triton_cold_seconds": 0.4827171410433948,
+  "warmup": 10
+}

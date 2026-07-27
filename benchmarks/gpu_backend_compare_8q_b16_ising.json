@@ -1,0 +1,220 @@
+{
+  "batch_size": 16,
+  "benchmark": "distributed_backend_compare",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error_max": 0.009301615878939629,
+    "grad_max_abs_error_rank0": 0.007416624575853348,
+    "loss_abs_error_max": 0.052921295166015625,
+    "loss_abs_error_rank0": 0.0322113037109375,
+    "loss_atol": 0.0001,
+    "slowdown_jax_vs_pytorch_mean_rank_time": 0.0015074341101221664,
+    "speedup_jax_over_pytorch_mean_rank_time": 663.3789120765997,
+    "speedup_jax_over_pytorch_slowest_rank_time": 684.295739198602,
+    "status": "precision_mismatch"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX quantum-kernel backend did not meet the requested GPU-cluster precision thresholds.",
+    "recommended_claim": "On 8 rank(s), device=cuda:0, 8 wires, 2 layers, batch_size=16, observable=ising, FlagQuantum JAX is 663.38x faster than FlagQuantum PyTorch by mean rank time, with max loss_abs_error=5.292e-02 and max grad_abs_error=9.302e-03."
+  },
+  "device": "cuda:0",
+  "dist_backend": "nccl",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 8,
+    "platform": "Linux-5.15.0-1053-nvidia-x86_64-with-glibc2.35",
+    "python": "3.12.9",
+    "torch": "2.6.0+cu124",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.0014068529102951289,
+      "mean_seconds": 0.0013459229888394474,
+      "min_seconds": 0.0012889611348509788,
+      "rank0_seconds": 0.0013880449812859296
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_term_count": 23,
+      "hamiltonian_terms": [
+        [
+          0.7,
+          [
+            [
+              0,
+              "z"
+            ],
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              1,
+              "z"
+            ],
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              2,
+              "z"
+            ],
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              3,
+              "z"
+            ],
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              4,
+              "z"
+            ],
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              5,
+              "z"
+            ],
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              6,
+              "z"
+            ],
+            [
+              7,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              0,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              0,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              1,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              2,
+              "x"
+            ]
+          ]
+        ]
+      ],
+      "interface": "torch",
+      "jit": true,
+      "observable": "hamiltonian",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 52.659427642822266,
+    "mode": "statevector",
+    "rank0_avg_seconds": 0.0013880449812859296,
+    "status": "precision_mismatch"
+  },
+  "flagquantum_pytorch": {
+    "backend": "pytorch",
+    "distributed_seconds": {
+      "max_seconds": 0.9627034521941096,
+      "mean_seconds": 0.8928569280751981,
+      "min_seconds": 0.8706626034993679,
+      "rank0_seconds": 0.8826608262397349
+    },
+    "loss_rank0": 52.62721633911133,
+    "mode": "statevector",
+    "rank0_avg_seconds": 0.8826608262397349
+  },
+  "iters": 100,
+  "layers": 2,
+  "local_rank": 0,
+  "n_wires": 8,
+  "observable": "ising",
+  "rank": 0,
+  "rank_offset_parameters": false,
+  "warmup": 20,
+  "world_size": 8
+}

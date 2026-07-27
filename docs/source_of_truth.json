@@ -1,0 +1,33 @@
+{
+  "schema_version": "flagquantum_documentation_sources_v1",
+  "authorities": {
+    "stable_api": "docs/public_api_v1.json",
+    "operator_capability": "docs/operator_manifest.json",
+    "runtime_contracts": "docs/runtime_contracts.schema.json",
+    "capability_maturity": "capability-maturity.toml",
+    "benchmark_evidence": "benchmarks/results/",
+    "support_policy": "pyproject.toml",
+    "release_changes": "docs/RELEASE_NOTES.md"
+  },
+  "externally_validated_authorities": {
+    "benchmark_evidence": "python benchmarks/audit_results.py --input benchmarks/results"
+  },
+  "generated": {
+    "docs/generated/STABLE_API.md": "stable_api",
+    "docs/generated/OPERATOR_CAPABILITIES.md": "operator_capability"
+  },
+  "stable_documents": [
+    "README.md",
+    "docs/API.md",
+    "docs/FEATURE_PARITY_MATRIX.md",
+    "docs/CAPABILITY_MATURITY.md",
+    "docs/KNOWN_LIMITATIONS.md",
+    "docs/RELEASE_NOTES.md",
+    "docs/generated/STABLE_API.md",
+    "docs/generated/OPERATOR_CAPABILITIES.md"
+  ],
+  "intent_documents": [
+    "docs/FLAGQUANTUM_VISION.md",
+    "docs/EXASCALE_GORDON_BELL_STRATEGY.md"
+  ]
+}

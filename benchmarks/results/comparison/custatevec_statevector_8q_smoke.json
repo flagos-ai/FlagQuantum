@@ -1,0 +1,66 @@
+{
+  "artifact_class": "measured_local_comparison",
+  "benchmark": "flagquantum_native_vs_custatevec_forward",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "max_abs_error": 1.3328003944934608e-07,
+    "passed": true
+  },
+  "custatevec": {
+    "coefficient_of_variation": 0.03604510568860249,
+    "cupy_pool_growth_bytes": 4096,
+    "mean_seconds": 0.0005507019038001696,
+    "median_seconds": 0.0005370411090552807,
+    "samples_seconds": [
+      0.0005787708796560764,
+      0.0005362937226891518,
+      0.0005370411090552807
+    ],
+    "workspace_bytes": 0
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda": "13.0",
+    "cupy": "14.1.1",
+    "cuquantum": "26.6.0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "flagquantum": {
+    "coefficient_of_variation": 0.05560926190800271,
+    "mean_seconds": 0.009290284011512995,
+    "median_seconds": 0.008943019900470972,
+    "peak_memory_allocated_bytes": 8532480,
+    "samples_seconds": [
+      0.010020610876381397,
+      0.008907221257686615,
+      0.008943019900470972
+    ]
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.custatevec_statevector_compare.v1",
+  "speedup_flagquantum_over_custatevec": 0.060051427261947406,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 23,
+    "gate_set": [
+      "RY",
+      "RZ",
+      "CX"
+    ],
+    "initial_state": "zero",
+    "iterations": 3,
+    "layers": 1,
+    "n_wires": 8,
+    "warmup": 1
+  },
+  "world_size": 1
+}

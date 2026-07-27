@@ -1,0 +1,141 @@
+{
+  "contracts": {
+    "accuracy": {
+      "fields": [
+        "version",
+        "metric",
+        "value",
+        "tolerance",
+        "passed"
+      ],
+      "python_type": "AccuracyContract"
+    },
+    "audit_record": {
+      "fields": [
+        "version",
+        "execution_hash",
+        "validated"
+      ],
+      "python_type": "AuditRecordContract"
+    },
+    "audit_validation": {
+      "fields": [
+        "version",
+        "validator",
+        "passed",
+        "release_claim_approved",
+        "errors"
+      ],
+      "python_type": "AuditValidation"
+    },
+    "capability": {
+      "fields": [
+        "version",
+        "backend",
+        "devices",
+        "dtypes",
+        "modes",
+        "supports_autograd",
+        "supports_distributed"
+      ],
+      "python_type": "CapabilityContract"
+    },
+    "estimated_resources": {
+      "fields": [
+        "version",
+        "memory_bytes",
+        "communication_bytes",
+        "depth"
+      ],
+      "python_type": "EstimatedResources"
+    },
+    "execution_observation": {
+      "fields": [
+        "version",
+        "executor",
+        "elapsed_seconds",
+        "peak_memory_bytes",
+        "communication_bytes",
+        "completed"
+      ],
+      "python_type": "ExecutionObservation"
+    },
+    "execution_record": {
+      "fields": [
+        "version",
+        "plan_id",
+        "observed",
+        "ownership",
+        "measurements",
+        "accuracy",
+        "failures",
+        "provenance"
+      ],
+      "python_type": "ExecutionRecordContract"
+    },
+    "failure": {
+      "fields": [
+        "version",
+        "code",
+        "message",
+        "retryable",
+        "blockers"
+      ],
+      "python_type": "FailureContract"
+    },
+    "measurement": {
+      "fields": [
+        "version",
+        "kind_name",
+        "wires",
+        "shots",
+        "values"
+      ],
+      "python_type": "MeasurementContract"
+    },
+    "ownership": {
+      "fields": [
+        "version",
+        "rank_owners",
+        "distribution_semantics"
+      ],
+      "python_type": "OwnershipContract"
+    },
+    "provenance": {
+      "fields": [
+        "version",
+        "commit",
+        "workload_sha256",
+        "command",
+        "devices",
+        "rank_mapping",
+        "raw_log_sha256"
+      ],
+      "python_type": "ProvenanceContract"
+    },
+    "requested_execution": {
+      "fields": [
+        "version",
+        "mode",
+        "backend",
+        "device",
+        "dtype",
+        "world_size"
+      ],
+      "python_type": "RequestedExecution"
+    },
+    "runtime_plan": {
+      "fields": [
+        "version",
+        "requested",
+        "estimated",
+        "capability",
+        "plan_id"
+      ],
+      "python_type": "RuntimePlanContract"
+    }
+  },
+  "schema": "flagquantum_runtime_contracts",
+  "unknown_production_fields": "reject",
+  "version": "1.0"
+}

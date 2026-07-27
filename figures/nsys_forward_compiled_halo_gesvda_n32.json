@@ -1,0 +1,72 @@
+{
+  "source": "benchmarks/results/heisenberg_vqe/nsys/mps_forward_n32_compiled_halo_gesvda.sqlite",
+  "profiler": "NVIDIA Nsight Systems",
+  "time_semantics": "mutually_exclusive_gpu_timeline_intervals_clipped_to_forward_nvtx",
+  "ranks": [
+    {
+      "rank": 0,
+      "forward_seconds": 1.757282165,
+      "compute_seconds": 0.006000418,
+      "nccl_wait_communication_seconds": 1.54921927,
+      "overlap_seconds": 0.0,
+      "idle_seconds": 0.202062477
+    },
+    {
+      "rank": 1,
+      "forward_seconds": 1.722667372,
+      "compute_seconds": 0.052381111,
+      "nccl_wait_communication_seconds": 1.422661271,
+      "overlap_seconds": 2.2112e-05,
+      "idle_seconds": 0.247602878
+    },
+    {
+      "rank": 2,
+      "forward_seconds": 1.690248121,
+      "compute_seconds": 0.447981785,
+      "nccl_wait_communication_seconds": 0.99754445,
+      "overlap_seconds": 2.0608e-05,
+      "idle_seconds": 0.244701278
+    },
+    {
+      "rank": 3,
+      "forward_seconds": 1.654956096,
+      "compute_seconds": 0.517565593,
+      "nccl_wait_communication_seconds": 0.885262281,
+      "overlap_seconds": 3.5104e-05,
+      "idle_seconds": 0.252093118
+    },
+    {
+      "rank": 4,
+      "forward_seconds": 1.610981581,
+      "compute_seconds": 0.518020785,
+      "nccl_wait_communication_seconds": 0.851691024,
+      "overlap_seconds": 4.0384e-05,
+      "idle_seconds": 0.241229388
+    },
+    {
+      "rank": 5,
+      "forward_seconds": 1.572071487,
+      "compute_seconds": 0.352042091,
+      "nccl_wait_communication_seconds": 0.986250003,
+      "overlap_seconds": 0.0,
+      "idle_seconds": 0.233779393
+    },
+    {
+      "rank": 6,
+      "forward_seconds": 1.535684135,
+      "compute_seconds": 0.032361454,
+      "nccl_wait_communication_seconds": 1.27198285,
+      "overlap_seconds": 0.0,
+      "idle_seconds": 0.231339831
+    },
+    {
+      "rank": 7,
+      "forward_seconds": 1.507101501,
+      "compute_seconds": 0.005361912,
+      "nccl_wait_communication_seconds": 1.308435578,
+      "overlap_seconds": 0.0,
+      "idle_seconds": 0.193304011
+    }
+  ],
+  "critical_rank": 0
+}

@@ -1,0 +1,328 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "benchmark": "statevector_strong_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes_per_rank_max": 10737418240,
+  "communication_fraction": 0.5555555555555556,
+  "communication_tiers": {
+    "inter_node_logical_bytes_per_rank_max": 0,
+    "intra_node_logical_bytes_per_rank_max": 10737418240,
+    "physical_route": "topology_dependent_nccl_collective",
+    "route_classification": "intra_node_collective"
+  },
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "global_invariants": {
+      "norm": 0.9999998211860657,
+      "z_expectations": {
+        "0": 0.0,
+        "1": -8.616302693553735e-08,
+        "2": -8.195638656616211e-08
+      }
+    },
+    "norm_absolute_error": 1.7881393432617188e-07,
+    "passed": true,
+    "rank_invariant_spread": 0.0
+  },
+  "device_timing": {
+    "coefficient_of_variation": 0.00027784515894620877,
+    "mean_seconds": 2.6902965332031252,
+    "median_seconds": 2.69032958984375,
+    "sample_count": 10,
+    "samples_seconds": [
+      2.689489013671875,
+      2.68994140625,
+      2.691316650390625,
+      2.691007568359375,
+      2.690597900390625,
+      2.69116015625,
+      2.690767822265625,
+      2.68963525390625,
+      2.68898828125,
+      2.690061279296875
+    ]
+  },
+  "distribution_semantics": "requires_runtime_summary",
+  "gpu_activity": "cuda_events_with_device_synchronization",
+  "hardware_inventory": {
+    "cuda_device_names": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "local_world_size": 4,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "rank_peak_memory_bytes": [
+    12893423104,
+    12893423104,
+    12893423104,
+    12893423104
+  ],
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "node_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "node_rank": 0,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "node_rank": 0,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "node_rank": 0,
+      "rank": 3
+    }
+  ],
+  "rank_timings": [
+    {
+      "communication_bytes": 10737418240,
+      "communication_count": 72,
+      "device": "cuda:0",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        2.689489013671875,
+        2.68994140625,
+        2.691316650390625,
+        2.691007568359375,
+        2.690597900390625,
+        2.69116015625,
+        2.690767822265625,
+        2.68963525390625,
+        2.68898828125,
+        2.690061279296875
+      ],
+      "exchange_workspace_allocation_count": 2,
+      "exchange_workspace_reserved_bytes": 268435456,
+      "exchange_workspace_reuse_count": 70,
+      "executor_peak_scratch_bytes": 3489660928,
+      "host_samples_seconds": [
+        2.6895116539672017,
+        2.689965244848281,
+        2.6913421130739152,
+        2.691028246190399,
+        2.690622521098703,
+        2.691185678821057,
+        2.69078948488459,
+        2.6896580099128187,
+        2.689013827126473,
+        2.6900867549702525
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "invariants": {
+        "norm": 0.9999998211860657,
+        "z_expectations": {
+          "0": 0.0,
+          "1": -8.616302693553735e-08,
+          "2": -8.195638656616211e-08
+        }
+      },
+      "local_rank": 0,
+      "local_state_bytes": 2147483648,
+      "node_rank": 0,
+      "peak_memory_bytes": 12893423104,
+      "rank": 0
+    },
+    {
+      "communication_bytes": 10737418240,
+      "communication_count": 72,
+      "device": "cuda:1",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        2.68771533203125,
+        2.6885283203125,
+        2.68779833984375,
+        2.688110595703125,
+        2.68769189453125,
+        2.68756689453125,
+        2.6877275390625,
+        2.6870283203125,
+        2.68731689453125,
+        2.687853515625
+      ],
+      "exchange_workspace_allocation_count": 2,
+      "exchange_workspace_reserved_bytes": 268435456,
+      "exchange_workspace_reuse_count": 70,
+      "executor_peak_scratch_bytes": 3489660928,
+      "host_samples_seconds": [
+        2.6877438058145344,
+        2.688544971868396,
+        2.687818291131407,
+        2.688124439679086,
+        2.68771019205451,
+        2.6875843331217766,
+        2.687742668669671,
+        2.687053123023361,
+        2.687342243269086,
+        2.6878769770264626
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "invariants": {
+        "norm": 0.9999998211860657,
+        "z_expectations": {
+          "0": 0.0,
+          "1": -8.616302693553735e-08,
+          "2": -8.195638656616211e-08
+        }
+      },
+      "local_rank": 1,
+      "local_state_bytes": 2147483648,
+      "node_rank": 0,
+      "peak_memory_bytes": 12893423104,
+      "rank": 1
+    },
+    {
+      "communication_bytes": 10737418240,
+      "communication_count": 72,
+      "device": "cuda:2",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        2.689238037109375,
+        2.689239990234375,
+        2.69007861328125,
+        2.6902109375,
+        2.68971923828125,
+        2.690427001953125,
+        2.690260009765625,
+        2.68929443359375,
+        2.688659423828125,
+        2.6889931640625
+      ],
+      "exchange_workspace_allocation_count": 2,
+      "exchange_workspace_reserved_bytes": 268435456,
+      "exchange_workspace_reuse_count": 70,
+      "executor_peak_scratch_bytes": 3489660928,
+      "host_samples_seconds": [
+        2.6892996029928327,
+        2.689262295141816,
+        2.6901258057914674,
+        2.6902333800680935,
+        2.6897476883605123,
+        2.6904485472477973,
+        2.690288458019495,
+        2.6893152482807636,
+        2.688747377600521,
+        2.689016438089311
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "invariants": {
+        "norm": 0.9999998211860657,
+        "z_expectations": {
+          "0": 0.0,
+          "1": -8.616302693553735e-08,
+          "2": -8.195638656616211e-08
+        }
+      },
+      "local_rank": 2,
+      "local_state_bytes": 2147483648,
+      "node_rank": 0,
+      "peak_memory_bytes": 12893423104,
+      "rank": 2
+    },
+    {
+      "communication_bytes": 10737418240,
+      "communication_count": 72,
+      "device": "cuda:3",
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_samples_seconds": [
+        2.687748046875,
+        2.688427001953125,
+        2.687623046875,
+        2.68801123046875,
+        2.687624267578125,
+        2.687500244140625,
+        2.687667236328125,
+        2.687068115234375,
+        2.687320068359375,
+        2.68781982421875
+      ],
+      "exchange_workspace_allocation_count": 2,
+      "exchange_workspace_reserved_bytes": 268435456,
+      "exchange_workspace_reuse_count": 70,
+      "executor_peak_scratch_bytes": 3489660928,
+      "host_samples_seconds": [
+        2.687761636916548,
+        2.6884454218670726,
+        2.6876451917923987,
+        2.6880291048437357,
+        2.687645219732076,
+        2.687520237173885,
+        2.6876855893060565,
+        2.6870858860202134,
+        2.6873366199433804,
+        2.6878435760736465
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "invariants": {
+        "norm": 0.9999998211860657,
+        "z_expectations": {
+          "0": 0.0,
+          "1": -8.616302693553735e-08,
+          "2": -8.195638656616211e-08
+        }
+      },
+      "local_rank": 3,
+      "local_state_bytes": 2147483648,
+      "node_rank": 0,
+      "peak_memory_bytes": 12893423104,
+      "rank": 3
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.strong_scaling.v1",
+  "timing": {
+    "coefficient_of_variation": 0.00027780058780056384,
+    "mean_seconds": 2.690320353489369,
+    "median_seconds": 2.690354638034478,
+    "sample_count": 10,
+    "samples_seconds": [
+      2.6895116539672017,
+      2.689965244848281,
+      2.6913421130739152,
+      2.691028246190399,
+      2.690622521098703,
+      2.691185678821057,
+      2.69078948488459,
+      2.6896580099128187,
+      2.689013827126473,
+      2.6900867549702525
+    ]
+  },
+  "validation_blockers": [],
+  "workload": {
+    "depth": 8,
+    "dtype": "complex64",
+    "exchange_buffer_bytes": 536870912,
+    "gate_count": 64,
+    "n_wires": 30,
+    "name": "issue044_fixed_statevector_forward_v1"
+  },
+  "workload_sha256": "f4a2f122b118fa30dab73e99b52ec87e7e10c9ae30277c189ebe9fe331b0858b",
+  "world_size": 4
+}

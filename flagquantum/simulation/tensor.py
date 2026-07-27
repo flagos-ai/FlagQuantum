@@ -1,0 +1,50 @@
+"""Compatibility facade for tensor-network simulation."""
+
+from importlib import import_module
+from typing import Any
+
+_MODULES = (
+    "flagquantum.simulation.tensor_contraction",
+    "flagquantum.simulation.tensor_models",
+    "flagquantum.simulation.tensor_state",
+    "flagquantum.simulation.tensor_execution",
+)
+
+__all__ = (
+    "CompiledTNContractionBucket",
+    "CompiledTNContractionStage",
+    "CompiledTNNode",
+    "CompiledTNObservableProgram",
+    "CompiledTNProgram",
+    "CompiledTNStagePlan",
+    "ContractionGraph",
+    "ContractionPathStep",
+    "EinsumProgram",
+    "PairContractionStep",
+    "TensorNetworkContractionPlan",
+    "TensorNetworkContractionProfile",
+    "TensorNetworkExpectationPlan",
+    "TensorNetworkNode",
+    "TensorNetworkSlicingPlan",
+    "TensorNetworkState",
+    "TensorNode",
+    "build_tensor_network",
+    "build_tensor_network_expectation",
+    "run_tensor_network",
+    "tensor_network_expectation_ps",
+)
+
+
+def __getattr__(name: str) -> Any:
+    for module_name in _MODULES:
+        module = import_module(module_name)
+        if hasattr(module, name):
+            return getattr(module, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    names = set(globals())
+    for module_name in _MODULES:
+        names.update(dir(import_module(module_name)))
+    return sorted(names)

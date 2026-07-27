@@ -1,0 +1,20 @@
+schema = "flagquantum_dependency_policy_v1"
+python = ["3.10", "3.11", "3.12"]
+core = ["torch>=2.5,<2.14"]
+
+[extras]
+jax = ["jax>=0.10,<0.11"]
+viz = ["matplotlib>=3.5"]
+examples = ["datasets>=2.20", "transformers>=4.40"]
+providers = []
+
+[tested]
+torch = ["2.5", "2.13"]
+jax = ["0.10"]
+
+[updates]
+cadence = "monthly"
+security_updates = "expedited"
+lower_bound = "oldest supported CI lane"
+upper_bound = "latest supported CI lane"
+major_updates = "dedicated compatibility pull request"

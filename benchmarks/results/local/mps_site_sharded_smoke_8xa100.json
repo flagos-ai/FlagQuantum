@@ -1,0 +1,689 @@
+{
+  "batch_size": 1,
+  "benchmark": "mps_site_sharded_smoke_8xa100",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "requires_runtime_summary",
+  "full_mps_materialization": false,
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "logical_mps_bytes": 27968,
+  "max_bond": 8,
+  "n_sites": 32,
+  "non_release_evidence": true,
+  "rank_records": [
+    {
+      "elapsed_seconds": 7.071338358335197,
+      "error": null,
+      "owned_wires": [
+        0,
+        4
+      ],
+      "peak_memory_bytes": 17061888,
+      "rank": 0,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.562411974184215,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": true,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 0,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17052160,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7045414177700877,
+            "forward_seconds": 0.5597649915143847,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 12,
+            "optimizer_seconds": 0.09197184443473816,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17061888,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.051956793293356895,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 1696,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.117813098244369,
+      "error": null,
+      "owned_wires": [
+        4,
+        8
+      ],
+      "peak_memory_bytes": 17064960,
+      "rank": 1,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.5646076863631606,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 1,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17054208,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7049832548946142,
+            "forward_seconds": 0.37990323174744844,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09201169107109308,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17064960,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.2322251135483384,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 4096,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.199460626579821,
+      "error": null,
+      "owned_wires": [
+        8,
+        12
+      ],
+      "peak_memory_bytes": 17064960,
+      "rank": 2,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.56418713927269,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 2,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17054208,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7052474766969681,
+            "forward_seconds": 0.3788036769255996,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09201213251799345,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17064960,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.2337600151076913,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 4096,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.215938420034945,
+      "error": null,
+      "owned_wires": [
+        12,
+        16
+      ],
+      "peak_memory_bytes": 17064960,
+      "rank": 3,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.564612977206707,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 3,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17054208,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7050606720149517,
+            "forward_seconds": 0.3735445458441973,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09191109891980886,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17064960,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.2388140270486474,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 4096,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.180457846261561,
+      "error": null,
+      "owned_wires": [
+        16,
+        20
+      ],
+      "peak_memory_bytes": 17064960,
+      "rank": 4,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.564724439755082,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 4,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17054208,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.705644840374589,
+            "forward_seconds": 0.3721344219520688,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09201352391391993,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17064960,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.24094072822481394,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 4096,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.062734084203839,
+      "error": null,
+      "owned_wires": [
+        20,
+        24
+      ],
+      "peak_memory_bytes": 17064960,
+      "rank": 5,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.56189002469182,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 5,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17054208,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7085084393620491,
+            "forward_seconds": 0.3709194688126445,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09201902337372303,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17064960,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.24498916510492563,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 4096,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.082315731793642,
+      "error": null,
+      "owned_wires": [
+        24,
+        28
+      ],
+      "peak_memory_bytes": 17064960,
+      "rank": 6,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.554788038134575,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 6,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17054208,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7156617622822523,
+            "forward_seconds": 0.3761042784899473,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09201517701148987,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17064960,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.24688124377280474,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 4096,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    },
+    {
+      "elapsed_seconds": 7.152583404444158,
+      "error": null,
+      "owned_wires": [
+        28,
+        32
+      ],
+      "peak_memory_bytes": 17060352,
+      "rank": 7,
+      "status": "passed",
+      "training": {
+        "blockers": [
+          "release_speedup_evidence_not_attached",
+          "release_capacity_evidence_not_attached",
+          "multi_gpu_scaling_report_not_attached"
+        ],
+        "capacity_gate_passed": false,
+        "checkpoint_contract_fingerprint": "ba06e41317490c1598e1436637e9e56561f3f5abe9f44c82884c99e5b8ecdd6d",
+        "communication_protocol": "batched_isend_irecv_descriptor_payload",
+        "communication_setup_seconds": 2.5542299896478653,
+        "communication_stream": "dedicated_cuda_stream",
+        "completed_steps": 1,
+        "correctness_gate_passed": true,
+        "distribution_semantics": "sharded_across_ranks",
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "full_mps_materialization": false,
+        "local_world_size": 8,
+        "losses": [
+          0.05586060881614685
+        ],
+        "memory_growth_bytes": 0,
+        "memory_warmup_steps": 1,
+        "node_count": 1,
+        "optimizer": "adam",
+        "optimizer_ownership": [
+          {
+            "gradient_route": "deterministic_all_reduce",
+            "optimizer_state_local": false,
+            "owner_rank": 0,
+            "parameter_index": 0,
+            "update_route": "owner_step_then_broadcast"
+          }
+        ],
+        "optimizer_state_ownership_semantics": "sharded_across_ranks",
+        "rank": 7,
+        "rank_useful_work": true,
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "speedup_gate_passed": false,
+        "start_step": 0,
+        "step_metrics": [
+          {
+            "allocated_memory_bytes": 17051136,
+            "bond_updates": [],
+            "boundary_bytes": 0,
+            "boundary_exchanges": 0,
+            "boundary_forward_exchanges": 0,
+            "boundary_reverse_exchanges": 0,
+            "communication_buffer_bytes": 0,
+            "discarded_weight": 0.0,
+            "end_to_end_seconds": 0.7161444174125791,
+            "forward_seconds": 0.35312332585453987,
+            "loss": 0.05586060881614685,
+            "optimizer_memory_bytes": 0,
+            "optimizer_seconds": 0.09201110899448395,
+            "owned_bond_work": 0,
+            "owned_site_work": 4,
+            "peak_memory_bytes": 17060352,
+            "qr_activity": 0,
+            "reserved_memory_bytes": 23068672,
+            "reverse_seconds": 0.27032461296766996,
+            "step": 0,
+            "svd_activity": 0,
+            "tape_memory_bytes": 1696,
+            "truncated_splits": 0,
+            "two_site_splits": 0,
+            "useful_work_completed": true
+          }
+        ],
+        "suspected_memory_leak": false,
+        "world_size": 8
+      }
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.example.variable_bond_capacity_8gpu.v1",
+  "sharded_completion": true,
+  "single_gpu_capacity_failure": false,
+  "workload": "single_state_transverse_field_quench",
+  "world_size": 8
+}

@@ -1,0 +1,178 @@
+{
+  "artifact_class": "measured_development_run",
+  "backend": "nccl",
+  "backward": {
+    "coefficient_of_variation": 0.00461375444225094,
+    "mean_seconds": 0.6398139617716273,
+    "median_seconds": 0.6389885400421917,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.6437706779688597,
+      0.6389885400421917,
+      0.6366826673038304
+    ]
+  },
+  "backward_communication_bytes_per_rank_max": 16,
+  "benchmark": "statevector_differentiable_training_scaling",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "correctness": {
+    "absolute_tolerance": 3e-05,
+    "final_parameter_spread": 0.0,
+    "final_parameters": [
+      0.380182683467865,
+      -0.5202473402023315
+    ],
+    "gradient_absolute_error_max": 3.3531009357989916e-08,
+    "passed": true,
+    "value_absolute_error_max": 1.0730526467384038e-07
+  },
+  "differentiable_forward": {
+    "coefficient_of_variation": 0.004284569129438813,
+    "mean_seconds": 0.31012769881635904,
+    "median_seconds": 0.3105838820338249,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.30832089204341173,
+      0.3105838820338249,
+      0.3114783223718405
+    ]
+  },
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "end_to_end": {
+    "coefficient_of_variation": 0.038828848446406175,
+    "mean_seconds": 0.9774602289932469,
+    "median_seconds": 0.9506703172810376,
+    "peak_memory_bytes_max": 34519391232,
+    "sample_count": 3,
+    "samples_seconds": [
+      1.0311347749084234,
+      0.9505755947902799,
+      0.9506703172810376
+    ]
+  },
+  "forward": {
+    "coefficient_of_variation": 0.8130534477421834,
+    "mean_seconds": 0.4173026909120381,
+    "median_seconds": 0.17750308196991682,
+    "peak_memory_bytes_max": 17758817280,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.8971303319558501,
+      0.17727465881034732,
+      0.17750308196991682
+    ]
+  },
+  "hardware": {
+    "cuda": "13.0",
+    "device": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "local_world_size": 8,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "optimizer": {
+    "coefficient_of_variation": 1.327518026952242,
+    "mean_seconds": 0.027578298468142748,
+    "median_seconds": 0.0024922522716224194,
+    "sample_count": 3,
+    "samples_seconds": [
+      0.07934544002637267,
+      0.0008972031064331532,
+      0.0024922522716224194
+    ]
+  },
+  "rank_placement": [
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "final_parameters": [
+        0.380182683467865,
+        -0.5202473402023315
+      ],
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "release_gate_allowed": false,
+  "repetitions": 3,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling.v1",
+  "validation_blockers": [],
+  "warmup": 1,
+  "workload": {
+    "dtype": "complex64",
+    "gate_count": 3,
+    "learning_rate": 0.05,
+    "local_amplitudes": 1073741824,
+    "n_wires": 33,
+    "observable": "Z(31)",
+    "optimizer": "adam"
+  },
+  "world_size": 8
+}

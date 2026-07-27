@@ -1,0 +1,37 @@
+{
+  "artifact_class": "measured_development_capacity_report",
+  "benchmark": "statevector_training_science_35q_capacity_report_v12",
+  "benchmark_evidence_class": "comparison_non_release",
+  "blockers": [],
+  "capacity_expansion_demonstrated": true,
+  "claim_evidence_type": "development_smoke",
+  "distributed_backward_median_seconds": 72.84301320416853,
+  "distributed_capacity_completion_observed": true,
+  "distributed_end_to_end_median_seconds": 114.31942800292745,
+  "distributed_node_count": 2,
+  "distributed_peak_memory_bytes_per_rank": 69374092288,
+  "distributed_source": "benchmarks/results/comparison/statevector_training_science_35q_2node16xa800_v12.json",
+  "distributed_world_size": 16,
+  "distribution_semantics": "single_device_fast_path",
+  "matched_workload": {
+    "active_wire_count": 35,
+    "dtype": "complex64",
+    "entanglement": "directed_cnot_linear",
+    "gate_count": 69,
+    "layers": 1,
+    "n_wires": 35,
+    "name": "full_width_linear_hea",
+    "parameter_count": 35,
+    "seed": 20260722
+  },
+  "matched_workload_sha256": "cc72a032214db7971c83701fb860c2701fc486dbc8cf9e5e3dcc89fc89e6b803",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.full_width_capacity_report.v1",
+  "single_gpu_oom_observed": true,
+  "single_gpu_source": "benchmarks/results/comparison/statevector_training_science_35q_1xa800_oom_v12.json"
+}

@@ -1,0 +1,604 @@
+{
+  "artifact_class": "derived_development_report",
+  "baseline_n_wires": 31,
+  "benchmark": "statevector_differentiable_training_scaling_report",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "definition": "constant_2^31_amplitudes_per_rank",
+  "display_efficiency_baseline_world_size": 1,
+  "display_efficiency_rationale": "the full weak-scaling series is normalized at the requested single-GPU baseline; distributed-baseline efficiency remains available per point",
+  "distribution_semantics": "single_device_fast_path",
+  "local_amplitudes": 2147483648,
+  "non_release_evidence": true,
+  "points": [
+    {
+      "active_wire_count": 31,
+      "backward_communication_bytes_per_rank_max": 0,
+      "end_to_end_peak_memory_bytes": 68879188992,
+      "forward_communication_bytes_per_rank_max": 0,
+      "forward_peak_memory_bytes": 34938731008,
+      "gate_count": 61,
+      "gradient_absolute_error_max": null,
+      "n_wires": 31,
+      "node_count": 1,
+      "parameter_count": 31,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0003664926909640375,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 24.575324279721826,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.002362071828043079,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 9.496642285957932,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.0014935526092106337,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 34.090815800242126,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.036746151953114814,
+          "distributed_weak_scaling_efficiency": null,
+          "median_seconds": 8.426323566120118,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "baseline",
+            "speedup": 1.0
+          }
+        }
+      },
+      "world_size": 1
+    },
+    {
+      "active_wire_count": 32,
+      "backward_communication_bytes_per_rank_max": 120259084424,
+      "end_to_end_peak_memory_bytes": 68937893888,
+      "forward_communication_bytes_per_rank_max": 34359738368,
+      "forward_peak_memory_bytes": 36381573632,
+      "gate_count": 63,
+      "gradient_absolute_error_max": null,
+      "n_wires": 32,
+      "node_count": 1,
+      "parameter_count": 32,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.0009640606107607011,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 30.284573555924,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.8101083071943633,
+              0.8127453809446249
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.8114799514789476
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.0036256547261961816,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 10.829346514306962,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.8723472804775213,
+              0.884577265526637
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.8769358588176714
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.0013722315236626887,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 41.163114953786135,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.8264654830888862,
+              0.832006341974411
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.8281884361403629
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.03554469404080011,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              1.0,
+              1.0
+            ],
+            "confidence_level": 0.95,
+            "method": "distributed_baseline",
+            "speedup": 1.0
+          },
+          "median_seconds": 10.170734541025013,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.7878575880783281,
+              0.9316229559528824
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.828487218118949
+          }
+        }
+      },
+      "world_size": 2
+    },
+    {
+      "active_wire_count": 33,
+      "backward_communication_bytes_per_rank_max": 343597383820,
+      "end_to_end_peak_memory_bytes": 69206324224,
+      "forward_communication_bytes_per_rank_max": 103079215104,
+      "forward_peak_memory_bytes": 36515792896,
+      "gate_count": 65,
+      "gradient_absolute_error_max": null,
+      "n_wires": 33,
+      "node_count": 1,
+      "parameter_count": 33,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.009982297828236283,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.6713840196259677,
+              0.6893929231806576
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.677702604010581
+          },
+          "median_seconds": 44.687114047817886,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.5451766714584233,
+              0.5589824240363116
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.5499420762196627
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.008297688829099729,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.8521829001227095,
+              0.874614789116483
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.8731837980384838
+          },
+          "median_seconds": 12.402138631790876,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.7495765858216804,
+              0.7672887043223396
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.765726183838554
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.00929140545075638,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.7115229237479759,
+              0.7300250037165384
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7200819600224898
+          },
+          "median_seconds": 57.164485765621066,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.5898297858244363,
+              0.6055517848782581
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.5963635523639131
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.025452123212675325,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.7522180636288816,
+              0.8735044824222464
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.8095379214391485
+          },
+          "median_seconds": 12.563629536889493,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.646584864395176,
+              0.745883956001101
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.6706918204949164
+          }
+        }
+      },
+      "world_size": 4
+    },
+    {
+      "active_wire_count": 34,
+      "backward_communication_bytes_per_rank_max": 566935683216,
+      "end_to_end_peak_memory_bytes": 69273430016,
+      "forward_communication_bytes_per_rank_max": 171798691840,
+      "forward_peak_memory_bytes": 36515794432,
+      "gate_count": 67,
+      "gradient_absolute_error_max": null,
+      "n_wires": 34,
+      "node_count": 1,
+      "parameter_count": 34,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.01320384517074919,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.4014636102336297,
+              0.41563383383865765
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.40862054653457314
+          },
+          "median_seconds": 74.11417221371084,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.32599613386804344,
+              0.3370095632527331
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.33158738127517645
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.007406370280771997,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.7539744270551135,
+              0.7725134555225746
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7596466172074281
+          },
+          "median_seconds": 14.255768760107458,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.663192815471244,
+              0.677716470994349
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.6661613586587349
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.009692088676703781,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.45913564517042543,
+              0.4715904052164297
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.4657431748573512
+          },
+          "median_seconds": 88.38157417206094,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.3806087902673942,
+              0.3911816857729916
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.3857231116281573
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.07742985086113384,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.5974696183114074,
+              0.7698698126498646
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.7281134309405153
+          },
+          "median_seconds": 13.968612730968744,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.5135675820817743,
+              0.657390492001536
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.6032326708749509
+          }
+        }
+      },
+      "world_size": 8
+    },
+    {
+      "active_wire_count": 35,
+      "backward_communication_bytes_per_rank_max": 790273982612,
+      "end_to_end_peak_memory_bytes": 69273428992,
+      "forward_communication_bytes_per_rank_max": 240518168576,
+      "forward_peak_memory_bytes": 36515795968,
+      "gate_count": 69,
+      "gradient_absolute_error_max": null,
+      "n_wires": 35,
+      "node_count": 2,
+      "parameter_count": 35,
+      "phases": {
+        "backward": {
+          "coefficient_of_variation": 0.011942691517936213,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.22704712137992644,
+              0.23382623473626726
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.22811539679443468
+          },
+          "median_seconds": 132.75988373206928,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.1843666073063282,
+              0.1895939907435207
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.18511107112234873
+          }
+        },
+        "differentiable_forward": {
+          "coefficient_of_variation": 0.0017034559706060402,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.327142309417856,
+              0.33113238081066454
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.33051957212214683
+          },
+          "median_seconds": 32.76461495086551,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.28775303439666094,
+              0.2904983297710373
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.2898444648349841
+          }
+        },
+        "end_to_end": {
+          "coefficient_of_variation": 0.009931839093387046,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.24698027071371093,
+              0.2534546473018413
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.24866508045351254
+          },
+          "median_seconds": 165.5363707630895,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.20473875867635227,
+              0.21023925657060663
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.2059415441035121
+          }
+        },
+        "forward": {
+          "coefficient_of_variation": 0.004254430626975822,
+          "distributed_weak_scaling_efficiency": {
+            "baseline_world_size": 2,
+            "confidence_interval": [
+              0.29846719764537044,
+              0.3286281778717547
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.3147748983829268
+          },
+          "median_seconds": 32.31113596819341,
+          "weak_scaling_efficiency": {
+            "confidence_interval": [
+              0.25655375993623025,
+              0.28061502865411647
+            ],
+            "confidence_level": 0.95,
+            "method": "independent_bootstrap_median_ratio",
+            "resamples": 10000,
+            "seed": 440044,
+            "speedup": 0.26078697989494587
+          }
+        }
+      },
+      "world_size": 16
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.statevector.training_scaling_report.v1",
+  "source_world_sizes": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "validation_blockers": [
+    "development_artifacts_not_release_scalability_evidence",
+    "matched_external_simulator_comparison_pending"
+  ],
+  "workload": {
+    "active_wire_count": 31,
+    "dtype": "complex64",
+    "entanglement": "directed_cnot_linear",
+    "gate_count": 61,
+    "initialization": "deterministic_nonzero_ry_angles",
+    "layers": 1,
+    "learning_rate": 0.05,
+    "local_amplitudes": 2147483648,
+    "n_wires": 31,
+    "name": "full_width_linear_hea",
+    "observable": "Z(15)",
+    "optimizer": "adam",
+    "parameter_count": 31,
+    "seed": 20260722,
+    "validation": "dense_autograd_small_scale_plus_distributed_invariants"
+  }
+}

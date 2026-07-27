@@ -1,0 +1,292 @@
+{
+  "benchmark": "parameterized_single_qubit_fusion_training_step",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "fallback": {
+    "coefficient_of_variation": 0.05136802772649426,
+    "mean_seconds": 0.060064510287096105,
+    "median_seconds": 0.05839332100003958,
+    "profile_top_device_operators": [
+      {
+        "count": 359,
+        "device_time_us": 19373.235999999943,
+        "operator": "aten::bmm",
+        "self_device_time_us": 19352.14699999995
+      },
+      {
+        "count": 118,
+        "device_time_us": 9228.944000000032,
+        "operator": "ampere_cgemm_32x32_cn",
+        "self_device_time_us": 9228.944000000032
+      },
+      {
+        "count": 38,
+        "device_time_us": 3813.088999999984,
+        "operator": "ampere_cgemm_64x32_nn",
+        "self_device_time_us": 3813.088999999984
+      },
+      {
+        "count": 37,
+        "device_time_us": 3730.1500000000815,
+        "operator": "ampere_cgemm_64x32_nc",
+        "self_device_time_us": 3730.1500000000815
+      },
+      {
+        "count": 833,
+        "device_time_us": 2352.1910000000635,
+        "operator": "aten::copy_",
+        "self_device_time_us": 2352.1910000000635
+      },
+      {
+        "count": 148,
+        "device_time_us": 1355.8440000000255,
+        "operator": "void at::native::elementwise_kernel<128, 2, at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#9}::operator()() const::{lambda(c10::complex<float>)#1}>(at::TensorIteratorBase&, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#9}::operator()() const::{lambda(c10::complex<float>)#1} const&)::{lambda(int)#1}>(int, at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#9}::operator()() const::{lambda(c10::complex<float>)#1}>(at::TensorIteratorBase&, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#9}::operator()() const::{lambda(c10::complex<float>)#1} const&)::{lambda(int)#1})",
+        "self_device_time_us": 1355.8440000000255
+      },
+      {
+        "count": 480,
+        "device_time_us": 1368.1709999999948,
+        "operator": "aten::cat",
+        "self_device_time_us": 1305.5779999999936
+      },
+      {
+        "count": 40,
+        "device_time_us": 847.1330000000089,
+        "operator": "void cublasLt::splitKreduce_kernel<32, 16, int, float2, float2, float2, float2, false, float2, float2, float2, true, false, false, false>(cublasLt::cublasSplitKParams<float2>, float2 const*, float2 const*, float2*, float2*, float2 const*, float2 const*, float2 const*, float2 const*, float2*, void*, long, float2*, int*, float2*, float2*, float2 const*, float2 const*, float2 const*, float2 const*, float2 const*)",
+        "self_device_time_us": 847.1330000000089
+      },
+      {
+        "count": 444,
+        "device_time_us": 950.6619999999648,
+        "operator": "aten::mul",
+        "self_device_time_us": 753.3199999999315
+      },
+      {
+        "count": 240,
+        "device_time_us": 722.6779999999844,
+        "operator": "void at::native::(anonymous namespace)::CatArrayBatchedCopy_alignedK_contig<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 2, 128, 1, 16>(at::native::(anonymous namespace)::OpaqueType<8u>*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)",
+        "self_device_time_us": 722.6779999999844
+      },
+      {
+        "count": 2,
+        "device_time_us": 560.9279999999999,
+        "operator": "ampere_cgemm_32x32_nt",
+        "self_device_time_us": 560.9279999999999
+      },
+      {
+        "count": 160,
+        "device_time_us": 478.4699999999384,
+        "operator": "aten::cos",
+        "self_device_time_us": 478.4699999999384
+      },
+      {
+        "count": 160,
+        "device_time_us": 478.4699999999384,
+        "operator": "cos_impl_vectorized2_kernel",
+        "self_device_time_us": 478.4699999999384
+      },
+      {
+        "count": 282,
+        "device_time_us": 465.21799999997756,
+        "operator": "void at::native::vectorized_elementwise_kernel<2, at::native::conj_kernel_cuda(at::TensorIteratorBase&)::{lambda()#2}::operator()() const::{lambda()#12}::operator()() const::{lambda(c10::complex<float>)#1}, std::array<char*, 2ul> >(int, at::native::conj_kernel_cuda(at::TensorIteratorBase&)::{lambda()#2}::operator()() const::{lambda()#12}::operator()() const::{lambda(c10::complex<float>)#1}, std::array<char*, 2ul>)",
+        "self_device_time_us": 465.21799999997756
+      },
+      {
+        "count": 160,
+        "device_time_us": 430.8100000000172,
+        "operator": "aten::sin",
+        "self_device_time_us": 430.8100000000172
+      },
+      {
+        "count": 160,
+        "device_time_us": 430.8100000000172,
+        "operator": "sin_impl_vectorized2_kernel",
+        "self_device_time_us": 430.8100000000172
+      },
+      {
+        "count": 241,
+        "device_time_us": 408.22000000007756,
+        "operator": "Memcpy DtoD (Device -> Device)",
+        "self_device_time_us": 408.22000000007756
+      },
+      {
+        "count": 239,
+        "device_time_us": 395.49300000001676,
+        "operator": "aten::add_",
+        "self_device_time_us": 395.49300000001676
+      },
+      {
+        "count": 80,
+        "device_time_us": 385.8209999998435,
+        "operator": "ampere_cgemm_32x32_nc",
+        "self_device_time_us": 385.8209999998435
+      },
+      {
+        "count": 120,
+        "device_time_us": 377.6250000000041,
+        "operator": "void at::native::(anonymous namespace)::CatArrayBatchedCopy_vectorized<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 2, 128, 1, 16, 2>(char*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)",
+        "self_device_time_us": 377.6250000000041
+      }
+    ],
+    "samples_seconds": [
+      0.06362499203532934,
+      0.05817521782591939,
+      0.05839332100003958
+    ]
+  },
+  "fused": {
+    "coefficient_of_variation": 0.08076858101881174,
+    "mean_seconds": 0.08057414538537462,
+    "median_seconds": 0.08129727793857455,
+    "profile_top_device_operators": [
+      {
+        "count": 480,
+        "device_time_us": 1672.9989999999493,
+        "operator": "aten::cat",
+        "self_device_time_us": 1594.8889999999278
+      },
+      {
+        "count": 240,
+        "device_time_us": 1381.7670000000358,
+        "operator": "aten::bmm",
+        "self_device_time_us": 1381.7670000000358
+      },
+      {
+        "count": 723,
+        "device_time_us": 1300.7690000001435,
+        "operator": "aten::copy_",
+        "self_device_time_us": 1300.7690000001435
+      },
+      {
+        "count": 444,
+        "device_time_us": 1173.9550000000318,
+        "operator": "aten::mul",
+        "self_device_time_us": 930.0140000000401
+      },
+      {
+        "count": 240,
+        "device_time_us": 889.9859999999471,
+        "operator": "void at::native::(anonymous namespace)::CatArrayBatchedCopy_alignedK_contig<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 2, 128, 1, 16>(at::native::(anonymous namespace)::OpaqueType<8u>*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)",
+        "self_device_time_us": 889.9859999999471
+      },
+      {
+        "count": 40,
+        "device_time_us": 1302.8799999999756,
+        "operator": "_SingleQubitMatrixBackward",
+        "self_device_time_us": 879.775999999998
+      },
+      {
+        "count": 40,
+        "device_time_us": 879.775999999998,
+        "operator": "_single_qubit_matrix_backward_kernel",
+        "self_device_time_us": 879.775999999998
+      },
+      {
+        "count": 160,
+        "device_time_us": 579.1319999999391,
+        "operator": "aten::cos",
+        "self_device_time_us": 579.1319999999391
+      },
+      {
+        "count": 160,
+        "device_time_us": 579.1319999999391,
+        "operator": "cos_impl_vectorized2_kernel",
+        "self_device_time_us": 579.1319999999391
+      },
+      {
+        "count": 280,
+        "device_time_us": 551.3919999999994,
+        "operator": "void at::native::vectorized_elementwise_kernel<2, at::native::conj_kernel_cuda(at::TensorIteratorBase&)::{lambda()#2}::operator()() const::{lambda()#12}::operator()() const::{lambda(c10::complex<float>)#1}, std::array<char*, 2ul> >(int, at::native::conj_kernel_cuda(at::TensorIteratorBase&)::{lambda()#2}::operator()() const::{lambda()#12}::operator()() const::{lambda(c10::complex<float>)#1}, std::array<char*, 2ul>)",
+        "self_device_time_us": 551.3919999999994
+      },
+      {
+        "count": 160,
+        "device_time_us": 529.6630000000227,
+        "operator": "aten::sin",
+        "self_device_time_us": 529.6630000000227
+      },
+      {
+        "count": 160,
+        "device_time_us": 529.6630000000227,
+        "operator": "sin_impl_vectorized2_kernel",
+        "self_device_time_us": 529.6630000000227
+      },
+      {
+        "count": 241,
+        "device_time_us": 492.3170000000846,
+        "operator": "Memcpy DtoD (Device -> Device)",
+        "self_device_time_us": 492.3170000000846
+      },
+      {
+        "count": 239,
+        "device_time_us": 488.10000000005675,
+        "operator": "aten::add_",
+        "self_device_time_us": 488.10000000005675
+      },
+      {
+        "count": 40,
+        "device_time_us": 475.9959999999942,
+        "operator": "_SingleQubitMatrix",
+        "self_device_time_us": 475.9959999999942
+      },
+      {
+        "count": 40,
+        "device_time_us": 475.9959999999942,
+        "operator": "_single_qubit_matrix_kernel",
+        "self_device_time_us": 475.9959999999942
+      },
+      {
+        "count": 80,
+        "device_time_us": 471.328000000045,
+        "operator": "ampere_cgemm_32x32_nc",
+        "self_device_time_us": 471.328000000045
+      },
+      {
+        "count": 120,
+        "device_time_us": 461.3220000000024,
+        "operator": "void at::native::(anonymous namespace)::CatArrayBatchedCopy_vectorized<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 2, 128, 1, 16, 2>(char*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<8u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)",
+        "self_device_time_us": 461.3220000000024
+      },
+      {
+        "count": 80,
+        "device_time_us": 457.859000000004,
+        "operator": "ampere_cgemm_32x32_cn",
+        "self_device_time_us": 457.859000000004
+      },
+      {
+        "count": 80,
+        "device_time_us": 452.57999999998674,
+        "operator": "ampere_cgemm_32x32_nn",
+        "self_device_time_us": 452.57999999998674
+      }
+    ],
+    "samples_seconds": [
+      0.0866902363486588,
+      0.07373492186889052,
+      0.08129727793857455
+    ]
+  },
+  "maximum_parameter_gradient_error": 8.568167686462402e-08,
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.parameterized_single_qubit_fusion.v1",
+  "speedup": 0.7182690796137059,
+  "stability": {
+    "comparison_claim_allowed": true,
+    "fallback_passed": true,
+    "fused_passed": true,
+    "maximum_coefficient_of_variation": 0.1
+  },
+  "workload": {
+    "iterations": 3,
+    "layers": 2,
+    "n_wires": 20,
+    "parameter_count": 120,
+    "warmup": 2
+  }
+}

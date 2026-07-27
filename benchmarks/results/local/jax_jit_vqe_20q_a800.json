@@ -1,0 +1,1587 @@
+{
+  "benchmark": "jax_jit_cold_vs_steady",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "claim_scope": "development_single_device_jax_kernel_acceleration",
+  "correctness_passed": true,
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A800-SXM4-80GB",
+    "device": "cuda:0",
+    "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "limitations": [
+    "Development evidence from the current single-device environment, not release certification.",
+    "JAX persistent compilation cache is disabled to expose cold-start cost.",
+    "Results do not imply distributed scalability or universal backend superiority."
+  ],
+  "measurements": [
+    {
+      "break_even_calls": 534,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 3.34419310092926e-05,
+          "jax_cold_total_seconds": 17.651264388579875,
+          "jax_first_value_grad_seconds": 17.29718699818477,
+          "jax_kernel_build_seconds": 0.3540773903951049,
+          "jax_steady_samples_seconds": [
+            0.09486012579873204,
+            0.09388406202197075,
+            0.08950952114537358
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    11,
+                    "z"
+                  ],
+                  [
+                    12,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    12,
+                    "z"
+                  ],
+                  [
+                    13,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    13,
+                    "z"
+                  ],
+                  [
+                    14,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    14,
+                    "z"
+                  ],
+                  [
+                    15,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    15,
+                    "z"
+                  ],
+                  [
+                    16,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    16,
+                    "z"
+                  ],
+                  [
+                    17,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    17,
+                    "z"
+                  ],
+                  [
+                    18,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    18,
+                    "z"
+                  ],
+                  [
+                    19,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    12,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    13,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    14,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    15,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    16,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    17,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    18,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    19,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              2,
+              20,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 2,
+          "loss_abs_error": 1.9073486328125e-05,
+          "n_wires": 20,
+          "pytorch_first_seconds": 0.2530283550731838,
+          "pytorch_steady_samples_seconds": [
+            0.13686672179028392,
+            0.11782914726063609,
+            0.1265516928397119
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 3.34419310092926e-05,
+      "jax_cold_total_seconds_median": 17.651264388579875,
+      "jax_compile_tax_in_steady_steps": 188.0112982803101,
+      "jax_first_value_grad_seconds_median": 17.29718699818477,
+      "jax_kernel_build_seconds_median": 0.3540773903951049,
+      "jax_steady_samples_seconds": [
+        0.09486012579873204,
+        0.09388406202197075,
+        0.08950952114537358
+      ],
+      "jax_steady_seconds_median": 0.09388406202197075,
+      "layers": 2,
+      "loss_abs_error_max": 1.9073486328125e-05,
+      "n_wires": 20,
+      "pytorch_first_seconds_median": 0.2530283550731838,
+      "pytorch_steady_samples_seconds": [
+        0.13686672179028392,
+        0.11782914726063609,
+        0.1265516928397119
+      ],
+      "pytorch_steady_seconds_median": 0.1265516928397119,
+      "state_dimension": 1048576,
+      "steady_speedup_jax_over_pytorch": 1.3479571517697677
+    },
+    {
+      "break_even_calls": 533,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 3.2123178243637085e-05,
+          "jax_cold_total_seconds": 28.37666849512607,
+          "jax_first_value_grad_seconds": 28.012860963121057,
+          "jax_kernel_build_seconds": 0.36380753200501204,
+          "jax_steady_samples_seconds": [
+            0.1644964162260294,
+            0.1635408541187644,
+            0.16355205792933702
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    11,
+                    "z"
+                  ],
+                  [
+                    12,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    12,
+                    "z"
+                  ],
+                  [
+                    13,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    13,
+                    "z"
+                  ],
+                  [
+                    14,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    14,
+                    "z"
+                  ],
+                  [
+                    15,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    15,
+                    "z"
+                  ],
+                  [
+                    16,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    16,
+                    "z"
+                  ],
+                  [
+                    17,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    17,
+                    "z"
+                  ],
+                  [
+                    18,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    18,
+                    "z"
+                  ],
+                  [
+                    19,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    12,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    13,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    14,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    15,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    16,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    17,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    18,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    19,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              4,
+              20,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 4,
+          "loss_abs_error": 1.1920928955078125e-05,
+          "n_wires": 20,
+          "pytorch_first_seconds": 0.34630895080044866,
+          "pytorch_steady_samples_seconds": [
+            0.2155095678754151,
+            0.22249332582578063,
+            0.2162544522434473
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 3.2123178243637085e-05,
+      "jax_cold_total_seconds_median": 28.37666849512607,
+      "jax_compile_tax_in_steady_steps": 173.5023628219112,
+      "jax_first_value_grad_seconds_median": 28.012860963121057,
+      "jax_kernel_build_seconds_median": 0.36380753200501204,
+      "jax_steady_samples_seconds": [
+        0.1644964162260294,
+        0.1635408541187644,
+        0.16355205792933702
+      ],
+      "jax_steady_seconds_median": 0.16355205792933702,
+      "layers": 4,
+      "loss_abs_error_max": 1.1920928955078125e-05,
+      "n_wires": 20,
+      "pytorch_first_seconds_median": 0.34630895080044866,
+      "pytorch_steady_samples_seconds": [
+        0.2155095678754151,
+        0.22249332582578063,
+        0.2162544522434473
+      ],
+      "pytorch_steady_seconds_median": 0.2162544522434473,
+      "state_dimension": 1048576,
+      "steady_speedup_jax_over_pytorch": 1.3222362040646438
+    },
+    {
+      "break_even_calls": 505,
+      "cold_repetitions": [
+        {
+          "correctness_passed": true,
+          "device": "cuda:0",
+          "grad_max_abs_error": 7.643364369869232e-06,
+          "jax_cold_total_seconds": 50.59550465317443,
+          "jax_first_value_grad_seconds": 50.22074915515259,
+          "jax_kernel_build_seconds": 0.37475549802184105,
+          "jax_steady_samples_seconds": [
+            0.31914844177663326,
+            0.31784114614129066,
+            0.31803870713338256
+          ],
+          "kernel_summary": {
+            "backend": "jax",
+            "compatible_distributed_modes": [
+              "distributed_statevector",
+              "distributed_mps",
+              "distributed_tensor_network"
+            ],
+            "compute_dtype": "complex64",
+            "cutoff": 0.0,
+            "distributed_integration_role": "rank_local_jax_accelerator",
+            "distribution_semantics": "rank_local_replicated_kernel",
+            "executor": "jax_quantum_kernel",
+            "hamiltonian_fastpath": null,
+            "hamiltonian_terms": [
+              [
+                -0.7,
+                [
+                  [
+                    0,
+                    "z"
+                  ],
+                  [
+                    1,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    1,
+                    "z"
+                  ],
+                  [
+                    2,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    2,
+                    "z"
+                  ],
+                  [
+                    3,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    3,
+                    "z"
+                  ],
+                  [
+                    4,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    4,
+                    "z"
+                  ],
+                  [
+                    5,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    5,
+                    "z"
+                  ],
+                  [
+                    6,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    6,
+                    "z"
+                  ],
+                  [
+                    7,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    7,
+                    "z"
+                  ],
+                  [
+                    8,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    8,
+                    "z"
+                  ],
+                  [
+                    9,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    9,
+                    "z"
+                  ],
+                  [
+                    10,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    10,
+                    "z"
+                  ],
+                  [
+                    11,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    11,
+                    "z"
+                  ],
+                  [
+                    12,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    12,
+                    "z"
+                  ],
+                  [
+                    13,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    13,
+                    "z"
+                  ],
+                  [
+                    14,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    14,
+                    "z"
+                  ],
+                  [
+                    15,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    15,
+                    "z"
+                  ],
+                  [
+                    16,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    16,
+                    "z"
+                  ],
+                  [
+                    17,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    17,
+                    "z"
+                  ],
+                  [
+                    18,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.7,
+                [
+                  [
+                    18,
+                    "z"
+                  ],
+                  [
+                    19,
+                    "z"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    0,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    1,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    2,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    3,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    4,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    5,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    6,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    7,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    8,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    9,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    10,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    11,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    12,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    13,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    14,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    15,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    16,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    17,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    18,
+                    "x"
+                  ]
+                ]
+              ],
+              [
+                -0.25,
+                [
+                  [
+                    19,
+                    "x"
+                  ]
+                ]
+              ]
+            ],
+            "interface": "torch",
+            "jit": true,
+            "matmul_precision": "highest",
+            "max_bond": null,
+            "mode": "statevector",
+            "observable": "hamiltonian",
+            "observable_wires": null,
+            "parameter_shape": [
+              8,
+              20,
+              3
+            ],
+            "requires_jax_distributed_plan_for_capacity_scaling": true,
+            "scalability_claim_allowed": false,
+            "scalability_note": "The JAX quantum kernel runs independently inside each torchrun rank. It does not shard one statevector/MPS/TN workload across ranks.",
+            "status": "ready"
+          },
+          "layers": 8,
+          "loss_abs_error": 4.76837158203125e-07,
+          "n_wires": 20,
+          "pytorch_first_seconds": 0.566588987596333,
+          "pytorch_steady_samples_seconds": [
+            0.41745959781110287,
+            0.4177402760833502,
+            0.4161459067836404
+          ],
+          "task": "tfim_vqe"
+        }
+      ],
+      "correctness_passed": true,
+      "grad_max_abs_error_max": 7.643364369869232e-06,
+      "jax_cold_total_seconds_median": 50.59550465317443,
+      "jax_compile_tax_in_steady_steps": 159.08599651034027,
+      "jax_first_value_grad_seconds_median": 50.22074915515259,
+      "jax_kernel_build_seconds_median": 0.37475549802184105,
+      "jax_steady_samples_seconds": [
+        0.31914844177663326,
+        0.31784114614129066,
+        0.31803870713338256
+      ],
+      "jax_steady_seconds_median": 0.31803870713338256,
+      "layers": 8,
+      "loss_abs_error_max": 4.76837158203125e-07,
+      "n_wires": 20,
+      "pytorch_first_seconds_median": 0.566588987596333,
+      "pytorch_steady_samples_seconds": [
+        0.41745959781110287,
+        0.4177402760833502,
+        0.4161459067836404
+      ],
+      "pytorch_steady_seconds_median": 0.41745959781110287,
+      "state_dimension": 1048576,
+      "steady_speedup_jax_over_pytorch": 1.3126062597029238
+    }
+  ],
+  "methodology": {
+    "cold_process_isolation": true,
+    "cold_repetitions": 1,
+    "jax_cold_definition": "kernel construction plus first value-and-gradient call",
+    "persistent_compilation_cache_disabled": true,
+    "steady_definition": "median value-and-gradient latency after first call",
+    "steady_repetitions_per_cold_process": 3
+  },
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.jax_jit_crossover.v1",
+  "workload": {
+    "depths": [
+      2,
+      4,
+      8
+    ],
+    "dtype": "complex64",
+    "hamiltonian": "-0.7 * sum(ZZ) - 0.25 * sum(X), open boundary",
+    "includes_forward_backward": true,
+    "layers": null,
+    "mode": "statevector",
+    "observable": "transverse_field_ising_energy",
+    "parameterization": "RX-RY-RZ chain CX plus closing RXX",
+    "task": "tfim_vqe"
+  }
+}

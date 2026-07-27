@@ -1,0 +1,50 @@
+{
+  "batch": 1,
+  "benchmark": "qng_rx_rz_tangent_b1_p4096_d16_a800",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "depth": 16,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "execution_semantics": "single_device_fast_path",
+  "maximum_tangent_error": 8.550188113076729e-09,
+  "non_release_evidence": true,
+  "pairs": 4096,
+  "parameter_count_per_batch": 32,
+  "qng_direction_cosine_similarity": 1.0000001192092896,
+  "relative_l2_metric_error": 1.7082979297811107e-07,
+  "relative_l2_tangent_error": 2.4190973135773675e-07,
+  "release_gate_allowed": false,
+  "repeats": 5,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.qng_rx_rz_tangent_triton.v1",
+  "speedup_vectorized_reverse_over_triton": 6684.913929129909,
+  "triton": {
+    "median_seconds": 7.891329005360603e-05,
+    "peak_memory_bytes": 14957056,
+    "samples_seconds": [
+      0.00010183360427618027,
+      8.715735748410225e-05,
+      7.891329005360603e-05,
+      7.354095578193665e-05,
+      7.237214595079422e-05
+    ]
+  },
+  "triton_cold_seconds": 0.5086292629130185,
+  "vectorized_reverse": {
+    "median_seconds": 0.5275285518728197,
+    "peak_memory_bytes": 2162574848,
+    "samples_seconds": [
+      0.527567177079618,
+      0.5275537893176079,
+      0.5274261329323053,
+      0.5274073611944914,
+      0.5275285518728197
+    ]
+  },
+  "warmup": 2
+}

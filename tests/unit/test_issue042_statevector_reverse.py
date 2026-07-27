@@ -1,0 +1,219 @@
+"""Single-rank reverse-mode and custom-autograd contracts."""
+
+import math
+
+import pytest
+import torch
+
+import flagquantum as fq
+from flagquantum.runtime.backends.statevector.reverse import (
+    BackwardExecutionEvidence,
+    StatevectorCheckpointPolicy,
+    _all_reduce_packed_gradients,
+    _analytic_rotation_derivative,
+    execute_torch_distributed_statevector_reverse,
+)
+
+pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("gate_name", ("rx", "ry", "rz"))
+@pytest.mark.parametrize("dtype", (torch.float32, torch.float64))
+def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, dtype):
+    theta = torch.tensor(0.37, dtype=dtype, requires_grad=True)
+    circuit = fq.Circuit(1)
+    getattr(circuit, gate_name)(0, theta)
+    instruction = circuit.to_ir().instructions[0]
+    complex_dtype = torch.complex64 if dtype == torch.float32 else torch.complex128
+
+    import flagquantum.runtime.backends.statevector.reverse as reverse
+
+    def matrix_at(value):
+        rebound = reverse._bind_parameters(
+            circuit.to_ir(), ((0, "theta", 0),), (value,)
+        )
+        return reverse._instruction_matrix(
+            rebound.instructions[0], device=theta.device, dtype=complex_dtype
+        )
+
+    matrix = matrix_at(theta)
+    _, reference = torch.autograd.functional.jvp(
+        matrix_at, (theta,), (torch.ones_like(theta),)
+    )
+    actual = _analytic_rotation_derivative(instruction, matrix)
+    assert actual is not None
+    assert torch.allclose(actual, reference, atol=2e-7, rtol=2e-6)
+
+
+def test_parameter_gradients_are_all_reduced_in_dtype_packed_buckets(monkeypatch):
+    calls = []
+
+    def fake_all_reduce(tensor, **kwargs):
+        calls.append(tensor.clone())
+        tensor.add_(10)
+
+    monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
+    gradients = [
+        torch.tensor(1.0),
+        torch.tensor(2.0),
+        torch.tensor(3.0, dtype=torch.float64),
+    ]
+    evidence = BackwardExecutionEvidence()
+
+    _all_reduce_packed_gradients(
+        gradients,
+        process_group=None,
+        evidence=evidence,
+    )
+
+    assert len(calls) == 2
+    torch.testing.assert_close(calls[0], torch.tensor([1.0, 2.0]))
+    torch.testing.assert_close(calls[1], torch.tensor([3.0], dtype=torch.float64))
+    assert [gradient.item() for gradient in gradients] == [11.0, 12.0, 13.0]
+    assert evidence.communication_count == 2
+    assert evidence.communication_bytes == 16
+    assert evidence.gradient_collective_count == 2
+    assert evidence.gradient_collective_bytes == 16
+
+
+def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
+    theta = torch.tensor(0.23, requires_grad=True)
+    phi = torch.tensor(-0.37, requires_grad=True)
+    circuit = fq.Circuit(3).h(0).ry(2, theta).rxx(0, 2, phi).rz(1, theta)
+    dense = circuit.expectation_z(2)
+    dense_grad = torch.autograd.grad(dense, (theta, phi), retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(circuit, observable_wire=2)
+    pending = result.summary()
+    assert pending["parameter_gradient_ready"] is False
+    assert pending["backward_status"] == "pending"
+    assert pending["gradient_reduction"] == "pending"
+    assert pending["backward_distribution_semantics"] == "pending"
+    assert pending["local_world_size"] == 1
+    assert pending["node_count"] == 1
+    assert pending["local_state_bytes"] > 0
+    assert pending["backward_communication_count"] == 0
+    assert pending["backward_communication_bytes"] == 0
+    assert pending["peak_backward_scratch_bytes"] == 0
+    assert all(item["owner_rank"] is None for item in pending["parameter_ownership"])
+    assert all(
+        not item["participating_ranks"] for item in pending["parameter_ownership"]
+    )
+    result.backward()
+    assert theta.grad == pytest.approx(float(dense_grad[0]), abs=2e-5)
+    assert phi.grad == pytest.approx(float(dense_grad[1]), abs=2e-5)
+    assert result.ownership[0].occurrence_count == 2
+    completed = result.summary()
+    assert completed["backward_uses_full_state_replay"] is False
+    assert completed["parameter_gradient_ready"] is True
+    assert completed["backward_status"] == "completed"
+    assert completed["gradient_distribution"] == "local"
+    assert completed["backward_distribution_semantics"] == "single_device_fast_path"
+    assert completed["peak_backward_scratch_bytes"] > 0
+    assert completed["parameter_ownership"][0]["participating_ranks"] == (0,)
+
+
+def test_parameter_shift_and_finite_difference_match_native_vjp():
+    theta = torch.tensor(0.41, requires_grad=True)
+    circuit = fq.Circuit(1).ry(0, theta)
+    result = execute_torch_distributed_statevector_reverse(circuit)
+    result.backward()
+    parameter_shift = (math.cos(0.41 + math.pi / 2) - math.cos(0.41 - math.pi / 2)) / 2
+    epsilon = 1e-4
+    finite_difference = (math.cos(0.41 + epsilon) - math.cos(0.41 - epsilon)) / (
+        2 * epsilon
+    )
+    assert float(theta.grad) == pytest.approx(parameter_shift, abs=1e-5)
+    assert float(theta.grad) == pytest.approx(finite_difference, abs=2e-4)
+
+
+def test_checkpoint_policy_is_versioned_and_fail_closed():
+    assert StatevectorCheckpointPolicy().strategy == "full_rematerialization"
+    assert StatevectorCheckpointPolicy(strategy="interval", interval=8).interval == 8
+    with pytest.raises(ValueError, match="interval > 0"):
+        StatevectorCheckpointPolicy(strategy="interval", interval=0)
+
+
+def test_reverse_exchange_chunk_is_configurable_and_audited(monkeypatch):
+    monkeypatch.setenv("FQ_STATEVECTOR_REVERSE_CHUNK_AMPLITUDES", str(1 << 20))
+    theta = torch.tensor(0.19, requires_grad=True)
+    result = execute_torch_distributed_statevector_reverse(fq.Circuit(1).ry(0, theta))
+    result.backward()
+    summary = result.summary()
+    assert summary["backward_exchange_chunk_amplitudes"] == 1 << 20
+    assert summary["backward_exchange_chunk_bytes"] == 8 << 20
+
+    monkeypatch.setenv("FQ_STATEVECTOR_REVERSE_CHUNK_AMPLITUDES", "1000")
+    with pytest.raises(ValueError, match="positive power of two"):
+        execute_torch_distributed_statevector_reverse(
+            fq.Circuit(1).ry(0, torch.tensor(0.2, requires_grad=True))
+        )
+
+
+def test_reversible_adjoint_matches_dense_autograd_on_all_active_wires():
+    parameters = tuple(
+        torch.tensor(0.11 + 0.07 * wire, requires_grad=True) for wire in range(4)
+    )
+    circuit = fq.Circuit(4)
+    for wire, parameter in enumerate(parameters):
+        circuit.ry(wire, parameter)
+    for wire in range(3):
+        circuit.cx(wire, wire + 1)
+    circuit.cx(3, 0)
+    dense = circuit.expectation_z(2)
+    expected = torch.autograd.grad(dense, parameters, retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wire=2,
+        checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
+    )
+    result.backward()
+
+    torch.testing.assert_close(result.value, dense.squeeze(), atol=2e-5, rtol=2e-5)
+    for parameter, reference in zip(parameters, expected):
+        torch.testing.assert_close(parameter.grad, reference, atol=3e-5, rtol=3e-5)
+    assert result.summary()["saved_forward_state_reused"] is True
+
+
+def test_reverse_executor_import_does_not_initialize_jax():
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; import flagquantum.runtime.backends.statevector.reverse; "
+        "assert 'jax' not in sys.modules and 'jaxlib' not in sys.modules"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_custom_autograd_boundary_passes_double_precision_gradcheck():
+    theta = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
+
+    def expectation(value):
+        circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, value)
+        return execute_torch_distributed_statevector_reverse(circuit).value
+
+    assert torch.autograd.gradcheck(
+        expectation, (theta,), eps=1e-6, atol=1e-5, rtol=1e-4
+    )
+
+
+def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch):
+    import flagquantum.runtime.backends.statevector.reverse as reverse
+
+    theta = torch.tensor(0.19, requires_grad=True)
+    result = execute_torch_distributed_statevector_reverse(fq.Circuit(1).ry(0, theta))
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("injected backward failure")
+
+    monkeypatch.setattr(reverse, "_explicit_sharded_adjoint", fail)
+    with pytest.raises(RuntimeError, match="injected backward failure"):
+        result.backward()
+    summary = result.summary()
+    assert summary["backward_status"] == "failed"
+    assert summary["backward_distribution_semantics"] == "failed"
+    assert summary["parameter_gradient_ready"] is False
+    assert "injected backward failure" in summary["backward_error"]
+    assert result.ownership[0].distribution == "failed"

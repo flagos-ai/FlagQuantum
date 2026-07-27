@@ -1,0 +1,363 @@
+{
+  "benchmark": "statevector_capacity_release_payload_8rank",
+  "benchmark_family": "distributed_statevector_capacity",
+  "artifact_class": "plan",
+  "benchmark_evidence_class": "capacity_model_fixture",
+  "non_release_evidence": true,
+  "claim_evidence_type": "plan_preflight",
+  "release_payload": false,
+  "payload_kind": "estimated_capacity_model_fixture",
+  "state_mode": "jax_sharded_statevector",
+  "mode": "statevector",
+  "distribution_semantics": "sharded_across_ranks",
+  "forward_distribution_semantics": "sharded_across_ranks",
+  "backward_distribution_semantics": "sharded_across_ranks",
+  "gradient_distribution_semantics": "sharded_across_ranks",
+  "backward_uses_full_state_replay": false,
+  "parameter_gradient_ready": true,
+  "production_value_gradient_ready": true,
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "cpu_labelled_capacity_model_not_reproduced_on_claimed_hardware",
+    "runtime_provenance_missing"
+  ],
+  "sharding_plan_available": true,
+  "statevector_training_claimability_status": "capacity_model_fixture",
+  "claimable_production_training": false,
+  "world_size": 8,
+  "local_world_size": 8,
+  "node_count": 1,
+  "ranks_per_node": {
+    "0": 8
+  },
+  "network_backend": "single_node_xla_collective",
+  "n_wires": 34,
+  "dtype": "complex64",
+  "state_amplitudes": 17179869184,
+  "total_state_bytes": 137438953472,
+  "per_rank_state_bytes": 17179869184,
+  "single_gpu_expected_oom": true,
+  "capacity_baseline_device": "single_gpu_40gb_a100_class",
+  "capacity_baseline_device_memory_bytes": 42949672960,
+  "capacity_failure_reason": "single_gpu_statevector_memory_137438953472_bytes_exceeds_42949672960_byte_budget",
+  "rank_placement": [
+    {
+      "rank": 0,
+      "node_id": 0,
+      "local_rank": 0,
+      "device": "cpu:0"
+    },
+    {
+      "rank": 1,
+      "node_id": 0,
+      "local_rank": 1,
+      "device": "cpu:1"
+    },
+    {
+      "rank": 2,
+      "node_id": 0,
+      "local_rank": 2,
+      "device": "cpu:2"
+    },
+    {
+      "rank": 3,
+      "node_id": 0,
+      "local_rank": 3,
+      "device": "cpu:3"
+    },
+    {
+      "rank": 4,
+      "node_id": 0,
+      "local_rank": 4,
+      "device": "cpu:4"
+    },
+    {
+      "rank": 5,
+      "node_id": 0,
+      "local_rank": 5,
+      "device": "cpu:5"
+    },
+    {
+      "rank": 6,
+      "node_id": 0,
+      "local_rank": 6,
+      "device": "cpu:6"
+    },
+    {
+      "rank": 7,
+      "node_id": 0,
+      "local_rank": 7,
+      "device": "cpu:7"
+    }
+  ],
+  "rank_shards": [
+    {
+      "rank": 0,
+      "amplitude_start": 0,
+      "amplitude_end": 2147483648,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 1,
+      "amplitude_start": 2147483648,
+      "amplitude_end": 4294967296,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 2,
+      "amplitude_start": 4294967296,
+      "amplitude_end": 6442450944,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 3,
+      "amplitude_start": 6442450944,
+      "amplitude_end": 8589934592,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 4,
+      "amplitude_start": 8589934592,
+      "amplitude_end": 10737418240,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 5,
+      "amplitude_start": 10737418240,
+      "amplitude_end": 12884901888,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 6,
+      "amplitude_start": 12884901888,
+      "amplitude_end": 15032385536,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    },
+    {
+      "rank": 7,
+      "amplitude_start": 15032385536,
+      "amplitude_end": 17179869184,
+      "owned_amplitudes": 2147483648,
+      "local_state_bytes": 17179869184
+    }
+  ],
+  "local_memory_bytes_by_rank": [
+    34359738368,
+    34359738368,
+    34359738368,
+    34359738368,
+    34359738368,
+    34359738368,
+    34359738368,
+    34359738368
+  ],
+  "peak_intermediate_bytes": 17179869184,
+  "memory_plan": {
+    "state_partition": "amplitude_sharded_across_ranks",
+    "state_bytes_total": 137438953472,
+    "state_bytes_per_rank": 17179869184,
+    "communication_buffer_bytes_per_rank": 17179869184,
+    "peak_bytes_per_rank": 34359738368,
+    "capacity_baseline_device_memory_bytes": 42949672960,
+    "single_device_reference_bytes": 137438953472
+  },
+  "communication_bytes": 137438953472,
+  "estimated_transfer_bytes": 137438953472,
+  "intra_node_communication_bytes": 137438953472,
+  "inter_node_communication_bytes": 0,
+  "collective_counts": {
+    "all_to_all": 1
+  },
+  "p2p_counts": {
+    "pair_exchange_rounds": 3
+  },
+  "communication_plan": {
+    "communication_semantics": "collective_state_shard_exchange",
+    "transport": "single_node_xla_all_to_all",
+    "patterns": [
+      "pair_exchange",
+      "all_to_all"
+    ],
+    "topology_scope": "single_node_executed_collective",
+    "communication_buffer_bytes_per_rank": 17179869184,
+    "estimated_transfer_bytes": 137438953472,
+    "intra_node_communication_bytes": 137438953472,
+    "inter_node_communication_bytes": 0
+  },
+  "parameter_count": 1024,
+  "parameter_ownership_semantics": "sharded_across_ranks",
+  "gradient_ownership_semantics": "sharded_across_ranks",
+  "optimizer_update_semantics": "sharded_across_ranks",
+  "optimizer_update_ownership_semantics": "sharded_across_ranks",
+  "training_step_count": 1,
+  "parameter_ownership": [
+    {
+      "rank": 0,
+      "parameter_start": 0,
+      "parameter_end": 128,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 1,
+      "parameter_start": 128,
+      "parameter_end": 256,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 2,
+      "parameter_start": 256,
+      "parameter_end": 384,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 3,
+      "parameter_start": 384,
+      "parameter_end": 512,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 4,
+      "parameter_start": 512,
+      "parameter_end": 640,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 5,
+      "parameter_start": 640,
+      "parameter_end": 768,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 6,
+      "parameter_start": 768,
+      "parameter_end": 896,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 7,
+      "parameter_start": 896,
+      "parameter_end": 1024,
+      "owned_parameter_count": 128
+    }
+  ],
+  "gradient_ownership": [
+    {
+      "rank": 0,
+      "parameter_start": 0,
+      "parameter_end": 128,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 1,
+      "parameter_start": 128,
+      "parameter_end": 256,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 2,
+      "parameter_start": 256,
+      "parameter_end": 384,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 3,
+      "parameter_start": 384,
+      "parameter_end": 512,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 4,
+      "parameter_start": 512,
+      "parameter_end": 640,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 5,
+      "parameter_start": 640,
+      "parameter_end": 768,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 6,
+      "parameter_start": 768,
+      "parameter_end": 896,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 7,
+      "parameter_start": 896,
+      "parameter_end": 1024,
+      "owned_parameter_count": 128
+    }
+  ],
+  "optimizer_update_ownership": [
+    {
+      "rank": 0,
+      "parameter_start": 0,
+      "parameter_end": 128,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 1,
+      "parameter_start": 128,
+      "parameter_end": 256,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 2,
+      "parameter_start": 256,
+      "parameter_end": 384,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 3,
+      "parameter_start": 384,
+      "parameter_end": 512,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 4,
+      "parameter_start": 512,
+      "parameter_end": 640,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 5,
+      "parameter_start": 640,
+      "parameter_end": 768,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 6,
+      "parameter_start": 768,
+      "parameter_end": 896,
+      "owned_parameter_count": 128
+    },
+    {
+      "rank": 7,
+      "parameter_start": 896,
+      "parameter_end": 1024,
+      "owned_parameter_count": 128
+    }
+  ],
+  "optimizer_step_evidence": {
+    "optimizer_name": "explicit_sharded_optimizer_step",
+    "training_step_count": 1,
+    "parameter_ownership_semantics": "sharded_across_ranks",
+    "gradient_ownership_semantics": "sharded_across_ranks",
+    "optimizer_update_semantics": "sharded_across_ranks",
+    "optimizer_update_ownership_semantics": "sharded_across_ranks"
+  },
+  "blockers": [],
+  "gradient_blockers": [],
+  "production_blockers": [],
+  "readiness_blockers": []
+}

@@ -1,0 +1,66 @@
+{
+  "batch_size": 2,
+  "benchmark": "backend_compare",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 2.384185791015625e-07,
+    "loss_abs_error": 4.76837158203125e-07,
+    "loss_atol": 0.0001,
+    "slowdown_jax_vs_pytorch": 0.8133770974858542,
+    "speedup_jax_over_pytorch": 1.229442042431483,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX quantum-kernel backend matches PyTorch precision and is faster.",
+    "precision_status": "ok",
+    "recommended_claim": "On cpu, 4 wires, 1 layers, batch_size=2, observable=z_sum, FlagQuantum JAX is 1.23x faster than FlagQuantum PyTorch with loss_abs_error=4.768e-07 and grad_max_abs_error=2.384e-07."
+  },
+  "device": "cpu",
+  "environment": {
+    "cuda_available": false,
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu"
+  },
+  "flagquantum_jax": {
+    "avg_seconds": 0.8275737000076333,
+    "backend": "jax",
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "compute_dtype": "complex128",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_terms": [],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": null,
+      "mode": "tensor_network",
+      "observable": "z_sum",
+      "observable_wires": null,
+      "parameter_shape": [
+        1,
+        4,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss": 6.707488536834717,
+    "mode": "tensor_network",
+    "status": "ok"
+  },
+  "flagquantum_pytorch": {
+    "avg_seconds": 1.017453899999964,
+    "backend": "pytorch",
+    "loss": 6.707488059997559,
+    "mode": "tensor_network"
+  },
+  "iters": 1,
+  "layers": 1,
+  "mode": "tensor_network",
+  "n_wires": 4,
+  "observable": "z_sum",
+  "warmup": 0
+}

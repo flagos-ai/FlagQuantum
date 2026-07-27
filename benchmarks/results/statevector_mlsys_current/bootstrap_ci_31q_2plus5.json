@@ -1,0 +1,381 @@
+{
+  "artifact_class": "derived_statistical_report",
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "method": "independent_nonparametric_bootstrap_of_medians",
+    "resamples": 10000,
+    "seed": 440044
+  },
+  "claim_evidence_type": "development_uncertainty_analysis",
+  "points": [
+    {
+      "coefficient_of_variation": 0.00012327889816266316,
+      "median": {
+        "confidence_interval_seconds": [
+          16.866230711340904,
+          16.871841377113014
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 16.867377184331417
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        16.871841377113014,
+        16.86970749590546,
+        16.866877621039748,
+        16.867377184331417,
+        16.866230711340904
+      ],
+      "source": "benchmarks/results/comparison/flagquantum_31q_d8_2xa800_fused_final_warm2_rep5.json",
+      "stationarity_warning": null,
+      "system": "FlagQuantum",
+      "world_size": 2
+    },
+    {
+      "coefficient_of_variation": 0.0004536905227789455,
+      "median": {
+        "confidence_interval_seconds": [
+          9.80459666531533,
+          9.816886119078845
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 9.813001667149365
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        9.813834688160568,
+        9.807602025102824,
+        9.813001667149365,
+        9.816886119078845,
+        9.80459666531533
+      ],
+      "source": "benchmarks/results/comparison/flagquantum_31q_d8_4xa800_fused_final_warm2_rep5.json",
+      "stationarity_warning": null,
+      "system": "FlagQuantum",
+      "world_size": 4
+    },
+    {
+      "coefficient_of_variation": 0.0006890079789784439,
+      "median": {
+        "confidence_interval_seconds": [
+          5.364346519578248,
+          5.374244554899633
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 5.369299705140293
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        5.366945177316666,
+        5.373082885984331,
+        5.369299705140293,
+        5.374244554899633,
+        5.364346519578248
+      ],
+      "source": "benchmarks/results/comparison/flagquantum_31q_d8_8xa800_fused_final_warm2_rep5.json",
+      "stationarity_warning": null,
+      "system": "FlagQuantum",
+      "world_size": 8
+    },
+    {
+      "coefficient_of_variation": 0.007403442942539959,
+      "median": {
+        "confidence_interval_seconds": [
+          5.883675291202962,
+          6.0073774280026555
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 5.941321364138275
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        5.974128386005759,
+        5.9106568126007915,
+        6.0073774280026555,
+        5.941321364138275,
+        5.883675291202962
+      ],
+      "source": "benchmarks/results/comparison/flagquantum_31q_d8_16xa800_fused_final_warm2_rep5.json",
+      "stationarity_warning": "high_cv_or_monotonic_tail; bootstrap assumes exchangeable samples",
+      "system": "FlagQuantum",
+      "world_size": 16
+    },
+    {
+      "coefficient_of_variation": 0.0003539747994372674,
+      "median": {
+        "confidence_interval_seconds": [
+          24.415427172090858,
+          24.441113781183958
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 24.427371110767126
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        24.441113781183958,
+        24.42067722650245,
+        24.427371110767126,
+        24.428228188306093,
+        24.415427172090858
+      ],
+      "source": "benchmarks/results/comparison/pennylane_lightning_gpu_31q_d8_2xa800_mpi_final_warm2_rep5.json",
+      "stationarity_warning": null,
+      "system": "PennyLane",
+      "world_size": 2
+    },
+    {
+      "coefficient_of_variation": 0.0011116871453597855,
+      "median": {
+        "confidence_interval_seconds": [
+          14.118581962771714,
+          14.161059961188585
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 14.125347719993442
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        14.143649477511644,
+        14.118581962771714,
+        14.125347719993442,
+        14.124096115119755,
+        14.161059961188585
+      ],
+      "source": "benchmarks/results/comparison/pennylane_lightning_gpu_31q_d8_4xa800_mpi_final_warm2_rep5.json",
+      "stationarity_warning": null,
+      "system": "PennyLane",
+      "world_size": 4
+    },
+    {
+      "coefficient_of_variation": 0.0049164529154833,
+      "median": {
+        "confidence_interval_seconds": [
+          8.125423952471465,
+          8.236436605919152
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 8.166718226857483
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        8.236436605919152,
+        8.215733118820935,
+        8.125423952471465,
+        8.158267034217715,
+        8.166718226857483
+      ],
+      "source": "benchmarks/results/comparison/pennylane_lightning_gpu_31q_d8_8xa800_mpi_final_warm2_rep5.json",
+      "stationarity_warning": "high_cv_or_monotonic_tail; bootstrap assumes exchangeable samples",
+      "system": "PennyLane",
+      "world_size": 8
+    },
+    {
+      "coefficient_of_variation": 0.006410255124334183,
+      "median": {
+        "confidence_interval_seconds": [
+          86.47094635432586,
+          88.22675210982561
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 87.22309247171506
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        88.22675210982561,
+        86.47094635432586,
+        87.35834851488471,
+        87.22309247171506,
+        87.19867477891967
+      ],
+      "source": "benchmarks/results/comparison/pennylane_lightning_gpu_31q_d8_16xa800_mpi_final_warm2_rep5.json",
+      "stationarity_warning": "high_cv_or_monotonic_tail; bootstrap assumes exchangeable samples",
+      "system": "PennyLane",
+      "world_size": 16
+    },
+    {
+      "coefficient_of_variation": 0.0035479588638047664,
+      "median": {
+        "confidence_interval_seconds": [
+          342.17863893602043,
+          345.87751444382593
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 343.9737810064107
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        345.87751444382593,
+        343.41845474299043,
+        342.17863893602043,
+        343.9737810064107,
+        344.5164482765831
+      ],
+      "source": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_2gpu_2plus5.json",
+      "stationarity_warning": "high_cv_or_monotonic_tail; bootstrap assumes exchangeable samples",
+      "system": "TorchQuantum-Dist",
+      "world_size": 2
+    },
+    {
+      "coefficient_of_variation": 0.00013542163455439218,
+      "median": {
+        "confidence_interval_seconds": [
+          173.55380374193192,
+          173.61951195215806
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 173.56307231308892
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        173.61951195215806,
+        173.56169823138043,
+        173.57866588421166,
+        173.55380374193192,
+        173.56307231308892
+      ],
+      "source": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_4gpu_2plus5.json",
+      "stationarity_warning": null,
+      "system": "TorchQuantum-Dist",
+      "world_size": 4
+    },
+    {
+      "coefficient_of_variation": 0.10466186978956249,
+      "median": {
+        "confidence_interval_seconds": [
+          82.22903811139986,
+          107.5955187221989
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 86.6890084692277
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        107.5955187221989,
+        86.6890084692277,
+        92.52110218349844,
+        82.29808125644922,
+        82.22903811139986
+      ],
+      "source": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_8gpu_2plus5.json",
+      "stationarity_warning": "high_cv_or_monotonic_tail; bootstrap assumes exchangeable samples",
+      "system": "TorchQuantum-Dist",
+      "world_size": 8
+    },
+    {
+      "coefficient_of_variation": 0.7368988210070477,
+      "median": {
+        "confidence_interval_seconds": [
+          74.96296417340636,
+          441.78841648669913
+        ],
+        "confidence_level": 0.95,
+        "median_seconds": 100.39559155004099
+      },
+      "sample_count": 5,
+      "samples_seconds": [
+        356.6262511401437,
+        441.78841648669913,
+        100.39559155004099,
+        83.63287444598973,
+        74.96296417340636
+      ],
+      "source": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_16gpu_2plus5.json",
+      "stationarity_warning": "high_cv_or_monotonic_tail; bootstrap assumes exchangeable samples",
+      "system": "TorchQuantum-Dist",
+      "world_size": 16
+    }
+  ],
+  "ratios": [
+    {
+      "confidence_interval": [
+        1.447422168135695,
+        1.4490168515285233
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "PennyLane",
+      "ratio": 1.4482021030192176,
+      "world_size": 2
+    },
+    {
+      "confidence_interval": [
+        1.4387552166536768,
+        1.4430915678527865
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "PennyLane",
+      "ratio": 1.4394522898411772,
+      "world_size": 4
+    },
+    {
+      "confidence_interval": [
+        1.5133116791175951,
+        1.5339871227590463
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "PennyLane",
+      "ratio": 1.521002491077018,
+      "world_size": 8
+    },
+    {
+      "confidence_interval": [
+        14.51526490951837,
+        14.849685230353122
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "PennyLane",
+      "ratio": 14.680756539814915,
+      "world_size": 16
+    },
+    {
+      "confidence_interval": [
+        20.286416506644546,
+        20.50570818829624
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "TorchQuantum-Dist",
+      "ratio": 20.39284337140084,
+      "world_size": 2
+    },
+    {
+      "confidence_interval": [
+        17.680053553414858,
+        17.702544567752057
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "TorchQuantum-Dist",
+      "ratio": 17.6870521579671,
+      "world_size": 4
+    },
+    {
+      "confidence_interval": [
+        15.313423201297951,
+        20.039022708900468
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "TorchQuantum-Dist",
+      "ratio": 16.145310045970444,
+      "world_size": 8
+    },
+    {
+      "confidence_interval": [
+        12.617220914169307,
+        74.35861307777883
+      ],
+      "confidence_level": 0.95,
+      "denominator": "FlagQuantum",
+      "numerator": "TorchQuantum-Dist",
+      "ratio": 16.897855779360334,
+      "world_size": 16
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.statevector.mlsys_bootstrap.v1"
+}

@@ -1,0 +1,72 @@
+{
+  "batch_size": 1,
+  "benchmark": "backend_compare",
+  "benchmark_evidence_class": "comparison_non_release",
+  "benchmark_hygiene_note": "comparison_result_not_release_scalability_evidence",
+  "claim_evidence_type": "development_smoke",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error": 1.61805940024351e-06,
+    "loss_abs_error": 9.5367431640625e-07,
+    "loss_atol": 0.0001,
+    "slowdown_jax_vs_pytorch": 0.021279275414943816,
+    "speedup_jax_over_pytorch": 46.99408135381006,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX quantum-kernel backend matches PyTorch precision and is faster.",
+    "precision_status": "ok",
+    "recommended_claim": "On cpu, 8 wires, 2 layers, batch_size=1, observable=z_sum, FlagQuantum JAX is 46.99x faster than FlagQuantum PyTorch with loss_abs_error=9.537e-07 and grad_max_abs_error=1.618e-06."
+  },
+  "device": "cpu",
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda_available": false,
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu"
+  },
+  "flagquantum_jax": {
+    "avg_seconds": 0.0006572439998853951,
+    "backend": "jax",
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_terms": [],
+      "interface": "torch",
+      "jit": true,
+      "observable": "z_sum",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss": 5.849952697753906,
+    "mode": "statevector",
+    "status": "ok"
+  },
+  "flagquantum_pytorch": {
+    "avg_seconds": 0.03088657799991779,
+    "backend": "pytorch",
+    "loss": 5.84995174407959,
+    "mode": "statevector"
+  },
+  "iters": 50,
+  "layers": 2,
+  "n_wires": 8,
+  "non_release_evidence": true,
+  "observable": "z_sum",
+  "payload_kind": "comparison_non_release",
+  "release_gate_allowed": false,
+  "release_payload": false,
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "warmup": 10
+}

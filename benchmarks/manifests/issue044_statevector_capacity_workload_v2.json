@@ -1,0 +1,13 @@
+{
+  "dtype": "complex64",
+  "gates": [
+    "RY(n-1,theta)",
+    "CX(n-1,n-2)",
+    "RY(n-2,phi)"
+  ],
+  "n_wires": 31,
+  "name": "issue044_single_node_capacity_v2",
+  "observable": "Z(n-2)",
+  "optimizer": "adam",
+  "steps": 2
+}

@@ -1,0 +1,231 @@
+{
+  "batch_size": 16,
+  "benchmark": "pennylane_backend_compare",
+  "comparison": {
+    "grad_atol": 0.0001,
+    "grad_max_abs_error_max": 1.989305019378662e-06,
+    "grad_max_abs_error_rank0": 1.989305019378662e-06,
+    "loss_abs_error_max": 1.223911060321825e-05,
+    "loss_abs_error_rank0": 1.223911060321825e-05,
+    "loss_atol": 0.0001,
+    "speedup_flagquantum_over_pennylane_mean_rank_time": 285.10672643242805,
+    "speedup_flagquantum_over_pennylane_slowest_rank_time": 285.10672643242805,
+    "status": "ok"
+  },
+  "conclusion": {
+    "headline": "FlagQuantum JAX matches PennyLane gradient precision for this workload.",
+    "recommended_claim": "Against PennyLane default.qubit, on 1 rank(s), device=cpu, pennylane_interface=torch, flagquantum_mode=mps, 8 wires, 2 layers, batch_size=16, observable=ising, FlagQuantum is 285.11x faster by mean rank time with max loss_abs_error=1.224e-05 and max grad_abs_error=1.989e-06."
+  },
+  "device": "cpu",
+  "dist_backend": null,
+  "environment": {
+    "cuda_available": false,
+    "cuda_device_count": 0,
+    "jax": "0.10.2",
+    "pennylane": "0.45.1",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "torch_cuda_matmul_allow_tf32": null,
+    "torch_cudnn_allow_tf32": null,
+    "torch_float32_matmul_precision": "highest",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.0030722099999547937,
+      "mean_seconds": 0.0030722099999547937,
+      "min_seconds": 0.0030722099999547937,
+      "rank0_seconds": 0.0030722099999547937
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_term_count": 23,
+      "hamiltonian_terms": [
+        [
+          0.7,
+          [
+            [
+              0,
+              "z"
+            ],
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              1,
+              "z"
+            ],
+            [
+              2,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              2,
+              "z"
+            ],
+            [
+              3,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              3,
+              "z"
+            ],
+            [
+              4,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              4,
+              "z"
+            ],
+            [
+              5,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              5,
+              "z"
+            ],
+            [
+              6,
+              "z"
+            ]
+          ]
+        ],
+        [
+          0.7,
+          [
+            [
+              6,
+              "z"
+            ],
+            [
+              7,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              0,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              0,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              1,
+              "x"
+            ]
+          ]
+        ],
+        [
+          0.05,
+          [
+            [
+              1,
+              "z"
+            ]
+          ]
+        ],
+        [
+          -0.2,
+          [
+            [
+              2,
+              "x"
+            ]
+          ]
+        ]
+      ],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": 32,
+      "mode": "mps",
+      "observable": "hamiltonian",
+      "observable_wires": null,
+      "parameter_shape": [
+        2,
+        8,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 52.62721252441406,
+    "mode": "mps",
+    "rank0_avg_seconds": 0.0030722099999547937,
+    "requested_matmul_precision": "highest"
+  },
+  "iters": 50,
+  "layers": 2,
+  "local_rank": 0,
+  "n_wires": 8,
+  "observable": "ising",
+  "pennylane": {
+    "backend": "default.qubit",
+    "diff_method": "backprop",
+    "distributed_seconds": {
+      "max_seconds": 0.8759077360000811,
+      "mean_seconds": 0.8759077360000811,
+      "min_seconds": 0.8759077360000811,
+      "rank0_seconds": 0.8759077360000811
+    },
+    "error": null,
+    "interface": "torch",
+    "jit": false,
+    "loss_rank0": 52.62720028530346,
+    "rank0_avg_seconds": 0.8759077360000811,
+    "status": "ok"
+  },
+  "rank": 0,
+  "warmup": 10,
+  "world_size": 1
+}

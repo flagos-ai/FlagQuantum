@@ -1,0 +1,109 @@
+{
+  "batch_size": 1,
+  "benchmark": "pennylane_backend_compare",
+  "comparison": {
+    "pennylane_early_stop_speedup": 30000.0,
+    "pennylane_effective_warmup": 0,
+    "pennylane_run_timeout_seconds": 3.0,
+    "reason": {
+      "message": "PennyLane subprocess exceeded 3.000 seconds.",
+      "timeout_seconds": 3.0,
+      "type": "TimeoutError"
+    },
+    "speedup_lower_bound_flagquantum_over_pennylane_min_rank": 3.5645227329616525,
+    "speedup_lower_bound_flagquantum_over_pennylane_rank0": 3.5645227329616525,
+    "status": "timeout"
+  },
+  "conclusion": {
+    "headline": "PennyLane did not finish within the configured timeout for this workload.",
+    "recommended_claim": "Against PennyLane default.tensor, on 1 rank(s), device=cpu, pennylane_interface=torch, pennylane_device_kwargs={'method': 'mps', 'max_bond_dim': 4}, flagquantum_mode=mps, 3 wires, 1 layers, batch_size=1, observable=z_sum, FlagQuantum is at least 3.56x faster before the PennyLane timeout."
+  },
+  "device": "cpu",
+  "dist_backend": null,
+  "environment": {
+    "cuda_available": false,
+    "cuda_device_count": 0,
+    "jax": "0.10.2",
+    "pennylane": "0.45.1",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.12.13",
+    "torch": "2.11.0+cpu",
+    "torch_cuda_matmul_allow_tf32": null,
+    "torch_cudnn_allow_tf32": null,
+    "torch_float32_matmul_precision": "highest",
+    "xla_python_client_mem_fraction": null,
+    "xla_python_client_preallocate": "false"
+  },
+  "flagquantum_jax": {
+    "backend": "jax",
+    "distributed_seconds": {
+      "max_seconds": 0.8416274000046542,
+      "mean_seconds": 0.8416274000046542,
+      "min_seconds": 0.8416274000046542,
+      "rank0_seconds": 0.8416274000046542
+    },
+    "interface": "torch",
+    "jit": true,
+    "kernel": {
+      "backend": "jax",
+      "compute_dtype": "complex64",
+      "cutoff": 0.0,
+      "executor": "jax_quantum_kernel",
+      "hamiltonian_terms": [],
+      "interface": "torch",
+      "jit": true,
+      "matmul_precision": "highest",
+      "max_bond": 4,
+      "mode": "mps",
+      "observable": "z_sum",
+      "observable_wires": null,
+      "parameter_shape": [
+        1,
+        3,
+        3
+      ],
+      "status": "ready"
+    },
+    "loss_rank0": 2.6173081398010254,
+    "mode": "mps",
+    "rank0_avg_seconds": 0.8416274000046542,
+    "requested_compute_dtype": "complex64",
+    "requested_matmul_precision": "highest"
+  },
+  "iters": 1,
+  "layers": 1,
+  "local_rank": 0,
+  "n_wires": 3,
+  "observable": "z_sum",
+  "pennylane": {
+    "backend": "default.tensor",
+    "completed_iters": null,
+    "device_kwargs": {
+      "max_bond_dim": 4,
+      "method": "mps"
+    },
+    "diff_method": "parameter-shift",
+    "distributed_seconds": null,
+    "early_stop_reason": null,
+    "early_stop_speedup": 30000.0,
+    "early_stopped": null,
+    "effective_warmup": 0,
+    "error": {
+      "message": "PennyLane subprocess exceeded 3.000 seconds.",
+      "timeout_seconds": 3.0,
+      "type": "TimeoutError"
+    },
+    "interface": "torch",
+    "jit": false,
+    "loss_rank0": null,
+    "rank0_avg_seconds": null,
+    "requested_iters": null,
+    "run_timeout_seconds": 3.0,
+    "speedup_lower_bound_over_flagquantum": null,
+    "status": "unavailable"
+  },
+  "pennylane_effective_warmup": 0,
+  "rank": 0,
+  "warmup": 0,
+  "world_size": 1
+}

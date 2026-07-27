@@ -1,0 +1,76 @@
+schema = "flagquantum_capability_maturity_v1"
+
+[levels.experimental]
+rank = 0
+description = "Unstable research surface without compatibility or production guarantees."
+required_evidence = ["owner", "limitations", "focused_tests"]
+
+[levels.development_evidence]
+rank = 1
+description = "Executable development evidence; never sufficient for production or scalability claims."
+required_evidence = ["owner", "limitations", "focused_tests", "development_artifact"]
+
+[levels.production_supported]
+rank = 2
+description = "Supported production path with compatibility, operations, and target-hardware evidence."
+required_evidence = ["owner", "limitations", "focused_tests", "integration_tests", "hardware_evidence", "operational_runbook"]
+
+[levels.release_certified]
+rank = 3
+description = "Release-gated capability with audited, reproducible evidence and no unresolved release blocker."
+required_evidence = ["owner", "limitations", "focused_tests", "integration_tests", "hardware_evidence", "operational_runbook", "release_gate", "release_artifact"]
+
+[capabilities.ir]
+level = "release_certified"
+owner = "FlagQuantum core maintainers"
+limitations = "IR v1; incompatible schema changes require an explicit migration."
+focused_tests = "tests/unit/test_issue040_ir_public_api.py"
+integration_tests = "tests/test_native_circuit.py"
+hardware_evidence = "not_applicable_pure_contract"
+operational_runbook = "docs/PUBLIC_API_POLICY.md"
+release_gate = "tools/runtime_contract_schema.py"
+release_artifact = "docs/generated/STABLE_API.md"
+
+[capabilities.local_statevector]
+level = "production_supported"
+owner = "PyTorch runtime maintainers"
+limitations = "Capacity is bounded by one device; distributed capacity claims use the sharded capability."
+focused_tests = "tests/test_native_circuit.py"
+integration_tests = "tests/test_backends.py"
+hardware_evidence = ".github/workflows/local-gpu.yml"
+operational_runbook = "docs/RUNTIME_ARCHITECTURE.md"
+
+[capabilities.sharded_statevector_training]
+level = "production_supported"
+owner = "PyTorch distributed maintainers"
+limitations = "Multi-node release certification remains dependent on promoted audited hardware evidence."
+focused_tests = "tests/unit/test_issue043_statevector_training.py"
+integration_tests = "tests/distributed/statevector_training_runtime.py"
+hardware_evidence = ".github/workflows/local-gpu.yml"
+operational_runbook = "docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md"
+
+[capabilities.sharded_mps_training]
+level = "development_evidence"
+owner = "MPS maintainers"
+limitations = "Production backward, general boundary gates, capacity expansion, and release payload evidence remain incomplete."
+focused_tests = "tests/unit/test_issue052_mps_training.py"
+development_artifact = "benchmarks/results/smoke"
+
+[capabilities.tensor_network_training]
+level = "experimental"
+owner = "tensor-network maintainers"
+limitations = "General reverse contraction and production distributed transport are not certified."
+focused_tests = "tests/test_tensor_network.py"
+
+[capabilities.cloud_deployment]
+level = "development_evidence"
+owner = "deployment maintainers"
+limitations = "Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix."
+focused_tests = "tests/test_deployment.py"
+development_artifact = "flagquantum/deployment"
+
+[capabilities.extension_sdk]
+level = "experimental"
+owner = "extension maintainers"
+limitations = "Extension compatibility is not guaranteed before stabilization."
+focused_tests = "tests/unit/test_issue080_extension_sdk.py"
