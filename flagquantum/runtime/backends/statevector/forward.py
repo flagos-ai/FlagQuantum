@@ -13,7 +13,12 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from .environment import get, get_bool, mode
-from .kernel_dispatch import select_triton_kernel, triton_available
+from .kernel_dispatch import (
+    KernelDecision,
+    KernelDispatchEvidence,
+    select_triton_kernel,
+    triton_available,
+)
 from .state import (
     DistributedStatevectorPlan,
     StatevectorShardState,
@@ -43,20 +48,30 @@ def _runtime_index_validation_enabled() -> bool:
     }
 
 
-def _triton_local_1q_enabled() -> bool:
+def _triton_local_1q_decision(*, supported: bool = True) -> KernelDecision:
     requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
         "1",
         "true",
         "on",
         "yes",
     }
-    return select_triton_kernel("local_1q", requested=requested).accelerated
+    return select_triton_kernel("local_1q", requested=requested, supported=supported)
+
+
+def _triton_local_1q_enabled() -> bool:
+    return _triton_local_1q_decision().accelerated
+
+
+def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
+    return select_triton_kernel(
+        "local_cx",
+        requested=get_bool("FQ_SV_TRITON_LOCAL_CX", True),
+        supported=supported,
+    )
 
 
 def _triton_local_cx_enabled() -> bool:
-    return select_triton_kernel(
-        "local_cx", requested=get_bool("FQ_SV_TRITON_LOCAL_CX", True)
-    ).accelerated
+    return _triton_local_cx_decision().accelerated
 
 
 def _triton_available() -> bool:
@@ -399,6 +414,9 @@ class TorchDistributedStatevectorResult:
     inter_node_communication_bytes: int
     wire_layout: str
     logical_to_physical_wires: tuple[int, ...]
+    kernel_dispatch_evidence: KernelDispatchEvidence = field(
+        default_factory=KernelDispatchEvidence
+    )
     persistent_inter_node_ket_checkpoints: tuple[
         tuple[int, int, torch.Tensor], ...
     ] = ()
@@ -440,6 +458,7 @@ class TorchDistributedStatevectorResult:
             ),
             "peak_scratch_bytes": self.peak_scratch_bytes,
             "scratch_accounting": "peak_live_amplitude_tensors_including_output_buffer",
+            "kernel_dispatch": self.kernel_dispatch_evidence.summary(),
             "local_gate_count": self.local_gate_count,
             "local_diagonal_gate_count": self.local_diagonal_gate_count,
             "distributed_gate_count": self.distributed_gate_count,
@@ -542,6 +561,7 @@ def _vectorized_local_gate(
     plan: DistributedStatevectorPlan,
     chunk_amplitudes: int,
     output: torch.Tensor | None = None,
+    kernel_dispatch_evidence: KernelDispatchEvidence | None = None,
 ) -> tuple[StatevectorShardState, int]:
     """Apply owned outputs in tensor chunks without amplitude Python loops."""
 
@@ -549,13 +569,16 @@ def _vectorized_local_gate(
     gate_dim = 2 ** len(wires)
     matrix = matrix.to(shard_state.amplitudes)
     rank_bits = len(plan.sharded_wires)
-    if (
-        _triton_local_1q_enabled()
-        and gate_dim == 2
+    triton_supported = bool(
+        gate_dim == 2
         and shard_state.amplitudes.device.type == "cuda"
         and shard_state.amplitudes.dtype == torch.complex64
         and shard_state.amplitudes.is_contiguous()
-    ):
+    )
+    triton_decision = _triton_local_1q_decision(supported=triton_supported)
+    if gate_dim == 2 and kernel_dispatch_evidence is not None:
+        kernel_dispatch_evidence.record(triton_decision)
+    if triton_decision.accelerated:
         from .triton import apply_complex64_local_1q
 
         bit_position = plan.n_wires - wires[0] - 1 - rank_bits

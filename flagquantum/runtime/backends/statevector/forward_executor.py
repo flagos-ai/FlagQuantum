@@ -22,7 +22,7 @@ from .forward import (
     _local_block_fusion_enabled,
     _local_block_fusion_width,
     _triton_available,
-    _triton_local_cx_enabled,
+    _triton_local_cx_decision,
     _triton_local_cx_segment_enabled,
     _triton_transpose_1q_enabled,
     _vectorized_cross_shard_cx,
@@ -33,6 +33,7 @@ from .forward import (
     _vectorized_subgroup_exchange_gate,
     communication_aware_wire_layout,
 )
+from .kernel_dispatch import KernelDispatchEvidence
 from .layout import (
     distributed_swap_rank_local_bits,
     plan_persistent_statevector_layout,
@@ -186,6 +187,7 @@ def execute_torch_distributed_statevector(
         else None
     )
     local_count = distributed_count = communication_count = communication_bytes = 0
+    kernel_dispatch_evidence = KernelDispatchEvidence()
     local_diagonal_count = 0
     executed_distributed_segments = 0
     fused_cross_shard_regions = 0
@@ -347,6 +349,7 @@ def execute_torch_distributed_statevector(
                     plan=plan,
                     chunk_amplitudes=chunk_amplitudes,
                     output=shard_state.amplitudes,
+                    kernel_dispatch_evidence=kernel_dispatch_evidence,
                 )
                 peak_scratch = max(peak_scratch, scratch)
                 local_count += len(block_instructions)
@@ -435,12 +438,16 @@ def execute_torch_distributed_statevector(
             continue
         if not touched or world_size == 1:
             local_output = shard_state.amplitudes if local_compilation else None
-            if (
-                _triton_local_cx_enabled()
-                and instruction.name == "cx"
-                and shard_state.amplitudes.device.type == "cuda"
-                and shard_state.amplitudes.dtype == torch.complex64
-            ):
+            cx_decision = _triton_local_cx_decision(
+                supported=bool(
+                    instruction.name == "cx"
+                    and shard_state.amplitudes.device.type == "cuda"
+                    and shard_state.amplitudes.dtype == torch.complex64
+                )
+            )
+            if instruction.name == "cx":
+                kernel_dispatch_evidence.record(cx_decision)
+            if cx_decision.accelerated:
                 shard_state, scratch = _vectorized_local_cx_gate(
                     shard_state,
                     instruction.wires,
@@ -455,6 +462,7 @@ def execute_torch_distributed_statevector(
                     plan=plan,
                     chunk_amplitudes=chunk_amplitudes,
                     output=local_output,
+                    kernel_dispatch_evidence=kernel_dispatch_evidence,
                 )
             peak_scratch = max(peak_scratch, scratch)
             local_count += 1
@@ -565,6 +573,7 @@ def execute_torch_distributed_statevector(
         ),
         wire_layout=wire_layout,
         logical_to_physical_wires=logical_to_physical,
+        kernel_dispatch_evidence=kernel_dispatch_evidence,
         persistent_inter_node_ket_checkpoints=tuple(
             persistent_inter_node_ket_checkpoints
         ),

@@ -155,6 +155,12 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     assert completed["backward_distribution_semantics"] == "single_device_fast_path"
     assert completed["peak_backward_scratch_bytes"] > 0
     assert completed["parameter_ownership"][0]["participating_ranks"] == (0,)
+    dispatch = completed["kernel_dispatch"]
+    assert dispatch["triton_execution_count"] == 0
+    assert dispatch["pytorch_fallback_count"] == 3
+    assert {
+        (record["feature"], record["reason"]) for record in dispatch["decisions"]
+    } == {("vjp_adjoint", "disabled_by_policy")}
 
 
 def test_parameter_shift_and_finite_difference_match_native_vjp():

@@ -17,7 +17,11 @@ from .forward import (
     communication_aware_wire_layout,
     execute_torch_distributed_statevector,
 )
-from .kernel_dispatch import select_triton_kernel
+from .kernel_dispatch import (
+    KernelDecision,
+    KernelDispatchEvidence,
+    select_triton_kernel,
+)
 from .layout import (
     schedule_statevector_dependency_dag,
 )
@@ -40,14 +44,18 @@ def _reverse_chunk_amplitudes() -> int:
     return value
 
 
-def _triton_vjp_adjoint_enabled() -> bool:
+def _triton_vjp_adjoint_decision(*, supported: bool = True) -> KernelDecision:
     requested = os.getenv("FQ_STATEVECTOR_TRITON_VJP_ADJOINT", "0").strip().lower() in {
         "1",
         "true",
         "on",
         "yes",
     }
-    return select_triton_kernel("vjp_adjoint", requested=requested).accelerated
+    return select_triton_kernel("vjp_adjoint", requested=requested, supported=supported)
+
+
+def _triton_vjp_adjoint_enabled() -> bool:
+    return _triton_vjp_adjoint_decision().accelerated
 
 
 def _communication_aware_layout_enabled() -> bool:
@@ -188,6 +196,9 @@ class BackwardExecutionEvidence:
     intra_node_communication_bytes: int = 0
     inter_node_communication_count: int = 0
     inter_node_communication_bytes: int = 0
+    kernel_dispatch_evidence: KernelDispatchEvidence = field(
+        default_factory=KernelDispatchEvidence
+    )
 
 
 @dataclass(frozen=True)
@@ -334,6 +345,7 @@ class TorchDistributedStatevectorGradientResult:
             "backward_exchange_pipeline_prefetch_count": (
                 self.backward_evidence.exchange_pipeline_prefetch_count
             ),
+            "kernel_dispatch": self.backward_evidence.kernel_dispatch_evidence.summary(),
             "backward_uses_full_state_replay": False,
             "full_state_materialization": False,
             "optimizer_update_ready": False,

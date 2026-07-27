@@ -49,7 +49,7 @@ from .reverse import (  # noqa: E402
     _reverse_chunk_amplitudes,
     _reverse_cross_shard_cx_packing_enabled,
     _reverse_exchange_workspace_enabled,
-    _triton_vjp_adjoint_enabled,
+    _triton_vjp_adjoint_decision,
 )
 
 
@@ -706,15 +706,18 @@ def _explicit_sharded_adjoint(
             ),
         )
         active = sorted(slots_by_instruction.get(index, ()))
-        if (
-            inplace_local
-            and _triton_vjp_adjoint_enabled()
-            and len(active) == 1
-            and len(execution_instruction.wires) == 1
-            and execution_instruction.wires[0] not in plan.sharded_wires
-            and reversible_state.amplitudes.dtype == torch.complex64
-            and reversible_state.amplitudes.device.type == "cuda"
-        ):
+        reversible_vjp_decision = _triton_vjp_adjoint_decision(
+            supported=bool(
+                inplace_local
+                and reversible_state is not None
+                and len(active) == 1
+                and len(execution_instruction.wires) == 1
+                and execution_instruction.wires[0] not in plan.sharded_wires
+                and reversible_state.amplitudes.dtype == torch.complex64
+                and reversible_state.amplitudes.device.type == "cuda"
+            )
+        )
+        if reversible_vjp_decision.accelerated:
             precision = get_runtime_config().with_overrides(
                 complex_dtype=str(dtype).removeprefix("torch.")
             )
@@ -726,6 +729,7 @@ def _explicit_sharded_adjoint(
                 execution_instruction, original_matrix
             )
             if derivative_matrix is not None:
+                evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
                 from .triton import (
                     fused_complex64_local_1q_reversible_vjp,
                 )
@@ -951,14 +955,16 @@ def _explicit_sharded_adjoint(
                         create_graph=False,
                         strict=False,
                     )
-                use_triton_fused = (
-                    _triton_vjp_adjoint_enabled()
-                    and len(active) == 1
-                    and len(instruction.wires) == 1
-                    and before.amplitudes.dtype == torch.complex64
-                    and before.amplitudes.device.type == "cuda"
+                vjp_decision = _triton_vjp_adjoint_decision(
+                    supported=bool(
+                        len(active) == 1
+                        and len(instruction.wires) == 1
+                        and before.amplitudes.dtype == torch.complex64
+                        and before.amplitudes.device.type == "cuda"
+                    )
                 )
-                if use_triton_fused:
+                evidence.kernel_dispatch_evidence.record(vjp_decision)
+                if vjp_decision.accelerated:
                     from .triton import (
                         fused_complex64_local_1q_vjp_adjoint,
                     )

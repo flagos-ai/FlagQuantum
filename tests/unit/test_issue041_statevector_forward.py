@@ -59,6 +59,16 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
     assert result.summary()["distribution_semantics"] == "single_device_fast_path"
     assert result.peak_scratch_bytes >= result.plan.per_rank_state_bytes
     assert result.summary()["scratch_accounting"].endswith("including_output_buffer")
+    dispatch = result.summary()["kernel_dispatch"]
+    assert dispatch["triton_execution_count"] == 0
+    assert dispatch["pytorch_fallback_count"] == 3
+    assert {
+        (record["feature"], record["reason"], record["count"])
+        for record in dispatch["decisions"]
+    } == {
+        ("local_1q", "disabled_by_policy", 2),
+        ("local_cx", "input_not_supported", 1),
+    }
     with pytest.raises(FullStateMaterializationError, match="forbidden"):
         result.full_state()
 

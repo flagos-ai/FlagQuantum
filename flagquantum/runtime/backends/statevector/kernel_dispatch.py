@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from .environment import mode
@@ -30,6 +30,37 @@ class KernelDecision:
         }
 
 
+@dataclass
+class KernelDispatchEvidence:
+    """Aggregated decisions made by kernels during one execution."""
+
+    decisions: dict[tuple[str, str, str], int] = field(default_factory=dict)
+
+    def record(self, decision: KernelDecision, *, count: int = 1) -> None:
+        key = (decision.feature, decision.selected, decision.reason)
+        self.decisions[key] = self.decisions.get(key, 0) + int(count)
+
+    def summary(self) -> dict[str, Any]:
+        records = tuple(
+            {
+                "feature": feature,
+                "selected": selected,
+                "reason": reason,
+                "count": count,
+            }
+            for (feature, selected, reason), count in sorted(self.decisions.items())
+        )
+        return {
+            "decisions": records,
+            "triton_execution_count": sum(
+                record["count"] for record in records if record["selected"] == "triton"
+            ),
+            "pytorch_fallback_count": sum(
+                record["count"] for record in records if record["selected"] == "pytorch"
+            ),
+        }
+
+
 def triton_available() -> bool:
     """Return whether the optional Triton runtime is importable."""
 
@@ -49,12 +80,17 @@ def select_triton_kernel(
         return KernelDecision(feature, "pytorch", "portable_mode")
     if not requested:
         return KernelDecision(feature, "pytorch", "disabled_by_policy")
+    if not supported:
+        return KernelDecision(feature, "pytorch", "input_not_supported")
     resolved_available = triton_available() if available is None else bool(available)
     if not resolved_available:
         return KernelDecision(feature, "pytorch", "triton_unavailable")
-    if not supported:
-        return KernelDecision(feature, "pytorch", "input_not_supported")
     return KernelDecision(feature, "triton", "eligible")
 
 
-__all__ = ("KernelDecision", "select_triton_kernel", "triton_available")
+__all__ = (
+    "KernelDecision",
+    "KernelDispatchEvidence",
+    "select_triton_kernel",
+    "triton_available",
+)

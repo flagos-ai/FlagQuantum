@@ -3,6 +3,7 @@
 import pytest
 
 from flagquantum.runtime.backends.statevector.kernel_dispatch import (
+    KernelDispatchEvidence,
     select_triton_kernel,
 )
 
@@ -59,3 +60,19 @@ def test_portable_mode_has_precedence_over_accelerator_availability(monkeypatch)
 
     assert not decision.accelerated
     assert decision.reason == "portable_mode"
+
+
+def test_dispatch_evidence_aggregates_actual_decisions(monkeypatch):
+    monkeypatch.setenv("FQ_SV_RUNTIME_MODE", "auto")
+    evidence = KernelDispatchEvidence()
+
+    evidence.record(
+        select_triton_kernel("local_1q", requested=True, available=True), count=3
+    )
+    evidence.record(
+        select_triton_kernel("local_cx", requested=True, available=False), count=2
+    )
+
+    summary = evidence.summary()
+    assert summary["triton_execution_count"] == 3
+    assert summary["pytorch_fallback_count"] == 2
