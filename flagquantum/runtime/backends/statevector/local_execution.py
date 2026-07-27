@@ -81,21 +81,43 @@ def _rank_global_indices(
     plan: DistributedStatevectorPlan, rank: int, *, device: torch.device
 ) -> torch.Tensor:
     if plan.distribution == "qubit_address_sharded" and plan.sharded_wires:
-        indices = []
+        shard = _shard_by_rank(plan.shards)[int(rank)]
+        local_indices = torch.arange(
+            shard.local_amplitudes, dtype=torch.long, device=device
+        )
+        global_indices = torch.zeros_like(local_indices)
         coordinates = plan.topology.rank_coordinates[int(rank)]
-        for basis in range(plan.total_amplitudes):
-            owned = True
-            for coord, wire in zip(coordinates, plan.sharded_wires):
-                bit = 1 if basis & _wire_mask(plan.n_wires, int(wire)) else 0
-                if bit != int(coord):
-                    owned = False
-                    break
-            if owned:
-                indices.append(basis)
-        return torch.tensor(indices, dtype=torch.long, device=device)
+        sharded_coordinates = {
+            int(wire): int(coord)
+            for coord, wire in zip(coordinates, plan.sharded_wires)
+        }
+        local_bit = 0
+        for wire in range(plan.n_wires - 1, -1, -1):
+            destination_mask = _wire_mask(plan.n_wires, wire)
+            if wire in sharded_coordinates:
+                if sharded_coordinates[wire]:
+                    global_indices |= destination_mask
+                continue
+            global_indices |= ((local_indices >> local_bit) & 1) * destination_mask
+            local_bit += 1
+        return global_indices
     shard = _shard_by_rank(plan.shards)[int(rank)]
     return torch.arange(
         shard.amplitude_start, shard.amplitude_end, dtype=torch.long, device=device
+    )
+
+
+def use_compact_global_indices(
+    plan: DistributedStatevectorPlan,
+    rank: int,
+    *,
+    local_amplitude_threshold: int = 1 << 24,
+) -> bool:
+    """Return whether shard ownership can be represented without an index tensor."""
+
+    return bool(
+        plan.distribution == "qubit_address_sharded"
+        or plan.shards[int(rank)].local_amplitudes >= int(local_amplitude_threshold)
     )
 
 

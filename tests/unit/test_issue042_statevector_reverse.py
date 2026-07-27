@@ -7,6 +7,10 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.runtime.backends.statevector.local_execution import (
+    _rank_global_indices,
+    use_compact_global_indices,
+)
 from flagquantum.runtime.backends.statevector.reverse import (
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
@@ -32,6 +36,29 @@ def test_address_sharded_reverse_always_uses_compact_global_indices():
 
     assert _compact_reverse_global_indices(address_sharded, 0) is True
     assert _compact_reverse_global_indices(range_partitioned, 0) is False
+
+
+@pytest.mark.parametrize("world_size", (2, 4, 8))
+def test_address_sharded_indices_are_built_from_local_ordinal(world_size):
+    plan = fq.plan_distributed_statevector(fq.Circuit(8), world_size=world_size)
+    rank_bits = len(plan.sharded_wires)
+
+    for rank in range(world_size):
+        indices = _rank_global_indices(plan, rank, device=torch.device("cpu"))
+        expected = (
+            torch.arange(plan.shards[rank].local_amplitudes, dtype=torch.long)
+            << rank_bits
+        ) | rank
+        torch.testing.assert_close(indices, expected)
+        assert indices.numel() == plan.shards[rank].local_amplitudes
+
+
+def test_compact_index_policy_is_shared_by_forward_and_reverse():
+    plan = fq.plan_distributed_statevector(fq.Circuit(8), world_size=4)
+
+    for rank in range(plan.world_size):
+        assert use_compact_global_indices(plan, rank)
+        assert _compact_reverse_global_indices(plan, rank)
 
 
 @pytest.mark.parametrize("gate_name", ("rx", "ry", "rz"))

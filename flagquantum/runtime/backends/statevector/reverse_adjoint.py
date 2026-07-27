@@ -34,6 +34,7 @@ from .state import (
     _instruction_matrix,
     initialize_statevector_shard,
     plan_distributed_statevector,
+    use_compact_global_indices,
 )
 
 _DEFAULT_REVERSE_CHUNK_AMPLITUDES = 1 << 22
@@ -113,10 +114,8 @@ def _analytic_rotation_derivative(
 
 
 def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
-    """Avoid Python full-space enumeration for address-sharded reverse states."""
-    return plan.distribution == "qubit_address_sharded" or plan.shards[
-        rank
-    ].local_amplitudes >= (1 << 24)
+    """Use the shared shard-index representation policy for reverse states."""
+    return bool(use_compact_global_indices(plan, rank))
 
 
 def _local_expectation_z(

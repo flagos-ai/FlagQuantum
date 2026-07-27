@@ -42,6 +42,7 @@ from .state import (
     _instruction_matrix,
     initialize_statevector_shard,
     plan_distributed_statevector,
+    use_compact_global_indices,
 )
 
 
@@ -157,9 +158,10 @@ def execute_torch_distributed_statevector(
         rank=rank,
         device=resolved_device,
         dtype=dtype,
-        compact_global_indices=(
-            plan.distribution == "qubit_address_sharded"
-            or plan.shards[rank].local_amplitudes >= compact_index_threshold
+        compact_global_indices=use_compact_global_indices(
+            plan,
+            rank,
+            local_amplitude_threshold=compact_index_threshold,
         ),
     )
     layout_send_buffer = layout_receive_buffer = None
