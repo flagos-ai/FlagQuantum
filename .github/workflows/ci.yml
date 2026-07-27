@@ -115,6 +115,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install pytest
       - run: python -m pip install -e . --no-deps
       - run: python -m pytest tests/smoke tests/test_gates.py -q
 
