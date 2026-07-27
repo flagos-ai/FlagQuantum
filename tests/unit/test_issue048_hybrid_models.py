@@ -109,6 +109,8 @@ def test_classifier_deployment_binds_encoded_inputs_to_final_quantum_ir() -> Non
 
 
 def test_variational_energy_same_model_switches_native_and_jax_policy() -> None:
+    pytest.importorskip("jax", reason="JAX is an optional backend")
+
     native = fq.VariationalEnergyModel()
     native.quantum.parameters_tensor.data.copy_(torch.tensor([0.21, -0.32]))
     native_value = native()

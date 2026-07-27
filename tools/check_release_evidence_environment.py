@@ -49,9 +49,12 @@ def readiness_errors(
 
 
 def _output(command: Sequence[str]) -> str:
-    completed = subprocess.run(
-        command, check=False, capture_output=True, text=True, timeout=30
-    )
+    try:
+        completed = subprocess.run(
+            command, check=False, capture_output=True, text=True, timeout=30
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return ""
     return completed.stdout.strip() if completed.returncode == 0 else ""
 
 
