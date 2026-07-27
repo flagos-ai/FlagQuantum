@@ -108,7 +108,7 @@ def _run_once(
         circuit,
         device=device,
         exchange_buffer_bytes=exchange_buffer_bytes,
-        pipeline_pair_exchange=False,
+        pipeline_pair_exchange=True,
     )
     end.record()
     _sync(device)

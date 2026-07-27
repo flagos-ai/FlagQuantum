@@ -57,7 +57,7 @@ def execute_torch_distributed_statevector(
     compact_index_threshold: int = 1 << 24,
     process_group: Any | None = None,
     fuse_cross_shard_gates: bool = True,
-    pipeline_pair_exchange: bool = False,
+    pipeline_pair_exchange: bool = True,
     wire_layout: str = "canonical",
     preferred_local_wires: Sequence[int] = (),
     persistent_wire_layout: bool = False,

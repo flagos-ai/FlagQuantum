@@ -153,7 +153,7 @@ def main() -> None:
                 "peak_live_amplitude_tensors_including_output_buffer"
             )
         summary = result.summary()
-        assert summary["exchange_pipeline_enabled"] is False
+        assert summary["exchange_pipeline_enabled"] is True
         if world > 1:
             assert summary["exchange_workspace_allocation_count"] >= 1
             assert summary["exchange_workspace_reuse_count"] >= 1
