@@ -1,6 +1,7 @@
 """Single-rank reverse-mode and custom-autograd contracts."""
 
 import math
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -13,8 +14,24 @@ from flagquantum.runtime.backends.statevector.reverse import (
     _analytic_rotation_derivative,
     execute_torch_distributed_statevector_reverse,
 )
+from flagquantum.runtime.backends.statevector.reverse_adjoint import (
+    _compact_reverse_global_indices,
+)
 
 pytestmark = pytest.mark.unit
+
+
+def test_address_sharded_reverse_always_uses_compact_global_indices():
+    small_shard = SimpleNamespace(local_amplitudes=1 << 23)
+    address_sharded = SimpleNamespace(
+        distribution="qubit_address_sharded", shards=(small_shard,)
+    )
+    range_partitioned = SimpleNamespace(
+        distribution="range_partitioned", shards=(small_shard,)
+    )
+
+    assert _compact_reverse_global_indices(address_sharded, 0) is True
+    assert _compact_reverse_global_indices(range_partitioned, 0) is False
 
 
 @pytest.mark.parametrize("gate_name", ("rx", "ry", "rz"))

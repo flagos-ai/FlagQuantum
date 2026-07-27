@@ -112,6 +112,13 @@ def _analytic_rotation_derivative(
     return (-0.5j) * (generator @ matrix)
 
 
+def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
+    """Avoid Python full-space enumeration for address-sharded reverse states."""
+    return plan.distribution == "qubit_address_sharded" or plan.shards[
+        rank
+    ].local_amplitudes >= (1 << 24)
+
+
 def _local_expectation_z(
     shard_state: Any, *, plan: Any, n_wires: int, wire: int
 ) -> torch.Tensor:
@@ -593,7 +600,7 @@ def _explicit_sharded_adjoint(
             rank=rank,
             device=device,
             dtype=dtype,
-            compact_global_indices=plan.shards[rank].local_amplitudes >= (1 << 24),
+            compact_global_indices=_compact_reverse_global_indices(plan, rank),
         )
         checkpoints[0] = initial
     if policy.strategy == "interval":
