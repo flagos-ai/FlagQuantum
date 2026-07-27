@@ -1,4 +1,4 @@
-"""Eight-rank multi-step MPS soak and checkpoint equivalence for ISSUE-093."""
+"""Eight-rank multi-step MPS soak and checkpoint equivalence."""
 
 from __future__ import annotations
 
@@ -47,6 +47,7 @@ def train(
     checkpoint_dir=None,
     checkpoint_interval=25,
     resume=False,
+    max_bond=16,
 ):
     return fq.train_distributed_mps(
         build_entangling_workload(32, *params),
@@ -55,7 +56,7 @@ def train(
         optimizer=optimizer,
         lr=0.01,
         device=device,
-        max_bond=7,
+        max_bond=max_bond,
         gradient_policy="approximate",
         gradient_tolerance=TRUNCATION_BUDGET,
         initial_mps_tensors=initial,
@@ -73,6 +74,7 @@ def main():
     parser.add_argument("--optimizer", choices=("sgd", "adam"), required=True)
     parser.add_argument("--steps", type=int, default=100)
     parser.add_argument("--restart-steps", type=int, default=10)
+    parser.add_argument("--max-bond", type=int, default=16)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -91,6 +93,7 @@ def main():
         steps=args.steps,
         optimizer=args.optimizer,
         device=device,
+        max_bond=args.max_bond,
     )
 
     uninterrupted_params = parameters(device)
@@ -100,6 +103,7 @@ def main():
         steps=args.restart_steps,
         optimizer=args.optimizer,
         device=device,
+        max_bond=args.max_bond,
     )
     root = Path(tempfile.gettempdir()) / f"fq-issue093-{args.optimizer}"
     if rank == 0:
@@ -114,6 +118,7 @@ def main():
         device=device,
         checkpoint_dir=root,
         checkpoint_interval=args.restart_steps // 2,
+        max_bond=args.max_bond,
     )
     resumed_params = parameters(device)
     resumed = train(
@@ -125,6 +130,7 @@ def main():
         checkpoint_dir=root,
         checkpoint_interval=args.restart_steps // 2,
         resume=True,
+        max_bond=args.max_bond,
     )
     parameter_error = max(
         abs(float(left.detach()) - float(right.detach()))
@@ -160,10 +166,11 @@ def main():
     dist.all_gather_object(records, local)
     if rank == 0:
         payload = {
-            "schema": "flagquantum.issue093.mps_stability_run.v2",
+            "schema": "flagquantum.mps_stability_run.v1",
             "world_size": world,
             "optimizer": args.optimizer,
             "steps": args.steps,
+            "max_bond": args.max_bond,
             "warmup_steps": 5,
             "memory_growth_tolerance_bytes": 64 << 20,
             "rank_records": records,

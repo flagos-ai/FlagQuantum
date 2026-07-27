@@ -57,6 +57,11 @@ jobs:
           python tools/run_with_watchdog.py --phase scale-train --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-train-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint-${{ matrix.gpu-count }} --mode train 2>&1 | tee hardware-run/statevector-training-${{ matrix.gpu-count }}.log
           python tools/run_with_watchdog.py --phase scale-correctness --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-correctness-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/correctness-${{ matrix.gpu-count }}.log
           python tools/run_with_watchdog.py --phase scale-statevector --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-statevector-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_correctness.py 2>&1 | tee hardware-run/scale-${{ matrix.gpu-count }}.log
+          python tools/run_with_watchdog.py --phase scale-mps-forward --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-mps-forward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/mps_forward_runtime.py --backend nccl 2>&1 | tee hardware-run/mps-forward-${{ matrix.gpu-count }}.log
+          python tools/run_with_watchdog.py --phase scale-mps-boundary --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-mps-boundary-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/mps_boundary_transport.py --output hardware-run/mps-boundary-${{ matrix.gpu-count }}.json 2>&1 | tee hardware-run/mps-boundary-${{ matrix.gpu-count }}.log
+          if [ "${{ matrix.gpu-count }}" = "8" ]; then
+            python tools/run_with_watchdog.py --phase scale-mps-stability --stall-seconds 300 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-mps-stability -- torchrun --standalone --nproc-per-node=8 benchmarks/mps_stability.py --optimizer sgd --steps 100 --restart-steps 10 --max-bond 16 --output hardware-run/mps-stability-8.json 2>&1 | tee hardware-run/mps-stability-8.log
+          fi
           python tools/run_with_watchdog.py --phase scale-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-benchmark-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/performance-${{ matrix.gpu-count }}.json
           python tools/evaluate_performance_artifact.py hardware-run/performance-${{ matrix.gpu-count }}.json --baseline benchmarks/development/issue077_${{ matrix.gpu-count }}gpu_topology.json
       - if: always()
@@ -67,6 +72,8 @@ jobs:
           --world-size ${{ matrix.gpu-count }}
           --evidence-scope scheduled_4_8_gpu_scale
           --log hardware-run/scale-${{ matrix.gpu-count }}.log
+          --log hardware-run/mps-forward-${{ matrix.gpu-count }}.log
+          --log hardware-run/mps-boundary-${{ matrix.gpu-count }}.log
       - if: always()
         uses: actions/upload-artifact@v4
         with:

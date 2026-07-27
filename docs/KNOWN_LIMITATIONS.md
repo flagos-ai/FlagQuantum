@@ -10,7 +10,7 @@ whole. The authoritative status and evidence requirements are defined in
 | IR v1 | `release_certified` | Incompatible schema changes require an explicit migration. |
 | Local statevector | `production_supported` | Capacity is bounded by one device; larger statevectors require the sharded runtime. |
 | Sharded statevector training | `production_supported` | Multi-node release certification requires promoted, audited hardware evidence. |
-| Sharded MPS training | `development_evidence` | General boundary gates, production backward paths, capacity expansion, and release payload evidence are incomplete. |
+| Sharded MPS training | `development_evidence` | Single-node 2/4/8-GPU forward and boundary transport plus a 100-step 8-GPU SGD soak are validated; other optimizers, multi-node operation, and release payload evidence remain incomplete. |
 | Tensor-network training | `experimental` | General reverse contraction and production distributed transport are not certified. |
 | Cloud deployment | `development_evidence` | Provider behavior and credentials vary; no provider is release certified. |
 | Extension SDK | `experimental` | Compatibility is not guaranteed before stabilization. |

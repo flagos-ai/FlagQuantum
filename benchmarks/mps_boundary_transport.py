@@ -84,7 +84,7 @@ def measure_overlap(device, iterations=40):
         ]
         started = time.perf_counter()
         _run_batched_p2p_with_overlap(
-            operations, device, diagnostic="issue099_overlap",
+            operations, device, diagnostic="mps_boundary_overlap",
             overlap_work=lambda: torch.mm(matrix, matrix),
         )
         torch.cuda.synchronize()
@@ -150,7 +150,7 @@ def main():
         legacy_wait = sum(item["legacy"]["transport_stats"]["host_wait_seconds"] for item in records)
         packed_wait = sum(item["packed"]["transport_stats"]["host_wait_seconds"] for item in records)
         payload = {
-            "schema": "flagquantum.issue099.mps_boundary_transport.v1",
+            "schema": "flagquantum.mps_boundary_transport.v1",
             "world_size": world, "backend": "nccl", "device": torch.cuda.get_device_name(0),
             "legacy_physical_messages": legacy_messages,
             "packed_physical_messages": packed_messages,

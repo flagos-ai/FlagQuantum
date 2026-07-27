@@ -5,6 +5,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added fail-closed single-node MPS development evidence on 8×A800:
+  2/4/8-GPU rank-owned forward, 2/8-GPU packed boundary transport and fault
+  cleanup, 2-GPU accelerator backward, and a 100-step 8-GPU SGD soak with
+  stable memory and exact checkpoint/restart equivalence. This does not promote
+  multi-node or release-certified support.
 - Removed the pre-release `flagquantum.algorithms_stack` namespace. Import
   algorithm helpers from `flagquantum.algorithms` and optimization contracts
   from `flagquantum.algorithms.optimization`.
