@@ -105,7 +105,9 @@ def main() -> None:
         original_object_gather = dist.all_gather_object
 
         def forbidden_object_gather(*_args, **_kwargs):
-            raise AssertionError("MPS tensor reconstruction must use tensor collectives")
+            raise AssertionError(
+                "MPS tensor reconstruction must use tensor collectives"
+            )
 
         dist.all_gather_object = forbidden_object_gather
         try:
