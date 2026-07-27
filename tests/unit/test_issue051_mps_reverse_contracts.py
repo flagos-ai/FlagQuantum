@@ -1,3 +1,6 @@
+import ast
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -14,6 +17,20 @@ from flagquantum.runtime.backends.mps.reverse import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_mps_reverse_observable_functions_are_defined_once() -> None:
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "flagquantum/runtime/backends/mps/reverse_z_observables.py"
+    )
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    names = [
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
+    assert len(names) == len(set(names))
 
 
 def _record(
