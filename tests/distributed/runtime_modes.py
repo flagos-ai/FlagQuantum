@@ -52,16 +52,28 @@ def main() -> None:
         )
     torch.distributed.barrier()
 
-    dmps = fq.run_native(
-        _circuit(),
-        mode="distributed_mps",
-        world_size=world_size,
-        distributed_executor="torch",
-        backend="gloo",
-        device="cpu",
-        max_bond=8,
-        boundary_transport="auto",
-    )
+    original_broadcast_object_list = torch.distributed.broadcast_object_list
+    original_all_gather_object = torch.distributed.all_gather_object
+
+    def _forbid_object_collective(*args: object, **kwargs: object) -> None:
+        raise AssertionError("distributed MPS runtime used an object collective")
+
+    torch.distributed.broadcast_object_list = _forbid_object_collective
+    torch.distributed.all_gather_object = _forbid_object_collective
+    try:
+        dmps = fq.run_native(
+            _circuit(),
+            mode="distributed_mps",
+            world_size=world_size,
+            distributed_executor="torch",
+            backend="gloo",
+            device="cpu",
+            max_bond=8,
+            boundary_transport="auto",
+        )
+    finally:
+        torch.distributed.broadcast_object_list = original_broadcast_object_list
+        torch.distributed.all_gather_object = original_all_gather_object
     local_mps = fq.run_native(_circuit(), mode="mps", max_bond=8)
     distributed_mps_state = dmps.sharded_state.to_statevector()
     local_mps_state = local_mps.to_statevector()

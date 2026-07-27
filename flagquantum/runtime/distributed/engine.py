@@ -9,6 +9,7 @@ across rank-local shards instead of replicating the full circuit per rank.
 
 from __future__ import annotations
 
+import json
 from importlib import import_module
 from typing import Any, Mapping, Sequence
 
@@ -546,13 +547,57 @@ def _load_mps_payload(mps: MPSState, payload: Mapping[str, Any]) -> None:
     mps.orthogonality_center = payload.get("orthogonality_center")
 
 
+def _broadcast_mps_metadata(
+    payload: Mapping[str, Any] | None,
+    *,
+    src: int,
+    context: TorchDistributedContext,
+) -> Mapping[str, Any]:
+    """Broadcast MPS metadata without pickle or NumPy-backed object collectives."""
+    transport_device = (
+        context.device if context.backend == "nccl" else torch.device("cpu")
+    )
+    encoded = (
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        if context.rank == src
+        else b""
+    )
+    length = torch.tensor(
+        [len(encoded)],
+        dtype=torch.int64,
+        device=transport_device,
+    )
+    dist.broadcast(length, src=src)
+    byte_count = int(length.item())
+    if context.rank == src:
+        buffer = torch.tensor(
+            list(encoded),
+            dtype=torch.uint8,
+            device=transport_device,
+        )
+    else:
+        buffer = torch.empty(
+            byte_count,
+            dtype=torch.uint8,
+            device=transport_device,
+        )
+    dist.broadcast(buffer, src=src)
+    decoded = json.loads(bytes(buffer.cpu().tolist()).decode("utf-8"))
+    if not isinstance(decoded, dict):
+        raise RuntimeError("Distributed MPS metadata must decode to a mapping.")
+    return decoded
+
+
 def _broadcast_mps(
     mps: MPSState, *, src: int, context: TorchDistributedContext
 ) -> None:
-    objects: list[Any] = [_mps_payload(mps) if context.rank == src else None]
-    dist.broadcast_object_list(objects, src=src)
+    payload = _broadcast_mps_metadata(
+        _mps_payload(mps) if context.rank == src else None,
+        src=src,
+        context=context,
+    )
     if context.rank != src:
-        _load_mps_payload(mps, objects[0])
+        _load_mps_payload(mps, payload)
     mps.tensors = [
         _broadcast_mps_site_tensor(
             tensor if context.rank == src else None,
