@@ -56,6 +56,14 @@ def main() -> None:
     dist.init_process_group(args.backend)
     rank = dist.get_rank()
     world = dist.get_world_size()
+    original_all_gather_object = dist.all_gather_object
+    original_gather_object = dist.gather_object
+
+    def forbidden_object_collective(*_args, **_kwargs):
+        raise AssertionError("distributed MPS runtime used an object collective")
+
+    dist.all_gather_object = forbidden_object_collective
+    dist.gather_object = forbidden_object_collective
     try:
         circuit = circuit_for_world(world, device=device)
         result = execute_torch_distributed_mps_forward(
@@ -64,11 +72,13 @@ def main() -> None:
             max_bond=8,
             rebalance_threshold=1.01,
         )
-        owned: list[object] = [None] * world
-        dist.all_gather_object(owned, tuple(result.shard_state.local_tensors))
-        flat = [wire for wires in owned for wire in wires]
-        assert sorted(flat) == list(range(circuit.n_wires))
-        assert len(flat) == len(set(flat))
+        ownership_counts = torch.zeros(
+            circuit.n_wires, dtype=torch.int64, device=device
+        )
+        for wire in result.shard_state.local_tensors:
+            ownership_counts[wire] = 1
+        dist.all_reduce(ownership_counts)
+        assert torch.equal(ownership_counts, torch.ones_like(ownership_counts))
         assert all(
             wire in result.shard_state.ownership[rank]
             for wire in result.shard_state.local_tensors
@@ -102,18 +112,7 @@ def main() -> None:
                 initialized=True,
             ),
         )
-        original_object_gather = dist.all_gather_object
-
-        def forbidden_object_gather(*_args, **_kwargs):
-            raise AssertionError(
-                "MPS tensor reconstruction must use tensor collectives"
-            )
-
-        dist.all_gather_object = forbidden_object_gather
-        try:
-            reconstructed = sharded.gather_tensors()
-        finally:
-            dist.all_gather_object = original_object_gather
+        reconstructed = sharded.gather_tensors()
         assert tuple(reconstructed) == tuple(range(circuit.n_wires))
         for wire, tensor in reconstructed.items():
             torch.testing.assert_close(
@@ -238,6 +237,8 @@ def main() -> None:
                 flush=True,
             )
     finally:
+        dist.all_gather_object = original_all_gather_object
+        dist.gather_object = original_gather_object
         dist.destroy_process_group()
 
 

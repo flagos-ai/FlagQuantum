@@ -17,6 +17,8 @@ from .communication import (
     _apply_one_mps_tensor,
     _apply_two_mps_tensors_with_info,
     _instruction_matrix_for_mps,
+    _recv_tensor_p2p,
+    _send_tensor_p2p,
     _tensor_nbytes,
 )
 from .compiled_layers import (
@@ -39,6 +41,7 @@ from .factorization import (
     MemoryProvider,
     cuda_factorization_memory_snapshot,
 )
+from .metadata_transport import all_gather_json
 from .records import TorchDistributedMPSForwardResult
 from .state import (
     MPSPartition,
@@ -279,8 +282,7 @@ def execute_torch_distributed_mps_forward(
     )
     canonicalization = canonicalize_rank_owned_mps(state, center=canonical_center)
     bond_dimensions = global_mps_bond_dimensions(state)
-    gathered_records: list[Any] = [None] * world_size
-    dist.all_gather_object(gathered_records, local_truncation_records)
+    gathered_records = all_gather_json(local_truncation_records)
     truncation_records = tuple(
         record for rank_records in gathered_records for record in rank_records
     )
@@ -340,24 +342,21 @@ def gather_mps_for_validation(
     """Explicit test-only rank gather; never called by the production executor."""
 
     state = result.shard_state
-    payload = {
-        wire: tensor.detach().cpu() for wire, tensor in state.local_tensors.items()
-    }
-    gathered: list[Any] | None = (
-        [None] * state.world_size if state.rank == destination_rank else None
-    )
-    dist.gather_object(payload, gathered, dst=destination_rank)
+    tensors: dict[int, torch.Tensor] = {}
+    reference = next(iter(state.local_tensors.values()))
+    for wire in range(state.n_wires):
+        owner = state.owner(wire)
+        if owner == destination_rank:
+            if state.rank == destination_rank:
+                tensors[wire] = state.local_tensors[wire]
+        elif state.rank == owner:
+            _send_tensor_p2p(state.local_tensors[wire], dst=destination_rank)
+        elif state.rank == destination_rank:
+            tensors[wire] = _recv_tensor_p2p(src=owner, reference=reference)
     if state.rank != destination_rank:
         return None
-    tensors: dict[int, torch.Tensor] = {}
-    assert gathered is not None
-    for item in gathered:
-        tensors.update(item)
     return MPSState(
-        [
-            tensors[wire].to(next(iter(state.local_tensors.values())).device)
-            for wire in range(state.n_wires)
-        ],
+        [tensors[wire] for wire in range(state.n_wires)],
         config=state.config,
     )
 

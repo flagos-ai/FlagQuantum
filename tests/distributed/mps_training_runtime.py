@@ -51,6 +51,12 @@ def main():
     if args.backend == "nccl":
         torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
     dist.init_process_group(args.backend)
+    dist.all_gather_object = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("distributed MPS training used all_gather_object")
+    )
+    dist.gather_object = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("distributed MPS training used gather_object")
+    )
     rank = dist.get_rank()
     device = (
         torch.device("cuda", int(os.environ["LOCAL_RANK"]))

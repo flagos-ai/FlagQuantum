@@ -62,29 +62,25 @@ def apply_rank_boundary_gate(
 
 def global_mps_tensor_bytes(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current per-site tensor footprint on every rank."""
-    local = {
-        wire: _tensor_nbytes(tensor) for wire, tensor in state.local_tensors.items()
-    }
-    gathered: list[Any] = [None] * state.world_size
-    dist.all_gather_object(gathered, local)
-    sizes = [0] * state.n_wires
-    for payload in gathered:
-        for wire, value in payload.items():
-            sizes[int(wire)] = int(value)
-    return tuple(sizes)
+    reference = next(iter(state.local_tensors.values()))
+    sizes = torch.zeros(state.n_wires, dtype=torch.int64, device=reference.device)
+    for wire, tensor in state.local_tensors.items():
+        sizes[wire] = _tensor_nbytes(tensor)
+    dist.all_reduce(sizes)
+    return tuple(int(value) for value in sizes.tolist())
 
 
 def global_mps_bond_dimensions(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current internal bond dimensions on every rank."""
-    local = {wire: int(tensor.shape[3]) for wire, tensor in state.local_tensors.items()}
-    gathered: list[Any] = [None] * state.world_size
-    dist.all_gather_object(gathered, local)
-    dimensions = [1] * max(0, state.n_wires - 1)
-    for payload in gathered:
-        for wire, value in payload.items():
-            if int(wire) < state.n_wires - 1:
-                dimensions[int(wire)] = int(value)
-    return tuple(dimensions)
+    reference = next(iter(state.local_tensors.values()))
+    dimensions = torch.zeros(
+        max(0, state.n_wires - 1), dtype=torch.int64, device=reference.device
+    )
+    for wire, tensor in state.local_tensors.items():
+        if wire < state.n_wires - 1:
+            dimensions[wire] = int(tensor.shape[3])
+    dist.all_reduce(dimensions)
+    return tuple(int(value) for value in dimensions.tolist())
 
 
 def migrate_mps_partitions(

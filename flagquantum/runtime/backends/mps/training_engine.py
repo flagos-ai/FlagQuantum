@@ -17,6 +17,7 @@ from torch.profiler import record_function
 
 from ....core.ir import ensure_circuit_ir
 from .communication import warmup_mps_neighbor_communicators
+from .metadata_transport import all_gather_json
 from .records import MPSReverseCheckpointPolicy
 from .reverse import execute_torch_distributed_mps_reverse
 from .reverse_planning import build_mps_parameter_layout
@@ -61,7 +62,7 @@ def _initial_state_contract(
         raw = value.contiguous().view(torch.uint8).reshape(-1)
         chunk_bytes = 8 * 1024 * 1024
         for start in range(0, raw.numel(), chunk_bytes):
-            digest.update(raw[start : start + chunk_bytes].cpu().numpy().tobytes())
+            digest.update(bytes(raw[start : start + chunk_bytes].cpu().tolist()))
         return digest.hexdigest()
 
     if initial_mps_tensors is None:
@@ -87,8 +88,7 @@ def _initial_state_contract(
             }
             for wire, tensor in initial_mps_tensors.items()
         }
-    gathered: list[Any] = [None] * dist.get_world_size()
-    dist.all_gather_object(gathered, local_descriptors)
+    gathered = all_gather_json(local_descriptors)
     global_descriptors = {
         int(wire): descriptor
         for payload in gathered
