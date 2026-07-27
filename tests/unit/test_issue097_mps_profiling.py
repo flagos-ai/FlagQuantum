@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.profiler import ProfilerActivity, profile
 
-from benchmarks.internal.evidence.aggregate_issue097_mps_critical_path import aggregate
+from benchmarks.internal.evidence.mps_critical_path_summary import aggregate
 from flagquantum.runtime.backends.mps.profiling import (
     MPS_TRACE_COMMUNICATION_LABELS,
     MPS_TRACE_OPERATION_LABELS,

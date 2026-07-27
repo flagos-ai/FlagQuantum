@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from benchmarks.internal.evidence.issue107_mps_forward_memory_plateau import audit_plateau
+from benchmarks.internal.evidence.mps_forward_memory_plateau import audit_plateau
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -15,7 +15,7 @@ def test_issue107_benchmark_entrypoint_resolves_repository_imports() -> None:
             sys.executable,
             str(
                 ROOT
-                / "benchmarks/internal/evidence/issue107_mps_forward_memory_plateau.py"
+                / "benchmarks/internal/evidence/mps_forward_memory_plateau.py"
             ),
             "--help",
         ],

@@ -9,7 +9,7 @@ from typing import Any, Mapping
 
 from flagquantum.runtime.observability.evidence import verify_evidence_artifact
 
-MANIFEST = Path("benchmarks/manifests/issue044_statevector_release_v2.json")
+MANIFEST = Path("benchmarks/manifests/statevector_release_v2.json")
 RESULTS = Path("benchmarks/results/scalability")
 
 

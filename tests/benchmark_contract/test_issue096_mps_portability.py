@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.internal.evidence.issue096_mps_portability import (
+from benchmarks.internal.evidence.mps_portability import (
     attribute_communication_tiers,
 )
 from flagquantum.testing import (

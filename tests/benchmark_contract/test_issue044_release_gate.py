@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.internal.evidence.issue044_release_gate import (
+from benchmarks.internal.evidence.statevector_release_gate import (
     evaluate_issue044_release,
     load_manifest,
 )

@@ -1,7 +1,7 @@
 {
   "schema_version": "flagquantum.issue044.release_manifest.v2",
   "issue": "ISSUE-044",
-  "supersedes": "benchmarks/manifests/issue044_statevector_release_v1.json",
+  "supersedes": "benchmarks/manifests/statevector_release_v1.json",
   "frozen_before_release_run": true,
   "freeze_note": "The v1 30-qubit capacity candidate completed on one A800 during development calibration. Version 2 freezes the calibrated 31-qubit candidate before any release-eligible rerun; earlier development measurements remain ineligible.",
   "runtime": {
@@ -38,7 +38,7 @@
   },
   "capacity_workload": {
     "name": "issue044_single_node_capacity_v2",
-    "manifest_path": "benchmarks/manifests/issue044_statevector_capacity_workload_v2.json",
+    "manifest_path": "benchmarks/manifests/statevector_capacity_workload_v2.json",
     "workload_sha256": "1c937d01db177ba6e69ea3b7b07b7282b2aa621a2533e9fa5847c16228ce9bf0",
     "n_wires": 31,
     "dtype": "complex64",

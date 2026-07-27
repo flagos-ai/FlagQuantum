@@ -120,3 +120,8 @@ def test_benchmark_root_stays_free_of_internal_assets():
     assert not list(benchmark_root.glob("issue*.py"))
     assert not list(benchmark_root.glob("aggregate_issue*.py"))
     assert not list(benchmark_root.glob("plot_*.py"))
+    assert not [
+        path
+        for path in benchmark_root.rglob("*")
+        if "issue" in path.name.lower() and "__pycache__" not in path.parts
+    ]

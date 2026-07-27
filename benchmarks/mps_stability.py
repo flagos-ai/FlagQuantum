@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from benchmarks.internal.evidence.issue092_general_mps_capacity import (  # noqa: E402
+from benchmarks.internal.evidence.general_mps_capacity import (  # noqa: E402
     TRUNCATION_BUDGET,
     build_entangling_workload,
 )

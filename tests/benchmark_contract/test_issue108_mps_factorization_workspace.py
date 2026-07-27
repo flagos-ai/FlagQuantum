@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchmarks.internal.evidence.issue108_mps_factorization_workspace import (
+from benchmarks.internal.evidence.mps_factorization_workspace import (
     audit_factorization_workspace,
 )
 
