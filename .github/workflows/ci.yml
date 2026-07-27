@@ -32,6 +32,7 @@ jobs:
           flagquantum/core/contracts.py flagquantum/runtime/records.py
           flagquantum/runtime/audit/contracts.py
           flagquantum/runtime/backends/statevector/checkpointing.py
+          flagquantum/runtime/backends/statevector/gradient_reduction.py
       - name: Strict typed trainable module
         run: >-
           mypy --strict --no-site-packages --ignore-missing-imports

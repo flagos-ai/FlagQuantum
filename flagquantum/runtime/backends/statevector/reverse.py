@@ -160,6 +160,8 @@ class BackwardExecutionEvidence:
     communication_bytes: int = 0
     gradient_collective_count: int = 0
     gradient_collective_bytes: int = 0
+    async_gradient_collective_count: int = 0
+    overlapped_gradient_collective_count: int = 0
     persistent_layout_swap_count: int = 0
     persistent_layout_swap_bytes: int = 0
     persistent_layout_buffer_allocation_count: int = 0
@@ -280,6 +282,12 @@ class TorchDistributedStatevectorGradientResult:
             ),
             "gradient_collective_bytes": (
                 self.backward_evidence.gradient_collective_bytes
+            ),
+            "async_gradient_collective_count": (
+                self.backward_evidence.async_gradient_collective_count
+            ),
+            "overlapped_gradient_collective_count": (
+                self.backward_evidence.overlapped_gradient_collective_count
             ),
             "persistent_layout_enabled": _persistent_wire_layout_enabled(),
             "persistent_layout_swap_count": (
@@ -428,6 +436,8 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         evidence.communication_bytes = 0
         evidence.gradient_collective_count = 0
         evidence.gradient_collective_bytes = 0
+        evidence.async_gradient_collective_count = 0
+        evidence.overlapped_gradient_collective_count = 0
         evidence.persistent_layout_swap_count = 0
         evidence.persistent_layout_swap_bytes = 0
         evidence.persistent_layout_buffer_allocation_count = 0

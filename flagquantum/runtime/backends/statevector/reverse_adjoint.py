@@ -26,6 +26,7 @@ from .forward import (
     _vectorized_subgroup_exchange_gate,
     _wait_for_exchange,
 )
+from .gradient_reduction import AsyncGradientReducer
 from .layout import (
     distributed_swap_rank_local_bits,
     plan_persistent_statevector_layout,
@@ -490,25 +491,21 @@ def _all_reduce_packed_gradients(
     process_group: Any | None,
     evidence: BackwardExecutionEvidence,
 ) -> None:
-    """All-reduce accumulated parameter gradients in dtype-homogeneous buckets."""
+    """Compatibility wrapper around asynchronous dtype-homogeneous buckets."""
 
-    buckets: dict[tuple[torch.device, torch.dtype], list[int]] = {}
-    for index, gradient in enumerate(gradients):
-        buckets.setdefault((gradient.device, gradient.dtype), []).append(index)
-    for indices in buckets.values():
-        packed = torch.cat([gradients[index].reshape(-1) for index in indices])
-        dist.all_reduce(packed, op=dist.ReduceOp.SUM, group=process_group)
-        evidence.communication_count += 1
-        evidence.communication_bytes += packed.numel() * packed.element_size()
-        evidence.gradient_collective_count += 1
-        evidence.gradient_collective_bytes += packed.numel() * packed.element_size()
-        offset = 0
-        for index in indices:
-            count = gradients[index].numel()
-            gradients[index].copy_(
-                packed[offset : offset + count].reshape_as(gradients[index])
-            )
-            offset += count
+    reducer = AsyncGradientReducer(
+        gradients,
+        process_group=process_group,
+        evidence=evidence,
+        max_parameters=len(gradients) or 1,
+        max_bytes=sum(
+            gradient.numel() * gradient.element_size() for gradient in gradients
+        )
+        or 1,
+    )
+    for index in range(len(gradients)):
+        reducer.mark_ready(index, overlap_opportunity=False)
+    reducer.finish()
 
 
 def _explicit_sharded_adjoint(
@@ -692,6 +689,34 @@ def _explicit_sharded_adjoint(
     slots_by_instruction: dict[int, set[int]] = {}
     for instruction_index, _, parameter_index in slots:
         slots_by_instruction.setdefault(instruction_index, set()).add(parameter_index)
+    remaining_parameter_instructions = [0] * len(base_parameters)
+    for parameter_indices in slots_by_instruction.values():
+        for parameter_index in parameter_indices:
+            remaining_parameter_instructions[parameter_index] += 1
+    gradient_reducer = (
+        AsyncGradientReducer(
+            accumulated,
+            process_group=process_group,
+            evidence=evidence,
+        )
+        if world_size > 1
+        else None
+    )
+
+    def accumulate_parameter_gradient(
+        parameter_index: int, gradient: torch.Tensor
+    ) -> None:
+        accumulated[parameter_index] += gradient.detach()
+        evidence.reduction_counts[parameter_index] += 1
+        remaining_parameter_instructions[parameter_index] -= 1
+        if (
+            gradient_reducer is not None
+            and remaining_parameter_instructions[parameter_index] == 0
+        ):
+            gradient_reducer.mark_ready(
+                parameter_index,
+                overlap_opportunity=index > 0,
+            )
 
     skipped_cx_indices: set[int] = set()
     cx_segment_ket_scratch = cx_segment_adjoint_scratch = None
@@ -747,8 +772,7 @@ def _explicit_sharded_adjoint(
                     derivative_matrix,
                     bit_position=bit_position,
                 ).to(dtype=base_parameters[active[0]].dtype)
-                accumulated[active[0]] += gradient.detach()
-                evidence.reduction_counts[active[0]] += 1
+                accumulate_parameter_gradient(active[0], gradient)
                 evidence.analytic_rotation_derivative_count += 1
                 evidence.fused_parameter_adjoint_count += 1
                 for swap_index, swap in reversed(
@@ -1042,8 +1066,7 @@ def _explicit_sharded_adjoint(
         for parameter_index, gradient in zip(active, derivatives):
             if gradient is None:
                 continue
-            accumulated[parameter_index] += gradient.detach()
-            evidence.reduction_counts[parameter_index] += 1
+            accumulate_parameter_gradient(parameter_index, gradient)
         if fused_adjoint is not None:
             previous_adjoint = adjoint
             adjoint = fused_adjoint
@@ -1130,12 +1153,8 @@ def _explicit_sharded_adjoint(
             )
         if reversible_state is None:
             del before
-    if world_size > 1:
-        _all_reduce_packed_gradients(
-            accumulated,
-            process_group=process_group,
-            evidence=evidence,
-        )
+    if gradient_reducer is not None:
+        gradient_reducer.finish()
     if exchange_workspace is not None:
         evidence.exchange_workspace_allocation_count = (
             exchange_workspace.allocation_count

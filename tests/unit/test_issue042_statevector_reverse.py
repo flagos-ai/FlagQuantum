@@ -7,6 +7,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.runtime.backends.statevector.gradient_reduction import (
+    AsyncGradientReducer,
+)
 from flagquantum.runtime.backends.statevector.local_execution import (
     _rank_global_indices,
     use_compact_global_indices,
@@ -93,9 +96,15 @@ def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, dtype
 def test_parameter_gradients_are_all_reduced_in_dtype_packed_buckets(monkeypatch):
     calls = []
 
+    class CompletedWork:
+        def wait(self):
+            return True
+
     def fake_all_reduce(tensor, **kwargs):
         calls.append(tensor.clone())
         tensor.add_(10)
+        assert kwargs["async_op"] is True
+        return CompletedWork()
 
     monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
     gradients = [
@@ -116,9 +125,50 @@ def test_parameter_gradients_are_all_reduced_in_dtype_packed_buckets(monkeypatch
     torch.testing.assert_close(calls[1], torch.tensor([3.0], dtype=torch.float64))
     assert [gradient.item() for gradient in gradients] == [11.0, 12.0, 13.0]
     assert evidence.communication_count == 2
+    assert evidence.async_gradient_collective_count == 2
     assert evidence.communication_bytes == 16
     assert evidence.gradient_collective_count == 2
     assert evidence.gradient_collective_bytes == 16
+
+
+def test_ready_gradient_bucket_launches_before_adjoint_completion(monkeypatch):
+    waits = []
+
+    class PendingWork:
+        def wait(self):
+            waits.append(True)
+
+    def fake_all_reduce(tensor, **kwargs):
+        tensor.mul_(2)
+        return PendingWork()
+
+    monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
+    gradients = [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)]
+    evidence = BackwardExecutionEvidence()
+    reducer = AsyncGradientReducer(
+        gradients,
+        process_group=None,
+        evidence=evidence,
+        max_parameters=2,
+        max_bytes=1 << 20,
+    )
+
+    reducer.mark_ready(0)
+    assert evidence.gradient_collective_count == 0
+    reducer.mark_ready(1)
+    assert evidence.gradient_collective_count == 1
+    assert evidence.overlapped_gradient_collective_count == 1
+    assert waits == []
+
+    reducer.mark_ready(2)
+    reducer.finish()
+
+    assert waits == [True, True]
+    assert [gradient.item() for gradient in gradients] == [2.0, 4.0, 6.0]
+    assert evidence.async_gradient_collective_count == 2
+    assert evidence.communication_bytes == 12
+    assert evidence.gradient_collective_count == 2
+    assert evidence.gradient_collective_bytes == 12
 
 
 def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
