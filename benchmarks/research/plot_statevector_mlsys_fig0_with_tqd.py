@@ -28,7 +28,7 @@ def load(path: Path) -> dict:
 
 
 def main() -> None:
-    repo = Path(__file__).resolve().parents[1]
+    repo = Path(__file__).resolve().parents[2]
     comparison = repo / "benchmarks" / "results" / "comparison"
     output = repo / "benchmarks" / "results" / "statevector_mlsys_current"
     tqd_root = output / "tqd_current"

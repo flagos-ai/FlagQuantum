@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.runners.registry import names, register, resolve
+from benchmarks.runners.registry import describe, names, register, resolve
 
 ROOT = Path(__file__).parents[2]
 
@@ -13,6 +13,8 @@ ROOT = Path(__file__).parents[2]
 def test_runner_registry_is_lazy_and_sorted():
     assert names() == (
         "environment_probe",
+        "mps_training",
+        "statevector_local",
         "statevector_strong_scaling",
         "statevector_training_scaling",
         "statevector_weak_scaling",
@@ -65,3 +67,56 @@ def test_runner_package_lists_available_runner():
         text=True,
     )
     assert "environment_probe" in result.stdout
+    assert "statevector_local" in result.stdout
+    assert "mps_training" in result.stdout
+
+
+def test_runner_info_is_discoverable_without_importing_implementation():
+    spec = describe("statevector_local")
+    assert spec.category == "statevector"
+    assert "CPU or one GPU" in spec.hardware
+    result = subprocess.run(
+        [sys.executable, "-m", "benchmarks.runners", "info", "statevector_local"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "flagquantum-benchmark run statevector_local" in result.stdout
+
+
+def test_explicit_run_subcommand_writes_contract_payload(tmp_path):
+    output = tmp_path / "probe.json"
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "benchmarks.runners",
+            "run",
+            "environment_probe",
+            "--json-output",
+            str(output),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert json.loads(output.read_text())["runner"] == "environment_probe"
+
+
+def test_pyproject_installs_benchmark_command_and_runner_namespace():
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert (
+        'flagquantum-benchmark = "benchmarks.runners.__main__:main"' in text
+    )
+    assert '"benchmarks*"' in text
+
+
+def test_benchmark_root_stays_free_of_internal_assets():
+    benchmark_root = ROOT / "benchmarks"
+    assert not list(benchmark_root.glob("*.json"))
+    assert not list(benchmark_root.glob("*.sh"))
+    assert not list(benchmark_root.glob("issue*.py"))
+    assert not list(benchmark_root.glob("aggregate_issue*.py"))
+    assert not list(benchmark_root.glob("plot_*.py"))

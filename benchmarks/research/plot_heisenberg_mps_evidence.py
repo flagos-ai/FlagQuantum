@@ -17,7 +17,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "benchmarks/results/heisenberg_vqe"
 OUT = ROOT / "benchmarks/results/heisenberg_vqe/figures"
 OUT.mkdir(parents=True, exist_ok=True)

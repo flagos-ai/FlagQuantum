@@ -11,7 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MANIFEST = REPO_ROOT / "benchmarks/manifests/issue097_mps_critical_path_v1.json"
 _TRACE_NAME = re.compile(r'^\s*"name":\s*("(?:[^"\\]|\\.)*")')
 _TRACE_DURATION = re.compile(r'^\s*"dur":\s*([0-9.eE+-]+)')

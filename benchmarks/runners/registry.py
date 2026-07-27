@@ -2,30 +2,115 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from importlib import import_module
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
+from importlib import import_module
 
 RunnerMain = Callable[[], int]
 
-_RUNNERS: dict[str, tuple[str, str]] = {
-    "environment_probe": ("benchmarks.runners.environment_probe", "main"),
-    "statevector_weak_scaling": (
-        "benchmarks.runners.statevector_weak_scaling",
-        "main",
+
+@dataclass(frozen=True)
+class RunnerSpec:
+    """Discoverable benchmark metadata without importing the implementation."""
+
+    name: str
+    module: str
+    attribute: str
+    category: str
+    summary: str
+    hardware: str
+    example: str
+
+
+_RUNNERS: dict[str, RunnerSpec] = {
+    "environment_probe": RunnerSpec(
+        name="environment_probe",
+        module="benchmarks.runners.environment_probe",
+        attribute="main",
+        category="environment",
+        summary="Record the runtime, package, CPU, and accelerator environment.",
+        hardware="CPU; GPU optional",
+        example=(
+            "flagquantum-benchmark run environment_probe "
+            "--json-output results/environment.json"
+        ),
     ),
-    "statevector_strong_scaling": (
-        "benchmarks.runners.statevector_strong_scaling",
-        "main",
+    "statevector_local": RunnerSpec(
+        name="statevector_local",
+        module="benchmarks.statevector_local_performance",
+        attribute="main",
+        category="statevector",
+        summary="Measure local statevector execution on CPU or one GPU.",
+        hardware="CPU or one GPU",
+        example=(
+            "flagquantum-benchmark run statevector_local --device cpu "
+            "--n-wires 12 --batch-size 4 --layers 2 --warmup 3 "
+            "--iterations 10 --json-output results/statevector.json"
+        ),
     ),
-    "statevector_training_scaling": (
-        "benchmarks.runners.statevector_training_scaling",
-        "main",
+    "mps_training": RunnerSpec(
+        name="mps_training",
+        module="benchmarks.flagship_mps_training",
+        attribute="main",
+        category="mps",
+        summary="Run the maintained single-device MPS training benchmark.",
+        hardware="CPU or one GPU; JAX optional",
+        example=(
+            "flagquantum-benchmark run mps_training --cases dimer:20 "
+            "--steps 1 --iters 1 --warmup 0 "
+            "--json-output results/mps.json"
+        ),
+    ),
+    "statevector_weak_scaling": RunnerSpec(
+        name="statevector_weak_scaling",
+        module="benchmarks.runners.statevector_weak_scaling",
+        attribute="main",
+        category="statevector",
+        summary="Aggregate audited weak-scaling result payloads.",
+        hardware="No accelerator required for report generation",
+        example=(
+            "flagquantum-benchmark run statevector_weak_scaling INPUT... "
+            "--json-output results/weak.json"
+        ),
+    ),
+    "statevector_strong_scaling": RunnerSpec(
+        name="statevector_strong_scaling",
+        module="benchmarks.runners.statevector_strong_scaling",
+        attribute="main",
+        category="statevector",
+        summary="Aggregate audited strong-scaling result payloads.",
+        hardware="No accelerator required for report generation",
+        example=(
+            "flagquantum-benchmark run statevector_strong_scaling INPUT... "
+            "--json-output results/strong.json"
+        ),
+    ),
+    "statevector_training_scaling": RunnerSpec(
+        name="statevector_training_scaling",
+        module="benchmarks.runners.statevector_training_scaling",
+        attribute="main",
+        category="statevector",
+        summary="Aggregate distributed statevector training results.",
+        hardware="No accelerator required for report generation",
+        example=(
+            "flagquantum-benchmark run statevector_training_scaling INPUT... "
+            "--json-output results/training.json"
+        ),
     ),
 }
 
 
-def register(name: str, module: str, attribute: str = "main") -> None:
+def register(
+    name: str,
+    module: str,
+    attribute: str = "main",
+    *,
+    category: str = "extension",
+    summary: str = "Third-party benchmark runner.",
+    hardware: str = "Runner-defined",
+    example: str = "",
+) -> None:
     """Register a runner exactly once; duplicate names are rejected."""
     if not name or not module or not attribute:
         raise ValueError("runner registration requires name, module, and attribute")
@@ -33,19 +118,35 @@ def register(name: str, module: str, attribute: str = "main") -> None:
         raise ValueError("runner name must use lowercase snake_case")
     if name in _RUNNERS:
         raise ValueError(f"benchmark runner already registered: {name}")
-    _RUNNERS[name] = (module, attribute)
+    _RUNNERS[name] = RunnerSpec(
+        name=name,
+        module=module,
+        attribute=attribute,
+        category=category,
+        summary=summary,
+        hardware=hardware,
+        example=example,
+    )
 
 
 def names() -> tuple[str, ...]:
     return tuple(sorted(_RUNNERS))
 
 
-def resolve(name: str) -> RunnerMain:
+def specs() -> tuple[RunnerSpec, ...]:
+    return tuple(_RUNNERS[name] for name in names())
+
+
+def describe(name: str) -> RunnerSpec:
     try:
-        module_name, attribute = _RUNNERS[name]
+        return _RUNNERS[name]
     except KeyError as exc:
         raise KeyError(f"unknown benchmark runner: {name}") from exc
-    return getattr(import_module(module_name), attribute)
 
 
-__all__ = ["names", "register", "resolve"]
+def resolve(name: str) -> RunnerMain:
+    runner = describe(name)
+    return getattr(import_module(runner.module), runner.attribute)
+
+
+__all__ = ["RunnerSpec", "describe", "names", "register", "resolve", "specs"]

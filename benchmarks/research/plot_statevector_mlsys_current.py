@@ -765,7 +765,7 @@ def fig3_multinode_diagnosis(root: Path) -> Any:
 
 
 def main() -> None:
-    repo = Path(__file__).resolve().parents[1]
+    repo = Path(__file__).resolve().parents[2]
     root = repo / "benchmarks" / "results" / "comparison"
     output = repo / "benchmarks" / "results" / "statevector_mlsys_current"
     style()

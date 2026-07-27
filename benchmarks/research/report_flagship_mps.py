@@ -2,7 +2,7 @@
 
 Example
 -------
-    python benchmarks/report_flagship_mps.py \
+    python benchmarks/research/report_flagship_mps.py \
         --input benchmarks/results/flagship_mps_1000q_dimer_cpu_jax.json \
         --output benchmarks/results/flagship_mps_1000q_dimer_cpu_jax.md
 """

@@ -54,7 +54,7 @@ seven rank boundaries active, run:
 ```bash
 timeout --signal=TERM --kill-after=30s 2h \
   torchrun --standalone --nproc-per-node=8 \
-  benchmarks/issue092_general_mps_capacity.py \
+  benchmarks/internal/evidence/issue092_general_mps_capacity.py \
   --profile capacity \
   --single-gpu-artifact /tmp/issue092-capacity-1gpu.json \
   --output /tmp/issue092-capacity-8gpu.json

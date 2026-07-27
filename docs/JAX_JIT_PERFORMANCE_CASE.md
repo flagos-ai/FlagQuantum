@@ -42,7 +42,7 @@ CUDA_VISIBLE_DEVICES=0 python benchmarks/jax_jit_crossover.py \
   --device cuda:0 \
   --output benchmarks/results/local/jax_jit_crossover_a800.json
 
-python benchmarks/plot_jax_jit_crossover.py \
+python benchmarks/research/plot_jax_jit_crossover.py \
   --input benchmarks/results/local/jax_jit_crossover_a800.json \
   --output-dir benchmarks/results/local/jax_jit_crossover_figures
 ```

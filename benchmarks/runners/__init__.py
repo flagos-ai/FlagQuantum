@@ -5,6 +5,6 @@ Research/plotting scripts remain outside this namespace and are not imported
 as library code.
 """
 
-from .registry import names, register, resolve
+from .registry import RunnerSpec, describe, names, register, resolve, specs
 
-__all__ = ["names", "register", "resolve"]
+__all__ = ["RunnerSpec", "describe", "names", "register", "resolve", "specs"]

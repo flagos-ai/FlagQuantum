@@ -20,9 +20,9 @@ ORANGE = "#E69F00"
 RED = "#D55E00"
 GREY = "#6C757D"
 
-ROOT = Path(__file__).resolve().parent / "results" / "comparison"
+ROOT = Path(__file__).resolve().parents[1] / "results" / "comparison"
 OUTPUT = (
-    Path(__file__).resolve().parent
+    Path(__file__).resolve().parents[1]
     / "results"
     / "statevector_submission_figures"
     / "fig6_lightning_gpu_multinode_cliff"

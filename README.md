@@ -201,7 +201,7 @@ python benchmarks/hybrid_classical_quantum_optimizer.py \
   --n-wires 4 --depth 2 --steps 30 --precision float64 \
   --json-output /tmp/hybrid-optimizer.json \
   --csv-output /tmp/hybrid-optimizer.csv
-python benchmarks/plot_hybrid_classical_quantum_optimizer.py \
+python benchmarks/research/plot_hybrid_classical_quantum_optimizer.py \
   /tmp/hybrid-optimizer.json --output-dir /tmp/hybrid-optimizer-figures
 ```
 
@@ -217,7 +217,7 @@ python benchmarks/hybrid_mlp_quantum_optimizer_suite.py \
   --n-wires 6 --depth 3 --steps 60 --precision float64 \
   --json-output /tmp/hybrid-mlp-suite.json \
   --csv-output /tmp/hybrid-mlp-suite.csv
-python benchmarks/plot_hybrid_mlp_quantum_optimizer_suite.py \
+python benchmarks/research/plot_hybrid_mlp_quantum_optimizer_suite.py \
   /tmp/hybrid-mlp-suite.json --output-dir /tmp/hybrid-mlp-suite-figures
 ```
 
@@ -333,17 +333,20 @@ tests for the currently implemented provider abstraction.
 
 ## Benchmarks
 
-Benchmark wording must match the JSON payload. Before promoting results, run:
+Install the project, discover maintained scenarios, and run a CPU smoke
+benchmark through the stable command:
 
 ```bash
-python benchmarks/audit_results.py --input benchmarks/results
-python benchmarks/audit_results.py --input benchmarks/results/scalability --require-scalability
+pip install -e .
+flagquantum-benchmark list
+flagquantum-benchmark info statevector_local
+flagquantum-benchmark run environment_probe \
+  --json-output benchmarks/results/local/environment.json
 ```
 
-The second command is expected to pass only for `benchmarks/results/scalability`
-payloads with `claim_evidence_type="production_training_benchmark"` or an
-explicit release payload, `single_gpu_expected_oom=True`, capacity baseline
-failure details, and sharded optimizer-update evidence.
+See [benchmarks/README.md](benchmarks/README.md) for local, distributed, and
+release-evidence workflows. Script filenames are implementation details; use
+`flagquantum-benchmark` in user automation.
 
 ## Tests
 

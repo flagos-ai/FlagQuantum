@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from benchmarks.issue107_mps_forward_memory_plateau import audit_plateau
+from benchmarks.internal.evidence.issue107_mps_forward_memory_plateau import audit_plateau
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -13,7 +13,10 @@ def test_issue107_benchmark_entrypoint_resolves_repository_imports() -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            str(ROOT / "benchmarks/issue107_mps_forward_memory_plateau.py"),
+            str(
+                ROOT
+                / "benchmarks/internal/evidence/issue107_mps_forward_memory_plateau.py"
+            ),
             "--help",
         ],
         cwd=ROOT,
