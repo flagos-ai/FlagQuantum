@@ -3,7 +3,11 @@ import json
 from pathlib import Path
 
 import pytest
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
 
 from tools.check_import_time import sample_imports
 from tools.check_repository_hygiene import (
