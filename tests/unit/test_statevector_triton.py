@@ -3,6 +3,8 @@
 import pytest
 import torch
 
+pytest.importorskip("triton")
+
 from flagquantum.runtime.backends.statevector.layout import _local_bit_view
 from flagquantum.runtime.backends.statevector.triton import (
     apply_complex64_local_1q,

@@ -53,16 +53,18 @@ def _triton_local_1q_enabled() -> bool:
 
 
 def _triton_local_cx_enabled() -> bool:
-    if importlib.util.find_spec("triton") is None:
+    if not _triton_available():
         return False
     if mode() == "portable":
         return False
     return get_bool("FQ_SV_TRITON_LOCAL_CX", True)
 
 
+def _triton_available() -> bool:
+    return importlib.util.find_spec("triton") is not None
+
+
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
-    if importlib.util.find_spec("triton") is None:
-        return False
     raw = get("FQ_SV_TRITON_CX_SEGMENT", "")
     if not raw:
         raw = None

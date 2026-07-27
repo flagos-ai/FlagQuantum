@@ -1,8 +1,9 @@
+import importlib.util
+
 import pytest
 import torch
 
 import flagquantum.simulation.real_imag_kernels as kernels_runtime
-import flagquantum.simulation.triton_complex_bmm as triton_bmm_runtime
 from flagquantum.simulation.real_imag_kernels import (
     _CANONICAL_LAYOUT_CACHE,
     _bmm_real_imag_eager,
@@ -12,6 +13,11 @@ from flagquantum.simulation.real_imag_kernels import (
     complex_einsum_pair,
     kernel_cache_summary,
 )
+
+if importlib.util.find_spec("triton") is not None:
+    import flagquantum.simulation.triton_complex_bmm as triton_bmm_runtime
+else:
+    triton_bmm_runtime = None
 
 
 def test_canonical_layout_detects_real_reshape_copy_without_materializing() -> None:

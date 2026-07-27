@@ -1,6 +1,8 @@
 import pytest
 import torch
 
+pytest.importorskip("triton")
+
 import flagquantum as fq
 from flagquantum.simulation.triton_kernels import (
     repeated_rx_rz,

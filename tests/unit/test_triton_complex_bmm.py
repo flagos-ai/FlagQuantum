@@ -1,6 +1,8 @@
 import pytest
 import torch
 
+pytest.importorskip("triton")
+
 from flagquantum.simulation.triton_complex_bmm import fused_complex_bmm
 
 

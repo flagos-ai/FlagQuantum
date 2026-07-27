@@ -1,6 +1,8 @@
 import pytest
 import torch
 
+pytest.importorskip("triton")
+
 import flagquantum.algorithms as fqa
 from flagquantum.simulation.triton_kernels import heisenberg_hva_forward_tangents
 

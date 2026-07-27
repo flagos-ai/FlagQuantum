@@ -15,6 +15,7 @@ from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
     _storage_global_indices,
+    _triton_available,
     _triton_local_cx_enabled,
     _triton_local_cx_segment_enabled,
     _vectorized_cross_shard_cx,
@@ -794,6 +795,7 @@ def _explicit_sharded_adjoint(
                 continue
         if (
             inplace_local
+            and _triton_available()
             and _triton_local_cx_segment_enabled(bound)
             and execution_instruction.name == "cx"
             and not swaps_before.get(index)
