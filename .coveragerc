@@ -1,0 +1,9 @@
+[run]
+omit =
+    flagquantum/benchmarking/*
+    flagquantum/runtime/backends/statevector/triton.py
+    flagquantum/simulation/triton_kernels/*
+
+[report]
+exclude_also =
+    if TYPE_CHECKING:

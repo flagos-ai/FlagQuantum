@@ -264,7 +264,8 @@ must carry a reason and are not evidence of success.
 ## Coverage gate
 
 CI measures the maintained package with the seeded smoke, unit, and integration
-tiers. The repository-wide floor is 51%, below the measured 52%
-baseline. The floor must only move upward; backend-specific accelerator and
-multi-node gaps remain visible in the XML report rather than being omitted from
-the denominator.
+tiers. The CPU maintained-runtime floor is 55%, below the measured 56%
+baseline. The floor must only move upward. Benchmark tooling and GPU-only
+Triton kernels are owned by their dedicated benchmark and hardware gates;
+backend-independent runtime, accelerator orchestration, and multi-node control
+paths remain visible in the XML report.

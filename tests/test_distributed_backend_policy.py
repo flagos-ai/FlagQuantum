@@ -3,7 +3,11 @@ import torch
 
 import flagquantum as fq
 
-pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.distributed,
+    pytest.mark.distributed_cpu,
+]
 
 
 def test_distributed_backend_policy_defaults_to_development_without_torchrun(

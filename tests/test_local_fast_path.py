@@ -1,7 +1,10 @@
+import pytest
 import torch
 
 import flagquantum as fq
 import flagquantum.runtime.execution as execution
+
+pytestmark = pytest.mark.integration
 
 
 def test_local_fast_path_preflight_default_program():

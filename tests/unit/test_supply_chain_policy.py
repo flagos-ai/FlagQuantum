@@ -10,7 +10,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_ci_has_coverage_security_and_sbom_gates():
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
-    assert "--cov-fail-under=51" in workflow
+    coverage_config = (ROOT / ".coveragerc").read_text()
+    assert "--cov-fail-under=55" in workflow
+    assert "flagquantum/benchmarking/*" in coverage_config
+    assert "flagquantum/simulation/triton_kernels/*" in coverage_config
     assert "pip list --format freeze --exclude flagquantum" in workflow
     assert (
         "pip-audit --strict --no-deps --requirement audit-requirements.txt" in workflow
