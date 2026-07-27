@@ -105,7 +105,7 @@ def run_mps(
         instruction = instructions[group[0]]
         if operation.kind == "adjacent_two_bucket":
             spatial_bucket_enabled = os.getenv(
-                "FQ_MPS_SPATIAL_BUCKET", "0"
+                "FQ_MPS_SPATIAL_BUCKET", "1"
             ).strip().lower() not in {"0", "false", "off", "no"}
             if not spatial_bucket_enabled:
                 for index in group:

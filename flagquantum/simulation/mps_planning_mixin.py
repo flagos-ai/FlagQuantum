@@ -167,11 +167,15 @@ class MPSPlanningMixin:
             "local_refinement_windows": refinement.windows,
             "dtype": str(self.dtype),
             "device": str(self.device),
-            "triton_mps_two_site_enabled": os.getenv("FQ_TRITON_MPS_TWO_SITE", "1")
+            "triton_mps_two_site_enabled": os.getenv("FQ_TRITON_MPS_TWO_SITE", "0")
             .strip()
             .lower()
             not in {"0", "false", "off", "no"},
             "triton_mps_two_site_regions": self.triton_two_site_regions,
             "eager_mps_two_site_regions": self.eager_two_site_regions,
             "fixed_rank_qr_regions": self.fixed_rank_qr_regions,
+            "spatial_two_site_bucket_count": self.spatial_two_site_bucket_count,
+            "spatial_two_site_bucketed_gate_count": (
+                self.spatial_two_site_bucketed_gate_count
+            ),
         }

@@ -51,6 +51,8 @@ class MPSState(MPSPlanningMixin):
         self.eager_two_site_regions = 0
         self.svd_gradient_method = "not_used"
         self.fixed_rank_qr_regions = 0
+        self.spatial_two_site_bucket_count = 0
+        self.spatial_two_site_bucketed_gate_count = 0
 
     @property
     def n_wires(self) -> int:
@@ -931,7 +933,7 @@ class MPSState(MPSPlanningMixin):
         )
         fused_threshold = 2**18 if requires_grad else 2**12
         triton_enabled = os.getenv(
-            "FQ_TRITON_MPS_TWO_SITE", "1"
+            "FQ_TRITON_MPS_TWO_SITE", "0"
         ).strip().lower() not in {
             "0",
             "false",
@@ -984,6 +986,8 @@ class MPSState(MPSPlanningMixin):
                 position = positions[0]
                 self.apply_two(matrices[position], int(left_wires[position]))
                 continue
+            self.spatial_two_site_bucket_count += 1
+            self.spatial_two_site_bucketed_gate_count += len(positions)
             wires = [int(left_wires[position]) for position in positions]
             left = torch.stack([self.tensors[wire] for wire in wires])
             right = torch.stack([self.tensors[wire + 1] for wire in wires])
@@ -1004,7 +1008,7 @@ class MPSState(MPSPlanningMixin):
             flat_gates = gates.reshape(bond_count * batch, 4, 4)
             volume = bond_count * batch * left_dim * middle_dim * right_dim
             use_triton = (
-                os.getenv("FQ_TRITON_MPS_TWO_SITE", "1").strip().lower()
+                os.getenv("FQ_TRITON_MPS_TWO_SITE", "0").strip().lower()
                 not in {"0", "false", "off", "no"}
                 and flat_left.is_cuda
                 and flat_left.dtype == torch.complex64

@@ -72,6 +72,42 @@ def test_mps_parameterized_adjacent_two_qubit_gate():
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
 
 
+def test_mps_spatial_two_site_bucket_is_default_and_matches_sequential(monkeypatch):
+    circuit = fq.Circuit(4).h(0).h(2).rxx(0, 1, theta=0.31).rzz(2, 3, theta=-0.27)
+
+    monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
+    bucketed = fq.run_mps(circuit)
+    monkeypatch.setenv("FQ_MPS_SPATIAL_BUCKET", "0")
+    sequential = fq.run_mps(circuit)
+
+    torch.testing.assert_close(
+        bucketed.to_statevector(), sequential.to_statevector(), atol=1e-6, rtol=1e-6
+    )
+    assert bucketed.summary()["spatial_two_site_bucket_count"] == 1
+    assert bucketed.summary()["spatial_two_site_bucketed_gate_count"] == 2
+    assert bucketed.summary()["triton_mps_two_site_enabled"] is False
+    assert sequential.summary()["spatial_two_site_bucket_count"] == 0
+
+
+def test_mps_spatial_two_site_bucket_preserves_parameter_gradients(monkeypatch):
+    theta = torch.tensor(0.31, requires_grad=True)
+    phi = torch.tensor(-0.27, requires_grad=True)
+    reference_theta = theta.detach().clone().requires_grad_(True)
+    reference_phi = phi.detach().clone().requires_grad_(True)
+    circuit = fq.Circuit(4).rxx(0, 1, theta).rzz(2, 3, phi)
+    reference = fq.Circuit(4).rxx(0, 1, reference_theta).rzz(2, 3, reference_phi)
+
+    monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
+    loss = fq.run_mps(circuit).expectation_z_sum().sum()
+    reference_loss = reference.expectation_z().sum()
+    loss.backward()
+    reference_loss.backward()
+
+    torch.testing.assert_close(loss, reference_loss, atol=2e-6, rtol=2e-6)
+    torch.testing.assert_close(theta.grad, reference_theta.grad, atol=2e-6, rtol=2e-6)
+    torch.testing.assert_close(phi.grad, reference_phi.grad, atol=2e-6, rtol=2e-6)
+
+
 def test_mps_complex128_two_site_gate_preserves_dtype_and_gradient():
     theta = torch.tensor(0.31, dtype=torch.float64, requires_grad=True)
     reference_theta = theta.detach().clone().requires_grad_(True)
