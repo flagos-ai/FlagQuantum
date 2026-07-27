@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_ci_has_coverage_security_and_sbom_gates():
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
-    assert "--cov-fail-under=50" in workflow
+    assert "--cov-fail-under=51" in workflow
     assert "pip list --format freeze --exclude flagquantum" in workflow
     assert (
         "pip-audit --strict --no-deps --requirement audit-requirements.txt" in workflow

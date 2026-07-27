@@ -31,6 +31,11 @@ jobs:
           mypy --strict --no-site-packages --follow-imports skip
           flagquantum/core/contracts.py flagquantum/runtime/records.py
           flagquantum/runtime/audit/contracts.py
+      - name: Strict typed trainable module
+        run: >-
+          mypy --strict --no-site-packages --ignore-missing-imports
+          --follow-imports skip
+          flagquantum/runtime/module.py flagquantum/runtime/training.py
       - name: Strict typed execution mainline
         run: >-
           mypy --strict --no-site-packages --ignore-missing-imports
@@ -175,7 +180,7 @@ jobs:
           --cov=flagquantum
           --cov-report=term-missing
           --cov-report=xml
-          --cov-fail-under=50
+          --cov-fail-under=51
       - uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.sha }}

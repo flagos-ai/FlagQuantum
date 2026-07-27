@@ -264,7 +264,7 @@ must carry a reason and are not evidence of success.
 ## Coverage gate
 
 CI measures the maintained package with the seeded smoke, unit, and integration
-tiers. The initial repository-wide floor is 50%, below the measured 51.84%
+tiers. The repository-wide floor is 51%, below the measured 52%
 baseline. The floor must only move upward; backend-specific accelerator and
 multi-node gaps remain visible in the XML report rather than being omitted from
 the denominator.

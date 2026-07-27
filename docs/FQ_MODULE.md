@@ -29,12 +29,9 @@ native sharded statevector runtime. PyTorch is always the stable default. A
 non-PyTorch backend request either fails explicitly or records the selected
 PyTorch compatibility fallback in the result.
 
-New code should construct `fq.Module` directly. Historical
-`QuantumTorchLayer` objects can be wrapped temporarily with
-`fq.Module.from_quantum_torch_layer(layer)`; this adapter is a migration
-aid rather than the recommended training surface.
-
-`fq.Module` remains a compatibility alias for existing applications.
+Construct `fq.Module` directly. Legacy layer adapters are intentionally not
+part of the stable API; integrations must provide a circuit builder and an
+explicit runtime policy.
 
 Module parameters, policy, and deployment binding participate in
 `state_dict()` save/load. The circuit builder remains application code and must

@@ -6,7 +6,7 @@ import hashlib
 import inspect
 import os
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Mapping, cast
 
 import torch
 
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 CircuitBuilder = Callable[..., Circuit | CircuitIR]
 
 
-class Module(torch.nn.Module):
+class Module(torch.nn.Module):  # type: ignore[misc]
     """A normal ``torch.nn.Module`` whose quantum execution is policy-driven.
 
     ``circuit`` receives the owned parameter tensor, and optionally the input
@@ -942,39 +942,15 @@ class Module(torch.nn.Module):
     ) -> dict[str, Any]:
         from .training_state import load_training_checkpoint
 
-        return load_training_checkpoint(
-            path,
-            module=self,
-            optimizer=optimizer,
-            precision=self.precision,
+        return cast(
+            dict[str, Any],
+            load_training_checkpoint(
+                path,
+                module=self,
+                optimizer=optimizer,
+                precision=self.precision,
+            ),
         )
-
-    @classmethod
-    def from_quantum_torch_layer(cls, layer: torch.nn.Module) -> "_LegacyLayerAdapter":
-        return _LegacyLayerAdapter(layer)
-
-
-class _LegacyLayerAdapter(Module):
-    def __init__(self, layer: torch.nn.Module) -> None:
-        torch.nn.Module.__init__(self)
-        self.layer = layer
-
-    def execute(self, inputs: torch.Tensor | None = None) -> ExecutionResult:
-        value = self.layer(inputs) if inputs is not None else self.layer()
-        return ExecutionResult(
-            value=value,
-            runtime={"executor": "quantum_torch_layer_compatibility_adapter"},
-            compatibility={
-                "fallback_used": False,
-                "source": "QuantumTorchLayer",
-                "migration": "construct fq.Module with a circuit builder and RuntimePolicy",
-            },
-        )
-
-    def forward(self, inputs: torch.Tensor | None = None) -> torch.Tensor:
-        result = self.execute(inputs)
-        assert result.value is not None
-        return result.value
 
 
 __all__ = [

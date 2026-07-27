@@ -374,20 +374,8 @@ def test_module_state_dict_round_trip_includes_policy_and_deployment() -> None:
     torch.testing.assert_close(target(), source())
 
 
-def test_quantum_torch_layer_compatibility_adapter() -> None:
-    class Legacy(torch.nn.Module):
-        def __init__(self) -> None:
-            super().__init__()
-            self.weight = torch.nn.Parameter(torch.tensor(2.0))
-
-        def forward(self, value: torch.Tensor | None = None) -> torch.Tensor:
-            return self.weight if value is None else self.weight * value
-
-    adapter = fq.Module.from_quantum_torch_layer(Legacy())
-    result = adapter.execute(torch.tensor(3.0))
-    torch.testing.assert_close(result.value, torch.tensor(6.0))
-    assert result.compatibility["source"] == "QuantumTorchLayer"
-    assert tuple(adapter.parameters())
+def test_module_has_no_legacy_layer_adapter() -> None:
+    assert not hasattr(fq.Module, "from_quantum_torch_layer")
 
 
 def test_module_to_updates_precision_and_invalidates_jax_cache() -> None:

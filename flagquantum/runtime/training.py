@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, TypeAlias
 
 import torch
 
 from .module import ExecutionResult, Module
 
-TrainingObjective = Callable[[torch.Tensor], torch.Tensor]
-TrainingInputs = torch.Tensor | Callable[[int], torch.Tensor | None] | None
-TrainingCallback = Callable[[int, float, ExecutionResult], None]
+TrainingObjective: TypeAlias = Callable[[torch.Tensor], torch.Tensor]
+TrainingInputs: TypeAlias = torch.Tensor | Callable[[int], torch.Tensor | None] | None
+TrainingCallback: TypeAlias = Callable[[int, float, ExecutionResult], None]
 
 
 @dataclass(frozen=True)
