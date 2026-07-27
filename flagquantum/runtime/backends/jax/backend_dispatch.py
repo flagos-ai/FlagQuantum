@@ -20,6 +20,8 @@ from .common import node_count as _node_count
 from .common import product_int as _product
 from .common import rank_for_wire as _rank_for_wire
 from .common import split_contiguous as _split_contiguous
+from .mps_planning import _mps_plan
+from .planning_core import JAXDistributedQuantumPlan, _as_ir
 from .release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
 )
@@ -29,6 +31,14 @@ from .release_policy import (
 from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
+from .runtime_environment import (
+    _require_jax,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
+)
+from .statevector_gradient_records import _statevector_plan
+from .tensor_network_planning import _tensor_network_plan
 
 
 def _jax_available_local_devices() -> tuple[Any, ...]:

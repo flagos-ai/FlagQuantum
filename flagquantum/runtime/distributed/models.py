@@ -830,7 +830,7 @@ def _broadcast_mps_site_tensor(
     if context.rank == src:
         if tensor is None:
             raise RuntimeError(f"Rank {src} does not hold its owned MPS wire {wire}.")
-        tensor = tensor.detach().to(device=transport_device)
+        tensor = tensor.detach().to(device=transport_device).contiguous()
         if tensor.dtype == torch.complex64:
             dtype_code = 0
         elif tensor.dtype == torch.complex128:

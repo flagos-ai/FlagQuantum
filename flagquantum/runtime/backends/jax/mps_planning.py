@@ -20,6 +20,7 @@ from .common import node_count as _node_count
 from .common import product_int as _product
 from .common import rank_for_wire as _rank_for_wire
 from .common import split_contiguous as _split_contiguous
+from .planning_core import JAXDistributedQuantumPlan
 from .release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
 )

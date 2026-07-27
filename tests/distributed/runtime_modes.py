@@ -28,13 +28,16 @@ def _rank() -> int:
     return int(os.environ.get("RANK", "0"))
 
 
+def _circuit() -> fq.Circuit:
+    return fq.Circuit(4).h(0).cx(1, 2).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
+
+
 def main() -> None:
     world_size = _world_size()
     rank = _rank()
-    circuit = fq.Circuit(4)
-    circuit.h(0).cx(1, 2).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
 
-    dtn = circuit.run(
+    dtn = fq.run_native(
+        _circuit(),
         mode="distributed_tensor_network",
         world_size=world_size,
         distributed_executor="torch",
@@ -42,15 +45,15 @@ def main() -> None:
         device="cpu",
         max_intermediate_size=8,
     )
-    local_tn = circuit.run(mode="tensor_network")
-    if not torch.allclose(dtn.state(), local_tn.state(), atol=1e-6):
+    local_tn = fq.run_native(_circuit(), mode="tensor_network")
+    if not torch.allclose(dtn.to_statevector(), local_tn.to_statevector(), atol=1e-6):
         raise AssertionError(
             "distributed tensor-network result does not match local tensor-network result"
         )
+    torch.distributed.barrier()
 
-    fq.destroy_torch_distributed()
-
-    dmps = circuit.run(
+    dmps = fq.run_native(
+        _circuit(),
         mode="distributed_mps",
         world_size=world_size,
         distributed_executor="torch",
@@ -59,9 +62,24 @@ def main() -> None:
         max_bond=8,
         boundary_transport="auto",
     )
-    local_mps = circuit.run(mode="mps", max_bond=8)
-    if not torch.allclose(dmps.to_statevector(), local_mps.to_statevector(), atol=1e-6):
-        raise AssertionError("distributed MPS result does not match local MPS result")
+    local_mps = fq.run_native(_circuit(), mode="mps", max_bond=8)
+    distributed_mps_state = dmps.sharded_state.to_statevector()
+    local_mps_state = local_mps.to_statevector()
+    if not torch.allclose(distributed_mps_state, local_mps_state, atol=1e-6):
+        maximum_error = float(
+            torch.max(torch.abs(distributed_mps_state - local_mps_state))
+        )
+        dense_state = _circuit().state()
+        overlap = torch.sum(distributed_mps_state.conj() * dense_state)
+        raise AssertionError(
+            "distributed MPS result does not match local MPS result; "
+            f"rank={rank}, maximum_error={maximum_error}, "
+            f"distributed_norm={float(torch.linalg.vector_norm(distributed_mps_state))}, "
+            f"local_norm={float(torch.linalg.vector_norm(local_mps_state))}, "
+            f"fidelity={float(torch.abs(overlap).square())}, "
+            f"distributed_dense_error={float(torch.max(torch.abs(distributed_mps_state - dense_state)))}, "
+            f"local_dense_error={float(torch.max(torch.abs(local_mps_state - dense_state)))}"
+        )
     if not dmps.local_shard_tensors:
         raise AssertionError("distributed MPS rank has no assigned local shard tensors")
 
