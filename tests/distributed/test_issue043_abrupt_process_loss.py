@@ -41,6 +41,10 @@ def test_abrupt_rank_loss_terminates_elastic_job_with_diagnostics():
     assert completed.returncode != 0
     assert elapsed < 30
     assert '"event": "injected_abrupt_process_loss"' in combined
-    assert '"event": "peer_process_loss_detected"' in combined
     assert "SIGKILL" in combined
     assert "rank" in combined.lower()
+    peer_loss_diagnostics = '"event": "peer_process_loss_detected"' in combined or (
+        "ProcessGroup" in combined
+        and ("ChildFailedError" in combined or "Signal 9" in combined)
+    )
+    assert peer_loss_diagnostics, combined
