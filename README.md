@@ -1,11 +1,8 @@
 <div align="center">
-  <img src="assets/logo.png" alt="FlagQuantum" width="380">
+  <img src="assets/logo_flagquantum.png" alt="FlagQuantum" width="620">
 
-# FlagQuantum
-
-**Build, train, and scale quantum AI everywhere.**
-
-*Designed for the FlagOS unified multi-chip backend.*
+<h2>Build, train, and scale quantum AI everywhere.</h2>
+<p><em>Designed for the FlagOS unified multi-chip backend.</em></p>
 
 [Quick Start](#quick-start) ·
 [Capabilities](docs/generated/CAPABILITIES.md) ·
