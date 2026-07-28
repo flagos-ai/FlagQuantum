@@ -16,6 +16,7 @@ from .factorization import (
     factorization_workspace_pool,
     plan_rxx_factorization_microbatch,
 )
+from .operations import apply_two_mps_tensors_with_info
 from .site_kernels import (
     apply_rxx_contraction_bucket,
     apply_ry_bucket,
@@ -142,6 +143,35 @@ def prepare_compiled_mps_layer(
         for bucket in buckets.values():
             _, sample, sample_wires = bucket[0]
             sample_left = min(sample_wires)
+            if (
+                state.config.max_bond is not None
+                and int(state.config.max_bond) >= 128
+            ):
+                for index, candidate, wires in bucket:
+                    left = min(wires)
+                    matrix = _instruction_matrix_for_mps(
+                        candidate, bsz=bsz, device=device, dtype=dtype
+                    )
+                    updated_left, updated_right, info = apply_two_mps_tensors_with_info(
+                        state.local_tensors[left],
+                        state.local_tensors[left + 1],
+                        matrix,
+                        state.config,
+                        reverse=int(wires[0]) > int(wires[1]),
+                    )
+                    precomputed[index] = (updated_left, updated_right, info)
+                    state.local_tensors[left] = updated_left
+                    state.local_tensors[left + 1] = updated_right
+                factorization_records.append(
+                    {
+                        "policy_id": factorization_workspace_policy.policy_id,
+                        "layer_start": layer_start,
+                        "compiled_bucket_enabled": False,
+                        "reason": "high_bond_correctness_quarantine",
+                        "bucket_item_count": len(bucket),
+                    }
+                )
+                continue
             sample_matrix = _instruction_matrix_for_mps(
                 sample, bsz=bsz, device=device, dtype=dtype
             )
@@ -171,59 +201,38 @@ def prepare_compiled_mps_layer(
                         "bucket_item_start": start,
                     }
                 )
-                left_values = [
-                    state.local_tensors[min(wires)] for _, _, wires in chunk
-                ]
-                right_values = [
-                    state.local_tensors[min(wires) + 1] for _, _, wires in chunk
-                ]
-                pool = factorization_workspace_pool()
-                left_entry = pool.acquire(
-                    role="rxx_left",
-                    shape=(len(left_values), *left_values[0].shape),
-                    dtype=left_values[0].dtype,
-                    device=left_values[0].device,
+                lefts = torch.stack(
+                    [state.local_tensors[min(wires)] for _, _, wires in chunk]
                 )
-                right_entry = pool.acquire(
-                    role="rxx_right",
-                    shape=(len(right_values), *right_values[0].shape),
-                    dtype=right_values[0].dtype,
-                    device=right_values[0].device,
+                rights = torch.stack(
+                    [state.local_tensors[min(wires) + 1] for _, _, wires in chunk]
                 )
-                lefts = left_entry.tensor
-                rights = right_entry.tensor
-                try:
-                    for position, value in enumerate(left_values):
-                        lefts[position].copy_(value)
-                    for position, value in enumerate(right_values):
-                        rights[position].copy_(value)
-                    packed_matrices = []
-                    for _, candidate, _ in chunk:
-                        matrix = _instruction_matrix_for_mps(
-                            candidate, bsz=bsz, device=device, dtype=dtype
-                        )
-                        packed_matrices.append(
-                            matrix.expand(bsz, -1, -1)
-                            if matrix.ndim == 2
-                            else matrix
-                        )
-                    pairs = apply_rxx_contraction_bucket(
-                        lefts,
-                        rights,
-                        torch.stack(packed_matrices),
-                        compiled=True,
+                packed_matrices = []
+                for _, candidate, _ in chunk:
+                    matrix = _instruction_matrix_for_mps(
+                        candidate, bsz=bsz, device=device, dtype=dtype
                     )
-                    split_outputs = _split_pair_matrix_bucket(
-                        pairs,
-                        left_dim=lefts.shape[2],
-                        right_dim=rights.shape[-1],
-                        config=state.config,
-                        svd_driver=factorization_workspace_policy.svd_driver,
+                    packed_matrices.append(
+                        matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
                     )
-                finally:
-                    pool.release(left_entry)
-                    pool.release(right_entry)
-                factorization_records[-1]["staging_workspace_pool"] = pool.stats()
+                pairs = apply_rxx_contraction_bucket(
+                    lefts,
+                    rights,
+                    torch.stack(packed_matrices),
+                    compiled=True,
+                )
+                split_outputs = _split_pair_matrix_bucket(
+                    pairs,
+                    left_dim=lefts.shape[2],
+                    right_dim=rights.shape[-1],
+                    config=state.config,
+                    svd_driver=factorization_workspace_policy.svd_driver,
+                )
+                factorization_records[-1]["staging_workspace_pool"] = {
+                    "enabled": False,
+                    "reason": "high_bond_correctness_quarantine",
+                    **factorization_workspace_pool().stats(),
+                }
                 for position, (index, _, wires) in enumerate(chunk):
                     left = min(wires)
                     updated_left, updated_right, info = split_outputs[position]

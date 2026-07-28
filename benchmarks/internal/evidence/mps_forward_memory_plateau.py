@@ -47,7 +47,9 @@ SCHEMA = "flagquantum.issue107.mps_forward_memory_plateau.v1"
 def _parse_depths(value: str) -> tuple[int, ...]:
     depths = tuple(int(item.strip()) for item in value.split(",") if item.strip())
     if not depths or any(depth <= 0 for depth in depths):
-        raise argparse.ArgumentTypeError("depths must be positive comma-separated integers")
+        raise argparse.ArgumentTypeError(
+            "depths must be positive comma-separated integers"
+        )
     return depths
 
 
@@ -56,10 +58,13 @@ def _slope(values: Sequence[int]) -> float:
         return 0.0
     center = (len(values) - 1) / 2.0
     denominator = sum((index - center) ** 2 for index in range(len(values)))
-    return sum(
-        (index - center) * (float(value) - sum(values) / len(values))
-        for index, value in enumerate(values)
-    ) / denominator
+    return (
+        sum(
+            (index - center) * (float(value) - sum(values) / len(values))
+            for index, value in enumerate(values)
+        )
+        / denominator
+    )
 
 
 def audit_plateau(
@@ -146,9 +151,16 @@ def main() -> None:
     parser.add_argument("--memory-budget-gib", type=float, default=38.0)
     parser.add_argument("--heartbeat-every-layers", type=int, default=1)
     parser.add_argument("--compile-observables", action="store_true")
+    parser.add_argument(
+        "--compile-site-kernels",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     parser.add_argument("--factorization-minimum-headroom-gib", type=float, default=2.0)
     parser.add_argument("--factorization-maximum-chunk-size", type=int, default=8)
-    parser.add_argument("--factorization-high-bond-maximum-chunk-size", type=int, default=1)
+    parser.add_argument(
+        "--factorization-high-bond-maximum-chunk-size", type=int, default=1
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if (
@@ -216,7 +228,7 @@ def main() -> None:
                 global_error_budget=args.discarded_weight_tolerance,
                 error_budget_policy="enforce",
                 truncation_gradient_policy="approximate",
-                compile_site_kernels=True,
+                compile_site_kernels=args.compile_site_kernels,
                 layer_lifecycle_callback=heartbeat,
                 factorization_workspace_policy=FactorizationWorkspacePolicy(
                     memory_budget_bytes=int(args.memory_budget_gib * (1 << 30)),
@@ -237,9 +249,7 @@ def main() -> None:
             )
         torch.cuda.synchronize(device)
         summary = result.summary()
-        factorization_records = list(
-            summary["factorization_workspace"]["records"]
-        )
+        factorization_records = list(summary["factorization_workspace"]["records"])
         target_peak = int(torch.cuda.max_memory_allocated(device))
         rank_runs = []
         for depth in args.depths:
@@ -299,6 +309,11 @@ def main() -> None:
             flush=True,
         )
 
+        planned_factorizations = [
+            record
+            for record in factorization_records
+            if "selected_chunk_size" in record
+        ]
         rank_record = {
             "rank": rank,
             "device": str(device),
@@ -312,30 +327,29 @@ def main() -> None:
                 "selected_chunk_histogram": {
                     str(size): sum(
                         int(record["selected_chunk_size"]) == size
-                        for record in factorization_records
+                        for record in planned_factorizations
                     )
                     for size in sorted(
                         {
                             int(record["selected_chunk_size"])
-                            for record in factorization_records
+                            for record in planned_factorizations
                         }
                     )
                 },
                 "downshift_count": sum(
-                    bool(record["downshifted"])
-                    for record in factorization_records
+                    bool(record["downshifted"]) for record in planned_factorizations
                 ),
                 "minimum_observed_free_bytes": min(
                     (
                         int(record["memory_snapshot"]["free_bytes"])
-                        for record in factorization_records
+                        for record in planned_factorizations
                     ),
                     default=int(torch.cuda.mem_get_info(device)[0]),
                 ),
                 "maximum_selected_working_set_bytes": max(
                     (
                         int(record["selected_working_set_bytes"])
-                        for record in factorization_records
+                        for record in planned_factorizations
                     ),
                     default=0,
                 ),
@@ -398,7 +412,9 @@ def main() -> None:
                 encoding="utf-8",
             )
             if not audit["passed"]:
-                raise RuntimeError(f"ISSUE-107 plateau audit failed: {audit['blockers']}")
+                raise RuntimeError(
+                    f"ISSUE-107 plateau audit failed: {audit['blockers']}"
+                )
     finally:
         dist.destroy_process_group()
 

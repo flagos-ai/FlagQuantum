@@ -18,6 +18,7 @@ _SVD_FALLBACK_STATS = {
     "isolated_gesvd_matrices": 0,
     "cpu_lapack_fallbacks": 0,
     "cpu_lapack_matrices": 0,
+    "nonfinite_svd_outputs": 0,
 }
 from .mps_models import (  # noqa: E402
     MPSConfig,
@@ -52,18 +53,29 @@ def _cuda_svd(
     """Run the requested CUDA SVD driver with a correctness-preserving fallback."""
     is_cuda = _is_cuda_tensor(matrix)
     requested = driver if is_cuda else None
+
+    def checked(
+        result: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if all(bool(torch.isfinite(value).all()) for value in result):
+            return result
+        _SVD_FALLBACK_STATS["nonfinite_svd_outputs"] += 1
+        raise torch._C._LinAlgError("MPS SVD returned non-finite factors")
+
     try:
-        return torch.linalg.svd(matrix, full_matrices=False, driver=requested)
+        return checked(torch.linalg.svd(matrix, full_matrices=False, driver=requested))
     except (RuntimeError, torch._C._LinAlgError) as requested_error:
         _SVD_FALLBACK_STATS["requested_driver_failures"] += 1
         if not is_cuda:
             raise
         if requested not in (None, "gesvd"):
             try:
-                result = torch.linalg.svd(
-                    matrix,
-                    full_matrices=False,
-                    driver="gesvd",
+                result = checked(
+                    torch.linalg.svd(
+                        matrix,
+                        full_matrices=False,
+                        driver="gesvd",
+                    )
                 )
                 _SVD_FALLBACK_STATS["gesvd_driver_fallbacks"] += 1
                 return result
@@ -77,10 +89,12 @@ def _cuda_svd(
         try:
             for item in flattened:
                 outputs.append(
-                    torch.linalg.svd(
-                        item,
-                        full_matrices=False,
-                        driver="gesvd",
+                    checked(
+                        torch.linalg.svd(
+                            item,
+                            full_matrices=False,
+                            driver="gesvd",
+                        )
                     )
                 )
         except (RuntimeError, torch._C._LinAlgError):
@@ -88,9 +102,11 @@ def _cuda_svd(
             used_cpu = True
             try:
                 for item in flattened:
-                    cpu_result = torch.linalg.svd(
-                        item.detach().to("cpu"),
-                        full_matrices=False,
+                    cpu_result = checked(
+                        torch.linalg.svd(
+                            item.detach().to("cpu"),
+                            full_matrices=False,
+                        )
                     )
                     outputs.append(
                         tuple(value.to(matrix.device) for value in cpu_result)

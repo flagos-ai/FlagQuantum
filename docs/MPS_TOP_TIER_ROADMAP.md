@@ -307,6 +307,13 @@ passing one capability does not promote the others.
       and orthogonality errors below 2e-6 on A800.
 - [x] Pool application-controlled RXX factorization staging workspaces with
       bounded shape/device/dtype/role leases and CUDA event-safe reuse.
+- [x] Fail closed on non-finite compiled-kernel and SVD outputs, with strict
+      isolated-CUDA/CPU-LAPACK recovery for solver failures.
+- [x] Quarantine the batched two-site path when `max_bond >= 128`; an 8×A800,
+      64-wire, depth-4 run now passes with zero allocator retry/OOM. This is a
+      correctness recovery, not a performance promotion: large-bond batching
+      and staging-pool reuse remain disabled until their lifecycle defect is
+      independently reproduced and fixed.
 - [ ] Investigate solver-native workspace control below `torch.linalg`; current
       PyTorch APIs do not expose an external cuSOLVER workspace pointer.
 - [ ] Fuse common contraction/decomposition regions.

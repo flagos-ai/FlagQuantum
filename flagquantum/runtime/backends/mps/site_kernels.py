@@ -27,6 +27,8 @@ class SiteKernelStats:
     eager_fallbacks: int = 0
     prewarm_compiles: int = 0
     warm_execution_seconds: float = 0.0
+    nonfinite_compiled_outputs: int = 0
+    nonfinite_eager_recoveries: int = 0
 
 
 @dataclass(frozen=True)
@@ -320,6 +322,27 @@ def _ry_bucket_real(tensors: torch.Tensor, matrices: torch.Tensor) -> torch.Tens
     return torch.stack((real, imag), dim=-1)
 
 
+def _recover_nonfinite_compiled_output(
+    output: torch.Tensor,
+    *,
+    eager: Callable[..., torch.Tensor],
+    inputs: tuple[torch.Tensor, ...],
+    kind: str,
+) -> torch.Tensor:
+    if bool(torch.isfinite(output).all()):
+        return output
+    _STATS.nonfinite_compiled_outputs += 1
+    recovered = eager(*inputs)
+    if not bool(torch.isfinite(recovered).all()):
+        finite_inputs = tuple(bool(torch.isfinite(item).all()) for item in inputs)
+        raise RuntimeError(
+            f"MPS {kind} produced non-finite values in both compiled and eager "
+            f"kernels; finite_inputs={finite_inputs}"
+        )
+    _STATS.nonfinite_eager_recoveries += 1
+    return recovered
+
+
 def apply_ry_bucket(
     tensors: torch.Tensor, matrices: torch.Tensor, *, compiled: bool
 ) -> torch.Tensor:
@@ -332,12 +355,24 @@ def apply_ry_bucket(
         matrices = matrices.unsqueeze(1).expand(-1, tensors.shape[1], -1, -1)
     real_tensors = torch.view_as_real(tensors)
     real_matrices = torch.view_as_real(matrices)
+    real_inputs = (real_tensors, real_matrices)
     output = _run(
         _ry_bucket_real,
-        (real_tensors, real_matrices),
+        real_inputs,
         kind="ry",
         compiled=compiled,
     )
+    if compiled:
+        input_norm = torch.linalg.vector_norm(real_tensors, dim=(-4, -3, -2, -1))
+        output_norm = torch.linalg.vector_norm(output, dim=(-4, -3, -2, -1))
+        if not bool(torch.allclose(input_norm, output_norm, rtol=2e-5, atol=2e-6)):
+            output = torch.full_like(output, float("nan"))
+        output = _recover_nonfinite_compiled_output(
+            output,
+            eager=_ry_bucket_real,
+            inputs=real_inputs,
+            kind="single-site contraction",
+        )
     return torch.view_as_complex(output.contiguous())
 
 
@@ -380,16 +415,30 @@ def apply_rxx_contraction_bucket(
     _STATS.rxx_bucket_calls += 1
     if matrices.ndim == 3:
         matrices = matrices.unsqueeze(1).expand(-1, left.shape[1], -1, -1)
+    real_inputs = (
+        torch.view_as_real(left),
+        torch.view_as_real(right),
+        torch.view_as_real(matrices),
+    )
     output = _run(
         _rxx_contraction_real,
-        (
-            torch.view_as_real(left),
-            torch.view_as_real(right),
-            torch.view_as_real(matrices),
-        ),
+        real_inputs,
         kind="rxx_contraction",
         compiled=compiled,
     )
+    if compiled:
+        left_norm = torch.linalg.vector_norm(real_inputs[0], dim=(-4, -3, -2, -1))
+        right_norm = torch.linalg.vector_norm(real_inputs[1], dim=(-4, -3, -2, -1))
+        output_norm = torch.linalg.vector_norm(output, dim=(-3, -2, -1))
+        norm_bound = left_norm * right_norm
+        if not bool(torch.all(output_norm <= norm_bound * 1.00002 + 2e-6)):
+            output = torch.full_like(output, float("nan"))
+        output = _recover_nonfinite_compiled_output(
+            output,
+            eager=_rxx_contraction_real,
+            inputs=real_inputs,
+            kind="two-site contraction",
+        )
     return torch.view_as_complex(output.contiguous())
 
 

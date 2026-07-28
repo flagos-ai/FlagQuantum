@@ -41,6 +41,7 @@ def test_batched_gesvd_failure_retries_isolated_matrices(monkeypatch):
         "isolated_gesvd_matrices": 2,
         "cpu_lapack_fallbacks": 0,
         "cpu_lapack_matrices": 0,
+        "nonfinite_svd_outputs": 0,
     }
 
 
@@ -72,4 +73,5 @@ def test_isolated_cuda_failure_uses_strict_cpu_lapack(monkeypatch):
         "isolated_gesvd_matrices": 0,
         "cpu_lapack_fallbacks": 1,
         "cpu_lapack_matrices": 2,
+        "nonfinite_svd_outputs": 0,
     }

@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+from flagquantum.runtime.backends.mps import site_kernels
 from flagquantum.runtime.backends.mps.site_kernels import (
     apply_rxx_contraction_bucket,
     apply_ry_bucket,
@@ -78,6 +79,55 @@ def test_rank_local_rxx_bucket_matches_individual_contractions():
         theta = torch.einsum("bij,bljr->blir", matrix[bond], theta)
         expected.append(theta.reshape(2, 4, 4))
     torch.testing.assert_close(actual, torch.stack(expected), atol=2e-5, rtol=2e-5)
+
+
+def test_compiled_rxx_nonfinite_output_recovers_with_eager_kernel(monkeypatch):
+    left = torch.ones(1, 1, 1, 2, 1, dtype=torch.complex64)
+    right = torch.ones(1, 1, 1, 2, 1, dtype=torch.complex64)
+    matrix = torch.eye(4, dtype=torch.complex64).reshape(1, 1, 4, 4)
+
+    def nonfinite_compiled(*args, **kwargs):
+        eager = site_kernels._rxx_contraction_real(*args[1])
+        return torch.full_like(eager, float("nan"))
+
+    monkeypatch.setattr(site_kernels, "_run", nonfinite_compiled)
+    reset_site_kernel_stats()
+    actual = apply_rxx_contraction_bucket(left, right, matrix, compiled=True)
+    assert torch.isfinite(actual).all()
+    stats = site_kernel_stats()
+    assert stats["nonfinite_compiled_outputs"] == 1
+    assert stats["nonfinite_eager_recoveries"] == 1
+
+
+def test_compiled_rxx_norm_bound_violation_recovers_with_eager_kernel(monkeypatch):
+    left = torch.ones(1, 1, 1, 2, 1, dtype=torch.complex64)
+    right = torch.ones(1, 1, 1, 2, 1, dtype=torch.complex64)
+    matrix = torch.eye(4, dtype=torch.complex64).reshape(1, 1, 4, 4)
+
+    def corrupted_compiled(*args, **kwargs):
+        return 1.0e10 * site_kernels._rxx_contraction_real(*args[1])
+
+    monkeypatch.setattr(site_kernels, "_run", corrupted_compiled)
+    reset_site_kernel_stats()
+    actual = apply_rxx_contraction_bucket(left, right, matrix, compiled=True)
+    assert torch.isfinite(actual).all()
+    assert site_kernel_stats()["nonfinite_eager_recoveries"] == 1
+
+
+def test_compiled_ry_norm_violation_recovers_with_eager_kernel(monkeypatch):
+    tensor = torch.ones(1, 1, 1, 2, 1, dtype=torch.complex64)
+    matrix = torch.eye(2, dtype=torch.complex64).reshape(1, 1, 2, 2)
+
+    def corrupted_compiled(*args, **kwargs):
+        return 1.0e10 * site_kernels._ry_bucket_real(*args[1])
+
+    monkeypatch.setattr(site_kernels, "_run", corrupted_compiled)
+    reset_site_kernel_stats()
+    actual = apply_ry_bucket(tensor, matrix, compiled=True)
+    torch.testing.assert_close(actual, tensor)
+    stats = site_kernel_stats()
+    assert stats["nonfinite_compiled_outputs"] == 1
+    assert stats["nonfinite_eager_recoveries"] == 1
 
 
 def test_kernel_stats_distinguish_eager_from_compiled_claims():
