@@ -53,7 +53,7 @@ def test_dynamic_dialects_do_not_import_provider_or_execution_layers() -> None:
         ), path
 
 
-def test_dialect_implementations_live_outside_internal_monolith() -> None:
+def test_dynamic_implementations_live_in_layer_modules() -> None:
     runtime_root = Path(__file__).parents[2] / "flagquantum" / "runtime" / "dynamic"
 
     def functions(path: Path) -> set[str]:
@@ -63,49 +63,35 @@ def test_dialect_implementations_live_outside_internal_monolith() -> None:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         }
 
-    implementation = functions(runtime_root / "_implementation.py")
     standard = functions(runtime_root / "dialects" / "openqasm3.py")
     iqm = functions(runtime_root / "dialects" / "braket_iqm.py")
+    execution_functions = functions(runtime_root / "execution.py")
+    routing_functions = functions(runtime_root / "routing.py")
+    deployment_functions = functions(runtime_root / "deployment.py")
 
     assert "export_dynamic_qasm3" in standard
     assert "export_dynamic_qasm3_for_backend" in standard
     assert "export_braket_iqm_dynamic_qasm3" in iqm
-    assert not {
-        "export_dynamic_qasm3",
-        "export_dynamic_qasm3_for_backend",
-        "export_braket_iqm_dynamic_qasm3",
-    } & implementation
+    assert "run_dynamic" in execution_functions
+    assert "route_dynamic_circuit" in routing_functions
+    assert "create_dynamic_deployment_package" in deployment_functions
+    assert not (runtime_root / "_implementation.py").exists()
 
 
-def test_core_dynamic_types_and_conditions_do_not_depend_on_monolith() -> None:
+def test_dynamic_layers_do_not_reference_removed_monolith() -> None:
     runtime_root = Path(__file__).parents[2] / "flagquantum" / "runtime" / "dynamic"
     for relative in (
         "circuit.py",
         "result.py",
         "_conditions.py",
         "execution.py",
+        "routing.py",
+        "deployment.py",
         "dialects/openqasm3.py",
         "dialects/braket_iqm.py",
     ):
         source = (runtime_root / relative).read_text()
         assert "_implementation" not in source, relative
-
-    implementation = ast.parse((runtime_root / "_implementation.py").read_text())
-    class_names = {
-        node.name for node in ast.walk(implementation) if isinstance(node, ast.ClassDef)
-    }
-    function_names = {
-        node.name
-        for node in ast.walk(implementation)
-        if isinstance(node, ast.FunctionDef)
-    }
-    assert "DynamicCircuit" not in class_names
-    assert "DynamicExecutionResult" not in class_names
-    assert "_instruction_conditions" not in function_names
-    assert "_classical_width" not in function_names
-    assert "run_dynamic" not in function_names
-    assert "_measure_wire" not in function_names
-    assert "_apply_instruction" not in function_names
 
 
 def test_dynamic_execution_layer_has_no_transport_or_dialect_dependencies() -> None:
