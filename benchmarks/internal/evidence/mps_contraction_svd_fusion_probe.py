@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -121,6 +122,17 @@ def main() -> None:
             "device_name": torch.cuda.get_device_name(device),
             "torch": str(torch.__version__),
             "cuda": torch.version.cuda,
+        },
+        "provenance": {
+            "source_commit": subprocess.check_output(
+                ("git", "rev-parse", "HEAD"), cwd=ROOT, text=True
+            ).strip(),
+            "dirty_paths": tuple(
+                line[3:]
+                for line in subprocess.check_output(
+                    ("git", "status", "--short"), cwd=ROOT, text=True
+                ).splitlines()
+            ),
         },
         "records": records,
         "promotion": {
