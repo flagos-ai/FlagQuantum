@@ -317,8 +317,12 @@ passing one capability does not promote the others.
       and retain strict per-matrix SVD. The same 8×A800 workload passes with
       zero solver fallback, allocator retry, or OOM; staging-pool reuse remains
       quarantined and this single run is not a performance promotion.
-- [ ] Investigate solver-native workspace control below `torch.linalg`; current
-      PyTorch APIs do not expose an external cuSOLVER workspace pointer.
+- [x] Investigate solver-native workspace control below `torch.linalg`: the
+      CUDA 13 runtime exposes classic complex `gesvd` and 64-bit `Xgesvd`
+      device/host workspace APIs, while PyTorch 2.13 exposes no public
+      caller-owned workspace contract. Production integration therefore
+      requires a compiled, stream-aware C++/CUDA extension; direct `ctypes`
+      execution and private ATen ABI coupling are explicitly rejected.
 - [ ] Fuse common contraction/decomposition regions.
 - [ ] Add steady-state CUDA Graph evaluation.
 
