@@ -77,9 +77,22 @@ def distributed_run(args, device):
     gathered_time = [None] * dist.get_world_size()
     gathered_memory = [None] * dist.get_world_size()
     gathered_components = [None] * dist.get_world_size()
+    gathered_training = [None] * dist.get_world_size()
+    gathered_placement = [None] * dist.get_world_size()
     dist.all_gather_object(gathered_time, local)
     dist.all_gather_object(gathered_memory, local_memory)
     dist.all_gather_object(gathered_components, local_components)
+    dist.all_gather_object(gathered_training, result.summary())
+    dist.all_gather_object(
+        gathered_placement,
+        {
+            "rank": dist.get_rank(),
+            "local_rank": int(os.environ.get("LOCAL_RANK", "0")),
+            "node_rank": int(os.environ.get("GROUP_RANK", "0")),
+            "hostname": socket.gethostname(),
+            "device": str(device),
+        },
+    )
     samples = [
         max(rank_values[i] for rank_values in gathered_time) for i in range(len(local))
     ]
@@ -100,6 +113,9 @@ def distributed_run(args, device):
         list(result.losses[args.warmup :]),
         result.summary(),
         components[args.warmup :],
+        gathered_memory,
+        gathered_training,
+        gathered_placement,
     )
 
 
@@ -140,7 +156,16 @@ def main():
             init_method=f"file://{store.name}",
         )
     try:
-        samples, memories, losses, training, components = distributed_run(args, device)
+        (
+            samples,
+            memories,
+            losses,
+            training,
+            components,
+            rank_memory_samples,
+            rank_training,
+            rank_placement,
+        ) = distributed_run(args, device)
         if world_size > 1 and dist.get_rank() != 0:
             return
         mean = statistics.mean(samples)
@@ -157,6 +182,18 @@ def main():
             "scaling_mode": args.scaling_mode,
             "seed": args.seed,
         }
+        local_memory_bytes_by_rank = [
+            max(int(value) for value in values) for values in rank_memory_samples
+        ]
+        communication_bytes_by_rank = [
+            sum(
+                int(step["boundary_bytes"])
+                + int(step["gradient_collective_bytes"])
+                + int(step["optimizer_collective_bytes"])
+                for step in summary["step_metrics"][args.warmup :]
+            )
+            for summary in rank_training
+        ]
         payload = {
             "schema": "flagquantum.issue052.mps_training_measurement.v1",
             "evidence_source": "measured_runtime",
@@ -168,6 +205,18 @@ def main():
             "cuda": torch.version.cuda,
             "device": torch.cuda.get_device_name(0),
             "world_size": world_size,
+            "local_world_size": int(os.environ.get("LOCAL_WORLD_SIZE", world_size)),
+            "node_count": len({item["hostname"] for item in rank_placement}),
+            "rank_placement": rank_placement,
+            "local_memory_bytes_by_rank": local_memory_bytes_by_rank,
+            "communication_bytes": max(communication_bytes_by_rank, default=0),
+            "communication_bytes_by_rank": communication_bytes_by_rank,
+            "communication_protocol": (
+                "none"
+                if world_size == 1
+                else "batched_isend_irecv_and_owner_gradient_collectives"
+            ),
+            "claim_evidence_type": "accelerator_development_performance",
             "distribution_semantics": (
                 "single_device_fast_path" if world_size == 1 else "sharded_across_ranks"
             ),

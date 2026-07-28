@@ -191,6 +191,18 @@ Release-grade scalability requires one logical workload sharded across ranks,
 capacity-failure evidence, sharded gradient/optimizer ownership, communication
 and memory evidence, topology metadata, and an empty blocker set.
 
+Before running the single-node MPS NCCL certification matrix, execute:
+
+```bash
+python tools/check_mps_single_node_certification_environment.py \
+  --json-output benchmarks/results/smoke/mps-single-node-preflight.json
+```
+
+The preflight requires a clean tree, eight visible GPUs of one model, PyTorch
+NCCL support, and `FQ_EVIDENCE_SIGNING_KEY`. It prints the frozen 1/2/4/8-rank
+measured-training commands but remains non-claimable plan evidence. A blocked
+preflight must not be presented as runtime or scalability certification.
+
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
