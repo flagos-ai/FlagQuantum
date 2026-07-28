@@ -16,6 +16,8 @@ _SVD_FALLBACK_STATS = {
     "gesvd_driver_fallbacks": 0,
     "isolated_gesvd_retries": 0,
     "isolated_gesvd_matrices": 0,
+    "cpu_lapack_fallbacks": 0,
+    "cpu_lapack_matrices": 0,
 }
 from .mps_models import (  # noqa: E402
     MPSConfig,
@@ -71,6 +73,7 @@ def _cuda_svd(
             raise requested_error
         flattened = matrix.reshape(-1, matrix.shape[-2], matrix.shape[-1])
         outputs = []
+        used_cpu = False
         try:
             for item in flattened:
                 outputs.append(
@@ -80,14 +83,30 @@ def _cuda_svd(
                         driver="gesvd",
                     )
                 )
-        except (RuntimeError, torch._C._LinAlgError) as isolated_error:
-            raise RuntimeError(
-                "CUDA gesvd failed for both batched and isolated MPS "
-                f"factorization; batch_shape={tuple(matrix.shape[:-2])}, "
-                f"matrix_shape={tuple(matrix.shape[-2:])}"
-            ) from isolated_error
-        _SVD_FALLBACK_STATS["isolated_gesvd_retries"] += 1
-        _SVD_FALLBACK_STATS["isolated_gesvd_matrices"] += len(outputs)
+        except (RuntimeError, torch._C._LinAlgError):
+            outputs = []
+            used_cpu = True
+            try:
+                for item in flattened:
+                    cpu_result = torch.linalg.svd(
+                        item.detach().to("cpu"),
+                        full_matrices=False,
+                    )
+                    outputs.append(
+                        tuple(value.to(matrix.device) for value in cpu_result)
+                    )
+            except (RuntimeError, torch._C._LinAlgError) as cpu_error:
+                raise RuntimeError(
+                    "MPS strict SVD failed for batched CUDA gesvd, isolated "
+                    "CUDA gesvd, and CPU LAPACK fallback; "
+                    f"batch_shape={tuple(matrix.shape[:-2])}, "
+                    f"matrix_shape={tuple(matrix.shape[-2:])}"
+                ) from cpu_error
+            _SVD_FALLBACK_STATS["cpu_lapack_fallbacks"] += 1
+            _SVD_FALLBACK_STATS["cpu_lapack_matrices"] += len(outputs)
+        if not used_cpu:
+            _SVD_FALLBACK_STATS["isolated_gesvd_retries"] += 1
+            _SVD_FALLBACK_STATS["isolated_gesvd_matrices"] += len(outputs)
         u, singular, vh = zip(*outputs)
         batch_shape = matrix.shape[:-2]
         return (
