@@ -305,7 +305,10 @@ passing one capability does not promote the others.
 - [x] Calibrate the no-truncation reduced-QR path for the same bond matrix;
       full MPS transfer adds below 5% over direct QR and preserves reconstruction
       and orthogonality errors below 2e-6 on A800.
-- [ ] Pool workspaces.
+- [x] Pool application-controlled RXX factorization staging workspaces with
+      bounded shape/device/dtype/role leases and CUDA event-safe reuse.
+- [ ] Investigate solver-native workspace control below `torch.linalg`; current
+      PyTorch APIs do not expose an external cuSOLVER workspace pointer.
 - [ ] Fuse common contraction/decomposition regions.
 - [ ] Add steady-state CUDA Graph evaluation.
 
@@ -339,6 +342,7 @@ Update this table as work lands:
 | 2026-07-28 | M2 | Final optimized frozen matrix | `9898286` | `benchmarks/results/smoke/release_candidates/mps_sprint2_closeout/` | Correctness passes; 4 GPU 0.487s, 8 GPU 0.565s | 4→8 is 0.861×, below 1.5× target; repeated trials and Sprint 3 kernels required |
 | 2026-07-28 | M3 | A800 SVD driver calibration | `8eb8657` | `benchmarks/results/smoke/release_candidates/mps_svd_policy/` | Strict: `gesvd`; explicit approximate: `gesvda`, 6.7×–11.1× faster with measured residual below 1e-6 | A800-only; QR matrix and cross-device portability remain |
 | 2026-07-28 | M3 | A800 no-truncation QR calibration | `876decd` | `benchmarks/results/smoke/release_candidates/mps_qr_policy/` | Bond 128/256/512 full update 0.815/2.01/5.24 ms; errors below 2e-6 | Batch-1 complex64 A800 only; portability remains |
+| 2026-07-28 | M3 | Factorization staging workspace pool | `a9e9ec2` | `benchmarks/results/smoke/release_candidates/mps_workspace_pool/` | 8×A800 stable-shape run: every rank reuses buffers; plateau passes; zero allocator retry/OOM | Solver workspace remains internal; bond-128 depth-4 `gesvd` convergence blocker observed |
 
 ## Claim policy
 
