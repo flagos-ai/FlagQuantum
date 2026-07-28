@@ -87,6 +87,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", choices=("small_latency", "crossover", "large_bond"), required=True)
     parser.add_argument("--n-wires", type=int)
+    parser.add_argument(
+        "--prefetch-layer-halos",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Overlap disjoint local layer work with boundary-halo transport.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())
@@ -116,6 +122,7 @@ def main() -> None:
         "dtype": manifest["dtype"], "optimizer": manifest["optimizer"],
         "optimization_set": "issue098_through_issue105",
         "site_kernel_policy": "compiled_distributed" if compile_site_kernels else "eager_local_fast_path",
+        "prefetch_layer_halos": args.prefetch_layer_halos,
         "scaling_mode": (
             "fixed_problem_strong_scaling"
             if args.n_wires is not None
@@ -138,6 +145,7 @@ def main() -> None:
             initial_mps_left_canonical=True,
             compile_site_kernels=compile_site_kernels,
             compile_observables=compile_site_kernels,
+            prefetch_layer_halos=args.prefetch_layer_halos,
             fuse_local_reverse=True, canonicalization_policy="dirty",
         )
     profiler.export_chrome_trace(str(trace_path))
