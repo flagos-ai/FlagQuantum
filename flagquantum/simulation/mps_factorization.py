@@ -11,6 +11,12 @@ _DENSE_Z_SUM_WEIGHT_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
 ] = {}
 _MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
+_SVD_FALLBACK_STATS = {
+    "requested_driver_failures": 0,
+    "gesvd_driver_fallbacks": 0,
+    "isolated_gesvd_retries": 0,
+    "isolated_gesvd_matrices": 0,
+}
 from .mps_models import (  # noqa: E402
     MPSConfig,
 )
@@ -42,16 +48,66 @@ def _cuda_svd(
     driver: str | None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Run the requested CUDA SVD driver with a correctness-preserving fallback."""
+    is_cuda = _is_cuda_tensor(matrix)
+    requested = driver if is_cuda else None
     try:
-        return torch.linalg.svd(
-            matrix,
-            full_matrices=False,
-            driver=driver if matrix.is_cuda else None,
-        )
-    except (RuntimeError, torch._C._LinAlgError):
-        if not matrix.is_cuda or driver in (None, "gesvd"):
+        return torch.linalg.svd(matrix, full_matrices=False, driver=requested)
+    except (RuntimeError, torch._C._LinAlgError) as requested_error:
+        _SVD_FALLBACK_STATS["requested_driver_failures"] += 1
+        if not is_cuda:
             raise
-        return torch.linalg.svd(matrix, full_matrices=False, driver="gesvd")
+        if requested not in (None, "gesvd"):
+            try:
+                result = torch.linalg.svd(
+                    matrix,
+                    full_matrices=False,
+                    driver="gesvd",
+                )
+                _SVD_FALLBACK_STATS["gesvd_driver_fallbacks"] += 1
+                return result
+            except (RuntimeError, torch._C._LinAlgError):
+                pass
+        if matrix.ndim <= 2:
+            raise requested_error
+        flattened = matrix.reshape(-1, matrix.shape[-2], matrix.shape[-1])
+        outputs = []
+        try:
+            for item in flattened:
+                outputs.append(
+                    torch.linalg.svd(
+                        item,
+                        full_matrices=False,
+                        driver="gesvd",
+                    )
+                )
+        except (RuntimeError, torch._C._LinAlgError) as isolated_error:
+            raise RuntimeError(
+                "CUDA gesvd failed for both batched and isolated MPS "
+                f"factorization; batch_shape={tuple(matrix.shape[:-2])}, "
+                f"matrix_shape={tuple(matrix.shape[-2:])}"
+            ) from isolated_error
+        _SVD_FALLBACK_STATS["isolated_gesvd_retries"] += 1
+        _SVD_FALLBACK_STATS["isolated_gesvd_matrices"] += len(outputs)
+        u, singular, vh = zip(*outputs)
+        batch_shape = matrix.shape[:-2]
+        return (
+            torch.stack(u).reshape(*batch_shape, *u[0].shape),
+            torch.stack(singular).reshape(*batch_shape, *singular[0].shape),
+            torch.stack(vh).reshape(*batch_shape, *vh[0].shape),
+        )
+
+
+def _is_cuda_tensor(matrix: torch.Tensor) -> bool:
+    return matrix.is_cuda
+
+
+def reset_mps_svd_fallback_stats() -> None:
+    for key in _SVD_FALLBACK_STATS:
+        _SVD_FALLBACK_STATS[key] = 0
+
+
+def mps_svd_fallback_stats() -> dict[str, int]:
+    return dict(_SVD_FALLBACK_STATS)
 
 
 def _split_pair_matrix(

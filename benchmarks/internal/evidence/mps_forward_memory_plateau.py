@@ -35,6 +35,10 @@ from flagquantum.runtime.backends.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,
 )
+from flagquantum.simulation.mps_factorization import (
+    mps_svd_fallback_stats,
+    reset_mps_svd_fallback_stats,
+)
 
 
 SCHEMA = "flagquantum.issue107.mps_forward_memory_plateau.v1"
@@ -163,6 +167,7 @@ def main() -> None:
     dist.init_process_group("nccl")
     rank, world = dist.get_rank(), dist.get_world_size()
     reset_site_kernel_stats()
+    reset_mps_svd_fallback_stats()
     try:
         coupling, field = smooth_couplings(args.n_wires, device=device)
         observation_sites = tuple(range(0, args.n_wires, args.observation_stride))
@@ -300,6 +305,7 @@ def main() -> None:
             "device_name": torch.cuda.get_device_name(device),
             "runs": rank_runs,
             "site_kernel_stats": site_kernel_stats(),
+            "svd_fallback_stats": mps_svd_fallback_stats(),
             "factorization_records": factorization_records,
             "factorization_summary": {
                 "decision_count": len(factorization_records),
