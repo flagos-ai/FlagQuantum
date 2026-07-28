@@ -136,7 +136,7 @@ Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../examples/braket_iqm_dynamic_preflight.py)
 - **Documentation:** [guide](../../docs/API.md)
-- **Known boundary:** Local trajectory execution, IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified.
+- **Known boundary:** Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified.
 
 ### Extension SDK
 

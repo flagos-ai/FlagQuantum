@@ -44,6 +44,11 @@ braket = [
     "amazon-braket-sdk>=1.117,<2",
 ]
 
+qiskit = [
+    "qiskit>=2,<3",
+    "qiskit-aer>=0.17,<1",
+]
+
 examples = [
     "datasets>=2.20.0",
     "transformers>=4.40.0",

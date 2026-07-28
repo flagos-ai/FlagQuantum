@@ -149,8 +149,8 @@ quick_start = "examples/braket_iqm_dynamic_preflight.py"
 documentation = "docs/API.md"
 level = "experimental"
 owner = "deployment maintainers"
-limitations = "Local trajectory execution, IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified."
-focused_tests = "tests/test_braket_iqm_dynamic.py"
+limitations = "Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified."
+focused_tests = "tests/test_dynamic_conformance.py"
 
 [capabilities.extension_sdk]
 title = "Extension SDK"

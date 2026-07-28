@@ -35,6 +35,17 @@ __all__ = (
     "create_dynamic_deployment_package",
     "deploy_dynamic_circuit",
     "route_dynamic_circuit",
+    "DynamicFeatureSet",
+    "DynamicFeatureReport",
+    "DynamicConformanceCase",
+    "DynamicConformanceResult",
+    "LOCAL_TRAJECTORY_FEATURES",
+    "QISKIT_AER_DYNAMIC_FEATURES",
+    "BRAKET_IQM_DYNAMIC_FEATURES",
+    "assess_dynamic_features",
+    "dynamic_conformance_cases",
+    "run_dynamic_conformance",
+    "run_qiskit_aer_dynamic",
 )
 
 
@@ -81,6 +92,20 @@ def __getattr__(name: str) -> Any:
         "route_dynamic_circuit",
     }:
         return getattr(import_module("flagquantum.runtime.dynamic"), name)
+    if name in {
+        "DynamicFeatureSet",
+        "DynamicFeatureReport",
+        "DynamicConformanceCase",
+        "DynamicConformanceResult",
+        "LOCAL_TRAJECTORY_FEATURES",
+        "QISKIT_AER_DYNAMIC_FEATURES",
+        "BRAKET_IQM_DYNAMIC_FEATURES",
+        "assess_dynamic_features",
+        "dynamic_conformance_cases",
+        "run_dynamic_conformance",
+        "run_qiskit_aer_dynamic",
+    }:
+        return getattr(import_module("flagquantum.runtime.dynamic_conformance"), name)
     return getattr(import_module("flagquantum.api"), name)
 
 

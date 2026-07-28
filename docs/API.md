@@ -168,6 +168,25 @@ for the complete guarded-submission example. This integration has been
 validated locally through the real Braket SDK serializer and mocked task
 contract only; no real IQM QPU execution is claimed.
 
+### Provider-neutral dynamic conformance
+
+The experimental conformance API makes backend differences explicit and runs
+the same deterministic active-reset, conditional-flip, and qubit-reuse vectors
+against multiple implementations:
+
+```python
+local = fq.experimental.run_dynamic_conformance()
+aer = fq.experimental.run_dynamic_conformance(
+    fq.experimental.run_qiskit_aer_dynamic,
+    implementation="qiskit_aer",
+)
+assert local.passed and aer.passed
+```
+
+Install the second local backend with `pip install -e '.[qiskit]'`.
+`assess_dynamic_features()` can compare a circuit against the declared local,
+Qiskit Aer, or Braket IQM feature set before transport-specific validation.
+
 The stable surface also includes circuit and IR construction, backend
 compilation, runtime planning, and deployment helpers. The generated table is
 authoritative for exact names.
