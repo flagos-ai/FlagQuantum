@@ -350,6 +350,7 @@ Update this table as work lands:
 | 2026-07-28 | M3 | A800 SVD driver calibration | `8eb8657` | `benchmarks/results/smoke/release_candidates/mps_svd_policy/` | Strict: `gesvd`; explicit approximate: `gesvda`, 6.7×–11.1× faster with measured residual below 1e-6 | A800-only; QR matrix and cross-device portability remain |
 | 2026-07-28 | M3 | A800 no-truncation QR calibration | `876decd` | `benchmarks/results/smoke/release_candidates/mps_qr_policy/` | Bond 128/256/512 full update 0.815/2.01/5.24 ms; errors below 2e-6 | Batch-1 complex64 A800 only; portability remains |
 | 2026-07-28 | M3 | Factorization staging workspace pool | `a9e9ec2` | `benchmarks/results/smoke/release_candidates/mps_workspace_pool/` | 8×A800 stable-shape run: every rank reuses buffers; plateau passes; zero allocator retry/OOM | Solver workspace remains internal; bond-128 depth-4 `gesvd` convergence blocker observed |
+| 2026-07-28 | M3 | Large-bond correctness quarantine | `889bf31` | `benchmarks/results/smoke/release_candidates/mps_large_bond_quarantine/` | 8×A800, 64 wires, depth 4, bond 128 passes plateau with zero allocator retry/OOM and no SVD fallback | Non-release smoke only; batched two-site execution and staging-pool reuse remain quarantined at `max_bond >= 128` |
 
 ## Claim policy
 
