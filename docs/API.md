@@ -199,6 +199,11 @@ pytest -m qiskit
 pytest -m braket
 ```
 
+The implementation is partitioned under `flagquantum.runtime.dynamic` into
+`circuit`, `result`, `execution`, `routing`, `deployment`, and `dialects`
+boundaries. Existing `fq.experimental` names and the
+`flagquantum.runtime.dynamic` import path remain compatible.
+
 The stable surface also includes circuit and IR construction, backend
 compilation, runtime planning, and deployment helpers. The generated table is
 authoritative for exact names.

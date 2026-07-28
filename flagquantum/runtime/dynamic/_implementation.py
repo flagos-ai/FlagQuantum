@@ -1,4 +1,4 @@
-"""Experimental local statevector execution for dynamic quantum circuits."""
+"""Internal implementation backing the layered dynamic runtime package."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from typing import Any, Iterable, Mapping
 
 import torch
 
-from ..circuit import Circuit
-from ..compilation.routing import CouplingMap, route_to_topology
-from ..core.ir import Instruction
+from ...circuit import Circuit
+from ...compilation.routing import CouplingMap, route_to_topology
+from ...core.ir import Instruction
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class DynamicExecutionResult:
     def to_execution_result(self) -> Any:
         """Project dynamic shots into the canonical execution result contract."""
 
-        from .result import ExecutionResult, MeasurementResult
+        from ..result import ExecutionResult, MeasurementResult
 
         measurements = [
             MeasurementResult(
@@ -597,8 +597,8 @@ def create_dynamic_deployment_package(
 ) -> Any:
     """Create a sealed OpenQASM 3 deployment package after capability checks."""
 
-    from ..deployment.cloud import DeploymentPackage
-    from ..deployment.routing_evidence import (
+    from ...deployment.cloud import DeploymentPackage
+    from ...deployment.routing_evidence import (
         DEPLOYMENT_PACKAGE_SCHEMA,
         build_deployment_routing_evidence,
         deployment_artifact_sha256,
