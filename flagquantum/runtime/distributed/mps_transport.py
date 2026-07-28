@@ -319,13 +319,48 @@ def _recv_tensor_static_p2p(
         if cached is not None:
             _MPS_P2P_STATS["descriptor_cache_invalidations"] += 1
         _MPS_P2P_STATS["descriptor_cache_misses"] += 1
-        value = _recv_tensor_p2p(src=src, reference=reference, sequence=sequence)
-        if tuple(value.shape) != shape:
+        descriptor = torch.empty(
+            (len(shape) + 1,), dtype=torch.int64, device=reference.device
+        )
+        _run_batched_p2p(
+            [dist.P2POp(dist.irecv, descriptor, src)],
+            reference.device,
+            diagnostic=(
+                f"direction=static_receive_cold_descriptor,peer={src},"
+                f"sequence={sequence},"
+                f"generation={shape_generation},expected_shape={shape}"
+            ),
+        )
+        values = tuple(int(value) for value in descriptor.detach().cpu().tolist())
+        actual_sequence = values[0]
+        actual_shape = tuple(values[1:])
+        if any(dimension < 0 for dimension in actual_shape):
             raise RuntimeError(
-                f"MPS static P2P shape mismatch from peer {src}: expected {shape}, received {tuple(value.shape)}"
+                f"MPS static P2P descriptor from peer {src} contains a negative "
+                f"dimension: {actual_shape}"
+            )
+        flat = torch.empty(
+            int(__import__("math").prod(actual_shape)),
+            dtype=reference.dtype,
+            device=reference.device,
+        )
+        _run_batched_p2p(
+            [dist.P2POp(dist.irecv, flat, src)],
+            reference.device,
+            diagnostic=(
+                f"direction=static_receive_cold_payload,peer={src},"
+                f"sequence={sequence},actual_sequence={actual_sequence},"
+                f"actual_shape={actual_shape}"
+            ),
+        )
+        if actual_sequence != int(sequence) or actual_shape != shape:
+            raise RuntimeError(
+                f"MPS static P2P descriptor mismatch from peer {src}: expected "
+                f"sequence {sequence} and shape {shape}, received sequence "
+                f"{actual_sequence} and shape {actual_shape}; payload drained before failure"
             )
         _MPS_STATIC_DESCRIPTOR_CACHE[key] = signature
-        return value
+        return flat.reshape(shape)
     _MPS_P2P_STATS["descriptor_cache_hits"] += 1
     flat = torch.empty(
         __import__("math").prod(shape), dtype=reference.dtype, device=reference.device
