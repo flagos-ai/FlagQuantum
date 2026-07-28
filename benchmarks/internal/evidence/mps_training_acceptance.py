@@ -9,6 +9,7 @@ import os
 import platform
 import socket
 import statistics
+import subprocess
 import tempfile
 import time
 from pathlib import Path
@@ -17,6 +18,23 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+
+
+def source_identity() -> tuple[str, bool]:
+    commit = subprocess.run(
+        ("git", "rev-parse", "HEAD"),
+        check=False,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    tracked_changes = subprocess.run(
+        ("git", "diff", "--quiet"),
+        check=False,
+    ).returncode != 0 or subprocess.run(
+        ("git", "diff", "--cached", "--quiet"),
+        check=False,
+    ).returncode != 0
+    return commit or "unavailable", tracked_changes
 
 
 def build_circuit(
@@ -194,10 +212,14 @@ def main():
             )
             for summary in rank_training
         ]
+        source_commit, source_tree_dirty = source_identity()
         payload = {
             "schema": "flagquantum.issue052.mps_training_measurement.v1",
+            "benchmark": "mps_single_node_training_certification",
             "evidence_source": "measured_runtime",
             "measured": True,
+            "source_commit": source_commit,
+            "source_tree_dirty": source_tree_dirty,
             "timestamp": time.time(),
             "hostname": socket.gethostname(),
             "platform": platform.platform(),
@@ -216,7 +238,7 @@ def main():
                 if world_size == 1
                 else "batched_isend_irecv_and_owner_gradient_collectives"
             ),
-            "claim_evidence_type": "accelerator_development_performance",
+            "claim_evidence_type": "development_smoke",
             "distribution_semantics": (
                 "single_device_fast_path" if world_size == 1 else "sharded_across_ranks"
             ),
