@@ -5,6 +5,8 @@
 
 **Build, train, and scale quantum AI everywhere.**
 
+*Designed for the FlagOS unified multi-chip backend.*
+
 [Quick Start](#quick-start) ·
 [Capabilities](docs/generated/CAPABILITIES.md) ·
 [Examples](examples/README.md) ·
