@@ -31,8 +31,7 @@ def test_feature_assessment_is_provider_neutral_and_fail_closed() -> None:
     assert "condition_value_unsupported" in iqm.blockers
     assert "conditional_gate_unsupported:h" in iqm.blockers
     assert (
-        fq.experimental.BRAKET_IQM_DYNAMIC_FEATURES
-        .returns_mid_circuit_measurements
+        fq.experimental.BRAKET_IQM_DYNAMIC_FEATURES.returns_mid_circuit_measurements
         is False
     )
 
@@ -77,9 +76,7 @@ def test_qiskit_qasm3_round_trip_preserves_dynamic_feedback() -> None:
     circuit.x(0).measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
-    result = fq.experimental.run_qiskit_aer_qasm3_round_trip(
-        circuit, shots=8, seed=9
-    )
+    result = fq.experimental.run_qiskit_aer_qasm3_round_trip(circuit, shots=8, seed=9)
 
     assert torch.equal(result.final_samples, torch.ones((8, 2), dtype=torch.int64))
     assert torch.equal(
@@ -98,11 +95,10 @@ def test_random_branch_statistics_match_local_aer_and_qasm_round_trip() -> None:
 
     local = fq.experimental.run_dynamic(circuit, shots=4096, seed=41)
     aer = fq.experimental.run_qiskit_aer_dynamic(circuit, shots=4096, seed=41)
-    qasm = fq.experimental.run_qiskit_aer_qasm3_round_trip(
-        circuit, shots=4096, seed=41
-    )
+    qasm = fq.experimental.run_qiskit_aer_qasm3_round_trip(circuit, shots=4096, seed=41)
     probabilities = [
-        float(result.final_samples[:, 0].float().mean()) for result in (local, aer, qasm)
+        float(result.final_samples[:, 0].float().mean())
+        for result in (local, aer, qasm)
     ]
 
     assert all(abs(probability - 0.5) < 0.04 for probability in probabilities)

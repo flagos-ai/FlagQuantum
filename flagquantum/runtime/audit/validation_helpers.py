@@ -65,7 +65,9 @@ def _backend_family(payload: Mapping[str, Any]) -> str:
 
 
 def _rank_memory_reported(payload: Mapping[str, Any]) -> bool:
-    if _is_nonempty(payload.get("local_memory_bytes_by_rank")):
+    if _is_nonempty(payload.get("local_memory_bytes_by_rank")) or _is_nonempty(
+        payload.get("rank_peak_memory_bytes")
+    ):
         return True
     for key in ("rank_shards", "shards"):
         ranks = payload.get(key)
@@ -99,6 +101,8 @@ def _communication_evidence_reported(payload: Mapping[str, Any]) -> bool:
             "inter_node_communication_bytes",
             "communication_bytes",
             "estimated_transfer_bytes",
+            "forward_communication_bytes_per_rank_max",
+            "backward_communication_bytes_per_rank_max",
         ),
     )
 

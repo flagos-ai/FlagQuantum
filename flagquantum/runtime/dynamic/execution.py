@@ -67,9 +67,7 @@ def _apply_instruction(
         parameter_bindings=None,
     )
     apply_gate = (
-        _apply_diagonal_matrix
-        if name in _DIAGONAL_STATEVECTOR_GATES
-        else _apply_matrix
+        _apply_diagonal_matrix if name in _DIAGONAL_STATEVECTOR_GATES else _apply_matrix
     )
     return apply_gate(
         state,
@@ -181,7 +179,9 @@ def _run_dynamic_trajectory(
                 ]
             )
             classical_rows.append(classical)
-            branch_counts[",".join(f"{index}:{bit}" for index, bit in branch_trace)] += 1
+            branch_counts[
+                ",".join(f"{index}:{bit}" for index, bit in branch_trace)
+            ] += 1
         batched_states.append(torch.stack(final_states))
         batched_samples.append(
             torch.tensor(final_samples, dtype=torch.int64, device=circuit.device)
@@ -232,8 +232,8 @@ def _measure_wires_batched(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     shaped = state.reshape((state.shape[0],) + (2,) * n_wires)
     axes = tuple(axis + 1 for axis in range(n_wires) if axis != wire)
-    probabilities = (torch.abs(shaped) ** 2).sum(dim=axes) if axes else (
-        torch.abs(shaped) ** 2
+    probabilities = (
+        (torch.abs(shaped) ** 2).sum(dim=axes) if axes else (torch.abs(shaped) ** 2)
     )
     bits = torch.multinomial(probabilities, 1, generator=generator).reshape(-1)
     selector = torch.arange(2, device=state.device).reshape(1, 2) == bits.reshape(-1, 1)
@@ -354,9 +354,7 @@ def _run_dynamic_batched(
         dim=1,
     )
     branch_counts: Counter[str] = Counter()
-    branch_rows = tuple(
-        (index, values.tolist()) for index, values in branch_values
-    )
+    branch_rows = tuple((index, values.tolist()) for index, values in branch_values)
     for shot_index in range(int(shots)):
         branch_counts[
             ",".join(
@@ -419,7 +417,9 @@ def run_dynamic(
     estimated_bytes = int(shots) * (2**circuit.n_wires) * element_size * 3
     batched_compatible = circuit.bsz == 1 and estimated_bytes <= max_batched_bytes
     if strategy == "batched" and not batched_compatible:
-        reason = "batch size must be one" if circuit.bsz != 1 else "memory budget exceeded"
+        reason = (
+            "batch size must be one" if circuit.bsz != 1 else "memory budget exceeded"
+        )
         raise ValueError(f"batched dynamic execution unavailable: {reason}")
     use_batched = strategy == "batched" or (
         strategy == "auto" and int(shots) >= 32 and batched_compatible

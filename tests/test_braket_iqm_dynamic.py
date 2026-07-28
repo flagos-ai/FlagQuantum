@@ -104,9 +104,7 @@ def test_braket_iqm_rejects_cross_group_and_multiple_controllers() -> None:
     multiple.conditional("x", 2, classical_bit=0)
     multiple.measure(1, classical_bit=1)
     multiple.conditional("x", 2, classical_bit=1)
-    backend = _iqm_backend(
-        metadata={"dynamic_qubit_groups": ((0, 1, 2),)}
-    )
+    backend = _iqm_backend(metadata={"dynamic_qubit_groups": ((0, 1, 2),)})
     report = fq.experimental.assess_dynamic_backend(multiple, backend)
     assert "braket_iqm_target_has_multiple_feedback_controllers" in report.blockers
 

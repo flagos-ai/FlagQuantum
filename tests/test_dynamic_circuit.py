@@ -254,9 +254,7 @@ def test_dynamic_routing_preserves_measurement_and_conditional_semantics() -> No
     assert routing["dynamic_boundary_count"] == 2
     assert routing["dynamic_boundary_source_indices"] == (1, 3)
     assert routing["dynamic_boundary_mapping_policy"] == "identity_restored_per_gate"
-    assert routing["conditional_routing_semantics"] == (
-        "unconditional_swap_sandwich"
-    )
+    assert routing["conditional_routing_semantics"] == ("unconditional_swap_sandwich")
 
 
 def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> None:

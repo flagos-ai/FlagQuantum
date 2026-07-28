@@ -26,11 +26,7 @@ def test_layered_dynamic_imports_preserve_experimental_api_identity() -> None:
 
 def test_dynamic_dialects_do_not_import_provider_or_execution_layers() -> None:
     dialect_root = (
-        Path(__file__).parents[2]
-        / "flagquantum"
-        / "runtime"
-        / "dynamic"
-        / "dialects"
+        Path(__file__).parents[2] / "flagquantum" / "runtime" / "dynamic" / "dialects"
     )
     forbidden = {"providers", "deployment", "execution"}
     for path in dialect_root.glob("*.py"):
@@ -47,9 +43,7 @@ def test_dynamic_dialects_do_not_import_provider_or_execution_layers() -> None:
             if isinstance(node, ast.ImportFrom)
         )
         assert not any(
-            part in forbidden
-            for imported in imports
-            for part in imported.split(".")
+            part in forbidden for imported in imports for part in imported.split(".")
         ), path
 
 

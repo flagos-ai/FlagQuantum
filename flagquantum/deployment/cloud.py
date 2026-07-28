@@ -623,7 +623,9 @@ def hamiltonian_expectation_from_grouped_counts(
     """Aggregate basis-rotated counts from a ``PauliMeasurementPlan``."""
 
     if len(counts_by_group) != len(plan.groups):
-        raise ValueError("counts_by_group must contain one result per measurement group")
+        raise ValueError(
+            "counts_by_group must contain one result per measurement group"
+        )
     total = 0.0
     for group_index, (counts, group, package) in enumerate(
         zip(counts_by_group, plan.groups, plan.packages, strict=True)

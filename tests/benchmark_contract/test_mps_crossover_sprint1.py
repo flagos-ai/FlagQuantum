@@ -4,8 +4,7 @@ from pathlib import Path
 from benchmarks.audit_results import audit_paths
 
 REPORT = Path(
-    "benchmarks/results/smoke/release_candidates/"
-    "mps_crossover_sprint1/summary.json"
+    "benchmarks/results/smoke/release_candidates/" "mps_crossover_sprint1/summary.json"
 )
 
 

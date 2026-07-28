@@ -9,8 +9,7 @@ def instruction_conditions(
 ) -> tuple[tuple[int, int], ...]:
     if "conditions" in instruction.metadata:
         return tuple(
-            (int(bit), int(value))
-            for bit, value in instruction.metadata["conditions"]
+            (int(bit), int(value)) for bit, value in instruction.metadata["conditions"]
         )
     legacy = instruction.metadata.get("condition")
     if legacy:

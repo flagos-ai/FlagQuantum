@@ -219,9 +219,9 @@ def prepare_compiled_mps_layer(
                     "batched_factorization_enabled"
                 ] = not isolate_factorizations
                 if isolate_factorizations:
-                    factorization_records[-1]["reason"] = (
-                        "high_bond_batched_factorization_quarantine"
-                    )
+                    factorization_records[-1][
+                        "reason"
+                    ] = "high_bond_batched_factorization_quarantine"
                 factorization_records[-1]["staging_workspace_pool"] = {
                     "enabled": False,
                     "reason": "staging_pool_correctness_quarantine",

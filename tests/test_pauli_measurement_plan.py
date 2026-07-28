@@ -45,9 +45,7 @@ def test_pauli_measurement_plan_rotates_each_group_into_z_basis() -> None:
             term = hamiltonian.terms[term_index]
             if not term.ops:
                 continue
-            measured = rotated.expectation_ps(
-                z=tuple(wire for wire, _name in term.ops)
-            )
+            measured = rotated.expectation_ps(z=tuple(wire for wire, _name in term.ops))
             coefficient = float(torch.as_tensor(term.coefficient))
             expected = term.expectation(circuit) / coefficient
             torch.testing.assert_close(measured, expected, atol=1e-6, rtol=0)

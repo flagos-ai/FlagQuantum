@@ -239,6 +239,11 @@ def main():
                 else "batched_isend_irecv_and_owner_gradient_collectives"
             ),
             "claim_evidence_type": "development_smoke",
+            "benchmark_evidence_class": "non_release_smoke",
+            "non_release_evidence": True,
+            "scalability_blockers": [
+                "development_smoke_not_release_scalability_evidence"
+            ],
             "distribution_semantics": (
                 "single_device_fast_path" if world_size == 1 else "sharded_across_ranks"
             ),

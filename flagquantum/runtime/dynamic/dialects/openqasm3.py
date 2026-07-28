@@ -29,9 +29,11 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
         else:
             params = ""
             if instruction.params:
-                params = "(" + ", ".join(
-                    str(value) for value in instruction.params.values()
-                ) + ")"
+                params = (
+                    "("
+                    + ", ".join(str(value) for value in instruction.params.values())
+                    + ")"
+                )
             statement = f"{instruction.name}{params} {wire_text};"
         conditions = _instruction_conditions(instruction)
         if conditions:
@@ -44,9 +46,7 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
     return "\n".join(lines) + "\n"
 
 
-def export_dynamic_qasm3_for_backend(
-    circuit: DynamicCircuit, backend: Any
-) -> str:
+def export_dynamic_qasm3_for_backend(circuit: DynamicCircuit, backend: Any) -> str:
     """Export using the backend-declared dynamic OpenQASM dialect."""
 
     dialect = getattr(backend, "dynamic_dialect", None) or "openqasm3"
@@ -63,5 +63,6 @@ def export_dynamic_qasm3_for_backend(
             qubit_groups=iqm_qubit_groups(backend),
         )
     raise ValueError(f"unsupported_dynamic_dialect:{dialect}")
+
 
 __all__ = ("export_dynamic_qasm3", "export_dynamic_qasm3_for_backend")

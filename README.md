@@ -410,6 +410,9 @@ python tools/ci_tier.py pr-default
 
 Runtime, distributed, accelerator, and release changes use progressively
 stronger tiers documented in the [testing manual](docs/development/TESTING.md).
+Contributors can install the versioned commit and CPU pre-push gates with
+`pre-commit install`; the complete local gate is also available as
+`python tools/pre_push.py`.
 
 Before contributing, read [AGENTS.md](AGENTS.md), the
 [capability maturity policy](docs/roadmap/CAPABILITY_MATURITY.md), and the

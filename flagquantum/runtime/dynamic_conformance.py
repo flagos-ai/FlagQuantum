@@ -144,9 +144,7 @@ def run_dynamic_conformance(
             if width
             else result.classical_bits.reshape(shots, 0)
         )
-        passed = bool(
-            torch.all(samples == torch.tensor(case.expected_sample)).item()
-        )
+        passed = bool(torch.all(samples == torch.tensor(case.expected_sample)).item())
         if case.expected_classical:
             passed = passed and bool(
                 torch.all(classical == torch.tensor(case.expected_classical)).item()
@@ -181,7 +179,9 @@ def run_qiskit_aer_dynamic(
     def apply(instruction: Any) -> None:
         method = getattr(qc, instruction.name, None)
         if method is None:
-            raise ValueError(f"Qiskit Aer dynamic gate is unsupported: {instruction.name}")
+            raise ValueError(
+                f"Qiskit Aer dynamic gate is unsupported: {instruction.name}"
+            )
         params = tuple(instruction.params.values())
         method(*params, *instruction.wires)
 
@@ -196,7 +196,9 @@ def run_qiskit_aer_dynamic(
             qc.reset(instruction.wires[0])
         elif conditions:
             if len(conditions) != 1:
-                raise ValueError("Qiskit Aer adapter currently requires one condition bit")
+                raise ValueError(
+                    "Qiskit Aer adapter currently requires one condition bit"
+                )
             bit, expected = conditions[0]
             with qc.if_test((qc.clbits[bit], bool(expected))):
                 apply(instruction)
@@ -205,12 +207,17 @@ def run_qiskit_aer_dynamic(
     for wire in range(circuit.n_wires):
         qc.measure(wire, width + wire)
 
-    memory = AerSimulator().run(
-        qc,
-        shots=int(shots),
-        memory=True,
-        seed_simulator=seed,
-    ).result().get_memory(qc)
+    memory = (
+        AerSimulator()
+        .run(
+            qc,
+            shots=int(shots),
+            memory=True,
+            seed_simulator=seed,
+        )
+        .result()
+        .get_memory(qc)
+    )
     rows = [[int(char) for char in item.replace(" ", "")[::-1]] for item in memory]
     classical = torch.tensor(
         [row[:width] for row in rows],
@@ -255,12 +262,17 @@ def run_qiskit_aer_qasm3_round_trip(
     qc.add_register(final)
     for wire in range(circuit.n_wires):
         qc.measure(wire, final[wire])
-    memory = AerSimulator().run(
-        qc,
-        shots=int(shots),
-        memory=True,
-        seed_simulator=seed,
-    ).result().get_memory(qc)
+    memory = (
+        AerSimulator()
+        .run(
+            qc,
+            shots=int(shots),
+            memory=True,
+            seed_simulator=seed,
+        )
+        .result()
+        .get_memory(qc)
+    )
     rows = [[int(char) for char in item.replace(" ", "")[::-1]] for item in memory]
     classical = torch.tensor([row[:width] for row in rows], dtype=torch.int64)
     samples = torch.tensor(

@@ -32,19 +32,27 @@ _evidence_module = import_module("flagquantum.runtime.observability.evidence")
 
 def _json_files(path: Path) -> list[Path]:
     if path.is_file():
-        return [] if _is_generated_audit_summary(path) else [path]
+        return (
+            []
+            if _is_generated_audit_summary(path) or _is_auxiliary_report(path)
+            else [path]
+        )
     if path.name == "results":
         curated = ("local", "comparison", "smoke", "scalability")
         return sorted(
             item
             for category in curated
             for item in (path / category).rglob("*.json")
-            if item.is_file() and not _is_generated_audit_summary(item)
+            if item.is_file()
+            and not _is_generated_audit_summary(item)
+            and not _is_auxiliary_report(item)
         )
     return sorted(
         item
         for item in path.rglob("*.json")
-        if item.is_file() and not _is_generated_audit_summary(item)
+        if item.is_file()
+        and not _is_generated_audit_summary(item)
+        and not _is_auxiliary_report(item)
     )
 
 
@@ -53,6 +61,13 @@ def _is_generated_audit_summary(path: Path) -> bool:
         "scalability_audit_summary.json",
         "audit_summary.json",
     } or path.stem.endswith("_audit_summary")
+
+
+def _is_auxiliary_report(path: Path) -> bool:
+    payload, error = _read_json(path)
+    return error is None and payload is not None and (
+        payload.get("artifact_class") == "auxiliary_report"
+    )
 
 
 def _read_json(path: Path) -> tuple[dict[str, Any] | None, dict[str, str] | None]:
@@ -95,6 +110,30 @@ def audit_paths(
             continue
         assert payload is not None
         if payload.get("benchmark") == "scalability_results_audit":
+            continue
+        if payload.get("artifact_class") == "auxiliary_report":
+            records.append(
+                {
+                    "path": str(path),
+                    "status": "auxiliary",
+                    "benchmark": None,
+                    "distribution_semantics": "not_applicable",
+                    "scalability_claim_allowed": False,
+                    "claim_evidence_type": "auxiliary_report",
+                    "release_gate_allowed": False,
+                    "scalability_audit": {
+                        "valid": True,
+                        "scalability_claim_allowed": False,
+                        "release_gate_allowed": False,
+                        "distribution_semantics": "not_applicable",
+                        "claim_evidence_type": "auxiliary_report",
+                        "errors": (),
+                        "warnings": (
+                            "auxiliary report is not benchmark claim evidence",
+                        ),
+                    },
+                }
+            )
             continue
         if require_scalability:
             provenance_valid, provenance_errors = _evidence_module.verify_evidence_artifact(

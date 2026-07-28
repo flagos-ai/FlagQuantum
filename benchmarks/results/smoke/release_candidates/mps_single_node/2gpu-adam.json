@@ -1,6 +1,11 @@
 {
   "benchmark": "mps_single_node_training_certification",
+  "benchmark_evidence_class": "non_release_smoke",
   "claim_evidence_type": "development_smoke",
+  "non_release_evidence": true,
+  "scalability_blockers": [
+    "development_smoke_not_release_scalability_evidence"
+  ],
   "coefficient_of_variation": 0.038088749088662714,
   "communication_bytes": 938400,
   "communication_bytes_by_rank": [

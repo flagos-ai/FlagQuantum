@@ -1,9 +1,12 @@
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^benchmarks/results/
+        exclude: ^(benchmarks/results/|assets/readme/.*\.svg$)
       - id: end-of-file-fixer
         exclude: ^benchmarks/results/
       - id: check-docstring-first
@@ -50,7 +53,7 @@ repos:
         pass_filenames: false
       - id: black-production-surface
         name: black production and test surface
-        entry: black --workers 1 --check
+        entry: black --check
         language: system
         files: ^(flagquantum|tests|tools)/.*\.py$
       - id: mypy-foundation
@@ -73,3 +76,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^(flagquantum|tools)/.*\.py$
+      - id: pre-push-ci
+        name: FlagQuantum CPU pre-push gate
+        entry: python tools/pre_push.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

@@ -1,4 +1,5 @@
 {
+  "artifact_class": "auxiliary_report",
   "audit": {
     "blockers": [],
     "maximum_slope_fraction_per_layer": 0.01,

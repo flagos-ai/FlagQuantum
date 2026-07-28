@@ -232,7 +232,9 @@ def communication_aware_mps_ownership(
     n_wires = len(bonds) - 1
     penalties = tuple(int(value) for value in boundary_penalties)
     if len(penalties) != max(0, n_wires - 1) or any(value < 0 for value in penalties):
-        raise ValueError("boundary_penalties must contain one non-negative value per bond")
+        raise ValueError(
+            "boundary_penalties must contain one non-negative value per bond"
+        )
     if not 1 <= world_size <= n_wires:
         raise ValueError(
             "communication-aware ownership requires 1 <= world_size <= n_wires"

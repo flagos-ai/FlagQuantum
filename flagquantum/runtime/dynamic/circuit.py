@@ -57,7 +57,9 @@ class DynamicCircuit(Circuit):
             else {int(bit): int(value) for bit, value in (conditions or {}).items()}
         )
         if not raw_conditions:
-            raise ValueError("conditional gate requires at least one classical condition")
+            raise ValueError(
+                "conditional gate requires at least one classical condition"
+            )
         if any(bit < 0 or value not in {0, 1} for bit, value in raw_conditions.items()):
             raise ValueError("conditions require non-negative bits and values 0 or 1")
         wire_tuple = (int(wires),) if isinstance(wires, int) else tuple(wires)
@@ -71,7 +73,9 @@ class DynamicCircuit(Circuit):
             )
         )
 
-    def state(self, parameter_bindings: Mapping[Any, Any] | None = None) -> torch.Tensor:
+    def state(
+        self, parameter_bindings: Mapping[Any, Any] | None = None
+    ) -> torch.Tensor:
         if any(
             instruction.metadata.get("is_dynamic")
             or instruction.metadata.get("condition")
@@ -81,5 +85,6 @@ class DynamicCircuit(Circuit):
                 "dynamic circuits require fq.experimental.run_dynamic(..., shots=...)"
             )
         return super().state(parameter_bindings)
+
 
 __all__ = ("DynamicCircuit",)

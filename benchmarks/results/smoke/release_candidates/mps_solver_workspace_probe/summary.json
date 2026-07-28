@@ -1,5 +1,5 @@
 {
-  "artifact_class": "derived_development_report",
+  "artifact_class": "auxiliary_report",
   "benchmark_evidence_class": "non_release_smoke",
   "blockers": [
     "native_extension_not_implemented",

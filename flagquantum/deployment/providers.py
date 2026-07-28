@@ -1,9 +1,4 @@
-"""Quantum-cloud provider adapters.
-
-The adapters here intentionally depend only on the Python standard library.
-They keep platform-specific endpoint, authentication, and payload details
-behind the FlagQuantum deployment contract.
-"""
+"""Standard-library quantum-cloud adapters behind the deployment contract."""
 
 from __future__ import annotations
 
@@ -274,13 +269,16 @@ def braket_backend_profile(
     if n_wires is None:
         raise ValueError("Braket device properties do not declare a qubit count")
     n_wires = int(n_wires)
-    basis = _first_property(
-        properties,
-        (
-            ("paradigm", "nativeGateSet"),
-            ("paradigm", "native_gate_set"),
-        ),
-    ) or ()
+    basis = (
+        _first_property(
+            properties,
+            (
+                ("paradigm", "nativeGateSet"),
+                ("paradigm", "native_gate_set"),
+            ),
+        )
+        or ()
+    )
     arn = str(getattr(device, "arn", getattr(device, "device_arn", "")))
     name = str(getattr(device, "name", arn or "braket-device"))
     provider_name = str(
@@ -294,7 +292,7 @@ def braket_backend_profile(
         if dynamic_qubit_groups is not None
         else _braket_dynamic_groups(properties)
     )
-    metadata = {
+    metadata: dict[str, object] = {
         "device_arn": arn,
         "device_provider": provider_name,
         "capability_source": "AwsDevice.properties",
@@ -1207,7 +1205,9 @@ class AmazonBraketProvider(QuantumProvider):
         raw = task.result()
         counts = getattr(raw, "measurement_counts", None)
         if counts is None:
-            raise RuntimeError("Amazon Braket result does not contain measurement counts")
+            raise RuntimeError(
+                "Amazon Braket result does not contain measurement counts"
+            )
         normalized = _normalize_counts(counts)
         return DeploymentResult(
             handle=handle,
@@ -1217,9 +1217,9 @@ class AmazonBraketProvider(QuantumProvider):
                 handle,
                 {
                     "device_arn": self.device_arn,
-                    "mid_circuit_measurements_returned": False
-                    if self.backend.dynamic_dialect == "braket_iqm"
-                    else None,
+                    "mid_circuit_measurements_returned": (
+                        False if self.backend.dynamic_dialect == "braket_iqm" else None
+                    ),
                 },
             ),
         )

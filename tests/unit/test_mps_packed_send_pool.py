@@ -30,9 +30,7 @@ def test_packed_sender_reuses_payload_buffer_without_changing_values(monkeypatch
     expected = torch.cat((torch.arange(6.0), torch.arange(4.0)))
     assert all(torch.equal(payload, expected) for payload in payloads)
     assert (
-        mps_transport._MPS_P2P_BUFFER_POOL[
-            ("cpu", None, torch.float32, 10)
-        ].data_ptr()
+        mps_transport._MPS_P2P_BUFFER_POOL[("cpu", None, torch.float32, 10)].data_ptr()
         == first_pointer
     )
     stats = mps_transport.mps_p2p_stats()

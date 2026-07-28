@@ -93,6 +93,33 @@ python -m pytest tests/benchmark_contract -q
 
 ## Test Tiers
 
+### Push Gate
+
+Install both repository hooks once per clone:
+
+```bash
+pre-commit install
+```
+
+The checked-in configuration installs `pre-commit` and `pre-push`. Before a
+push leaves the machine, the push gate runs:
+
+- all normal pre-commit quality and source-of-truth checks;
+- the strict typed trainable-module and execution-mainline checks;
+- capability maturity, required-check policy, and lazy-import validation;
+- `pr-default`, `pr-runtime`, and `pr-distributed`.
+
+Run the same gate directly when diagnosing a failure:
+
+```bash
+python tools/pre_push.py
+python tools/pre_push.py --dry-run
+```
+
+The gate stops at the first failure. It is CPU-safe and does not claim to
+replace the remote Python-version matrix, clean distribution installs,
+supply-chain checks, or accelerator jobs.
+
 ### Daily Development
 
 Use daily development for ordinary code edits and as the minimum verification

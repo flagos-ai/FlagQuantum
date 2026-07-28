@@ -3,9 +3,7 @@ from pathlib import Path
 
 from benchmarks.audit_results import audit_paths
 
-REPORT = Path(
-    "benchmarks/results/smoke/release_candidates/mps_svd_policy/summary.json"
-)
+REPORT = Path("benchmarks/results/smoke/release_candidates/mps_svd_policy/summary.json")
 
 
 def test_mps_svd_policy_report_preserves_accuracy_modes():
@@ -15,10 +13,7 @@ def test_mps_svd_policy_report_preserves_accuracy_modes():
     assert payload["schema"] == "flagquantum.mps_svd_policy_report.v1"
     assert [item["bond"] for item in payload["selections"]] == [128, 256, 512]
     assert all(item["exact_driver"] == "gesvd" for item in payload["selections"])
-    assert all(
-        item["approximate_driver"] == "gesvda"
-        for item in payload["selections"]
-    )
+    assert all(item["approximate_driver"] == "gesvda" for item in payload["selections"])
     assert all(
         item["exact_residual"] <= payload["exact_residual_budget"]
         for item in payload["selections"]

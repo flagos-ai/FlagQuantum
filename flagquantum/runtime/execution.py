@@ -747,8 +747,7 @@ def run(
 
     source_ir = ensure_circuit_ir(circuit_or_ir)
     if any(
-        instruction.metadata.get("is_dynamic")
-        or instruction.metadata.get("condition")
+        instruction.metadata.get("is_dynamic") or instruction.metadata.get("condition")
         for instruction in source_ir.instructions
     ):
         raise NotImplementedError(
@@ -756,9 +755,7 @@ def run(
             "fq.experimental.run_dynamic(..., shots=...)"
         )
     requests = (
-        tuple(source_ir.measurements)
-        if measurements is None
-        else tuple(measurements)
+        tuple(source_ir.measurements) if measurements is None else tuple(measurements)
     )
     if any(not isinstance(request, MeasurementNode) for request in requests):
         raise TypeError("measurements must contain MeasurementNode instances")

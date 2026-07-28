@@ -1,5 +1,5 @@
 {
-  "artifact_class": "derived_development_report",
+  "artifact_class": "auxiliary_report",
   "benchmark_evidence_class": "non_release_smoke",
   "environment": {
     "cuda": "13.0",

@@ -39,9 +39,9 @@ def test_stable_api_and_lazy_compatibility_symbols_preserve_behavior():
 
 
 def test_dependency_graph_and_compatibility_registry_are_checked_in():
-    graph = (
-        ROOT / "docs" / "architecture" / "ARCHITECTURE_DEPENDENCIES.md"
-    ).read_text(encoding="utf-8")
+    graph = (ROOT / "docs" / "architecture" / "ARCHITECTURE_DEPENDENCIES.md").read_text(
+        encoding="utf-8"
+    )
     policy = (ROOT / "architecture.toml").read_text(encoding="utf-8")
 
     assert "flowchart TD" in graph

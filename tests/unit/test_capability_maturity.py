@@ -51,6 +51,4 @@ def test_user_discovery_links_fail_closed_when_missing():
     data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
     data["capabilities"]["ir"]["quick_start"] = "examples/does_not_exist.py"
     errors = maturity_errors(data, ROOT)
-    assert (
-        "ir: quick_start path does not exist: examples/does_not_exist.py" in errors
-    )
+    assert "ir: quick_start path does not exist: examples/does_not_exist.py" in errors

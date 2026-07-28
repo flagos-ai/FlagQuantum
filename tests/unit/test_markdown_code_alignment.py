@@ -84,15 +84,17 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
     vision = (ROOT / "docs" / "roadmap" / "FLAGQUANTUM_VISION.md").read_text(
         encoding="utf-8"
     )
-    native_example = (
-        ROOT / "examples" / "vqe_switch_sv_mps_tn.py"
-    ).read_text(encoding="utf-8")
+    native_example = (ROOT / "examples" / "vqe_switch_sv_mps_tn.py").read_text(
+        encoding="utf-8"
+    )
     mps_research = (
         ROOT / "examples" / "mps_hamiltonian_identification" / "core.py"
     ).read_text(encoding="utf-8")
 
     assert "training = fq.train(" in readme
-    assert "trained_program = build_program(next(model.parameters()).detach())" in readme
+    assert (
+        "trained_program = build_program(next(model.parameters()).detach())" in readme
+    )
     assert "two-feature classifier" not in examples
     assert "result = fq.run(program)" in result_contract
     assert "import flagquantum as fq" in hybrid

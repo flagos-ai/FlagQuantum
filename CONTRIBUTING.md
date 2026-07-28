@@ -76,10 +76,31 @@ Bugs and suggestions are tracked as [GitHub issues](https://guides.github.com/fe
 
 To get your contribution reviewed and merged:
 
-1. Follow the [styleguides](#styleguides)
-2. Ensure your changes do not break existing functionality
-3. If relevant, add or update tests
-4. The maintainers may request additional design work, tests, or changes before accepting the PR
+1. Install the development environment with `pip install -e '.[dev]'`.
+2. Install the versioned commit and push gates:
+
+   ```bash
+   pre-commit install
+   ```
+
+   The repository config installs both `pre-commit` and `pre-push` hooks.
+
+3. Add or update focused tests for the behavior you changed.
+4. Commit normally. Formatting, architecture, documentation, and typed-contract
+   checks run before the commit is accepted.
+5. Push normally. The CPU-safe quality, smoke/unit, runtime integration, and
+   distributed contract tiers run before Git sends commits to the remote.
+
+Run the complete push gate explicitly at any time:
+
+```bash
+python tools/pre_push.py
+```
+
+The local gate cannot reproduce clean Python 3.10–3.12 environments, package
+installation, supply-chain databases, or accelerator runners. Required GitHub
+checks remain authoritative for those environments, and protected branches
+must not be merged until they pass.
 
 ---
 

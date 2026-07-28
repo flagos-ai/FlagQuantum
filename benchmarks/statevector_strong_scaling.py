@@ -270,9 +270,14 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             "schema_version": SCHEMA,
             "benchmark": "statevector_strong_scaling",
             "artifact_class": "measured_development_run",
+            "benchmark_evidence_class": "non_release_smoke",
             "claim_evidence_type": "accelerator_development_performance",
+            "non_release_evidence": True,
             "scalability_claim_allowed": False,
             "release_gate_allowed": False,
+            "scalability_blockers": [
+                "hardware_certification_development_run_not_release_evidence"
+            ],
             "backend": "nccl",
             "distribution_semantics": (
                 "single_device_fast_path" if world_size == 1 else "sharded_across_ranks"

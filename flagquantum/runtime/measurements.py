@@ -84,7 +84,9 @@ def validate_measurements(
         kind = request.kind.strip().lower()
         if kind not in _SUPPORTED_KINDS:
             choices = ", ".join(sorted(_SUPPORTED_KINDS))
-            raise ValueError(f"unsupported measurement kind {kind!r}; expected {choices}")
+            raise ValueError(
+                f"unsupported measurement kind {kind!r}; expected {choices}"
+            )
         wires = _validate_wires(
             request.wires or tuple(range(n_wires)),
             n_wires,
@@ -92,7 +94,9 @@ def validate_measurements(
         metadata = dict(request.metadata)
         conditions = _postselection(metadata, n_wires)
         if conditions and kind not in {"sample", "counts"}:
-            raise ValueError("postselection is currently supported only for sample/counts")
+            raise ValueError(
+                "postselection is currently supported only for sample/counts"
+            )
         if kind in {"sample", "counts"} and request.shots is None:
             raise ValueError(f"{kind} measurement requires a positive shots value")
         if kind == "probabilities":
@@ -173,10 +177,7 @@ def _sample(
             "max_postselection_draw_multiplier"
         )
     conditioned = torch.stack(
-        [
-            torch.cat(parts, dim=0)[:shots]
-            for parts in retained
-        ],
+        [torch.cat(parts, dim=0)[:shots] for parts in retained],
         dim=0,
     )
     return conditioned[..., list(wires)], {
@@ -245,9 +246,7 @@ def _marginal_probabilities(
     subset_expectations: list[torch.Tensor | None] = [None]
     template: torch.Tensor | None = None
     for mask in range(1, 1 << len(wires)):
-        subset = tuple(
-            wire for index, wire in enumerate(wires) if mask & (1 << index)
-        )
+        subset = tuple(wire for index, wire in enumerate(wires) if mask & (1 << index))
         value = expectation(z=subset)
         template = value
         subset_expectations.append(value)

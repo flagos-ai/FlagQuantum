@@ -1283,6 +1283,26 @@ def test_benchmark_results_root_scan_is_hygienic_after_issue010():
     assert summary["claimable_count"] == len(summary["claimable_paths"])
 
 
+def test_auxiliary_report_is_valid_but_never_claimable(tmp_path: Path):
+    path = tmp_path / "summary.json"
+    path.write_text(
+        json.dumps(
+            {
+                "artifact_class": "auxiliary_report",
+                "schema": "flagquantum.test.summary.v1",
+                "status": "passed",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    summary = audit_paths([path], require_scalability=False)
+
+    assert summary["invalid_count"] == 0
+    assert summary["claimable_count"] == 0
+    assert summary["records"][0]["status"] == "auxiliary"
+
+
 def test_non_scalability_result_payloads_fail_strict_release_gate_after_issue010():
     non_release_dirs = (
         Path("benchmarks/results/local"),

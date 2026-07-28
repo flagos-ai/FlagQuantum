@@ -549,8 +549,13 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             "schema_version": SCHEMA,
             "benchmark": "statevector_differentiable_training_scaling",
             "artifact_class": "measured_development_run",
+            "benchmark_evidence_class": "non_release_smoke",
+            "non_release_evidence": True,
             "scalability_claim_allowed": False,
             "release_gate_allowed": False,
+            "scalability_blockers": [
+                "hardware_certification_development_run_not_release_evidence"
+            ],
             "backend": "nccl",
             "world_size": world,
             "local_world_size": int(os.environ.get("LOCAL_WORLD_SIZE", world)),

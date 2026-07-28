@@ -19,7 +19,7 @@ jobs:
       - name: Ruff production and test surface
         run: ruff check flagquantum tests tools
       - name: Black production and test surface
-        run: black --workers 1 --check flagquantum tests tools
+        run: black --check flagquantum tests tools
       - name: Typed foundation subset
         run: >-
           mypy --no-site-packages --ignore-missing-imports --follow-imports skip
