@@ -309,11 +309,14 @@ passing one capability does not promote the others.
       bounded shape/device/dtype/role leases and CUDA event-safe reuse.
 - [x] Fail closed on non-finite compiled-kernel and SVD outputs, with strict
       isolated-CUDA/CPU-LAPACK recovery for solver failures.
-- [x] Quarantine the batched two-site path when `max_bond >= 128`; an 8×A800,
+- [x] Initially quarantine the batched two-site path when `max_bond >= 128`; an 8×A800,
       64-wire, depth-4 run now passes with zero allocator retry/OOM. This is a
-      correctness recovery, not a performance promotion: large-bond batching
-      and staging-pool reuse remain disabled until their lifecycle defect is
-      independently reproduced and fixed.
+      correctness recovery, not a performance promotion.
+- [x] Narrow the large-bond quarantine: restore compiled batched contraction,
+      isolate only the unstable batched factorization at `max_bond >= 128`,
+      and retain strict per-matrix SVD. The same 8×A800 workload passes with
+      zero solver fallback, allocator retry, or OOM; staging-pool reuse remains
+      quarantined and this single run is not a performance promotion.
 - [ ] Investigate solver-native workspace control below `torch.linalg`; current
       PyTorch APIs do not expose an external cuSOLVER workspace pointer.
 - [ ] Fuse common contraction/decomposition regions.

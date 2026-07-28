@@ -7,7 +7,7 @@ from typing import Any, Sequence
 import torch
 
 from ....core.ir import Instruction
-from ....simulation.mps import _split_pair_matrix_bucket
+from ....simulation.mps import _split_pair_matrix, _split_pair_matrix_bucket
 from .communication import _instruction_matrix_for_mps
 from .errors import MPSForwardLifetimeError
 from .factorization import (
@@ -16,7 +16,6 @@ from .factorization import (
     factorization_workspace_pool,
     plan_rxx_factorization_microbatch,
 )
-from .operations import apply_two_mps_tensors_with_info
 from .site_kernels import (
     apply_rxx_contraction_bucket,
     apply_ry_bucket,
@@ -143,35 +142,6 @@ def prepare_compiled_mps_layer(
         for bucket in buckets.values():
             _, sample, sample_wires = bucket[0]
             sample_left = min(sample_wires)
-            if (
-                state.config.max_bond is not None
-                and int(state.config.max_bond) >= 128
-            ):
-                for index, candidate, wires in bucket:
-                    left = min(wires)
-                    matrix = _instruction_matrix_for_mps(
-                        candidate, bsz=bsz, device=device, dtype=dtype
-                    )
-                    updated_left, updated_right, info = apply_two_mps_tensors_with_info(
-                        state.local_tensors[left],
-                        state.local_tensors[left + 1],
-                        matrix,
-                        state.config,
-                        reverse=int(wires[0]) > int(wires[1]),
-                    )
-                    precomputed[index] = (updated_left, updated_right, info)
-                    state.local_tensors[left] = updated_left
-                    state.local_tensors[left + 1] = updated_right
-                factorization_records.append(
-                    {
-                        "policy_id": factorization_workspace_policy.policy_id,
-                        "layer_start": layer_start,
-                        "compiled_bucket_enabled": False,
-                        "reason": "high_bond_correctness_quarantine",
-                        "bucket_item_count": len(bucket),
-                    }
-                )
-                continue
             sample_matrix = _instruction_matrix_for_mps(
                 sample, bsz=bsz, device=device, dtype=dtype
             )
@@ -221,16 +191,40 @@ def prepare_compiled_mps_layer(
                     torch.stack(packed_matrices),
                     compiled=True,
                 )
-                split_outputs = _split_pair_matrix_bucket(
-                    pairs,
-                    left_dim=lefts.shape[2],
-                    right_dim=rights.shape[-1],
-                    config=state.config,
-                    svd_driver=factorization_workspace_policy.svd_driver,
+                isolate_factorizations = (
+                    state.config.max_bond is not None
+                    and int(state.config.max_bond) >= 128
                 )
+                split_outputs = (
+                    tuple(
+                        _split_pair_matrix(
+                            pair,
+                            left_dim=lefts.shape[2],
+                            right_dim=rights.shape[-1],
+                            config=state.config,
+                        )
+                        for pair in pairs
+                    )
+                    if isolate_factorizations
+                    else _split_pair_matrix_bucket(
+                        pairs,
+                        left_dim=lefts.shape[2],
+                        right_dim=rights.shape[-1],
+                        config=state.config,
+                        svd_driver=factorization_workspace_policy.svd_driver,
+                    )
+                )
+                factorization_records[-1]["batched_contraction_enabled"] = True
+                factorization_records[-1][
+                    "batched_factorization_enabled"
+                ] = not isolate_factorizations
+                if isolate_factorizations:
+                    factorization_records[-1]["reason"] = (
+                        "high_bond_batched_factorization_quarantine"
+                    )
                 factorization_records[-1]["staging_workspace_pool"] = {
                     "enabled": False,
-                    "reason": "high_bond_correctness_quarantine",
+                    "reason": "staging_pool_correctness_quarantine",
                     **factorization_workspace_pool().stats(),
                 }
                 for position, (index, _, wires) in enumerate(chunk):
