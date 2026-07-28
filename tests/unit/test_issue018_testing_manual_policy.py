@@ -12,7 +12,7 @@ def _read(path: str) -> str:
 
 
 def test_issue018_testing_manual_has_human_entrypoints():
-    text = _read("docs/TESTING.md")
+    text = _read("docs/development/TESTING.md")
     for heading in (
         "## Quick Start",
         "## Marker Reference",
@@ -25,7 +25,7 @@ def test_issue018_testing_manual_has_human_entrypoints():
 
 
 def test_issue018_testing_manual_distinguishes_required_workflows():
-    text = _read("docs/TESTING.md")
+    text = _read("docs/development/TESTING.md")
     for phrase in (
         "Daily Development",
         "Local API And Runtime Work",
@@ -38,7 +38,7 @@ def test_issue018_testing_manual_distinguishes_required_workflows():
 
 
 def test_issue018_testing_manual_lists_current_commands():
-    text = _read("docs/TESTING.md")
+    text = _read("docs/development/TESTING.md")
     for command in (
         "python tools/ci_tier.py pr-default",
         "python tools/ci_tier.py pr-runtime",
@@ -58,7 +58,7 @@ def test_issue018_testing_manual_lists_current_commands():
 
 
 def test_issue018_testing_manual_documents_every_marker_with_proof_boundary():
-    text = _read("docs/TESTING.md")
+    text = _read("docs/development/TESTING.md")
     for marker in (
         "smoke",
         "unit",
@@ -80,7 +80,7 @@ def test_issue018_testing_manual_documents_every_marker_with_proof_boundary():
 
 
 def test_issue018_testing_manual_matches_ci_tier_commands_and_boundaries():
-    text = _read("docs/TESTING.md")
+    text = _read("docs/development/TESTING.md")
     normalized = " ".join(text.split())
 
     for tier_name, tier in CI_TIERS.items():
@@ -107,7 +107,7 @@ def test_issue018_testing_manual_matches_ci_tier_commands_and_boundaries():
 
 
 def test_issue018_testing_manual_preserves_scalability_boundary():
-    text = " ".join(_read("docs/TESTING.md").split())
+    text = " ".join(_read("docs/development/TESTING.md").split())
     assert "CPU distributed tests prove semantics and fail-closed behavior only" in text
     assert "They do not prove real multi-card capacity expansion" in text
     assert (
@@ -122,7 +122,7 @@ def test_issue018_testing_manual_preserves_scalability_boundary():
 
 
 def test_testing_manual_aligned_with_agents():
-    docs = _read("docs/TESTING.md")
+    docs = _read("docs/development/TESTING.md")
     agents = _read("AGENTS.md")
     normalized_docs = " ".join(docs.split())
     assert "python tools/ci_tier.py pr-default" in agents

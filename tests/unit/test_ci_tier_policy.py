@@ -108,7 +108,7 @@ def test_nightly_tier_excludes_hardware_multinode_scalability_and_benchmark_cont
 
 
 def test_docs_ci_matrix_matches_script_tiers_and_fail_closed_boundaries():
-    text = Path("docs/TESTING.md").read_text(encoding="utf-8")
+    text = Path("docs/development/TESTING.md").read_text(encoding="utf-8")
 
     for tier_name in CI_TIERS:
         assert f"python tools/ci_tier.py {tier_name}" in text

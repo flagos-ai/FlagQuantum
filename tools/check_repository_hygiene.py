@@ -20,7 +20,7 @@ FORBIDDEN_SUFFIXES = {
     ".npy",
     ".npz",
 }
-ALLOWED_LARGE_FILES = {Path("assets/logo.png"): 2_100_000}
+ALLOWED_LARGE_FILES: dict[Path, int] = {}
 DEFAULT_MAX_FILE_BYTES = 2_000_000
 DEFAULT_MAX_TOTAL_BYTES = 50_000_000
 

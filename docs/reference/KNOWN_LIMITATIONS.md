@@ -2,8 +2,8 @@
 
 FlagQuantum publishes support claims per capability, not for the package as a
 whole. The authoritative status and evidence requirements are defined in
-[`capability-maturity.toml`](../capability-maturity.toml) and explained in
-[`CAPABILITY_MATURITY.md`](CAPABILITY_MATURITY.md).
+[`capability-maturity.toml`](../../capability-maturity.toml) and explained in
+[`CAPABILITY_MATURITY.md`](../roadmap/CAPABILITY_MATURITY.md).
 
 | Capability | Current level | Limitation |
 | --- | --- | --- |

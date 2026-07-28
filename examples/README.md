@@ -1,85 +1,114 @@
 # FlagQuantum Examples
 
-FlagQuantum examples are short, runnable scripts that demonstrate a concrete
-workflow. They complement tutorials: tutorials explain concepts, while examples
-provide reusable code templates.
+Runnable, copy-ready workflows for building and training quantum AI programs
+with the current FlagQuantum API.
 
-The [capability catalog](../docs/generated/CAPABILITIES.md) is the complete
-task-oriented entry point. It identifies the canonical quick example, maturity,
-hardware, gradient support, and distribution semantics for every product
-capability.
+All curated examples use:
 
-## Curated Paths
+- `import flagquantum as fq` as the public entry point;
+- `fq.Circuit(n_qubits=...)` for circuit construction;
+- PyTorch for parameters, gradients, and optimizers;
+- explicit runtime and distribution semantics when making performance claims.
 
-Start with the end-to-end quantum-classical hybrid AI example:
+For exact support levels, consult the
+[capability catalog](../docs/generated/CAPABILITIES.md).
+
+## Start in one minute
+
+From an editable development installation:
 
 ```bash
-python examples/quick_start.py --steps 40
+python examples/quick_start.py --mode sv --steps 40
 ```
 
-It combines a `torch.nn.Linear` encoder with an `fq.Module` quantum layer in
-one ordinary PyTorch optimizer loop. The model learns a one-dimensional
-analytical target and reports both classical and quantum training results.
+This trains a hybrid model with a `torch.nn.Linear` encoder and an `fq.Module`
+quantum layer in one PyTorch optimizer loop. The example uses an analytical
+target, so it reports correctness as well as training loss.
 
-| Path | Purpose | Start here |
+Switch the simulation representation without rewriting the model:
+
+```bash
+python examples/quick_start.py --mode mps --steps 40
+python examples/quick_start.py --mode tn --steps 40
+```
+
+Statevector is the recommended first run. MPS and tensor-network support
+boundaries are listed in the capability catalog.
+
+## Choose a workflow
+
+| Goal | Recommended entry | Scope |
 | --- | --- | --- |
-| `tutorials/` | Beginner notebooks for circuit basics, measurement, gradients, and QML | `tutorials/README.md` |
-| `quick_start.py` | Minimal quantum-classical hybrid AI training | Run this first |
-| `single_machine_quantum_ai/` | Official CPU/one-GPU quantum AI examples | `single_machine_quantum_ai/README.md` |
-| `distributed_statevector_topologies/` | Sharded statevector topology and ownership examples | `distributed_statevector_topologies/README.md` |
-| `distributed_mps/` | Rank-owned variable-bond MPS capacity examples | `distributed_mps/README.md` |
-| `mps_hamiltonian_identification/` | Experimental 512–1024 qubit MPS system-identification research path | `mps_hamiltonian_identification/README.md` |
-| `train_parameterized_circuit_then_deploy.py` | Train a parameterized circuit and package it for deployment | Run as a deployment bridge example |
-| `hybrid_jax_torch_training.py` | Minimal PyTorch training interface with a JAX quantum kernel | Use for integration experiments |
-| `quantum_transformer.py` | Larger application-style demo | Treat as a demo candidate, not a minimal example |
+| Learn circuits, measurements, gradients, and QML | [Tutorials](tutorials/README.md) | Guided notebooks |
+| Verify the local CPU or one-GPU path | [Single-machine quantum AI](single_machine_quantum_ai/README.md) | Supported local workflows |
+| Train a local statevector VQE | [`01_vqe_statevector.py`](single_machine_quantum_ai/01_vqe_statevector.py) | Exact differentiable simulation |
+| Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
+| Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
+| Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |
+| Inspect rank-owned MPS execution | [Distributed MPS](distributed_mps/README.md) | Development evidence |
+| Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |
+| Build an extension | [`extensions/reference_extensions.py`](extensions/reference_extensions.py) | Experimental API |
 
-## Runtime Planning Example
+Larger application and research examples are intentionally not presented as
+minimal getting-started paths.
 
-Use `Circuit.runtime_plan(...)` or `fq.plan_runtime_selection(...)` when an
-example needs to explain why it chose statevector, MPS, tensor network, JAX, or
-distributed execution:
+## Plan before execution
+
+Use the runtime planner when you need to inspect representation choice,
+gradient support, or blockers before running:
 
 ```python
 import flagquantum as fq
 
-circuit = fq.Circuit(4)
-circuit.h(0).cx(0, 1).rzz(1, 2, theta=0.2)
+circuit = (
+    fq.Circuit(n_qubits=4)
+    .h(0)
+    .cx(0, 1)
+    .rzz(1, 2, theta=0.2)
+)
 
 plan = circuit.runtime_plan(prefer_jax=True, require_gradients=True)
-print(plan.summary()["recommended_mode"])
+print(plan.summary())
 ```
 
-Examples must print distribution semantics before making performance or
-scalability statements.
+A plan is an explanation of intended execution, not benchmark evidence.
+Performance and scalability statements must use runtime-generated records and
+report their `distribution_semantics`.
 
-## Recommended First Runs
+## Recommended smoke runs
+
+These small commands are suitable for checking a development environment:
 
 ```bash
 python examples/single_machine_quantum_ai/00_local_fast_path_check.py
-python examples/single_machine_quantum_ai/01_vqe_statevector.py --steps 2 --n-qubits 3
+python examples/single_machine_quantum_ai/01_vqe_statevector.py \
+  --backend torch --steps 2 --n-qubits 3
 python examples/single_machine_quantum_ai/02_quantum_classifier.py --steps 2
-python examples/single_machine_quantum_ai/03_mps_training.py --steps 2 --n-qubits 4 --max-bond 8
-python examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py --steps 1 --bench-iters 1
-python examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py --steps 2 --n-qubits 20
+python examples/single_machine_quantum_ai/03_mps_training.py \
+  --steps 2 --n-qubits 4 --max-bond 8
 ```
 
-The curated single-machine examples intentionally avoid distributed backend
-initialization. They are local fast-path examples and do not make distributed
-scalability claims.
+Optional JAX check:
 
-## Adding A New Example
+```bash
+python examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py \
+  --steps 1 --bench-iters 1
+```
 
-Use a new example when the user should be able to copy the file, change a few
-arguments, and run a task end to end.
+The curated single-machine examples do not initialize distributed backends and
+make no distributed scalability claim.
 
-Each curated example should include:
+## Example quality contract
 
-- A module docstring that states the task and runtime mode.
-- A corresponding capability entry with maturity and a support boundary.
-- `argparse` options for problem size, steps, device, and optional benchmarks.
-- A short smoke command suitable for tests or documentation.
-- Clear output keys for final metrics and backend/runtime summary.
-- Honest wording about local, replicated, sliced, or sharded execution.
+A curated example must:
 
-Prefer putting shared helpers in the nearest local `common.py` instead of adding
-new framework abstractions from an example.
+1. state the task, runtime mode, and maturity boundary;
+2. expose practical arguments for problem size, steps, and device;
+3. run end to end from a documented installation;
+4. report a correctness metric or an explicit reference value;
+5. identify local, replicated, sliced, or sharded execution accurately;
+6. use stable public API unless explicitly labeled experimental.
+
+Shared helpers belong next to the examples that use them. Example-only
+convenience code must not become a framework abstraction without a separate API
+review.

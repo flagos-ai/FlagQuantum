@@ -8,16 +8,24 @@ from pathlib import Path
 
 import torch
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from common import (  # noqa: E402
+    exact_ground_energy,
+    jax_available,
+    print_training_summary,
+    speedup,
+    time_value_and_grad,
+)
+
 import flagquantum as fq  # noqa: E402
-from common import exact_ground_energy, jax_available, print_training_summary, speedup, time_value_and_grad  # noqa: E402
 
 
-def build_ansatz(parameters: torch.Tensor, *, n_wires: int, layers: int, device: str) -> fq.Circuit:
+def build_ansatz(
+    parameters: torch.Tensor, *, n_wires: int, layers: int, device: str
+) -> fq.Circuit:
     circuit = fq.Circuit(n_wires, device=device)
     cursor = 0
     for _ in range(layers):
@@ -55,16 +63,26 @@ def main() -> None:
     )
 
     def native_loss(theta: torch.Tensor) -> torch.Tensor:
-        circuit = build_ansatz(theta, n_wires=args.n_qubits, layers=args.layers, device=args.device)
+        circuit = build_ansatz(
+            theta, n_wires=args.n_qubits, layers=args.layers, device=args.device
+        )
         return hamiltonian.expectation(circuit).sum()
 
-    has_jax, jax_error = jax_available()
+    has_jax = False
+    jax_error = None
+    if args.backend == "jax":
+        has_jax, jax_error = jax_available()
     if args.backend == "jax" and not has_jax:
-        raise SystemExit(f"JAX backend requested but unavailable: {jax_error}. Use --backend torch to run the native path.")
+        raise SystemExit(
+            f"JAX backend requested but unavailable: {jax_error}. "
+            "Use --backend torch to run the native path."
+        )
     jax_kernel = None
     if has_jax:
         jax_kernel = fq.compile_quantum_kernel(
-            lambda theta: build_ansatz(theta, n_wires=args.n_qubits, layers=args.layers, device=args.device),
+            lambda theta: build_ansatz(
+                theta, n_wires=args.n_qubits, layers=args.layers, device=args.device
+            ),
             parameters.detach(),
             backend="jax",
             interface="torch",
@@ -87,10 +105,19 @@ def main() -> None:
         loss = training_loss(parameters)
         loss.backward()
         optimizer.step()
-        if step == 0 or step == args.steps - 1 or (step + 1) % max(1, args.steps // 5) == 0:
+        if (
+            step == 0
+            or step == args.steps - 1
+            or (step + 1) % max(1, args.steps // 5) == 0
+        ):
             print({"step": step + 1, "energy": float(loss.detach())})
 
-    trained = build_ansatz(parameters.detach(), n_wires=args.n_qubits, layers=args.layers, device=args.device)
+    trained = build_ansatz(
+        parameters.detach(),
+        n_wires=args.n_qubits,
+        layers=args.layers,
+        device=args.device,
+    )
     native_speed = None
     if args.compare_torch:
         native_speed = time_value_and_grad(
@@ -99,13 +126,33 @@ def main() -> None:
             iters=args.bench_iters,
             device=args.device,
         )
-    jax_speed = time_value_and_grad(
-        lambda theta: jax_kernel(theta).sum(),
-        parameters.detach(),
-        iters=args.bench_iters,
-        device=args.device,
-    ) if jax_kernel is not None else None
+    jax_speed = (
+        time_value_and_grad(
+            lambda theta: jax_kernel(theta).sum(),
+            parameters.detach(),
+            iters=args.bench_iters,
+            device=args.device,
+        )
+        if jax_kernel is not None
+        else None
+    )
     final_energy = float(training_loss(parameters).detach())
+    speed_compare = {
+        "pytorch_native": (
+            native_speed
+            if native_speed is not None
+            else {
+                "status": "unavailable",
+                "reason": "pass --compare-torch to benchmark the native path",
+            }
+        ),
+    }
+    if jax_speed is not None:
+        speed_compare["jax_kernel"] = jax_speed
+        speed_compare["speedup_jax_over_pytorch"] = speedup(
+            native_speed["avg_seconds"] if native_speed else None,
+            jax_speed["avg_seconds"],
+        )
     print_training_summary(
         title="Single-Machine VQE (Statevector)",
         example="single_machine_vqe_statevector",
@@ -117,14 +164,7 @@ def main() -> None:
             "gap_to_theory": final_energy - exact_energy,
             "optimized_parameter_norm": float(parameters.detach().norm()),
         },
-        speed_compare={
-            "pytorch_native": native_speed if native_speed is not None else {"status": "unavailable", "reason": "run with --compare-torch"},
-            "jax_kernel": jax_speed if jax_speed is not None else {"status": "unavailable", "reason": jax_error},
-            "speedup_jax_over_pytorch": speedup(
-                native_speed["avg_seconds"] if native_speed else None,
-                jax_speed["avg_seconds"] if jax_speed else None,
-            ),
-        },
+        speed_compare=speed_compare,
         model_summary=trained.plan().summary(),
     )
 

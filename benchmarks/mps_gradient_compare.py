@@ -36,7 +36,6 @@ from typing import Any
 
 import torch
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -499,7 +498,11 @@ def main() -> None:
     parser.add_argument("--skip-fq-local-mps", action="store_true")
     parser.add_argument("--loss-atol", type=float, default=1e-4)
     parser.add_argument("--grad-atol", type=float, default=1e-4)
-    parser.add_argument("--json-output", default="mps_benchmark")
+    parser.add_argument(
+        "--json-output",
+        default=None,
+        help="Optional JSON output path; stdout is used when omitted.",
+    )
     args = parser.parse_args()
 
     device = _device(args.device)

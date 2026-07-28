@@ -5,11 +5,12 @@
 <p><em>Designed for the FlagOS unified multi-chip backend</em></p>
 
 [Quick Start](#quick-start) ·
+[Documentation](docs/README.md) ·
 [Capabilities](docs/generated/CAPABILITIES.md) ·
 [Examples](examples/README.md) ·
-[API Reference](docs/API.md) ·
+[API Reference](docs/reference/API.md) ·
 [Architecture](ARCHITECTURE.md) ·
-[Roadmap](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+[Roadmap](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.5%2B-red.svg)](https://pytorch.org/)
 [![Python](https://img.shields.io/badge/Python-3.10--3.12-blue.svg)](https://python.org/)
@@ -108,7 +109,7 @@ python examples/quick_start.py --mode tn
 
 Start with the [annotated source](examples/quick_start.py), continue to the
 [single-machine quantum AI examples](examples/single_machine_quantum_ai/README.md),
-or inspect the stable [`fq.ExecutionResult` contract](docs/RUNTIME_RESULT_CONTRACT.md).
+or inspect the stable [`fq.ExecutionResult` contract](docs/reference/RUNTIME_RESULT_CONTRACT.md).
 
 ## How it works
 
@@ -131,7 +132,7 @@ trained programs.
 The complete stable `flagquantum.backends.flagos` backend and deeper FlagOS
 kernel and collective integration are under active development. Existing
 accelerator paths remain supported according to their documented maturity;
-the [FlagOS-aligned release train](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+the [FlagOS-aligned release train](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
 defines when unified backend claims may be promoted. The diagram is the target
 product architecture; the
 [machine-validated capability matrix](capability-maturity.toml) remains the
@@ -284,8 +285,8 @@ throughput:
   ownership; release claims still require audited hardware evidence.
 
 See the
-[distributed quantum AI principles](docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md)
-and [distributed scalability principles](docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md)
+[distributed quantum AI principles](docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md)
+and [distributed scalability principles](docs/concepts/DISTRIBUTED_SCALABILITY_PRINCIPLES.md)
 for the binding execution and evidence rules.
 
 ## Deploy trained programs
@@ -308,7 +309,7 @@ print(package.qasm[:80])
 Provider availability, credentials, supported operations, and hardware
 evidence vary by target. Cloud deployment is currently development evidence,
 not a release-certified hardware capability. See the
-[API reference](docs/API.md) and [known limitations](docs/KNOWN_LIMITATIONS.md).
+[API reference](docs/reference/API.md) and [known limitations](docs/reference/KNOWN_LIMITATIONS.md).
 
 ## Capability maturity
 
@@ -375,9 +376,9 @@ print(fq.info())
 | Train a large low-entanglement system | [Differentiable MPS](examples/mps_hamiltonian_identification/README.md) |
 | Partition one workload across devices | [Distributed statevector](examples/distributed_statevector_topologies/README.md) and [distributed MPS](examples/distributed_mps/README.md) |
 | Package a trained program for hardware | [Training-to-deployment example](examples/train_parameterized_circuit_then_deploy.py) |
-| Understand the runtime architecture | [Runtime architecture](docs/RUNTIME_ARCHITECTURE.md) |
-| Follow FlagOS integration milestones | [FlagOS-aligned release train](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md) |
-| Inspect limitations and evidence | [Known limitations](docs/KNOWN_LIMITATIONS.md) and [capability maturity](docs/CAPABILITY_MATURITY.md) |
+| Understand the runtime architecture | [Runtime architecture](docs/architecture/RUNTIME_ARCHITECTURE.md) |
+| Follow FlagOS integration milestones | [FlagOS-aligned release train](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md) |
+| Inspect limitations and evidence | [Known limitations](docs/reference/KNOWN_LIMITATIONS.md) and [capability maturity](docs/roadmap/CAPABILITY_MATURITY.md) |
 
 ## Benchmarks and evidence
 
@@ -408,10 +409,10 @@ python tools/ci_tier.py pr-default
 ```
 
 Runtime, distributed, accelerator, and release changes use progressively
-stronger tiers documented in the [testing manual](docs/TESTING.md).
+stronger tiers documented in the [testing manual](docs/development/TESTING.md).
 
 Before contributing, read [AGENTS.md](AGENTS.md), the
-[capability maturity policy](docs/CAPABILITY_MATURITY.md), and the
+[capability maturity policy](docs/roadmap/CAPABILITY_MATURITY.md), and the
 architecture map in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## License

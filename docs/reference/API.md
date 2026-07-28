@@ -1,22 +1,38 @@
 # FlagQuantum API Reference
 
-The stable package boundary is defined by [`public_api_v1.json`](public_api_v1.json),
-verified by an import/snapshot test, and rendered in
-[`generated/STABLE_API.md`](generated/STABLE_API.md). An object merely reachable
-through a compatibility module is not a stable API.
+FlagQuantum exposes one curated Python interface:
+`import flagquantum as fq`. Build a circuit, inspect its runtime plan, execute
+it through a stable result contract, and train parameterized programs with
+PyTorch.
 
-## Quick start
+Exact stable names are defined by
+[`public_api_v1.json`](../public_api_v1.json), verified by executable contract
+tests, and rendered in the
+[stable API inventory](../generated/STABLE_API.md).
+
+## API map
+
+| Task | Primary interface | Result |
+| --- | --- | --- |
+| Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
+| Execute | `fq.run` | `fq.ExecutionResult` |
+| Define a trainable quantum layer | `fq.Module` | PyTorch module |
+| Train | `fq.train` | `fq.TrainingResult` |
+| Package for a target | `fq.create_deployment_package` | Sealed deployment package |
+
+## Build and execute
 
 ```python
 import flagquantum as fq
 
-circuit = fq.Circuit(n_qubits=2)
-circuit.h(0)
-circuit.cx(0, 1)
+circuit = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
+plan = circuit.runtime_plan()
 result = fq.run(circuit)
 
+print(plan.summary()["recommended_mode"])
+print(result.plan.state_mode)
 print(result.state)
-print(result.plan)
 ```
 
 `n_qubits` is the preferred public name for circuit size. Positional
@@ -37,10 +53,28 @@ shortcut whose default return remains backend-native. `fq.run_native`,
 `fq.run_mps`, and `fq.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects.
 
-Training is intentionally separate from execution:
+## Train with PyTorch
+
+Execution and training are intentionally separate. A complete trainable program
+looks like ordinary PyTorch code:
 
 ```python
-module = fq.Module(build_circuit, n_parameters=2)
+import flagquantum as fq
+import torch
+
+def build_circuit(parameters, inputs=None):
+    return (
+        fq.Circuit(n_qubits=2)
+        .ry(0, theta=parameters[0])
+        .cx(0, 1)
+        .ry(1, theta=parameters[1])
+    )
+
+module = fq.Module(
+    build_circuit,
+    n_parameters=2,
+    policy=fq.RuntimePolicy(observable_wires=(1,)),
+)
 optimizer = torch.optim.Adam(module.parameters(), lr=0.01)
 
 training = fq.train(
@@ -49,6 +83,8 @@ training = fq.train(
     objective=lambda value: value.mean(),
     steps=100,
 )
+
+print(training.losses[-1])
 ```
 
 `fq.run` performs one forward execution and never updates parameters.
@@ -56,6 +92,9 @@ training = fq.train(
 `step`) and returns `fq.TrainingResult`. The specialized
 `train_distributed_statevector` and `train_distributed_mps` functions remain
 advanced interfaces for explicit distributed lifecycle and evidence control.
+
+The [examples index](../../examples/README.md) provides runnable statevector,
+MPS, JAX, distributed, and deployment workflows.
 
 ## Measurements
 
@@ -163,7 +202,7 @@ result = provider.run(package)  # Creates a Braket quantum task.
 
 `dry_run()` validates the sealed package, device ARN, OpenQASM version, IQM
 dialect and dynamic groups without calling `AwsDevice.run()`. See
-[`braket_iqm_dynamic_preflight.py`](../examples/braket_iqm_dynamic_preflight.py)
+[`braket_iqm_dynamic_preflight.py`](../../examples/braket_iqm_dynamic_preflight.py)
 for the complete guarded-submission example. This integration has been
 validated locally through the real Braket SDK serializer and mocked task
 contract only; no real IQM QPU execution is claimed.
@@ -241,7 +280,7 @@ authoritative for exact names.
 - A planner result describes intent and estimates; it is never runtime or
   benchmark evidence.
 - Operator/backend support comes from the executable lowering registry in the
-  [generated capability table](generated/OPERATOR_CAPABILITIES.md).
+  [generated capability table](../generated/OPERATOR_CAPABILITIES.md).
 - Runtime evidence must satisfy the [typed contracts](RUNTIME_CONTRACTS.md).
 
 Examples in stable documentation are executed by documentation contract tests.

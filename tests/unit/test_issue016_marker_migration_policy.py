@@ -62,7 +62,7 @@ def test_issue016_runtime_tier_uses_integration_marker_after_migration():
 
 
 def test_docs_record_incremental_marker_migration():
-    docs = _read("docs/TESTING.md")
+    docs = _read("docs/development/TESTING.md")
     assert 'python -m pytest -m "integration" -q' in docs
     assert "tests/test_native_circuit.py" in docs
     assert "tests/test_backends.py" in docs

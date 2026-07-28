@@ -53,10 +53,10 @@ FlagQuantum must become a flagship quantum AI framework with:
 Before changing distributed runtime, planners, benchmark claims, or quantum AI
 training paths, read:
 
-- `docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md`
-- `docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md`
-- `docs/CAPABILITY_MATURITY.md`
-- `docs/KNOWN_LIMITATIONS.md`
+- `docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md`
+- `docs/concepts/DISTRIBUTED_SCALABILITY_PRINCIPLES.md`
+- `docs/roadmap/CAPABILITY_MATURITY.md`
+- `docs/reference/KNOWN_LIMITATIONS.md`
 
 These documents are binding design standards.
 
@@ -100,7 +100,7 @@ by rewriting user code.
 
 ## Verification Standards
 
-Use the tiered pytest policy in `docs/TESTING.md`: run the smallest meaningful
+Use the tiered pytest policy in `docs/development/TESTING.md`: run the smallest meaningful
 layer first, then expand by blast radius. Do not start with the largest suite
 when a smaller seeded tier proves the touched surface.
 

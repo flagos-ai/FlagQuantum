@@ -1,7 +1,7 @@
 # Eight-GPU Variable-Bond MPS Capacity Example
 
 The maintained execution plan for advancing this backend is
-[`MPS_TOP_TIER_ROADMAP.md`](../../docs/MPS_TOP_TIER_ROADMAP.md).
+[`MPS_TOP_TIER_ROADMAP.md`](../../docs/roadmap/MPS_TOP_TIER_ROADMAP.md).
 
 This example evolves and differentiates one open-boundary MPS. It does not use
 a large batch, data-parallel replicas, or full-MPS reconstruction.

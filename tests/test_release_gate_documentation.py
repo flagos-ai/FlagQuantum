@@ -22,7 +22,7 @@ def test_issue011_registers_tiered_pytest_markers():
 
 
 def test_issue011_testing_policy_documents_marker_boundaries():
-    text = Path("docs/TESTING.md").read_text(encoding="utf-8")
+    text = Path("docs/development/TESTING.md").read_text(encoding="utf-8")
     normalized = " ".join(text.split())
 
     for marker in TIERED_MARKERS:
@@ -42,7 +42,7 @@ def test_issue011_agents_guidance_uses_tiered_strategy_without_false_scalability
     text = Path("AGENTS.md").read_text(encoding="utf-8")
     normalized = " ".join(text.split())
 
-    assert "Use the tiered pytest policy in `docs/TESTING.md`" in text
+    assert "Use the tiered pytest policy in `docs/development/TESTING.md`" in text
     assert 'python -m pytest -m "smoke or unit" -q' in text
     assert "Only run marker-selection commands that have seeded tests" in text
     assert (

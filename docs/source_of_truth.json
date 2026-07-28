@@ -7,7 +7,7 @@
     "capability_maturity": "capability-maturity.toml",
     "benchmark_evidence": "benchmarks/results/",
     "support_policy": "pyproject.toml",
-    "release_changes": "docs/RELEASE_NOTES.md"
+    "release_changes": "docs/reference/RELEASE_NOTES.md"
   },
   "externally_validated_authorities": {
     "benchmark_evidence": "python benchmarks/audit_results.py --input benchmarks/results"
@@ -19,17 +19,17 @@
   },
   "stable_documents": [
     "README.md",
-    "docs/API.md",
-    "docs/FEATURE_PARITY_MATRIX.md",
-    "docs/CAPABILITY_MATURITY.md",
-    "docs/KNOWN_LIMITATIONS.md",
-    "docs/RELEASE_NOTES.md",
+    "docs/reference/API.md",
+    "docs/reference/FEATURE_PARITY_MATRIX.md",
+    "docs/roadmap/CAPABILITY_MATURITY.md",
+    "docs/reference/KNOWN_LIMITATIONS.md",
+    "docs/reference/RELEASE_NOTES.md",
     "docs/generated/CAPABILITIES.md",
     "docs/generated/STABLE_API.md",
     "docs/generated/OPERATOR_CAPABILITIES.md"
   ],
   "intent_documents": [
-    "docs/FLAGQUANTUM_VISION.md",
-    "docs/EXASCALE_GORDON_BELL_STRATEGY.md"
+    "docs/roadmap/FLAGQUANTUM_VISION.md",
+    "docs/roadmap/EXASCALE_GORDON_BELL_STRATEGY.md"
   ]
 }

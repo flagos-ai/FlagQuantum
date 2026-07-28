@@ -35,7 +35,6 @@ from typing import Any
 
 import torch
 
-
 REPRO_COMMANDS = """
 CPU statevector:
   python benchmarks/backend_compare.py --device cpu --mode statevector --n-wires 8 --layers 2 --batch-size 16 --observable ising --iters 50 --warmup 10 --json-output cpu_jax_statevector_compare_8q_b16_ising.json
@@ -313,7 +312,11 @@ def main() -> None:
     parser.add_argument("--max-bond", type=int, default=None)
     parser.add_argument("--loss-atol", type=float, default=1e-4)
     parser.add_argument("--grad-atol", type=float, default=1e-4)
-    parser.add_argument("--json-output", default="sv_benckend_benchmark_local_ising")
+    parser.add_argument(
+        "--json-output",
+        default=None,
+        help="Optional JSON output path; stdout is used when omitted.",
+    )
     args = parser.parse_args()
     _configure_torch_precision(args.torch_matmul_precision)
 

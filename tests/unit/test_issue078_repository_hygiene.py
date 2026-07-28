@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,7 @@ from tools.verify_distribution_artifacts import _forbidden
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
+MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 
 def test_repository_has_no_tracked_cache_dataset_model_or_oversized_artifact():
@@ -31,6 +33,25 @@ def test_repository_has_no_tracked_cache_dataset_model_or_oversized_artifact():
         )
         == ()
     )
+
+
+def test_repository_root_has_no_generated_benchmark_or_retired_logo() -> None:
+    assert not (ROOT / "mps_benchmark").exists()
+    assert not (ROOT / "sv_benckend_benchmark_local").exists()
+    assert not (ROOT / "assets" / "logo.png").exists()
+    assert (ROOT / "assets" / "logo_flagquantum.png").is_file()
+
+
+def test_local_markdown_links_resolve() -> None:
+    broken: list[str] = []
+    for document in ROOT.rglob("*.md"):
+        for target in MARKDOWN_LINK.findall(document.read_text(encoding="utf-8")):
+            if target.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            local_target = target.split("#", 1)[0]
+            if local_target and not (document.parent / local_target).exists():
+                broken.append(f"{document.relative_to(ROOT)} -> {target}")
+    assert not broken, "\n".join(broken)
 
 
 def test_dependency_groups_keep_core_minimal_and_ranges_executable():

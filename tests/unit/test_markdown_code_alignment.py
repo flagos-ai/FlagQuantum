@@ -8,11 +8,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 USER_DOCUMENTS = (
     ROOT / "README.md",
-    ROOT / "docs" / "API.md",
-    ROOT / "docs" / "ECOSYSTEM_DEVELOPMENT.md",
-    ROOT / "docs" / "FQ_MODULE.md",
-    ROOT / "docs" / "HYBRID_RUNTIME_ARCHITECTURE.md",
-    ROOT / "docs" / "RUNTIME_RESULT_CONTRACT.md",
+    ROOT / "docs" / "reference" / "API.md",
+    ROOT / "docs" / "roadmap" / "ECOSYSTEM_DEVELOPMENT.md",
+    ROOT / "docs" / "reference" / "FQ_MODULE.md",
+    ROOT / "docs" / "architecture" / "HYBRID_RUNTIME_ARCHITECTURE.md",
+    ROOT / "docs" / "reference" / "RUNTIME_RESULT_CONTRACT.md",
     ROOT / "examples" / "README.md",
     ROOT / "examples" / "single_machine_quantum_ai" / "README.md",
     ROOT / "examples" / "mps_hamiltonian_identification" / "README.md",
@@ -76,12 +76,14 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     examples = (ROOT / "examples" / "README.md").read_text(encoding="utf-8")
     result_contract = (
-        ROOT / "docs" / "RUNTIME_RESULT_CONTRACT.md"
+        ROOT / "docs" / "reference" / "RUNTIME_RESULT_CONTRACT.md"
     ).read_text(encoding="utf-8")
-    hybrid = (ROOT / "docs" / "HYBRID_RUNTIME_ARCHITECTURE.md").read_text(
+    hybrid = (
+        ROOT / "docs" / "architecture" / "HYBRID_RUNTIME_ARCHITECTURE.md"
+    ).read_text(encoding="utf-8")
+    vision = (ROOT / "docs" / "roadmap" / "FLAGQUANTUM_VISION.md").read_text(
         encoding="utf-8"
     )
-    vision = (ROOT / "docs" / "FLAGQUANTUM_VISION.md").read_text(encoding="utf-8")
     native_example = (
         ROOT / "examples" / "vqe_switch_sv_mps_tn.py"
     ).read_text(encoding="utf-8")

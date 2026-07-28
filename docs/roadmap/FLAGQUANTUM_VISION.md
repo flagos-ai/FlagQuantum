@@ -319,13 +319,13 @@ Its full ambition is to serve both ends of the field:
 
 ## Relationship To Product Policy
 
-- `docs/CAPABILITY_MATURITY.md` separates research availability from supported
+- `docs/roadmap/CAPABILITY_MATURITY.md` separates research availability from supported
   and release-certified capability.
-- `docs/KNOWN_LIMITATIONS.md` records current support boundaries.
-- `docs/EXASCALE_GORDON_BELL_STRATEGY.md` defines leadership-scale system and
+- `docs/reference/KNOWN_LIMITATIONS.md` records current support boundaries.
+- `docs/roadmap/EXASCALE_GORDON_BELL_STRATEGY.md` defines leadership-scale system and
   scientific requirements.
-- `docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md` and
-  `docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md` define claim and execution
+- `docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md` and
+  `docs/concepts/DISTRIBUTED_SCALABILITY_PRINCIPLES.md` define claim and execution
   boundaries.
 - Future intent is never proof of current capability; only declared maturity
   and its referenced evidence may support capability claims.

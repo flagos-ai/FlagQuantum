@@ -24,13 +24,13 @@ def _execute_first_python_block(relative_path: str) -> dict[str, object]:
 
 @pytest.mark.integration
 def test_runtime_result_contract_entry_example_executes() -> None:
-    namespace = _execute_first_python_block("docs/RUNTIME_RESULT_CONTRACT.md")
+    namespace = _execute_first_python_block("docs/reference/RUNTIME_RESULT_CONTRACT.md")
 
     assert namespace["result"].plan is not None
 
 
 @pytest.mark.integration
 def test_hybrid_runtime_entry_example_executes() -> None:
-    namespace = _execute_first_python_block("docs/HYBRID_RUNTIME_ARCHITECTURE.md")
+    namespace = _execute_first_python_block("docs/architecture/HYBRID_RUNTIME_ARCHITECTURE.md")
 
     assert namespace["loss"].grad_fn is not None

@@ -58,7 +58,7 @@ def test_issue012_baseline_avoids_distributed_gpu_benchmark_and_subprocess_depen
 
 
 def test_issue012_docs_and_agents_keep_smoke_unit_as_minimum_entry_point():
-    testing = Path("docs/TESTING.md").read_text(encoding="utf-8")
+    testing = Path("docs/development/TESTING.md").read_text(encoding="utf-8")
     agents = Path("AGENTS.md").read_text(encoding="utf-8")
     assert 'python -m pytest -m "smoke or unit" -q' in testing
     assert 'python -m pytest -m "smoke or unit" -q' in agents

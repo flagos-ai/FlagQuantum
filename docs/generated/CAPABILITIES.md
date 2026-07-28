@@ -1,6 +1,20 @@
 # FlagQuantum Capabilities
 
-Do not edit. Source: `capability-maturity.toml`. Maturity describes the exact documented scope; it does not turn local, replicated, or planned execution into distributed scalability evidence.
+Choose a supported workflow by user goal, runtime, hardware, and evidence level.
+This catalog is generated from the machine-validated
+[`capability-maturity.toml`](../../capability-maturity.toml) source of truth.
+
+> Maturity applies only to the scope stated in each row. A local, replicated,
+> sliced, or planned execution path is not distributed scalability evidence.
+
+## How to read maturity
+
+| Level | Meaning |
+| --- | --- |
+| **Release certified** | Release-gated with audited, reproducible evidence and no unresolved release blocker. |
+| **Production supported** | Supported path with compatibility, operational guidance, and target-hardware evidence. |
+| **Development evidence** | Executable and tested development result; not a production or general scalability claim. |
+| **Experimental** | Research surface without compatibility or production guarantees. |
 
 ## Find a capability by goal
 
@@ -42,7 +56,7 @@ Build, validate, serialize, compile, and inspect quantum circuits through the st
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick example](../../examples/quick_start.py)
-- **Documentation:** [guide](../../docs/API.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** IR v1; incompatible schema changes require an explicit migration.
 
 
@@ -73,7 +87,7 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 - **Gradient support:** `experimental`
 - **Distribution semantics:** `manual_sliced_tensor_contraction`
 - **Start:** [quick example](../../examples/vqe_switch_sv_mps_tn.py)
-- **Documentation:** [guide](../../docs/KNOWN_LIMITATIONS.md)
+- **Documentation:** [guide](../../docs/reference/KNOWN_LIMITATIONS.md)
 - **Known boundary:** General reverse contraction and production distributed transport are not certified.
 
 
@@ -121,7 +135,7 @@ Package trained circuits, export provider formats, and route them through deploy
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `provider_dependent`
 - **Start:** [quick example](../../examples/train_parameterized_circuit_then_deploy.py)
-- **Documentation:** [guide](../../docs/API.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix.
 
 ### Dynamic circuits and IQM Braket preflight
@@ -135,7 +149,7 @@ Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../examples/braket_iqm_dynamic_preflight.py)
-- **Documentation:** [guide](../../docs/API.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified.
 
 ### Extension SDK
@@ -149,5 +163,5 @@ Add gates, transformations, runtime hooks, and providers through the experimenta
 - **Gradient support:** `extension_defined`
 - **Distribution semantics:** `extension_defined`
 - **Start:** [quick example](../../examples/extensions/reference_extensions.py)
-- **Documentation:** [guide](../../docs/EXTENSION_SDK.md)
+- **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
 - **Known boundary:** Extension compatibility is not guaranteed before stabilization.

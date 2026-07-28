@@ -100,7 +100,7 @@ def test_issue017_ci_tiers_match_agents_workflow_commands():
 
 
 def test_docs_record_workflow_update():
-    docs = _read("docs/TESTING.md")
+    docs = _read("docs/development/TESTING.md")
     normalized_docs = " ".join(docs.split())
     assert "## Agent Workflow" in docs
     assert "tier commands are the official vocabulary" in normalized_docs

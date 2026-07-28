@@ -72,7 +72,7 @@ def test_issue013_torchrun_cpu_candidates_keep_local_skip_guards():
 
 
 def test_issue013_docs_and_agents_reject_cpu_distributed_release_evidence():
-    docs = _read("docs/TESTING.md")
+    docs = _read("docs/development/TESTING.md")
     agents = _read("AGENTS.md")
     normalized_agents = " ".join(agents.split())
 

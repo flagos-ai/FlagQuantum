@@ -129,7 +129,21 @@ def render_capabilities(data: dict[str, object]) -> str:
     sections: list[str] = [
         "# FlagQuantum Capabilities",
         "",
-        "Do not edit. Source: `capability-maturity.toml`. Maturity describes the exact documented scope; it does not turn local, replicated, or planned execution into distributed scalability evidence.",
+        "Choose a supported workflow by user goal, runtime, hardware, and evidence level.",
+        "This catalog is generated from the machine-validated",
+        "[`capability-maturity.toml`](../../capability-maturity.toml) source of truth.",
+        "",
+        "> Maturity applies only to the scope stated in each row. A local, replicated,",
+        "> sliced, or planned execution path is not distributed scalability evidence.",
+        "",
+        "## How to read maturity",
+        "",
+        "| Level | Meaning |",
+        "| --- | --- |",
+        "| **Release certified** | Release-gated with audited, reproducible evidence and no unresolved release blocker. |",
+        "| **Production supported** | Supported path with compatibility, operational guidance, and target-hardware evidence. |",
+        "| **Development evidence** | Executable and tested development result; not a production or general scalability claim. |",
+        "| **Experimental** | Research surface without compatibility or production guarantees. |",
         "",
         "## Find a capability by goal",
         "",
@@ -273,7 +287,7 @@ def validate() -> list[str]:
         text = (ROOT / doc).read_text(encoding="utf-8").lower()
         if "future intent" not in text[:1000]:
             errors.append(f"{doc}: must identify itself as future intent near the top")
-    release = (ROOT / "docs/RELEASE_NOTES.md").read_text(encoding="utf-8")
+    release = (ROOT / "docs/reference/RELEASE_NOTES.md").read_text(encoding="utf-8")
     if re.search(r"reviewer.approved ISSUE-|Recorded .*ISSUE-", release, re.I):
         errors.append(
             "release notes duplicate issue/review logs instead of user-visible changes"
