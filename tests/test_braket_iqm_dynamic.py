@@ -5,6 +5,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.braket
+
 
 def _iqm_backend(**overrides) -> fq.CloudBackendProfile:
     values = {

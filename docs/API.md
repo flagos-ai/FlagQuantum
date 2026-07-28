@@ -186,6 +186,18 @@ assert local.passed and aer.passed
 Install the second local backend with `pip install -e '.[qiskit]'`.
 `assess_dynamic_features()` can compare a circuit against the declared local,
 Qiskit Aer, or Braket IQM feature set before transport-specific validation.
+`DynamicExecutionResult` exposes `final_samples`, `classical_register`,
+`mid_circuit_measurements`, availability metadata, and
+`to_execution_result()` for projection into the canonical result contract.
+The Qiskit path also validates a full `DynamicCircuit → OpenQASM 3 → Qiskit →
+Aer` round trip and statistical agreement for random measurement branches.
+
+Optional integration suites can be selected independently:
+
+```bash
+pytest -m qiskit
+pytest -m braket
+```
 
 The stable surface also includes circuit and IR construction, backend
 compilation, runtime planning, and deployment helpers. The generated table is

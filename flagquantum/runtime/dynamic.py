@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping
 
 import torch
@@ -23,6 +23,61 @@ class DynamicExecutionResult:
     shots: int
     seed: int | None
     execution_semantics: str = "local_statevector_trajectory"
+    mid_circuit_measurements_available: bool = True
+    provider_metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def final_samples(self) -> torch.Tensor:
+        return self.samples
+
+    @property
+    def classical_register(self) -> torch.Tensor:
+        return self.classical_bits
+
+    @property
+    def mid_circuit_measurements(self) -> torch.Tensor | None:
+        return (
+            self.classical_bits
+            if self.mid_circuit_measurements_available
+            else None
+        )
+
+    def to_execution_result(self) -> Any:
+        """Project dynamic shots into the canonical execution result contract."""
+
+        from .result import ExecutionResult, MeasurementResult
+
+        measurements = [
+            MeasurementResult(
+                "sample",
+                tuple(range(self.samples.shape[-1])),
+                self.samples,
+                shots=self.shots,
+                metadata={"stage": "final"},
+            )
+        ]
+        if self.mid_circuit_measurements_available:
+            measurements.append(
+                MeasurementResult(
+                    "mid_circuit_measurement",
+                    tuple(range(self.classical_bits.shape[-1])),
+                    self.classical_bits,
+                    shots=self.shots,
+                )
+            )
+        return ExecutionResult(
+            samples=self.samples,
+            measurements=tuple(measurements),
+            runtime={
+                "mode": self.execution_semantics,
+                "shots": self.shots,
+                "seed": self.seed,
+                "mid_circuit_measurements_available": (
+                    self.mid_circuit_measurements_available
+                ),
+            },
+            provenance=dict(self.provider_metadata),
+        )
 
 
 @dataclass(frozen=True)
@@ -302,7 +357,7 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
         "OPENQASM 3.0;",
         'include "stdgates.inc";',
         f"qubit[{circuit.n_wires}] q;",
-        f"bit[{classical_width}] c;" if classical_width else "bit[0] c;",
+        *([f"bit[{classical_width}] c;"] if classical_width else []),
     ]
     for instruction in circuit._instructions:
         wire_text = ", ".join(f"q[{wire}]" for wire in instruction.wires)
@@ -321,7 +376,8 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
         conditions = _instruction_conditions(instruction)
         if conditions:
             expression = " && ".join(
-                f"c[{bit}] == {value}" for bit, value in conditions
+                f"c[{bit}] == {'true' if value else 'false'}"
+                for bit, value in conditions
             )
             statement = (
                 f"if ({expression}) {{ {statement} }}"

@@ -45,7 +45,7 @@ braket = [
 ]
 
 qiskit = [
-    "qiskit>=2,<3",
+    "qiskit[qasm3-import]>=2,<3",
     "qiskit-aer>=0.17,<1",
 ]
 

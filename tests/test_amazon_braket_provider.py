@@ -4,6 +4,8 @@ import pytest
 
 import flagquantum as fq
 
+pytestmark = pytest.mark.braket
+
 
 class FakeBraketTask:
     id = "braket-task-1"

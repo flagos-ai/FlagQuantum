@@ -229,6 +229,58 @@ def run_qiskit_aer_dynamic(
         shots=int(shots),
         seed=seed,
         execution_semantics="qiskit_aer_dynamic_shots",
+        provider_metadata={"provider": "qiskit-aer", "transport": "python_circuit"},
+    )
+
+
+def run_qiskit_aer_qasm3_round_trip(
+    circuit: DynamicCircuit,
+    *,
+    shots: int,
+    seed: int | None = None,
+) -> DynamicExecutionResult:
+    """Export OpenQASM 3, import it with Qiskit, then execute it on Aer."""
+
+    try:
+        from qiskit import ClassicalRegister, qasm3
+        from qiskit_aer import AerSimulator
+    except ImportError as exc:
+        raise ImportError(
+            "QASM 3 round-trip requires the 'qiskit' optional dependency"
+        ) from exc
+    from .dynamic import export_dynamic_qasm3
+
+    source = export_dynamic_qasm3(circuit)
+    qc = qasm3.loads(source)
+    width = _classical_width(circuit)
+    final = ClassicalRegister(circuit.n_wires, "final")
+    qc.add_register(final)
+    for wire in range(circuit.n_wires):
+        qc.measure(wire, final[wire])
+    memory = AerSimulator().run(
+        qc,
+        shots=int(shots),
+        memory=True,
+        seed_simulator=seed,
+    ).result().get_memory(qc)
+    rows = [[int(char) for char in item.replace(" ", "")[::-1]] for item in memory]
+    classical = torch.tensor([row[:width] for row in rows], dtype=torch.int64)
+    samples = torch.tensor(
+        [row[width : width + circuit.n_wires] for row in rows],
+        dtype=torch.int64,
+    )
+    return DynamicExecutionResult(
+        samples=samples,
+        classical_bits=classical,
+        final_states=torch.empty(0),
+        shots=int(shots),
+        seed=seed,
+        execution_semantics="qiskit_aer_openqasm3_round_trip",
+        provider_metadata={
+            "provider": "qiskit-aer",
+            "transport": "openqasm3",
+            "qasm": source,
+        },
     )
 
 
@@ -244,4 +296,5 @@ __all__ = (
     "dynamic_conformance_cases",
     "run_dynamic_conformance",
     "run_qiskit_aer_dynamic",
+    "run_qiskit_aer_qasm3_round_trip",
 )

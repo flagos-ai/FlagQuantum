@@ -77,7 +77,7 @@ def test_dynamic_ir_round_trip_and_qasm3_export() -> None:
     assert "bit[2] c;" in qasm
     assert "c[1] = measure q[0];" in qasm
     assert "reset q[0];" in qasm
-    assert "if (c[1] == 1) { x q[1]; }" in qasm
+    assert "if (c[1] == true) { x q[1]; }" in qasm
 
 
 def test_dynamic_execution_supports_batched_initial_states() -> None:
@@ -109,7 +109,7 @@ def test_multiple_classical_conditions_are_conjoined() -> None:
     qasm = fq.experimental.export_dynamic_qasm3(circuit)
 
     assert torch.all(result.samples == 1)
-    assert "if (c[0] == 1 && c[1] == 1) { x q[2]; }" in qasm
+    assert "if (c[0] == true && c[1] == true) { x q[2]; }" in qasm
 
 
 def test_dynamic_backend_capability_negotiation_fails_closed() -> None:

@@ -46,6 +46,7 @@ __all__ = (
     "dynamic_conformance_cases",
     "run_dynamic_conformance",
     "run_qiskit_aer_dynamic",
+    "run_qiskit_aer_qasm3_round_trip",
 )
 
 
@@ -104,6 +105,7 @@ def __getattr__(name: str) -> Any:
         "dynamic_conformance_cases",
         "run_dynamic_conformance",
         "run_qiskit_aer_dynamic",
+        "run_qiskit_aer_qasm3_round_trip",
     }:
         return getattr(import_module("flagquantum.runtime.dynamic_conformance"), name)
     return getattr(import_module("flagquantum.api"), name)
