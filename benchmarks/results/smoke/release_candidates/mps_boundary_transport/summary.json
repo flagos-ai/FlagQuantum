@@ -1,0 +1,115 @@
+{
+  "artifact_class": "derived_development_report",
+  "backend": "nccl",
+  "benchmark": "mps_boundary_transport",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 83220480,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "sharded_across_ranks",
+  "legacy_physical_messages": 2520,
+  "legacy_total_rank_host_wait_seconds": 1.2698198365978897,
+  "local_memory_bytes_by_rank": [
+    264192,
+    264192,
+    264192,
+    264192,
+    264192,
+    264192,
+    264192,
+    264192
+  ],
+  "local_world_size": 8,
+  "logical_byte_growth": 0.0,
+  "message_count_reduction": 0.5,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "p2p_wait_reduction": 0.1873416463502734,
+  "packed_buffer_pool_hits_by_rank": [
+    44,
+    89,
+    89,
+    89,
+    89,
+    89,
+    89,
+    44
+  ],
+  "packed_physical_messages": 1260,
+  "packed_rank_mean_seconds": [
+    0.00232069258345291,
+    0.004631679353769869,
+    0.0037718421430327,
+    0.004146980808582157,
+    0.0035847437218762936,
+    0.004421168891713023,
+    0.003735230816528201,
+    0.0013942201505415142
+  ],
+  "packed_total_rank_host_wait_seconds": 1.0319296978414059,
+  "passed": true,
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "microbenchmark_not_end_to_end_training",
+    "single_run_unsigned_development_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_boundary_transport_report.v1",
+  "shape_mismatch_fault": {
+    "bounded_cleanup": true,
+    "shape_mismatch_passed": true
+  },
+  "source_commit": "05154c4b89758150c3bcee958135bd62f3b1ad8c",
+  "source_tree_dirty": false,
+  "world_size": 8
+}
