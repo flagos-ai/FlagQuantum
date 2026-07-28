@@ -1,0 +1,97 @@
+{
+  "artifact_class": "derived_development_report",
+  "baseline_collective_count": 1000,
+  "baseline_mean_rank_seconds": 0.7315744709339924,
+  "benchmark": "mps_gradient_bucket_8gpu",
+  "benchmark_evidence_class": "non_release_smoke",
+  "bucket_collective_count": 8,
+  "bucket_mean_rank_seconds": 0.21193404908990487,
+  "claim_evidence_type": "development_smoke",
+  "collective_count_reduction": 0.992,
+  "communication_bytes": 4000,
+  "distribution_semantics": "sharded_across_ranks",
+  "local_memory_bytes_by_rank": [
+    2000,
+    2000,
+    2000,
+    2000,
+    2000,
+    2000,
+    2000,
+    2000
+  ],
+  "local_world_size": 8,
+  "loss_error": 0.0,
+  "max_adam_update_error": 0.0,
+  "max_gradient_error": 0.0,
+  "max_sgd_update_error": 0.0,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "nonowner_materialized_gradients": 0,
+  "observed_backward_speedup": 3.4518968239202095,
+  "optimizer_resume_state_entries": 1000,
+  "owner_bucket_count": 8,
+  "parameter_count": 1000,
+  "passed": true,
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "raw_artifact_sha256": "149036b2cc904a00d0143e3bc7b77bcdb2850813b71896cfb834970946c0953b",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "specialized_gradient_microbenchmark",
+    "single_run_unsigned_development_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_gradient_bucket_report.v1",
+  "source_commit": "357856cc2cf1f2cbbccae864bdac3aaeb0a94ffe",
+  "source_tree_dirty": false,
+  "world_size": 8
+}

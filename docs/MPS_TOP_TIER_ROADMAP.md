@@ -281,7 +281,9 @@ passing one capability does not promote the others.
 
 ### Sprint 2 — Communication and balance
 
-- [ ] Implement gradient buckets.
+- [x] Implement and certify dtype/owner gradient buckets; the 8×A800,
+      1000-parameter development run reduces collectives from 1000 to 8 with
+      exact loss, gradient, SGD and Adam parity.
 - [x] Pack compatible boundary messages and reuse packed send/receive buffers;
       8×A800 microbenchmark evidence records 50% fewer physical messages
       without logical-byte growth.
@@ -326,6 +328,7 @@ Update this table as work lands:
 | 2026-07-28 | M2 | Packed boundary transport and buffer reuse | `05154c4` | `benchmarks/results/smoke/release_candidates/mps_boundary_transport/` | 8×A800 development audit valid; physical messages −50%; logical bytes +0%; total rank P2P wait −18.7% | Microbenchmark only; frozen end-to-end matrix must be repeated |
 | 2026-07-28 | M2 | Boundary-halo overlap A/B | `4991374` | `benchmarks/results/smoke/release_candidates/mps_halo_overlap/` | 8-GPU mean step time improves 38.9%; 4-GPU improves 1.2%; correctness checks pass | Overlap-enabled 4→8 speedup remains 0.923×; single unsigned A/B run |
 | 2026-07-28 | M2 | Communication-aware ownership A/B | `35bdd03` | `benchmarks/results/smoke/release_candidates/mps_communication_aware_ownership/` | 4-GPU improves 6.4%; 8-GPU improves 84.8%; messages −46.2%; bytes −64.4% | Aware 4→8 speedup remains below 1×; compile setup grows about 3.1× |
+| 2026-07-28 | M2 | Owner gradient buckets | `357856c` | `benchmarks/results/smoke/release_candidates/mps_gradient_buckets/` | 8×A800 collectives 1000→8; measured backward 3.45× faster; exact optimizer parity | Specialized microbenchmark; single unsigned run |
 
 ## Claim policy
 
