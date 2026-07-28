@@ -1,0 +1,88 @@
+{
+  "benchmark": "scalability_results_audit",
+  "claimable_count": 0,
+  "claimable_paths": [],
+  "file_count": 4,
+  "invalid_count": 0,
+  "invalid_paths": [],
+  "records": [
+    {
+      "benchmark": "mps_single_node_training_certification",
+      "claim_evidence_type": "development_smoke",
+      "distribution_semantics": "single_device_fast_path",
+      "path": "benchmarks/results/smoke/release_candidates/mps_single_node/1gpu-adam.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "development_smoke",
+        "distribution_semantics": "single_device_fast_path",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "mps_single_node_training_certification",
+      "claim_evidence_type": "development_smoke",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/smoke/release_candidates/mps_single_node/2gpu-adam.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "development_smoke",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "mps_single_node_training_certification",
+      "claim_evidence_type": "development_smoke",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/smoke/release_candidates/mps_single_node/4gpu-adam.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "development_smoke",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "mps_single_node_training_certification",
+      "claim_evidence_type": "development_smoke",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/smoke/release_candidates/mps_single_node/8gpu-adam.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "development_smoke",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    }
+  ]
+}
