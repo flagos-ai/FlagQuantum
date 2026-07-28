@@ -323,7 +323,11 @@ passing one capability does not promote the others.
       caller-owned workspace contract. Production integration therefore
       requires a compiled, stream-aware C++/CUDA extension; direct `ctypes`
       execution and private ATen ABI coupling are explicitly rejected.
-- [ ] Fuse common contraction/decomposition regions.
+- [x] Evaluate full-graph contraction/SVD fusion on A800. Reconstruction error
+      remains below 2e-6, but 64/128/256 matrices deliver only
+      0.997×/1.019×/1.036× speedup and identical peak allocation versus the
+      separate compiled-contraction/SVD path. This misses the frozen 1.05×
+      promotion threshold, so the fused graph is rejected from production.
 - [ ] Add steady-state CUDA Graph evaluation.
 
 ### Sprint 4 — Capacity and comparison
