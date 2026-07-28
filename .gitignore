@@ -46,3 +46,7 @@ examples/.assets/
 benchmarks/results/heisenberg_vqe/forward_operator_trace_*/
 benchmarks/results/heisenberg_vqe/neel_n16_p16_chi256_lrdecay.json
 benchmarks/results/heisenberg_vqe/neel_n16_p16_chi256_lrdecay099_100.json
+
+# Local, unaudited hardware certification workspaces. Promote validated,
+# provenance-sealed artifacts through benchmarks/results/smoke/release_candidates/.
+benchmarks/results/smoke/hardware-certification-*/
