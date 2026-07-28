@@ -391,7 +391,13 @@ def _send_tensor_batch_p2p(
         descriptor_values.extend((-1,) * (max_ndim - value.ndim))
     descriptor = torch.tensor(descriptor_values, dtype=torch.int64, device=device)
     _MPS_P2P_STATS["descriptor_message_count"] += 1
-    payload = torch.cat(tuple(value.reshape(-1) for value in values))
+    elements = sum(value.numel() for value in values)
+    payload = _pooled_p2p_buffer(device=device, dtype=dtype, elements=elements)
+    offset = 0
+    for value in values:
+        count = value.numel()
+        payload[offset : offset + count].copy_(value.reshape(-1))
+        offset += count
     _MPS_P2P_STATS["logical_tensor_count"] += len(values)
     _MPS_P2P_STATS["logical_payload_bytes"] += payload.numel() * payload.element_size()
     _run_batched_p2p(
