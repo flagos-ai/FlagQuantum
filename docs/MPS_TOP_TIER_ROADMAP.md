@@ -354,6 +354,7 @@ Update this table as work lands:
 | 2026-07-28 | M3 | A800 no-truncation QR calibration | `876decd` | `benchmarks/results/smoke/release_candidates/mps_qr_policy/` | Bond 128/256/512 full update 0.815/2.01/5.24 ms; errors below 2e-6 | Batch-1 complex64 A800 only; portability remains |
 | 2026-07-28 | M3 | Factorization staging workspace pool | `a9e9ec2` | `benchmarks/results/smoke/release_candidates/mps_workspace_pool/` | 8×A800 stable-shape run: every rank reuses buffers; plateau passes; zero allocator retry/OOM | Solver workspace remains internal; bond-128 depth-4 `gesvd` convergence blocker observed |
 | 2026-07-28 | M3 | Large-bond correctness quarantine | `889bf31` | `benchmarks/results/smoke/release_candidates/mps_large_bond_quarantine/` | 8×A800, 64 wires, depth 4, bond 128 passes plateau with zero allocator retry/OOM and no SVD fallback | Non-release smoke only; batched two-site execution and staging-pool reuse remain quarantined at `max_bond >= 128` |
+| 2026-07-28 | M3 | Hybrid large-bond contraction/factorization | `3914274` | `benchmarks/results/smoke/release_candidates/mps_large_bond_hybrid/` | Compiled batched contraction restored; per-matrix strict factorization; 8×A800 plateau passes with zero fallback/retry/OOM | Non-release single run; batched large-bond factorization and staging-pool reuse remain quarantined |
 
 ## Claim policy
 
