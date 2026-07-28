@@ -1,11 +1,30 @@
 import pytest
 
 from flagquantum.runtime.backends.mps.state import (
+    communication_aware_mps_ownership,
     cost_aware_mps_ownership,
     gate_aligned_cost_aware_mps_ownership,
     mps_factorization_site_costs,
     validate_mps_ownership,
 )
+
+
+def test_communication_aware_ownership_avoids_hot_cuts_with_bounded_load():
+    bonds = (1, *([64] * 63), 1)
+    penalties = [0] * 63
+    for bond in (7, 15, 23, 31, 39, 47, 55):
+        penalties[bond] = 100
+
+    ownership = communication_aware_mps_ownership(
+        bonds,
+        world_size=8,
+        boundary_penalties=penalties,
+        maximum_load_ratio=1.25,
+    )
+    cuts = {shard[-1] for shard in ownership[:-1]}
+
+    assert cuts.isdisjoint({7, 15, 23, 31, 39, 47, 55})
+    assert tuple(wire for shard in ownership for wire in shard) == tuple(range(64))
 
 
 def test_cost_aware_mps_ownership_is_contiguous_and_reduces_peak_proxy():

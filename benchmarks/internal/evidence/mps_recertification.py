@@ -23,6 +23,10 @@ from flagquantum.runtime.backends.mps.site_kernels import (
     site_kernel_cache_events,
     site_kernel_stats,
 )
+from flagquantum.runtime.backends.mps.state import (
+    communication_aware_mps_ownership,
+    initial_mps_ownership,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = ROOT / "benchmarks/manifests/mps_critical_path_v1.json"
@@ -57,14 +61,16 @@ def _snapshot() -> dict[str, object]:
     }
 
 
-def _initial_tensors(n_wires: int, bond: int, device: torch.device):
-    rank, world = dist.get_rank(), dist.get_world_size()
-    base, extra = divmod(n_wires, world)
-    starts = [item * base + min(item, extra) for item in range(world)]
-    stops = [start + base + (item < extra) for item, start in enumerate(starts)]
+def _initial_tensors(
+    n_wires: int,
+    bond: int,
+    device: torch.device,
+    ownership: tuple[tuple[int, ...], ...],
+):
+    rank = dist.get_rank()
     tensors = {}
     generator = torch.Generator(device=device).manual_seed(9700 + rank)
-    for wire in range(starts[rank], stops[rank]):
+    for wire in ownership[rank]:
         left = 1 if wire == 0 else bond
         right = 1 if wire == n_wires - 1 else bond
         real = torch.randn(1, left, 2, right, generator=generator, device=device)
@@ -93,6 +99,11 @@ def main() -> None:
         default=True,
         help="Overlap disjoint local layer work with boundary-halo transport.",
     )
+    parser.add_argument(
+        "--ownership-policy",
+        choices=("equal_sites", "communication_aware"),
+        default="equal_sites",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())
@@ -114,6 +125,20 @@ def main() -> None:
         if args.n_wires is not None
         else max(world, int(case["sites_per_rank"]) * world)
     )
+    equal_ownership = initial_mps_ownership(n_wires, world)
+    penalties = [0] * (n_wires - 1)
+    for shard in equal_ownership[:-1]:
+        penalties[shard[-1]] += 1
+    bond_dimensions = (1, *([int(case["initial_bond"])] * (n_wires - 1)), 1)
+    site_ownership = (
+        communication_aware_mps_ownership(
+            bond_dimensions,
+            world,
+            boundary_penalties=penalties,
+        )
+        if args.ownership_policy == "communication_aware"
+        else equal_ownership
+    )
     theta = torch.tensor(0.03, device=device, requires_grad=True)
     workload = {
         "manifest_schema": manifest["schema"], "case": args.case,
@@ -123,6 +148,8 @@ def main() -> None:
         "optimization_set": "issue098_through_issue105",
         "site_kernel_policy": "compiled_distributed" if compile_site_kernels else "eager_local_fast_path",
         "prefetch_layer_halos": args.prefetch_layer_halos,
+        "ownership_policy": args.ownership_policy,
+        "site_ownership": site_ownership,
         "scaling_mode": (
             "fixed_problem_strong_scaling"
             if args.n_wires is not None
@@ -141,8 +168,14 @@ def main() -> None:
             observable={n_wires - 1: "z"}, optimizer="adam", lr=0.001,
             device=device, max_bond=int(case["max_bond"]),
             gradient_policy="approximate", gradient_tolerance=1e6,
-            initial_mps_tensors=_initial_tensors(n_wires, int(case["initial_bond"]), device),
+            initial_mps_tensors=_initial_tensors(
+                n_wires,
+                int(case["initial_bond"]),
+                device,
+                site_ownership,
+            ),
             initial_mps_left_canonical=True,
+            site_ownership=site_ownership,
             compile_site_kernels=compile_site_kernels,
             compile_observables=compile_site_kernels,
             prefetch_layer_halos=args.prefetch_layer_halos,

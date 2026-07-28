@@ -220,6 +220,70 @@ def gate_aligned_cost_aware_mps_ownership(
     return validate_mps_ownership(ownership, n_wires, world_size)
 
 
+def communication_aware_mps_ownership(
+    bond_dimensions: Sequence[int],
+    world_size: int,
+    *,
+    boundary_penalties: Sequence[int],
+    maximum_load_ratio: float = 1.25,
+) -> tuple[tuple[int, ...], ...]:
+    """Minimize cut traffic subject to a bounded factorization-load ratio."""
+    bonds = tuple(int(value) for value in bond_dimensions)
+    n_wires = len(bonds) - 1
+    penalties = tuple(int(value) for value in boundary_penalties)
+    if len(penalties) != max(0, n_wires - 1) or any(value < 0 for value in penalties):
+        raise ValueError("boundary_penalties must contain one non-negative value per bond")
+    if not 1 <= world_size <= n_wires:
+        raise ValueError(
+            "communication-aware ownership requires 1 <= world_size <= n_wires"
+        )
+    if maximum_load_ratio < 1:
+        raise ValueError("maximum_load_ratio must be at least one")
+    if world_size == 1:
+        return (tuple(range(n_wires)),)
+    weights = mps_factorization_site_costs(bonds)
+    prefix = [0]
+    for weight in weights:
+        prefix.append(prefix[-1] + int(weight))
+    average = prefix[-1] / world_size
+    maximum = average * maximum_load_ratio
+    # (rank_count, end) -> (cut penalty, peak absolute load deviation, cuts)
+    states: dict[tuple[int, int], tuple[int, float, tuple[int, ...]]] = {
+        (0, 0): (0, 0.0, ())
+    }
+    for rank_count in range(1, world_size + 1):
+        minimum_end = rank_count
+        maximum_end = n_wires - (world_size - rank_count)
+        for end in range(minimum_end, maximum_end + 1):
+            candidates = []
+            for start in range(rank_count - 1, end):
+                previous = states.get((rank_count - 1, start))
+                if previous is None:
+                    continue
+                load = prefix[end] - prefix[start]
+                if load > maximum:
+                    continue
+                cut_penalty = 0 if end == n_wires else penalties[end - 1]
+                candidates.append(
+                    (
+                        previous[0] + cut_penalty,
+                        max(previous[1], abs(load - average)),
+                        (*previous[2], end),
+                    )
+                )
+            if candidates:
+                states[(rank_count, end)] = min(candidates)
+    result = states.get((world_size, n_wires))
+    if result is None:
+        raise ValueError("no communication-aware ownership satisfies the load bound")
+    boundaries = (0, *result[2])
+    ownership = tuple(
+        tuple(range(boundaries[rank], boundaries[rank + 1]))
+        for rank in range(world_size)
+    )
+    return validate_mps_ownership(ownership, n_wires, world_size)
+
+
 def _owner(ownership: Sequence[Sequence[int]], wire: int) -> int:
     for rank, wires in enumerate(ownership):
         if int(wire) in wires:
@@ -346,6 +410,7 @@ __all__ = (
     "RankOwnedMPSState",
     "ReverseMPSInitialization",
     "cost_aware_mps_ownership",
+    "communication_aware_mps_ownership",
     "gate_aligned_cost_aware_mps_ownership",
     "initial_mps_ownership",
     "initialize_reverse_mps_state",
