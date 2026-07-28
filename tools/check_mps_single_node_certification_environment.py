@@ -124,6 +124,17 @@ def _command_output(command: Sequence[str]) -> str:
     return completed.stdout.strip() if completed.returncode == 0 else ""
 
 
+def _tracked_source_dirty() -> bool:
+    return (
+        subprocess.run(("git", "diff", "--quiet"), cwd=ROOT, check=False).returncode
+        != 0
+        or subprocess.run(
+            ("git", "diff", "--cached", "--quiet"), cwd=ROOT, check=False
+        ).returncode
+        != 0
+    )
+
+
 def environment_payload() -> Mapping[str, Any]:
     import torch
 
@@ -134,9 +145,7 @@ def environment_payload() -> Mapping[str, Any]:
         cuda_available=torch.cuda.is_available(),
         nccl_available=torch.distributed.is_nccl_available(),
         device_names=device_names,
-        source_tree_dirty=bool(
-            _command_output(("git", "status", "--porcelain=v1"))
-        ),
+        source_tree_dirty=_tracked_source_dirty(),
         signing_key_present=bool(os.environ.get("FQ_EVIDENCE_SIGNING_KEY")),
         source_commit=_command_output(("git", "rev-parse", "HEAD")) or "unavailable",
     )
