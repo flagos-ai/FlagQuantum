@@ -132,7 +132,7 @@ trained programs.
 The complete stable `flagquantum.backends.flagos` backend and deeper FlagOS
 kernel and collective integration are under active development. Existing
 accelerator paths remain supported according to their documented maturity;
-the [FlagOS-aligned release train](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+the [product roadmap](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
 defines when unified backend claims may be promoted. The diagram is the target
 product architecture; the
 [machine-validated capability matrix](capability-maturity.toml) remains the
@@ -377,7 +377,7 @@ print(fq.info())
 | Partition one workload across devices | [Distributed statevector](examples/distributed_statevector_topologies/README.md) and [distributed MPS](examples/distributed_mps/README.md) |
 | Package a trained program for hardware | [Training-to-deployment example](examples/train_parameterized_circuit_then_deploy.py) |
 | Understand the runtime architecture | [Runtime architecture](docs/architecture/RUNTIME_ARCHITECTURE.md) |
-| Follow FlagOS integration milestones | [FlagOS-aligned release train](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md) |
+| Follow planned product development | [Product roadmap](docs/roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md) |
 | Inspect limitations and evidence | [Known limitations](docs/reference/KNOWN_LIMITATIONS.md) and [capability maturity](docs/roadmap/CAPABILITY_MATURITY.md) |
 
 ## Benchmarks and evidence

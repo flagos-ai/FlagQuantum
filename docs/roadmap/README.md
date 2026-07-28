@@ -5,7 +5,7 @@ targets.
 
 - [FlagQuantum vision](FLAGQUANTUM_VISION.md)
 - [Capability maturity](CAPABILITY_MATURITY.md)
-- [FlagOS-aligned release train](FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+- [Product roadmap](FLAGOS_ALIGNED_RELEASE_TRAIN.md)
 - [Ecosystem development plan](ECOSYSTEM_DEVELOPMENT.md)
 - [Hybrid model acceptance](HYBRID_MODEL_ACCEPTANCE.md)
 - [MPS top-tier roadmap](MPS_TOP_TIER_ROADMAP.md)

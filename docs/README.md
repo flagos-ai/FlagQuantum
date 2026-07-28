@@ -13,8 +13,8 @@ and maintainers can find the right level of detail quickly.
 - [Known limitations](reference/KNOWN_LIMITATIONS.md) — current support
   boundaries
 - [Testing manual](development/TESTING.md) — verification tiers and commands
-- [FlagOS-aligned release train](roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md) —
-  delivery milestones
+- [Product roadmap](roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md) — planned
+  user-facing capabilities
 
 ## Documentation map
 
