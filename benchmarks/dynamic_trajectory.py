@@ -36,6 +36,7 @@ def run_benchmark(
     mid_circuit_measurements: tuple[int, ...] = (1, 2, 4),
     backends: tuple[str, ...] = ("flagquantum",),
     seed: int = 7,
+    flagquantum_strategy: str = "auto",
 ) -> dict[str, Any]:
     """Measure shot throughput without making production performance claims."""
 
@@ -48,7 +49,10 @@ def run_benchmark(
             circuit = _workload(measurement_count)
             for shot_count in shots:
                 started = perf_counter()
-                result = execute(circuit, shots=shot_count, seed=seed)
+                options = {"shots": shot_count, "seed": seed}
+                if backend == "flagquantum":
+                    options["strategy"] = flagquantum_strategy
+                result = execute(circuit, **options)
                 elapsed = perf_counter() - started
                 unique_branches = len(
                     {
@@ -75,6 +79,7 @@ def run_benchmark(
         "artifact_classification": "development_microbenchmark",
         "scalability_claim_allowed": False,
         "seed": seed,
+        "flagquantum_strategy": flagquantum_strategy,
         "rows": rows,
     }
 
@@ -95,6 +100,11 @@ def main() -> None:
         dest="backends",
     )
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument(
+        "--flagquantum-strategy",
+        choices=("auto", "trajectory", "batched"),
+        default="auto",
+    )
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     payload = run_benchmark(
@@ -102,6 +112,7 @@ def main() -> None:
         mid_circuit_measurements=tuple(args.mid_circuit_measurements),
         backends=tuple(args.backends or ("flagquantum",)),
         seed=args.seed,
+        flagquantum_strategy=args.flagquantum_strategy,
     )
     text = json.dumps(payload, indent=2, sort_keys=True)
     if args.json_output is not None:

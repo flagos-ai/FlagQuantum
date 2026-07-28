@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 import torch
 
 import flagquantum as fq
@@ -30,7 +31,7 @@ def test_dynamic_statistics_count_trajectories_operations_and_branches() -> None
     assert statistics["branch_count"] == len(statistics["branch_shots"])
     assert sum(statistics["branch_shots"].values()) == 64
     assert statistics["elapsed_seconds"] >= 0
-    assert statistics["gate_execution_strategy"] == "direct_statevector_kernel"
+    assert statistics["gate_execution_strategy"] == "batched_statevector_kernel"
     assert result.provider_metadata["provider"] == "flagquantum"
 
     canonical = result.to_execution_result()
@@ -79,3 +80,50 @@ def test_direct_dynamic_gate_path_matches_static_statevector_gates() -> None:
     expected = static.state()[0]
 
     assert torch.allclose(result.final_states, expected.expand(8, -1))
+
+
+def test_batched_and_reference_dynamic_strategies_are_semantically_equivalent() -> None:
+    circuit = fq.experimental.DynamicCircuit(2)
+    circuit.h(0)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional("x", 1, classical_bit=0)
+    reference = fq.experimental.run_dynamic(
+        circuit, shots=2048, seed=23, strategy="trajectory"
+    )
+    batched = fq.experimental.run_dynamic(
+        circuit, shots=2048, seed=23, strategy="batched"
+    )
+
+    for result in (reference, batched):
+        assert torch.equal(result.samples[:, 0], result.classical_bits[:, 0])
+        assert torch.equal(result.samples[:, 1], result.classical_bits[:, 0])
+        probability = float(result.classical_bits[:, 0].float().mean())
+        assert abs(probability - 0.5) < 0.05
+    assert (
+        reference.statistics["gate_execution_strategy"]
+        == "trajectory_direct_statevector_kernel"
+    )
+    assert batched.statistics["gate_execution_strategy"] == "batched_statevector_kernel"
+
+
+def test_auto_dynamic_strategy_falls_back_when_memory_budget_is_too_small() -> None:
+    circuit = _feedback_circuit()
+    result = fq.experimental.run_dynamic(
+        circuit,
+        shots=64,
+        seed=3,
+        max_batched_bytes=1,
+    )
+
+    assert (
+        result.statistics["gate_execution_strategy"]
+        == "trajectory_direct_statevector_kernel"
+    )
+    with pytest.raises(ValueError, match="memory budget exceeded"):
+        fq.experimental.run_dynamic(
+            circuit,
+            shots=64,
+            seed=3,
+            strategy="batched",
+            max_batched_bytes=1,
+        )

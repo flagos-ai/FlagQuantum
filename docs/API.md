@@ -192,9 +192,13 @@ Qiskit Aer, or Braket IQM feature set before transport-specific validation.
 Local trajectory results also expose a `statistics` mapping with trajectory,
 measurement, reset, conditional-branch, observed-branch and elapsed-time
 counters. The same mapping is retained as `runtime["dynamic_statistics"]` by
-the canonical projection. Static gates inside each trajectory use the direct
-statevector-kernel path; `statistics["gate_execution_strategy"]` records that
-choice for benchmark attribution.
+the canonical projection. `run_dynamic(..., strategy="auto")` uses batched
+statevector trajectories for eligible workloads of at least 32 shots and
+falls back to the reference trajectory path when batching would exceed
+`max_batched_bytes` (256 MiB by default) or the input is already batched.
+Callers may explicitly request `strategy="trajectory"` or `"batched"`.
+`statistics["gate_execution_strategy"]` records the selected path for
+benchmark attribution.
 The Qiskit path also validates a full `DynamicCircuit → OpenQASM 3 → Qiskit →
 Aer` round trip and statistical agreement for random measurement branches.
 
@@ -207,6 +211,9 @@ python benchmarks/dynamic_trajectory.py \
   --shots 100 1000 --mid-circuit-measurements 1 2 4 \
   --json-output benchmarks/results/smoke/dynamic-trajectory.json
 ```
+
+Use `--flagquantum-strategy trajectory` and `batched` in separate runs for a
+direct reference-versus-vectorized comparison.
 
 This payload is development evidence only and does not support scalability or
 provider-performance claims.
