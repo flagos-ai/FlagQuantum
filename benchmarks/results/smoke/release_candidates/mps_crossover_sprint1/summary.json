@@ -1,0 +1,275 @@
+{
+  "artifact_class": "derived_development_report",
+  "benchmark": "mps_fixed_problem_crossover_diagnosis",
+  "benchmark_evidence_class": "non_release_smoke",
+  "blockers": [
+    "eight_gpu_slower_than_four_gpu",
+    "nccl_visible_transport_breakdown_not_captured"
+  ],
+  "boundary_forward_byte_ratio": 2.6470588235294117,
+  "boundary_forward_message_ratio": 2.6,
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 36864000,
+  "diagnosis": {
+    "boundary_growth_observed": true,
+    "next_actions": [
+      "capture NCCL-visible communication labels",
+      "pack boundary envelopes across compatible transfers",
+      "overlap independent site work with boundary transport",
+      "repeat the frozen matrix without changing thresholds"
+    ],
+    "primary_optimization_target": "boundary_transport_and_partition_synchronization",
+    "rank_imbalance_primary": false
+  },
+  "distribution_semantics": "sharded_across_ranks",
+  "eight_over_four_phase_ratio": {
+    "forward": 1.1617235330988867,
+    "reverse_vjp": 1.1832003710573744
+  },
+  "four_to_eight_speedup": 0.9057864611789173,
+  "local_memory_bytes_by_rank": [
+    18560512,
+    25161216,
+    25161216,
+    25161216,
+    25161216,
+    25161216,
+    25161216,
+    24658432
+  ],
+  "local_world_size": 8,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "points": [
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "3afbc57edd3e3af3d31392f9885e1035993db2f87d7b3ac3999ed2f329946695",
+      "compile_setup_seconds_max": 3.1288901017978787,
+      "largest_realized_bond": 64,
+      "local_memory_bytes_by_rank": [
+        61952512,
+        62721536,
+        62721536,
+        62216192
+      ],
+      "maximum_rank_imbalance": 1.0010457722831505,
+      "mean_seconds": 0.47736176373437045,
+      "message_totals_by_payload_class": {
+        "boundary_forward_tensor": {
+          "message_count": 500,
+          "payload_bytes": 13926400
+        },
+        "boundary_reverse_adjoint": {
+          "message_count": 500,
+          "payload_bytes": 13926400
+        },
+        "parameter_gradient_collective": {
+          "message_count": 100,
+          "payload_bytes": 400
+        }
+      },
+      "p50_seconds": 0.4761747040320188,
+      "phase_mean_seconds": {
+        "forward": 0.3133871253114194,
+        "optimizer": 0.0038141952361911537,
+        "reverse_vjp": 0.21987450211308895,
+        "unattributed": 0.0004984042840078473
+      },
+      "phase_reconciliation_passed": true,
+      "profiled_communication_seconds": 0.0008609439999759198,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        }
+      ],
+      "sample_count": 20,
+      "source_commit": "0de61747b79a0aa7fda49237ef4d0142fb51dae0",
+      "source_tree_dirty": false,
+      "world_size": 4
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "2ff5f838d606f42947a9cffbe341889cc0a57d11bf0ccc9b43462459dc25331e",
+      "compile_setup_seconds_max": 1.5227079181931913,
+      "largest_realized_bond": 64,
+      "local_memory_bytes_by_rank": [
+        18560512,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        24658432
+      ],
+      "maximum_rank_imbalance": 1.0016758652559894,
+      "mean_seconds": 0.5270135779166594,
+      "message_totals_by_payload_class": {
+        "boundary_forward_tensor": {
+          "message_count": 1300,
+          "payload_bytes": 36864000
+        },
+        "boundary_reverse_adjoint": {
+          "message_count": 1300,
+          "payload_bytes": 36864000
+        },
+        "parameter_gradient_collective": {
+          "message_count": 200,
+          "payload_bytes": 800
+        }
+      },
+      "p50_seconds": 0.5253482051193714,
+      "phase_mean_seconds": {
+        "forward": 0.36406919844448565,
+        "optimizer": 0.0013808040879666806,
+        "reverse_vjp": 0.2601555924862623,
+        "unattributed": 0.0006849047727882862
+      },
+      "phase_reconciliation_passed": true,
+      "profiled_communication_seconds": 0.002135087999993004,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        },
+        {
+          "device": "cuda:4",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 4,
+          "rank": 4
+        },
+        {
+          "device": "cuda:5",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 5,
+          "rank": 5
+        },
+        {
+          "device": "cuda:6",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 6,
+          "rank": 6
+        },
+        {
+          "device": "cuda:7",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 7,
+          "rank": 7
+        }
+      ],
+      "sample_count": 20,
+      "source_commit": "0de61747b79a0aa7fda49237ef4d0142fb51dae0",
+      "source_tree_dirty": false,
+      "world_size": 8
+    }
+  ],
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "eight_gpu_slower_than_four_gpu",
+    "nccl_visible_transport_breakdown_not_captured"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_crossover_sprint1_report.v1",
+  "workload": {
+    "dtype": "complex64",
+    "initial_bond": 32,
+    "max_bond": 64,
+    "n_wires": 64,
+    "optimizer": "adam",
+    "retained_warm_steps": 20,
+    "scaling_mode": "fixed_problem_strong_scaling",
+    "warmup_steps": 5
+  },
+  "world_size": 8
+}

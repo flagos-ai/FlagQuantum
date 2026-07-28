@@ -273,10 +273,11 @@ passing one capability does not promote the others.
 - [x] Separate constant-sites-per-rank profiling from fixed-problem strong
       scaling; freeze the corrected 64-site, bond-64 4/8-GPU matrix in
       `benchmarks/manifests/mps_crossover_sprint1_v1.json`.
-- [ ] Capture four-GPU and eight-GPU NSYS traces.
-- [ ] Reconcile CUDA, NCCL, host and idle time.
-- [ ] Quantify per-rank site/bond work and communication.
-- [ ] Publish the first crossover report.
+- [x] Capture four-GPU and eight-GPU PyTorch profiler traces; NSYS is not
+      installed on the current A800 host and remains a follow-up.
+- [ ] Reconcile CUDA, NCCL, host and idle time with an NCCL-visible trace.
+- [x] Quantify per-rank site/bond work and boundary-message communication.
+- [x] Publish the first non-release crossover diagnosis report.
 
 ### Sprint 2 — Communication and balance
 
@@ -315,6 +316,7 @@ Update this table as work lands:
 | Date | Milestone | Item | Commit | Evidence | Result | Blockers |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-28 | M1 | 1/2/4/8 A800 Adam matrix | `bd816c6` | `benchmarks/results/smoke/release_candidates/mps_single_node/` | Development audit valid | Unsigned; 8 GPU slower than 4 GPU |
+| 2026-07-28 | M1 | Fixed 64-site bond-64 4/8 GPU profile | `0de6174` | `benchmarks/results/smoke/release_candidates/mps_crossover_sprint1/` | Development audit valid; 4→8 speedup 0.906×; boundary messages grow 2.6× | NCCL-visible transport breakdown not captured; boundary transport optimization required |
 
 ## Claim policy
 
