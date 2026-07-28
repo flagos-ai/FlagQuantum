@@ -1,113 +1,62 @@
 <div align="center">
-  <img src="assets/logo.png" alt="FlagQuantum Logo" width="380">
-</div>
+  <img src="assets/logo.png" alt="FlagQuantum" width="380">
 
 # FlagQuantum
 
-FlagQuantum is a quantum AI framework centered on one public API:
+**The quantum AI framework for FlagOS, unifying programmable training and
+scalable execution across classical and quantum hardware.**
+
+[Quick Start](#quick-start) ·
+[Capabilities](docs/generated/CAPABILITIES.md) ·
+[Examples](examples/README.md) ·
+[API Reference](docs/API.md) ·
+[Architecture](ARCHITECTURE.md) ·
+[Roadmap](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.5%2B-red.svg)](https://pytorch.org/)
+[![Python](https://img.shields.io/badge/Python-3.10--3.12-blue.svg)](https://python.org/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+</div>
+
+## One quantum AI program, every execution scale
+
+Quantum AI development is fragmented across local simulators, accelerator
+runtimes, distributed systems, tensor representations, and quantum hardware.
+FlagQuantum brings these environments under one programming model:
 
 ```python
 import flagquantum as fq
 ```
 
-The current implementation provides a FlagQuantum-native circuit IR, PyTorch
-training interfaces, local statevector/MPS/tensor-network runtimes, optional
-JAX quantum kernels, deployment packaging, and auditable distributed planning.
-Distributed scalability claims are intentionally fail-closed: replicated
-per-rank execution is not described as capacity scaling.
+Build and train a quantum or hybrid AI program locally, plan it for the
+available resources, scale one logical workload across devices, and package
+the trained program for quantum hardware without changing its mathematical
+intent.
 
-## Documentation Entry Points
+FlagQuantum is built around four durable ideas:
 
-- [Explore all capabilities](docs/generated/CAPABILITIES.md)
-- [Runnable examples](examples/README.md)
-- [Tutorial notebooks](examples/tutorials/README.md)
-- [API reference](docs/API.md)
-- [Known limitations](docs/KNOWN_LIMITATIONS.md)
-- [Release notes](docs/RELEASE_NOTES.md)
-- [FlagQuantum vision](docs/FLAGQUANTUM_VISION.md)
-- [Ecosystem development strategy](docs/ECOSYSTEM_DEVELOPMENT.md)
-- [Capability maturity](docs/CAPABILITY_MATURITY.md)
-- [Distributed quantum AI principles](docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md)
-- [Distributed scalability principles](docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md)
-- [Exascale and Gordon Bell strategy](docs/EXASCALE_GORDON_BELL_STRATEGY.md)
-- [Feature parity matrix](docs/FEATURE_PARITY_MATRIX.md)
+- **Programmable quantum AI:** circuits, hybrid models, measurements, and
+  training share one FlagQuantum-native IR and PyTorch-facing interface.
+- **Representation-aware execution:** the same program can use an exact
+  statevector, a low-entanglement MPS, a tensor-network path, or a provider
+  target according to its workload and constraints.
+- **Verifiable multi-chip scale:** state, gradient, optimizer, memory, and
+  communication ownership are explicit rather than inferred from process
+  count.
+- **Classical-to-quantum portability:** training and deployment preserve the
+  program, parameter, and result contracts across classical accelerators and
+  quantum hardware.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the runtime and benchmark layout.
-User-facing imports belong in `flagquantum.api`; reproducible benchmark
-drivers belong in `flagquantum.benchmarking`; exploratory plots stay in
-`benchmarks.research`.
+## Quick start
 
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.5%2B-red.svg)](https://pytorch.org/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.10--3.12-blue.svg)](https://python.org/)
-
-## Current Capability Surface
-
-| Goal | Recommended path |
-| --- | --- |
-| Build, compile, or export a circuit | [`fq.Circuit` quick start](examples/quick_start.py) |
-| Train a quantum or hybrid AI model | [Single-machine quantum AI](examples/single_machine_quantum_ai/README.md) |
-| Simulate a large low-entanglement system | [Differentiable MPS examples](examples/mps_hamiltonian_identification/README.md) |
-| Partition one workload across GPUs | [Distributed statevector](examples/distributed_statevector_topologies/README.md) or [rank-owned MPS](examples/distributed_mps/README.md) |
-| Package a trained circuit for deployment | [Training-to-deployment example](examples/train_parameterized_circuit_then_deploy.py) |
-| Add custom framework behavior | [Extension SDK](docs/EXTENSION_SDK.md) |
-
-The [generated capability catalog](docs/generated/CAPABILITIES.md) is the
-complete task-oriented index. It reports maturity, stable APIs, runtime modes,
-hardware, gradient support, distribution semantics, examples, and known
-boundaries from the machine-validated capability matrix.
-
-## Distributed Claim Boundary
-
-FlagQuantum uses these semantics in runtime summaries and benchmark JSON:
-
-- `single_device_fast_path`: local CPU or one-GPU execution. This can be a
-  performance result, but not a distributed scalability result.
-- `rank_local_replicated_kernel`, `data_parallel_replicated`, or
-  `replicated_per_rank`: useful for throughput, smoke tests, or rank-local
-  acceleration, but not one-workload capacity scaling.
-- `manual_sliced_tensor_contraction`: sliced TN work that must still report
-  blockers before it is promoted as full distributed training scalability.
-- `sharded_across_ranks`: one logical workload is partitioned across ranks.
-  This is necessary but not sufficient for release-grade scalability claims.
-
-Every distributed result that makes a scalability claim must expose world size,
-local world size, node count, rank ownership, memory evidence, communication
-evidence, `distribution_semantics`, `claim_evidence_type`,
-`scalability_claim_allowed`, and blockers. Plan and preflight summaries should
-use `sharding_plan_available=True` instead of treating the plan itself as
-release evidence.
-
-## Installation
+Install the core package:
 
 ```bash
 pip install -e .
 ```
 
-For development, install the reproducible test toolchain with
-`pip install -e '.[dev]'`. Optional JAX and model examples use
-`pip install -e '.[jax]'` and `pip install -e '.[examples]'`, respectively.
-Comparison benchmarks may still require PennyLane, provider SDKs, or
-accelerator-specific runtimes. Core local examples are designed to run without
-distributed initialization.
-
-A Conda environment definition is also provided:
-
-```bash
-conda env create -f environment.yml
-conda activate flagquantum-dev
-```
-
-Verify the install:
-
-```python
-import flagquantum as fq
-
-print(fq.__version__)
-print(fq.info())
-```
-
-## Quick Start
+Build a differentiable quantum program with the public API:
 
 ```python
 import flagquantum as fq
@@ -115,38 +64,90 @@ import torch
 
 theta = torch.tensor(0.3, requires_grad=True)
 
-circuit = fq.Circuit(n_qubits=2)
-circuit.h(0)
-circuit.cx(0, 1)
-circuit.rx(0, theta=theta)
+program = fq.Circuit(n_qubits=2)
+program.h(0)
+program.cx(0, 1)
+program.rx(0, theta=theta)
 
-value = circuit.expectation_z(0).sum()
+value = program.expectation_z(0).sum()
 value.backward()
 
 print(float(value.detach()))
 print(float(theta.grad))
 ```
 
-For execution across statevector, MPS, tensor-network, and distributed modes,
-use the uniform entry point:
+Execute the same program through the uniform runtime:
 
 ```python
-result = fq.run(circuit, mode="auto")
+result = fq.run(program, mode="auto")
 
 print(result.state)
 print(result.plan)
 print(result.runtime)
 ```
 
-`fq.run(...)` returns the stable `fq.ExecutionResult` contract and is the
-single recommended execution entry point. `Circuit.run(...)`, `fq.run_native`,
-and backend-specific runners such as `fq.run_mps` are compatibility or advanced
-interfaces that may expose native result objects.
+`fq.run(...)` always returns the stable `fq.ExecutionResult` contract.
+Backend-specific runners remain available as advanced interfaces, but
+`fq.run(...)` is the recommended execution entry point.
 
-Training is a separate operation because it updates parameters:
+## How it works
+
+```mermaid
+flowchart TD
+    A["Quantum AI application<br/>fq.Circuit · fq.Module · training loop"]
+    B["FlagQuantum Program / IR<br/>operations · parameters · measurements"]
+    C["Planning and differentiation<br/>representation · partitioning · gradients"]
+    D["Execution runtimes<br/>statevector · MPS · tensor network · provider"]
+    E["FlagOS unified multi-chip backend<br/>target integration"]
+    F["Classical hardware<br/>CPU · GPU · multi-chip systems"]
+    G["Quantum hardware<br/>deployment providers"]
+    H["ExecutionResult<br/>values · plans · runtime evidence"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> F
+    D -.-> E
+    E --> F
+    D --> G
+    F --> H
+    G --> H
+```
+
+FlagQuantum owns quantum program semantics, differentiable training,
+representation selection, partitioning, and auditable execution results.
+FlagOS is the target unified backend for mapping those plans onto heterogeneous
+and multi-chip systems. Quantum providers form a parallel deployment path for
+trained programs.
+
+The complete stable `flagquantum.backends.flagos` backend and deeper FlagOS
+kernel and collective integration are under active development. Existing
+accelerator paths remain supported according to their documented maturity;
+the [FlagOS-aligned release train](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+defines when unified backend claims may be promoted.
+
+## Train quantum AI models
+
+`fq.Module` connects parameterized quantum programs to ordinary PyTorch
+optimizers:
 
 ```python
-module = fq.Module(build_circuit, n_parameters=2)
+import flagquantum as fq
+import torch
+
+def build_circuit(parameters, inputs=None):
+    return (
+        fq.Circuit(n_qubits=2)
+        .ry(0, theta=parameters[0])
+        .cx(0, 1)
+        .ry(1, theta=parameters[1])
+    )
+
+module = fq.Module(
+    build_circuit,
+    n_parameters=2,
+    policy=fq.RuntimePolicy(observable_wires=(1,)),
+)
 optimizer = torch.optim.Adam(module.parameters(), lr=0.01)
 
 training = fq.train(
@@ -158,213 +159,181 @@ training = fq.train(
 )
 ```
 
-Training is silent when `log_interval` is omitted. A positive interval prints
-the first step, every matching step, and the final step. Use `callback=` for
-per-step integrations such as TensorBoard or experiment tracking; callbacks
-run every step independently of terminal logging.
+The same model abstraction supports local quantum AI experiments, hybrid
+classical-quantum models, VQE workflows, and distributed training paths.
+`fq.run(...)` executes without updating parameters; `fq.train(...)` owns the
+optimizer loop and returns `fq.TrainingResult`.
 
-For VQE convergence studies, staged classical and quantum-aware optimization
-is available through `flagquantum.algorithms`.
-The first implementation supports Adam/AdamW/SGD/L-BFGS, Rotosolve, and exact
-full or block-diagonal quantum natural gradient (QNG):
+Start with the
+[single-machine quantum AI examples](examples/single_machine_quantum_ai/README.md)
+or the [tutorial notebooks](examples/tutorials/README.md).
 
-```python
-import flagquantum.algorithms as fqa
-from flagquantum.algorithms.optimization import OptimizationStage
+## Plan and scale execution
 
-stages = (
-    OptimizationStage("quantum", "adam", steps=40, lr=0.02),
-    OptimizationStage(
-        "quantum", "qng", steps=20, lr=0.05, block_size=13
-    ),
-)
-result = fqa.run_hybrid_vqe(builder, initial, hamiltonian, stages=stages)
-```
-
-QNG currently forms an exact local statevector metric, while Rotosolve assumes
-single-frequency Pauli-rotation coordinates. They are convergence tools for
-local workloads and do not claim distributed sharded execution. Named groups
-passed to `optimize_hybrid` can alternate ordinary classical-network
-parameters and quantum-circuit parameters under different stages.
-
-A matched classically gated HVA benchmark compares Adam on both parameter
-groups with classical Adam plus layer-block QNG on the quantum group. It
-records optimizer steps, circuit evaluations, cumulative wall time, energy,
-and relative error, then generates cost-aware PNG/SVG figures:
-
-```bash
-python benchmarks/hybrid_classical_quantum_optimizer.py \
-  --n-wires 4 --depth 2 --steps 30 --precision float64 \
-  --json-output /tmp/hybrid-optimizer.json \
-  --csv-output /tmp/hybrid-optimizer.csv
-python benchmarks/research/plot_hybrid_classical_quantum_optimizer.py \
-  /tmp/hybrid-optimizer.json --output-dir /tmp/hybrid-optimizer-figures
-```
-
-This exact-statevector comparison is a local convergence/cost diagnostic, not
-distributed-MPS scalability evidence.
-
-For a larger systematic study, the MLP-conditioned suite keeps the classical
-optimizer fixed as Adam and compares Adam, block-QNG, L-BFGS, and SPSA on the
-quantum parameter group:
-
-```bash
-python benchmarks/hybrid_mlp_quantum_optimizer_suite.py \
-  --n-wires 6 --depth 3 --steps 60 --precision float64 \
-  --json-output /tmp/hybrid-mlp-suite.json \
-  --csv-output /tmp/hybrid-mlp-suite.csv
-python benchmarks/research/plot_hybrid_mlp_quantum_optimizer_suite.py \
-  /tmp/hybrid-mlp-suite.json --output-dir /tmp/hybrid-mlp-suite-figures
-```
-
-The MLP consumes layer, gate-family, bond/site-position, and boundary features
-and emits a gain and bias for every circuit angle. The output includes
-accuracy-target crossing costs and equal circuit-evaluation-budget summaries,
-so optimizer-step improvements cannot be mistaken for total-cost improvements.
-
-The experimental A800 Triton block-QNG path uses forward-mode propagation of
-the state and all parameter tangents through a complete bond-resolved-phase
-Heisenberg HVA. Its benchmark entrypoints are:
-
-```bash
-python benchmarks/qng_hva_forward_tangent_triton.py \
-  --n-wires 6 --depth 3 --output /tmp/hva-tangent.json
-python benchmarks/qng_hva_time_to_accuracy.py \
-  --n-wires 4 --depth 2 --steps 60 --output /tmp/time-to-accuracy.json
-```
-
-On three N=4/depth2 A800 seeds, reference and Triton block-QNG both passed the
-1e-5 gate while Adam passed in zero runs. Triton reduced median time-to-1e-5
-from 2.93 s to 1.30 s. This is local complex64 evidence; it is not a
-complex128 or distributed-MPS QNG claim.
-
-The deterministic local N=8 Heisenberg convergence check uses complex128,
-depth-5 phase-augmented HVA, a dimer-singlet initial state, and Adam-to-L-BFGS:
-
-```bash
-python examples/single_machine_quantum_ai/06_heisenberg_hybrid_vqe.py \
-  --n-qubits 8 --depth 5 --schedule adam_lbfgs --precision float64
-```
-
-It reports `converged` only when relative error against exact diagonalization
-is at most `--convergence-tolerance` (default `1e-5`).
-
-The matched 2-GPU distributed-MPS optimizer comparison is available as
-lightweight plotting inputs in
-`benchmarks/results/heisenberg_vqe/optimizer_comparison_n8_p5_chi16_complex128_g2.{json,csv}`.
-The associated SVGs plot optimizer step against energy and relative error.
-This convergence path requires saved two-site factorization graphs. Exact MPS
-gradient policy retains them automatically; the lower-memory recomputation
-pullback is restricted to explicitly approximate-gradient work.
-
-For larger variational circuits, parameters can be organized into named groups:
+FlagQuantum keeps execution policy separate from program intent:
 
 ```python
-module = fq.Module(
-    build_circuit,
-    parameters={"encoder": (4,), "entangler": (3, 2), "readout": ()},
-    init={"encoder": "uniform", "entangler": "normal", "readout": 0.1},
-    seed=42,
-)
-```
-
-Passing a symbolic `Circuit` directly also infers and automatically binds its
-scalar `fq.Parameter` values during execution.
-
-Use `fq.gate_info("u3")` to inspect a gate's wire count, parameter names, and
-parameter shapes without consulting source code.
-
-`fq.run` never performs an optimizer update. `fq.train` runs the PyTorch
-optimizer loop and always returns `fq.TrainingResult`.
-
-Plan how the same circuit should run:
-
-```python
-plan = circuit.runtime_plan(
+plan = program.runtime_plan(
     prefer_jax=True,
     state_mode="auto",
     require_gradients=True,
 )
 
-print(plan.summary()["recommended_mode"])
-print(plan.summary()["recommended_candidate"]["distribution_semantics"])
+summary = plan.summary()
+print(summary["recommended_mode"])
+print(summary["recommended_candidate"]["distribution_semantics"])
 ```
 
-## Local Training Examples
+Execution can remain on the local fast path or select a distributed
+representation. A production training path must preserve the distribution
+semantics through the complete lifecycle:
 
-The curated examples intentionally avoid distributed backend initialization:
-
-```bash
-python examples/single_machine_quantum_ai/00_local_fast_path_check.py
-python examples/single_machine_quantum_ai/01_vqe_statevector.py --steps 2 --n-qubits 3
-python examples/single_machine_quantum_ai/03_mps_training.py --steps 2 --n-qubits 4 --max-bond 8
-python examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py --steps 1 --bench-iters 1
-python examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py --steps 2 --n-qubits 20
+```text
+forward → loss → backward → optimizer update → checkpoint → restart
 ```
 
-The 1000-qubit MPS example is a structure-aware local MPS workload. It is not
-evidence for arbitrary 1000-qubit circuits and does not claim distributed
-sharded scalability.
+FlagQuantum distinguishes true one-workload sharding from replicated
+throughput:
 
-## Deployment Sketch
+- `single_device_fast_path` is local CPU or one-device execution.
+- `data_parallel_replicated`, `rank_local_replicated_kernel`, and
+  `replicated_per_rank` do not expand the capacity of one workload.
+- `manual_sliced_tensor_contraction` remains a constrained tensor-network
+  execution mode until its training and transport blockers are closed.
+- `sharded_across_ranks` means one logical workload has explicit rank
+  ownership; release claims still require audited hardware evidence.
+
+See the
+[distributed quantum AI principles](docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md)
+and [distributed scalability principles](docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md)
+for the binding execution and evidence rules.
+
+## Deploy trained programs
+
+The deployment contract packages a trained circuit, its parameters, shots,
+provider target, and serialized program:
 
 ```python
 import flagquantum as fq
 
-circuit = fq.Circuit(2)
-circuit.h(0).cx(0, 1)
+program = fq.Circuit(n_qubits=2)
+program.h(0).cx(0, 1)
 
-package = fq.create_deployment_package(
-    circuit,
-    shots=1024,
-)
+package = fq.create_deployment_package(program, shots=1024)
 
 print(package.backend.provider)
 print(package.qasm[:80])
 ```
 
-Provider integration status depends on credentials, endpoint availability, and
-the selected backend profile. See [docs/API.md](docs/API.md) and the deployment
-tests for the currently implemented provider abstraction.
+Provider availability, credentials, supported operations, and hardware
+evidence vary by target. Cloud deployment is currently development evidence,
+not a release-certified hardware capability. See the
+[API reference](docs/API.md) and [known limitations](docs/KNOWN_LIMITATIONS.md).
 
-## Benchmarks
+## Capability maturity
 
-Install the project, discover maintained scenarios, and run a CPU smoke
-benchmark through the stable command:
+FlagQuantum assigns maturity to individual capabilities rather than to the
+package as a whole:
+
+| Capability | Current level | Current boundary |
+| --- | --- | --- |
+| Unified circuit API and FlagQuantum IR | `release_certified` | IR v1 changes require an explicit migration |
+| Local statevector training | `production_supported` | Capacity is bounded by one device |
+| Sharded statevector training | `production_supported` | Multi-node release certification still requires promoted evidence |
+| Sharded MPS training | `development_evidence` | Single-node multi-GPU evidence exists; multi-node and release evidence remain incomplete |
+| Tensor-network training | `experimental` | General reverse contraction and production transport are not certified |
+| Cloud and quantum hardware deployment | `development_evidence` | No provider is release certified |
+| Dynamic circuits | `experimental` | Local and provider-preflight scope; no verified QPU execution |
+| Extension SDK | `experimental` | Compatibility is not yet guaranteed |
+
+The machine-validated
+[capability matrix](capability-maturity.toml) is authoritative. The generated
+[capability catalog](docs/generated/CAPABILITIES.md) maps each user goal to its
+stable API, runtime mode, gradient support, evidence, examples, and known
+boundaries.
+
+## Installation
+
+FlagQuantum supports Python 3.10–3.12 and uses PyTorch as its primary training
+interface:
 
 ```bash
 pip install -e .
+```
+
+Install optional environments only when required:
+
+```bash
+pip install -e '.[dev]'       # tests, lint, typing, and builds
+pip install -e '.[jax]'       # optional JAX quantum kernels
+pip install -e '.[cuda]'      # optional Triton kernels
+pip install -e '.[examples]'  # model and dataset examples
+```
+
+A reproducible Conda environment is also provided:
+
+```bash
+conda env create -f environment.yml
+conda activate flagquantum-dev
+```
+
+Verify the installation:
+
+```python
+import flagquantum as fq
+
+print(fq.__version__)
+print(fq.info())
+```
+
+## Explore FlagQuantum
+
+| Goal | Start here |
+| --- | --- |
+| Build, compile, or export a program | [`fq.Circuit` quick start](examples/quick_start.py) |
+| Train a quantum or hybrid AI model | [Single-machine quantum AI](examples/single_machine_quantum_ai/README.md) |
+| Train a large low-entanglement system | [Differentiable MPS](examples/mps_hamiltonian_identification/README.md) |
+| Partition one workload across devices | [Distributed statevector](examples/distributed_statevector_topologies/README.md) and [distributed MPS](examples/distributed_mps/README.md) |
+| Package a trained program for hardware | [Training-to-deployment example](examples/train_parameterized_circuit_then_deploy.py) |
+| Understand the runtime architecture | [Runtime architecture](docs/RUNTIME_ARCHITECTURE.md) |
+| Follow FlagOS integration milestones | [FlagOS-aligned release train](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md) |
+| Inspect limitations and evidence | [Known limitations](docs/KNOWN_LIMITATIONS.md) and [capability maturity](docs/CAPABILITY_MATURITY.md) |
+
+## Benchmarks and evidence
+
+The stable benchmark command discovers maintained scenarios and records
+structured results:
+
+```bash
 flagquantum-benchmark list
 flagquantum-benchmark info statevector_local
 flagquantum-benchmark run environment_probe \
   --json-output benchmarks/results/local/environment.json
 ```
 
-See [benchmarks/README.md](benchmarks/README.md) for local, distributed, and
-release-evidence workflows. Script filenames are implementation details; use
-`flagquantum-benchmark` in user automation.
+Benchmark conclusions separate local performance, replicated throughput,
+manual tensor slicing, and true capacity expansion. Scalability claims are
+fail-closed unless runtime ownership, memory, communication, topology,
+gradient, optimizer, and blocker evidence pass the release gate.
 
-## Tests
+See [benchmarks/README.md](benchmarks/README.md) for reproducible local,
+distributed, and release-evidence workflows.
 
-Local fast-path checks:
+## Development
 
-```bash
-python -m pytest tests/test_native_circuit.py tests/test_backends.py -q
-```
-
-Distributed semantics checks:
+Run the smallest meaningful test tier first:
 
 ```bash
-python -m pytest tests/test_distributed_statevector.py tests/test_jax_distributed_plan.py tests/test_distributed_scalability_audit.py -q
+python tools/ci_tier.py pr-default
 ```
 
-## Contributing
+Runtime, distributed, accelerator, and release changes use progressively
+stronger tiers documented in the [testing manual](docs/TESTING.md).
 
-Read [AGENTS.md](AGENTS.md), the
-[capability maturity policy](docs/CAPABILITY_MATURITY.md), and the distributed
-principle documents before changing distributed runtime, planners, benchmark
-claims, or quantum AI training paths.
+Before contributing, read [AGENTS.md](AGENTS.md), the
+[capability maturity policy](docs/CAPABILITY_MATURITY.md), and the
+architecture map in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## License
 
-Apache License 2.0.
+FlagQuantum is licensed under the [Apache License 2.0](LICENSE).
