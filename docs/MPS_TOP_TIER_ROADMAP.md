@@ -293,7 +293,9 @@ passing one capability does not promote the others.
 - [x] Add measured communication-aware ownership balancing; the frozen A/B
       reduces eight-GPU boundary messages by 46.2% and boundary bytes by
       64.4%, improving mean step time by 84.8% at the cost of more compilation.
-- [ ] Re-run the frozen matrix without changing acceptance thresholds.
+- [x] Re-run the frozen matrix without changing acceptance thresholds; the
+      correctness gate passes but the final 4→8 speedup is only 0.861× versus
+      the 1.5× target, so Sprint 2 closes without performance promotion.
 
 ### Sprint 3 — Large-bond kernels
 
@@ -329,6 +331,7 @@ Update this table as work lands:
 | 2026-07-28 | M2 | Boundary-halo overlap A/B | `4991374` | `benchmarks/results/smoke/release_candidates/mps_halo_overlap/` | 8-GPU mean step time improves 38.9%; 4-GPU improves 1.2%; correctness checks pass | Overlap-enabled 4→8 speedup remains 0.923×; single unsigned A/B run |
 | 2026-07-28 | M2 | Communication-aware ownership A/B | `35bdd03` | `benchmarks/results/smoke/release_candidates/mps_communication_aware_ownership/` | 4-GPU improves 6.4%; 8-GPU improves 84.8%; messages −46.2%; bytes −64.4% | Aware 4→8 speedup remains below 1×; compile setup grows about 3.1× |
 | 2026-07-28 | M2 | Owner gradient buckets | `357856c` | `benchmarks/results/smoke/release_candidates/mps_gradient_buckets/` | 8×A800 collectives 1000→8; measured backward 3.45× faster; exact optimizer parity | Specialized microbenchmark; single unsigned run |
+| 2026-07-28 | M2 | Final optimized frozen matrix | `9898286` | `benchmarks/results/smoke/release_candidates/mps_sprint2_closeout/` | Correctness passes; 4 GPU 0.487s, 8 GPU 0.565s | 4→8 is 0.861×, below 1.5× target; repeated trials and Sprint 3 kernels required |
 
 ## Claim policy
 
