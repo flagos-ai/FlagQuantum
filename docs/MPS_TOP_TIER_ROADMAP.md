@@ -288,7 +288,9 @@ passing one capability does not promote the others.
 - [x] Overlap boundary-halo communication with independent layer work; frozen
       A/B evidence improves eight-GPU mean step time by 38.9% and four-GPU by
       1.2%, while preserving finite losses and phase reconciliation.
-- [ ] Add measured ownership balancing.
+- [x] Add measured communication-aware ownership balancing; the frozen A/B
+      reduces eight-GPU boundary messages by 46.2% and boundary bytes by
+      64.4%, improving mean step time by 84.8% at the cost of more compilation.
 - [ ] Re-run the frozen matrix without changing acceptance thresholds.
 
 ### Sprint 3 — Large-bond kernels
@@ -323,6 +325,7 @@ Update this table as work lands:
 | 2026-07-28 | M1 | Fixed 64-site bond-64 4/8 GPU profile | `0de6174` | `benchmarks/results/smoke/release_candidates/mps_crossover_sprint1/` | Development audit valid; 4→8 speedup 0.906×; boundary messages grow 2.6× | NCCL-visible transport breakdown not captured; boundary transport optimization required |
 | 2026-07-28 | M2 | Packed boundary transport and buffer reuse | `05154c4` | `benchmarks/results/smoke/release_candidates/mps_boundary_transport/` | 8×A800 development audit valid; physical messages −50%; logical bytes +0%; total rank P2P wait −18.7% | Microbenchmark only; frozen end-to-end matrix must be repeated |
 | 2026-07-28 | M2 | Boundary-halo overlap A/B | `4991374` | `benchmarks/results/smoke/release_candidates/mps_halo_overlap/` | 8-GPU mean step time improves 38.9%; 4-GPU improves 1.2%; correctness checks pass | Overlap-enabled 4→8 speedup remains 0.923×; single unsigned A/B run |
+| 2026-07-28 | M2 | Communication-aware ownership A/B | `35bdd03` | `benchmarks/results/smoke/release_candidates/mps_communication_aware_ownership/` | 4-GPU improves 6.4%; 8-GPU improves 84.8%; messages −46.2%; bytes −64.4% | Aware 4→8 speedup remains below 1×; compile setup grows about 3.1× |
 
 ## Claim policy
 

@@ -1,0 +1,655 @@
+{
+  "artifact_class": "derived_development_report",
+  "aware_four_to_eight_speedup": 0.9145508906944716,
+  "benchmark": "mps_communication_aware_ownership_ab",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 13107200,
+  "distribution_semantics": "sharded_across_ranks",
+  "eight_gpu_boundary_byte_reduction": 0.6444444444444444,
+  "eight_gpu_boundary_message_reduction": 0.46153846153846156,
+  "eight_gpu_compile_setup_ratio": 3.065794397568776,
+  "eight_gpu_policy_speedup": 1.8478367228448282,
+  "four_gpu_policy_speedup": 1.0640410881420828,
+  "local_memory_bytes_by_rank": [
+    60749312,
+    60375040,
+    60548608,
+    60564992,
+    61207040,
+    61207040,
+    61207040,
+    61130240
+  ],
+  "local_world_size": 8,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "passed": true,
+  "points": [
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "de8423772bb04269755f46f07c08e97dea3cba8a1c8fd63923ebcae592c2395d",
+      "boundary_forward_bytes": 13926400,
+      "boundary_forward_messages": 500,
+      "compile_setup_seconds_max": 1.4984600557945669,
+      "local_memory_bytes_by_rank": [
+        20010496,
+        26611200,
+        26611200,
+        26100224
+      ],
+      "maximum_rank_imbalance": 1.0044027467231373,
+      "mean_seconds": 0.5118994339602068,
+      "ownership_policy": "equal_sites",
+      "p50_seconds": 0.48778284154832363,
+      "phase_reconciliation_passed": true,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        }
+      ],
+      "sample_count": 20,
+      "site_ownership": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47
+        ],
+        [
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63
+        ]
+      ],
+      "source_commit": "35bdd0381669db113e8d44600c1270a974a01c53",
+      "source_tree_dirty": false,
+      "world_size": 4
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "a14d585abd8e5152ab28f32465a31aa49cc4d6cdbea63142820718bbfb801299",
+      "boundary_forward_bytes": 6553600,
+      "boundary_forward_messages": 300,
+      "compile_setup_seconds_max": 3.918246599845588,
+      "local_memory_bytes_by_rank": [
+        62199296,
+        62087168,
+        62474752,
+        62843392
+      ],
+      "maximum_rank_imbalance": 1.0011336116698437,
+      "mean_seconds": 0.48108991247136146,
+      "ownership_policy": "communication_aware",
+      "p50_seconds": 0.4790546379517764,
+      "phase_reconciliation_passed": true,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        }
+      ],
+      "sample_count": 20,
+      "site_ownership": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        [
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30
+        ],
+        [
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45
+        ],
+        [
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63
+        ]
+      ],
+      "source_commit": "35bdd0381669db113e8d44600c1270a974a01c53",
+      "source_tree_dirty": false,
+      "world_size": 4
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "53edaa840e1eeb29fc80c964838ed225fcbd0ee55355991b0b285a9c67d5826b",
+      "boundary_forward_bytes": 36864000,
+      "boundary_forward_messages": 1300,
+      "compile_setup_seconds_max": 1.5538517218083143,
+      "local_memory_bytes_by_rank": [
+        18560512,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        24658432
+      ],
+      "maximum_rank_imbalance": 1.0024577656183904,
+      "mean_seconds": 0.9720351445721462,
+      "ownership_policy": "equal_sites",
+      "p50_seconds": 0.9493028926663101,
+      "phase_reconciliation_passed": true,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        },
+        {
+          "device": "cuda:4",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 4,
+          "rank": 4
+        },
+        {
+          "device": "cuda:5",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 5,
+          "rank": 5
+        },
+        {
+          "device": "cuda:6",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 6,
+          "rank": 6
+        },
+        {
+          "device": "cuda:7",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 7,
+          "rank": 7
+        }
+      ],
+      "sample_count": 20,
+      "site_ownership": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        [
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        [
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47
+        ],
+        [
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55
+        ],
+        [
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63
+        ]
+      ],
+      "source_commit": "35bdd0381669db113e8d44600c1270a974a01c53",
+      "source_tree_dirty": false,
+      "world_size": 8
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "12468c45cdb50fe836ead50e955ed6f6313df010eb102a91d848c6754343e543",
+      "boundary_forward_bytes": 13107200,
+      "boundary_forward_messages": 700,
+      "compile_setup_seconds_max": 4.763789903372526,
+      "local_memory_bytes_by_rank": [
+        60749312,
+        60375040,
+        60548608,
+        60564992,
+        61207040,
+        61207040,
+        61207040,
+        61130240
+      ],
+      "maximum_rank_imbalance": 1.0011863726906487,
+      "mean_seconds": 0.526039521000348,
+      "ownership_policy": "communication_aware",
+      "p50_seconds": 0.5254912485834211,
+      "phase_reconciliation_passed": true,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        },
+        {
+          "device": "cuda:4",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 4,
+          "rank": 4
+        },
+        {
+          "device": "cuda:5",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 5,
+          "rank": 5
+        },
+        {
+          "device": "cuda:6",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 6,
+          "rank": 6
+        },
+        {
+          "device": "cuda:7",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 7,
+          "rank": 7
+        }
+      ],
+      "sample_count": 20,
+      "site_ownership": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        [
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        [
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26
+        ],
+        [
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35
+        ],
+        [
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44
+        ],
+        [
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53
+        ],
+        [
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63
+        ]
+      ],
+      "source_commit": "35bdd0381669db113e8d44600c1270a974a01c53",
+      "source_tree_dirty": false,
+      "world_size": 8
+    }
+  ],
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "single_ab_run_unsigned_development_evidence",
+    "aware_four_to_eight_speedup_below_one",
+    "communication_aware_compile_setup_regression"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_ownership_ab_report.v1",
+  "workload": {
+    "initial_bond": 32,
+    "max_bond": 64,
+    "n_wires": 64,
+    "scaling_mode": "fixed_problem_strong_scaling"
+  },
+  "world_size": 8
+}
