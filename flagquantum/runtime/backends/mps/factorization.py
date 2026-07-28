@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Mapping
+from threading import Lock
+from typing import Any, Callable, Mapping, Sequence
 
 import torch
 from torch.profiler import record_function
@@ -142,6 +143,88 @@ class FactorizationMicrobatchDecision:
 
 
 MemoryProvider = Callable[[torch.device], FactorizationMemorySnapshot]
+
+
+@dataclass
+class _WorkspaceEntry:
+    tensor: torch.Tensor
+    in_use: bool = False
+    ready: torch.cuda.Event | None = None
+
+
+class FactorizationWorkspacePool:
+    """Bounded reusable staging tensors with CUDA stream-safe leases."""
+
+    def __init__(self, *, maximum_bytes: int = 512 * 1024 * 1024) -> None:
+        if maximum_bytes <= 0:
+            raise ValueError("factorization workspace pool maximum must be positive")
+        self.maximum_bytes = int(maximum_bytes)
+        self._entries: dict[tuple[object, ...], list[_WorkspaceEntry]] = {}
+        self._reserved_bytes = 0
+        self._allocations = 0
+        self._reuses = 0
+        self._lock = Lock()
+
+    def acquire(
+        self,
+        *,
+        role: str,
+        shape: Sequence[int],
+        dtype: torch.dtype,
+        device: torch.device,
+    ) -> _WorkspaceEntry:
+        normalized = tuple(int(value) for value in shape)
+        key = (role, device.type, device.index, dtype, normalized)
+        with self._lock:
+            for entry in self._entries.get(key, ()):
+                if not entry.in_use:
+                    if entry.ready is not None and device.type == "cuda":
+                        torch.cuda.current_stream(device).wait_event(entry.ready)
+                    entry.in_use = True
+                    self._reuses += 1
+                    return entry
+            tensor = torch.empty(normalized, dtype=dtype, device=device)
+            tensor_bytes = tensor.numel() * tensor.element_size()
+            if self._reserved_bytes + tensor_bytes > self.maximum_bytes:
+                raise MPSFactorizationMemoryError(
+                    "factorization staging pool exhausted: "
+                    f"requested_bytes={tensor_bytes}, "
+                    f"reserved_bytes={self._reserved_bytes}, "
+                    f"maximum_bytes={self.maximum_bytes}, role={role}, "
+                    f"shape={normalized}"
+                )
+            entry = _WorkspaceEntry(tensor=tensor, in_use=True)
+            self._entries.setdefault(key, []).append(entry)
+            self._reserved_bytes += tensor_bytes
+            self._allocations += 1
+            return entry
+
+    def release(self, entry: _WorkspaceEntry) -> None:
+        with self._lock:
+            if not entry.in_use:
+                raise RuntimeError(
+                    "factorization workspace lease was already released"
+                )
+            if entry.tensor.device.type == "cuda":
+                entry.ready = torch.cuda.Event()
+                entry.ready.record(torch.cuda.current_stream(entry.tensor.device))
+            entry.in_use = False
+
+    def stats(self) -> dict[str, int]:
+        return {
+            "allocation_count": self._allocations,
+            "reuse_count": self._reuses,
+            "reserved_bytes": self._reserved_bytes,
+            "entry_count": sum(len(values) for values in self._entries.values()),
+            "maximum_bytes": self.maximum_bytes,
+        }
+
+
+_FACTORIZATION_WORKSPACE_POOL = FactorizationWorkspacePool()
+
+
+def factorization_workspace_pool() -> FactorizationWorkspacePool:
+    return _FACTORIZATION_WORKSPACE_POOL
 
 
 def cuda_factorization_memory_snapshot(
@@ -384,9 +467,11 @@ __all__ = [
     "FactorizationMicrobatchDecision",
     "FactorizationWorkingSet",
     "FactorizationWorkspacePolicy",
+    "FactorizationWorkspacePool",
     "MPSFactorizationMemoryError",
     "cuda_factorization_memory_snapshot",
     "estimate_rxx_factorization_working_set",
+    "factorization_workspace_pool",
     "plan_rxx_factorization_microbatch",
     "apply_mps_pair_forward",
     "apply_mps_qr_forward",

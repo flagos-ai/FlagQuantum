@@ -13,6 +13,7 @@ from .errors import MPSForwardLifetimeError
 from .factorization import (
     FactorizationWorkspacePolicy,
     MemoryProvider,
+    factorization_workspace_pool,
     plan_rxx_factorization_microbatch,
 )
 from .site_kernels import (
@@ -170,30 +171,59 @@ def prepare_compiled_mps_layer(
                         "bucket_item_start": start,
                     }
                 )
-                lefts = torch.stack(
-                    [state.local_tensors[min(wires)] for _, _, wires in chunk]
+                left_values = [
+                    state.local_tensors[min(wires)] for _, _, wires in chunk
+                ]
+                right_values = [
+                    state.local_tensors[min(wires) + 1] for _, _, wires in chunk
+                ]
+                pool = factorization_workspace_pool()
+                left_entry = pool.acquire(
+                    role="rxx_left",
+                    shape=(len(left_values), *left_values[0].shape),
+                    dtype=left_values[0].dtype,
+                    device=left_values[0].device,
                 )
-                rights = torch.stack(
-                    [state.local_tensors[min(wires) + 1] for _, _, wires in chunk]
+                right_entry = pool.acquire(
+                    role="rxx_right",
+                    shape=(len(right_values), *right_values[0].shape),
+                    dtype=right_values[0].dtype,
+                    device=right_values[0].device,
                 )
-                packed_matrices = []
-                for _, candidate, _ in chunk:
-                    matrix = _instruction_matrix_for_mps(
-                        candidate, bsz=bsz, device=device, dtype=dtype
+                lefts = left_entry.tensor
+                rights = right_entry.tensor
+                try:
+                    for position, value in enumerate(left_values):
+                        lefts[position].copy_(value)
+                    for position, value in enumerate(right_values):
+                        rights[position].copy_(value)
+                    packed_matrices = []
+                    for _, candidate, _ in chunk:
+                        matrix = _instruction_matrix_for_mps(
+                            candidate, bsz=bsz, device=device, dtype=dtype
+                        )
+                        packed_matrices.append(
+                            matrix.expand(bsz, -1, -1)
+                            if matrix.ndim == 2
+                            else matrix
+                        )
+                    pairs = apply_rxx_contraction_bucket(
+                        lefts,
+                        rights,
+                        torch.stack(packed_matrices),
+                        compiled=True,
                     )
-                    packed_matrices.append(
-                        matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
+                    split_outputs = _split_pair_matrix_bucket(
+                        pairs,
+                        left_dim=lefts.shape[2],
+                        right_dim=rights.shape[-1],
+                        config=state.config,
+                        svd_driver=factorization_workspace_policy.svd_driver,
                     )
-                pairs = apply_rxx_contraction_bucket(
-                    lefts, rights, torch.stack(packed_matrices), compiled=True
-                )
-                split_outputs = _split_pair_matrix_bucket(
-                    pairs,
-                    left_dim=lefts.shape[2],
-                    right_dim=rights.shape[-1],
-                    config=state.config,
-                    svd_driver=factorization_workspace_policy.svd_driver,
-                )
+                finally:
+                    pool.release(left_entry)
+                    pool.release(right_entry)
+                factorization_records[-1]["staging_workspace_pool"] = pool.stats()
                 for position, (index, _, wires) in enumerate(chunk):
                     left = min(wires)
                     updated_left, updated_right, info = split_outputs[position]
