@@ -192,7 +192,9 @@ Qiskit Aer, or Braket IQM feature set before transport-specific validation.
 Local trajectory results also expose a `statistics` mapping with trajectory,
 measurement, reset, conditional-branch, observed-branch and elapsed-time
 counters. The same mapping is retained as `runtime["dynamic_statistics"]` by
-the canonical projection.
+the canonical projection. Static gates inside each trajectory use the direct
+statevector-kernel path; `statistics["gate_execution_strategy"]` records that
+choice for benchmark attribution.
 The Qiskit path also validates a full `DynamicCircuit → OpenQASM 3 → Qiskit →
 Aer` round trip and statistical agreement for random measurement branches.
 

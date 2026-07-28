@@ -30,6 +30,7 @@ def test_dynamic_statistics_count_trajectories_operations_and_branches() -> None
     assert statistics["branch_count"] == len(statistics["branch_shots"])
     assert sum(statistics["branch_shots"].values()) == 64
     assert statistics["elapsed_seconds"] >= 0
+    assert statistics["gate_execution_strategy"] == "direct_statevector_kernel"
     assert result.provider_metadata["provider"] == "flagquantum"
 
     canonical = result.to_execution_result()
@@ -65,3 +66,16 @@ def test_dynamic_development_benchmark_contract_and_smoke_budget() -> None:
     assert row["shots_per_second"] > 0
     assert row["runtime_statistics"]["trajectory_count"] == 32
     assert row["elapsed_seconds"] < 10
+
+
+def test_direct_dynamic_gate_path_matches_static_statevector_gates() -> None:
+    dynamic = fq.experimental.DynamicCircuit(3)
+    dynamic.x(0).rx(1, theta=0.31).cx(0, 2).rzz(1, 2, theta=-0.27)
+    dynamic.measure(0, classical_bit=0)
+    result = fq.experimental.run_dynamic(dynamic, shots=8, seed=13)
+
+    static = fq.Circuit(3)
+    static.x(0).rx(1, theta=0.31).cx(0, 2).rzz(1, 2, theta=-0.27)
+    expected = static.state()[0]
+
+    assert torch.allclose(result.final_states, expected.expand(8, -1))

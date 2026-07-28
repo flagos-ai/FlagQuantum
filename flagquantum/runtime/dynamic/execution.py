@@ -5,7 +5,16 @@ from time import perf_counter
 
 import torch
 
-from ...circuit import Circuit
+from ...circuit_statevector import (
+    _DIAGONAL_STATEVECTOR_GATES,
+    _apply_diagonal_matrix,
+    _apply_fixed_permutation,
+    _apply_matrix,
+    _apply_single_qubit_fixed,
+    _canonical_name,
+    _gate_matrix,
+    _statevector_layout,
+)
 from ...core.ir import Instruction
 from ._conditions import classical_width, instruction_conditions
 from .circuit import DynamicCircuit
@@ -38,15 +47,37 @@ def _apply_instruction(
     *,
     n_wires: int,
 ) -> torch.Tensor:
-    circuit = Circuit(
-        n_qubits=n_wires,
-        bsz=1,
+    """Apply one static instruction without constructing a temporary circuit."""
+
+    name = _canonical_name(instruction.name)
+    if name in {"x", "cx", "swap"}:
+        return _apply_fixed_permutation(state, name, instruction.wires, n_wires)
+    if name == "y":
+        return _apply_single_qubit_fixed(
+            state,
+            name,
+            instruction.wires[0],
+            n_wires,
+        )
+    matrix = _gate_matrix(
+        instruction,
+        bsz=state.shape[0],
         device=state.device,
         dtype=state.dtype,
-        inputs=state,
+        parameter_bindings=None,
     )
-    circuit._instructions.append(instruction)
-    return circuit.state()
+    apply_gate = (
+        _apply_diagonal_matrix
+        if name in _DIAGONAL_STATEVECTOR_GATES
+        else _apply_matrix
+    )
+    return apply_gate(
+        state,
+        matrix,
+        instruction.wires,
+        n_wires,
+        layout=_statevector_layout(n_wires, instruction.wires),
+    )
 
 
 def run_dynamic(
@@ -185,6 +216,7 @@ def run_dynamic(
             "branch_count": len(branch_counts),
             "branch_shots": dict(sorted(branch_counts.items())),
             "elapsed_seconds": perf_counter() - started,
+            "gate_execution_strategy": "direct_statevector_kernel",
             "device": str(circuit.device),
             "seed": seed,
         },
