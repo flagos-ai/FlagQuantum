@@ -1,5 +1,8 @@
 """Local statevector trajectory execution for dynamic circuits."""
 
+from collections import Counter
+from time import perf_counter
+
 import torch
 
 from ...circuit import Circuit
@@ -64,6 +67,12 @@ def run_dynamic(
                 raise RuntimeError("dynamic trajectory execution is not differentiable")
 
     width = classical_width(circuit)
+    started = perf_counter()
+    branch_counts: Counter[str] = Counter()
+    measurement_count = 0
+    reset_count = 0
+    conditional_applied = 0
+    conditional_skipped = 0
     generator = torch.Generator(device=torch.device(circuit.device).type)
     if seed is not None:
         generator.manual_seed(int(seed))
@@ -78,7 +87,8 @@ def run_dynamic(
         for _ in range(int(shots)):
             state = initial_states[batch_index : batch_index + 1]
             classical = [-1] * width
-            for instruction in circuit._instructions:
+            branch_trace = []
+            for instruction_index, instruction in enumerate(circuit._instructions):
                 conditions = instruction_conditions(instruction)
                 skip = False
                 for bit_index, expected in conditions:
@@ -90,7 +100,10 @@ def run_dynamic(
                         skip = True
                         break
                 if skip:
+                    conditional_skipped += 1
                     continue
+                if conditions:
+                    conditional_applied += 1
                 if instruction.name == "measure":
                     state, bit = _measure_wire(
                         state,
@@ -99,6 +112,8 @@ def run_dynamic(
                         generator=generator,
                     )
                     classical[int(instruction.metadata["classical_bit"])] = bit
+                    measurement_count += 1
+                    branch_trace.append((instruction_index, bit))
                 elif instruction.name == "reset":
                     state, bit = _measure_wire(
                         state,
@@ -112,6 +127,8 @@ def run_dynamic(
                             Instruction("x", instruction.wires),
                             n_wires=circuit.n_wires,
                         )
+                    reset_count += 1
+                    branch_trace.append((instruction_index, bit))
                 else:
                     state = _apply_instruction(
                         state,
@@ -133,6 +150,7 @@ def run_dynamic(
                 ]
             )
             classical_rows.append(classical)
+            branch_counts[",".join(f"{index}:{bit}" for index, bit in branch_trace)] += 1
         batched_states.append(torch.stack(final_states))
         batched_samples.append(
             torch.tensor(final_samples, dtype=torch.int64, device=circuit.device)
@@ -153,6 +171,23 @@ def run_dynamic(
         final_states=states_tensor,
         shots=int(shots),
         seed=seed,
+        provider_metadata={
+            "provider": "flagquantum",
+            "device": str(circuit.device),
+        },
+        statistics={
+            "batch_size": circuit.bsz,
+            "trajectory_count": circuit.bsz * int(shots),
+            "measurement_count": measurement_count,
+            "reset_count": reset_count,
+            "conditional_applied_count": conditional_applied,
+            "conditional_skipped_count": conditional_skipped,
+            "branch_count": len(branch_counts),
+            "branch_shots": dict(sorted(branch_counts.items())),
+            "elapsed_seconds": perf_counter() - started,
+            "device": str(circuit.device),
+            "seed": seed,
+        },
     )
 
 __all__ = ("run_dynamic",)

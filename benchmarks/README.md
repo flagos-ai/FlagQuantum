@@ -28,6 +28,10 @@ flagquantum-benchmark run statevector_local \
 python benchmarks/flagship_mps_training.py \
   --cases dimer:20 --steps 1 --iters 1 --warmup 0 \
   --json-output benchmarks/results/local/mps_smoke.json
+
+python benchmarks/dynamic_trajectory.py \
+  --shots 100 1000 --mid-circuit-measurements 1 2 4 \
+  --json-output benchmarks/results/smoke/dynamic-trajectory.json
 ```
 
 Use `--device cuda` for the local statevector benchmark on a GPU host.

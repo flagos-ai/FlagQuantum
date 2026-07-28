@@ -189,8 +189,25 @@ Qiskit Aer, or Braket IQM feature set before transport-specific validation.
 `DynamicExecutionResult` exposes `final_samples`, `classical_register`,
 `mid_circuit_measurements`, availability metadata, and
 `to_execution_result()` for projection into the canonical result contract.
+Local trajectory results also expose a `statistics` mapping with trajectory,
+measurement, reset, conditional-branch, observed-branch and elapsed-time
+counters. The same mapping is retained as `runtime["dynamic_statistics"]` by
+the canonical projection.
 The Qiskit path also validates a full `DynamicCircuit → OpenQASM 3 → Qiskit →
 Aer` round trip and statistical agreement for random measurement branches.
+
+Use the development microbenchmark to measure shot and mid-circuit-measurement
+scaling locally. Add `--backend qiskit_aer` after installing the optional
+Qiskit dependencies for a same-workload comparison:
+
+```bash
+python benchmarks/dynamic_trajectory.py \
+  --shots 100 1000 --mid-circuit-measurements 1 2 4 \
+  --json-output benchmarks/results/smoke/dynamic-trajectory.json
+```
+
+This payload is development evidence only and does not support scalability or
+provider-performance claims.
 
 Optional integration suites can be selected independently:
 

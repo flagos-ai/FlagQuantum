@@ -18,6 +18,7 @@ class DynamicExecutionResult:
     execution_semantics: str = "local_statevector_trajectory"
     mid_circuit_measurements_available: bool = True
     provider_metadata: Mapping[str, Any] = field(default_factory=dict)
+    statistics: Mapping[str, Any] = field(default_factory=dict)
 
     @property
     def final_samples(self) -> torch.Tensor:
@@ -64,6 +65,7 @@ class DynamicExecutionResult:
                 "mid_circuit_measurements_available": (
                     self.mid_circuit_measurements_available
                 ),
+                "dynamic_statistics": dict(self.statistics),
             },
             provenance=dict(self.provider_metadata),
         )
