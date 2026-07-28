@@ -83,6 +83,7 @@ def test_core_dynamic_types_and_conditions_do_not_depend_on_monolith() -> None:
         "circuit.py",
         "result.py",
         "_conditions.py",
+        "execution.py",
         "dialects/openqasm3.py",
         "dialects/braket_iqm.py",
     ):
@@ -102,3 +103,19 @@ def test_core_dynamic_types_and_conditions_do_not_depend_on_monolith() -> None:
     assert "DynamicExecutionResult" not in class_names
     assert "_instruction_conditions" not in function_names
     assert "_classical_width" not in function_names
+    assert "run_dynamic" not in function_names
+    assert "_measure_wire" not in function_names
+    assert "_apply_instruction" not in function_names
+
+
+def test_dynamic_execution_layer_has_no_transport_or_dialect_dependencies() -> None:
+    path = (
+        Path(__file__).parents[2]
+        / "flagquantum"
+        / "runtime"
+        / "dynamic"
+        / "execution.py"
+    )
+    source = path.read_text()
+    for forbidden in ("deployment", "providers", "dialects", "routing"):
+        assert forbidden not in source

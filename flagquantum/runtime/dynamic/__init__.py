@@ -11,9 +11,9 @@ from ._implementation import (
     export_dynamic_qasm3,
     export_dynamic_qasm3_for_backend,
     route_dynamic_circuit,
-    run_dynamic,
 )
 from .circuit import DynamicCircuit
+from .execution import run_dynamic
 from .result import DynamicExecutionResult
 
 __all__ = (
