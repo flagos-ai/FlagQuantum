@@ -24,7 +24,6 @@ from flagquantum.runtime.backends.mps.site_kernels import (
     site_kernel_stats,
 )
 
-
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = ROOT / "benchmarks/manifests/mps_critical_path_v1.json"
 
@@ -87,6 +86,7 @@ def _circuit(n_wires: int, theta: torch.Tensor, world: int):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", choices=("small_latency", "crossover", "large_bond"), required=True)
+    parser.add_argument("--n-wires", type=int)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())
@@ -101,7 +101,13 @@ def main() -> None:
     process_group_setup_seconds = time.perf_counter() - process_group_started
     rank, world = dist.get_rank(), dist.get_world_size()
     compile_site_kernels = world > 1
-    n_wires = max(world, int(case["sites_per_rank"]) * world)
+    if args.n_wires is not None and args.n_wires < world:
+        raise ValueError("--n-wires must be at least the distributed world size")
+    n_wires = (
+        int(args.n_wires)
+        if args.n_wires is not None
+        else max(world, int(case["sites_per_rank"]) * world)
+    )
     theta = torch.tensor(0.03, device=device, requires_grad=True)
     workload = {
         "manifest_schema": manifest["schema"], "case": args.case,
@@ -110,6 +116,11 @@ def main() -> None:
         "dtype": manifest["dtype"], "optimizer": manifest["optimizer"],
         "optimization_set": "issue098_through_issue105",
         "site_kernel_policy": "compiled_distributed" if compile_site_kernels else "eager_local_fast_path",
+        "scaling_mode": (
+            "fixed_problem_strong_scaling"
+            if args.n_wires is not None
+            else "constant_sites_per_rank"
+        ),
     }
     activities = [ProfilerActivity.CPU]
     if device.type == "cuda":

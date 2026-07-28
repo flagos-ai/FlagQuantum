@@ -1,0 +1,25 @@
+{
+  "schema": "flagquantum.mps_crossover_sprint1.v1",
+  "source_manifest": "benchmarks/manifests/mps_critical_path_v1.json",
+  "purpose": "diagnose fixed-problem four-to-eight-GPU MPS scaling",
+  "world_sizes": [4, 8],
+  "case": "large_bond",
+  "n_wires": 64,
+  "initial_bond": 32,
+  "max_bond": 64,
+  "dtype": "complex64",
+  "optimizer": "adam",
+  "warmup_steps": 5,
+  "retained_warm_steps": 20,
+  "acceptance": {
+    "all_losses_finite": true,
+    "phase_reconciliation_required": true,
+    "source_tree_clean": true,
+    "performance_claim_allowed": false,
+    "scalability_claim_allowed": false
+  },
+  "notes": [
+    "This matrix was frozen after identifying that the original critical-path manifest holds sites-per-rank constant.",
+    "It corrects experiment semantics; it does not change kernels or performance thresholds."
+  ]
+}

@@ -270,6 +270,9 @@ passing one capability does not promote the others.
 ### Sprint 1 — Explain eight-GPU regression
 
 - [ ] Run qubit/bond/batch crossover sweep on 8×A800.
+- [x] Separate constant-sites-per-rank profiling from fixed-problem strong
+      scaling; freeze the corrected 64-site, bond-64 4/8-GPU matrix in
+      `benchmarks/manifests/mps_crossover_sprint1_v1.json`.
 - [ ] Capture four-GPU and eight-GPU NSYS traces.
 - [ ] Reconcile CUDA, NCCL, host and idle time.
 - [ ] Quantify per-rank site/bond work and communication.
