@@ -64,7 +64,8 @@ class Instruction:
 
         schema = get_operator_schema(name)
         is_channel = bool(self.metadata.get("is_channel"))
-        if schema is None and self.matrix is None and not is_channel:
+        is_dynamic = bool(self.metadata.get("is_dynamic"))
+        if schema is None and self.matrix is None and not is_channel and not is_dynamic:
             raise IRValidationError(
                 f"unknown opcode {name!r}; custom operations require an explicit matrix"
             )

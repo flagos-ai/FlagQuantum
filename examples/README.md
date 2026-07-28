@@ -4,6 +4,11 @@ FlagQuantum examples are short, runnable scripts that demonstrate a concrete
 workflow. They complement tutorials: tutorials explain concepts, while examples
 provide reusable code templates.
 
+The [capability catalog](../docs/generated/CAPABILITIES.md) is the complete
+task-oriented entry point. It identifies the canonical quick example, maturity,
+hardware, gradient support, and distribution semantics for every product
+capability.
+
 ## Curated Paths
 
 Start with the end-to-end quantum-classical hybrid AI example:
@@ -20,6 +25,7 @@ point to train a two-feature classifier on CPU.
 | `tutorials/` | Beginner notebooks for circuit basics, measurement, gradients, and QML | `tutorials/README.md` |
 | `quick_start.py` | Minimal quantum-classical hybrid AI training | Run this first |
 | `single_machine_quantum_ai/` | Official CPU/one-GPU quantum AI examples | `single_machine_quantum_ai/README.md` |
+| `distributed_statevector_topologies/` | Sharded statevector topology and ownership examples | `distributed_statevector_topologies/README.md` |
 | `distributed_mps/` | Rank-owned variable-bond MPS capacity examples | `distributed_mps/README.md` |
 | `mps_hamiltonian_identification/` | 512–1024 qubit differentiable MPS system identification | `mps_hamiltonian_identification/README.md` |
 | `train_parameterized_circuit_then_deploy.py` | Train a parameterized circuit and package it for deployment | Run as a deployment bridge example |
@@ -68,6 +74,7 @@ arguments, and run a task end to end.
 Each curated example should include:
 
 - A module docstring that states the task and runtime mode.
+- A corresponding capability entry with maturity and a support boundary.
 - `argparse` options for problem size, steps, device, and optional benchmarks.
 - A short smoke command suitable for tests or documentation.
 - Clear output keys for final metrics and backend/runtime summary.

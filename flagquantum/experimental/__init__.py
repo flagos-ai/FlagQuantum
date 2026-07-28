@@ -24,6 +24,17 @@ __all__ = (
     "site_sharded_z_zz_observations",
     "reset_mps_site_kernel_stats",
     "mps_site_kernel_stats",
+    "DynamicCircuit",
+    "DynamicBackendCompatibility",
+    "DynamicExecutionResult",
+    "export_dynamic_qasm3",
+    "export_braket_iqm_dynamic_qasm3",
+    "export_dynamic_qasm3_for_backend",
+    "run_dynamic",
+    "assess_dynamic_backend",
+    "create_dynamic_deployment_package",
+    "deploy_dynamic_circuit",
+    "route_dynamic_circuit",
 )
 
 
@@ -56,6 +67,20 @@ def __getattr__(name: str) -> Any:
         return getattr(
             import_module("flagquantum.runtime.backends.mps.site_kernels"), target
         )
+    if name in {
+        "DynamicCircuit",
+        "DynamicBackendCompatibility",
+        "DynamicExecutionResult",
+        "export_dynamic_qasm3",
+        "export_braket_iqm_dynamic_qasm3",
+        "export_dynamic_qasm3_for_backend",
+        "run_dynamic",
+        "assess_dynamic_backend",
+        "create_dynamic_deployment_package",
+        "deploy_dynamic_circuit",
+        "route_dynamic_circuit",
+    }:
+        return getattr(import_module("flagquantum.runtime.dynamic"), name)
     return getattr(import_module("flagquantum.api"), name)
 
 

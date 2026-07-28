@@ -20,6 +20,25 @@ EXPECTED_LEVELS = (
     "production_supported",
     "release_certified",
 )
+REQUIRED_USER_FIELDS = (
+    "title",
+    "summary",
+    "category",
+    "user_goals",
+    "public_apis",
+    "runtime_modes",
+    "hardware",
+    "gradient_support",
+    "distribution_semantics",
+    "quick_start",
+    "documentation",
+)
+EXPECTED_CATEGORIES = (
+    "build_and_compile",
+    "simulation_and_training",
+    "distributed_execution",
+    "deployment_and_extension",
+)
 
 
 def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
@@ -37,6 +56,22 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
     if not capabilities:
         errors.append("at least one capability must be classified")
     for name, capability in capabilities.items():
+        for field in REQUIRED_USER_FIELDS:
+            value = capability.get(field)
+            if isinstance(value, str):
+                valid = bool(value.strip())
+            elif isinstance(value, list):
+                valid = bool(value) and all(
+                    isinstance(item, str) and item.strip() for item in value
+                )
+            else:
+                valid = False
+            if not valid:
+                errors.append(f"{name}: missing or invalid user field {field}")
+        if capability.get("category") not in EXPECTED_CATEGORIES:
+            errors.append(
+                f"{name}: unknown capability category {capability.get('category')!r}"
+            )
         level = capability.get("level")
         if level not in levels:
             errors.append(f"{name}: unknown maturity level {level!r}")
@@ -50,6 +85,8 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
                 f"{name}: non-certified capability cannot declare release_gate"
             )
         for field in (
+            "quick_start",
+            "documentation",
             "focused_tests",
             "integration_tests",
             "operational_runbook",

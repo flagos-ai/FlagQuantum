@@ -8,7 +8,7 @@ Circuit and IR objects.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping, Sequence
 
 import torch
@@ -16,7 +16,8 @@ import torch
 from ..algorithms import Hamiltonian
 from ..circuit import Circuit
 from ..compilation.compiler import CouplingMap, compile_for_backend
-from ..core.ir import CircuitIR
+from ..core.ir import CircuitIR, Instruction, MeasurementNode
+from ..runtime.parallel import ObservableGroup, group_observables
 from ..utils.qasm_exporter import export_to_qasm_str
 from ..utils.qcis_exporter import export_to_qcis_str
 from .routing_evidence import (
@@ -40,8 +41,11 @@ class CloudBackendProfile:
     coupling_map: CouplingMap | None = None
     supports_openqasm: bool = True
     supports_qcis: bool = False
+    supports_dynamic_circuits: bool = False
+    max_classical_bits: int | None = None
     is_simulator: bool = False
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    dynamic_dialect: str | None = None
 
     @classmethod
     def simulator(
@@ -72,6 +76,44 @@ class DeploymentPackage:
     @property
     def n_wires(self) -> int:
         return int(self.ir.n_wires)
+
+
+@dataclass(frozen=True)
+class PauliMeasurementPlan:
+    """Grouped, basis-rotated deployment packages for one Hamiltonian."""
+
+    hamiltonian: Hamiltonian
+    groups: tuple[ObservableGroup, ...]
+    packages: tuple[DeploymentPackage, ...]
+
+    def __post_init__(self) -> None:
+        if not self.groups or len(self.groups) != len(self.packages):
+            raise ValueError("Pauli measurement groups and packages must align")
+
+    @property
+    def shots_per_group(self) -> tuple[int, ...]:
+        return tuple(package.shots for package in self.packages)
+
+    def expectation(
+        self,
+        counts_by_group: Sequence[Mapping[str, int]],
+    ) -> torch.Tensor:
+        return hamiltonian_expectation_from_grouped_counts(counts_by_group, self)
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "group_count": len(self.groups),
+            "term_count": self.hamiltonian.n_terms,
+            "shots_per_group": self.shots_per_group,
+            "groups": tuple(
+                {
+                    "term_indices": group.term_indices,
+                    "basis": group.basis,
+                    "package_name": package.name,
+                }
+                for group, package in zip(self.groups, self.packages, strict=True)
+            ),
+        }
 
 
 class DeploymentPackageIdentityError(ValueError):
@@ -140,7 +182,14 @@ def validate_deployment_package(
         raise DeploymentPackageIdentityError(
             "deployment routing evidence digest mismatch"
         )
-    expected_qasm = export_to_qasm_str(package.ir, version=package.qasm_version)
+    if metadata.get("dynamic_circuit") is True:
+        from ..runtime.dynamic import DynamicCircuit, export_dynamic_qasm3_for_backend
+
+        dynamic = DynamicCircuit(package.ir.n_wires)
+        dynamic._instructions.extend(package.ir.instructions)
+        expected_qasm = export_dynamic_qasm3_for_backend(dynamic, package.backend)
+    else:
+        expected_qasm = export_to_qasm_str(package.ir, version=package.qasm_version)
     if package.qasm != expected_qasm:
         raise DeploymentPackageIdentityError(
             "deployment QASM does not match the packaged IR"
@@ -354,6 +403,84 @@ def create_deployment_package(
     )
 
 
+def create_pauli_measurement_plan(
+    circuit_or_ir: Circuit | CircuitIR,
+    hamiltonian: Hamiltonian,
+    *,
+    backend: CloudBackendProfile | None = None,
+    name: str = "flagquantum_measurement",
+    shots: int = 1024,
+    qasm_version: float = 2.0,
+    optimize: bool = True,
+    routing_strategy: str = "restore_after_each_gate",
+    metadata: Mapping[str, Any] | None = None,
+) -> PauliMeasurementPlan:
+    """Create qubit-wise-commuting Pauli measurement deployment packages."""
+
+    source_ir = (
+        circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    )
+    if not isinstance(source_ir, CircuitIR):
+        raise TypeError("Pauli measurement planning requires Circuit or CircuitIR")
+    if hamiltonian.n_wires > source_ir.n_wires:
+        raise ValueError("Hamiltonian references wires outside the source circuit")
+    if int(shots) <= 0:
+        raise ValueError("shots must be a positive integer")
+    groups = group_observables(hamiltonian.terms)
+    packages: list[DeploymentPackage] = []
+    all_wires = tuple(range(source_ir.n_wires))
+    for group_index, group in enumerate(groups):
+        rotations: list[Instruction] = []
+        for wire, basis in group.basis:
+            if basis == "x":
+                rotations.append(Instruction("h", (wire,)))
+            elif basis == "y":
+                rotations.extend(
+                    (Instruction("sdg", (wire,)), Instruction("h", (wire,)))
+                )
+            elif basis != "z":
+                raise ValueError(f"unsupported Pauli measurement basis {basis!r}")
+        group_metadata = {
+            **dict(source_ir.metadata),
+            "pauli_measurement": {
+                "group_index": group_index,
+                "term_indices": group.term_indices,
+                "basis": group.basis,
+            },
+        }
+        rotated_ir = replace(
+            source_ir,
+            instructions=source_ir.instructions + tuple(rotations),
+            measurements=(MeasurementNode("sample", all_wires, shots=int(shots)),),
+            metadata=group_metadata,
+        )
+        package_metadata = {
+            **dict(metadata or {}),
+            "pauli_measurement_group": {
+                "group_index": group_index,
+                "term_indices": group.term_indices,
+                "basis": group.basis,
+            },
+        }
+        packages.append(
+            create_deployment_package(
+                rotated_ir,
+                backend=backend,
+                name=f"{name}_group_{group_index}",
+                shots=shots,
+                qasm_version=qasm_version,
+                optimize=optimize,
+                routing_strategy=routing_strategy,
+                metadata=package_metadata,
+            )
+        )
+    return PauliMeasurementPlan(
+        hamiltonian=hamiltonian,
+        groups=groups,
+        packages=tuple(packages),
+    )
+
+
 class LocalSimulatorProvider(QuantumProvider):
     """Local provider used to validate the deployment contract without network IO."""
 
@@ -489,6 +616,47 @@ def hamiltonian_expectation_from_counts(
     return torch.tensor([total], dtype=torch.float32)
 
 
+def hamiltonian_expectation_from_grouped_counts(
+    counts_by_group: Sequence[Mapping[str, int]],
+    plan: PauliMeasurementPlan,
+) -> torch.Tensor:
+    """Aggregate basis-rotated counts from a ``PauliMeasurementPlan``."""
+
+    if len(counts_by_group) != len(plan.groups):
+        raise ValueError("counts_by_group must contain one result per measurement group")
+    total = 0.0
+    for group_index, (counts, group, package) in enumerate(
+        zip(counts_by_group, plan.groups, plan.packages, strict=True)
+    ):
+        if not counts:
+            raise ValueError(f"measurement group {group_index} counts cannot be empty")
+        shots = sum(int(count) for count in counts.values())
+        if shots != package.shots:
+            raise ValueError(
+                f"measurement group {group_index} returned {shots} shots; "
+                f"expected {package.shots}"
+            )
+        for bitstring in counts:
+            if len(str(bitstring)) != package.n_wires:
+                raise ValueError(
+                    f"measurement group {group_index} bitstring width does not "
+                    "match its deployment package"
+                )
+        for term_index in group.term_indices:
+            term = plan.hamiltonian.terms[term_index]
+            coefficient = torch.as_tensor(term.coefficient)
+            if coefficient.is_complex() and torch.abs(coefficient.imag) > 1e-12:
+                raise ValueError("measured Hamiltonian coefficients must be real")
+            expectation = 0.0
+            for bitstring, count in counts.items():
+                parity = 1.0
+                for wire, _name in term.ops:
+                    parity *= 1.0 if str(bitstring)[wire] == "0" else -1.0
+                expectation += parity * int(count)
+            total += float(coefficient.real) * expectation / shots
+    return torch.tensor([total], dtype=torch.float32)
+
+
 __all__ = [
     "CloudBackendProfile",
     "DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA",
@@ -496,13 +664,16 @@ __all__ = [
     "DeploymentPackageIdentityError",
     "DeploymentResult",
     "LocalSimulatorProvider",
+    "PauliMeasurementPlan",
     "ProviderTaskHandle",
     "QuantumProvider",
     "build_result_metadata",
     "build_submission_receipt",
     "create_deployment_package",
+    "create_pauli_measurement_plan",
     "deploy_circuit",
     "hamiltonian_expectation_from_counts",
+    "hamiltonian_expectation_from_grouped_counts",
     "expectation_z_from_counts",
     "validate_deployment_package",
     "validate_deployment_result",

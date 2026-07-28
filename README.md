@@ -18,25 +18,24 @@ per-rank execution is not described as capacity scaling.
 
 ## Documentation Entry Points
 
-## Source architecture
+- [Explore all capabilities](docs/generated/CAPABILITIES.md)
+- [Runnable examples](examples/README.md)
+- [Tutorial notebooks](examples/tutorials/README.md)
+- [API reference](docs/API.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+- [Release notes](docs/RELEASE_NOTES.md)
+- [FlagQuantum vision](docs/FLAGQUANTUM_VISION.md)
+- [Ecosystem development strategy](docs/ECOSYSTEM_DEVELOPMENT.md)
+- [Capability maturity](docs/CAPABILITY_MATURITY.md)
+- [Distributed quantum AI principles](docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md)
+- [Distributed scalability principles](docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md)
+- [Exascale and Gordon Bell strategy](docs/EXASCALE_GORDON_BELL_STRATEGY.md)
+- [Feature parity matrix](docs/FEATURE_PARITY_MATRIX.md)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the runtime and benchmark layout.
 User-facing imports belong in `flagquantum.api`; reproducible benchmark
 drivers belong in `flagquantum.benchmarking`; exploratory plots stay in
 `benchmarks.research`.
-
-- [FlagQuantum vision](docs/FLAGQUANTUM_VISION.md)
-- [Ecosystem development strategy](docs/ECOSYSTEM_DEVELOPMENT.md)
-- [API reference](docs/API.md)
-- [Capability maturity](docs/CAPABILITY_MATURITY.md)
-- [Known limitations](docs/KNOWN_LIMITATIONS.md)
-- [Distributed quantum AI principles](docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md)
-- [Distributed scalability principles](docs/DISTRIBUTED_SCALABILITY_PRINCIPLES.md)
-- [Exascale and Gordon Bell strategy](docs/EXASCALE_GORDON_BELL_STRATEGY.md)
-- [Feature parity matrix](docs/FEATURE_PARITY_MATRIX.md)
-- [Runnable examples](examples/README.md)
-- [Tutorial notebooks](examples/tutorials/README.md)
-- [Release notes](docs/RELEASE_NOTES.md)
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.5%2B-red.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -44,22 +43,19 @@ drivers belong in `flagquantum.benchmarking`; exploratory plots stay in
 
 ## Current Capability Surface
 
-- **Unified circuit API and IR**: build circuits with `fq.Circuit`, export
-  FlagQuantum IR, draw circuits, compile to topology constraints, and run
-  statevector/MPS/TN/density-matrix modes.
-- **PyTorch-first training**: circuit execution and trainable examples are
-  exposed through PyTorch tensors, optimizers, and autograd-compatible paths.
-- **Optional JAX kernels**: compatibility modules expose JAX
-  value-and-gradient kernels through a PyTorch-facing interface when JAX is
-  installed; they are not part of the stable root API.
-- **Runtime planning**: `fq.plan_runtime_selection(...)` and
-  `Circuit.runtime_plan(...)` report candidate modes, memory plans,
-  communication plans, gradient support, deployment readiness, blockers, and
-  distribution semantics.
-- **Distributed guardrails**: audit-policy compatibility modules check metadata
-  honesty and fail closed before evidence can be considered for release.
-- **Deployment packaging**: circuits can be compiled into portable deployment
-  packages and routed through provider abstractions or exported formats.
+| Goal | Recommended path |
+| --- | --- |
+| Build, compile, or export a circuit | [`fq.Circuit` quick start](examples/quick_start.py) |
+| Train a quantum or hybrid AI model | [Single-machine quantum AI](examples/single_machine_quantum_ai/README.md) |
+| Simulate a large low-entanglement system | [Differentiable MPS examples](examples/mps_hamiltonian_identification/README.md) |
+| Partition one workload across GPUs | [Distributed statevector](examples/distributed_statevector_topologies/README.md) or [rank-owned MPS](examples/distributed_mps/README.md) |
+| Package a trained circuit for deployment | [Training-to-deployment example](examples/train_parameterized_circuit_then_deploy.py) |
+| Add custom framework behavior | [Extension SDK](docs/EXTENSION_SDK.md) |
+
+The [generated capability catalog](docs/generated/CAPABILITIES.md) is the
+complete task-oriented index. It reports maturity, stable APIs, runtime modes,
+hardware, gradient support, distribution semantics, examples, and known
+boundaries from the machine-validated capability matrix.
 
 ## Distributed Claim Boundary
 

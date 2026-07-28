@@ -59,6 +59,17 @@ def test_large_benchmark_authority_uses_its_dedicated_audit() -> None:
     )
 
 
+def test_generated_capability_catalog_supports_goal_based_discovery():
+    maturity = DOCS.tomllib.loads(
+        (ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+    )
+    rendered = DOCS.render_capabilities(maturity)
+    assert "## Find a capability by goal" in rendered
+    assert "Sharded statevector training" in rendered
+    assert "sharded_across_ranks" in rendered
+    assert "../../examples/" in rendered
+
+
 def test_stable_document_example_executes():
     circuit = fq.Circuit(2)
     circuit.h(0)

@@ -87,7 +87,9 @@ def test_circuit_run_uses_density_matrix_for_noise():
     circuit.x(0)
     model = fq.NoiseModel().add("x", fq.bit_flip_channel(1.0))
 
-    rho, plan = circuit.run(noise_model=model, return_plan=True)
+    result = circuit.run(noise_model=model)
+    rho = result.state
+    plan = result.plan
     rho_from_ir = fq.density_matrix_from_ir(fq.lower_noise_model(circuit, model))
 
     assert torch.allclose(rho, rho_from_ir)

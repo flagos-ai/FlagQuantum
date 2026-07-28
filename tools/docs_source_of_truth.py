@@ -104,6 +104,78 @@ def render_operators(data: dict[str, object]) -> str:
     )
 
 
+CAPABILITY_CATEGORY_LABELS = {
+    "build_and_compile": "Build and compile",
+    "simulation_and_training": "Simulation and training",
+    "distributed_execution": "Distributed execution",
+    "deployment_and_extension": "Deployment and extension",
+}
+
+MATURITY_LABELS = {
+    "experimental": "Experimental",
+    "development_evidence": "Development evidence",
+    "production_supported": "Production supported",
+    "release_certified": "Release certified",
+}
+
+
+def root_link(path: str, label: str) -> str:
+    return f"[{label}](../../{path})"
+
+
+def render_capabilities(data: dict[str, object]) -> str:
+    capabilities = data["capabilities"]
+    assert isinstance(capabilities, dict)
+    sections: list[str] = [
+        "# FlagQuantum Capabilities",
+        "",
+        "Do not edit. Source: `capability-maturity.toml`. Maturity describes the exact documented scope; it does not turn local, replicated, or planned execution into distributed scalability evidence.",
+        "",
+        "## Find a capability by goal",
+        "",
+        "| Goal | Capability | Maturity | Start here |",
+        "| --- | --- | --- | --- |",
+    ]
+    for capability in capabilities.values():
+        assert isinstance(capability, dict)
+        title = str(capability["title"])
+        maturity = MATURITY_LABELS[str(capability["level"])]
+        start = root_link(str(capability["quick_start"]), "Run example")
+        for goal in capability["user_goals"]:
+            sections.append(f"| {goal} | {title} | {maturity} | {start} |")
+
+    for category, category_label in CAPABILITY_CATEGORY_LABELS.items():
+        sections.extend(["", f"## {category_label}", ""])
+        for name, capability in capabilities.items():
+            assert isinstance(capability, dict)
+            if capability["category"] != category:
+                continue
+            apis = ", ".join(f"`fq.{api}`" for api in capability["public_apis"])
+            runtime_modes = ", ".join(
+                f"`{mode}`" for mode in capability["runtime_modes"]
+            )
+            hardware = ", ".join(f"`{item}`" for item in capability["hardware"])
+            sections.extend(
+                [
+                    f"### {capability['title']}",
+                    "",
+                    str(capability["summary"]),
+                    "",
+                    f"- **Maturity:** {MATURITY_LABELS[str(capability['level'])]}",
+                    f"- **Public API:** {apis}",
+                    f"- **Runtime modes:** {runtime_modes}",
+                    f"- **Hardware:** {hardware}",
+                    f"- **Gradient support:** `{capability['gradient_support']}`",
+                    f"- **Distribution semantics:** `{capability['distribution_semantics']}`",
+                    f"- **Start:** {root_link(str(capability['quick_start']), 'quick example')}",
+                    f"- **Documentation:** {root_link(str(capability['documentation']), 'guide')}",
+                    f"- **Known boundary:** {capability['limitations']}",
+                    "",
+                ]
+            )
+    return "\n".join(sections).rstrip() + "\n"
+
+
 def generated() -> dict[Path, str]:
     config = load(CONFIG)
     assert isinstance(config, dict)
@@ -113,9 +185,12 @@ def generated() -> dict[Path, str]:
     assert isinstance(api, dict)
     ops = load(ROOT / str(auth["operator_capability"]))
     assert isinstance(ops, dict)
+    maturity_path = ROOT / str(auth["capability_maturity"])
+    maturity = tomllib.loads(maturity_path.read_text(encoding="utf-8"))
     return {
         ROOT / "docs/generated/STABLE_API.md": render_api(api),
         ROOT / "docs/generated/OPERATOR_CAPABILITIES.md": render_operators(ops),
+        ROOT / "docs/generated/CAPABILITIES.md": render_capabilities(maturity),
     }
 
 
@@ -176,6 +251,14 @@ def validate() -> list[str]:
             "stable API verification contains non-stable exports: "
             + ", ".join(sorted(extra_verification))
         )
+    maturity_path = ROOT / str(authorities["capability_maturity"])
+    maturity = tomllib.loads(maturity_path.read_text(encoding="utf-8"))
+    for capability_name, capability in maturity["capabilities"].items():
+        for name in capability["public_apis"]:
+            if name not in stable:
+                errors.append(
+                    f"{capability_name}: capability API is not stable: fq.{name}"
+                )
     for doc in config["stable_documents"]:
         path = ROOT / doc
         text = path.read_text(encoding="utf-8")

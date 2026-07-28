@@ -68,6 +68,8 @@ from .core.runtime_config import (
     set_runtime_config,
 )
 from .deployment import (
+    AmazonBraketProvider,
+    BraketSubmissionPreview,
     CloudBackendProfile,
     DeploymentPackage,
     DeploymentResult,
@@ -76,6 +78,7 @@ from .deployment import (
     HttpQuantumProvider,
     LocalSimulatorProvider,
     OriginQProvider,
+    PauliMeasurementPlan,
     ProviderCredentials,
     ProviderEndpoints,
     ProviderTaskHandle,
@@ -85,10 +88,13 @@ from .deployment import (
     TencentQuantumProvider,
     TianyanProvider,
     UrllibTransport,
+    braket_backend_profile,
     create_deployment_package,
+    create_pauli_measurement_plan,
     deploy_circuit,
     expectation_z_from_counts,
     hamiltonian_expectation_from_counts,
+    hamiltonian_expectation_from_grouped_counts,
 )
 from .gradients import parameter_shift_gradient
 from .models import HybridQuantumClassifier, VariationalEnergyModel
@@ -274,6 +280,7 @@ from .runtime.compatibility import (
     validate_flaggems_ops,
     validate_production_mps_workload,
 )
+from .runtime.result import MeasurementResult
 from .simulation import graph, linalg, mps, noise, tensor
 from .simulation.linalg import expm, random_unitary
 from .simulation.mps import (
@@ -408,6 +415,8 @@ __all__ = (
         "OperatorBackendSession",
         "OperatorReplacementPlan",
         "CloudBackendProfile",
+        "AmazonBraketProvider",
+        "BraketSubmissionPreview",
         "DeploymentPackage",
         "DeploymentResult",
         "LocalSimulatorProvider",
@@ -424,6 +433,7 @@ __all__ = (
         "TencentQuantumProvider",
         "TianyanProvider",
         "UrllibTransport",
+        "braket_backend_profile",
         "CircuitIR",
         "RUNTIME_CONFIG_VERSION",
         "RuntimeConfig",
@@ -487,6 +497,7 @@ __all__ = (
         "run_distributed_tensor_network",
         "run_native",
         "ExecutionResult",
+        "MeasurementResult",
         "HybridParallelPlan",
         "Module",
         "GateInfo",
@@ -570,9 +581,12 @@ __all__ = (
         "resolve_device",
         "resolve_dtype",
         "create_deployment_package",
+        "create_pauli_measurement_plan",
         "deploy_circuit",
         "expectation_z_from_counts",
         "hamiltonian_expectation_from_counts",
+        "hamiltonian_expectation_from_grouped_counts",
+        "PauliMeasurementPlan",
         "QCISInstruction",
         "export_to_qcis_str",
         "algorithms",

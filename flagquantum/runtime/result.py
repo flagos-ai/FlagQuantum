@@ -12,12 +12,25 @@ from .result_adapters import LiveRuntimeSummary
 
 
 @dataclass(frozen=True)
+class MeasurementResult:
+    """One backend-neutral result produced from a ``MeasurementNode``."""
+
+    kind: str
+    wires: tuple[int, ...]
+    value: Any
+    shots: int | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    statistics: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ExecutionResult:
     """Stable result shape shared by local, distributed, and adapter paths."""
 
     value: torch.Tensor | None = None
     state: torch.Tensor | None = None
     samples: torch.Tensor | None = None
+    measurements: tuple[MeasurementResult, ...] = ()
     plan: RuntimePlanContract | Any | None = None
     accuracy: AccuracyContract = AccuracyContract()
     metrics: Mapping[str, Any] = field(default_factory=dict)
@@ -33,6 +46,21 @@ class ExecutionResult:
             value=move(self.value),
             state=move(self.state),
             samples=move(self.samples),
+            measurements=tuple(
+                MeasurementResult(
+                    kind=item.kind,
+                    wires=item.wires,
+                    value=(
+                        item.value.to(*args, **kwargs)
+                        if isinstance(item.value, torch.Tensor)
+                        else item.value
+                    ),
+                    shots=item.shots,
+                    metadata=item.metadata,
+                    statistics=item.statistics,
+                )
+                for item in self.measurements
+            ),
             plan=self.plan,
             accuracy=self.accuracy,
             metrics=self.metrics,
@@ -55,6 +83,21 @@ class ExecutionResult:
             value=detach(self.value),
             state=detach(self.state),
             samples=detach(self.samples),
+            measurements=tuple(
+                MeasurementResult(
+                    kind=item.kind,
+                    wires=item.wires,
+                    value=(
+                        detach(item.value)
+                        if isinstance(item.value, torch.Tensor)
+                        else item.value
+                    ),
+                    shots=item.shots,
+                    metadata=item.metadata,
+                    statistics=item.statistics,
+                )
+                for item in self.measurements
+            ),
             plan=self.plan,
             accuracy=self.accuracy,
             metrics=self.metrics,
@@ -98,6 +141,7 @@ class ExecutionResult:
             "has_value": self.value is not None,
             "has_state": self.state is not None,
             "has_samples": self.samples is not None,
+            "measurement_count": len(self.measurements),
             "has_plan": self.plan is not None,
             "accuracy": self.accuracy.to_dict(),
             "metrics": dict(self.metrics),
@@ -154,4 +198,4 @@ def normalize_execution_result(
     return result
 
 
-__all__ = ("ExecutionResult", "normalize_execution_result")
+__all__ = ("ExecutionResult", "MeasurementResult", "normalize_execution_result")

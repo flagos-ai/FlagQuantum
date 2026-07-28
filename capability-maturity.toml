@@ -21,6 +21,17 @@ description = "Release-gated capability with audited, reproducible evidence and 
 required_evidence = ["owner", "limitations", "focused_tests", "integration_tests", "hardware_evidence", "operational_runbook", "release_gate", "release_artifact"]
 
 [capabilities.ir]
+title = "Unified circuit API and FlagQuantum IR"
+summary = "Build, validate, serialize, compile, and inspect quantum circuits through the stable FlagQuantum interface."
+category = "build_and_compile"
+user_goals = ["Build portable quantum circuits", "Compile or export a circuit", "Inspect a stable circuit representation"]
+public_apis = ["Circuit", "CircuitIR", "compile_for_backend"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "examples/quick_start.py"
+documentation = "docs/API.md"
 level = "release_certified"
 owner = "FlagQuantum core maintainers"
 limitations = "IR v1; incompatible schema changes require an explicit migration."
@@ -32,6 +43,17 @@ release_gate = "tools/runtime_contract_schema.py"
 release_artifact = "docs/generated/STABLE_API.md"
 
 [capabilities.local_statevector]
+title = "Local statevector simulation and training"
+summary = "Run exact circuits and differentiable quantum workloads on a CPU or one GPU."
+category = "simulation_and_training"
+user_goals = ["Simulate a small or medium circuit exactly", "Train a parameterized quantum circuit", "Run local VQE and quantum machine learning"]
+public_apis = ["Circuit", "run", "Module", "train"]
+runtime_modes = ["statevector"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "exact"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/single_machine_quantum_ai/01_vqe_statevector.py"
+documentation = "examples/single_machine_quantum_ai/README.md"
 level = "production_supported"
 owner = "PyTorch runtime maintainers"
 limitations = "Capacity is bounded by one device; distributed capacity claims use the sharded capability."
@@ -41,6 +63,17 @@ hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/RUNTIME_ARCHITECTURE.md"
 
 [capabilities.sharded_statevector_training]
+title = "Sharded statevector training"
+summary = "Partition one logical statevector workload across ranks while preserving differentiable training semantics."
+category = "distributed_execution"
+user_goals = ["Train one statevector workload across multiple ranks", "Plan distributed statevector ownership", "Inspect communication and sharding semantics"]
+public_apis = ["plan", "train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["multi_gpu", "multi_node"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "examples/distributed_statevector_topologies/run.sh"
+documentation = "examples/distributed_statevector_topologies/README.md"
 level = "production_supported"
 owner = "PyTorch distributed maintainers"
 limitations = "Multi-node release certification remains dependent on promoted audited hardware evidence."
@@ -50,6 +83,17 @@ hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md"
 
 [capabilities.sharded_mps_training]
+title = "Differentiable and sharded MPS training"
+summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."
+category = "distributed_execution"
+user_goals = ["Train a large low-entanglement system", "Distribute one MPS across several GPUs", "Inspect variable-bond MPS capacity"]
+public_apis = ["run_mps", "train_distributed_mps", "plan_production_mps"]
+runtime_modes = ["mps", "distributed_mps"]
+hardware = ["cpu", "single_gpu", "multi_gpu"]
+gradient_support = "exact"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "examples/distributed_mps/variable_bond_capacity_8gpu.py"
+documentation = "examples/distributed_mps/README.md"
 level = "development_evidence"
 owner = "MPS maintainers"
 limitations = "Single-node 2/4/8-GPU forward and boundary transport plus a 100-step 8-GPU SGD soak are validated; other optimizers, multi-node operation, and release payload evidence remain incomplete."
@@ -57,19 +101,69 @@ focused_tests = "tests/unit/test_issue052_mps_training.py"
 development_artifact = "benchmarks/results/local/mps_single_node_certification.json"
 
 [capabilities.tensor_network_training]
+title = "Tensor-network execution and training"
+summary = "Execute tensor-network circuit paths and evaluate experimental contraction and gradient workflows."
+category = "simulation_and_training"
+user_goals = ["Evaluate a circuit with tensor-network contraction", "Compare statevector, MPS, and tensor-network modes"]
+public_apis = ["run_tensor_network", "plan_runtime_selection"]
+runtime_modes = ["tensor_network"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "experimental"
+distribution_semantics = "manual_sliced_tensor_contraction"
+quick_start = "examples/vqe_switch_sv_mps_tn.py"
+documentation = "docs/KNOWN_LIMITATIONS.md"
 level = "experimental"
 owner = "tensor-network maintainers"
 limitations = "General reverse contraction and production distributed transport are not certified."
 focused_tests = "tests/test_tensor_network.py"
 
 [capabilities.cloud_deployment]
+title = "Circuit packaging and cloud deployment"
+summary = "Package trained circuits, export provider formats, and route them through deployment provider abstractions."
+category = "deployment_and_extension"
+user_goals = ["Package a trained parameterized circuit", "Export a circuit for a provider", "Run a circuit through a deployment abstraction"]
+public_apis = ["create_deployment_package", "deploy_circuit"]
+runtime_modes = ["provider"]
+hardware = ["provider_dependent"]
+gradient_support = "not_applicable"
+distribution_semantics = "provider_dependent"
+quick_start = "examples/train_parameterized_circuit_then_deploy.py"
+documentation = "docs/API.md"
 level = "development_evidence"
 owner = "deployment maintainers"
 limitations = "Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix."
 focused_tests = "tests/test_deployment.py"
 development_artifact = "flagquantum/deployment"
 
+[capabilities.dynamic_circuits]
+title = "Dynamic circuits and IQM Braket preflight"
+summary = "Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with fail-closed hardware preflight."
+category = "deployment_and_extension"
+user_goals = ["Prototype mid-circuit measurement and feed-forward", "Export dynamic OpenQASM 3", "Preflight an IQM Braket task without submitting it"]
+public_apis = ["experimental"]
+runtime_modes = ["local_statevector_trajectory", "provider_preflight"]
+hardware = ["cpu", "amazon_braket_iqm_unverified"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "examples/braket_iqm_dynamic_preflight.py"
+documentation = "docs/API.md"
+level = "experimental"
+owner = "deployment maintainers"
+limitations = "Local trajectory execution, IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified."
+focused_tests = "tests/test_braket_iqm_dynamic.py"
+
 [capabilities.extension_sdk]
+title = "Extension SDK"
+summary = "Add gates, transformations, runtime hooks, and providers through the experimental extension surface."
+category = "deployment_and_extension"
+user_goals = ["Prototype a FlagQuantum extension", "Register custom framework behavior"]
+public_apis = ["experimental"]
+runtime_modes = ["extension_defined"]
+hardware = ["extension_defined"]
+gradient_support = "extension_defined"
+distribution_semantics = "extension_defined"
+quick_start = "examples/extensions/reference_extensions.py"
+documentation = "docs/EXTENSION_SDK.md"
 level = "experimental"
 owner = "extension maintainers"
 limitations = "Extension compatibility is not guaranteed before stabilization."

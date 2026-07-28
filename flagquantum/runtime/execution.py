@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
-from typing import Any
+from typing import Any, Sequence
 
 import torch
 
 from ..compilation.compiler import compile_for_backend
 from ..compilation.planner import ExecutionPlan, select_execution_mode
 from ..compilation.planner import plan as build_plan
-from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
 from ..core.parameters import value_to_tensor
 from ..core.runtime_config import (
     RuntimeConfig,
@@ -725,6 +725,7 @@ def run(
     *,
     mode: str = "auto",
     noise_model: Any | None = None,
+    measurements: Sequence[MeasurementNode] | None = None,
     **options: Any,
 ) -> Any:
     """Execute a circuit and always return the stable ``ExecutionResult``.
@@ -744,6 +745,27 @@ def run(
             "fq.run() always returns ExecutionResult; remove the result option"
         )
 
+    source_ir = ensure_circuit_ir(circuit_or_ir)
+    if any(
+        instruction.metadata.get("is_dynamic")
+        or instruction.metadata.get("condition")
+        for instruction in source_ir.instructions
+    ):
+        raise NotImplementedError(
+            "fq.run does not execute dynamic trajectories; use "
+            "fq.experimental.run_dynamic(..., shots=...)"
+        )
+    requests = (
+        tuple(source_ir.measurements)
+        if measurements is None
+        else tuple(measurements)
+    )
+    if any(not isinstance(request, MeasurementNode) for request in requests):
+        raise TypeError("measurements must contain MeasurementNode instances")
+    from .measurements import validate_measurements
+
+    validate_measurements(requests, n_wires=source_ir.n_wires)
+
     output, execution_plan = run_native(
         circuit_or_ir,
         noise_model=noise_model,
@@ -751,6 +773,7 @@ def run(
         return_plan=True,
         **options,
     )
+    from .measurements import execute_measurements
     from .result import normalize_execution_result
 
     aliases = {
@@ -762,11 +785,33 @@ def run(
     selected_mode = aliases.get(mode, mode)
     if selected_mode == "auto":
         selected_mode = execution_plan.state_mode
-    return normalize_execution_result(
+    result = normalize_execution_result(
         output,
         mode=selected_mode,
         plan=execution_plan,
     )
+    measurement_results = execute_measurements(
+        output,
+        requests,
+        n_wires=source_ir.n_wires,
+    )
+    first_samples = next(
+        (
+            item.value
+            for item in measurement_results
+            if item.kind == "sample" and isinstance(item.value, torch.Tensor)
+        ),
+        result.samples,
+    )
+    normalized = replace(
+        result,
+        samples=first_samples,
+        measurements=measurement_results,
+    )
+    native = result.__dict__.get("_native_output")
+    if native is not None:
+        object.__setattr__(normalized, "_native_output", native)
+    return normalized
 
 
 __all__ = [

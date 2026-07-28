@@ -183,6 +183,39 @@ def test_circuit_run_matches_uniform_execution_entry_point() -> None:
         circuit.run(return_plan=True)
 
 
+def test_fq_run_executes_ordered_measurement_requests() -> None:
+    circuit = fq.Circuit(2).x(0)
+    result = fq.run(
+        circuit,
+        mode="statevector",
+        measurements=(
+            fq.MeasurementNode("expectation_z", (0, 1)),
+            fq.MeasurementNode("sample", (1,), shots=4, metadata={"seed": 7}),
+            fq.MeasurementNode(
+                "counts",
+                (0,),
+                shots=4,
+                metadata={"seed": 7, "format": "int"},
+            ),
+        ),
+    )
+
+    assert all(isinstance(item, fq.MeasurementResult) for item in result.measurements)
+    assert tuple(item.kind for item in result.measurements) == (
+        "expectation_z",
+        "sample",
+        "counts",
+    )
+    torch.testing.assert_close(
+        result.measurements[0].value,
+        torch.tensor([[-1.0, 1.0]]),
+    )
+    assert result.measurements[1].value.tolist() == [[[0], [0], [0], [0]]]
+    assert result.measurements[2].value == [{1: 4}]
+    assert result.samples is result.measurements[1].value
+    assert result.summary()["measurement_count"] == 3
+
+
 def test_fq_run_is_the_uniform_execution_entry_point() -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
 

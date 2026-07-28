@@ -16,6 +16,7 @@ __license__ = "Apache-2.0"
 __all__ = (
     "Circuit",
     "ExecutionResult",
+    "MeasurementResult",
     "CircuitIR",
     "Instruction",
     "IR_VERSION",
@@ -46,11 +47,14 @@ __all__ = (
     "MPSProductionAcceptanceError",
     "MPSProductionPlan",
     "MPSProductionSupport",
+    "PauliMeasurementPlan",
     "plan_production_mps",
     "validate_production_mps_workload",
     "build_mps_release_artifact",
     "create_deployment_package",
+    "create_pauli_measurement_plan",
     "deploy_circuit",
+    "hamiltonian_expectation_from_grouped_counts",
     "__version__",
     "get_version",
     "gate_info",
@@ -83,7 +87,7 @@ def __getattr__(name: str) -> Any:
         return import_module(".experimental", __name__)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
-    if name in {"ExecutionResult", "Module", "RuntimePolicy"}:
+    if name in {"ExecutionResult", "MeasurementResult", "Module", "RuntimePolicy"}:
         return getattr(import_module(".runtime.contracts", __name__), name)
     if name == "run":
         return getattr(import_module(".runtime.execution", __name__), name)
