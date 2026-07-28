@@ -5,7 +5,8 @@ from typing import Any, Iterable
 
 import torch
 
-from .._implementation import DynamicCircuit, _instruction_conditions
+from .._conditions import instruction_conditions as _instruction_conditions
+from ..circuit import DynamicCircuit
 
 
 def _qasm_angle(value: Any) -> str:

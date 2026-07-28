@@ -75,3 +75,30 @@ def test_dialect_implementations_live_outside_internal_monolith() -> None:
         "export_dynamic_qasm3_for_backend",
         "export_braket_iqm_dynamic_qasm3",
     } & implementation
+
+
+def test_core_dynamic_types_and_conditions_do_not_depend_on_monolith() -> None:
+    runtime_root = Path(__file__).parents[2] / "flagquantum" / "runtime" / "dynamic"
+    for relative in (
+        "circuit.py",
+        "result.py",
+        "_conditions.py",
+        "dialects/openqasm3.py",
+        "dialects/braket_iqm.py",
+    ):
+        source = (runtime_root / relative).read_text()
+        assert "_implementation" not in source, relative
+
+    implementation = ast.parse((runtime_root / "_implementation.py").read_text())
+    class_names = {
+        node.name for node in ast.walk(implementation) if isinstance(node, ast.ClassDef)
+    }
+    function_names = {
+        node.name
+        for node in ast.walk(implementation)
+        if isinstance(node, ast.FunctionDef)
+    }
+    assert "DynamicCircuit" not in class_names
+    assert "DynamicExecutionResult" not in class_names
+    assert "_instruction_conditions" not in function_names
+    assert "_classical_width" not in function_names

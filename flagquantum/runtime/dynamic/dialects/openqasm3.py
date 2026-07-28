@@ -2,11 +2,9 @@
 
 from typing import Any
 
-from .._implementation import (
-    DynamicCircuit,
-    _classical_width,
-    _instruction_conditions,
-)
+from .._conditions import classical_width as _classical_width
+from .._conditions import instruction_conditions as _instruction_conditions
+from ..circuit import DynamicCircuit
 
 
 def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:

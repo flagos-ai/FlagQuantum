@@ -7,13 +7,11 @@ from typing import Any, Callable
 
 import torch
 
-from .dynamic import (
-    DynamicCircuit,
-    DynamicExecutionResult,
-    _classical_width,
-    _instruction_conditions,
-    run_dynamic,
-)
+from .dynamic import run_dynamic
+from .dynamic._conditions import classical_width as _classical_width
+from .dynamic._conditions import instruction_conditions as _instruction_conditions
+from .dynamic.circuit import DynamicCircuit
+from .dynamic.result import DynamicExecutionResult
 
 
 @dataclass(frozen=True)

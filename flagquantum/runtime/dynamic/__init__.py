@@ -1,11 +1,9 @@
 """Layered experimental dynamic-circuit runtime with compatibility exports."""
 
+from ._conditions import classical_width as _classical_width
+from ._conditions import instruction_conditions as _instruction_conditions
 from ._implementation import (
     DynamicBackendCompatibility,
-    DynamicCircuit,
-    DynamicExecutionResult,
-    _classical_width,
-    _instruction_conditions,
     assess_dynamic_backend,
     create_dynamic_deployment_package,
     deploy_dynamic_circuit,
@@ -15,6 +13,8 @@ from ._implementation import (
     route_dynamic_circuit,
     run_dynamic,
 )
+from .circuit import DynamicCircuit
+from .result import DynamicExecutionResult
 
 __all__ = (
     "DynamicBackendCompatibility",
