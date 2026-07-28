@@ -299,7 +299,10 @@ passing one capability does not promote the others.
 
 ### Sprint 3 — Large-bond kernels
 
-- [ ] Calibrate bond 128/256/512 QR/SVD drivers.
+- [x] Calibrate bond 128/256/512 SVD drivers on A800: retain `gesvd` for
+      strict mode and `gesvda` only for explicit approximate mode; portability
+      remains required before automatic production selection.
+- [ ] Calibrate the no-truncation QR path for the same bond matrix.
 - [ ] Pool workspaces.
 - [ ] Fuse common contraction/decomposition regions.
 - [ ] Add steady-state CUDA Graph evaluation.
@@ -332,6 +335,7 @@ Update this table as work lands:
 | 2026-07-28 | M2 | Communication-aware ownership A/B | `35bdd03` | `benchmarks/results/smoke/release_candidates/mps_communication_aware_ownership/` | 4-GPU improves 6.4%; 8-GPU improves 84.8%; messages −46.2%; bytes −64.4% | Aware 4→8 speedup remains below 1×; compile setup grows about 3.1× |
 | 2026-07-28 | M2 | Owner gradient buckets | `357856c` | `benchmarks/results/smoke/release_candidates/mps_gradient_buckets/` | 8×A800 collectives 1000→8; measured backward 3.45× faster; exact optimizer parity | Specialized microbenchmark; single unsigned run |
 | 2026-07-28 | M2 | Final optimized frozen matrix | `9898286` | `benchmarks/results/smoke/release_candidates/mps_sprint2_closeout/` | Correctness passes; 4 GPU 0.487s, 8 GPU 0.565s | 4→8 is 0.861×, below 1.5× target; repeated trials and Sprint 3 kernels required |
+| 2026-07-28 | M3 | A800 SVD driver calibration | `8eb8657` | `benchmarks/results/smoke/release_candidates/mps_svd_policy/` | Strict: `gesvd`; explicit approximate: `gesvda`, 6.7×–11.1× faster with measured residual below 1e-6 | A800-only; QR matrix and cross-device portability remain |
 
 ## Claim policy
 
