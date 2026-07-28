@@ -364,6 +364,7 @@ Update this table as work lands:
 | 2026-07-28 | M3 | Large-bond correctness quarantine | `889bf31` | `benchmarks/results/smoke/release_candidates/mps_large_bond_quarantine/` | 8×A800, 64 wires, depth 4, bond 128 passes plateau with zero allocator retry/OOM and no SVD fallback | Non-release smoke only; batched two-site execution and staging-pool reuse remain quarantined at `max_bond >= 128` |
 | 2026-07-28 | M3 | Hybrid large-bond contraction/factorization | `3914274` | `benchmarks/results/smoke/release_candidates/mps_large_bond_hybrid/` | Compiled batched contraction restored; per-matrix strict factorization; 8×A800 plateau passes with zero fallback/retry/OOM | Non-release single run; batched large-bond factorization and staging-pool reuse remain quarantined |
 | 2026-07-28 | M3 | Solver-native workspace capability probe | `22187f6` | `benchmarks/results/smoke/release_candidates/mps_solver_workspace_probe/` | CUDA 13 exports classic complex `gesvd` and `Xgesvd` explicit workspace APIs; PyTorch 2.13 has no public external-workspace contract | Capability evidence only; compiled extension, stream/allocator contract, and numerical parity remain |
+| 2026-07-28 | M3 | Contraction/SVD full-graph fusion A/B | `5a93d59` | `benchmarks/results/smoke/release_candidates/mps_contraction_svd_fusion/` | Reconstruction error below 2e-6, but repeated A800 speedups are 0.999×/1.009×/1.008× with identical peak allocation | Rejected: misses the frozen 1.05× promotion threshold on every tested shape |
 
 ## Claim policy
 

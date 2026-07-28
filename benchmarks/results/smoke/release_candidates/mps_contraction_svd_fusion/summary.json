@@ -1,0 +1,65 @@
+{
+  "artifact_class": "derived_development_report",
+  "benchmark_evidence_class": "non_release_smoke",
+  "environment": {
+    "cuda": "13.0",
+    "device": "cuda:0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "promotion": {
+    "allowed": false,
+    "maximum_relative_reconstruction_error": 2e-05,
+    "minimum_required_speedup": 1.05
+  },
+  "provenance": {
+    "dirty_paths": [],
+    "source_commit": "f4901792d7c8a12faa5d7487a248e101e3cd0f06"
+  },
+  "records": [
+    {
+      "active_dim": 32,
+      "fused_median_seconds": 0.0037236730568110943,
+      "fused_peak_allocated_bytes": 9706496,
+      "fused_relative_reconstruction_error": 9.067183555089287e-07,
+      "matrix_shape": [
+        64,
+        64
+      ],
+      "separate_median_seconds": 0.003721097018569708,
+      "separate_peak_allocated_bytes": 9706496,
+      "separate_relative_reconstruction_error": 9.067183555089287e-07,
+      "speedup_separate_over_fused": 0.9993081996721827
+    },
+    {
+      "active_dim": 64,
+      "fused_median_seconds": 0.010327189695090055,
+      "fused_peak_allocated_bytes": 11412480,
+      "fused_relative_reconstruction_error": 1.2889458957943134e-06,
+      "matrix_shape": [
+        128,
+        128
+      ],
+      "separate_median_seconds": 0.010425196029245853,
+      "separate_peak_allocated_bytes": 11412480,
+      "separate_relative_reconstruction_error": 1.2889458957943134e-06,
+      "speedup_separate_over_fused": 1.0094901262637206
+    },
+    {
+      "active_dim": 128,
+      "fused_median_seconds": 0.020291946828365326,
+      "fused_peak_allocated_bytes": 17972224,
+      "fused_relative_reconstruction_error": 1.7070678950403817e-06,
+      "matrix_shape": [
+        256,
+        256
+      ],
+      "separate_median_seconds": 0.02046351507306099,
+      "separate_peak_allocated_bytes": 17972224,
+      "separate_relative_reconstruction_error": 1.7070678950403817e-06,
+      "speedup_separate_over_fused": 1.0084549918323182
+    }
+  ],
+  "schema": "flagquantum.mps_contraction_svd_fusion_probe.v1",
+  "status": "passed"
+}
