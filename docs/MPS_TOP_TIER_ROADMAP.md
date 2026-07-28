@@ -285,7 +285,9 @@ passing one capability does not promote the others.
 - [x] Pack compatible boundary messages and reuse packed send/receive buffers;
       8×A800 microbenchmark evidence records 50% fewer physical messages
       without logical-byte growth.
-- [ ] Overlap communication and independent factorization.
+- [x] Overlap boundary-halo communication with independent layer work; frozen
+      A/B evidence improves eight-GPU mean step time by 38.9% and four-GPU by
+      1.2%, while preserving finite losses and phase reconciliation.
 - [ ] Add measured ownership balancing.
 - [ ] Re-run the frozen matrix without changing acceptance thresholds.
 
@@ -320,6 +322,7 @@ Update this table as work lands:
 | 2026-07-28 | M1 | 1/2/4/8 A800 Adam matrix | `bd816c6` | `benchmarks/results/smoke/release_candidates/mps_single_node/` | Development audit valid | Unsigned; 8 GPU slower than 4 GPU |
 | 2026-07-28 | M1 | Fixed 64-site bond-64 4/8 GPU profile | `0de6174` | `benchmarks/results/smoke/release_candidates/mps_crossover_sprint1/` | Development audit valid; 4→8 speedup 0.906×; boundary messages grow 2.6× | NCCL-visible transport breakdown not captured; boundary transport optimization required |
 | 2026-07-28 | M2 | Packed boundary transport and buffer reuse | `05154c4` | `benchmarks/results/smoke/release_candidates/mps_boundary_transport/` | 8×A800 development audit valid; physical messages −50%; logical bytes +0%; total rank P2P wait −18.7% | Microbenchmark only; frozen end-to-end matrix must be repeated |
+| 2026-07-28 | M2 | Boundary-halo overlap A/B | `4991374` | `benchmarks/results/smoke/release_candidates/mps_halo_overlap/` | 8-GPU mean step time improves 38.9%; 4-GPU improves 1.2%; correctness checks pass | Overlap-enabled 4→8 speedup remains 0.923×; single unsigned A/B run |
 
 ## Claim policy
 

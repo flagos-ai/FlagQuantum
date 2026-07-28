@@ -1,0 +1,327 @@
+{
+  "artifact_class": "derived_development_report",
+  "benchmark": "mps_halo_overlap_ab",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 36864000,
+  "distribution_semantics": "sharded_across_ranks",
+  "eight_gpu_overlap_speedup": 1.3892164366719002,
+  "four_gpu_overlap_speedup": 1.0116448877439999,
+  "local_memory_bytes_by_rank": [
+    18560512,
+    25161216,
+    25161216,
+    25161216,
+    25161216,
+    25161216,
+    25161216,
+    24658432
+  ],
+  "local_world_size": 8,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "overlap_enabled_four_to_eight_speedup": 0.9229990055664549,
+  "passed": true,
+  "points": [
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "b746fc103f3b397dae18ebd87556ff5fc4dddcf6793dac72caab90713479c246",
+      "communication_bytes": 13926400,
+      "local_memory_bytes_by_rank": [
+        20010496,
+        26594816,
+        26594816,
+        26066944
+      ],
+      "mean_seconds": 0.5065614314284176,
+      "p50_seconds": 0.48617722699418664,
+      "phase_reconciliation_passed": true,
+      "prefetch_layer_halos": false,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        }
+      ],
+      "sample_count": 20,
+      "source_commit": "499137429e8bf4f52ca2af30426c9471b74950eb",
+      "source_tree_dirty": false,
+      "world_size": 4
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "5002e57fd59916b0d9ed4aa59e5c830b65853ee49d975e9d64077355dbed67fe",
+      "communication_bytes": 13926400,
+      "local_memory_bytes_by_rank": [
+        20010496,
+        26611200,
+        26611200,
+        26100224
+      ],
+      "mean_seconds": 0.5007304811850191,
+      "p50_seconds": 0.47709745704196393,
+      "phase_reconciliation_passed": true,
+      "prefetch_layer_halos": true,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        }
+      ],
+      "sample_count": 20,
+      "source_commit": "499137429e8bf4f52ca2af30426c9471b74950eb",
+      "source_tree_dirty": false,
+      "world_size": 4
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "748f51661ed9d35374f456bd28e5afe2d052cad67ed826ec67caf4f264ac972f",
+      "communication_bytes": 36864000,
+      "local_memory_bytes_by_rank": [
+        18560512,
+        25144832,
+        25144832,
+        25144832,
+        25144832,
+        25144832,
+        25144832,
+        24625152
+      ],
+      "mean_seconds": 0.7536552158882841,
+      "p50_seconds": 0.5599756573792547,
+      "phase_reconciliation_passed": true,
+      "prefetch_layer_halos": false,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        },
+        {
+          "device": "cuda:4",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 4,
+          "rank": 4
+        },
+        {
+          "device": "cuda:5",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 5,
+          "rank": 5
+        },
+        {
+          "device": "cuda:6",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 6,
+          "rank": 6
+        },
+        {
+          "device": "cuda:7",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 7,
+          "rank": 7
+        }
+      ],
+      "sample_count": 20,
+      "source_commit": "499137429e8bf4f52ca2af30426c9471b74950eb",
+      "source_tree_dirty": false,
+      "world_size": 8
+    },
+    {
+      "all_losses_finite": true,
+      "artifact_sha256": "8b216b1d370e42171bce4ea22d3d38117ba5420797906231932d1393da48518c",
+      "communication_bytes": 36864000,
+      "local_memory_bytes_by_rank": [
+        18560512,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        25161216,
+        24658432
+      ],
+      "mean_seconds": 0.5425038143759593,
+      "p50_seconds": 0.5416033135261387,
+      "phase_reconciliation_passed": true,
+      "prefetch_layer_halos": true,
+      "rank_placement": [
+        {
+          "device": "cuda:0",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 0,
+          "rank": 0
+        },
+        {
+          "device": "cuda:1",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 1,
+          "rank": 1
+        },
+        {
+          "device": "cuda:2",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 2,
+          "rank": 2
+        },
+        {
+          "device": "cuda:3",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 3,
+          "rank": 3
+        },
+        {
+          "device": "cuda:4",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 4,
+          "rank": 4
+        },
+        {
+          "device": "cuda:5",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 5,
+          "rank": 5
+        },
+        {
+          "device": "cuda:6",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 6,
+          "rank": 6
+        },
+        {
+          "device": "cuda:7",
+          "hostname": "p-kt-lc-a800-04",
+          "local_rank": 7,
+          "rank": 7
+        }
+      ],
+      "sample_count": 20,
+      "source_commit": "499137429e8bf4f52ca2af30426c9471b74950eb",
+      "source_tree_dirty": false,
+      "world_size": 8
+    }
+  ],
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "cuda:1",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "rank": 1
+    },
+    {
+      "device": "cuda:2",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "rank": 2
+    },
+    {
+      "device": "cuda:3",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "rank": 3
+    },
+    {
+      "device": "cuda:4",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "rank": 4
+    },
+    {
+      "device": "cuda:5",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "rank": 5
+    },
+    {
+      "device": "cuda:6",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "rank": 6
+    },
+    {
+      "device": "cuda:7",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "rank": 7
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "single_ab_run_unsigned_development_evidence",
+    "four_to_eight_speedup_below_one"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_halo_overlap_report.v1",
+  "workload": {
+    "initial_bond": 32,
+    "max_bond": 64,
+    "n_wires": 64,
+    "scaling_mode": "fixed_problem_strong_scaling"
+  },
+  "world_size": 8
+}
