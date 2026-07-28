@@ -3,8 +3,7 @@
 
 # FlagQuantum
 
-**The quantum AI framework for FlagOS, unifying programmable training and
-scalable execution across classical and quantum hardware.**
+**Build, train, and scale quantum AI everywhere.**
 
 [Quick Start](#quick-start) ·
 [Capabilities](docs/generated/CAPABILITIES.md) ·
