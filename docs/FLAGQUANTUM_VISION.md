@@ -24,9 +24,10 @@ A user should express a model, objective, accuracy policy, and resource policy
 without first learning rank ownership, boundary protocols, contraction slices,
 or collective communication.
 
-The intended experience is structurally similar to:
+The intended experience is structurally similar to the following
+**non-executable future API sketch**:
 
-```python
+```text
 import flagquantum as fq
 import torch
 
@@ -54,7 +55,7 @@ optimizer.step()
 Execution policy should change placement and representation without requiring a
 rewrite of model code:
 
-```python
+```text
 model = fq.compile(
     model,
     target="auto",

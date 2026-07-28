@@ -21,7 +21,14 @@ user-facing execution APIs.
 also projected to the top level for historical distributed consumers:
 
 ```python
-summary["runtime"]["world_size"] == summary["world_size"]
+import flagquantum as fq
+
+program = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
+result = fq.run(program)
+summary = result.summary()
+
+assert summary["runtime"]["mode"] == summary["mode"]
+assert summary["has_plan"] is True
 ```
 
 Runtime keys cannot overwrite canonical fields. Conflicts are listed in

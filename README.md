@@ -28,25 +28,35 @@ trained program for quantum hardware:
 import flagquantum as fq
 import torch
 
-theta = torch.tensor([0.3, -0.2], requires_grad=True)
+def build_program(parameters, inputs=None):
+    return (
+        fq.Circuit(n_qubits=2)
+        .ry(0, parameters[0])
+        .cx(0, 1)
+        .ry(1, parameters[1])
+    )
 
-program = (
-    fq.Circuit(n_qubits=2)
-    .ry(0, theta=theta[0])
-    .cx(0, 1)
-    .ry(1, theta=theta[1])
+model = fq.Module(
+    build_program,
+    n_parameters=2,
+    init=torch.tensor([0.3, -0.2]),
+    policy=fq.RuntimePolicy(observable_wires=(1,)),
+)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+training = fq.train(
+    model,
+    optimizer=optimizer,
+    objective=lambda value: value.mean(),
+    steps=10,
 )
 
-# Train with ordinary PyTorch autograd.
-loss = program.expectation_z(1).mean()
-loss.backward()
+# Bind the optimized parameters into the same program for execution and deployment.
+trained_program = build_program(next(model.parameters()).detach())
+plan = trained_program.runtime_plan()
+result = fq.run(trained_program, mode="auto")
+package = fq.create_deployment_package(trained_program, shots=1024)
 
-# Plan, execute, and deploy the same FlagQuantum IR.
-plan = program.runtime_plan(require_gradients=True)
-result = fq.run(program, mode="auto")
-package = fq.create_deployment_package(program, shots=1024)
-
-print(float(loss.detach()), theta.grad.tolist())
+print(training.losses[-1])
 print(plan.summary()["usability_contract"])
 print(result.plan.state_mode)
 print(package.backend.provider)

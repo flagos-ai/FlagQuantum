@@ -17,19 +17,30 @@ FlagQuantum's long-term runtime philosophy is:
 User code should remain ordinary PyTorch:
 
 ```python
+import flagquantum as fq
+import torch
+
+def circuit_builder(parameters):
+    return (
+        fq.Circuit(n_qubits=2)
+        .ry(0, parameters[0])
+        .cx(0, 1)
+        .ry(1, parameters[1])
+    )
+
 layer = fq.Module(
     circuit_builder,
-    n_parameters=8,
+    n_parameters=2,
     policy=fq.RuntimePolicy(
         backend="jax",
-        observable="hamiltonian",
-        observable_wires=(0, 1, 2, 3),
+        observable_wires=(1,),
         allow_backend_fallback=False,
     ),
-    hamiltonian=hamiltonian,
 )
+optimizer = torch.optim.Adam(layer.parameters(), lr=0.01)
 
-loss = model_loss(layer(classical_model(inputs)), labels)
+optimizer.zero_grad()
+loss = layer().mean()
 loss.backward()
 optimizer.step()
 ```

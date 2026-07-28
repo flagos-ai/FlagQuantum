@@ -17,8 +17,9 @@ Start with the end-to-end quantum-classical hybrid AI example:
 python examples/quick_start.py --steps 40
 ```
 
-It uses one `fq.Module`, a PyTorch optimizer, and the stable `fq.train` entry
-point to train a two-feature classifier on CPU.
+It combines a `torch.nn.Linear` encoder with an `fq.Module` quantum layer in
+one ordinary PyTorch optimizer loop. The model learns a one-dimensional
+analytical target and reports both classical and quantum training results.
 
 | Path | Purpose | Start here |
 | --- | --- | --- |
@@ -27,7 +28,7 @@ point to train a two-feature classifier on CPU.
 | `single_machine_quantum_ai/` | Official CPU/one-GPU quantum AI examples | `single_machine_quantum_ai/README.md` |
 | `distributed_statevector_topologies/` | Sharded statevector topology and ownership examples | `distributed_statevector_topologies/README.md` |
 | `distributed_mps/` | Rank-owned variable-bond MPS capacity examples | `distributed_mps/README.md` |
-| `mps_hamiltonian_identification/` | 512–1024 qubit differentiable MPS system identification | `mps_hamiltonian_identification/README.md` |
+| `mps_hamiltonian_identification/` | Experimental 512–1024 qubit MPS system-identification research path | `mps_hamiltonian_identification/README.md` |
 | `train_parameterized_circuit_then_deploy.py` | Train a parameterized circuit and package it for deployment | Run as a deployment bridge example |
 | `hybrid_jax_torch_training.py` | Minimal PyTorch training interface with a JAX quantum kernel | Use for integration experiments |
 | `quantum_transformer.py` | Larger application-style demo | Treat as a demo candidate, not a minimal example |

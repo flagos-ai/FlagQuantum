@@ -1,4 +1,10 @@
-"""Differentiable MPS model for non-uniform 1D Hamiltonian identification."""
+"""Differentiable MPS model for non-uniform 1D Hamiltonian identification.
+
+This development-evidence example intentionally imports experimental MPS
+brickwork kernels. It is a research implementation, not a stable public-API
+template; user-facing applications should start from ``fq.Module`` and
+``fq.RuntimePolicy``.
+"""
 
 from __future__ import annotations
 

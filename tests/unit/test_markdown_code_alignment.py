@@ -12,6 +12,7 @@ USER_DOCUMENTS = (
     ROOT / "docs" / "ECOSYSTEM_DEVELOPMENT.md",
     ROOT / "docs" / "FQ_MODULE.md",
     ROOT / "docs" / "HYBRID_RUNTIME_ARCHITECTURE.md",
+    ROOT / "docs" / "RUNTIME_RESULT_CONTRACT.md",
     ROOT / "examples" / "README.md",
     ROOT / "examples" / "single_machine_quantum_ai" / "README.md",
     ROOT / "examples" / "mps_hamiltonian_identification" / "README.md",
@@ -68,3 +69,31 @@ def test_markdown_does_not_reference_removed_scratch_notebook() -> None:
         if "tutorials/tt.ipynb" in path.read_text(encoding="utf-8"):
             violations.append(str(path.relative_to(ROOT)))
     assert not violations, "\n".join(violations)
+
+
+@pytest.mark.unit
+def test_canonical_entry_documents_describe_the_current_execution_path() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    examples = (ROOT / "examples" / "README.md").read_text(encoding="utf-8")
+    result_contract = (
+        ROOT / "docs" / "RUNTIME_RESULT_CONTRACT.md"
+    ).read_text(encoding="utf-8")
+    hybrid = (ROOT / "docs" / "HYBRID_RUNTIME_ARCHITECTURE.md").read_text(
+        encoding="utf-8"
+    )
+    vision = (ROOT / "docs" / "FLAGQUANTUM_VISION.md").read_text(encoding="utf-8")
+    native_example = (
+        ROOT / "examples" / "vqe_switch_sv_mps_tn.py"
+    ).read_text(encoding="utf-8")
+    mps_research = (
+        ROOT / "examples" / "mps_hamiltonian_identification" / "core.py"
+    ).read_text(encoding="utf-8")
+
+    assert "training = fq.train(" in readme
+    assert "trained_program = build_program(next(model.parameters()).detach())" in readme
+    assert "two-feature classifier" not in examples
+    assert "result = fq.run(program)" in result_contract
+    assert "import flagquantum as fq" in hybrid
+    assert "non-executable future API sketch" in vision
+    assert "advanced example intentionally uses ``fq.run_native``" in native_example
+    assert "not a stable public-API" in mps_research
