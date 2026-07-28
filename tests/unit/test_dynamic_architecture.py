@@ -51,3 +51,27 @@ def test_dynamic_dialects_do_not_import_provider_or_execution_layers() -> None:
             for imported in imports
             for part in imported.split(".")
         ), path
+
+
+def test_dialect_implementations_live_outside_internal_monolith() -> None:
+    runtime_root = Path(__file__).parents[2] / "flagquantum" / "runtime" / "dynamic"
+
+    def functions(path: Path) -> set[str]:
+        return {
+            node.name
+            for node in ast.walk(ast.parse(path.read_text()))
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+
+    implementation = functions(runtime_root / "_implementation.py")
+    standard = functions(runtime_root / "dialects" / "openqasm3.py")
+    iqm = functions(runtime_root / "dialects" / "braket_iqm.py")
+
+    assert "export_dynamic_qasm3" in standard
+    assert "export_dynamic_qasm3_for_backend" in standard
+    assert "export_braket_iqm_dynamic_qasm3" in iqm
+    assert not {
+        "export_dynamic_qasm3",
+        "export_dynamic_qasm3_for_backend",
+        "export_braket_iqm_dynamic_qasm3",
+    } & implementation

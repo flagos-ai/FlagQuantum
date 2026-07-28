@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping
 
@@ -347,173 +346,11 @@ def run_dynamic(
     )
 
 
-def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
-    """Export the supported dynamic subset to OpenQASM 3."""
-
-    if not isinstance(circuit, DynamicCircuit):
-        raise TypeError("dynamic QASM export requires DynamicCircuit")
-    classical_width = _classical_width(circuit)
-    lines = [
-        "OPENQASM 3.0;",
-        'include "stdgates.inc";',
-        f"qubit[{circuit.n_wires}] q;",
-        *([f"bit[{classical_width}] c;"] if classical_width else []),
-    ]
-    for instruction in circuit._instructions:
-        wire_text = ", ".join(f"q[{wire}]" for wire in instruction.wires)
-        if instruction.name == "measure":
-            bit = int(instruction.metadata["classical_bit"])
-            statement = f"c[{bit}] = measure {wire_text};"
-        elif instruction.name == "reset":
-            statement = f"reset {wire_text};"
-        else:
-            params = ""
-            if instruction.params:
-                params = "(" + ", ".join(
-                    str(value) for value in instruction.params.values()
-                ) + ")"
-            statement = f"{instruction.name}{params} {wire_text};"
-        conditions = _instruction_conditions(instruction)
-        if conditions:
-            expression = " && ".join(
-                f"c[{bit}] == {'true' if value else 'false'}"
-                for bit, value in conditions
-            )
-            statement = (
-                f"if ({expression}) {{ {statement} }}"
-            )
-        lines.append(statement)
-    return "\n".join(lines) + "\n"
-
-
-def _qasm_angle(value: Any) -> str:
-    if isinstance(value, torch.Tensor):
-        if value.numel() != 1 or value.requires_grad:
-            raise ValueError("braket_iqm requires bound scalar gate parameters")
-        value = value.detach().cpu().item()
-    return repr(float(value))
-
-
-def _iqm_qubit_groups(backend: Any) -> tuple[frozenset[int], ...]:
-    metadata = getattr(backend, "metadata", {}) or {}
-    raw_groups = metadata.get("dynamic_qubit_groups")
-    if raw_groups is None:
-        return ()
-    return tuple(frozenset(int(wire) for wire in group) for group in raw_groups)
-
-
-def export_braket_iqm_dynamic_qasm3(
-    circuit: DynamicCircuit,
-    *,
-    qubit_groups: Iterable[Iterable[int]] | None = None,
-) -> str:
-    """Lower FlagQuantum feedback to IQM ``measure_ff``/``cc_prx`` QASM."""
-
-    if not isinstance(circuit, DynamicCircuit):
-        raise TypeError("Braket IQM dynamic export requires DynamicCircuit")
-    groups = tuple(frozenset(int(wire) for wire in group) for group in (qubit_groups or ()))
-    if not groups:
-        raise ValueError("braket_iqm_dynamic_qubit_groups_are_required")
-
-    latest_key: dict[int, int] = {}
-    measured_wire: dict[int, int] = {}
-    feed_forward_keys: set[int] = set()
-    target_controller: dict[int, int] = {}
-    next_key = 0
-    body: list[str] = []
-
-    def ensure_group(control: int, target: int) -> None:
-        if not any(control in group and target in group for group in groups):
-            raise ValueError("braket_iqm_feedback_pair_outside_dynamic_qubit_group")
-
-    for instruction in circuit._instructions:
-        conditions = _instruction_conditions(instruction)
-        if instruction.name == "measure":
-            if conditions:
-                raise ValueError("braket_iqm_conditional_measurement_is_unsupported")
-            bit = int(instruction.metadata["classical_bit"])
-            key = next_key
-            next_key += 1
-            latest_key[bit] = key
-            measured_wire[key] = instruction.wires[0]
-            body.append(f"measure_ff({key}) ${instruction.wires[0]};")
-            continue
-        if instruction.name == "reset":
-            if conditions:
-                raise ValueError("braket_iqm_conditional_reset_is_unsupported")
-            wire = instruction.wires[0]
-            key = next_key
-            next_key += 1
-            measured_wire[key] = wire
-            body.extend(
-                (f"measure_ff({key}) ${wire};", f"cc_prx({math.pi!r}, 0.0, {key}) ${wire};")
-            )
-            feed_forward_keys.add(key)
-            target_controller[wire] = wire
-            continue
-        if conditions:
-            if len(conditions) != 1 or conditions[0][1] != 1:
-                raise ValueError("braket_iqm_conditions_require_one_bit_equal_to_one")
-            bit = conditions[0][0]
-            if bit not in latest_key:
-                raise ValueError("braket_iqm_feedback_bit_was_read_before_measurement")
-            if len(instruction.wires) != 1 or instruction.name not in {"x", "rx"}:
-                raise ValueError("braket_iqm_conditional_gate_cannot_lower_to_cc_prx")
-            key = latest_key[bit]
-            control = measured_wire[key]
-            target = instruction.wires[0]
-            ensure_group(control, target)
-            previous = target_controller.setdefault(target, control)
-            if previous != control:
-                raise ValueError("braket_iqm_target_has_multiple_feedback_controllers")
-            angle = math.pi if instruction.name == "x" else next(iter(instruction.params.values()))
-            body.append(f"cc_prx({_qasm_angle(angle)}, 0.0, {key}) ${target};")
-            feed_forward_keys.add(key)
-            continue
-        wires = ", ".join(f"${wire}" for wire in instruction.wires)
-        if instruction.name == "x":
-            body.append(f"prx({math.pi!r}, 0.0) {wires};")
-        elif instruction.name == "rx":
-            angle = next(iter(instruction.params.values()))
-            body.append(f"prx({_qasm_angle(angle)}, 0.0) {wires};")
-        elif instruction.name in {"rz", "cz"}:
-            params = (
-                "(" + ", ".join(_qasm_angle(value) for value in instruction.params.values()) + ")"
-                if instruction.params
-                else ""
-            )
-            body.append(f"{instruction.name}{params} {wires};")
-        else:
-            raise ValueError(f"braket_iqm_unsupported_native_gate:{instruction.name}")
-
-    unused_keys = set(measured_wire) - feed_forward_keys
-    if unused_keys:
-        raise ValueError("braket_iqm_mid_circuit_measurement_requires_feed_forward")
-
-    lines = [
-        "OPENQASM 3.0;",
-        f"bit[{circuit.n_wires}] b;",
-        "#pragma braket verbatim",
-        "box{",
-        *(f"    {line}" for line in body),
-        "}",
-        *(f"b[{wire}] = measure ${wire};" for wire in range(circuit.n_wires)),
-    ]
-    return "\n".join(lines) + "\n"
-
-
-def export_dynamic_qasm3_for_backend(circuit: DynamicCircuit, backend: Any) -> str:
-    """Export using the backend-declared dynamic OpenQASM dialect."""
-
-    dialect = getattr(backend, "dynamic_dialect", None) or "openqasm3"
-    if dialect == "openqasm3":
-        return export_dynamic_qasm3(circuit)
-    if dialect == "braket_iqm":
-        return export_braket_iqm_dynamic_qasm3(
-            circuit,
-            qubit_groups=_iqm_qubit_groups(backend),
-        )
-    raise ValueError(f"unsupported_dynamic_dialect:{dialect}")
+from .dialects.braket_iqm import export_braket_iqm_dynamic_qasm3  # noqa: E402
+from .dialects.openqasm3 import (  # noqa: E402
+    export_dynamic_qasm3,
+    export_dynamic_qasm3_for_backend,
+)
 
 
 def assess_dynamic_backend(
