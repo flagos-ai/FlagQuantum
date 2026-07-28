@@ -1,0 +1,154 @@
+{
+  "artifact_class": "derived_development_report",
+  "benchmark": "mps_no_truncation_qr_calibration",
+  "benchmark_evidence_class": "non_release_smoke",
+  "claim_evidence_type": "development_smoke",
+  "communication_bytes": 0,
+  "device": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex64",
+  "local_memory_bytes_by_rank": [
+    38409216
+  ],
+  "local_world_size": 1,
+  "node_count": 1,
+  "non_release_evidence": true,
+  "passed": true,
+  "rank_placement": [
+    {
+      "device": "cuda:0",
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "rank": 0
+    }
+  ],
+  "records": [
+    {
+      "bond": 128,
+      "correctness_passed": true,
+      "direct_qr": {
+        "mean_seconds": 0.0007890971377491951,
+        "p50_seconds": 0.0007867100648581982,
+        "peak_allocated_memory_bytes": 7211008,
+        "samples_seconds": [
+          0.0007837088778614998,
+          0.0007880558259785175,
+          0.0007867100648581982,
+          0.0008046319708228111,
+          0.0007823789492249489
+        ]
+      },
+      "full_mps_update": {
+        "mean_seconds": 0.0008146327920258046,
+        "p50_seconds": 0.0008152918890118599,
+        "peak_allocated_memory_bytes": 15730688,
+        "samples_seconds": [
+          0.0008153286762535572,
+          0.0008152918890118599,
+          0.0008121812716126442,
+          0.0008171563968062401,
+          0.0008132057264447212
+        ]
+      },
+      "matrix_shape": [
+        1,
+        256,
+        128
+      ],
+      "normalized_orthogonality_error": 5.03475966733417e-07,
+      "relative_reconstruction_residual": 5.815793429064797e-07,
+      "transfer_overhead_fraction": 0.032360596756752846
+    },
+    {
+      "bond": 256,
+      "correctness_passed": true,
+      "direct_qr": {
+        "mean_seconds": 0.0019570344127714636,
+        "p50_seconds": 0.001957845874130726,
+        "peak_allocated_memory_bytes": 20188160,
+        "samples_seconds": [
+          0.0019633998163044453,
+          0.0019648969173431396,
+          0.001957845874130726,
+          0.0019561112858355045,
+          0.0019429181702435017
+        ]
+      },
+      "full_mps_update": {
+        "mean_seconds": 0.0020103453658521175,
+        "p50_seconds": 0.002008170820772648,
+        "peak_allocated_memory_bytes": 20188160,
+        "samples_seconds": [
+          0.0019970699213445187,
+          0.0020078313536942005,
+          0.0020264429040253162,
+          0.0020122118294239044,
+          0.002008170820772648
+        ]
+      },
+      "matrix_shape": [
+        1,
+        512,
+        256
+      ],
+      "normalized_orthogonality_error": 4.6867984337950475e-07,
+      "relative_reconstruction_residual": 8.86984821590886e-07,
+      "transfer_overhead_fraction": 0.027240682500394797
+    },
+    {
+      "bond": 512,
+      "correctness_passed": true,
+      "direct_qr": {
+        "mean_seconds": 0.005041757319122553,
+        "p50_seconds": 0.005036975722759962,
+        "peak_allocated_memory_bytes": 38409216,
+        "samples_seconds": [
+          0.0050371307879686356,
+          0.005064364057034254,
+          0.005035704933106899,
+          0.005034611094743013,
+          0.005036975722759962
+        ]
+      },
+      "full_mps_update": {
+        "mean_seconds": 0.005242056306451559,
+        "p50_seconds": 0.00524332607164979,
+        "peak_allocated_memory_bytes": 38409216,
+        "samples_seconds": [
+          0.005242028273642063,
+          0.005230218172073364,
+          0.005246347282081842,
+          0.005248361732810736,
+          0.00524332607164979
+        ]
+      },
+      "matrix_shape": [
+        1,
+        1024,
+        512
+      ],
+      "normalized_orthogonality_error": 8.333570448008517e-07,
+      "relative_reconstruction_residual": 1.14649571969494e-06,
+      "transfer_overhead_fraction": 0.03972801042392593
+    }
+  ],
+  "release_gate_allowed": false,
+  "samples": 5,
+  "scalability_blockers": [
+    "single_device_qr_calibration",
+    "a800_only_portability_not_established",
+    "single_run_unsigned_development_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_qr_policy_report.v1",
+  "selected_policy": {
+    "implementation": "torch.linalg.qr",
+    "mode": "reduced",
+    "shape_scope": "batch1_complex64_2chi_by_chi",
+    "tiny_column_fast_path_max_columns": 2
+  },
+  "source_commit": "876decd8a6798414e4ad6d2a4fee14ffd4935261",
+  "source_tree_dirty": false,
+  "warmups": 2,
+  "world_size": 1
+}

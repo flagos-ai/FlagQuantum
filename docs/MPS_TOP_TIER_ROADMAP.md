@@ -302,7 +302,9 @@ passing one capability does not promote the others.
 - [x] Calibrate bond 128/256/512 SVD drivers on A800: retain `gesvd` for
       strict mode and `gesvda` only for explicit approximate mode; portability
       remains required before automatic production selection.
-- [ ] Calibrate the no-truncation QR path for the same bond matrix.
+- [x] Calibrate the no-truncation reduced-QR path for the same bond matrix;
+      full MPS transfer adds below 5% over direct QR and preserves reconstruction
+      and orthogonality errors below 2e-6 on A800.
 - [ ] Pool workspaces.
 - [ ] Fuse common contraction/decomposition regions.
 - [ ] Add steady-state CUDA Graph evaluation.
@@ -336,6 +338,7 @@ Update this table as work lands:
 | 2026-07-28 | M2 | Owner gradient buckets | `357856c` | `benchmarks/results/smoke/release_candidates/mps_gradient_buckets/` | 8×A800 collectives 1000→8; measured backward 3.45× faster; exact optimizer parity | Specialized microbenchmark; single unsigned run |
 | 2026-07-28 | M2 | Final optimized frozen matrix | `9898286` | `benchmarks/results/smoke/release_candidates/mps_sprint2_closeout/` | Correctness passes; 4 GPU 0.487s, 8 GPU 0.565s | 4→8 is 0.861×, below 1.5× target; repeated trials and Sprint 3 kernels required |
 | 2026-07-28 | M3 | A800 SVD driver calibration | `8eb8657` | `benchmarks/results/smoke/release_candidates/mps_svd_policy/` | Strict: `gesvd`; explicit approximate: `gesvda`, 6.7×–11.1× faster with measured residual below 1e-6 | A800-only; QR matrix and cross-device portability remain |
+| 2026-07-28 | M3 | A800 no-truncation QR calibration | `876decd` | `benchmarks/results/smoke/release_candidates/mps_qr_policy/` | Bond 128/256/512 full update 0.815/2.01/5.24 ms; errors below 2e-6 | Batch-1 complex64 A800 only; portability remains |
 
 ## Claim policy
 
