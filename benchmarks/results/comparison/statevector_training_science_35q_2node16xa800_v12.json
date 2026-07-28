@@ -181,7 +181,14 @@
       41.411748468875885
     ]
   },
-  "distribution_semantics": "rank_local_replicated_kernel",
+  "backward_distribution_semantics": "sharded_across_ranks",
+  "distribution_semantics": "sharded_across_ranks",
+  "forward_distribution_semantics": "sharded_across_ranks",
+  "gradient_distribution": "replicated_after_all_reduce",
+  "communication_bytes": 781684048020,
+  "communication_bytes_scope": "forward_plus_backward_per_rank_maxima",
+  "inter_node_communication_bytes": 171798691840,
+  "intra_node_communication_bytes": 609885356032,
   "end_to_end": {
     "coefficient_of_variation": 0.000461321076573109,
     "mean_seconds": 114.32677886961028,
@@ -256,6 +263,24 @@
     "torch": "2.13.0+cu130"
   },
   "local_world_size": 8,
+  "local_memory_bytes_by_rank": [
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288,
+    69374092288
+  ],
   "node_count": 2,
   "non_release_evidence": true,
   "optimizer": {

@@ -15,24 +15,55 @@ scalable execution across classical and quantum hardware.**
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.5%2B-red.svg)](https://pytorch.org/)
 [![Python](https://img.shields.io/badge/Python-3.10--3.12-blue.svg)](https://python.org/)
+[![CI](https://github.com/FlagQuantum/FlagQuantum/actions/workflows/ci.yml/badge.svg)](https://github.com/FlagQuantum/FlagQuantum/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 </div>
 
 ## One quantum AI program, every execution scale
 
-Quantum AI development is fragmented across local simulators, accelerator
-runtimes, distributed systems, tensor representations, and quantum hardware.
-FlagQuantum brings these environments under one programming model:
+Write the quantum program once. Differentiate it with PyTorch, inspect how it
+should run, execute it through one stable result contract, and package the
+trained program for quantum hardware:
 
 ```python
 import flagquantum as fq
+import torch
+
+theta = torch.tensor([0.3, -0.2], requires_grad=True)
+
+program = (
+    fq.Circuit(n_qubits=2)
+    .ry(0, theta=theta[0])
+    .cx(0, 1)
+    .ry(1, theta=theta[1])
+)
+
+# Train with ordinary PyTorch autograd.
+loss = program.expectation_z(1).mean()
+loss.backward()
+
+# Plan, execute, and deploy the same FlagQuantum IR.
+plan = program.runtime_plan(require_gradients=True)
+result = fq.run(program, mode="auto")
+package = fq.create_deployment_package(program, shots=1024)
+
+print(float(loss.detach()), theta.grad.tolist())
+print(plan.summary()["usability_contract"])
+print(result.plan.state_mode)
+print(package.backend.provider)
 ```
 
-Build and train a quantum or hybrid AI program locally, plan it for the
-available resources, scale one logical workload across devices, and package
-the trained program for quantum hardware without changing its mathematical
-intent.
+The public abstraction stays the same from a local experiment to a
+representation-aware or multi-chip execution plan:
+
+```text
+fq.Circuit / fq.Module
+        → FlagQuantum IR
+        → plan representation, memory, communication, and gradients
+        → execute locally or shard one workload across FlagOS-managed chips
+        → package the trained program for quantum hardware
+```
 
 FlagQuantum is built around four durable ideas:
 
@@ -50,69 +81,38 @@ FlagQuantum is built around four durable ideas:
 
 ## Quick start
 
-Install the core package:
+Install FlagQuantum and run the maintained one-minute hybrid quantum AI
+example:
 
-```bash
+```console
 pip install -e .
+python examples/quick_start.py --mode sv
 ```
 
-Build a differentiable quantum program with the public API:
+The example trains an ordinary `torch.nn.Linear` layer and an `fq.Module`
+quantum layer in one PyTorch optimizer loop, then checks the trained model
+against an analytical reference. Change only the execution representation:
 
-```python
-import flagquantum as fq
-import torch
-
-theta = torch.tensor(0.3, requires_grad=True)
-
-program = fq.Circuit(n_qubits=2)
-program.h(0)
-program.cx(0, 1)
-program.rx(0, theta=theta)
-
-value = program.expectation_z(0).sum()
-value.backward()
-
-print(float(value.detach()))
-print(float(theta.grad))
+```console
+python examples/quick_start.py --mode mps
+python examples/quick_start.py --mode tn
 ```
 
-Execute the same program through the uniform runtime:
-
-```python
-result = fq.run(program, mode="auto")
-
-print(result.state)
-print(result.plan)
-print(result.runtime)
-```
-
-`fq.run(...)` always returns the stable `fq.ExecutionResult` contract.
-Backend-specific runners remain available as advanced interfaces, but
-`fq.run(...)` is the recommended execution entry point.
+Start with the [annotated source](examples/quick_start.py), continue to the
+[single-machine quantum AI examples](examples/single_machine_quantum_ai/README.md),
+or inspect the stable [`fq.ExecutionResult` contract](docs/RUNTIME_RESULT_CONTRACT.md).
 
 ## How it works
 
-```mermaid
-flowchart TD
-    A["Quantum AI application<br/>fq.Circuit · fq.Module · training loop"]
-    B["FlagQuantum Program / IR<br/>operations · parameters · measurements"]
-    C["Planning and differentiation<br/>representation · partitioning · gradients"]
-    D["Execution runtimes<br/>statevector · MPS · tensor network · provider"]
-    E["FlagOS unified multi-chip backend<br/>target integration"]
-    F["Classical hardware<br/>CPU · GPU · multi-chip systems"]
-    G["Quantum hardware<br/>deployment providers"]
-    H["ExecutionResult<br/>values · plans · runtime evidence"]
-
-    A --> B
-    B --> C
-    C --> D
-    D --> F
-    D -.-> E
-    E --> F
-    D --> G
-    F --> H
-    G --> H
-```
+<p align="center">
+  <a href="assets/readme/FlagQuantum.png">
+    <img
+      src="assets/readme/FlagQuantum.png"
+      alt="FlagQuantum product architecture across quantum AI applications, unified APIs, IR, planning, classical multi-chip training, and quantum hardware deployment"
+      width="1100"
+    >
+  </a>
+</p>
 
 FlagQuantum owns quantum program semantics, differentiable training,
 representation selection, partitioning, and auditable execution results.
@@ -124,7 +124,79 @@ The complete stable `flagquantum.backends.flagos` backend and deeper FlagOS
 kernel and collective integration are under active development. Existing
 accelerator paths remain supported according to their documented maturity;
 the [FlagOS-aligned release train](docs/FLAGOS_ALIGNED_RELEASE_TRAIN.md)
-defines when unified backend claims may be promoted.
+defines when unified backend claims may be promoted. The diagram is the target
+product architecture; the
+[machine-validated capability matrix](capability-maturity.toml) remains the
+authority for what is currently experimental, supported, or release certified.
+
+## Measured strong scaling
+
+<p align="center">
+  <a href="benchmarks/results/statevector_mlsys_current/TECHNICAL_REPORT.md">
+    <img
+      src="assets/readme/statevector-scaling.png"
+      alt="Measured FlagQuantum differentiable statevector scaling from one to sixteen NVIDIA A800 GPUs"
+      width="1080"
+    >
+  </a>
+</p>
+
+On one matched 31-qubit, 248-parameter workload, FlagQuantum reduced complete
+value-and-gradient time from 28.84 seconds on one NVIDIA A800 to 5.37 seconds
+on eight A800 GPUs and 4.31 seconds on sixteen GPUs across two nodes, while
+preserving amplitude-sharded forward and backward execution.
+
+These measurements are development evidence for this exact workload, not a
+release-certified general scalability claim. Read the
+[methodology and evidence](benchmarks/results/statevector_mlsys_current/TECHNICAL_REPORT.md),
+inspect the
+[full matched comparison](benchmarks/results/statevector_mlsys_current/fig0_final_scaling_with_tqd.png),
+or [regenerate the README figure](benchmarks/research/plot_readme_statevector_scaling.py)
+from the checked-in result artifacts.
+
+### Capacity beyond one GPU
+
+<p align="center">
+  <a href="benchmarks/results/comparison/statevector_training_science_35q_capacity_report_v12.json">
+    <img
+      src="assets/readme/capacity-expansion.png"
+      alt="A matched 35-qubit FlagQuantum workload requires a 256 GiB state allocation on one GPU but completes with the statevector amplitude-sharded across sixteen A800 GPUs"
+      width="1080"
+    >
+  </a>
+</p>
+
+For the same 35-qubit differentiable workload, the single-A800 path failed
+while attempting a 256 GiB state allocation. The two-node, sixteen-GPU path
+completed the full value-and-gradient step in 114.32 seconds with distinct
+amplitude shards, sharded forward and backward execution, no full-state
+materialization, and 64.61 GiB peak allocated memory per rank.
+
+This is measured development capacity evidence for the matched workload, not a
+release-certified general capacity claim. Inspect the
+[machine-readable capacity report](benchmarks/results/comparison/statevector_training_science_35q_capacity_report_v12.json)
+or [regenerate the figure](benchmarks/research/plot_readme_capacity_expansion.py)
+from the checked-in single-GPU and distributed artifacts.
+
+### Matched external comparison
+
+<p align="center">
+  <a href="benchmarks/results/statevector_mlsys_current/TECHNICAL_REPORT.md">
+    <img
+      src="assets/readme/external-comparison.png"
+      alt="Matched FlagQuantum, PennyLane Lightning-GPU, and TorchQuantum-Dist value-and-full-gradient runtime"
+      width="1080"
+    >
+  </a>
+</p>
+
+External framework timings reuse the same fixed workload and measurement
+protocol. The sixteen-GPU ratios use the latest 4.31-second FlagQuantum rerun;
+external measurements are unchanged. TorchQuantum-Dist's sixteen-GPU result
+has a 73.7% coefficient of variation, which is retained in the figure rather
+than hidden by its median. The
+[comparison plotting script](benchmarks/research/plot_readme_external_comparison.py)
+loads every value from the checked-in artifacts.
 
 ## Train quantum AI models
 

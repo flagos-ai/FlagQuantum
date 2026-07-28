@@ -315,6 +315,16 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 device,
             )
             return {
+                "distribution_semantics": reverse_summary[
+                    "distribution_semantics"
+                ],
+                "forward_distribution_semantics": reverse_summary[
+                    "forward_distribution_semantics"
+                ],
+                "backward_distribution_semantics": reverse_summary[
+                    "backward_distribution_semantics"
+                ],
+                "gradient_distribution": reverse_summary["gradient_distribution"],
                 "differentiable_forward_seconds": differentiable_forward,
                 "backward_seconds": backward,
                 "optimizer_seconds": optimizer_seconds,
@@ -547,6 +557,17 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             "node_count": len({record["hostname"] for record in complete_records}),
             "rank_placement": rank_placement,
             "rank_measurements": complete_records,
+            "local_memory_bytes_by_rank": [
+                int(record["peak_memory_bytes"]) for record in complete_records
+            ],
+            "distribution_semantics": forward_summary["distribution_semantics"],
+            "forward_distribution_semantics": forward_summary[
+                "distribution_semantics"
+            ],
+            "backward_distribution_semantics": measured_initial[
+                "backward_distribution_semantics"
+            ],
+            "gradient_distribution": measured_initial["gradient_distribution"],
             "workload": {
                 "n_wires": args.n_wires,
                 **workload_metadata,
@@ -629,6 +650,17 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 row["backward_inter_node_communication_count"] for row in measured
             ),
             "backward_inter_node_communication_bytes_per_rank_max": max(
+                row["backward_inter_node_communication_bytes"] for row in measured
+            ),
+            "communication_bytes": max(forward_communication_bytes)
+            + max(row["backward_communication_bytes"] for row in measured),
+            "communication_bytes_scope": "forward_plus_backward_per_rank_maxima",
+            "intra_node_communication_bytes": max(forward_intra_node_bytes)
+            + max(
+                row["backward_intra_node_communication_bytes"] for row in measured
+            ),
+            "inter_node_communication_bytes": max(forward_inter_node_bytes)
+            + max(
                 row["backward_inter_node_communication_bytes"] for row in measured
             ),
             "peak_backward_scratch_bytes_max": max(
