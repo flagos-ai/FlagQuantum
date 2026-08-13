@@ -34,6 +34,7 @@ def test_runtime_result_contract_entry_example_executes() -> None:
 
 @pytest.mark.integration
 def test_hybrid_runtime_entry_example_executes() -> None:
+    pytest.importorskip("jax", reason="JAX is an optional backend")
     namespace = _execute_first_python_block(
         "docs/architecture/HYBRID_RUNTIME_ARCHITECTURE.md"
     )

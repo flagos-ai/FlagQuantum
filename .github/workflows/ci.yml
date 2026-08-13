@@ -141,12 +141,15 @@ jobs:
       - name: Clean-install wheel and run quick start
         run: |
           python -m venv /tmp/fq-wheel
+          /tmp/fq-wheel/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-wheel/bin/python -m pip install dist/*.whl
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-wheel/bin/python -c "import importlib.util; assert importlib.util.find_spec('jax') is None; assert importlib.util.find_spec('datasets') is None; assert importlib.util.find_spec('transformers') is None; assert importlib.util.find_spec('matplotlib') is None"
+          rm -rf /tmp/fq-wheel
       - name: Clean-install sdist and run quick start
         run: |
           python -m venv /tmp/fq-sdist
+          /tmp/fq-sdist/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-sdist/bin/python -m pip install dist/*.tar.gz
           /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
       - name: Write checksummed artifact manifest

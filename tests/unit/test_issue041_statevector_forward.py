@@ -18,6 +18,10 @@ pytestmark = pytest.mark.unit
 
 
 def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypatch):
+    monkeypatch.setattr(
+        "flagquantum.runtime.backends.statevector.kernel_dispatch.triton_available",
+        lambda: True,
+    )
     scheduled = CircuitIR(
         n_wires=2,
         instructions=(),

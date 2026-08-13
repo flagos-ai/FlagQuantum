@@ -1,0 +1,35 @@
+x-flagquantum-dev: &flagquantum-dev
+  image: ${FLAGQUANTUM_DEV_IMAGE:-flagquantum-dev:local}
+  build:
+    context: .
+    dockerfile: docker/dev/Dockerfile
+    args:
+      BASE_IMAGE: ${FLAGQUANTUM_BASE_IMAGE:-python:3.12-slim-bookworm}
+      EXTRAS: ${FLAGQUANTUM_DEV_EXTRAS:-dev,jax}
+      TORCH_INDEX_URL: ${FLAGQUANTUM_TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+      SOURCE_URL: ${FLAGQUANTUM_SOURCE_URL:-https://github.com/FlagQuantum/FlagQuantum}
+      SOURCE_REVISION: ${FLAGQUANTUM_SOURCE_REVISION:-development}
+  working_dir: /workspace
+  volumes:
+    - .:/workspace
+  environment:
+    PYTHONPATH: /workspace
+    PYTHONUNBUFFERED: "1"
+  stdin_open: true
+  tty: true
+  shm_size: 8gb
+
+services:
+  dev:
+    <<: *flagquantum-dev
+    profiles: [cpu]
+
+  dev-gpu:
+    <<: *flagquantum-dev
+    profiles: [gpu]
+    gpus: all
+    environment:
+      PYTHONPATH: /workspace
+      PYTHONUNBUFFERED: "1"
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility

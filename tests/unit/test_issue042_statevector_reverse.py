@@ -197,8 +197,8 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
         not item["participating_ranks"] for item in pending["parameter_ownership"]
     )
     result.backward()
-    assert theta.grad == pytest.approx(float(dense_grad[0]), abs=2e-5)
-    assert phi.grad == pytest.approx(float(dense_grad[1]), abs=2e-5)
+    assert float(theta.grad) == pytest.approx(float(dense_grad[0]), abs=2e-5)
+    assert float(phi.grad) == pytest.approx(float(dense_grad[1]), abs=2e-5)
     assert result.ownership[0].occurrence_count == 2
     completed = result.summary()
     assert completed["backward_uses_full_state_replay"] is False
