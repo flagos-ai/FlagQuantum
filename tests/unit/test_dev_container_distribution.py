@@ -23,6 +23,10 @@ def test_ghcr_workflow_publishes_private_multiarch_cpu_tags() -> None:
     assert "linux/amd64,linux/arm64" in workflow
     assert "type=raw,value=cpu" in workflow
     assert "type=sha,prefix=cpu-sha-" in workflow
+    assert "github.event.repository.owner.type" in workflow
+    assert 'owner_scope="users"' in workflow
+    assert 'owner_scope="orgs"' in workflow
+    assert '"/${owner_scope}/${GITHUB_REPOSITORY_OWNER}/packages/container/' in workflow
     assert 'test "$visibility" = private' in workflow
     assert "provenance: mode=max" in workflow
     assert "sbom: true" in workflow

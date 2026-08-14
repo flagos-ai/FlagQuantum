@@ -80,7 +80,12 @@ jobs:
       - name: Fail if the GHCR package is not private
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_OWNER_TYPE: ${{ github.event.repository.owner.type }}
         shell: bash
         run: |
-          visibility="$(gh api "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/flagquantum-dev" --jq .visibility)"
+          owner_scope="users"
+          if [ "$GHCR_OWNER_TYPE" = "Organization" ]; then
+            owner_scope="orgs"
+          fi
+          visibility="$(gh api "/${owner_scope}/${GITHUB_REPOSITORY_OWNER}/packages/container/flagquantum-dev" --jq .visibility)"
           test "$visibility" = private
