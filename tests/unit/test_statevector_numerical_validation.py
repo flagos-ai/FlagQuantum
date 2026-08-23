@@ -42,6 +42,28 @@ def test_complex128_fixed_gate_is_not_promoted_from_complex64() -> None:
     assert abs(float(torch.linalg.vector_norm(state).item()) - 1.0) < 1e-14
 
 
+def test_complex128_python_float_parameter_is_materialized_in_float64() -> None:
+    theta = 0.371
+    state = Circuit(1, dtype=torch.complex128).ry(0, theta=theta).state()[0]
+    expected = torch.tensor(
+        [
+            torch.cos(torch.tensor(theta / 2, dtype=torch.float64)),
+            torch.sin(torch.tensor(theta / 2, dtype=torch.float64)),
+        ],
+        dtype=torch.complex128,
+    )
+
+    assert torch.equal(state, expected)
+
+
+def test_cswap_exchanges_targets_only_when_control_is_one() -> None:
+    state = Circuit(3, dtype=torch.complex128).x(0).x(2).cswap(0, 1, 2).state()[0]
+    expected = torch.zeros(8, dtype=torch.complex128)
+    expected[6] = 1.0
+
+    assert torch.equal(state, expected)
+
+
 @pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
 def test_cpu_statevector_certification_passes(dtype: torch.dtype) -> None:
     dtype_name = str(dtype).removeprefix("torch.")

@@ -89,6 +89,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_dependency_policy.py"),
         ),
         Check(
+            "Qiskit interoperability contract",
+            (python_executable, "tools/check_qiskit_interop_contract.py"),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

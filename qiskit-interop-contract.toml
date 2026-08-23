@@ -1,0 +1,231 @@
+schema = "flagquantum_qiskit_interop_contract_v1"
+ir_version = "1.0"
+maturity = "experimental"
+dependency_extra = "qiskit"
+qiskit_versions = ["2.0", "2.5"]
+aer_versions = ["0.17"]
+core_import_allowed = false
+
+[semantics]
+quantum_wire_mapping = "flat_qiskit_bit_index_equals_flagquantum_wire"
+classical_bit_mapping = "flat_qiskit_bit_index_equals_flagquantum_classical_bit"
+flagquantum_statevector_order = "wire_zero_most_significant"
+qiskit_statevector_order = "qubit_zero_least_significant"
+statevector_comparison = "reverse_qiskit_tensor_axes_before_comparison"
+parameter_identity = "unique_name"
+global_phase = "preserved"
+loss_policy = "fail_closed_unless_allow_lossy_true"
+
+[unsupported]
+qiskit_features = [
+    "control_flow_import",
+    "arbitrary_parameter_expression_import",
+    "nonstandard_register_layout_without_explicit_flattening",
+    "multi_qubit_custom_unitary_without_basis_order_conversion",
+]
+flagquantum_opcodes = [
+    "u1",
+    "u2",
+    "bit_flip",
+    "phase_flip",
+    "depolarizing",
+    "amplitude_damping",
+]
+issue_codes = [
+    "barrier_dropped",
+    "circuit_metadata_dropped",
+    "complex_gate_parameter",
+    "invalid_measurement_shape",
+    "measurement_requests_not_embedded",
+    "multi_qubit_unitary_wire_order_unverified",
+    "observables_not_embedded",
+    "operation_label_dropped",
+    "parameter_arity_mismatch",
+    "register_layout_flattened",
+    "unsupported_condition_value",
+    "unsupported_control_flow",
+    "unsupported_multi_bit_condition",
+    "unsupported_operation",
+    "unsupported_parameter_expression",
+    "unsupported_parameter_value",
+]
+
+[verification]
+policy = "tests/unit/test_qiskit_interop_contract.py"
+integration = "tests/test_qiskit_interop.py"
+conformance = "tests/test_qiskit_interop_conformance.py"
+core_isolation = "tests/unit/test_qiskit_interop_boundary.py"
+
+[[operations]]
+qiskit = "id"
+flagquantum = "i"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "x"
+flagquantum = "x"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "y"
+flagquantum = "y"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "z"
+flagquantum = "z"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "h"
+flagquantum = "h"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "s"
+flagquantum = "s"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "sdg"
+flagquantum = "sdg"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "t"
+flagquantum = "t"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "tdg"
+flagquantum = "tdg"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "sx"
+flagquantum = "sx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "sxdg"
+flagquantum = "sxdg"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "rx"
+flagquantum = "rx"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "ry"
+flagquantum = "ry"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "rz"
+flagquantum = "rz"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "p"
+flagquantum = "phase"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "u"
+flagquantum = "u3"
+qiskit_parameters = ["theta", "phi", "lam"]
+flagquantum_parameters = ["theta", "phi", "lbd"]
+
+[[operations]]
+qiskit = "cx"
+flagquantum = "cx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "cy"
+flagquantum = "cy"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "cz"
+flagquantum = "cz"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "swap"
+flagquantum = "swap"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "crx"
+flagquantum = "crx"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "cry"
+flagquantum = "cry"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "crz"
+flagquantum = "crz"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "cp"
+flagquantum = "cphase"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "rxx"
+flagquantum = "rxx"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "ryy"
+flagquantum = "ryy"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "rzz"
+flagquantum = "rzz"
+qiskit_parameters = ["theta"]
+flagquantum_parameters = ["theta"]
+
+[[operations]]
+qiskit = "ccx"
+flagquantum = "ccx"
+qiskit_parameters = []
+flagquantum_parameters = []
+
+[[operations]]
+qiskit = "cswap"
+flagquantum = "cswap"
+qiskit_parameters = []
+flagquantum_parameters = []

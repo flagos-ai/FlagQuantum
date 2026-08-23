@@ -285,6 +285,19 @@ and records every skipped operation; it is intended for inspection, not silent
 execution fallback. Importing `flagquantum` or `flagquantum.interop.qiskit`
 does not import Qiskit.
 
+The supported bidirectional gate set, parameter names, bit-index mapping,
+statevector endianness, loss policy, unsupported boundary, and certified
+Qiskit/Aer version lanes are pinned in `qiskit-interop-contract.toml`. Run the
+same deterministic semantic certification used by CI when qualifying a new
+environment:
+
+```python
+from flagquantum.interop.qiskit import run_qiskit_conformance
+
+result = run_qiskit_conformance()
+assert result.passed
+```
+
 The implementation is partitioned under `flagquantum.runtime.dynamic` into
 `circuit`, `result`, `execution`, `routing`, `deployment`, and `dialects`
 boundaries. Existing `fq.experimental` names and the

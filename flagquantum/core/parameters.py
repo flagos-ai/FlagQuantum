@@ -140,7 +140,10 @@ def parameter_names_in_value(value: Any) -> tuple[str, ...]:
 
 
 def value_to_tensor(
-    value: Any, *, device: torch.device | str | None = None
+    value: Any,
+    *,
+    device: torch.device | str | None = None,
+    dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
     """Convert a bound scalar value to a tensor with a helpful symbolic error."""
 
@@ -149,7 +152,11 @@ def value_to_tensor(
         raise ValueError(
             f"Unbound circuit parameter(s): {names}. Call bind_parameters first."
         )
-    return value if isinstance(value, torch.Tensor) else torch.as_tensor(value)
+    if isinstance(value, torch.Tensor):
+        if device is None and dtype is None:
+            return value
+        return value.to(device=device, dtype=dtype)
+    return torch.as_tensor(value, device=device, dtype=dtype)
 
 
 __all__ = [

@@ -39,13 +39,15 @@ def parameter_tensor(
     else:
         values = list(direct_values)
 
-    tensors = [value_to_tensor(value, device=device) for value in values]
+    complex_dtype = complex_dtype or get_global_precision()
+    real_dtype = torch.float64 if complex_dtype == torch.complex128 else torch.float32
+    tensors = [
+        value_to_tensor(value, device=device, dtype=real_dtype) for value in values
+    ]
     stacked = torch.stack(
         [tensor.reshape(()) if tensor.ndim == 0 else tensor for tensor in tensors],
         dim=-1,
     )
-    complex_dtype = complex_dtype or get_global_precision()
-    real_dtype = torch.float64 if complex_dtype == torch.complex128 else torch.float32
     stacked = stacked.to(device=device, dtype=real_dtype)
     if stacked.ndim == 1:
         stacked = stacked.reshape(1, -1)

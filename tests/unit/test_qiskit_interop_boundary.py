@@ -93,6 +93,8 @@ def test_architecture_isolates_qiskit_imports_to_interop_namespace() -> None:
 def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "qiskit-optional:" in workflow
-    assert "python -m pip install -e '.[dev,qiskit]'" in workflow
+    assert 'qiskit-version: ["2.0.*", "2.5.*"]' in workflow
+    assert "'qiskit[qasm3-import]==${{ matrix.qiskit-version }}'" in workflow
+    assert "python tools/check_qiskit_interop_contract.py" in workflow
     assert "python -m pytest -m qiskit -q" in workflow
     assert "external quantum frameworks are absent from core" in workflow

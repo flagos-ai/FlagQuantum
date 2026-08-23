@@ -167,10 +167,10 @@ class PrecisionConfig:
         TOFFOLI_MATRIX = toffoli
 
         fredkin = torch.eye(8, dtype=torch.complex128)
-        fredkin[4, 4] = 0
-        fredkin[4, 5] = 1
-        fredkin[5, 4] = 1
         fredkin[5, 5] = 0
+        fredkin[5, 6] = 1
+        fredkin[6, 5] = 1
+        fredkin[6, 6] = 0
         FREDKIN_MATRIX = fredkin
 
         cls._update_gate_dict()

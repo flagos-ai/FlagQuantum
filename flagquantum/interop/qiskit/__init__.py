@@ -9,6 +9,13 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
+from .conformance import (
+    QiskitConformanceCaseResult,
+    QiskitConformanceResult,
+    qiskit_statevector_to_flagquantum,
+    run_qiskit_conformance,
+    semantic_fingerprint,
+)
 from .conversion import export_qiskit, from_qiskit, import_qiskit, to_qiskit
 from .models import (
     QiskitConversionError,
@@ -24,6 +31,8 @@ __all__ = (
     "QiskitConversionError",
     "QiskitConversionIssue",
     "QiskitConversionReport",
+    "QiskitConformanceCaseResult",
+    "QiskitConformanceResult",
     "QiskitDependencyError",
     "QiskitExportResult",
     "QiskitImportResult",
@@ -31,8 +40,11 @@ __all__ = (
     "export_qiskit",
     "from_qiskit",
     "import_qiskit",
+    "qiskit_statevector_to_flagquantum",
     "run_qiskit_aer_dynamic",
     "run_qiskit_aer_qasm3_round_trip",
+    "run_qiskit_conformance",
+    "semantic_fingerprint",
     "to_qiskit",
 )
 

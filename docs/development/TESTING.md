@@ -243,8 +243,10 @@ The checked-in `ci.yml` maps this policy to five primary CPU jobs:
   only, including proof that importing and differentiating a native circuit
   does not import JAX;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
-- `qiskit-optional`: real Qiskit IR round trips and local Aer compatibility,
-  isolated from the core environment;
+- `qiskit-optional`: the machine-readable interoperability contract plus real
+  Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance
+  on the certified Qiskit 2.0.x and 2.5.x lanes, isolated from the core
+  environment;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
   commit/environment/checksum manifest.
 

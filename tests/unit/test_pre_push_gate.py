@@ -21,6 +21,7 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         "--show-diff-on-failure",
     ) in commands
     assert ("python", "tools/check_dependency_policy.py") in commands
+    assert ("python", "tools/check_qiskit_interop_contract.py") in commands
     for tier in ("pr-default", "pr-runtime", "pr-distributed"):
         assert ("python", "tools/ci_tier.py", tier) in commands
 
