@@ -8,11 +8,36 @@ import statistics
 import subprocess
 import sys
 import time
+from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def forbidden_imports() -> tuple[str, ...]:
+    policy = tomllib.loads(
+        (ROOT / "dependency-policy.toml").read_text(encoding="utf-8")
+    )
+    return tuple(policy["import_policy"]["core_forbidden_imports"])
 
 
 def sample_imports(repetitions: int) -> tuple[float, ...]:
     values = []
-    code = "import flagquantum; assert 'jax' not in __import__('sys').modules"
+    forbidden = forbidden_imports()
+    code = f"""
+import sys
+import flagquantum
+forbidden = {forbidden!r}
+loaded = sorted(
+    name for name in sys.modules
+    if any(name == root or name.startswith(root + '.') for root in forbidden)
+)
+assert not loaded, loaded
+"""
     for _ in range(repetitions):
         started = time.perf_counter()
         subprocess.run((sys.executable, "-c", code), check=True)

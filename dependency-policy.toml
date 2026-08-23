@@ -1,12 +1,44 @@
-schema = "flagquantum_dependency_policy_v1"
+schema = "flagquantum_dependency_policy_v2"
 python = ["3.10", "3.11", "3.12"]
 core = ["torch>=2.5,<2.14"]
 
 [extras]
+dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-xdist>=3.0.0", "ruff>=0.1.0", "black>=23.0", "mypy>=1.0", "build>=1.2.0", "pre-commit>=3.7.0", "tomli>=2.0; python_version < '3.11'"]
 jax = ["jax>=0.10,<0.11"]
-viz = ["matplotlib>=3.5"]
-examples = ["datasets>=2.20", "transformers>=4.40"]
-providers = []
+cuda = ["triton>=3.1,<4"]
+braket = ["amazon-braket-sdk>=1.117,<2"]
+quafu = ["quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'"]
+qiskit = ["qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1"]
+examples = ["datasets>=2.20.0", "transformers>=4.40.0"]
+viz = ["matplotlib>=3.5.0"]
+invertible = ["torch>=2.5,<2.14"]
+all = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-xdist>=3.0.0", "ruff>=0.1.0", "black>=23.0", "mypy>=1.0", "build>=1.2.0", "pre-commit>=3.7.0", "tomli>=2.0; python_version < '3.11'", "matplotlib>=3.5.0", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
+interop-all = ["amazon-braket-sdk>=1.117,<2", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1"]
+
+[classes]
+development = ["dev"]
+accelerator_kernel = ["cuda"]
+optional_runtime = ["jax"]
+interop = ["braket", "quafu", "qiskit"]
+user_experience = ["examples", "viz"]
+compatibility = ["invertible"]
+aggregate = ["all", "interop-all"]
+
+[aggregates]
+all = ["dev", "viz", "jax", "examples", "cuda"]
+interop-all = ["braket", "quafu", "qiskit"]
+
+[external_platforms.flagos]
+owner = "Torch-FL"
+distribution = "torch-fl"
+import_names = ["torch_fl"]
+installation = "managed_outside_flagquantum"
+core_dependency_allowed = false
+optional_extra_allowed = false
+
+[import_policy]
+core_allowed_distributions = ["torch"]
+core_forbidden_imports = ["braket", "datasets", "jax", "jaxlib", "matplotlib", "qiskit", "qiskit_aer", "quark", "torch_fl", "transformers", "triton"]
 
 [tested]
 torch = ["2.5", "2.13"]

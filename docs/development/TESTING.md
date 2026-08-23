@@ -236,6 +236,8 @@ GPU and multi-node tiers must run on explicitly provisioned environments.
 The checked-in `ci.yml` maps this policy to four required CPU jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, plus
+  dependency-policy synchronization, architecture-boundary, generated-document,
+  capability-maturity, repository-hygiene checks, and
   the currently enforced typed-foundation subset;
 - `cpu-core`: Python 3.10-3.12 smoke/unit and integration with core dependencies
   only, including proof that importing and differentiating a native circuit

@@ -85,6 +85,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_capability_maturity.py"),
         ),
         Check(
+            "dependency policy",
+            (python_executable, "tools/check_dependency_policy.py"),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

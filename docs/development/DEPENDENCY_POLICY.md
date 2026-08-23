@@ -1,9 +1,23 @@
 # Python and dependency policy
 
 The executable support matrix is `dependency-policy.toml`. FlagQuantum core
-supports Python 3.10–3.12 and installs only PyTorch. JAX, visualization,
-datasets/transformers and provider integrations are separate extras; providers
-currently use the Python standard library and add no dependency.
+supports Python 3.10–3.12 and installs only PyTorch. Every optional dependency
+group in `pyproject.toml` must have an exact, classified entry in that matrix;
+`python tools/check_dependency_policy.py` rejects missing groups, requirement
+drift, unclassified extras and aggregate extras that no longer equal their
+components.
+
+JAX, Triton, visualization, examples and provider SDKs remain separate extras.
+`interop-all` is the explicit aggregate for the Braket, Quafu and Qiskit
+adapters; it is not part of the historical `all` development/runtime bundle.
+Installing core FlagQuantum therefore never installs an external quantum
+framework.
+
+Torch-FL is different from an interop SDK: it owns the FlagOS platform and
+vendor-runtime boundary. It is deliberately recorded as
+`managed_outside_flagquantum`, may not appear in core dependencies or a
+FlagQuantum extra, and is imported only when the FlagOS platform is explicitly
+activated. Native CPU and CUDA paths remain independent of Torch-FL.
 
 The CI matrix tests the oldest and newest supported Python lines. Dependency
 lower bounds are exercised by a dedicated compatibility lane and current local

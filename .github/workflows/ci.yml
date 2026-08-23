@@ -49,6 +49,8 @@ jobs:
           flagquantum/deployment
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
+      - name: Enforce core, extras, interop, and external-platform dependencies
+        run: python tools/check_dependency_policy.py
       - name: Verify operator capability manifest
         run: python tools/operator_manifest.py --check
       - name: Verify runtime contract schema

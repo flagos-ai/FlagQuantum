@@ -10,6 +10,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
+from tools.check_dependency_policy import policy_errors
 from tools.check_import_time import sample_imports
 from tools.check_repository_hygiene import (
     DEFAULT_MAX_FILE_BYTES,
@@ -68,11 +69,12 @@ def test_dependency_groups_keep_core_minimal_and_ranges_executable():
 
 def test_dependency_policy_matches_ci_python_matrix():
     policy = tomllib.loads((ROOT / "dependency-policy.toml").read_text())
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
     assert policy["python"] == ["3.10", "3.11", "3.12"]
     for version in policy["python"]:
         assert f'"{version}"' in workflow
-    assert policy["extras"]["providers"] == []
+    assert policy_errors(policy, pyproject) == ()
 
 
 def test_example_assets_are_versioned_and_checksummed_not_tracked_payloads(tmp_path):
