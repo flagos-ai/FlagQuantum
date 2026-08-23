@@ -43,6 +43,12 @@ def test_builds_one_profiled_production_smoke_run(tmp_path: Path) -> None:
     run = manifest["run"]
     assert run["resources"]["gpus_per_node"] == 2
     command = run["command"]
+    assert command[:4] == [
+        "torchrun",
+        "--standalone",
+        "--nproc-per-node=2",
+        "benchmarks/statevector_training_scaling.py",
+    ]
     assert "--profile" in command
     assert command[command.index("--n-wires") + 1] == "28"
     assert command[command.index("--workload") + 1] == "full-width-linear"
