@@ -71,32 +71,11 @@ or inspect the stable [`fq.ExecutionResult` contract](docs/reference/RUNTIME_RES
 
 ## Beyond single-chip capacity
 
-<p align="center">
-  <a href="benchmarks/results/comparison/statevector_training_science_35q_capacity_report_v12.json">
-    <img
-      src="assets/readme/capacity-expansion.png"
-      alt="A matched 35-qubit FlagQuantum workload requires a 256 GiB state allocation on one GPU but completes with the statevector amplitude-sharded across sixteen A800 GPUs"
-      width="1080"
-    >
-  </a>
-</p>
-
-A matched 35-qubit differentiable workload failed on one NVIDIA A800 while
-attempting a 256 GiB state allocation. FlagQuantum completed the full
-value-and-gradient step on sixteen A800 GPUs across two nodes:
-
-- one logical statevector was amplitude-sharded across ranks;
-- forward and backward execution remained sharded;
-- no rank materialized the full state;
-- the complete value-and-gradient step took 114.32 seconds;
-- peak allocated memory was 64.61 GiB per rank.
-
-This is measured development evidence for this exact workload, hardware, and
-software configuration—not a release-certified general scalability claim.
-Inspect the
-[machine-readable report](benchmarks/results/comparison/statevector_training_science_35q_capacity_report_v12.json)
-or [regenerate the figure](benchmarks/research/plot_readme_capacity_expansion.py)
-from the checked-in evidence.
+Distributed capacity and timing records are publishable here only when the
+machine-readable capability matrix binds the raw artifact hash, code version,
+recorded environment, exact scope, and maturity. See [Verified results](#verified-results)
+for the claims that currently pass that fail-closed contract. Other checked-in
+benchmark reports remain development records, not public performance claims.
 
 ## Why FlagQuantum
 
@@ -311,205 +290,37 @@ certified. See the [API reference](docs/reference/API.md) and
 
 ## What is ready today
 
+<!-- BEGIN GENERATED CAPABILITY_SUMMARY -->
 Maturity applies to each capability—not to the package as a whole.
 
 | Capability | Maturity | Current boundary |
 | --- | --- | --- |
-| Unified circuit API and FlagQuantum IR | `release_certified` | IR v1 changes require an explicit migration |
-| Local statevector training | `production_supported` | Capacity is bounded by one device |
-| Sharded statevector training | `production_supported` | Multi-node release certification still requires promoted evidence |
-| Sharded MPS training | `development_evidence` | Two independent two-node 16×A800 runs complete 131,072 sites at χ768 (1151.84 GiB logical state) in 373.80 s and 367.37 s with 72.41 GiB peak allocation/rank; all 16 ranks, 15 boundaries, error checks, and cleanup checks pass. The repeated artifact is sealed and records `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, which eliminates the preceding fragmentation OOM. Capacity multi-step soak, sealed fault-matrix, clean/signable source, and release evidence remain incomplete. |
-| Tensor-network training | `experimental` | General reverse contraction and production transport are not certified |
-| Cloud and quantum hardware deployment | `development_evidence` | No provider is release certified |
-| Dynamic circuits | `experimental` | Local and provider-preflight scope; no verified QPU execution |
-| Extension SDK | `experimental` | Compatibility is not yet guaranteed |
+| Unified circuit API and FlagQuantum IR | `release_certified` | IR v1; incompatible schema changes require an explicit migration. |
+| Local statevector simulation and training | `production_supported` | Capacity is bounded by one device; distributed capacity claims use the sharded capability. |
+| Sharded statevector training | `production_supported` | Multi-node release certification remains dependent on promoted audited hardware evidence. |
+| FlagOS local statevector CUDA reference | `development_evidence` | CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim. |
+| Differentiable and sharded MPS training | `development_evidence` | Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete. |
+| Tensor-network execution and training | `experimental` | General reverse contraction and production distributed transport are not certified. |
+| Exact and trajectory-based noisy simulation | `experimental` | Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback. |
+| Circuit packaging and cloud deployment | `development_evidence` | Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix. |
+| Dynamic circuits and IQM Braket preflight | `experimental` | Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified. |
+| Extension SDK | `experimental` | Extension compatibility is not guaranteed before stabilization. |
 
-The machine-validated [capability matrix](capability-maturity.toml) is the
-authority. The generated [capability catalog](docs/generated/CAPABILITIES.md)
-maps user goals to APIs, runtime modes, gradient support, evidence, examples,
-and known boundaries.
+The machine-validated [capability matrix](capability-maturity.toml) is the authority.
+The generated [capability catalog](docs/generated/CAPABILITIES.md) maps user goals
+to APIs, runtime modes, evidence, examples, and known boundaries.
+<!-- END GENERATED CAPABILITY_SUMMARY -->
 
 ## Verified results
 
-### 131,072-qubit distributed MPS capacity
+<!-- BEGIN GENERATED PERFORMANCE_CLAIMS -->
+Every value below is read from a hash-bound raw artifact. Missing or changed
+evidence makes the source-of-truth check fail closed.
 
-<p align="center">
-  <a href="benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json">
-    <img
-      src="assets/readme/mps-capacity-131072-scientific.png"
-      alt="FlagQuantum distributed MPS capacity at 131,072 qubits on sixteen NVIDIA A800 GPUs"
-      width="1080"
-    >
-  </a>
-</p>
-
-FlagQuantum completed independently repeated, batch-one training of a
-131,072-qubit complex64 MPS with χ=768 on two nodes and sixteen NVIDIA A800
-GPUs. The run represents 1.15 TiB of logical MPS tensors, keeps the state
-sharded across all sixteen ranks, and executes forward and reverse propagation
-across all fifteen rank boundaries. The sealed repeat completed in 367.37
-seconds with 72.41 GiB peak allocation per rank and cumulative discarded
-weight of 8.39e-6.
-
-This is a full-width MPS capacity workload with sparse all-rank and all-boundary
-gate coverage. It is an entanglement-limited MPS simulation, not an arbitrary
-131,072-qubit statevector simulation or a dense full-width circuit benchmark.
-
-The independently attributable workload is
-[`general_mps_capacity_131072.py`](benchmarks/internal/evidence/general_mps_capacity_131072.py).
-Its circuit deliberately activates every rank and every adjacent rank boundary:
-
-```python
-def workload(theta, phi):
-    circuit = fq.Circuit(131_072, device=theta.device)
-    for rank in range(16):
-        wire = (2 * rank + 1) * 131_072 // (2 * 16)
-        circuit.ry(wire, theta if rank % 2 == 0 else phi)
-    for index, left in enumerate(
-        (rank + 1) * 131_072 // 16 - 1 for rank in range(15)
-    ):
-        circuit.rxx(left, left + 1, phi if index % 2 == 0 else theta)
-    return circuit
-```
-
-#### Reproduce the 131,072-qubit capacity run
-
-Reproduction requires two nodes with eight 80 GiB NVIDIA A800 GPUs each, a
-synchronized checkout on both nodes, a working NCCL interface, PyTorch with
-CUDA support, and the FlagQuantum development environment. First create the
-matched single-GPU OOM baseline on node 0:
-
-```bash
-cd /path/to/FlagQuantum
-export PYTHONPATH="$PWD"
-export CUDA_VISIBLE_DEVICES=0
-
-torchrun --standalone --nproc-per-node=1 \
-  benchmarks/internal/evidence/general_mps_capacity_131072.py \
-  --output benchmarks/results/local/mps_capacity_131072q_chi768_1gpu_oom_raw.json
-```
-
-Then set the same rendezvous address, port, repository revision, and artifact
-layout on both nodes. Set `NODE_RANK=0` on the rendezvous host and
-`NODE_RANK=1` on the second host:
-
-```bash
-cd /path/to/FlagQuantum
-export PYTHONPATH="$PWD"
-export MASTER_ADDR=10.0.0.10       # reachable address of node 0
-export MASTER_PORT=29720
-export NODE_RANK=0                 # use 1 on the second node
-export NCCL_SOCKET_IFNAME=eth0     # replace with the cluster interface
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-unset CUDA_VISIBLE_DEVICES
-
-export RUN_DIR="$PWD/benchmarks/results/local/mps_capacity_131072_reproduction"
-mkdir -p "$RUN_DIR"
-export RAW_LOG="$RUN_DIR/rank${NODE_RANK}.log"
-export GPU_SAMPLES="$RUN_DIR/gpu_rank${NODE_RANK}.csv"
-export OUTPUT="$RUN_DIR/result.json"
-export BASELINE="$PWD/benchmarks/results/local/mps_capacity_131072q_chi768_1gpu_oom_raw.json"
-
-nvidia-smi \
-  --query-gpu=timestamp,index,power.draw,utilization.gpu,memory.used \
-  --format=csv -lms 100 > "$GPU_SAMPLES" &
-MONITOR_PID=$!
-
-torchrun \
-  --nnodes=2 \
-  --nproc-per-node=8 \
-  --node-rank="$NODE_RANK" \
-  --master-addr="$MASTER_ADDR" \
-  --master-port="$MASTER_PORT" \
-  benchmarks/internal/evidence/general_mps_capacity_131072.py \
-  --output "$OUTPUT" \
-  --single-gpu-artifact "$BASELINE" \
-  --raw-log "$RAW_LOG" \
-  --gpu-samples "$GPU_SAMPLES" \
-  > "$RAW_LOG" 2>&1
-RUN_STATUS=$?
-
-kill "$MONITOR_PID"
-wait "$MONITOR_PID" 2>/dev/null || true
-if [ "$RUN_STATUS" -ne 0 ]; then
-  exit "$RUN_STATUS"
-fi
-```
-
-After both launchers stop, run the following on node 0 to copy the evidence
-into sealed destinations, recompute hashes after collection has stopped,
-and validate the capacity and source-integrity contracts:
-
-```bash
-python benchmarks/internal/evidence/finalize_mps_capacity.py \
-  "$RUN_DIR/result.json" \
-  --output "$RUN_DIR/sealed.json" \
-  --single-gpu-destination "$RUN_DIR/single_gpu_oom.json" \
-  --raw-log-destination "$RUN_DIR/rank0_sealed.log" \
-  --gpu-samples-destination "$RUN_DIR/gpu_rank0_sealed.csv" \
-  --cuda-allocator-policy expandable_segments:True
-
-python - <<'PY'
-import json
-from pathlib import Path
-
-from flagquantum.testing.mps_capacity_certification import (
-    require_capacity_source_integrity,
-    require_general_mps_capacity,
-)
-
-artifact = Path(
-    "benchmarks/results/local/mps_capacity_131072_reproduction/sealed.json"
-)
-payload = json.loads(artifact.read_text())
-require_general_mps_capacity(payload)
-require_capacity_source_integrity(payload, base_dir=Path.cwd())
-print("131,072-qubit MPS capacity and source integrity: passed")
-PY
-```
-
-For an attributable reproduction, record `git rev-parse HEAD`, retain the
-sealed JSON/log/telemetry files together, and do not modify either workload
-source between execution and finalization. The checked-in sealed development
-artifact is
-[`mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json`](benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json).
-
-### Differentiable statevector strong scaling
-
-<p align="center">
-  <a href="benchmarks/results/statevector_mlsys_current/TECHNICAL_REPORT.md">
-    <img
-      src="assets/readme/statevector-scaling.png"
-      alt="Measured FlagQuantum differentiable statevector scaling from one to sixteen NVIDIA A800 GPUs"
-      width="1080"
-    >
-  </a>
-</p>
-
-On a matched 31-qubit, 248-parameter workload, complete value-and-gradient time
-decreased from 28.84 seconds on one NVIDIA A800 to 5.37 seconds on eight A800
-GPUs and 4.31 seconds on sixteen GPUs across two nodes. Forward and backward
-execution remained amplitude-sharded. These results are development evidence
-for the exact measured workload, not a general release-certified claim.
-
-### Matched external comparison
-
-<p align="center">
-  <a href="benchmarks/results/statevector_mlsys_current/TECHNICAL_REPORT.md">
-    <img
-      src="assets/readme/external-comparison.png"
-      alt="Matched FlagQuantum, PennyLane Lightning-GPU, and TorchQuantum-Dist value-and-full-gradient runtime"
-      width="1080"
-    >
-  </a>
-</p>
-
-The comparison uses the same fixed workload and measurement protocol. External
-measurements, variability, precision, warm-up, gradient method, and execution
-semantics are retained rather than normalized away. Read the
-[technical report](benchmarks/results/statevector_mlsys_current/TECHNICAL_REPORT.md)
-or inspect the
-[comparison plotting source](benchmarks/research/plot_readme_external_comparison.py).
+| Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |
+| --- | --- | --- | --- | --- |
+| **Sharded MPS exact-workload capacity**<br>`mps-capacity-131072-chi768-20260806` | `development_evidence`<br>One batch-one, complex64, χ768 MPS training step for the checked-in all-rank and all-boundary workload. This is not arbitrary statevector capacity, fixed-plan strong scaling, or release evidence. | **Sites:** 131,072<br>**Logical MPS state:** 1,236,780,012,864 bytes (1,151.84 GiB)<br>**Maximum elapsed time:** 367.37 s<br>**Maximum peak allocated memory per rank:** 77,745,407,488 bytes (72.41 GiB)<br>**Cumulative discarded weight:** 8.39e-06 | **Ranks:** 16<br>**Reported device memory per rank:** 85,093,777,408 bytes (79.25 GiB)<br>**CUDA allocator policy:** expandable_segments:True<br>**Topology fingerprint:** c74a91e3a224a4dd414cfbfbcb31da7570880d42e6aa4eaccecf4b85427940a5<br>**Metadata boundary:** The artifact records rank count, per-rank device memory, topology fingerprint, and CUDA allocator policy. It does not record the exact GPU model or Python, PyTorch, CUDA, NCCL, driver, host, and operating-system versions, so the claim is restricted to the recorded environment fields. | [raw JSON](benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json)<br>SHA-256 `efb0d34c741d1196a7f7c89404cbf033c655f14bf5d575470bbe605bb93b0cbc`<br>code `9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708` |
+<!-- END GENERATED PERFORMANCE_CLAIMS -->
 
 The stable benchmark interface records structured results:
 

@@ -153,7 +153,7 @@ Train low-entanglement quantum systems with local or rank-owned matrix product s
 - **Distribution semantics:** `sharded_across_ranks`
 - **Start:** [quick example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py)
 - **Documentation:** [guide](../../examples/distributed_mps/README.md)
-- **Known boundary:** Single-node and dual-node execution plus matched checkpoint/restart are validated. A sealed two-node 16×A800 capacity run completes 24,576 sites at χ768 with 215.84 GiB logical state after a matched one-A800 OOM; all 15 boundaries pass, discarded weight is 8.39e-6 under the 0.1 budget, and peak allocation is 26.92–27.24 GiB/rank. Matched eager/eager SGD and Adam 100-step soaks have zero measured live-memory growth and zero restart error. Boundary instructions still execute serially by owner, leaving non-owner GPUs in low-power NCCL wait; layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, clean/signable source, repeated evidence, and the release payload remain incomplete.
+- **Known boundary:** Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete.
 
 
 ## Deployment and extension
@@ -199,3 +199,13 @@ Add gates, transformations, runtime hooks, and providers through the experimenta
 - **Start:** [quick example](../../examples/extensions/reference_extensions.py)
 - **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
 - **Known boundary:** Extension compatibility is not guaranteed before stabilization.
+
+
+## Validated public performance claims
+
+Every value below is read from a hash-bound raw artifact. Missing or changed
+evidence makes the source-of-truth check fail closed.
+
+| Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |
+| --- | --- | --- | --- | --- |
+| **Sharded MPS exact-workload capacity**<br>`mps-capacity-131072-chi768-20260806` | `development_evidence`<br>One batch-one, complex64, χ768 MPS training step for the checked-in all-rank and all-boundary workload. This is not arbitrary statevector capacity, fixed-plan strong scaling, or release evidence. | **Sites:** 131,072<br>**Logical MPS state:** 1,236,780,012,864 bytes (1,151.84 GiB)<br>**Maximum elapsed time:** 367.37 s<br>**Maximum peak allocated memory per rank:** 77,745,407,488 bytes (72.41 GiB)<br>**Cumulative discarded weight:** 8.39e-06 | **Ranks:** 16<br>**Reported device memory per rank:** 85,093,777,408 bytes (79.25 GiB)<br>**CUDA allocator policy:** expandable_segments:True<br>**Topology fingerprint:** c74a91e3a224a4dd414cfbfbcb31da7570880d42e6aa4eaccecf4b85427940a5<br>**Metadata boundary:** The artifact records rank count, per-rank device memory, topology fingerprint, and CUDA allocator policy. It does not record the exact GPU model or Python, PyTorch, CUDA, NCCL, driver, host, and operating-system versions, so the claim is restricted to the recorded environment fields. | [raw JSON](../../benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json)<br>SHA-256 `efb0d34c741d1196a7f7c89404cbf033c655f14bf5d575470bbe605bb93b0cbc`<br>code `9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708` |

@@ -15,6 +15,19 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
+try:
+    from tools.check_capability_maturity import (
+        aggregate_claim_value,
+        claim_values,
+        maturity_errors,
+    )
+except (ImportError, ModuleNotFoundError):  # direct execution beside an older install
+    from check_capability_maturity import (  # type: ignore[no-redef]
+        aggregate_claim_value,
+        claim_values,
+        maturity_errors,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "docs/source_of_truth.json"
 API_REF = re.compile(r"\bfq\.([A-Za-z_]\w*)")
@@ -118,9 +131,161 @@ MATURITY_LABELS = {
     "release_certified": "Release certified",
 }
 
+GENERATED_REGION = re.compile(
+    r"(?P<begin><!-- BEGIN GENERATED (?P<name>[A-Z_]+) -->)\n.*?\n"
+    r"(?P<end><!-- END GENERATED (?P=name) -->)",
+    re.DOTALL,
+)
+
 
 def root_link(path: str, label: str) -> str:
     return f"[{label}](../../{path})"
+
+
+def format_claim_value(value: object, value_format: str) -> str:
+    if value_format == "integer":
+        return f"{int(value):,}"
+    if value_format == "bytes":
+        byte_count = int(value)
+        if byte_count >= 1024**3:
+            return f"{byte_count:,} bytes ({byte_count / 1024**3:,.2f} GiB)"
+        if byte_count >= 1024**2:
+            return f"{byte_count:,} bytes ({byte_count / 1024**2:,.2f} MiB)"
+        return f"{byte_count:,} bytes"
+    if value_format == "seconds":
+        return f"{float(value):,.2f} s"
+    if value_format == "scientific":
+        return f"{float(value):.2e}"
+    if value_format == "boolean":
+        return "true" if value else "false"
+    return str(value)
+
+
+def claim_measurements(claim: dict[str, object], payload: object, field: str) -> str:
+    rendered: list[str] = []
+    measurements = claim[field]
+    assert isinstance(measurements, list)
+    for measurement in measurements:
+        assert isinstance(measurement, dict)
+        values = claim_values(payload, str(measurement["selector"]))
+        value = aggregate_claim_value(
+            values, str(measurement.get("aggregate", "single"))
+        )
+        formatted = format_claim_value(value, str(measurement["format"]))
+        rendered.append(f"**{measurement['label']}:** {formatted}")
+    return "<br>".join(rendered).replace("|", "\\|")
+
+
+def performance_claims(
+    data: dict[str, object],
+) -> list[tuple[dict[str, object], dict[str, object], object]]:
+    result: list[tuple[dict[str, object], dict[str, object], object]] = []
+    capabilities = data["capabilities"]
+    assert isinstance(capabilities, dict)
+    for capability in capabilities.values():
+        assert isinstance(capability, dict)
+        for claim in capability.get("performance_claims", []):
+            assert isinstance(claim, dict)
+            artifact = ROOT / str(claim["artifact"])
+            result.append((capability, claim, load(artifact)))
+    return result
+
+
+def render_performance_claims(data: dict[str, object], link_prefix: str) -> str:
+    rows = [
+        "| Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for capability, claim, payload in performance_claims(data):
+        artifact = str(claim["artifact"])
+        evidence = (
+            f"[raw JSON]({link_prefix}{artifact})<br>"
+            f"SHA-256 `{claim['artifact_sha256']}`<br>"
+            f"code `{claim['code_version']}`"
+        )
+        scope = f"`{claim['maturity']}`<br>{claim['scope']}".replace("|", "\\|")
+        environment = (
+            claim_measurements(claim, payload, "environment")
+            + f"<br>**Metadata boundary:** {claim['environment_limitations']}"
+        ).replace("|", "\\|")
+        rows.append(
+            f"| **{claim['title']}**<br>`{claim['id']}` | {scope} | "
+            f"{claim_measurements(claim, payload, 'metrics')} | {environment} | {evidence} |"
+        )
+    if len(rows) == 2:
+        rows.append("| No publishable performance claim | — | — | — | — |")
+    return "\n".join(rows)
+
+
+def render_readme_summary(data: dict[str, object]) -> str:
+    capabilities = data["capabilities"]
+    assert isinstance(capabilities, dict)
+    rows = [
+        "Maturity applies to each capability—not to the package as a whole.",
+        "",
+        "| Capability | Maturity | Current boundary |",
+        "| --- | --- | --- |",
+    ]
+    for capability in capabilities.values():
+        assert isinstance(capability, dict)
+        boundary = str(capability["limitations"]).replace("|", "\\|")
+        rows.append(
+            f"| {capability['title']} | `{capability['level']}` | {boundary} |"
+        )
+    rows.extend(
+        [
+            "",
+            "The machine-validated [capability matrix](capability-maturity.toml) is the authority.",
+            "The generated [capability catalog](docs/generated/CAPABILITIES.md) maps user goals",
+            "to APIs, runtime modes, evidence, examples, and known boundaries.",
+        ]
+    )
+    return "\n".join(rows)
+
+
+def render_known_limitations(data: dict[str, object]) -> str:
+    capabilities = data["capabilities"]
+    assert isinstance(capabilities, dict)
+    rows = [
+        "# Known limitations",
+        "",
+        "Do not edit this generated region. Capability boundaries come from",
+        "[`capability-maturity.toml`](../../capability-maturity.toml).",
+        "",
+        "| Capability | Current level | Limitation |",
+        "| --- | --- | --- |",
+    ]
+    for capability in capabilities.values():
+        assert isinstance(capability, dict)
+        limitation = str(capability["limitations"]).replace("|", "\\|")
+        rows.append(
+            f"| {capability['title']} | `{capability['level']}` | {limitation} |"
+        )
+    rows.extend(
+        [
+            "",
+            "## Validated public performance claims",
+            "",
+            render_performance_claims(data, "../../"),
+            "",
+            "These statements are support boundaries, not a development backlog. Promotion",
+            "requires all evidence for the target level to pass",
+            "`python tools/check_capability_maturity.py`.",
+        ]
+    )
+    return "\n".join(rows)
+
+
+def replace_generated_region(
+    path: Path, name: str, body: str, source: str | None = None
+) -> str:
+    text = path.read_text(encoding="utf-8") if source is None else source
+    matches = [match for match in GENERATED_REGION.finditer(text) if match.group("name") == name]
+    if len(matches) != 1:
+        raise ValueError(f"{path.relative_to(ROOT)}: expected one generated region {name}")
+    match = matches[0]
+    replacement = f"{match.group('begin')}\n{body.rstrip()}\n{match.group('end')}"
+    return text[: match.start()] + replacement + text[match.end() :]
 
 
 def render_capabilities(data: dict[str, object]) -> str:
@@ -187,6 +352,17 @@ def render_capabilities(data: dict[str, object]) -> str:
                     "",
                 ]
             )
+    sections.extend(
+        [
+            "",
+            "## Validated public performance claims",
+            "",
+            "Every value below is read from a hash-bound raw artifact. Missing or changed",
+            "evidence makes the source-of-truth check fail closed.",
+            "",
+            render_performance_claims(data, "../../"),
+        ]
+    )
     return "\n".join(sections).rstrip() + "\n"
 
 
@@ -201,10 +377,30 @@ def generated() -> dict[Path, str]:
     assert isinstance(ops, dict)
     maturity_path = ROOT / str(auth["capability_maturity"])
     maturity = tomllib.loads(maturity_path.read_text(encoding="utf-8"))
+    errors = maturity_errors(maturity, ROOT)
+    if errors:
+        raise ValueError("invalid capability maturity matrix:\n- " + "\n- ".join(errors))
+    readme = replace_generated_region(
+        ROOT / "README.md", "CAPABILITY_SUMMARY", render_readme_summary(maturity)
+    )
+    readme_claims = (
+        "Every value below is read from a hash-bound raw artifact. Missing or changed\n"
+        "evidence makes the source-of-truth check fail closed.\n\n"
+        + render_performance_claims(maturity, "")
+    )
+    readme = replace_generated_region(
+        ROOT / "README.md", "PERFORMANCE_CLAIMS", readme_claims, source=readme
+    )
     return {
         ROOT / "docs/generated/STABLE_API.md": render_api(api),
         ROOT / "docs/generated/OPERATOR_CAPABILITIES.md": render_operators(ops),
         ROOT / "docs/generated/CAPABILITIES.md": render_capabilities(maturity),
+        ROOT / "README.md": readme,
+        ROOT / "docs/reference/KNOWN_LIMITATIONS.md": replace_generated_region(
+            ROOT / "docs/reference/KNOWN_LIMITATIONS.md",
+            "KNOWN_LIMITATIONS",
+            render_known_limitations(maturity),
+        ),
     }
 
 

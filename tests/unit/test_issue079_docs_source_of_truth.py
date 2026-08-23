@@ -70,6 +70,30 @@ def test_generated_capability_catalog_supports_goal_based_discovery():
     assert "../../examples/" in rendered
 
 
+def test_readme_and_known_limitations_are_generated_from_capability_matrix():
+    expected = DOCS.generated()
+    for relative in ("README.md", "docs/reference/KNOWN_LIMITATIONS.md"):
+        path = ROOT / relative
+        assert path in expected
+        assert path.read_text(encoding="utf-8") == expected[path]
+    assert "mps-capacity-131072-chi768-20260806" in expected[ROOT / "README.md"]
+    assert "code `9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708`" in expected[
+        ROOT / "docs/reference/KNOWN_LIMITATIONS.md"
+    ]
+
+
+def test_generated_region_replacement_exposes_manual_edits(tmp_path):
+    document = tmp_path / "document.md"
+    document.write_text(
+        "before\n<!-- BEGIN GENERATED TEST -->\nmanual edit\n"
+        "<!-- END GENERATED TEST -->\nafter\n",
+        encoding="utf-8",
+    )
+    expected = DOCS.replace_generated_region(document, "TEST", "authoritative")
+    assert "manual edit" not in expected
+    assert expected != document.read_text(encoding="utf-8")
+
+
 def test_stable_document_example_executes():
     circuit = fq.Circuit(2)
     circuit.h(0)

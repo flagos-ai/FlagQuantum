@@ -1,5 +1,12 @@
 # MPS Top-Tier Roadmap
 
+> **Authority boundary:** This file is a dated engineering history and future
+> plan, not the current public capability or performance authority. Historical
+> measurements below retain their original workload and evidence context and
+> must not be combined into a current claim. Current public MPS claims are
+> generated from [`capability-maturity.toml`](../../capability-maturity.toml);
+> if wording or numbers differ, the generated claim is authoritative.
+
 ## Purpose
 
 This document is the execution plan for moving FlagQuantum MPS from

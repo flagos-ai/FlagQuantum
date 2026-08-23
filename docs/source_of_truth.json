@@ -15,7 +15,9 @@
   "generated": {
     "docs/generated/STABLE_API.md": "stable_api",
     "docs/generated/OPERATOR_CAPABILITIES.md": "operator_capability",
-    "docs/generated/CAPABILITIES.md": "capability_maturity"
+    "docs/generated/CAPABILITIES.md": "capability_maturity",
+    "docs/reference/KNOWN_LIMITATIONS.md": "capability_maturity",
+    "README.md": "capability_maturity"
   },
   "stable_documents": [
     "README.md",

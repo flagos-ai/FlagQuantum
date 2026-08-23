@@ -1,4 +1,4 @@
-schema = "flagquantum_capability_maturity_v1"
+schema = "flagquantum_capability_maturity_v2"
 
 [levels.experimental]
 rank = 0
@@ -114,9 +114,77 @@ quick_start = "examples/distributed_mps/variable_bond_capacity_8gpu.py"
 documentation = "examples/distributed_mps/README.md"
 level = "development_evidence"
 owner = "MPS maintainers"
-limitations = "Single-node and dual-node execution plus matched checkpoint/restart are validated. A sealed two-node 16×A800 capacity run completes 24,576 sites at χ768 with 215.84 GiB logical state after a matched one-A800 OOM; all 15 boundaries pass, discarded weight is 8.39e-6 under the 0.1 budget, and peak allocation is 26.92–27.24 GiB/rank. Matched eager/eager SGD and Adam 100-step soaks have zero measured live-memory growth and zero restart error. Boundary instructions still execute serially by owner, leaving non-owner GPUs in low-power NCCL wait; layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, clean/signable source, repeated evidence, and the release payload remain incomplete."
+limitations = "Single-node and dual-node execution plus matched checkpoint/restart have development evidence. The only public capacity measurement is emitted from the validated claim below; it is one exact-workload result, not general scalability or release evidence. Boundary instructions still execute serially by owner, and layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, repeated evidence, and the release payload remain incomplete."
 focused_tests = "tests/unit/test_issue052_mps_training.py"
-development_artifact = "benchmarks/results/local/mps_single_node_certification.json"
+development_artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
+
+[[capabilities.sharded_mps_training.performance_claims]]
+id = "mps-capacity-131072-chi768-20260806"
+title = "Sharded MPS exact-workload capacity"
+artifact = "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json"
+artifact_sha256 = "efb0d34c741d1196a7f7c89404cbf033c655f14bf5d575470bbe605bb93b0cbc"
+code_version = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
+maturity = "development_evidence"
+scope = "One batch-one, complex64, χ768 MPS training step for the checked-in all-rank and all-boundary workload. This is not arbitrary statevector capacity, fixed-plan strong scaling, or release evidence."
+environment_limitations = "The artifact records rank count, per-rank device memory, topology fingerprint, and CUDA allocator policy. It does not record the exact GPU model or Python, PyTorch, CUDA, NCCL, driver, host, and operating-system versions, so the claim is restricted to the recorded environment fields."
+
+[capabilities.sharded_mps_training.performance_claims.evidence_checks]
+schema = "flagquantum.issue092.general_mps_capacity.v1"
+distribution_semantics = "sharded_across_ranks"
+world_size = 16
+source_integrity_finalized = true
+single_gpu_capacity_failure = true
+scalability_claim_allowed = false
+release_gate_allowed = false
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Sites"
+selector = "n_sites"
+format = "integer"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Logical MPS state"
+selector = "logical_mps_bytes"
+format = "bytes"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Maximum elapsed time"
+selector = "rank_records[].elapsed_seconds"
+aggregate = "max"
+format = "seconds"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Maximum peak allocated memory per rank"
+selector = "rank_records[].peak_memory_bytes"
+aggregate = "max"
+format = "bytes"
+
+[[capabilities.sharded_mps_training.performance_claims.metrics]]
+label = "Cumulative discarded weight"
+selector = "discarded_weight"
+format = "scientific"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "Ranks"
+selector = "rank_records[].rank"
+aggregate = "count"
+format = "integer"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "Reported device memory per rank"
+selector = "rank_records[].device_total_memory_bytes"
+aggregate = "unique"
+format = "bytes"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "CUDA allocator policy"
+selector = "cuda_allocator_policy"
+format = "string"
+
+[[capabilities.sharded_mps_training.performance_claims.environment]]
+label = "Topology fingerprint"
+selector = "topology_fingerprint"
+format = "string"
 
 [capabilities.tensor_network_training]
 title = "Tensor-network execution and training"
