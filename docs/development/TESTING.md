@@ -233,7 +233,7 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` maps this policy to four required CPU jobs:
+The checked-in `ci.yml` maps this policy to five primary CPU jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, plus
   dependency-policy synchronization, architecture-boundary, generated-document,
@@ -243,6 +243,8 @@ The checked-in `ci.yml` maps this policy to four required CPU jobs:
   only, including proof that importing and differentiating a native circuit
   does not import JAX;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
+- `qiskit-optional`: real Qiskit IR round trips and local Aer compatibility,
+  isolated from the core environment;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
   commit/environment/checksum manifest.
 

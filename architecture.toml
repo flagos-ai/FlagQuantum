@@ -19,6 +19,11 @@ direct_cuda_allowed = [
     "flagquantum/runtime/platforms/pytorch.py",
 ]
 
+[interop_boundaries]
+qiskit_import_allowed_prefixes = [
+    "flagquantum/interop/qiskit/",
+]
+
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/algorithms/optimization.py" = 6
 "flagquantum/benchmarking/statevector_local.py" = 7

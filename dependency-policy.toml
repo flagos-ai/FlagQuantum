@@ -43,6 +43,7 @@ core_forbidden_imports = ["braket", "datasets", "jax", "jaxlib", "matplotlib", "
 [tested]
 torch = ["2.5", "2.13"]
 jax = ["0.10"]
+qiskit = ["2.5"]
 
 [updates]
 cadence = "monthly"

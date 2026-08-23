@@ -13,6 +13,12 @@ adapters; it is not part of the historical `all` development/runtime bundle.
 Installing core FlagQuantum therefore never installs an external quantum
 framework.
 
+External framework imports are also namespace-governed. Qiskit imports belong
+only under `flagquantum.interop.qiskit`; the architecture check rejects direct
+Qiskit dependencies in core IR, compilers, runtimes, kernels, and distributed
+workers. Existing experimental Aer entry points are compatibility wrappers over
+that adapter.
+
 Torch-FL is different from an interop SDK: it owns the FlagOS platform and
 vendor-runtime boundary. It is deliberately recorded as
 `managed_outside_flagquantum`, may not appear in core dependencies or a

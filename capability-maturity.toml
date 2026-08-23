@@ -255,6 +255,23 @@ limitations = "Provider support and credential/runtime behavior vary; no provide
 focused_tests = "tests/test_deployment.py"
 development_artifact = "flagquantum/deployment"
 
+[capabilities.qiskit_interop]
+title = "Qiskit IR interoperability"
+summary = "Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter."
+category = "deployment_and_extension"
+user_goals = ["Import a supported Qiskit circuit", "Export FlagQuantum IR to Qiskit", "Audit semantic loss at a framework boundary"]
+public_apis = ["experimental.from_qiskit", "experimental.to_qiskit"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "symbolic_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Validated with Qiskit 2.5.2 and Aer 0.17.2. Qiskit control flow and arbitrary ParameterExpression import are rejected; named or multiple registers require explicit lossy flattening; custom multi-qubit unitary matrices remain blocked until basis ordering is specified. Conversion does not make Qiskit a runtime dependency or certify any provider hardware."
+focused_tests = "tests/test_qiskit_interop.py"
+
 [capabilities.dynamic_circuits]
 title = "Dynamic circuits and IQM Braket preflight"
 summary = "Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with fail-closed hardware preflight."

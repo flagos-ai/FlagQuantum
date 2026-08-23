@@ -91,6 +91,11 @@ jobs:
       - run: python tools/ci_tier.py pr-runtime
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
+      - name: Prove external quantum frameworks are absent from core
+        run: >-
+          python -c "import importlib.util;
+          assert all(importlib.util.find_spec(name) is None
+          for name in ('qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
       - name: Prove native distributed runtime does not require JAX
@@ -107,6 +112,25 @@ jobs:
       - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
+
+  qiskit-optional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e '.[dev,qiskit]'
+      - name: Verify Qiskit IR conversion and Aer compatibility
+        run: python -m pytest -m qiskit -q
+      - name: Prove the stable root still does not import Qiskit
+        run: >-
+          python -c "import sys, flagquantum;
+          assert not any(name == 'qiskit' or name.startswith('qiskit.')
+          or name == 'qiskit_aer' or name.startswith('qiskit_aer.')
+          for name in sys.modules)"
 
   dependency-bounds:
     runs-on: ubuntu-latest
@@ -150,7 +174,7 @@ jobs:
           /tmp/fq-wheel/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-wheel/bin/python -m pip install dist/*.whl
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
-          /tmp/fq-wheel/bin/python -c "import importlib.util; assert importlib.util.find_spec('jax') is None; assert importlib.util.find_spec('datasets') is None; assert importlib.util.find_spec('transformers') is None; assert importlib.util.find_spec('matplotlib') is None"
+          /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
           rm -rf /tmp/fq-wheel
       - name: Clean-install sdist and run quick start
         run: |

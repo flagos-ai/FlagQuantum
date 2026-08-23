@@ -47,6 +47,8 @@ __all__ = (
     "run_dynamic_conformance",
     "run_qiskit_aer_dynamic",
     "run_qiskit_aer_qasm3_round_trip",
+    "from_qiskit",
+    "to_qiskit",
     "TEBDResult",
     "run_tebd",
 )
@@ -100,6 +102,11 @@ def __getattr__(name: str) -> Any:
         "route_dynamic_circuit",
     }:
         return getattr(import_module("flagquantum.runtime.dynamic"), name)
+    if name in {
+        "from_qiskit",
+        "to_qiskit",
+    }:
+        return getattr(import_module("flagquantum.interop.qiskit"), name)
     if name in {
         "DynamicFeatureSet",
         "DynamicFeatureReport",

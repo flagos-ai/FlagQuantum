@@ -46,6 +46,9 @@ This catalog is generated from the machine-validated
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
+| Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Prototype mid-circuit measurement and feed-forward | Dynamic circuits and IQM Braket preflight | Experimental | [Run example](../../examples/braket_iqm_dynamic_preflight.py) |
 | Export dynamic OpenQASM 3 | Dynamic circuits and IQM Braket preflight | Experimental | [Run example](../../examples/braket_iqm_dynamic_preflight.py) |
 | Preflight an IQM Braket task without submitting it | Dynamic circuits and IQM Braket preflight | Experimental | [Run example](../../examples/braket_iqm_dynamic_preflight.py) |
@@ -188,6 +191,20 @@ Package trained circuits, export provider formats, and route them through deploy
 - **Start:** [quick example](../../examples/train_parameterized_circuit_then_deploy.py)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix.
+
+### Qiskit IR interoperability
+
+Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental.from_qiskit`, `fq.experimental.to_qiskit`
+- **Runtime modes:** `control_plane_conversion`
+- **Hardware:** `cpu_control_plane`
+- **Gradient support:** `symbolic_parameters_only`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/reference/API.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
+- **Known boundary:** Validated with Qiskit 2.5.2 and Aer 0.17.2. Qiskit control flow and arbitrary ParameterExpression import are rejected; named or multiple registers require explicit lossy flattening; custom multi-qubit unitary matrices remain blocked until basis ordering is specified. Conversion does not make Qiskit a runtime dependency or certify any provider hardware.
 
 ### Dynamic circuits and IQM Braket preflight
 

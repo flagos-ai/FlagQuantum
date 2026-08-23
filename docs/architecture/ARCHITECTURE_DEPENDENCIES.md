@@ -17,6 +17,8 @@ flowchart TD
     JAX --> IR
     Measure[Measurements] --> IR
     Deploy --> IR
+    Qiskit[Optional Qiskit control plane] --> Interop[Interop adapters]
+    Interop --> IR
     Collector[Backend collectors] --> Evidence[Evidence schemas]
     Audit[Audit and release policy] --> Evidence
 ```
@@ -45,6 +47,7 @@ Every exception names an owner and removal version. Run
 | Optional kernels | backend adapters behind `flagquantum.runtime.backends` |
 | Measurements | `flagquantum.measurement` |
 | Deployment/providers | `flagquantum.deployment` |
+| External framework conversion | `flagquantum.interop.<framework>` |
 | Evidence and audit policy | `flagquantum.runtime.audit` |
 
 `flagquantum.runtime` is the sole runtime implementation namespace. New
@@ -54,3 +57,8 @@ backend, distributed, and audit subpackages.
 The circuit implementation lives at `flagquantum.circuit`; `flagquantum.core`
 contains backend-neutral IR, operator schemas, parameters, configuration, and
 versioned contracts only.
+
+External framework objects stop at `flagquantum.interop`. The Qiskit adapter
+converts to or from versioned FlagQuantum IR, reports semantic loss explicitly,
+and loads Qiskit only when an adapter function is called. Runtime kernels,
+distributed worker contracts, CUDA, and FlagOS never receive Qiskit objects.

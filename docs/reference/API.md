@@ -264,6 +264,27 @@ pytest -m qiskit
 pytest -m braket
 ```
 
+### Qiskit IR interoperability
+
+Qiskit is an optional control-plane adapter, not a FlagQuantum runtime
+dependency. Install it with `pip install 'flagquantum[qiskit]'`, then convert at
+the versioned IR boundary:
+
+```python
+from flagquantum.interop.qiskit import from_qiskit, to_qiskit
+
+ir = from_qiskit(qiskit_circuit)
+round_trip = to_qiskit(ir)
+```
+
+Both directions fail closed when an operation, control-flow construct, or
+parameter expression cannot be represented losslessly. Use `import_qiskit()`
+or `export_qiskit()` to receive the converted object together with a
+machine-readable `QiskitConversionReport`. `allow_lossy=True` must be explicit
+and records every skipped operation; it is intended for inspection, not silent
+execution fallback. Importing `flagquantum` or `flagquantum.interop.qiskit`
+does not import Qiskit.
+
 The implementation is partitioned under `flagquantum.runtime.dynamic` into
 `circuit`, `result`, `execution`, `routing`, `deployment`, and `dialects`
 boundaries. Existing `fq.experimental` names and the

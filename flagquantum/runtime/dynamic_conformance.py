@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Callable
 
 import torch
 
@@ -163,79 +163,11 @@ def run_qiskit_aer_dynamic(
     shots: int,
     seed: int | None = None,
 ) -> DynamicExecutionResult:
-    """Execute a dynamic circuit on local Qiskit Aer without cloud credentials."""
+    """Compatibility wrapper for the isolated Qiskit Aer adapter."""
 
-    try:
-        from qiskit import QuantumCircuit
-        from qiskit_aer import AerSimulator
-    except ImportError as exc:
-        raise ImportError(
-            "Qiskit Aer execution requires the 'qiskit' optional dependency"
-        ) from exc
+    from ..interop.qiskit.execution import run_qiskit_aer_dynamic as execute
 
-    width = _classical_width(circuit)
-    qc = QuantumCircuit(circuit.n_wires, width + circuit.n_wires)
-
-    def apply(instruction: Any) -> None:
-        method = getattr(qc, instruction.name, None)
-        if method is None:
-            raise ValueError(
-                f"Qiskit Aer dynamic gate is unsupported: {instruction.name}"
-            )
-        params = tuple(instruction.params.values())
-        method(*params, *instruction.wires)
-
-    for instruction in circuit._instructions:
-        conditions = _instruction_conditions(instruction)
-        if instruction.name == "measure":
-            qc.measure(
-                instruction.wires[0],
-                int(instruction.metadata["classical_bit"]),
-            )
-        elif instruction.name == "reset":
-            qc.reset(instruction.wires[0])
-        elif conditions:
-            if len(conditions) != 1:
-                raise ValueError(
-                    "Qiskit Aer adapter currently requires one condition bit"
-                )
-            bit, expected = conditions[0]
-            with qc.if_test((qc.clbits[bit], bool(expected))):
-                apply(instruction)
-        else:
-            apply(instruction)
-    for wire in range(circuit.n_wires):
-        qc.measure(wire, width + wire)
-
-    memory = (
-        AerSimulator()
-        .run(
-            qc,
-            shots=int(shots),
-            memory=True,
-            seed_simulator=seed,
-        )
-        .result()
-        .get_memory(qc)
-    )
-    rows = [[int(char) for char in item.replace(" ", "")[::-1]] for item in memory]
-    classical = torch.tensor(
-        [row[:width] for row in rows],
-        dtype=torch.int64,
-    )
-    samples = torch.tensor(
-        [row[width : width + circuit.n_wires] for row in rows],
-        dtype=torch.int64,
-    )
-    return DynamicExecutionResult(
-        samples=samples,
-        classical_bits=classical,
-        final_states=torch.empty(0),
-        shots=int(shots),
-        seed=seed,
-        execution_semantics="qiskit_aer_dynamic_shots",
-        provider_metadata={"provider": "qiskit-aer", "transport": "python_circuit"},
-    )
+    return execute(circuit, shots=shots, seed=seed)
 
 
 def run_qiskit_aer_qasm3_round_trip(
@@ -244,54 +176,13 @@ def run_qiskit_aer_qasm3_round_trip(
     shots: int,
     seed: int | None = None,
 ) -> DynamicExecutionResult:
-    """Export OpenQASM 3, import it with Qiskit, then execute it on Aer."""
+    """Compatibility wrapper for the isolated Qiskit QASM 3 adapter."""
 
-    try:
-        from qiskit import ClassicalRegister, qasm3
-        from qiskit_aer import AerSimulator
-    except ImportError as exc:
-        raise ImportError(
-            "QASM 3 round-trip requires the 'qiskit' optional dependency"
-        ) from exc
-    from .dynamic import export_dynamic_qasm3
+    from ..interop.qiskit.execution import (
+        run_qiskit_aer_qasm3_round_trip as execute,
+    )
 
-    source = export_dynamic_qasm3(circuit)
-    qc = qasm3.loads(source)
-    width = _classical_width(circuit)
-    final = ClassicalRegister(circuit.n_wires, "final")
-    qc.add_register(final)
-    for wire in range(circuit.n_wires):
-        qc.measure(wire, final[wire])
-    memory = (
-        AerSimulator()
-        .run(
-            qc,
-            shots=int(shots),
-            memory=True,
-            seed_simulator=seed,
-        )
-        .result()
-        .get_memory(qc)
-    )
-    rows = [[int(char) for char in item.replace(" ", "")[::-1]] for item in memory]
-    classical = torch.tensor([row[:width] for row in rows], dtype=torch.int64)
-    samples = torch.tensor(
-        [row[width : width + circuit.n_wires] for row in rows],
-        dtype=torch.int64,
-    )
-    return DynamicExecutionResult(
-        samples=samples,
-        classical_bits=classical,
-        final_states=torch.empty(0),
-        shots=int(shots),
-        seed=seed,
-        execution_semantics="qiskit_aer_openqasm3_round_trip",
-        provider_metadata={
-            "provider": "qiskit-aer",
-            "transport": "openqasm3",
-            "qasm": source,
-        },
-    )
+    return execute(circuit, shots=shots, seed=seed)
 
 
 __all__ = (

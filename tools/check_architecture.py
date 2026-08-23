@@ -51,6 +51,10 @@ def architecture_errors() -> tuple[str, ...]:
     default_ceiling = int(boundaries["default_module_line_ceiling"])
     root_ceiling = int(boundaries["root_init_line_ceiling"])
     accelerator_boundaries = CONFIG.get("accelerator_boundaries", {})
+    interop_boundaries = CONFIG.get("interop_boundaries", {})
+    qiskit_import_allowed_prefixes = tuple(
+        interop_boundaries.get("qiskit_import_allowed_prefixes", ())
+    )
     direct_cuda_allowed = set(accelerator_boundaries.get("direct_cuda_allowed", ()))
     direct_cuda_call_ceiling = {
         str(path): int(count)
@@ -109,6 +113,16 @@ def architecture_errors() -> tuple[str, ...]:
             ) and relative not in torch_fl_import_allowed:
                 errors.append(
                     f"{relative}: torch_fl imports are isolated to the FlagOS adapter"
+                )
+            if (
+                module == "qiskit"
+                or module.startswith("qiskit.")
+                or module == "qiskit_aer"
+                or module.startswith("qiskit_aer.")
+            ) and not relative.startswith(qiskit_import_allowed_prefixes):
+                errors.append(
+                    f"{relative}: Qiskit imports are isolated to "
+                    "flagquantum.interop.qiskit"
                 )
         for subsystem_name, policy in legacy_subsystems.items():
             allowed_importers = set(policy.get("allowed_importers", ()))
