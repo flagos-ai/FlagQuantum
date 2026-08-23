@@ -22,6 +22,7 @@ from .circuit_statevector import (
     _apply_matrix,
     _apply_rx_rz_loop,
     _apply_single_qubit_fixed,
+    _batched_rotation_sequence_matrices,
     _batched_rx_ry_rz_matrices,
     _bits_from_indices,
     _canonical_name,
@@ -51,6 +52,7 @@ from .core.parameters import (
 )
 from .core.runtime_config import RuntimeConfig, get_runtime_config, runtime_config
 from .ops.matrices import GATE_MAT_DICT
+from .ops.complex_ops import complex_conj, complex_mul
 
 
 class Circuit:
@@ -108,6 +110,9 @@ class Circuit:
         ] = {}
         self._statevector_fused_matrices: dict[
             tuple[int, str, torch.dtype, int], torch.Tensor
+        ] = {}
+        self._statevector_z_signs: dict[
+            tuple[tuple[int, ...], str, torch.dtype], torch.Tensor
         ] = {}
         self._inputs = inputs
         self.circuit_param = {
@@ -502,6 +507,53 @@ class Circuit:
             self._last_statevector_runtime["batched_rx_ry_rz_regions"] = len(
                 batched_rx_ry_rz_matrices
             )
+            batched_rotation_matrices: dict[int, torch.Tensor] = {}
+            rotation_patterns = {
+                tuple(item.name for item in step.instructions)
+                for step in program
+                if isinstance(step, _StatevectorFusedGateStep)
+                and len(step.instructions) >= 2
+                and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
+            }
+            for names in rotation_patterns:
+                rotation_steps = tuple(
+                    step
+                    for step in program
+                    if isinstance(step, _StatevectorFusedGateStep)
+                    and tuple(item.name for item in step.instructions) == names
+                )
+                region_angles = []
+                for step in rotation_steps:
+                    parameters = tuple(
+                        self._statevector_gate_parameters(
+                            instruction, state, parameter_bindings
+                        )
+                        for instruction in step.instructions
+                    )
+                    if any(parameter is None for parameter in parameters):
+                        region_angles = []
+                        break
+                    region_angles.append(
+                        torch.stack(
+                            tuple(parameter[:, 0] for parameter in parameters),
+                            dim=-1,
+                        )
+                    )
+                if region_angles:
+                    matrices = _batched_rotation_sequence_matrices(
+                        torch.stack(region_angles, dim=0),
+                        names=names,
+                        dtype=state.dtype,
+                    )
+                    batched_rotation_matrices.update(
+                        {
+                            id(step): matrices[index]
+                            for index, step in enumerate(rotation_steps)
+                        }
+                    )
+            self._last_statevector_runtime["batched_rotation_sequence_regions"] = len(
+                batched_rotation_matrices
+            )
             for step in program:
                 if isinstance(step, _StatevectorCXSequenceStep):
                     if state.is_cuda and state.dtype == torch.complex64:
@@ -596,7 +648,9 @@ class Circuit:
                             "triton_single_qubit_matrix_regions"
                         ] += 1
                         continue
-                    matrix = batched_rx_ry_rz_matrices.get(id(step))
+                    matrix = batched_rotation_matrices.get(id(step))
+                    if matrix is None:
+                        matrix = batched_rx_ry_rz_matrices.get(id(step))
                     if matrix is None:
                         matrix = _fused_gate_matrix(
                             step,
@@ -676,12 +730,12 @@ class Circuit:
     probability = probabilities
 
     def density_matrix(self) -> torch.Tensor:
-        from .simulation.noise import density_matrix
+        from .runtime.backends.density_matrix import density_matrix
 
         return density_matrix(self)
 
     def noisy_density_matrix(self, noise_model=None) -> torch.Tensor:
-        from .simulation.noise import noisy_density_matrix
+        from .runtime.backends.density_matrix import noisy_density_matrix
 
         return noisy_density_matrix(self, noise_model)
 
@@ -753,15 +807,21 @@ class Circuit:
         if wires is None:
             wires = range(self.n_wires)
         wires = _normalize_wires(wires)
-        probs = self.probabilities().reshape((self.bsz,) + (2,) * self.n_wires)
-        values = []
-        for wire in wires:
-            axes = tuple(
-                axis for axis in range(1, self.n_wires + 1) if axis != wire + 1
+        probs = self.probabilities()
+        key = (wires, str(probs.device), probs.dtype)
+        signs = self._statevector_z_signs.get(key)
+        if signs is None:
+            basis = torch.arange(
+                probs.shape[-1], dtype=torch.int64, device=probs.device
             )
-            marginal = probs.sum(dim=axes) if axes else probs
-            values.append(marginal[:, 0] - marginal[:, 1])
-        return torch.stack(values, dim=-1)
+            signs = torch.stack(
+                tuple(
+                    1 - 2 * ((basis >> (self.n_wires - 1 - wire)) & 1) for wire in wires
+                ),
+                dim=-1,
+            ).to(dtype=probs.dtype)
+            self._statevector_z_signs[key] = signs
+        return probs @ signs
 
     def expectation_ps(
         self,
@@ -799,7 +859,7 @@ class Circuit:
                 (wire,),
                 self.n_wires,
             )
-        value = (torch.conj(state) * transformed).sum(dim=-1)
+        value = complex_mul(complex_conj(state), transformed).sum(dim=-1)
         return torch.real(value)
 
     def sample(
@@ -910,7 +970,7 @@ def expectation(*ops: tuple[Any, Sequence[int]], ket: torch.Tensor) -> torch.Ten
     circuit = Circuit(n_wires, bsz=state.shape[0], device=state.device, inputs=state)
     for matrix, wires in ops:
         circuit.any(*wires, unitary=matrix)
-    return (torch.conj(state) * circuit.state()).sum(dim=-1)
+    return complex_mul(complex_conj(state), circuit.state()).sum(dim=-1)
 
 
 _CONTROLLED_TWO_QUBIT_GATES = {

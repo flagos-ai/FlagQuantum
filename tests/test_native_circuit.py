@@ -2,6 +2,7 @@
 
 import os
 import socket
+from collections import Counter
 
 import pytest
 import torch
@@ -467,7 +468,7 @@ def test_auto_mode_selects_statevector_by_default():
     assert fq.select_execution_mode(circuit) == "statevector"
 
 
-def test_auto_mode_selects_mps_for_bond_or_memory_controls():
+def test_auto_mode_selects_mps_for_bond_control_and_preserves_full_state_contract():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
 
@@ -480,8 +481,8 @@ def test_auto_mode_selects_mps_for_bond_or_memory_controls():
 
     assert plan.state_mode == "mps"
     assert result.summary()["state_mode"] == "mps"
-    assert memory_plan.state_mode == "mps"
-    assert memory_result.summary()["state_mode"] == "mps"
+    assert memory_plan.state_mode == "statevector"
+    assert torch.allclose(memory_result, circuit.state(), atol=1e-6)
     assert fq.select_execution_mode(circuit, max_bond=2) == "mps"
 
 
@@ -1168,13 +1169,20 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
     local_plan = fq.build_tensor_network(circuit)
-    target_peak = max(1, local_plan.contraction_cost()["peak_size"] // 2)
+    target_peak = local_plan.contraction_cost()["peak_size"]
+    label_counts = Counter(label for node in local_plan.nodes for label in node.labels)
+    sliced_label = next(
+        label
+        for label, count in label_counts.items()
+        if count > 1 and label not in local_plan.output_labels
+    )
 
     result, plan = fq.run_native(
         circuit,
         mode="distributed_tensor_network",
         world_size=2,
         max_intermediate_size=target_peak,
+        sliced_labels=(sliced_label,),
         return_plan=True,
     )
 
@@ -1194,7 +1202,13 @@ def test_distributed_tensor_network_local_tensor_simulates_slice_parallel_state(
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
     local_plan = fq.build_tensor_network(circuit)
-    target_peak = max(1, local_plan.contraction_cost()["peak_size"] // 2)
+    target_peak = local_plan.contraction_cost()["peak_size"]
+    label_counts = Counter(label for node in local_plan.nodes for label in node.labels)
+    sliced_label = next(
+        label
+        for label, count in label_counts.items()
+        if count > 1 and label not in local_plan.output_labels
+    )
 
     result = fq.run_native(
         circuit,
@@ -1203,6 +1217,7 @@ def test_distributed_tensor_network_local_tensor_simulates_slice_parallel_state(
         distributed_profile="development",
         torch_backend="local_tensor",
         max_intermediate_size=target_peak,
+        sliced_labels=(sliced_label,),
     )
     summary = result.summary()
 
@@ -1225,7 +1240,7 @@ def test_distributed_tensor_network_alias_and_backend_capability():
     circuit.h(0).cx(0, 1)
 
     result = fq.run_native(
-        circuit, mode="distributed_tn", world_size=2, max_intermediate_size=2
+        circuit, mode="distributed_tn", world_size=2, max_intermediate_size=4
     )
 
     assert isinstance(result, fq.DistributedTensorNetworkState)
@@ -1248,7 +1263,7 @@ def test_distributed_tensor_network_torch_executor_single_rank():
             init_method=init_uri,
             backend="gloo",
             device="cpu",
-            max_intermediate_size=4,
+            max_intermediate_size=8,
         )
 
         assert result.summary()["executor"] == "torch_distributed"

@@ -171,6 +171,35 @@ def test_ready_gradient_bucket_launches_before_adjoint_completion(monkeypatch):
     assert evidence.gradient_collective_bytes == 12
 
 
+def test_synchronous_gradient_reduction_has_no_overlap_evidence(monkeypatch):
+    calls = []
+
+    def fake_all_reduce(tensor, **kwargs):
+        calls.append(kwargs["async_op"])
+        tensor.mul_(2)
+        return None
+
+    monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
+    gradients = [torch.tensor(1.0), torch.tensor(2.0)]
+    evidence = BackwardExecutionEvidence()
+    reducer = AsyncGradientReducer(
+        gradients,
+        process_group=None,
+        evidence=evidence,
+        max_parameters=2,
+        max_bytes=1 << 20,
+        async_op=False,
+    )
+    reducer.mark_ready(0)
+    reducer.mark_ready(1)
+    reducer.finish()
+
+    assert calls == [False]
+    assert [gradient.item() for gradient in gradients] == [2.0, 4.0]
+    assert evidence.async_gradient_collective_count == 0
+    assert evidence.overlapped_gradient_collective_count == 0
+
+
 def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     theta = torch.tensor(0.23, requires_grad=True)
     phi = torch.tensor(-0.37, requires_grad=True)

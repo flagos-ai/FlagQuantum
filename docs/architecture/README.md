@@ -1,5 +1,7 @@
 # Architecture
 
+- [Noise code organization and architecture review](NOISY_SIMULATION_CODE_ORGANIZATION.md)
+
 Design documents for execution, parallelism, state ownership, and internal
 subsystems.
 

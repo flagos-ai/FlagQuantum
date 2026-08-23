@@ -1,0 +1,63 @@
+{
+  "category": "small_exact",
+  "dtype": "complex64",
+  "element_size": 8,
+  "identity": "96bbee2f0e0e27c85d992723e724a1b765380dd858a306cef2b4cc5001d06faf",
+  "inputs": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      4
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      0
+    ]
+  ],
+  "label_count": 6,
+  "name": "small_ring_6",
+  "output": [],
+  "schema_version": "flagquantum.tn_gap_workload.v1",
+  "shapes": [
+    [
+      2,
+      2
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "tensor_count": 6
+}

@@ -28,6 +28,7 @@ class AsyncGradientReducer:
         evidence: Any,
         max_parameters: int | None = None,
         max_bytes: int | None = None,
+        async_op: bool = True,
     ) -> None:
         self.gradients = gradients
         self.process_group = process_group
@@ -42,6 +43,7 @@ class AsyncGradientReducer:
             if max_bytes is not None
             else os.getenv("FQ_STATEVECTOR_GRADIENT_BUCKET_BYTES", str(1 << 20))
         )
+        self.async_op = bool(async_op)
         if self.max_parameters <= 0 or self.max_bytes <= 0:
             raise ValueError("gradient bucket limits must be positive")
         self._ready: dict[tuple[torch.device, torch.dtype], list[int]] = {}
@@ -76,32 +78,37 @@ class AsyncGradientReducer:
             packed,
             op=dist.ReduceOp.SUM,
             group=self.process_group,
-            async_op=True,
+            async_op=self.async_op,
         )
         byte_count = packed.numel() * packed.element_size()
         self.evidence.communication_count += 1
         self.evidence.communication_bytes += byte_count
         self.evidence.gradient_collective_count += 1
         self.evidence.gradient_collective_bytes += byte_count
-        self.evidence.async_gradient_collective_count += 1
-        if before_adjoint_complete:
+        if self.async_op:
+            self.evidence.async_gradient_collective_count += 1
+        if self.async_op and before_adjoint_complete:
             self.evidence.overlapped_gradient_collective_count += 1
-        self._pending.append(_PendingReduction(indices, packed, work))
+        if self.async_op:
+            self._pending.append(_PendingReduction(indices, packed, work))
+        else:
+            self._scatter(indices, packed)
+
+    def _scatter(self, indices: tuple[int, ...], packed: torch.Tensor) -> None:
+        offset = 0
+        for index in indices:
+            count = self.gradients[index].numel()
+            self.gradients[index].copy_(
+                packed[offset : offset + count].reshape_as(self.gradients[index])
+            )
+            offset += count
 
     def finish(self) -> None:
         for key in tuple(self._ready):
             self._launch(key, before_adjoint_complete=False)
         for pending in self._pending:
             pending.work.wait()
-            offset = 0
-            for index in pending.indices:
-                count = self.gradients[index].numel()
-                self.gradients[index].copy_(
-                    pending.packed[offset : offset + count].reshape_as(
-                        self.gradients[index]
-                    )
-                )
-                offset += count
+            self._scatter(pending.indices, pending.packed)
 
 
 __all__ = ("AsyncGradientReducer",)

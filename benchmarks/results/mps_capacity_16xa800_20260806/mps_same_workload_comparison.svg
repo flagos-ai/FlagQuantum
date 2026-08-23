@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="892.8pt" height="378pt" viewBox="0 0 892.8 378" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-08-06T11:36:49.123772</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 378 
+L 892.8 378 
+L 892.8 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 142.848 270.27 
+L 602.64 270.27 
+L 602.64 126.63 
+L 142.848 126.63 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="LineCollection_1">
+    <path d="M 177.08783 157.557273 
+L 568.40017 157.557273 
+" clip-path="url(#p4840231bed)" style="fill: none; stroke: #16866b; stroke-width: 3"/>
+   </g>
+   <g id="LineCollection_2">
+    <path d="M 177.08783 226.284545 
+L 372.744 226.284545 
+" clip-path="url(#p4840231bed)" style="fill: none; stroke: #b44343; stroke-width: 3"/>
+   </g>
+   <g id="LineCollection_3">
+    <path d="M 372.744 226.284545 
+L 568.40017 226.284545 
+" clip-path="url(#p4840231bed)" style="fill: none; stroke-dasharray: 6,6; stroke-dashoffset: 0; stroke: #aab2ba; stroke-width: 2"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1"/>
+     <g id="text_1">
+      <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="177.08783" y="286.500719" transform="rotate(-0 177.08783 286.500719)">Initial MPS</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2"/>
+     <g id="text_2">
+      <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="274.915915" y="286.500078" transform="rotate(-0 274.915915 286.500078)">31 gates</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3"/>
+     <g id="text_3">
+      <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="372.744" y="286.500078" transform="rotate(-0 372.744 286.500078)">Output MPS</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4"/>
+     <g id="text_4">
+      <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="470.572085" y="286.500078" transform="rotate(-0 470.572085 286.500078)">Center Z</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5"/>
+     <g id="text_5">
+      <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="568.40017" y="286.500719" transform="rotate(-0 568.40017 286.500719)">Gradient</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2"/>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="mb72ef504a6" d="M 0 5 
+C 1.326016 5 2.597899 4.473168 3.535534 3.535534 
+C 4.473168 2.597899 5 1.326016 5 0 
+C 5 -1.326016 4.473168 -2.597899 3.535534 -3.535534 
+C 2.597899 -4.473168 1.326016 -5 0 -5 
+C -1.326016 -5 -2.597899 -4.473168 -3.535534 -3.535534 
+C -4.473168 -2.597899 -5 -1.326016 -5 0 
+C -5 1.326016 -4.473168 2.597899 -3.535534 3.535534 
+C -2.597899 4.473168 -1.326016 5 0 5 
+z
+" style="stroke: #aab2ba; stroke-width: 1.4"/>
+    </defs>
+    <g clip-path="url(#p4840231bed)">
+     <use xlink:href="#mb72ef504a6" x="470.572085" y="226.284545" style="fill: #ffffff; stroke: #aab2ba; stroke-width: 1.4"/>
+     <use xlink:href="#mb72ef504a6" x="568.40017" y="226.284545" style="fill: #ffffff; stroke: #aab2ba; stroke-width: 1.4"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <defs>
+     <path id="mc24b9f8c9e" d="M 0 6.123724 
+C 1.624031 6.123724 3.181764 5.47849 4.330127 4.330127 
+C 5.47849 3.181764 6.123724 1.624031 6.123724 0 
+C 6.123724 -1.624031 5.47849 -3.181764 4.330127 -4.330127 
+C 3.181764 -5.47849 1.624031 -6.123724 0 -6.123724 
+C -1.624031 -6.123724 -3.181764 -5.47849 -4.330127 -4.330127 
+C -5.47849 -3.181764 -6.123724 -1.624031 -6.123724 0 
+C -6.123724 1.624031 -5.47849 3.181764 -4.330127 4.330127 
+C -3.181764 5.47849 -1.624031 6.123724 0 6.123724 
+z
+" style="stroke: #ffffff; stroke-width: 1.4"/>
+    </defs>
+    <g clip-path="url(#p4840231bed)">
+     <use xlink:href="#mc24b9f8c9e" x="177.08783" y="157.557273" style="fill: #16866b; stroke: #ffffff; stroke-width: 1.4"/>
+     <use xlink:href="#mc24b9f8c9e" x="274.915915" y="157.557273" style="fill: #16866b; stroke: #ffffff; stroke-width: 1.4"/>
+     <use xlink:href="#mc24b9f8c9e" x="372.744" y="157.557273" style="fill: #16866b; stroke: #ffffff; stroke-width: 1.4"/>
+     <use xlink:href="#mc24b9f8c9e" x="470.572085" y="157.557273" style="fill: #16866b; stroke: #ffffff; stroke-width: 1.4"/>
+     <use xlink:href="#mc24b9f8c9e" x="568.40017" y="157.557273" style="fill: #16866b; stroke: #ffffff; stroke-width: 1.4"/>
+    </g>
+   </g>
+   <g id="PathCollection_3">
+    <defs>
+     <path id="ma5c65aa473" d="M 0 6.123724 
+C 1.624031 6.123724 3.181764 5.47849 4.330127 4.330127 
+C 5.47849 3.181764 6.123724 1.624031 6.123724 0 
+C 6.123724 -1.624031 5.47849 -3.181764 4.330127 -4.330127 
+C 3.181764 -5.47849 1.624031 -6.123724 0 -6.123724 
+C -1.624031 -6.123724 -3.181764 -5.47849 -4.330127 -4.330127 
+C -5.47849 -3.181764 -6.123724 -1.624031 -6.123724 0 
+C -6.123724 1.624031 -5.47849 3.181764 -4.330127 4.330127 
+C -3.181764 5.47849 -1.624031 6.123724 0 6.123724 
+z
+" style="stroke: #ffffff; stroke-width: 1.4"/>
+    </defs>
+    <g clip-path="url(#p4840231bed)">
+     <use xlink:href="#ma5c65aa473" x="177.08783" y="226.284545" style="fill: #b44343; stroke: #ffffff; stroke-width: 1.4"/>
+     <use xlink:href="#ma5c65aa473" x="274.915915" y="226.284545" style="fill: #b44343; stroke: #ffffff; stroke-width: 1.4"/>
+    </g>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #16866b" x="568.40017" y="143.400618" transform="rotate(-0 568.40017 143.400618)">COMPLETED  ·  367.37 s</text>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 8.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #b44343" x="372.744" y="249.82432" transform="rotate(-0 372.744 249.82432)">FAILED  ·  483.96 s to failure</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 7.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="372.744" y="262.596717" transform="rotate(-0 372.744 262.596717)">int64 extent overflow → negative output dimension</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #20252b" x="142.848" y="113.63" transform="rotate(-0 142.848 113.63)">a   Measured execution path</text>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="177.08783" y="159.895163" transform="rotate(-0 177.08783 159.895163)">✓</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="274.915915" y="159.895163" transform="rotate(-0 274.915915 159.895163)">✓</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="372.744" y="159.895163" transform="rotate(-0 372.744 159.895163)">✓</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="470.572085" y="159.895163" transform="rotate(-0 470.572085 159.895163)">✓</text>
+   </g>
+   <g id="text_14">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="568.40017" y="159.895163" transform="rotate(-0 568.40017 159.895163)">✓</text>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="177.08783" y="228.622436" transform="rotate(-0 177.08783 228.622436)">✓</text>
+   </g>
+   <g id="text_16">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="274.915915" y="228.622436" transform="rotate(-0 274.915915 228.622436)">✓</text>
+   </g>
+   <g id="PathCollection_4">
+    <defs>
+     <path id="m63c0257ad3" d="M -3.354102 6.708204 
+L 0 3.354102 
+L 3.354102 6.708204 
+L 6.708204 3.354102 
+L 3.354102 0 
+L 6.708204 -3.354102 
+L 3.354102 -6.708204 
+L 0 -3.354102 
+L -3.354102 -6.708204 
+L -6.708204 -3.354102 
+L -3.354102 0 
+L -6.708204 3.354102 
+z
+" style="stroke: #ffffff; stroke-width: 1.2"/>
+    </defs>
+    <g clip-path="url(#p4840231bed)">
+     <use xlink:href="#m63c0257ad3" x="372.744" y="226.284545" style="fill: #b44343; stroke: #ffffff; stroke-width: 1.2"/>
+    </g>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #aab2ba" x="470.572085" y="228.622436" transform="rotate(-0 470.572085 228.622436)">—</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #aab2ba" x="568.40017" y="228.622436" transform="rotate(-0 568.40017 228.622436)">—</text>
+   </g>
+  </g>
+  <g id="patch_3">
+   <path d="M 52.6752 95.634 
+L 840.1248 95.634 
+Q 850.8384 95.634 850.8384 91.098 
+L 850.8384 65.772 
+Q 850.8384 61.236 840.1248 61.236 
+L 52.6752 61.236 
+Q 41.9616 61.236 41.9616 65.772 
+L 41.9616 91.098 
+Q 41.9616 95.634 52.6752 95.634 
+z
+" style="fill: #f7f9fa; stroke: #d9dee3; stroke-width: 0.9; stroke-linejoin: miter"/>
+  </g>
+  <g id="patch_4">
+   <path d="M 646.3872 273.294 
+L 840.1248 273.294 
+Q 850.8384 273.294 850.8384 268.758 
+L 850.8384 128.142 
+Q 850.8384 123.606 840.1248 123.606 
+L 646.3872 123.606 
+Q 635.6736 123.606 635.6736 128.142 
+L 635.6736 268.758 
+Q 635.6736 273.294 646.3872 273.294 
+z
+" style="fill: #f7f9fa; stroke: #d9dee3; stroke-width: 0.9; stroke-linejoin: miter"/>
+  </g>
+  <g id="patch_5">
+   <path d="M 52.6752 326.214 
+L 840.1248 326.214 
+Q 850.8384 326.214 850.8384 321.678 
+L 850.8384 296.352 
+Q 850.8384 291.816 840.1248 291.816 
+L 52.6752 291.816 
+Q 41.9616 291.816 41.9616 296.352 
+L 41.9616 321.678 
+Q 41.9616 326.214 52.6752 326.214 
+z
+" style="fill: #eaf6f2; stroke: #b9ddd2; stroke-width: 0.9; stroke-linejoin: miter"/>
+  </g>
+  <g id="line2d_6">
+   <path d="M 669.6 205.632 
+L 816.912 205.632 
+" style="fill: none; stroke: #d9dee3; stroke-width: 0.8; stroke-linecap: square"/>
+  </g>
+  <g id="text_19">
+   <text style="font-weight: 700; font-size: 17px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #20252b" x="49.104" y="37.487344" transform="rotate(-0 49.104 37.487344)">Same MPS workload: completion outcome</text>
+  </g>
+  <g id="text_20">
+   <text style="font-size: 9.2px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #66717d" x="49.104" y="54.240563" transform="rotate(-0 49.104 54.240563)">FlagQuantum completed the measured 131,072-qubit training step; cuQuantum 26.6 did not produce an output state.</text>
+  </g>
+  <g id="text_21">
+   <text style="font-weight: 700; font-size: 9.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #20252b" x="446.4" y="81.014203" transform="rotate(-0 446.4 81.014203)">131,072 qubits   ·   χ=768   ·   complex64   ·   16 RY + 15 RXX   ·   center-Z observable   ·   one gradient step</text>
+  </g>
+  <g id="text_22">
+   <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #16866b" x="129.456" y="160.094145" transform="rotate(-0 129.456 160.094145)">FlagQuantum</text>
+  </g>
+  <g id="text_23">
+   <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #b44343" x="129.456" y="228.889773" transform="rotate(-0 129.456 228.889773)">cuQuantum 26.6</text>
+  </g>
+  <g id="text_24">
+   <text style="font-weight: 700; font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #20252b" x="656.208" y="137.97" transform="rotate(-0 656.208 137.97)">b   Execution context</text>
+  </g>
+  <g id="text_25">
+   <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #16866b" x="669.6" y="161.784" transform="rotate(-0 669.6 161.784)">FlagQuantum</text>
+  </g>
+  <g id="text_26">
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #20252b" x="669.6" y="177.66" transform="rotate(-0 669.6 177.66)">2 nodes · 16×A800</text>
+  </g>
+  <g id="text_27">
+   <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #66717d" x="669.6" y="191.646" transform="rotate(-0 669.6 191.646)">Distributed MPS</text>
+  </g>
+  <g id="text_28">
+   <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b44343" x="669.6" y="222.264" transform="rotate(-0 669.6 222.264)">cuQuantum NetworkState</text>
+  </g>
+  <g id="text_29">
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #20252b" x="669.6" y="238.14" transform="rotate(-0 669.6 238.14)">1×A800 · device_id=0</text>
+  </g>
+  <g id="text_30">
+   <text style="font-size: 8.2px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #66717d" x="669.6" y="252.126" transform="rotate(-0 669.6 252.126)">Public MPS path is single-device</text>
+  </g>
+  <g id="text_31">
+   <text style="font-weight: 700; font-size: 10.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #16866b" x="446.4" y="311.854008" transform="rotate(-0 446.4 311.854008)">Same 131,072-qubit workload: FlagQuantum completed; cuQuantum 26.6 did not complete.</text>
+  </g>
+  <g id="text_32">
+   <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #66717d" x="446.4" y="352.758516" transform="rotate(-0 446.4 352.758516)">Completion/capability comparison—not a speedup claim. cuQuantum time is time-to-failure. Measured 2026-08-06 on NVIDIA A800 80 GB GPUs.</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p4840231bed">
+   <rect x="142.848" y="126.63" width="459.792" height="143.64"/>
+  </clipPath>
+ </defs>
+</svg>

@@ -44,6 +44,10 @@ braket = [
     "amazon-braket-sdk>=1.117,<2",
 ]
 
+quafu = [
+    "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'",
+]
+
 qiskit = [
     "qiskit[qasm3-import]>=2,<3",
     "qiskit-aer>=0.17,<1",
@@ -91,6 +95,9 @@ flagquantum-benchmark = "flagquantum.benchmarking.__main__:main"
 where = ["."]
 include = ["flagquantum*"]
 exclude = ["tests*", "docs*", "scripts*", "examples*"]
+
+[tool.setuptools.package-data]
+flagquantum = ["runtime/profiles/*.json"]
 
 [tool.setuptools.dynamic]
 version = {attr = "flagquantum.version.__version__"}

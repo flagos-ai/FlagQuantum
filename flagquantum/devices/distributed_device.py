@@ -14,11 +14,16 @@ from ..utils.maybe_dtensor import maybe_distribute_tensor, maybe_get_dtensor_inf
 
 
 class DistributedQuantumDevice:
-    """A distributed quantum device that contains and manages quantum state vectors.
+    """Legacy v0.1 DTensor execution adapter retained for internal compatibility.
 
-    This device supports distributed training across multiple GPUs/nodes by sharding the
-    quantum state tensor across devices. It provides automatic resharding when quantum
-    gates are applied to sharded dimensions.
+    This class is not part of the v0.2 stable public API and must not be used as
+    evidence for the v0.2 explicit shard-ownership, partner-exchange, or
+    adjoint-training implementations. New applications use ``fq.Circuit``,
+    ``fq.run`` and ``fq.train_distributed_statevector``.
+
+    The adapter remains reachable only because the native torch-distributed
+    compatibility route still consumes it. New runtime, compiler, benchmark,
+    and patent-facing code must not add dependencies on this class.
 
     Attributes:
         n_wires: Number of qubits in the quantum system.

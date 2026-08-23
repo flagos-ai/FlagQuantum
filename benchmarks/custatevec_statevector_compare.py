@@ -13,7 +13,6 @@ import json
 import math
 import platform
 import statistics
-import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -27,24 +26,16 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402, I001
+from benchmarks.sc27_metadata import (  # noqa: E402
+    driver_version,
+    gpu_identity,
+    source_identity,
+    topology_snapshot,
+)
 
 
 SCHEMA = "flagquantum.custatevec_statevector_compare.v1"
 CUDA_C_32F = 4
-
-
-def _git_commit() -> str:
-    try:
-        return subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=REPO_ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        ).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return "unavailable"
 
 
 @dataclass(frozen=True)
@@ -54,15 +45,18 @@ class Gate:
     angle: float | None = None
 
 
-def workload(n_wires: int, layers: int) -> tuple[Gate, ...]:
+def workload(n_wires: int, layers: int, seed: int = 41) -> tuple[Gate, ...]:
     gates: list[Gate] = []
     for layer in range(layers):
         for wire in range(n_wires):
-            angle = -0.31 + 0.017 * (layer * n_wires + wire)
+            angle = 0.11 + 0.013 * ((seed + layer * n_wires + wire) % 37)
             gates.append(Gate("ry", (wire,), angle))
-            gates.append(Gate("rz", (wire,), -0.5 * angle))
-        for wire in range(n_wires - 1):
-            gates.append(Gate("cx", (wire, wire + 1)))
+        edges = (
+            [(wire, wire + 1) for wire in range(n_wires - 1)]
+            if layer % 2 == 0
+            else [(wire + 1, wire) for wire in range(n_wires - 2, -1, -1)]
+        )
+        gates.extend(Gate("cx", edge) for edge in edges)
     return tuple(gates)
 
 
@@ -162,20 +156,34 @@ class CuStateVecExecutor:
         return state
 
 
-def _measure(
-    function: Callable[[], Any], *, warmup: int, iterations: int, synchronize: Callable[[], None]
-) -> tuple[tuple[float, ...], Any]:
-    output = function()
-    for _ in range(warmup):
-        output = function()
-    synchronize()
-    samples = []
-    for _ in range(iterations):
-        started = time.perf_counter()
-        output = function()
-        synchronize()
-        samples.append(time.perf_counter() - started)
-    return tuple(samples), output
+def _measure_paired(
+    left: Callable[[], Any],
+    right: Callable[[], Any],
+    *,
+    warmup: int,
+    iterations: int,
+    synchronize_left: Callable[[], None],
+    synchronize_right: Callable[[], None],
+    order_seed: int,
+) -> tuple[tuple[float, ...], tuple[float, ...], Any, Any]:
+    outputs: list[Any] = [None, None]
+    functions = (left, right)
+    synchronizers = (synchronize_left, synchronize_right)
+    for index in range(warmup):
+        order = (0, 1) if (index + order_seed) % 2 == 0 else (1, 0)
+        for slot in order:
+            outputs[slot] = functions[slot]()
+            synchronizers[slot]()
+    samples: list[list[float]] = [[], []]
+    for index in range(iterations):
+        order = (0, 1) if (index + warmup + order_seed) % 2 == 0 else (1, 0)
+        for slot in order:
+            synchronizers[slot]()
+            started = time.perf_counter()
+            outputs[slot] = functions[slot]()
+            synchronizers[slot]()
+            samples[slot].append(time.perf_counter() - started)
+    return tuple(samples[0]), tuple(samples[1]), outputs[0], outputs[1]
 
 
 def _summary(samples: tuple[float, ...]) -> dict[str, Any]:
@@ -189,60 +197,83 @@ def _summary(samples: tuple[float, ...]) -> dict[str, Any]:
 
 
 def run_benchmark(
-    *, n_wires: int, layers: int, warmup: int, iterations: int
+    *,
+    n_wires: int,
+    layers: int,
+    seed: int,
+    warmup: int,
+    iterations: int,
+    independent_run_index: int | None,
+    container_digest: str | None,
+    raw_log_sha256: str | None,
 ) -> dict[str, Any]:
     if n_wires < 2 or layers < 1 or warmup < 0 or iterations < 2:
         raise ValueError("n_wires >= 2, layers >= 1, warmup >= 0, iterations >= 2")
     import cupy as cp
     import cuquantum
 
-    gates = workload(n_wires, layers)
+    gates = workload(n_wires, layers, seed)
     circuit = build_flagquantum(n_wires, gates)
     executor = CuStateVecExecutor(n_wires, gates)
     try:
         torch.cuda.reset_peak_memory_stats()
-        fq_samples, fq_state = _measure(
+        fq_samples, cusv_samples, fq_state, cusv_state = _measure_paired(
             lambda: circuit.state(refresh=True),
-            warmup=warmup,
-            iterations=iterations,
-            synchronize=torch.cuda.synchronize,
-        )
-        fq_peak = int(torch.cuda.max_memory_allocated())
-        cp.get_default_memory_pool().free_all_blocks()
-        cp.get_default_memory_pool().set_limit(size=0)
-        before_pool = int(cp.get_default_memory_pool().total_bytes())
-        cusv_samples, cusv_state = _measure(
             executor.run,
             warmup=warmup,
             iterations=iterations,
-            synchronize=cp.cuda.Stream.null.synchronize,
+            synchronize_left=torch.cuda.synchronize,
+            synchronize_right=cp.cuda.Stream.null.synchronize,
+            order_seed=seed,
         )
-        cusv_peak_delta = int(cp.get_default_memory_pool().total_bytes()) - before_pool
+        fq_peak = int(torch.cuda.max_memory_allocated())
+        cusv_pool_bytes = int(cp.get_default_memory_pool().total_bytes())
         reference = cp.from_dlpack(fq_state.detach())
         max_error = float(cp.max(cp.abs(reference.reshape(-1) - cusv_state)).get())
     finally:
         executor.close()
     fq_timing, cusv_timing = _summary(fq_samples), _summary(cusv_samples)
     tolerance = 3e-5
+    workload_identity = {
+        "name": "full_width_linear_hea_forward_state",
+        "n_wires": n_wires,
+        "layers": layers,
+        "parameter_count": n_wires * layers,
+        "seed": seed,
+        "dtype": "complex64",
+        "world_size": 1,
+    }
     return {
         "schema": SCHEMA,
         "benchmark": "flagquantum_native_vs_custatevec_forward",
         "artifact_class": "measured_local_comparison",
         "claim_evidence_type": "local_comparative_performance",
+        "comparison_class": "forward_subsystem_only",
         "distribution_semantics": "single_device_fast_path",
         "world_size": 1,
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
+        "rank_placement": [
+            {
+                "rank": 0,
+                "local_rank": 0,
+                "hostname": platform.node(),
+                "device": "cuda:0",
+                **gpu_identity(0),
+                "topology": topology_snapshot(),
+            }
+        ],
+        "source_identity": source_identity(
+            repo_root=REPO_ROOT,
+            workload=workload_identity,
+            container_digest=container_digest,
+            raw_log_sha256=raw_log_sha256,
+        ),
         "external_baseline_isolation": {
             "environment_prefix": sys.prefix,
             "flagquantum_runtime_dependency": False,
             "purpose": "benchmark_only",
             "provider": "NVIDIA cuStateVec",
-        },
-        "provenance": {
-            "commit": _git_commit(),
-            "hostname": platform.node(),
-            "python_executable": sys.executable,
         },
         "environment": {
             "python": platform.python_version(),
@@ -251,16 +282,26 @@ def run_benchmark(
             "device_name": torch.cuda.get_device_name(0),
             "cuquantum": cuquantum.__version__,
             "cupy": cp.__version__,
+            "driver_version": driver_version(),
         },
         "workload": {
+            "name": "full_width_linear_hea_forward_state",
             "n_wires": n_wires,
             "layers": layers,
+            "parameter_count": n_wires * layers,
             "gate_count": len(gates),
-            "gate_set": ["RY", "RZ", "CX"],
+            "gate_set": ["RY", "CX"],
             "dtype": "complex64",
             "initial_state": "zero",
+            "seed": seed,
+        },
+        "protocol": {
             "warmup": warmup,
-            "iterations": iterations,
+            "repetitions": iterations,
+            "independent_run_index": independent_run_index,
+            "synchronization": "per_runtime_device_synchronized_wall_clock",
+            "execution_order": "counterbalanced_by_sample",
+            "setup_excluded": True,
         },
         "correctness": {
             "passed": max_error <= tolerance,
@@ -270,7 +311,7 @@ def run_benchmark(
         "flagquantum": {**fq_timing, "peak_memory_allocated_bytes": fq_peak},
         "custatevec": {
             **cusv_timing,
-            "cupy_pool_growth_bytes": cusv_peak_delta,
+            "cupy_pool_bytes": cusv_pool_bytes,
             "workspace_bytes": executor.workspace_size,
         },
         "speedup_flagquantum_over_custatevec": (
@@ -291,7 +332,7 @@ def run_benchmark(
         "timing_protocol": {
             "scope": "state_initialization_plus_all_gate_applications",
             "synchronization": "device_synchronized_wall_clock",
-            "execution_order": "flagquantum_then_custatevec",
+            "execution_order": "counterbalanced_by_sample",
             "setup_excluded": [
                 "circuit_construction",
                 "gate_matrix_construction",
@@ -304,17 +345,25 @@ def run_benchmark(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n-wires", type=int, default=20)
-    parser.add_argument("--layers", type=int, default=2)
+    parser.add_argument("--n-wires", type=int, default=31)
+    parser.add_argument("--layers", type=int, default=8)
+    parser.add_argument("--seed", type=int, default=41)
     parser.add_argument("--warmup", type=int, default=5)
-    parser.add_argument("--iterations", type=int, default=30)
+    parser.add_argument("--iterations", type=int, default=20)
+    parser.add_argument("--independent-run-index", type=int, choices=(1, 2, 3))
+    parser.add_argument("--container-digest")
+    parser.add_argument("--raw-log-sha256")
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     payload = run_benchmark(
         n_wires=args.n_wires,
         layers=args.layers,
+        seed=args.seed,
         warmup=args.warmup,
         iterations=args.iterations,
+        independent_run_index=args.independent_run_index,
+        container_digest=args.container_digest,
+        raw_log_sha256=args.raw_log_sha256,
     )
     encoded = json.dumps(payload, indent=2, sort_keys=True)
     print(encoded)

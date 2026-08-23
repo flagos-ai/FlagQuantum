@@ -1,0 +1,153 @@
+{
+  "benchmark": "tn_sparse_capacity",
+  "cuda_version": "13.0",
+  "distributed": {
+    "backend": "nccl",
+    "expected_slice_tasks": 8,
+    "sliced_labels": [
+      1,
+      2,
+      3
+    ],
+    "world_size": 8
+  },
+  "execution_summary": {
+    "distribution_semantics": "slice_parallel_sparse_output_all_reduce",
+    "full_state_materialized": false,
+    "output_target": "few_amplitudes",
+    "rank_partial_bytes_by_rank": {
+      "0": 32
+    },
+    "reduction_payload_bytes": 32,
+    "shared_contraction": true,
+    "slice_tasks": 8,
+    "state_mode": "distributed_tensor_network_amplitudes",
+    "target_count": 4,
+    "tasks_by_rank": {
+      "0": 1,
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1,
+      "5": 1,
+      "6": 1,
+      "7": 1
+    },
+    "world_size": 8
+  },
+  "git_sha": "5c08b45c5466a3cc262b7b10300e0fe12dc738b6",
+  "host": "p-kt-lc-a800-04",
+  "latency_seconds_max_rank_median": 73.39806365966797,
+  "peak_memory_bytes_max": 8798208,
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "rank_records": [
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 0,
+      "median_seconds": 73.39806365966797,
+      "peak_memory_bytes": 8798208,
+      "rank": 0,
+      "times_seconds": [
+        73.39806312695146
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 1,
+      "median_seconds": 73.39741516113281,
+      "peak_memory_bytes": 8798208,
+      "rank": 1,
+      "times_seconds": [
+        73.39741381630301
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 2,
+      "median_seconds": 73.39743041992188,
+      "peak_memory_bytes": 8798208,
+      "rank": 2,
+      "times_seconds": [
+        73.39743417408317
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 3,
+      "median_seconds": 73.39743041992188,
+      "peak_memory_bytes": 8798208,
+      "rank": 3,
+      "times_seconds": [
+        73.39742937963456
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 4,
+      "median_seconds": 73.39749145507812,
+      "peak_memory_bytes": 8798208,
+      "rank": 4,
+      "times_seconds": [
+        73.39749490702525
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 5,
+      "median_seconds": 73.39745330810547,
+      "peak_memory_bytes": 8798208,
+      "rank": 5,
+      "times_seconds": [
+        73.39745362475514
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 6,
+      "median_seconds": 73.39744567871094,
+      "peak_memory_bytes": 8798208,
+      "rank": 6,
+      "times_seconds": [
+        73.3974431422539
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 7,
+      "median_seconds": 73.39744567871094,
+      "peak_memory_bytes": 8798208,
+      "rank": 7,
+      "times_seconds": [
+        73.39744529593736
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "status": "measured_success",
+  "timestamp_utc": "2026-07-30T02:07:18Z",
+  "torch_version": "2.13.0+cu130",
+  "values_imag": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "values_real": [
+    [
+      0.9362066984176636,
+      2.6809514856760436e-22,
+      -1.3805041189464418e-25,
+      3.454058730072531e-20
+    ]
+  ],
+  "workload": {
+    "depth": 4,
+    "dtype": "complex64",
+    "qubits": 45,
+    "target": "few_amplitudes",
+    "target_count": 4,
+    "topology": "nearest_neighbour_brickwork"
+  }
+}

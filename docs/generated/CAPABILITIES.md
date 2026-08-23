@@ -29,11 +29,17 @@ This catalog is generated from the machine-validated
 | Train one statevector workload across multiple ranks | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
 | Plan distributed statevector ownership | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
 | Inspect communication and sharding semantics | Sharded statevector training | Production supported | [Run example](../../examples/distributed_statevector_topologies/run.sh) |
+| Check FlagQuantum and Torch-FL integration | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
+| Audit the statevector operator profile | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
+| Compare complex numerical behavior with a CPU complex128 reference | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
 | Train a large low-entanglement system | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Distribute one MPS across several GPUs | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Inspect variable-bond MPS capacity | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Evaluate a circuit with tensor-network contraction | Tensor-network execution and training | Experimental | [Run example](../../examples/vqe_switch_sv_mps_tn.py) |
 | Compare statevector, MPS, and tensor-network modes | Tensor-network execution and training | Experimental | [Run example](../../examples/vqe_switch_sv_mps_tn.py) |
+| Validate small noisy circuits exactly | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
+| Evaluate low-entanglement noisy circuits with MPS trajectories | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
+| Resume reproducible trajectory ensembles | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
@@ -76,6 +82,20 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 - **Documentation:** [guide](../../examples/single_machine_quantum_ai/README.md)
 - **Known boundary:** Capacity is bounded by one device; distributed capacity claims use the sharded capability.
 
+### FlagOS local statevector CUDA reference
+
+Exercise the local differentiable statevector path through Torch-FL's logical flagos device on a locked CUDA reference environment.
+
+- **Maturity:** Development evidence
+- **Public API:** `fq.resolve_device`, `fq.run`
+- **Runtime modes:** `statevector`
+- **Hardware:** `nvidia_a100_cuda_reference`
+- **Gradient support:** `development_evidence`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md)
+- **Documentation:** [guide](../../docs/reference/STATEVECTOR_OPERATOR_PROFILES.md)
+- **Known boundary:** CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim.
+
 ### Tensor-network execution and training
 
 Execute tensor-network circuit paths and evaluate experimental contraction and gradient workflows.
@@ -89,6 +109,20 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 - **Start:** [quick example](../../examples/vqe_switch_sv_mps_tn.py)
 - **Documentation:** [guide](../../docs/reference/KNOWN_LIMITATIONS.md)
 - **Known boundary:** General reverse contraction and production distributed transport are not certified.
+
+### Exact and trajectory-based noisy simulation
+
+Lower validated Kraus noise models into FlagQuantum IR and execute exact density-matrix or MPS quantum-trajectory paths.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.NoiseModel`, `fq.noisy_density_matrix`, `fq.run_noisy_mps`
+- **Runtime modes:** `density_matrix`, `noisy_mps`
+- **Hardware:** `cpu`, `single_gpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path_or_rank_local_trajectory_partition`
+- **Start:** [quick example](../../examples/noisy_simulation_v1.py)
+- **Documentation:** [guide](../../docs/guides/NOISY_SIMULATION.md)
+- **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
 
 
 ## Distributed execution
@@ -114,12 +148,12 @@ Train low-entanglement quantum systems with local or rank-owned matrix product s
 - **Maturity:** Development evidence
 - **Public API:** `fq.run_mps`, `fq.train_distributed_mps`, `fq.plan_production_mps`
 - **Runtime modes:** `mps`, `distributed_mps`
-- **Hardware:** `cpu`, `single_gpu`, `multi_gpu`
+- **Hardware:** `cpu`, `single_gpu`, `multi_gpu`, `multi_node`
 - **Gradient support:** `exact`
 - **Distribution semantics:** `sharded_across_ranks`
 - **Start:** [quick example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py)
 - **Documentation:** [guide](../../examples/distributed_mps/README.md)
-- **Known boundary:** Single-node 2/4/8-GPU forward and boundary transport plus a 100-step 8-GPU SGD soak are validated; other optimizers, multi-node operation, and release payload evidence remain incomplete.
+- **Known boundary:** Single-node and dual-node execution plus matched checkpoint/restart are validated. A sealed two-node 16×A800 capacity run completes 24,576 sites at χ768 with 215.84 GiB logical state after a matched one-A800 OOM; all 15 boundaries pass, discarded weight is 8.39e-6 under the 0.1 budget, and peak allocation is 26.92–27.24 GiB/rank. Matched eager/eager SGD and Adam 100-step soaks have zero measured live-memory growth and zero restart error. Boundary instructions still execute serially by owner, leaving non-owner GPUs in low-power NCCL wait; layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, clean/signable source, repeated evidence, and the release payload remain incomplete.
 
 
 ## Deployment and extension

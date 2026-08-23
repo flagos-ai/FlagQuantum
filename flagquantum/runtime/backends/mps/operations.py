@@ -6,8 +6,8 @@ from typing import Any, Mapping
 
 import torch
 
-from ....circuit import _gate_matrix
 from ....core.ir import Instruction
+from ....ops.gate_matrix import gate_matrix
 from ....simulation.mps import MPSConfig, _split_pair_matrix
 
 
@@ -18,7 +18,7 @@ def instruction_matrix_for_mps(
     device: torch.device | str,
     dtype: torch.dtype,
 ) -> torch.Tensor:
-    return _gate_matrix(instruction, bsz=bsz, device=device, dtype=dtype).to(
+    return gate_matrix(instruction, bsz=bsz, device=device, dtype=dtype).to(
         device=device, dtype=dtype
     )
 

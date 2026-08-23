@@ -1,0 +1,70 @@
+{
+  "claim_boundary": "Planning-only development evidence. Cost estimates share the same framework-neutral topology but are not execution measurements.",
+  "comparable_result_count": 4,
+  "comparison_scope": "planning",
+  "largest_observed_gap": {
+    "largest_gap": "search_time",
+    "ratios": {
+      "estimated_flops_flagquantum_over_cotengra": 1.0,
+      "largest_intermediate_flagquantum_over_cotengra": 1.0,
+      "search_time_flagquantum_over_cotengra": 3.048005164234301
+    },
+    "workload_identity": "96bbee2f0e0e27c85d992723e724a1b765380dd858a306cef2b4cc5001d06faf",
+    "workload_name": "small_ring_6"
+  },
+  "next_optimization_target": "reduce native planning overhead or bypass reconfiguration",
+  "result_count": 4,
+  "schema_version": 1,
+  "stage": "stage_b_reconfigured",
+  "stage_status": "completed",
+  "workloads": [
+    {
+      "comparable": true,
+      "identity": "6ac4cf2d5b09623986ec0bb2396e1be7fa621b0be97730bd924e0bf7ed670d8c",
+      "largest_gap": "search_time",
+      "name": "flagquantum_18q_13l_expectation",
+      "next_optimization_target": "reduce native planning overhead or bypass reconfiguration",
+      "ratios": {
+        "estimated_flops_flagquantum_over_cotengra": 0.6376495649562742,
+        "largest_intermediate_flagquantum_over_cotengra": 1.0,
+        "search_time_flagquantum_over_cotengra": 2.029422167394261
+      }
+    },
+    {
+      "comparable": true,
+      "identity": "5db23615a74f118bba7dd591a97f98da2fe128c10bf27789ed86d7bbcdfc34db",
+      "largest_gap": "search_time",
+      "name": "gradient_ladder_12",
+      "next_optimization_target": "reduce native planning overhead or bypass reconfiguration",
+      "ratios": {
+        "estimated_flops_flagquantum_over_cotengra": 1.0,
+        "largest_intermediate_flagquantum_over_cotengra": 1.0,
+        "search_time_flagquantum_over_cotengra": 1.2744373976261458
+      }
+    },
+    {
+      "comparable": true,
+      "identity": "6d861b8291c72619a9cbd7ee9987a006056ee01d216896284f6bcfca2fbced62",
+      "largest_gap": "path_flops",
+      "name": "medium_grid_4x4",
+      "next_optimization_target": "improve native multi-start path search",
+      "ratios": {
+        "estimated_flops_flagquantum_over_cotengra": 1.0136986301369864,
+        "largest_intermediate_flagquantum_over_cotengra": 1.0,
+        "search_time_flagquantum_over_cotengra": 0.2836977053187376
+      }
+    },
+    {
+      "comparable": true,
+      "identity": "96bbee2f0e0e27c85d992723e724a1b765380dd858a306cef2b4cc5001d06faf",
+      "largest_gap": "search_time",
+      "name": "small_ring_6",
+      "next_optimization_target": "reduce native planning overhead or bypass reconfiguration",
+      "ratios": {
+        "estimated_flops_flagquantum_over_cotengra": 1.0,
+        "largest_intermediate_flagquantum_over_cotengra": 1.0,
+        "search_time_flagquantum_over_cotengra": 3.048005164234301
+      }
+    }
+  ]
+}

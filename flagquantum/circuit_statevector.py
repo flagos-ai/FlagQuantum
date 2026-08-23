@@ -4,16 +4,22 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Iterable, Sequence
 
 import torch
 
-from .core.ir import Instruction
-from .core.operator_schema import canonical_opcode, get_operator_schema
-from .core.parameters import value_to_tensor
-from .ops.matrices import GATE_MAT_DICT, get_global_precision
+from .ops.complex_ops import complex_mul
 
-_FIXED_GATE_CACHE: dict[tuple[str, str, torch.dtype], torch.Tensor] = {}
+from .core.ir import Instruction
+from .core.operator_schema import canonical_opcode
+from .ops.gate_matrix import (
+    gate_matrix as _gate_matrix,
+)
+from .ops.gate_matrix import (
+    parameter_tensor as _parameter_tensor,
+)
+from .ops.matrices import GATE_MAT_DICT
+
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
 ] = {}
@@ -277,89 +283,6 @@ def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
     return tuple(int(wire) for wire in wires)
 
 
-def _parameter_tensor(
-    name: str,
-    params: Mapping[str, Any],
-    *,
-    bsz: int,
-    device: torch.device | str,
-    complex_dtype: torch.dtype | None = None,
-    direct_values: tuple[Any, ...] | None = None,
-) -> torch.Tensor | None:
-    schema = get_operator_schema(name)
-    names = schema.parameters if schema is not None else ()
-    if not names:
-        return None
-
-    if direct_values is None:
-        values = []
-        for param_name in names:
-            if param_name not in params:
-                return None
-            values.append(params[param_name])
-    else:
-        values = list(direct_values)
-
-    tensors = [value_to_tensor(value, device=device) for value in values]
-    stacked = torch.stack(
-        [t.reshape(()) if t.ndim == 0 else t for t in tensors], dim=-1
-    )
-    complex_dtype = complex_dtype or get_global_precision()
-    real_dtype = torch.float64 if complex_dtype == torch.complex128 else torch.float32
-    stacked = stacked.to(device=device, dtype=real_dtype)
-    if stacked.ndim == 1:
-        stacked = stacked.reshape(1, -1)
-    if stacked.shape[0] == 1 and bsz > 1:
-        stacked = stacked.expand(bsz, -1)
-    return stacked
-
-
-def _gate_matrix(
-    instruction: Instruction,
-    *,
-    bsz: int,
-    device: torch.device | str,
-    dtype: torch.dtype | None = None,
-    parameter_bindings: tuple[torch.Tensor, ...] | None = None,
-) -> torch.Tensor:
-    dtype = dtype or get_global_precision()
-    if instruction.matrix is not None:
-        matrix = instruction.matrix
-        matrix = getattr(matrix, "tensor", matrix)
-        return torch.as_tensor(matrix, dtype=dtype, device=device).reshape(
-            2 ** len(instruction.wires), 2 ** len(instruction.wires)
-        )
-
-    name = _canonical_name(instruction.name)
-    gate = GATE_MAT_DICT[name]
-    slots = getattr(instruction, "parameter_slots", ())
-    constants = getattr(instruction, "parameter_constants", ())
-    direct_values = None
-    if parameter_bindings is not None and slots:
-        direct_values = tuple(
-            parameter_bindings[slot] if slot >= 0 else constants[index]
-            for index, slot in enumerate(slots)
-        )
-    params = _parameter_tensor(
-        name,
-        instruction.params,
-        bsz=bsz,
-        device=device,
-        complex_dtype=dtype,
-        direct_values=direct_values,
-    )
-    if callable(gate):
-        if params is None:
-            raise ValueError(f"Gate {name!r} requires parameters.")
-        return gate(params).to(device=device, dtype=dtype)
-    key = (name, str(torch.device(device)), dtype)
-    cached = _FIXED_GATE_CACHE.get(key)
-    if cached is None:
-        cached = gate.to(device=device, dtype=dtype)
-        _FIXED_GATE_CACHE[key] = cached
-    return cached
-
-
 def _statevector_layout(
     n_wires: int, wires: Sequence[int]
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
@@ -400,6 +323,8 @@ def _apply_matrix(
 
     tensor = state.reshape((bsz,) + (2,) * n_wires).permute(perm)
     flat = tensor.reshape(bsz, dim, -1)
+    if matrix.dtype != state.dtype or matrix.device != state.device:
+        matrix = matrix.to(device=state.device, dtype=state.dtype)
     if matrix.ndim == 2:
         matrix = matrix.expand(bsz, -1, -1)
     out = torch.bmm(matrix, flat)
@@ -426,7 +351,7 @@ def _apply_diagonal_matrix(
     diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
     if diagonal.ndim == 1:
         diagonal = diagonal.expand(bsz, -1)
-    out = flat * diagonal.unsqueeze(-1)
+    out = complex_mul(flat, diagonal.unsqueeze(-1))
     return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
 
 
@@ -584,13 +509,34 @@ def _batched_rx_ry_rz_matrices(angles: torch.Tensor) -> torch.Tensor:
     rx, ry, rz = angles.unbind(dim=-1)
     cos_x, sin_x = torch.cos(0.5 * rx), torch.sin(0.5 * rx)
     cos_y, sin_y = torch.cos(0.5 * ry), torch.sin(0.5 * ry)
-    phase_neg = torch.exp(-0.5j * rz)
-    phase_pos = phase_neg.conj()
-    m00 = torch.complex(cos_y * cos_x, sin_y * sin_x) * phase_neg
-    m01 = torch.complex(-sin_y * cos_x, -cos_y * sin_x) * phase_neg
-    m10 = torch.complex(sin_y * cos_x, -cos_y * sin_x) * phase_pos
-    m11 = torch.complex(cos_y * cos_x, -sin_y * sin_x) * phase_pos
+    phase_neg = torch.complex(torch.cos(-0.5 * rz), torch.sin(-0.5 * rz))
+    phase_pos = torch.complex(torch.cos(0.5 * rz), torch.sin(0.5 * rz))
+    m00 = complex_mul(torch.complex(cos_y * cos_x, sin_y * sin_x), phase_neg)
+    m01 = complex_mul(torch.complex(-sin_y * cos_x, -cos_y * sin_x), phase_neg)
+    m10 = complex_mul(torch.complex(sin_y * cos_x, -cos_y * sin_x), phase_pos)
+    m11 = complex_mul(torch.complex(cos_y * cos_x, -sin_y * sin_x), phase_pos)
     return torch.stack((m00, m01, m10, m11), dim=-1).reshape(*angles.shape[:-1], 2, 2)
+
+
+def _batched_rotation_sequence_matrices(
+    angles: torch.Tensor,
+    *,
+    names: tuple[str, ...],
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Compose equal-topology rotation regions with one operation graph."""
+
+    region_count, bsz, gate_count = angles.shape
+    if gate_count != len(names) or not set(names) <= {"rx", "ry", "rz"}:
+        raise ValueError("batched rotation sequences require RX/RY/RZ topology")
+    flat_matrices = tuple(
+        GATE_MAT_DICT[name](angles[..., index].reshape(-1, 1)).to(dtype=dtype)
+        for index, name in enumerate(names)
+    )
+    combined = flat_matrices[0]
+    for matrix in flat_matrices[1:]:
+        combined = torch.bmm(matrix, combined)
+    return combined.reshape(region_count, bsz, 2, 2)
 
 
 def _bits_from_indices(indices: torch.Tensor, n_wires: int) -> torch.Tensor:

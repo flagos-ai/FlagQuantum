@@ -1,0 +1,54 @@
+{
+  "capacity_blocker": "checkpointed_reverse_working_set_exceeds_rank_memory_budget",
+  "capacity_preflight_passed": false,
+  "contraction_path_source": "cotengra:0.8.2",
+  "contraction_path_steps": 467,
+  "distribution_semantics": "planned_rank_owned_tn_slices",
+  "dtype": "complex128",
+  "execution_started": false,
+  "local_world_size": 1,
+  "node_count": 1,
+  "per_slice_estimated_flops": 571923038640,
+  "per_slice_peak_bytes": 1073741824,
+  "rank_preflights": [
+    {
+      "checkpoint_budget_bytes": 17179869184,
+      "checkpoint_memory_plan": {
+        "checkpoint_budget_bytes": 17179869184,
+        "checkpoint_count": 466,
+        "forward_peak_bytes": 7940915488,
+        "forward_workspace_multiplier": 2,
+        "logical_forward_peak_bytes": 3970457744,
+        "predicted_working_set_bytes": 7940915488,
+        "raw_input_bytes": 75712,
+        "rematerialization_peak_bytes": 0,
+        "reverse_cotangent_peak_bytes": 2147514080,
+        "saved_checkpoint_bytes": 3970382016
+      },
+      "estimated_full_tape_bytes": 3970457744,
+      "full_tape_budget_bytes": 1610612736,
+      "passed": false,
+      "rank": 0
+    }
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "slice_count": 8192,
+  "sliced_labels": [
+    120,
+    134,
+    145,
+    148,
+    163,
+    164,
+    165,
+    166,
+    224,
+    262,
+    495,
+    568,
+    611
+  ],
+  "workload": "5x8_4c_full_tape_preflight",
+  "world_size": 1
+}

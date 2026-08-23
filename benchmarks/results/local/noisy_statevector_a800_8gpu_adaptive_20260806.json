@@ -1,0 +1,66 @@
+{
+  "benchmark": "noisy_statevector_a800_8gpu_adaptive_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "completed_trajectories": 128,
+  "converged": true,
+  "depth": 8,
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "global_expectation_z": [
+    [
+      0.43781569600105286,
+      0.5420020818710327,
+      0.31344863772392273,
+      -0.5208454132080078,
+      -0.37717539072036743,
+      0.1966031789779663,
+      0.07040251046419144,
+      0.018981754779815674,
+      -0.39450526237487793,
+      -0.4631786346435547,
+      -0.0741504356265068,
+      -0.0459136888384819
+    ]
+  ],
+  "global_variance": [
+    [
+      0.007431951351463795,
+      0.04695228114724159,
+      0.017744138836860657,
+      0.03184668347239494,
+      0.021044712513685226,
+      0.04924890026450157,
+      0.010879565961658955,
+      0.017802810296416283,
+      0.03626003488898277,
+      0.04958430677652359,
+      0.010124926455318928,
+      0.030920909717679024
+    ]
+  ],
+  "max_cuda_peak_allocated_bytes": 15373824,
+  "max_cuda_peak_reserved_bytes": 27262976,
+  "median_seconds": 0.7667670845985413,
+  "min_trajectories": 128,
+  "n_wires": 12,
+  "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "repeat_seconds": [
+    0.7667670845985413
+  ],
+  "requested_trajectories": 512,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noisy_statevector_distributed_benchmark.v1",
+  "seed": 20260806,
+  "stopped_early": true,
+  "target_standard_error": 0.03,
+  "torch_version": "2.13.0+cu130",
+  "trajectories_per_second": 166.93465665263577,
+  "trajectory_batch_size": 16,
+  "world_size": 8
+}

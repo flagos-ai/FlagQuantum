@@ -1,0 +1,49 @@
+{
+  "calibration_time": "2026-08-07 09:18:56",
+  "frozen_models_sha256": "847ec232c1d98f2525d9cb5857f6d73da64e3124c47e566be84a6699f9ce9852",
+  "interpretation": "post-compile retrospective replay of returned physical QLisp",
+  "manifest_sha256": "29eda005e69a94827927b8eca7d6846b4083fa816c42bc696005e9f74179be87",
+  "rows": [
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 60,
+      "depth": 12,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d12:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071151526462586",
+      "tv_noise_model": 0.07744695083238184,
+      "tv_readout_only": 0.24639503363442136,
+      "tv_statevector": 0.36373772174973734,
+      "tv_uniform": 0.26435546875000004
+    }
+  ],
+  "schema": "flagquantum.quafu_scale_boundary.v1",
+  "shots_per_task": 10240,
+  "summary": {
+    "6": {
+      "noise_model_mean_tv": 0.07744695083238184,
+      "readout_only_mean_tv": 0.24639503363442136,
+      "relative_reduction": 0.7870802333620275,
+      "statevector_mean_tv": 0.36373772174973734,
+      "uniform_mean_tv": 0.26435546875000004
+    }
+  },
+  "tasks": 1
+}

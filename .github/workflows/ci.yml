@@ -59,6 +59,10 @@ jobs:
         run: python tools/correctness_certification.py --check
       - name: Verify capability maturity claims
         run: python tools/check_capability_maturity.py
+      - name: Verify checked-in FlagOS reference evidence
+        run: >-
+          python tools/validate_flagos_reference_evidence.py
+          artifacts/flagos_cuda_reference_a100_20260821.json
       - name: Verify branch-protection required-check contract
         run: python tools/validate_required_checks.py
       - name: Repository size and forbidden artifacts

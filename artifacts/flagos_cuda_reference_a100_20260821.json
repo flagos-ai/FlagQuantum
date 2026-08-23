@@ -1,0 +1,141 @@
+{
+  "schema": "flagquantum_flagos_cuda_reference_evidence_v1",
+  "captured_at": "2026-08-21",
+  "status": "passed",
+  "validation_scope": "flagos_cuda_reference",
+  "artifact_class": "development_reference",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "hardware_certification": false,
+  "source": {
+    "revision": "2c3440f3bf2a207a5487ee0690ef3e05ee44eb00",
+    "tree_dirty": true
+  },
+  "environment_lock": {
+    "path": "ci/flagos_cuda_reference.lock.json",
+    "sha256": "951268e4ddcc1ba169b53e50a13b92cd45377160493188987b6f8c017420a192",
+    "schema": "flagquantum_flagos_environment_lock_v1"
+  },
+  "environment": {
+    "accelerator": "NVIDIA A100-SXM4-40GB",
+    "container_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl:v0.20.2-cuda-ci",
+    "container_image_id": "8244e20acbad",
+    "cuda_version": "13.0.2",
+    "python_version": "3.12.13",
+    "torch_control_package": "2.10.0+cpu",
+    "torch_cuda_assets": "2.10.0+cu130",
+    "torch_fl_commit": "2e00b393cf80088706b460a187aef185d3a283f4"
+  },
+  "isolation": {
+    "ephemeral_container": true,
+    "container_remove_on_exit": true,
+    "source_workspace": "/root/agent_tmp/flagquantum-flagos-validation-20260821",
+    "colleague_project_mounted": false,
+    "container_image_modified": false
+  },
+  "tests": {
+    "selected_unit_tests": {
+      "passed": 36,
+      "failed": 0
+    }
+  },
+  "runtime": {
+    "logical_device": "flagos:0",
+    "device_count": 1,
+    "device_name": "FlagOS device 0",
+    "platform_provider": "torch_fl",
+    "stream_type": "Stream",
+    "event_type": "Event",
+    "memory_allocated_bytes": 17043968,
+    "memory_reserved_bytes": 23068672
+  },
+  "device": "flagos:0",
+  "device_count": 1,
+  "operator_profile": "statevector_local_p0",
+  "operator_evidence_count": 21,
+  "operator_profile_hash": "96235c9057c046d5ba8992969e23883c014b2f69232eac1bd565643be31cdfae",
+  "validation_matrix": [
+    {
+      "dtype": "complex64",
+      "depth": 8,
+      "state_metrics": {
+        "max_abs_error": 1.1076640806111483e-07,
+        "norm_drift": 2.58424959209691e-08,
+        "state_infidelity": 1.7763568394002505e-14
+      },
+      "numerical_validation": {"passed": true}
+    },
+    {
+      "dtype": "complex64",
+      "depth": 32,
+      "state_metrics": {
+        "max_abs_error": 1.563141416939461e-07,
+        "norm_drift": 4.375081008589632e-08,
+        "state_infidelity": 4.3298697960381105e-14
+      },
+      "numerical_validation": {"passed": true}
+    },
+    {
+      "dtype": "complex64",
+      "depth": 128,
+      "state_metrics": {
+        "max_abs_error": 1.8888005738774663e-06,
+        "norm_drift": 3.1792247165984833e-06,
+        "state_infidelity": 3.959055305813308e-13
+      },
+      "numerical_validation": {"passed": true}
+    },
+    {
+      "dtype": "complex128",
+      "depth": 8,
+      "state_metrics": {
+        "max_abs_error": 1.3877787807814457e-17,
+        "norm_drift": 1.1102230246251565e-16,
+        "state_infidelity": 2.220446049250313e-16
+      },
+      "numerical_validation": {"passed": true}
+    },
+    {
+      "dtype": "complex128",
+      "depth": 32,
+      "state_metrics": {
+        "max_abs_error": 3.927683650008203e-16,
+        "norm_drift": 1.1102230246251565e-16,
+        "state_infidelity": 0.0
+      },
+      "numerical_validation": {"passed": true}
+    },
+    {
+      "dtype": "complex128",
+      "depth": 128,
+      "state_metrics": {
+        "max_abs_error": 9.761916494637743e-16,
+        "norm_drift": 4.440892098500626e-16,
+        "state_infidelity": 0.0
+      },
+      "numerical_validation": {"passed": true}
+    }
+  ],
+  "differentiable_certification": {
+    "complex64": {
+      "gradient_relative_error": 1.7419694544694786e-06,
+      "gradient_cosine_similarity": 0.9999999999990534,
+      "norm_drift": 5.825907867240687e-08,
+      "state_infidelity": 1.1102230246251565e-15,
+      "state_max_abs_error": 4.417830273091352e-08
+    },
+    "complex128": {
+      "gradient_relative_error": 4.803526903332504e-16,
+      "gradient_cosine_similarity": 1.0,
+      "norm_drift": 1.1102230246251565e-16,
+      "state_infidelity": 0.0,
+      "state_max_abs_error": 0.0
+    }
+  },
+  "claim_blockers": [
+    "domestic_accelerator_hardware_not_exercised",
+    "route_fallback_absence_not_certified",
+    "production_performance_not_measured"
+  ],
+  "claim_boundary": "CUDA-backed Torch-FL integration reference only; this is not Hygon or other domestic-accelerator hardware certification."
+}

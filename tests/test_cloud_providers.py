@@ -153,11 +153,11 @@ def test_quafu_provider_uses_platform_endpoint_and_token_header():
     assert url.startswith("https://quafu.test/task/run/?")
     assert "chip=chip" in url
     assert payload["circuit"].startswith("OPENQASM")
-    assert payload["compile"] is False
+    assert payload["compile"] is True
     assert headers == {"token": "secret"}
 
 
-def test_quafu_provider_flips_returned_counts():
+def test_quafu_provider_preserves_returned_bit_order_by_default():
     transport = FakeTransport()
     provider = fq.QuafuProvider(base_url="https://quafu.test", transport=transport)
     package = _package("quafu")
@@ -167,6 +167,112 @@ def test_quafu_provider_flips_returned_counts():
 
     assert result.counts == {"00": 3, "11": 5}
     _assert_identity_chain(package, result)
+
+
+def test_quafu_provider_can_reverse_result_bits_for_legacy_consumers():
+    class AsymmetricResultTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            if "/task/result/" in url:
+                return {"status": "Finished", "count": {"01": 3, "10": 5}}
+            return super().get_json(url, headers, timeout)
+
+    provider = fq.QuafuProvider(
+        base_url="https://quafu.test",
+        transport=AsymmetricResultTransport(),
+        reverse_result_bits=True,
+    )
+    package = _package("quafu")
+
+    result = provider.fetch_result(provider.submit(package))
+
+    assert result.counts == {"10": 3, "01": 5}
+
+
+def test_quafu_provider_uses_official_token_env_and_status_discovery(monkeypatch):
+    class StatusTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            self.gets.append((url, headers, timeout))
+            if url.endswith("/task/status/0"):
+                return {"Dongling": 0, "Miaofeng": "Offline"}
+            return super().get_json(url, headers, timeout)
+
+    monkeypatch.setenv("QPU_API_TOKEN", "env-secret")
+    transport = StatusTransport()
+    provider = fq.QuafuProvider(base_url="https://quafu.test", transport=transport)
+
+    backends = provider.discover_backends(5)
+
+    assert [backend.name for backend in backends] == ["Dongling", "Miaofeng"]
+    assert all(backend.n_wires == 5 for backend in backends)
+    assert backends[0].metadata["queue_status"] == 0
+    assert transport.gets[0][1] == {"token": "env-secret"}
+
+
+def test_quafu_provider_run_polls_until_finished():
+    class PollingTransport(FakeTransport):
+        def __init__(self):
+            super().__init__()
+            self.statuses = iter(("Queued", "Running", "Finished"))
+
+        def get_json(self, url, headers, timeout):
+            if "/task/status/" in url:
+                return {"status": next(self.statuses)}
+            return super().get_json(url, headers, timeout)
+
+    provider = fq.QuafuProvider(
+        base_url="https://quafu.test",
+        transport=PollingTransport(),
+        poll_interval=0,
+        result_timeout=1,
+    )
+    package = _package("quafu")
+
+    result = provider.run(package)
+
+    assert result.counts == {"00": 3, "11": 5}
+    _assert_identity_chain(package, result)
+
+
+def test_quafu_provider_fetches_verbatim_chip_info():
+    class ChipInfoTransport(FakeTransport):
+        def get_json(self, url, headers, timeout):
+            self.gets.append((url, headers, timeout))
+            if url.endswith("/task/backendtest/Baihua1"):
+                return {
+                    "calibration_time": "2026-08-07 08:32:27",
+                    "qubits_info": {"Q1": {}},
+                    "couplers_info": {"C0": {}},
+                }
+            return super().get_json(url, headers, timeout)
+
+    transport = ChipInfoTransport()
+    provider = fq.QuafuProvider(
+        base_url="https://quafu.test", token="secret", transport=transport
+    )
+
+    info = provider.fetch_chip_info("Baihua")
+
+    assert info["calibration_time"] == "2026-08-07 08:32:27"
+    assert transport.gets[0][0] == "https://quafu.test/task/backendtest/Baihua1"
+    assert transport.gets[0][1] == {"token": "secret"}
+
+
+def test_quafu_provider_submits_sealed_physical_qasm_without_compile():
+    transport = FakeTransport()
+    provider = fq.QuafuProvider(
+        base_url="https://quafu.test", token="secret", transport=transport
+    )
+    qasm = "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\n"
+
+    handle = provider.submit_physical_qasm(
+        qasm, chip="Baihua", name="physical", shots=1024
+    )
+
+    _, payload, headers, _ = transport.posts[0]
+    assert payload == {"circuit": qasm, "compile": False, "options": {}}
+    assert headers == {"token": "secret"}
+    assert handle.payload["compile"] is False
+    assert len(handle.payload["physical_qasm_sha256"]) == 64
 
 
 def test_tencent_provider_uses_real_task_contract():

@@ -1,0 +1,45 @@
+{
+  "baseline": {
+    "estimated_cost": 6157665077713,
+    "n_slices": 1,
+    "n_steps": 494,
+    "output_size": 1,
+    "peak_size": 68719476736,
+    "sliced_labels": [],
+    "strategy": "quality_multistart",
+    "total_intermediate_size": 939638007970
+  },
+  "baseline_planning_seconds": 15.758196115028113,
+  "dtype": "torch.complex64",
+  "nodes": 495,
+  "planner": "nontrivial_adjacency_fixed_tree_pareto",
+  "slicing": {
+    "baseline_estimated_cost": 6157665077713,
+    "budget_satisfied": true,
+    "element_size_bytes": 8,
+    "n_slices": 16,
+    "peak_bytes": 34359738368,
+    "peak_size": 4294967296,
+    "per_slice_cost": 800498682073,
+    "recomputation_factor": 2.0800057735398907,
+    "reduction_method": "kahan_compensated",
+    "slice_shape": [
+      2,
+      2,
+      2,
+      2
+    ],
+    "sliced_labels": [
+      780,
+      319,
+      760,
+      321
+    ],
+    "target_peak_bytes": 64424509440,
+    "target_peak_size": 8053063680,
+    "total_estimated_cost": 12807978913168
+  },
+  "slicing_planning_seconds": 2.6679891678504646,
+  "target_peak_bytes": 64424509440,
+  "workload": "30q_5x6_grid_7cycles"
+}

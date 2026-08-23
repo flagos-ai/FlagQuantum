@@ -32,12 +32,35 @@ def _imports(path: Path) -> tuple[tuple[str, str], ...]:
     return tuple(imports)
 
 
+def _torch_cuda_use_count(path: Path) -> int:
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    return sum(
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "torch"
+        and node.attr == "cuda"
+        for node in ast.walk(tree)
+    )
+
+
 def architecture_errors() -> tuple[str, ...]:
     errors: list[str] = []
     boundaries = CONFIG["boundaries"]
     exceptions = CONFIG.get("legacy_exceptions", {})
+    legacy_subsystems = CONFIG.get("legacy_subsystems", {})
     default_ceiling = int(boundaries["default_module_line_ceiling"])
     root_ceiling = int(boundaries["root_init_line_ceiling"])
+    accelerator_boundaries = CONFIG.get("accelerator_boundaries", {})
+    direct_cuda_allowed = set(accelerator_boundaries.get("direct_cuda_allowed", ()))
+    direct_cuda_call_ceiling = {
+        str(path): int(count)
+        for path, count in accelerator_boundaries.get(
+            "direct_cuda_call_ceiling", {}
+        ).items()
+    }
+    torch_fl_import_allowed = set(
+        accelerator_boundaries.get("torch_fl_import_allowed", ())
+    )
 
     removed_runtime_stack = PACKAGE / "runtime_stack"
     if removed_runtime_stack.exists():
@@ -73,6 +96,45 @@ def architecture_errors() -> tuple[str, ...]:
     for path in sorted(PACKAGE.rglob("*.py")):
         relative = path.relative_to(ROOT).as_posix()
         imports = _imports(path)
+        cuda_use_count = _torch_cuda_use_count(path)
+        cuda_ceiling = direct_cuda_call_ceiling.get(relative, 0)
+        if relative not in direct_cuda_allowed and cuda_use_count > cuda_ceiling:
+            errors.append(
+                f"{relative}: {cuda_use_count} direct torch.cuda uses exceed "
+                f"the migration ceiling {cuda_ceiling}; use PlatformRuntime"
+            )
+        for module, _ in imports:
+            if (
+                module == "torch_fl" or module.startswith("torch_fl.")
+            ) and relative not in torch_fl_import_allowed:
+                errors.append(
+                    f"{relative}: torch_fl imports are isolated to the FlagOS adapter"
+                )
+        for subsystem_name, policy in legacy_subsystems.items():
+            allowed_importers = set(policy.get("allowed_importers", ()))
+            if relative in allowed_importers:
+                continue
+            legacy_roots = {
+                item.removeprefix("flagquantum/")
+                .removesuffix("/__init__.py")
+                .removesuffix(".py")
+                .replace("/", ".")
+                for item in policy.get("modules", ())
+            }
+            for module, name in imports:
+                imported = {module, name}
+                if any(
+                    candidate == root
+                    or candidate.endswith(f".{root}")
+                    or root.startswith(f"{candidate}.")
+                    for candidate in imported
+                    if candidate
+                    for root in legacy_roots
+                ):
+                    errors.append(
+                        f"{relative}: new dependency on closed legacy subsystem "
+                        f"{subsystem_name}: {module or name}"
+                    )
         for module, name in imports:
             if name == "*":
                 errors.append(f"{relative}: star imports are forbidden")
@@ -90,6 +152,38 @@ def architecture_errors() -> tuple[str, ...]:
             for module, _ in imports:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(f"{relative}: core imports forbidden layer {module}")
+
+        if relative.startswith("flagquantum/noise/"):
+            forbidden = tuple(boundaries["noise_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: noise semantics import forbidden layer {module}"
+                    )
+
+        if relative.startswith("flagquantum/compilation/noise/"):
+            forbidden = tuple(boundaries["compilation_noise_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: noise compilation imports forbidden layer {module}"
+                    )
+
+        if relative.startswith("flagquantum/runtime/backends/density_matrix/"):
+            forbidden = tuple(boundaries["density_backend_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: density backend imports forbidden layer {module}"
+                    )
+
+        if relative.startswith("flagquantum/runtime/trajectories/"):
+            forbidden = tuple(boundaries["trajectory_runtime_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: trajectory runtime imports forbidden layer {module}"
+                    )
 
         if relative in {
             "flagquantum/runtime/distributed/protocols.py",

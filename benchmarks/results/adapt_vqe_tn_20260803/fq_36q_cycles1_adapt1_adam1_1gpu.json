@@ -1,0 +1,519 @@
+{
+  "adapt_iterations_completed": 1,
+  "adapt_iterations_requested": 1,
+  "backend": "tensor_network",
+  "cols": 6,
+  "converged": false,
+  "cycles": 1,
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex128",
+  "execution_seconds": 10.332104057073593,
+  "final_energy": -2.648458052052936,
+  "hamiltonian_terms": 132,
+  "implementation": "FlagQuantum",
+  "initial_energy": -2.5941211908267388,
+  "iterations": [
+    {
+      "energy_after": -2.648458052052936,
+      "energy_before": -2.5941211908267388,
+      "optimization_history": [
+        -2.5941211908267388
+      ],
+      "optimization_seconds": 1.7028092709369957,
+      "pool_gradients": [
+        -0.5245763624852214,
+        0.2859879539640762,
+        0.721113916389051,
+        0.6312777567198837,
+        -3.960074492804143e-17,
+        8.610257610094572e-18,
+        -3.449376263581671e-17,
+        -1.420691824233261e-19,
+        -8.408876203590596e-17,
+        3.517929504672237e-18,
+        -3.747839737154956e-17,
+        1.6930685365275752e-16,
+        4.58580049115797e-17,
+        4.2031953735292017e-16,
+        -8.778160067297538e-17,
+        3.498230679782419e-17
+      ],
+      "screening_seconds": 1.6167477341368794,
+      "selected_gradient": 0.721113916389051,
+      "selected_pool_index": 2
+    }
+  ],
+  "max_intermediate_bytes": 2147483648,
+  "operator_pool": [
+    {
+      "kind": "ry",
+      "wires": [
+        0
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        10
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        21
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        31
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        2,
+        8
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        8,
+        14
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        14,
+        15
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        19,
+        25
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        25,
+        31
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        32,
+        33
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        3,
+        9
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        9,
+        15
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        15,
+        16
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        20,
+        26
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        26,
+        32
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        34,
+        35
+      ]
+    }
+  ],
+  "operator_pool_size": 16,
+  "optimization_steps_per_iteration": 1,
+  "parameter_dtype": "float64",
+  "parameters": [
+    -0.07999999889060525
+  ],
+  "path_planning_seconds": 0.875917264726013,
+  "peak_cuda_allocated_bytes": 70349824,
+  "planner": "cotengra",
+  "qubits": 36,
+  "rows": 6,
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "screening_method": "commutator",
+  "selected_pool_indices": [
+    2
+  ],
+  "slicing_plans": {
+    "0": {
+      "baseline_estimated_cost": 164585668,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 5439488,
+      "peak_size": 339968,
+      "per_slice_cost": 164585668,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 164585668
+    },
+    "1": {
+      "baseline_estimated_cost": 386312,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 65536,
+      "peak_size": 4096,
+      "per_slice_cost": 386312,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 386312
+    },
+    "10": {
+      "baseline_estimated_cost": 7944,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 1280,
+      "peak_size": 80,
+      "per_slice_cost": 7944,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 7944
+    },
+    "11": {
+      "baseline_estimated_cost": 18864,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 4096,
+      "peak_size": 256,
+      "per_slice_cost": 18864,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 18864
+    },
+    "12": {
+      "baseline_estimated_cost": 18160,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 4096,
+      "peak_size": 256,
+      "per_slice_cost": 18160,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 18160
+    },
+    "13": {
+      "baseline_estimated_cost": 11909,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 2048,
+      "peak_size": 128,
+      "per_slice_cost": 11909,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 11909
+    },
+    "14": {
+      "baseline_estimated_cost": 7581,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 2048,
+      "peak_size": 128,
+      "per_slice_cost": 7581,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 7581
+    },
+    "15": {
+      "baseline_estimated_cost": 5570,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 512,
+      "peak_size": 32,
+      "per_slice_cost": 5570,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 5570
+    },
+    "16": {
+      "baseline_estimated_cost": 4766,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 256,
+      "peak_size": 16,
+      "per_slice_cost": 4766,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 4766
+    },
+    "17": {
+      "baseline_estimated_cost": 164680468,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 313,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 5439488,
+      "peak_size": 339968,
+      "per_slice_cost": 164680468,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 164680468
+    },
+    "2": {
+      "baseline_estimated_cost": 471080,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 98304,
+      "peak_size": 6144,
+      "per_slice_cost": 471080,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 471080
+    },
+    "3": {
+      "baseline_estimated_cost": 83525,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 40960,
+      "peak_size": 2560,
+      "per_slice_cost": 83525,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 83525
+    },
+    "4": {
+      "baseline_estimated_cost": 7182,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 1280,
+      "peak_size": 80,
+      "per_slice_cost": 7182,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 7182
+    },
+    "5": {
+      "baseline_estimated_cost": 845766,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 147456,
+      "peak_size": 9216,
+      "per_slice_cost": 845766,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 845766
+    },
+    "6": {
+      "baseline_estimated_cost": 1201648,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 458752,
+      "peak_size": 28672,
+      "per_slice_cost": 1201648,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 1201648
+    },
+    "7": {
+      "baseline_estimated_cost": 931216,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 393216,
+      "peak_size": 24576,
+      "per_slice_cost": 931216,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 931216
+    },
+    "8": {
+      "baseline_estimated_cost": 178675,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 61440,
+      "peak_size": 3840,
+      "per_slice_cost": 178675,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 178675
+    },
+    "9": {
+      "baseline_estimated_cost": 29737,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 311,
+      "element_size_bytes": 16,
+      "n_slices": 1,
+      "peak_bytes": 16384,
+      "peak_size": 1024,
+      "per_slice_cost": 29737,
+      "recomputation_factor": 1.0,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [],
+      "sliced_labels": [],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 29737
+    }
+  },
+  "workload": "qubit_adapt_vqe_grid_tfim"
+}

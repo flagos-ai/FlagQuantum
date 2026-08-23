@@ -1,0 +1,820 @@
+{
+  "benchmark": "distributed_backend_preflight",
+  "communication_probes": [
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.2321898341178894,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.00040623266249895096,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.1350469910539687,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23156933719292283,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0005924180150032043,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.298870289232582,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23209234792739153,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0004122569225728512,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.1117993472144008,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.2317844768986106,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0006273849867284298,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.1351341190747917,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23248342238366604,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.000205878634005785,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.123397868126631,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23246286995708942,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.00020566675812005997,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.1655174694024026,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23242938285693526,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.00020740507170557976,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.251406088937074,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23243115236982703,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.00020458409562706947,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.1351735261268914,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.2301104860380292,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0003759567625820637,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.505712980404496,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.23228782787919044,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0003650491125881672,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.505715558771044,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.2308828099630773,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0003739893436431885,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.3867582250386477,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.22751410026103258,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0022600716911256313,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.3897297009825706,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.22834613639861345,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.000562506727874279,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.3480357341468334,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.22741663688793778,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.00020487001165747643,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.417708784341812,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.22587814601138234,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.0001977081410586834,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.417708189226687,
+      "initialized": true
+    },
+    {
+      "all_gather_object_count": 16,
+      "all_gather_object_seconds": 0.22565584303811193,
+      "all_reduce_expected_sum": 136.0,
+      "all_reduce_ok": true,
+      "all_reduce_seconds": 0.00019473489373922348,
+      "all_reduce_sum": 136.0,
+      "barrier_seconds": 2.459473693743348,
+      "initialized": true
+    }
+  ],
+  "device": "cuda:0",
+  "dist_backend": "nccl",
+  "dist_timeout_seconds": 300.0,
+  "environment": {
+    "cuda_available": true,
+    "cuda_device_count": 8,
+    "diagnostic_env": {
+      "LOCAL_RANK": "0",
+      "LOCAL_WORLD_SIZE": "8",
+      "MASTER_ADDR": "192.0.2.4",
+      "MASTER_PORT": "29632",
+      "NCCL_DEBUG": "INFO",
+      "NCCL_SOCKET_IFNAME": "ens22f0",
+      "RANK": "0",
+      "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+      "TORCH_NCCL_BLOCKING_WAIT": "1",
+      "WORLD_SIZE": "16",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "local_rank": 0,
+  "rank": 0,
+  "rank_diagnostics": [
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 0,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83354648576,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:0",
+      "env": {
+        "LOCAL_RANK": "0",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "0",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "pid": 2350005,
+      "python": "3.12.13",
+      "rank": 0,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 1,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:1",
+      "env": {
+        "LOCAL_RANK": "1",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "1",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "pid": 2350006,
+      "python": "3.12.13",
+      "rank": 1,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 2,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:2",
+      "env": {
+        "LOCAL_RANK": "2",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "2",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "pid": 2350007,
+      "python": "3.12.13",
+      "rank": 2,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 3,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:3",
+      "env": {
+        "LOCAL_RANK": "3",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "3",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "pid": 2350008,
+      "python": "3.12.13",
+      "rank": 3,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 4,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:4",
+      "env": {
+        "LOCAL_RANK": "4",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "4",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "pid": 2350009,
+      "python": "3.12.13",
+      "rank": 4,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 5,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:5",
+      "env": {
+        "LOCAL_RANK": "5",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "5",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "pid": 2350010,
+      "python": "3.12.13",
+      "rank": 5,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 6,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:6",
+      "env": {
+        "LOCAL_RANK": "6",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "6",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "pid": 2350011,
+      "python": "3.12.13",
+      "rank": 6,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 7,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 83826049024,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:7",
+      "env": {
+        "LOCAL_RANK": "7",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "7",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "pid": 2350012,
+      "python": "3.12.13",
+      "rank": 7,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 0,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 5762121728,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:0",
+      "env": {
+        "LOCAL_RANK": "0",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "8",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 0,
+      "pid": 2594172,
+      "python": "3.12.13",
+      "rank": 8,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 1,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 5539823616,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:1",
+      "env": {
+        "LOCAL_RANK": "1",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "9",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 1,
+      "pid": 2594173,
+      "python": "3.12.13",
+      "rank": 9,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 2,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 6900875264,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:2",
+      "env": {
+        "LOCAL_RANK": "2",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "10",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 2,
+      "pid": 2594174,
+      "python": "3.12.13",
+      "rank": 10,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 3,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 6900875264,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:3",
+      "env": {
+        "LOCAL_RANK": "3",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "11",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 3,
+      "pid": 2594175,
+      "python": "3.12.13",
+      "rank": 11,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 4,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 5363662848,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:4",
+      "env": {
+        "LOCAL_RANK": "4",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "12",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 4,
+      "pid": 2594176,
+      "python": "3.12.13",
+      "rank": 12,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 5,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 5539823616,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:5",
+      "env": {
+        "LOCAL_RANK": "5",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "13",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 5,
+      "pid": 2594177,
+      "python": "3.12.13",
+      "rank": 13,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 6,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 5736955904,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:6",
+      "env": {
+        "LOCAL_RANK": "6",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "14",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 6,
+      "pid": 2594178,
+      "python": "3.12.13",
+      "rank": 14,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    },
+    {
+      "backend": "nccl",
+      "cuda": {
+        "available": true,
+        "capability": [
+          8,
+          0
+        ],
+        "index": 7,
+        "max_memory_allocated_bytes": 4096,
+        "max_memory_reserved_bytes": 2097152,
+        "mem_get_info_free_bytes": 6900875264,
+        "mem_get_info_total_bytes": 85093777408,
+        "name": "NVIDIA A800-SXM4-80GB",
+        "total_memory_bytes": 85093777408
+      },
+      "device": "cuda:7",
+      "env": {
+        "LOCAL_RANK": "7",
+        "LOCAL_WORLD_SIZE": "8",
+        "MASTER_ADDR": "192.0.2.4",
+        "MASTER_PORT": "29632",
+        "NCCL_DEBUG": "INFO",
+        "NCCL_SOCKET_IFNAME": "ens22f0",
+        "RANK": "15",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        "TORCH_NCCL_BLOCKING_WAIT": "1",
+        "WORLD_SIZE": "16",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 7,
+      "pid": 2594179,
+      "python": "3.12.13",
+      "rank": 15,
+      "torch": "2.13.0+cu130",
+      "world_size": 16
+    }
+  ],
+  "rank_summary": {
+    "gpu_counts": {
+      "NVIDIA A800-SXM4-80GB": 16
+    },
+    "gpu_names": [
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "host_count": 2,
+    "ranks_by_host": {
+      "p-kt-lc-a800-04": 8,
+      "p-kt-lc-a800-06": 8
+    },
+    "warnings": []
+  },
+  "status": "ok",
+  "world_size": 16,
+  "_privacy_redaction": {
+    "kind": "publication_copy",
+    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
+  }
+}

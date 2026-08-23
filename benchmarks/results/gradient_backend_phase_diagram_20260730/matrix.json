@@ -1,0 +1,1792 @@
+[
+  {
+    "topology": "chain",
+    "qubits": 24,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 805306368,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 36864,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 3072,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 24,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 805306368,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 36864,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 24576,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 24,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.043478260869565216,
+    "estimated_mps_bond": 4096,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 805306368,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 38654705664,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 3072,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 24,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.043478260869565216,
+    "estimated_mps_bond": 4096,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 805306368,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 38654705664,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 24576,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 30,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 51539607552,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 46080,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 3840,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 30,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 51539607552,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 46080,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 30720,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 30,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.034482758620689655,
+    "estimated_mps_bond": 32768,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 51539607552,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 3092376453120,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 3840,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 30,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.034482758620689655,
+    "estimated_mps_bond": 32768,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 51539607552,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 3092376453120,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 30720,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 36,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 3298534883328,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 55296,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 4608,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 36,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 3298534883328,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 55296,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 36864,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 36,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.02857142857142857,
+    "estimated_mps_bond": 262144,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 3298534883328,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 237494511599616,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 4608,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 36,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.02857142857142857,
+    "estimated_mps_bond": 262144,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 3298534883328,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 237494511599616,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 36864,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 40,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 52776558133248,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 61440,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 5120,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 40,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 52776558133248,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 61440,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 40960,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 40,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.02564102564102564,
+    "estimated_mps_bond": 1048576,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 52776558133248,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 4222124650659840,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 5120,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 40,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.02564102564102564,
+    "estimated_mps_bond": 1048576,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 52776558133248,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 4222124650659840,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 40960,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 64,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 885443715538058477568,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 98304,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 8192,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 64,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 885443715538058477568,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 98304,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 65536,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 64,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.015873015873015872,
+    "estimated_mps_bond": 4294967296,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 885443715538058477568,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 113336795588871485128704,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 8192,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 64,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.015873015873015872,
+    "estimated_mps_bond": 4294967296,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 885443715538058477568,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 113336795588871485128704,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 65536,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 128,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 16333553612205046246241981156724874149888,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 196608,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 16384,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 128,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 16333553612205046246241981156724874149888,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 196608,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 131072,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 128,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.007874015748031496,
+    "estimated_mps_bond": 18446744073709551616,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 16333553612205046246241981156724874149888,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 4181389724724491839037947176121567782371328,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 16384,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 128,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.007874015748031496,
+    "estimated_mps_bond": 18446744073709551616,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 16333553612205046246241981156724874149888,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 4181389724724491839037947176121567782371328,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 131072,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 256,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 5558020283391177380331407280417019576956959263950747073893964032379830222716928,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 393216,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 32768,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "chain",
+    "qubits": 256,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "mps",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 1.0,
+    "estimated_mps_bond": 4,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 5558020283391177380331407280417019576956959263950747073893964032379830222716928,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": true,
+        "estimated_memory_bytes": 393216,
+        "score": 95,
+        "reasons": [
+          "one_dimensional_locality"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 262144,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 256,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.00392156862745098,
+    "estimated_mps_bond": 340282366920938463463374607431768211456,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 5558020283391177380331407280417019576956959263950747073893964032379830222716928,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 2845706385096282818729680527573514023401963143142782501833709584578473074031067136,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 32768,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "binary_tree",
+    "qubits": 256,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 1,
+    "nearest_neighbour_fraction": 0.00392156862745098,
+    "estimated_mps_bond": 340282366920938463463374607431768211456,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 5558020283391177380331407280417019576956959263950747073893964032379830222716928,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 2845706385096282818729680527573514023401963143142782501833709584578473074031067136,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 262144,
+        "score": 77,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 24,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 4,
+    "nearest_neighbour_fraction": 0.5263157894736842,
+    "estimated_mps_bond": 4096,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 805306368,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 38654705664,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 24576,
+        "score": 68,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 24,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 4,
+    "nearest_neighbour_fraction": 0.5263157894736842,
+    "estimated_mps_bond": 4096,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 805306368,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 38654705664,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 196608,
+        "score": 68,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 30,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 5,
+    "nearest_neighbour_fraction": 0.5102040816326531,
+    "estimated_mps_bond": 32768,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 51539607552,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 3092376453120,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 61440,
+        "score": 65,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 30,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "statevector",
+    "require_gradients": true,
+    "interaction_width_proxy": 5,
+    "nearest_neighbour_fraction": 0.5102040816326531,
+    "estimated_mps_bond": 32768,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": true,
+        "estimated_memory_bytes": 51539607552,
+        "score": 115,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": []
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 3092376453120,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": false,
+        "estimated_memory_bytes": 491520,
+        "score": 65,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": [
+          "dense_statevector_is_lower_risk_for_this_capacity"
+        ]
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 36,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 6,
+    "nearest_neighbour_fraction": 0.5,
+    "estimated_mps_bond": 262144,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 3298534883328,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 237494511599616,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 147456,
+        "score": 62,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 36,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 6,
+    "nearest_neighbour_fraction": 0.5,
+    "estimated_mps_bond": 262144,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 3298534883328,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 237494511599616,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 1179648,
+        "score": 62,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 64,
+    "target": "expectation",
+    "target_count": 1,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 10,
+    "nearest_neighbour_fraction": 0.5,
+    "estimated_mps_bond": 4294967296,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 885443715538058477568,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 113336795588871485128704,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 4194304,
+        "score": 50,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  },
+  {
+    "topology": "grid",
+    "qubits": 64,
+    "target": "local_observables",
+    "target_count": 8,
+    "evidence_level": "structural_capacity_prediction",
+    "selected_backend": "tensor_network",
+    "require_gradients": true,
+    "interaction_width_proxy": 10,
+    "nearest_neighbour_fraction": 0.5,
+    "estimated_mps_bond": 4294967296,
+    "warnings": [],
+    "candidates": [
+      {
+        "backend": "statevector",
+        "available": false,
+        "estimated_memory_bytes": 885443715538058477568,
+        "score": 30,
+        "reasons": [
+          "exact_dense_fast_path"
+        ],
+        "blockers": [
+          "dense_state_exceeds_per_rank_budget"
+        ]
+      },
+      {
+        "backend": "mps",
+        "available": false,
+        "estimated_memory_bytes": 113336795588871485128704,
+        "score": 50,
+        "reasons": [
+          "bounded_bond_path"
+        ],
+        "blockers": [
+          "mps_estimate_exceeds_per_rank_budget",
+          "unbounded_bond_growth_on_nonlocal_topology"
+        ]
+      },
+      {
+        "backend": "tensor_network",
+        "available": true,
+        "estimated_memory_bytes": 33554432,
+        "score": 50,
+        "reasons": [
+          "sparse_output_contraction",
+          "path_preflight_required"
+        ],
+        "blockers": []
+      }
+    ]
+  }
+]

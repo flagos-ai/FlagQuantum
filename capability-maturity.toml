@@ -82,6 +82,24 @@ integration_tests = "tests/distributed/statevector_training_runtime.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/concepts/DISTRIBUTED_QUANTUM_AI_PRINCIPLES.md"
 
+[capabilities.flagos_statevector_reference]
+title = "FlagOS local statevector CUDA reference"
+summary = "Exercise the local differentiable statevector path through Torch-FL's logical flagos device on a locked CUDA reference environment."
+category = "simulation_and_training"
+user_goals = ["Check FlagQuantum and Torch-FL integration", "Audit the statevector operator profile", "Compare complex numerical behavior with a CPU complex128 reference"]
+public_apis = ["resolve_device", "run"]
+runtime_modes = ["statevector"]
+hardware = ["nvidia_a100_cuda_reference"]
+gradient_support = "development_evidence"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md"
+documentation = "docs/reference/STATEVECTOR_OPERATOR_PROFILES.md"
+level = "development_evidence"
+owner = "FlagQuantum and Torch-FL integration maintainers"
+limitations = "CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim."
+focused_tests = "tests/unit/test_flagos_reference_evidence.py"
+development_artifact = "artifacts/flagos_cuda_reference_a100_20260821.json"
+
 [capabilities.sharded_mps_training]
 title = "Differentiable and sharded MPS training"
 summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."
@@ -89,14 +107,14 @@ category = "distributed_execution"
 user_goals = ["Train a large low-entanglement system", "Distribute one MPS across several GPUs", "Inspect variable-bond MPS capacity"]
 public_apis = ["run_mps", "train_distributed_mps", "plan_production_mps"]
 runtime_modes = ["mps", "distributed_mps"]
-hardware = ["cpu", "single_gpu", "multi_gpu"]
+hardware = ["cpu", "single_gpu", "multi_gpu", "multi_node"]
 gradient_support = "exact"
 distribution_semantics = "sharded_across_ranks"
 quick_start = "examples/distributed_mps/variable_bond_capacity_8gpu.py"
 documentation = "examples/distributed_mps/README.md"
 level = "development_evidence"
 owner = "MPS maintainers"
-limitations = "Single-node 2/4/8-GPU forward and boundary transport plus a 100-step 8-GPU SGD soak are validated; other optimizers, multi-node operation, and release payload evidence remain incomplete."
+limitations = "Single-node and dual-node execution plus matched checkpoint/restart are validated. A sealed two-node 16×A800 capacity run completes 24,576 sites at χ768 with 215.84 GiB logical state after a matched one-A800 OOM; all 15 boundaries pass, discarded weight is 8.39e-6 under the 0.1 budget, and peak allocation is 26.92–27.24 GiB/rank. Matched eager/eager SGD and Adam 100-step soaks have zero measured live-memory growth and zero restart error. Boundary instructions still execute serially by owner, leaving non-owner GPUs in low-power NCCL wait; layer-parallel contraction/SVD, capacity multi-step soak, a sealed fault matrix, clean/signable source, repeated evidence, and the release payload remain incomplete."
 focused_tests = "tests/unit/test_issue052_mps_training.py"
 development_artifact = "benchmarks/results/local/mps_single_node_certification.json"
 
@@ -116,6 +134,23 @@ level = "experimental"
 owner = "tensor-network maintainers"
 limitations = "General reverse contraction and production distributed transport are not certified."
 focused_tests = "tests/test_tensor_network.py"
+
+[capabilities.noisy_simulation]
+title = "Exact and trajectory-based noisy simulation"
+summary = "Lower validated Kraus noise models into FlagQuantum IR and execute exact density-matrix or MPS quantum-trajectory paths."
+category = "simulation_and_training"
+user_goals = ["Validate small noisy circuits exactly", "Evaluate low-entanglement noisy circuits with MPS trajectories", "Resume reproducible trajectory ensembles"]
+public_apis = ["NoiseModel", "noisy_density_matrix", "run_noisy_mps"]
+runtime_modes = ["density_matrix", "noisy_mps"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path_or_rank_local_trajectory_partition"
+quick_start = "examples/noisy_simulation_v1.py"
+documentation = "docs/guides/NOISY_SIMULATION.md"
+level = "experimental"
+owner = "noise runtime maintainers"
+limitations = "Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback."
+focused_tests = "tests/test_noise.py"
 
 [capabilities.cloud_deployment]
 title = "Circuit packaging and cloud deployment"

@@ -1,0 +1,108 @@
+{
+  "benchmark": "scalability_results_audit",
+  "claimable_count": 0,
+  "claimable_paths": [],
+  "file_count": 5,
+  "invalid_count": 0,
+  "invalid_paths": [],
+  "records": [
+    {
+      "benchmark": null,
+      "claim_evidence_type": "production_runtime",
+      "distribution_semantics": "single_device_fast_path",
+      "path": "benchmarks/results/tn_complex_scaling_20260802/fq_40q_4c_shared64_e2e128_1gpu.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "production_runtime",
+        "distribution_semantics": "single_device_fast_path",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": null,
+      "claim_evidence_type": "production_runtime",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/tn_complex_scaling_20260802/fq_40q_4c_shared64_e2e128_2gpu.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "production_runtime",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": null,
+      "claim_evidence_type": "production_runtime",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/tn_complex_scaling_20260802/fq_40q_4c_shared64_e2e128_4gpu.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "production_runtime",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": null,
+      "claim_evidence_type": "production_runtime",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/tn_complex_scaling_20260802/fq_40q_4c_shared64_e2e128_8gpu.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "production_runtime",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": null,
+      "claim_evidence_type": "production_runtime",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/tn_complex_scaling_20260802/fq_40q_4c_shared64_e2e128_16gpu.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "production_runtime",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    }
+  ]
+}

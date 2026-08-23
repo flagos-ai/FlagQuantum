@@ -1,0 +1,542 @@
+{
+  "calibration_time": "2026-08-07 09:18:56",
+  "frozen_models_sha256": "847ec232c1d98f2525d9cb5857f6d73da64e3124c47e566be84a6699f9ce9852",
+  "interpretation": "post-compile retrospective replay of returned physical QLisp",
+  "manifest_sha256": "29eda005e69a94827927b8eca7d6846b4083fa816c42bc696005e9f74179be87",
+  "rows": [
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "x",
+      "cz_count": 0,
+      "depth": 0,
+      "executed_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "key": "n6:d0:x",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071148544929477",
+      "tv_noise_model": 0.025870640499294946,
+      "tv_readout_only": 0.02674624838910583,
+      "tv_statevector": 0.1816727555242212,
+      "tv_uniform": 0.76806640625
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "y",
+      "cz_count": 0,
+      "depth": 0,
+      "executed_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "key": "n6:d0:y",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071149085898329",
+      "tv_noise_model": 0.04798562601208686,
+      "tv_readout_only": 0.047222879809669396,
+      "tv_statevector": 0.06015622485429048,
+      "tv_uniform": 0.060156249999999994
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 0,
+      "depth": 0,
+      "executed_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "key": "n6:d0:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071148432206490",
+      "tv_noise_model": 0.030572459002723918,
+      "tv_readout_only": 0.030616228366141814,
+      "tv_statevector": 0.10569318932502939,
+      "tv_uniform": 0.58603515625
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "x",
+      "cz_count": 60,
+      "depth": 12,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d12:x",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071152114244298",
+      "tv_noise_model": 0.09643062581308186,
+      "tv_readout_only": 0.33081239639993865,
+      "tv_statevector": 0.47297827817264987,
+      "tv_uniform": 0.22402343749999998
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "y",
+      "cz_count": 60,
+      "depth": 12,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d12:y",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071152284879936",
+      "tv_noise_model": 0.10560167944058776,
+      "tv_readout_only": 0.1262724158158448,
+      "tv_statevector": 0.19753511629533024,
+      "tv_uniform": 0.09687499999999999
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 60,
+      "depth": 12,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d12:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071151526462586",
+      "tv_noise_model": 0.07744695083238184,
+      "tv_readout_only": 0.24639503363442136,
+      "tv_statevector": 0.36373772174973734,
+      "tv_uniform": 0.26435546875000004
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "x",
+      "cz_count": 5,
+      "depth": 1,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d1:x",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071149306725141",
+      "tv_noise_model": 0.038557382510043675,
+      "tv_readout_only": 0.05806952508221101,
+      "tv_statevector": 0.15146644928754113,
+      "tv_uniform": 0.22529296875
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "y",
+      "cz_count": 5,
+      "depth": 1,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d1:y",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071149418287138",
+      "tv_noise_model": 0.061339836241677395,
+      "tv_readout_only": 0.06788313080320449,
+      "tv_statevector": 0.11553360410034656,
+      "tv_uniform": 0.16552734375
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 5,
+      "depth": 1,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d1:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071149195222798",
+      "tv_noise_model": 0.0544168315434945,
+      "tv_readout_only": 0.030368423975306483,
+      "tv_statevector": 0.23226337714793316,
+      "tv_uniform": 0.5732421875
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "x",
+      "cz_count": 10,
+      "depth": 2,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d2:x",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071150047432381",
+      "tv_noise_model": 0.04822030621580779,
+      "tv_readout_only": 0.09011623460777539,
+      "tv_statevector": 0.17752075335092743,
+      "tv_uniform": 0.32353515625000007
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "y",
+      "cz_count": 10,
+      "depth": 2,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d2:y",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071150161082150",
+      "tv_noise_model": 0.11675846292637287,
+      "tv_readout_only": 0.12206430343621832,
+      "tv_statevector": 0.16847703776729758,
+      "tv_uniform": 0.1615234375
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 10,
+      "depth": 2,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d2:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071149533508434",
+      "tv_noise_model": 0.043349696852965275,
+      "tv_readout_only": 0.07990360799947496,
+      "tv_statevector": 0.13458639193249838,
+      "tv_uniform": 0.4134765625
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "x",
+      "cz_count": 20,
+      "depth": 4,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d4:x",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071150413856626",
+      "tv_noise_model": 0.06353459190577268,
+      "tv_readout_only": 0.1430077151586907,
+      "tv_statevector": 0.23292368842047612,
+      "tv_uniform": 0.29296875
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "y",
+      "cz_count": 20,
+      "depth": 4,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d4:y",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071150535352211",
+      "tv_noise_model": 0.10147318956442178,
+      "tv_readout_only": 0.11973364751890472,
+      "tv_statevector": 0.21024471294949762,
+      "tv_uniform": 0.1537109375
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 20,
+      "depth": 4,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d4:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071150282279415",
+      "tv_noise_model": 0.0585906436899677,
+      "tv_readout_only": 0.085490920493165,
+      "tv_statevector": 0.2463799085817982,
+      "tv_uniform": 0.2716796875
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "x",
+      "cz_count": 40,
+      "depth": 8,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d8:x",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071151215235700",
+      "tv_noise_model": 0.07803288213908671,
+      "tv_readout_only": 0.20687751086006206,
+      "tv_statevector": 0.30434686436793756,
+      "tv_uniform": 0.25087890625
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "y",
+      "cz_count": 40,
+      "depth": 8,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d8:y",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071151353526422",
+      "tv_noise_model": 0.08549569817259907,
+      "tv_readout_only": 0.16206559082013428,
+      "tv_statevector": 0.2411371618742123,
+      "tv_uniform": 0.13369140625
+    },
+    {
+      "assignment_mapping": [
+        129,
+        124,
+        125,
+        126,
+        127,
+        128
+      ],
+      "basis": "z",
+      "cz_count": 40,
+      "depth": 8,
+      "executed_mapping": [
+        129,
+        128,
+        127,
+        126,
+        125,
+        124
+      ],
+      "key": "n6:d8:z",
+      "n_wires": 6,
+      "shots": 10240,
+      "task_id": "2608071151077254327",
+      "tv_noise_model": 0.0761722472961992,
+      "tv_readout_only": 0.2267955966751092,
+      "tv_statevector": 0.3159008357678539,
+      "tv_uniform": 0.3421875
+    }
+  ],
+  "schema": "flagquantum.quafu_scale_boundary.v1",
+  "shots_per_task": 10240,
+  "summary": {
+    "6": {
+      "noise_model_mean_tv": 0.06721387503658699,
+      "readout_only_mean_tv": 0.12224674499140992,
+      "relative_reduction": 0.6907775001805563,
+      "statevector_mean_tv": 0.21736411508164327,
+      "uniform_mean_tv": 0.29484592013888883
+    }
+  },
+  "tasks": 18
+}

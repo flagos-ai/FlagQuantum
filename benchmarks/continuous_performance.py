@@ -30,9 +30,22 @@ def _gpu_inventory() -> tuple[str, ...]:
 
 
 def _commit() -> str:
-    return subprocess.run(
-        ("git", "rev-parse", "HEAD"), check=True, capture_output=True, text=True
-    ).stdout.strip()
+    source_commit = os.environ.get("FLAGQUANTUM_SOURCE_COMMIT")
+    if source_commit is not None:
+        source_commit = source_commit.strip().lower()
+        if len(source_commit) != 40 or any(
+            character not in "0123456789abcdef" for character in source_commit
+        ):
+            raise ValueError("FLAGQUANTUM_SOURCE_COMMIT must be a 40-character SHA")
+        return source_commit
+    try:
+        return subprocess.run(
+            ("git", "rev-parse", "HEAD"), check=True, capture_output=True, text=True
+        ).stdout.strip()
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            "git is unavailable; set FLAGQUANTUM_SOURCE_COMMIT for archived source"
+        ) from exc
 
 
 def _measure_local(

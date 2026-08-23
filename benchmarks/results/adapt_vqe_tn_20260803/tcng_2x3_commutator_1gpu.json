@@ -1,0 +1,256 @@
+{
+  "adapt_iterations_completed": 2,
+  "adapt_iterations_requested": 2,
+  "backend": "tensor_network",
+  "cols": 3,
+  "contractor_build_seconds": 2.9780481555499136,
+  "contractor_count": 42,
+  "cycles": 2,
+  "devices": 1,
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex128",
+  "execution_seconds": 27.114968836773187,
+  "final_energy": -3.4793085039505467,
+  "hamiltonian_terms": 19,
+  "implementation": "TensorCircuit-NG 1.8.0 DistributedContractor",
+  "initial_energy": -3.2073939822678654,
+  "iterations": [
+    {
+      "energy_after": -3.2140296833183295,
+      "energy_before": -3.2073939822678654,
+      "optimization_history": [
+        -3.2073939822678663,
+        -3.212653401837133,
+        -3.214318966450166,
+        -3.213447280724391,
+        -3.2121913708752894,
+        -3.211933367641118,
+        -3.212572227735733,
+        -3.213489681569411,
+        -3.2141534291241363,
+        -3.214310660123341
+      ],
+      "optimization_seconds": 2.102097590919584,
+      "pool_gradients": [
+        -0.05546540134968746,
+        0.02644262405761657,
+        -0.08809298760476715,
+        0.019489813157353056,
+        -0.06014337954771713,
+        0.08670705396527886,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "screening_seconds": 8.710003259126097,
+      "selected_gradient": -0.08809298760476715,
+      "selected_pool_index": 2
+    },
+    {
+      "energy_after": -3.4793085039505467,
+      "energy_before": -3.2140296833183295,
+      "optimization_history": [
+        -3.2140296833183295,
+        -3.225942495838889,
+        -3.243588926067029,
+        -3.266466377757411,
+        -3.2938920882801037,
+        -3.3249080295171147,
+        -3.3582422261457534,
+        -3.392295290069498,
+        -3.4251704096127917,
+        -3.454803215540607
+      ],
+      "optimization_seconds": 1.49041120801121,
+      "pool_gradients": [
+        -0.0554654013496873,
+        -0.08933964763681176,
+        0.0,
+        0.01948981315735314,
+        -0.06014337954771709,
+        -0.03501666884138788,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "screening_seconds": 12.63788297912106,
+      "selected_gradient": -0.08933964763681176,
+      "selected_pool_index": 1
+    }
+  ],
+  "operator_pool": [
+    {
+      "kind": "ry",
+      "wires": [
+        0
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        1
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        2
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        3
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        4
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        5
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        0,
+        1
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        0,
+        3
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        1,
+        2
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        1,
+        4
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        2,
+        5
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        3,
+        4
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        4,
+        5
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        0,
+        1
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        0,
+        3
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        1,
+        2
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        1,
+        4
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        2,
+        5
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        3,
+        4
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        4,
+        5
+      ]
+    }
+  ],
+  "operator_pool_size": 20,
+  "optimization_steps_per_iteration": 10,
+  "parameter_dtype": "float64",
+  "parameters": [
+    0.8993049515474173,
+    0.8029564376369869
+  ],
+  "qubits": 6,
+  "rows": 2,
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "screening_method": "commutator",
+  "selected_pool_indices": [
+    2,
+    1
+  ],
+  "workload": "qubit_adapt_vqe_grid_tfim"
+}

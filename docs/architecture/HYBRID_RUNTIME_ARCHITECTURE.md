@@ -34,7 +34,7 @@ layer = fq.Module(
     policy=fq.RuntimePolicy(
         backend="jax",
         observable_wires=(1,),
-        allow_backend_fallback=False,
+        allow_backend_fallback=True,
     ),
 )
 optimizer = torch.optim.Adam(layer.parameters(), lr=0.01)

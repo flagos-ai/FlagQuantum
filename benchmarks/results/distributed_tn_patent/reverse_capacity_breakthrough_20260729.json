@@ -1,0 +1,55 @@
+{
+  "schema_version": "flagquantum.distributed_tn_patent_evidence.v1",
+  "recorded_at": "2026-07-29",
+  "scope": "complete dynamic reverse capacity on the single-A800-infeasible circuit-derived TN",
+  "workload": {
+    "qubits": 18,
+    "layers": 13,
+    "forward_operation_count": 312,
+    "reverse_record_count": 312,
+    "output": "direct expectation scalar",
+    "selected_shard_labels": [23, 37, 316],
+    "mesh_shape": [2, 2, 2]
+  },
+  "baseline": {
+    "single_a800_native_forward_status": "failed_oom",
+    "single_a800_allocated_bytes_at_failure": 69801902080,
+    "single_a800_reserved_bytes_at_failure": 69837258752,
+    "single_a800_reverse_status": "not_runnable_after_forward_oom"
+  },
+  "eight_gpu_dynamic_reverse": {
+    "status": "passed",
+    "passed_ranks": 8,
+    "completed_reverse_records": 312,
+    "cotangent_frontier_finite_on_all_ranks": true,
+    "checkpoint_budget_bytes_per_rank": 2147483648,
+    "selected_checkpoint_count": 309,
+    "checkpoint_local_bytes_per_rank": 384378584,
+    "raw_input_local_bytes_per_rank": 30392,
+    "rematerialized_forward_value_count_per_rank": 2,
+    "rematerialized_operation_count_per_rank": 2,
+    "rematerialization_peak_transient_bytes_per_rank": 17179869184,
+    "peak_cuda_allocated_bytes_per_rank": 69313913344,
+    "peak_cuda_reserved_bytes_per_rank": 77819019264,
+    "forward_plus_reverse_elapsed_seconds_range": [
+      11.983470720238984,
+      12.085132672917098
+    ],
+    "rank_plan_consensus": true,
+    "rank_tensor_preflight": true,
+    "full_state_materialization": false,
+    "silent_statevector_fallback": false
+  },
+  "implementation_changes_required": [
+    "selective partial-mesh checkpoint tape",
+    "same-mesh zero-copy forward value reuse",
+    "dependency-aware rematerialization with use-count release",
+    "lazy-conjugate reverse contraction without a full-size conjugate copy"
+  ],
+  "claim_limits": [
+    "This is a memory-intensive contraction-width capacity result, not a claim that 18 qubits is large-scale for tensor-network simulation.",
+    "The run validates completion and finite cotangents; a same-scale native numerical reference is unavailable because the single-GPU forward baseline OOMs.",
+    "Parameter-gradient correctness is established on the 8-qubit 2/4/8-GPU matrix, not independently at this 18-qubit capacity point.",
+    "No speedup claim is made."
+  ]
+}

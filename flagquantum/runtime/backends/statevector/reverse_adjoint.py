@@ -45,6 +45,8 @@ from .reverse import (  # noqa: E402
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
     _fused_vjp_pipeline_enabled,
+    _gradient_bucketing_enabled,
+    _gradient_reduction_overlap_enabled,
     _persistent_inplace_local_enabled,
     _persistent_wire_layout_enabled,
     _reverse_chunk_amplitudes,
@@ -554,6 +556,7 @@ def _explicit_sharded_adjoint(
         if persistent_layout
         else None
     )
+    evidence.persistent_layout_enabled = persistent_plan is not None
     persistent_mapping = list(
         persistent_plan.final_logical_to_physical
         if persistent_plan is not None
@@ -698,6 +701,9 @@ def _explicit_sharded_adjoint(
             accumulated,
             process_group=process_group,
             evidence=evidence,
+            max_parameters=(None if _gradient_bucketing_enabled() else 1),
+            max_bytes=(None if _gradient_bucketing_enabled() else 1),
+            async_op=_gradient_reduction_overlap_enabled(),
         )
         if world_size > 1
         else None

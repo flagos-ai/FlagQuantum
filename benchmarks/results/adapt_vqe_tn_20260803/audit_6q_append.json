@@ -1,0 +1,20 @@
+{
+  "final_energy_absolute_error": 8.881784197001252e-16,
+  "flagquantum_result": "benchmarks/results/adapt_vqe_tn_20260803/fq_6q_1gpu.json",
+  "flagquantum_seconds": 7.294595981948078,
+  "flagquantum_speedup": 4.164306486204725,
+  "initial_energy_absolute_error": 8.881784197001252e-16,
+  "max_optimization_history_absolute_error": 1.7763568394002505e-15,
+  "max_pool_gradient_absolute_error": 4.440892098500626e-16,
+  "qubits": 6,
+  "schema_version": 1,
+  "screening_method": "append",
+  "selected_pool_indices": [
+    2,
+    1
+  ],
+  "status": "pass",
+  "tensorcircuit_ng_result": "benchmarks/results/adapt_vqe_tn_20260803/tcng_6q_1gpu.json",
+  "tensorcircuit_ng_seconds": 30.376933361869305,
+  "tolerance": 1e-12
+}

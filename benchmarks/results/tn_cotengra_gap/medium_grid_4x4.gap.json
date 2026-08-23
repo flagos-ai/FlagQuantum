@@ -1,0 +1,78 @@
+{
+  "claim_boundary": "Planning-only development evidence; not execution, gradient, production, or scalability evidence.",
+  "comparable": true,
+  "comparison_scope": "planning",
+  "correctness": {
+    "topology_identity_equal": true
+  },
+  "cotengra": {
+    "backend": "cotengra",
+    "backend_version": "0.8.2",
+    "comparison_scope": "planning",
+    "distribution_semantics": "planning_only",
+    "environment": {
+      "isolation": "temporary_target_directory",
+      "python": "3.12.13"
+    },
+    "metrics": {
+      "estimated_flops": 584,
+      "estimated_peak_bytes": 128,
+      "largest_intermediate_elements": 16,
+      "operation_count": 15,
+      "search_time_seconds": 0.08680826611816883,
+      "slice_count": 1,
+      "sliced_labels": []
+    },
+    "scalability_claim_allowed": false,
+    "schema_version": "flagquantum.tn_cotengra_gap.v1",
+    "search_budget_compliant": true,
+    "search_budget_seconds": 1.0,
+    "seed": 0,
+    "status": "completed",
+    "strategy": "HyperOptimizer[greedy,random-greedy]/combo",
+    "workload_identity": "6d861b8291c72619a9cbd7ee9987a006056ee01d216896284f6bcfca2fbced62",
+    "workload_name": "medium_grid_4x4"
+  },
+  "flagquantum": {
+    "backend": "flagquantum",
+    "backend_version": "0.2.0",
+    "comparison_scope": "planning",
+    "distribution_semantics": "planning_only",
+    "environment": {
+      "python": "3.12.13",
+      "torch": "2.13.0+cu130"
+    },
+    "metrics": {
+      "estimated_flops": 752,
+      "estimated_peak_bytes": 256,
+      "largest_intermediate_elements": 32,
+      "operation_count": 15,
+      "search_time_seconds": 0.0054571968503296375,
+      "slice_count": 1,
+      "sliced_labels": [],
+      "total_intermediate_elements": 241
+    },
+    "scalability_claim_allowed": false,
+    "schema_version": "flagquantum.tn_cotengra_gap.v1",
+    "search_budget_compliant": true,
+    "search_budget_seconds": 1.0,
+    "status": "completed",
+    "strategy": "memory_greedy",
+    "workload_identity": "6d861b8291c72619a9cbd7ee9987a006056ee01d216896284f6bcfca2fbced62",
+    "workload_name": "medium_grid_4x4"
+  },
+  "largest_gap": "largest_intermediate",
+  "next_optimization_target": "improve memory-aware path search and slicing",
+  "ratios": {
+    "estimated_flops_flagquantum_over_cotengra": 1.2876712328767124,
+    "largest_intermediate_flagquantum_over_cotengra": 2.0,
+    "search_time_flagquantum_over_cotengra": 0.0628649447150685
+  },
+  "schema_version": 1,
+  "search_budget_seconds": {
+    "cotengra": 1.0,
+    "flagquantum": 1.0
+  },
+  "workload_identity": "6d861b8291c72619a9cbd7ee9987a006056ee01d216896284f6bcfca2fbced62",
+  "workload_name": "medium_grid_4x4"
+}

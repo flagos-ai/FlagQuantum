@@ -10,11 +10,12 @@ backward-compatible fixes. Stable public API removals require the documented
 deprecation window and removal version. Runtime evidence and benchmark schemas
 carry independent schema versions and migration rules.
 
-Version `0.1.0` is a development snapshot. Alpha, beta and release-candidate
-builds must use a PEP 440 prerelease suffix before a GitHub release is
-published. Accelerator or multi-node claims additionally require scheduled
-hardware evidence and benchmark audit; CPU contract tests alone are not
-scalability evidence.
+Version `0.1.0` is the historical FlagOS 2.1 development snapshot. Version
+`0.2.0` is the first release governed by the stable API manifest and the
+capability-maturity matrix. Alpha, beta and release-candidate builds must use a
+PEP 440 prerelease suffix before a GitHub release is published. Accelerator or
+multi-node claims additionally require scheduled hardware evidence and
+benchmark audit; CPU contract tests alone are not scalability evidence.
 
 Dependency groups are intentionally separated:
 

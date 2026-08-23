@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <style>
+      text { font-family: Inter, Arial, sans-serif; fill: #182033; }
+      .muted { fill: #66758d; }
+      .axis { font-size: 18px; font-weight: 650; }
+      .name { font-size: 29px; font-weight: 850; }
+      .sub { font-size: 15px; font-weight: 650; }
+      .body { font-size: 16px; }
+      .small { font-size: 13px; fill: #66758d; }
+      .legend-title { font-size: 19px; font-weight: 800; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#526176"/>
+    </marker>
+    <pattern id="qpuHatch" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="16" stroke="#f97316" stroke-width="4" opacity=".25"/>
+    </pattern>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#26334a" flood-opacity=".10"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#f7f9fc"/>
+  <text x="68" y="62" font-size="37" font-weight="850">SV / MPS / TN / QPU Applicability Map</text>
+  <text x="68" y="98" font-size="18" class="muted">Conceptual backend-selection guide by qubit scale and entanglement / treewidth</text>
+
+  <!-- Main map -->
+  <rect x="68" y="135" width="1040" height="650" rx="20" fill="#ffffff" stroke="#dbe3ee" filter="url(#shadow)"/>
+  <line x1="148" y1="713" x2="1046" y2="713" stroke="#526176" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="148" y1="713" x2="148" y2="195" stroke="#526176" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="500" y="760" class="axis">Qubit scale  →  small to large</text>
+  <text x="103" y="454" class="axis" text-anchor="middle" transform="rotate(-90 103 454)">Entanglement / treewidth  →  low to high</text>
+  <text x="172" y="174" class="small">Overlapping regions indicate workload-dependent choices, not fixed thresholds.</text>
+
+  <!-- Ideal QPU: background layer -->
+  <path d="M565 215 C705 175 920 180 1040 228 L1040 683
+           C915 719 735 710 620 635 C555 545 530 340 565 215Z"
+        fill="#8b5cf6" fill-opacity=".055" stroke="#7c3aed" stroke-width="4" stroke-dasharray="17 10"/>
+  <rect x="758" y="211" width="264" height="58" rx="13" fill="#f5f3ff" stroke="#a78bfa"/>
+  <text x="778" y="236" font-size="14.5" font-weight="800" fill="#6d28d9">IDEAL FAULT-TOLERANT QPU</text>
+  <text x="778" y="257" font-size="12.5" class="muted">future range · not current capability</text>
+
+  <!-- Classically hard corner -->
+  <path d="M760 286 C855 255 965 265 1040 307 L1040 395 C945 362 865 364 790 402 C770 360 760 322 760 286Z"
+        fill="#ef4444" fill-opacity=".08" stroke="#dc2626" stroke-width="2" stroke-dasharray="8 7"/>
+  <rect x="808" y="291" width="212" height="68" rx="13" fill="#fff1f2" fill-opacity=".95" stroke="#fca5a5"/>
+  <text x="914" y="320" font-size="13.5" font-weight="800" fill="#b91c1c" text-anchor="middle">CLASSICALLY DIFFICULT</text>
+  <text x="914" y="344" font-size="12.5" class="muted" text-anchor="middle">large scale + high treewidth</text>
+
+  <!-- SV -->
+  <path d="M170 223 C300 180 480 202 600 292 C667 343 670 458 600 526
+           C505 617 310 602 205 520 C160 435 150 310 170 223Z"
+        fill="#3b82f6" fill-opacity=".23" stroke="#2563eb" stroke-width="3" stroke-dasharray="12 8"/>
+  <rect x="214" y="298" width="264" height="108" rx="14" fill="#eff6ff" fill-opacity=".95" stroke="#93c5fd"/>
+  <text x="238" y="336" class="name" fill="#1d4ed8">SV</text>
+  <text x="238" y="367" font-size="14.5" font-weight="700" fill="#1d4ed8">full state · general exact</text>
+  <text x="238" y="393" class="small">exact access · memory O(2ⁿ)</text>
+
+  <!-- TN -->
+  <path d="M495 370 C585 292 730 292 850 334 C955 370 1015 441 1040 528
+           C923 604 757 627 625 570 C550 538 505 468 495 370Z"
+        fill="#f59e0b" fill-opacity=".24" stroke="#d97706" stroke-width="3" stroke-dasharray="12 8"/>
+  <rect x="745" y="431" width="250" height="92" rx="14" fill="#fff7ed" fill-opacity=".94" stroke="#fdba74"/>
+  <text x="769" y="468" class="name" fill="#b45309">TN</text>
+  <text x="769" y="496" class="sub" fill="#b45309">structured contraction</text>
+  <text x="769" y="516" class="small">treewidth / path limited</text>
+
+  <!-- MPS -->
+  <path d="M183 535 C330 475 490 507 612 570 C745 638 895 616 1040 550
+           L1040 693 L183 693 C152 648 153 578 183 535Z"
+        fill="#22c55e" fill-opacity=".22" stroke="#16a34a" stroke-width="3" stroke-dasharray="12 8"/>
+  <rect x="700" y="582" width="300" height="100" rx="14" fill="#f0fdf4" fill-opacity=".95" stroke="#86efac"/>
+  <text x="724" y="618" class="name" fill="#15803d">MPS</text>
+  <text x="724" y="648" font-size="14.5" font-weight="700" fill="#15803d">low entanglement · chain / local</text>
+  <text x="724" y="672" class="small">large structured systems and training</text>
+
+  <!-- Current QPU validation window -->
+  <path d="M275 445 C385 397 545 408 665 462 C745 498 784 548 766 600
+           C655 638 510 629 392 589 C310 560 270 505 275 445Z"
+        fill="url(#qpuHatch)" stroke="#f97316" stroke-width="4" stroke-dasharray="6 7"/>
+  <rect x="337" y="474" width="283" height="84" rx="14" fill="#fff7ed" fill-opacity=".95" stroke="#fb923c"/>
+  <text x="361" y="510" class="name" fill="#c2410c">CURRENT QPU</text>
+  <text x="361" y="538" class="sub" fill="#c2410c">physical validation window</text>
+
+  <!-- Legend -->
+  <rect x="1142" y="135" width="390" height="650" rx="20" fill="#ffffff" stroke="#dbe3ee" filter="url(#shadow)"/>
+  <text x="1178" y="181" font-size="24" font-weight="850">How to read the map</text>
+
+  <circle cx="1193" cy="233" r="11" fill="#3b82f6" opacity=".78"/>
+  <text x="1220" y="240" class="legend-title" fill="#1d4ed8">SV</text>
+  <text x="1178" y="273" class="body">Small/medium, higher entanglement,</text><text x="1178" y="298" class="body">exact full-state access.</text>
+
+  <circle cx="1193" cy="343" r="11" fill="#22c55e" opacity=".78"/>
+  <text x="1220" y="350" class="legend-title" fill="#15803d">MPS</text>
+  <text x="1178" y="383" class="body">Large low-entanglement, 1D/local</text><text x="1178" y="408" class="body">structure and trainable models.</text>
+
+  <circle cx="1193" cy="453" r="11" fill="#f59e0b" opacity=".78"/>
+  <text x="1220" y="460" class="legend-title" fill="#b45309">TN</text>
+  <text x="1178" y="493" class="body">Structure-aware circuits, selected</text><text x="1178" y="518" class="body">amplitudes or observables.</text>
+
+  <rect x="1182" y="551" width="22" height="22" fill="url(#qpuHatch)" stroke="#f97316"/>
+  <text x="1220" y="569" class="legend-title" fill="#c2410c">Current QPU</text>
+  <text x="1178" y="602" class="body">Hardware validation bounded by qubits,</text><text x="1178" y="627" class="body">depth, fidelity, shots and topology.</text>
+
+  <line x1="1182" y1="670" x2="1206" y2="670" stroke="#7c3aed" stroke-width="4" stroke-dasharray="9 6"/>
+  <text x="1220" y="677" class="legend-title" fill="#6d28d9">Ideal fault-tolerant QPU</text>
+  <text x="1178" y="710" class="body">Long-term range for large, deep and</text><text x="1178" y="735" class="body">high-entanglement algorithms.</text>
+  <text x="1178" y="766" class="small">QPU ranges are overlays, not classical simulators.</text>
+
+  <!-- Workflow -->
+  <rect x="68" y="826" width="1464" height="112" rx="20" fill="#182033"/>
+  <text x="104" y="873" font-size="18" font-weight="850" style="fill:#ffffff">JOINT WORKFLOW</text>
+  <text x="306" y="874" font-size="18" style="fill:#cbd5e1">select SV / MPS / TN</text>
+  <line x1="506" y1="868" x2="585" y2="868" stroke="#8795aa" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="614" y="874" font-size="18" style="fill:#cbd5e1">simulate &amp; train</text>
+  <line x1="772" y1="868" x2="851" y2="868" stroke="#8795aa" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="880" y="874" font-size="18" style="fill:#fed7aa">validate on Quafu QPU</text>
+  <line x1="1077" y1="868" x2="1156" y2="868" stroke="#8795aa" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="1185" y="874" font-size="18" style="fill:#cbd5e1">hardware feedback</text>
+  <text x="104" y="914" font-size="14" style="fill:#94a3b8">Current QPU = near-term validation. Ideal fault-tolerant QPU = long-term target capability.</text>
+
+  <text x="68" y="977" class="small">Conceptual applicability regions only. Benchmark the target workload before selecting a backend.</text>
+</svg>

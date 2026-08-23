@@ -44,6 +44,14 @@ from .operator_schema import (
     get_operator_schema,
     operator_manifest,
 )
+from .numerics import (
+    NUMERICAL_CONTRACT_VERSION,
+    AccuracyMode,
+    AccuracyRequirementContract,
+    ComplexRepresentation,
+    PrecisionPlanContract,
+    RefinementStrategy,
+)
 from .parameters import (
     Parameter,
     ParameterExpression,
@@ -108,4 +116,10 @@ __all__ = [
     "from_engine_qir",
     "is_parameterized_value",
     "parameter_names_in_value",
+    "NUMERICAL_CONTRACT_VERSION",
+    "AccuracyMode",
+    "AccuracyRequirementContract",
+    "ComplexRepresentation",
+    "PrecisionPlanContract",
+    "RefinementStrategy",
 ]

@@ -7,8 +7,9 @@ from typing import Any, Iterable, Sequence
 
 import torch
 
-from ..circuit import _apply_matrix, _bits_from_indices, _gate_matrix
+from ..circuit import _apply_matrix, _bits_from_indices
 from ..core.ir import Instruction
+from ..ops.gate_matrix import gate_matrix
 from ..ops.matrices import GATE_MAT_DICT, get_global_precision
 from .real_imag_kernels import complex_einsum_pair
 
@@ -170,6 +171,56 @@ class MPSState(MPSPlanningMixin):
         return state.reshape(self.bsz, -1)
 
     state = to_statevector
+
+    def amplitudes(
+        self,
+        bitstrings: Sequence[int | str | Sequence[int]],
+    ) -> torch.Tensor:
+        """Contract selected amplitudes directly from the MPS."""
+
+        normalized = []
+        for bitstring in bitstrings:
+            if isinstance(bitstring, int):
+                if bitstring < 0 or bitstring >= 2**self.n_wires:
+                    raise ValueError("integer bitstring is outside the state space")
+                bits = tuple(int(bit) for bit in f"{bitstring:0{self.n_wires}b}")
+            elif isinstance(bitstring, str):
+                if len(bitstring) != self.n_wires or set(bitstring) - {"0", "1"}:
+                    raise ValueError(
+                        "bitstring must contain exactly n_wires binary digits"
+                    )
+                bits = tuple(int(bit) for bit in bitstring)
+            else:
+                bits = tuple(int(bit) for bit in bitstring)
+                if len(bits) != self.n_wires or any(bit not in {0, 1} for bit in bits):
+                    raise ValueError(
+                        "bitstring must contain exactly n_wires binary values"
+                    )
+            normalized.append(bits)
+        if not normalized:
+            raise ValueError("bitstrings must contain at least one target")
+
+        values = []
+        for bits in normalized:
+            environment = torch.ones(
+                self.bsz,
+                1,
+                dtype=self.dtype,
+                device=self.device,
+            )
+            for bit, tensor in zip(bits, self.tensors):
+                environment = torch.einsum(
+                    "bl,blr->br",
+                    environment,
+                    tensor[:, :, bit, :],
+                )
+            values.append(environment[:, 0])
+        return torch.stack(values, dim=-1)
+
+    def amplitude(self, bitstring: int | str | Sequence[int]) -> torch.Tensor:
+        """Contract one selected amplitude directly from the MPS."""
+
+        return self.amplitudes((bitstring,))[:, 0]
 
     def probabilities(self) -> torch.Tensor:
         return torch.abs(self.to_statevector()) ** 2
@@ -756,7 +807,7 @@ class MPSState(MPSPlanningMixin):
                 wires[0],
             )
             return self
-        matrix = _gate_matrix(
+        matrix = gate_matrix(
             instruction,
             bsz=self.bsz,
             device=self.device,
@@ -834,15 +885,30 @@ class MPSState(MPSPlanningMixin):
         wires = tuple(int(wire) for wire in wires)
         if len(wires) != 1:
             dense = self.to_statevector()
-            from .noise import apply_kraus_density
-
-            rho = dense.unsqueeze(-1) * torch.conj(dense).unsqueeze(-2)
-            rho = apply_kraus_density(rho, kraus_ops, wires, self.n_wires)
-            values, vectors = torch.linalg.eigh(rho)
-            index = torch.argmax(torch.real(values), dim=-1)
+            ops = [op.to(device=self.device, dtype=self.dtype) for op in kraus_ops]
+            branches = tuple(
+                _apply_matrix(dense, op, wires, self.n_wires) for op in ops
+            )
+            probabilities = torch.stack(
+                [torch.sum(torch.abs(branch) ** 2, dim=-1) for branch in branches],
+                dim=-1,
+            )
+            probabilities = torch.clamp(probabilities, min=0)
+            totals = probabilities.sum(dim=-1, keepdim=True)
+            if bool(torch.any(totals <= 1e-12)):
+                raise RuntimeError("Kraus branch probabilities have zero total weight")
+            choices = torch.multinomial(
+                probabilities / totals,
+                num_samples=1,
+                replacement=True,
+                generator=generator,
+            ).squeeze(-1)
             state = torch.stack(
-                [vectors[b, :, int(index[b].item())] for b in range(self.bsz)],
+                [branches[int(choices[b].item())][b] for b in range(self.bsz)],
                 dim=0,
+            )
+            state = state / torch.clamp(
+                torch.linalg.vector_norm(state, dim=-1, keepdim=True), min=1e-12
             )
             rebuilt = type(self).from_statevector(
                 state,

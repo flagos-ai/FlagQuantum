@@ -1,0 +1,72 @@
+{
+  "evidence_type": "tensor_network_checkpoint_rematerialization_ablation",
+  "date": "2026-07-29",
+  "workload": {
+    "qubits": 8,
+    "parameterized_gates": 8,
+    "entangling_layers": 3,
+    "observable": "Z on all qubits",
+    "forward_dag_identity": "4c782c9381f925266d17d0f0ae31785f65b92d10e679250f8a8b433f2b26bfb7",
+    "reverse_dag_identity": "b266fb180c6be415894f29b57c85ed6841f5b1cab2adc713a0ba7356b290502e",
+    "total_checkpointable_intermediate_bytes": 8592
+  },
+  "planner": {
+    "version": "flagquantum.distributed_tn_checkpoint_plan.v1",
+    "selection": "deterministic greedy avoided compute per saved byte",
+    "identity_includes": [
+      "forward DAG identity",
+      "byte budget",
+      "selected value ids",
+      "saved intermediate bytes",
+      "estimated rematerialization cost"
+    ]
+  },
+  "results": [
+    {
+      "budget_bytes": 0,
+      "checkpoint_count": 0,
+      "saved_intermediate_bytes": 0,
+      "saved_tape_bytes": 3856,
+      "estimated_rematerialization_cost": 3874,
+      "actual_rematerialized_operations": 355,
+      "nonfinite_cotangent_count": 0,
+      "checkpoint_plan_identity": "8be936f267806689a1c79b354df68de8a39806ee49ee3d27b41aec9d31fc798b"
+    },
+    {
+      "budget_bytes": 1074,
+      "checkpoint_count": 4,
+      "saved_intermediate_bytes": 1072,
+      "saved_tape_bytes": 4928,
+      "estimated_rematerialization_cost": 2830,
+      "actual_rematerialized_operations": 235,
+      "nonfinite_cotangent_count": 0,
+      "checkpoint_plan_identity": "7a930107fabad5e39aa92b51fbd370ddb4a8295d65aa7dd4c96f0875db99561e"
+    },
+    {
+      "budget_bytes": 4296,
+      "checkpoint_count": 40,
+      "saved_intermediate_bytes": 4272,
+      "saved_tape_bytes": 8128,
+      "estimated_rematerialization_cost": 1052,
+      "actual_rematerialized_operations": 25,
+      "nonfinite_cotangent_count": 0,
+      "checkpoint_plan_identity": "677b77ef50759efae0a629ddd6d89c45d4c75d94c1dfdfff820ad17918803556"
+    },
+    {
+      "budget_bytes": 8592,
+      "checkpoint_count": 61,
+      "saved_intermediate_bytes": 8592,
+      "saved_tape_bytes": 12448,
+      "estimated_rematerialization_cost": 0,
+      "actual_rematerialized_operations": 0,
+      "nonfinite_cotangent_count": 0,
+      "checkpoint_plan_identity": "2e950cc1bc90b149b0b106a19df840310886b6b92ac4688cbabf4216cc1df481"
+    }
+  ],
+  "claim_boundary": [
+    "This evidence establishes executable saved-tape versus recomputation behavior and correctness.",
+    "The forward implementation currently computes the ordinary schedule before pruning the retained tape, so it does not yet establish a reduced forward peak.",
+    "The evidence is single-device and does not yet establish distributed rematerialization communication behavior.",
+    "Wall-clock speedup and large-model reverse capacity are not claimed."
+  ]
+}

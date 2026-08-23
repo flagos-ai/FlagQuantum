@@ -2,6 +2,8 @@
 
 from . import core as core
 from .core import (
+    AdaptVQEIteration,
+    AdaptVQEResult,
     Hamiltonian,
     HamiltonianTerm,
     LayerwiseVQEResult,
@@ -14,6 +16,7 @@ from .core import (
     pauli_term,
     qaoa_circuit,
     qaoa_loss,
+    run_adapt_vqe,
     run_hybrid_vqe,
     run_layerwise_vqe,
     run_vqe,
@@ -29,6 +32,8 @@ from .optimization import (
 )
 
 __all__ = [
+    "AdaptVQEIteration",
+    "AdaptVQEResult",
     "Hamiltonian",
     "HamiltonianTerm",
     "HybridOptimizationResult",
@@ -48,6 +53,7 @@ __all__ = [
     "run_hybrid_vqe",
     "run_layerwise_vqe",
     "run_vqe",
+    "run_adapt_vqe",
     "transverse_field_ising",
     "vqe_loss",
     "zz_chain_hamiltonian",

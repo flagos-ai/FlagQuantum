@@ -334,7 +334,7 @@ def local_distributed_development_preflight(
         if mode == "distributed_mps":
             mode_options.setdefault("max_bond", 16)
         if mode == "distributed_tensor_network":
-            mode_options.setdefault("max_intermediate_size", 4)
+            mode_options.setdefault("max_intermediate_size", 16)
         report = validate_development_production_parity(
             program,
             mode=mode,

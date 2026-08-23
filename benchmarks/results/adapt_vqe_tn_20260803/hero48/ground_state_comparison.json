@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "workload": "48q_grid_tfim_ground_state_comparison",
+  "adapt_vqe": {
+    "artifact": "fq_meanfield_adapt1_adam200_8gpu.json",
+    "ansatz_scope": "one selected operator from 16 sampled candidates",
+    "optimization_steps_completed": 190,
+    "converged_energy": -85.59304427565382,
+    "best_energy": -85.59304427565601,
+    "final_gradient": -0.0000036431607394399253,
+    "energy_tolerance": 1e-12
+  },
+  "dmrg_reference": {
+    "artifact": "dmrg_reference_random_bond256_seed0.json",
+    "energy": -85.61320789522475,
+    "energy_variance": 1.7260390450246632e-7,
+    "max_bond_reached": 48,
+    "status": "converged_variational_reference_not_exact_theory"
+  },
+  "absolute_energy_gap": 0.020163619568734248,
+  "relative_energy_gap": 0.0002355199631511403,
+  "conclusion": "optimizer converged; remaining gap is dominated by the one-operator ansatz"
+}

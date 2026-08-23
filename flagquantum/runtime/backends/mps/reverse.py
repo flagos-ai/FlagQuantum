@@ -44,6 +44,8 @@ from .reverse_observables import (
 )
 from .reverse_planning import (
     build_mps_parameter_layout,
+    cached_mps_gradient_buckets,
+    cached_mps_reverse_segments,
     discover_trainable_tensors,
     plan_mps_canonicalization_bonds,
     plan_mps_gradient_buckets,
@@ -53,6 +55,7 @@ from .reverse_planning import (
 from .reverse_replay import build_mps_reverse_backward
 from .reverse_transport import (
     ReverseLayerHaloPrefetch,
+    all_reduce_reverse_layer_records,
     begin_reverse_layer_halo_prefetch,
     broadcast_reverse_record,
     decode_reverse_record,
@@ -87,12 +90,14 @@ from .state import (
 _initial_ownership = initial_mps_ownership
 _rank_owned_initial_tensors = normalize_rank_owned_initial_tensors
 _broadcast_record = broadcast_reverse_record
+_all_reduce_layer_records = all_reduce_reverse_layer_records
 _begin_layer_halo_prefetch = begin_reverse_layer_halo_prefetch
 _decode_record = decode_reverse_record
 _encode_record = encode_reverse_record
 _finish_layer_halo_prefetch = finish_reverse_layer_halo_prefetch
 _fused_z_zz_mse_and_adjoints = mps_fused_z_zz_mse_and_adjoints
 _gradient_bucket_layout = plan_mps_gradient_buckets
+_cached_gradient_bucket_layout = cached_mps_gradient_buckets
 _heisenberg_mpo_energy_and_adjoints = mps_heisenberg_energy_and_adjoints
 _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
 _leaf_tensors = discover_trainable_tensors
@@ -109,6 +114,7 @@ _recv_batch = receive_reverse_tensor_batch
 _recv_static = receive_static_reverse_tensor
 _record = build_mps_reverse_tape_record
 _reverse_execution_segments = plan_mps_reverse_segments
+_cached_reverse_execution_segments = cached_mps_reverse_segments
 _send = send_reverse_tensor
 _send_batch = send_reverse_tensor_batch
 _send_static = send_static_reverse_tensor
@@ -127,6 +133,40 @@ class _ReversePayload:
     instruction: Instruction | None
     factorization_pair: torch.Tensor | None = None
     factorization_outputs: tuple[torch.Tensor, torch.Tensor] | None = None
+
+
+def _static_exact_qr_record(
+    left_shape: Sequence[int],
+    right_shape: Sequence[int],
+    *,
+    max_bond: int | None,
+    cutoff: float,
+) -> dict[str, Any] | None:
+    """Derive split metadata when exact QR makes it rank-independent.
+
+    This is deliberately unavailable for SVD/truncation paths: their retained
+    rank and numerical diagnostics must continue to come from the compute
+    owner.  Avoiding that dynamic broadcast also avoids a CUDA-to-CPU schema
+    decode for every untruncated two-site gate.
+    """
+    left = tuple(int(value) for value in left_shape)
+    right = tuple(int(value) for value in right_shape)
+    if len(left) != 4 or len(right) != 4 or left[0] != right[0]:
+        return None
+    full_rank = min(left[1] * left[2], right[2] * right[3])
+    if cutoff > 0 or (max_bond is not None and int(max_bond) < full_rank):
+        return None
+    output_left = (left[0], left[1], left[2], full_rank)
+    output_right = (right[0], full_rank, right[2], right[3])
+    return {
+        "input_shapes": (left, right),
+        "output_shapes": (output_left, output_right),
+        "split_info": {
+            "rank": full_rank,
+            "original_rank": full_rank,
+            "discarded_weight": 0.0,
+        },
+    }
 
 
 def execute_torch_distributed_mps_reverse(
@@ -172,8 +212,8 @@ def execute_torch_distributed_mps_reverse(
         raise ValueError("degeneracy_tolerance must be non-negative")
     if initial_bond_dimension < 1:
         raise ValueError("initial_bond_dimension must be positive")
-    if canonicalization_policy not in {"dirty", "full"}:
-        raise ValueError("canonicalization_policy must be dirty or full")
+    if canonicalization_policy not in {"none", "dirty", "full"}:
+        raise ValueError("canonicalization_policy must be none, dirty or full")
     policy = checkpoint_policy or MPSReverseCheckpointPolicy()
     save_exact_factorizations = (
         policy.save_two_site_factorizations or gradient_policy == "exact"
@@ -228,6 +268,13 @@ def execute_torch_distributed_mps_reverse(
     checkpoint_budget = ReverseCheckpointBudget(policy, resolved_device)
     initial_mps_canonical = initial_mps_tensors is None or initial_mps_left_canonical
     dirty_bonds = set() if initial_mps_canonical else set(range(ir.n_wires - 1))
+    static_qr_metadata_records = 0
+    dynamic_metadata_broadcasts = 0
+    layer_halo_message_count = 0
+    layer_halo_payload_bytes = 0
+    layer_halo_intra_node_bytes = 0
+    layer_halo_inter_node_bytes = 0
+    layer_halo_wait_seconds = 0.0
 
     if initial_mps_left_canonical and initial_mps_tensors is None:
         raise MPSReverseContractError(
@@ -244,6 +291,7 @@ def execute_torch_distributed_mps_reverse(
     precomputed_factorizations: dict[
         int, tuple[torch.Tensor, torch.Tensor, torch.Tensor]
     ] = {}
+    precomputed_layer_metadata: dict[int, dict[str, Any]] = {}
     prefetched_rxx_indices: set[int] = set()
     prefetched_rxx_halos: dict[int, torch.Tensor] = {}
     reserved_ry: set[int] = set()
@@ -488,10 +536,11 @@ def execute_torch_distributed_mps_reverse(
                         else None
                     )
                     for position, (candidate_index, _, left_wire) in enumerate(chunk):
-                        pair_leaf = (
-                            pair_matrices[position].detach().requires_grad_(True)
+                        pair_leaf = pair_matrices[position].detach().requires_grad_(
+                            True
                         )
-                        if batched_splits is not None:
+                        if use_batched_truncated_split:
+                            assert batched_splits is not None
                             batched_left, _, raw_info = batched_splits[position]
                             after_left = batched_left.detach()
                             retained_rank = int(after_left.shape[-1])
@@ -531,8 +580,97 @@ def execute_torch_distributed_mps_reverse(
                                 after_left,
                                 after_right,
                             )
-            _finish_layer_halo_prefetch(layer_prefetch)
+            layer_halo_wait_seconds += _finish_layer_halo_prefetch(layer_prefetch)
             if layer_prefetch is not None:
+                # Every left owner can factor its disjoint boundary pair as
+                # soon as the layer halo arrives.  Commit/send remains in IR
+                # order below, but the expensive contraction/SVD no longer
+                # serializes on per-instruction metadata.
+                for candidate_index, candidate, left_wire in layer:
+                    left_owner = state.owner(left_wire)
+                    right_owner = state.owner(left_wire + 1)
+                    if (
+                        rank != left_owner
+                        or left_owner == right_owner
+                        or candidate_index not in layer_prefetch.received
+                    ):
+                        continue
+                    before_left = state.local_tensors[left_wire].detach().clone()
+                    before_right = (
+                        layer_prefetch.received[candidate_index].detach().clone()
+                    )
+                    saved_factorization = None
+                    if candidate_index in selected_factorizations:
+                        matrix = _instruction_matrix_for_mps(
+                            candidate,
+                            bsz=bsz,
+                            device=resolved_device,
+                            dtype=resolved_dtype,
+                        )
+                        if matrix.ndim == 2:
+                            matrix = matrix.expand(bsz, -1, -1)
+                        with torch.no_grad():
+                            contracted = apply_rxx_contraction_bucket(
+                                before_left.unsqueeze(0),
+                                before_right.unsqueeze(0),
+                                matrix.unsqueeze(0),
+                                compiled=True,
+                            )[0]
+                        with torch.enable_grad():
+                            pair_leaf = contracted.detach().requires_grad_(True)
+                            after_left, after_right, info = _split_pair_matrix(
+                                pair_leaf,
+                                left_dim=int(before_left.shape[1]),
+                                right_dim=int(before_right.shape[-1]),
+                                config=state.config,
+                            )
+                        saved_factorization = (pair_leaf, after_left, after_right)
+                    else:
+                        with torch.enable_grad():
+                            after_left, after_right, info = _pair_forward(
+                                before_left.detach().requires_grad_(True),
+                                before_right.detach().requires_grad_(True),
+                                candidate,
+                                state,
+                            )
+                    precomputed_rxx[candidate_index] = (
+                        before_left,
+                        before_right,
+                        after_left.detach(),
+                        after_right.detach(),
+                        dict(info),
+                    )
+                    if saved_factorization is not None:
+                        precomputed_factorizations[candidate_index] = (
+                            saved_factorization
+                        )
+                layer_entries = tuple(
+                    (candidate_index, state.owner(left_wire))
+                    for candidate_index, _, left_wire in layer
+                    if state.owner(left_wire) != state.owner(left_wire + 1)
+                )
+                local_layer_metadata = {
+                    candidate_index: {
+                        "input_shapes": (values[0].shape, values[1].shape),
+                        "output_shapes": (values[2].shape, values[3].shape),
+                        "split_info": dict(values[4]),
+                    }
+                    for candidate_index, values in precomputed_rxx.items()
+                    if candidate_index in {item[0] for item in layer_entries}
+                }
+                precomputed_layer_metadata.update(
+                    _all_reduce_layer_records(
+                        local_layer_metadata,
+                        layer_entries,
+                        next(iter(local_tensors.values())),
+                    )
+                )
+                if layer_entries:
+                    dynamic_metadata_broadcasts += 1
+                layer_halo_message_count += layer_prefetch.message_count
+                layer_halo_payload_bytes += layer_prefetch.payload_bytes
+                layer_halo_intra_node_bytes += layer_prefetch.intra_node_payload_bytes
+                layer_halo_inter_node_bytes += layer_prefetch.inter_node_payload_bytes
                 prefetched_rxx_halos.update(layer_prefetch.received)
         wires = tuple(int(wire) for wire in instruction.wires)
         if len(wires) not in {1, 2} or (
@@ -707,9 +845,31 @@ def execute_torch_distributed_mps_reverse(
                     source=left_owner,
                     sequence=sequence + 1,
                 )
-        metadata = _broadcast_record(
-            metadata, left_owner, next(iter(local_tensors.values()))
+        static_metadata = _static_exact_qr_record(
+            global_shapes[left_wire],
+            global_shapes[left_wire + 1],
+            max_bond=max_bond,
+            cutoff=cutoff,
         )
+        if static_metadata is None:
+            if instruction_index in precomputed_layer_metadata:
+                metadata = precomputed_layer_metadata.pop(instruction_index)
+            else:
+                dynamic_metadata_broadcasts += 1
+                metadata = _broadcast_record(
+                    metadata, left_owner, next(iter(local_tensors.values()))
+                )
+        else:
+            static_qr_metadata_records += 1
+            if rank == left_owner and (
+                tuple(metadata["input_shapes"]) != static_metadata["input_shapes"]
+                or tuple(metadata["output_shapes"])
+                != static_metadata["output_shapes"]
+            ):
+                raise MPSReverseContractError(
+                    "owner-local exact QR shapes differ from the static MPS plan"
+                )
+            metadata = static_metadata
         split = metadata["split_info"]
         full_rank = int(split.get("original_rank", split.get("rank", 0)))
         split["method"] = (
@@ -843,7 +1003,14 @@ def execute_torch_distributed_mps_reverse(
         fused_heisenberg_objective = True
         value, adjoints = _heisenberg_mpo_energy_and_adjoints(state, coefficients)
     elif observable_terms is None:
-        value, adjoints = _expectation_and_adjoints(state, observable or {0: "z"})
+        objective_adjoint_wires = {
+            wire for record in tape.records for wire in record.wires
+        }
+        value, adjoints = _expectation_and_adjoints(
+            state,
+            observable or {0: "z"},
+            adjoint_wires=objective_adjoint_wires,
+        )
     else:
         fused_z_zz_objective = _parse_z_zz_terms(state, observable_terms) is not None
         value, adjoints = _multi_observable_mse_and_adjoints(
@@ -868,14 +1035,14 @@ def execute_torch_distributed_mps_reverse(
         )
         for index in range(len(parameters))
     )
-    reverse_segments = _reverse_execution_segments(
+    reverse_segments, reverse_segment_cache_hit = _cached_reverse_execution_segments(
         tape, fuse_owner_local=fuse_local_reverse
     )
     fused_segment_count = sum(len(segment) > 1 for segment in reverse_segments)
     reverse_autograd_calls = sum(
         segment[0].compute_owner == rank for segment in reverse_segments
     )
-    gradient_buckets = _gradient_bucket_layout(
+    gradient_buckets, gradient_bucket_cache_hit = _cached_gradient_bucket_layout(
         parameters, gradient_owner_ranks, max_bucket_bytes=gradient_bucket_bytes
     )
     gradient_bucket_payload_bytes = sum(
@@ -959,6 +1126,15 @@ def execute_torch_distributed_mps_reverse(
         svd_factorization_count=sum(
             record.factorization_method == "svd" for record in tape.records
         ),
+        static_qr_metadata_records=static_qr_metadata_records,
+        dynamic_metadata_broadcasts=dynamic_metadata_broadcasts,
+        reverse_segment_cache_hit=reverse_segment_cache_hit,
+        gradient_bucket_cache_hit=gradient_bucket_cache_hit,
+        layer_halo_message_count=layer_halo_message_count,
+        layer_halo_payload_bytes=layer_halo_payload_bytes,
+        layer_halo_intra_node_bytes=layer_halo_intra_node_bytes,
+        layer_halo_inter_node_bytes=layer_halo_inter_node_bytes,
+        layer_halo_wait_seconds=layer_halo_wait_seconds,
     )
 
 

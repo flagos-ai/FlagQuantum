@@ -1,0 +1,69 @@
+{
+  "evidence_type": "joint_mesh_checkpoint_communication_rematerialization_planning",
+  "date": "2026-07-29",
+  "dag_identity": "91e730bb01e34d13e4305a2e383ffa50b84c11f77745f98b470e93f83e3ab70f",
+  "world_size": 8,
+  "candidate_count": 20,
+  "objective": "forward local peak bytes + communication_weight * estimated collective network bytes + rematerialization_weight * estimated operation cost",
+  "weights": {
+    "communication": 1,
+    "rematerialization": 1
+  },
+  "results": [
+    {
+      "checkpoint_budget_local_bytes": 0,
+      "plan_identity": "2c7a65888714ed13e113cf2267990f9a509e5b649ff82fb02447c80c8c3da2c3",
+      "shard_labels": [20, 17, 26],
+      "checkpoint_count": 0,
+      "saved_checkpoint_local_bytes": 0,
+      "predicted_forward_peak_local_bytes": 3480,
+      "estimated_collective_network_bytes": 112,
+      "estimated_rematerialization_cost": 3874,
+      "objective_score": 7466
+    },
+    {
+      "checkpoint_budget_local_bytes": 1024,
+      "plan_identity": "78c796323e5ad6fff7083eb50be64c6d7bc34a4766a9f1c244e08359068b8b3f",
+      "shard_labels": [17, 9, 25],
+      "checkpoint_count": 11,
+      "saved_checkpoint_local_bytes": 1024,
+      "predicted_forward_peak_local_bytes": 3592,
+      "estimated_collective_network_bytes": 112,
+      "estimated_rematerialization_cost": 1426,
+      "objective_score": 5130
+    },
+    {
+      "checkpoint_budget_local_bytes": 4096,
+      "plan_identity": "c4509528be12dba45d251498310bbc0631729a94bceb38d105d85e1e091ef6e8",
+      "shard_labels": [20, 9, 26],
+      "checkpoint_count": 54,
+      "saved_checkpoint_local_bytes": 4024,
+      "predicted_forward_peak_local_bytes": 3528,
+      "estimated_collective_network_bytes": 112,
+      "estimated_rematerialization_cost": 224,
+      "objective_score": 3864
+    },
+    {
+      "checkpoint_budget_local_bytes": 16384,
+      "plan_identity": "7f11952dac8c4c6882db8f3910f81cf5c01bd9539390c6cf9399cb1d3f6e3af3",
+      "shard_labels": [20, 17, 26],
+      "checkpoint_count": 61,
+      "saved_checkpoint_local_bytes": 5776,
+      "predicted_forward_peak_local_bytes": 3480,
+      "estimated_collective_network_bytes": 112,
+      "estimated_rematerialization_cost": 0,
+      "objective_score": 3592
+    }
+  ],
+  "observations": [
+    "Checkpoint budget changes both the selected checkpoints and the selected mesh labels.",
+    "The 1024-byte and 4096-byte budgets choose different meshes from the zero-budget and full-save cases.",
+    "Increasing the budget reduces estimated rematerialization cost from 3874 to zero."
+  ],
+  "claim_boundary": [
+    "This is deterministic planning evidence, not execution or speedup evidence.",
+    "Estimated operation cost and bytes are combined through explicit user-visible weights and are not asserted to share physical units.",
+    "The communication estimate currently covers the target collective and not every future dynamic remesh or parameter-gradient collective.",
+    "Measured-cost calibration remains pending."
+  ]
+}

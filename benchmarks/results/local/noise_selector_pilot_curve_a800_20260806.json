@@ -1,0 +1,79 @@
+{
+  "benchmark": "noise_selector_pilot_curve_a800_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "circuit_digest": "44dad8211ee723949e0a165fdf06b61f07981af436b7e48ebe24a356f9d34cfe",
+  "claim_evidence_type": "development_smoke",
+  "confidence_level": 0.95,
+  "depth": 8,
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "single_device_fast_path",
+  "n_wires": 8,
+  "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+  "non_release_evidence": true,
+  "observable_count": 8,
+  "records": [
+    {
+      "candidate_estimated_seconds": {
+        "density_matrix": 3.3985397573560476,
+        "noisy_mps": 4163.155294809258,
+        "noisy_statevector": 31.409251187142218
+      },
+      "estimated_trajectories_to_target": 2500,
+      "maximum_sample_variance": 0.048145636916160583,
+      "pilot_seconds": 0.7261073496192694,
+      "pilot_trajectories": 32,
+      "selected_mode": "density_matrix",
+      "variance_upper_confidence_bound": 1.0
+    },
+    {
+      "candidate_estimated_seconds": {
+        "density_matrix": 3.3985397573560476,
+        "noisy_mps": 2392.9816634563613,
+        "noisy_statevector": 18.054037582369347
+      },
+      "estimated_trajectories_to_target": 1437,
+      "maximum_sample_variance": 0.03707273304462433,
+      "pilot_seconds": 1.6344580873847008,
+      "pilot_trajectories": 128,
+      "selected_mode": "density_matrix",
+      "variance_upper_confidence_bound": 0.574502540845525
+    },
+    {
+      "candidate_estimated_seconds": {
+        "density_matrix": 3.3985397573560476,
+        "noisy_mps": 997.4920086362981,
+        "noisy_statevector": 7.525656584439275
+      },
+      "estimated_trajectories_to_target": 599,
+      "maximum_sample_variance": 0.043004490435123444,
+      "pilot_seconds": 6.5146004389971495,
+      "pilot_trajectories": 512,
+      "selected_mode": "density_matrix",
+      "variance_upper_confidence_bound": 0.23936798555754796
+    },
+    {
+      "candidate_estimated_seconds": {
+        "density_matrix": 3.3985397573560476,
+        "noisy_mps": 3410.456817507744,
+        "noisy_statevector": 25.730458572506905
+      },
+      "estimated_trajectories_to_target": 2048,
+      "maximum_sample_variance": 0.03661901131272316,
+      "pilot_seconds": 26.027278675697744,
+      "pilot_trajectories": 2048,
+      "selected_mode": "density_matrix",
+      "variance_upper_confidence_bound": 0.11035434725584511
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noise_pilot_curve.v1",
+  "seed": 20260806,
+  "target_standard_error": 0.02,
+  "torch_version": "2.13.0+cu130",
+  "trajectory_batch_size": 64,
+  "trajectory_cap": 4096
+}

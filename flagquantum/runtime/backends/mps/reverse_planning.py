@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from typing import Any, Mapping, Sequence
 
 import torch
@@ -11,6 +12,15 @@ from .records import (
     MPSReverseTape,
     MPSReverseTapeRecord,
 )
+
+_REVERSE_SEGMENT_CACHE_MAX_ENTRIES = 128
+_REVERSE_SEGMENT_CACHE: OrderedDict[
+    tuple[str, bool], tuple[tuple[int, ...], ...]
+] = OrderedDict()
+_REVERSE_SEGMENT_CACHE_HITS = 0
+_REVERSE_SEGMENT_CACHE_MISSES = 0
+_GRADIENT_BUCKET_CACHE_MAX_ENTRIES = 128
+_GRADIENT_BUCKET_CACHE: OrderedDict[tuple[Any, ...], tuple[Any, ...]] = OrderedDict()
 
 
 def validate_mps_svd_gaps(
@@ -69,6 +79,58 @@ def plan_mps_reverse_segments(
     return tuple(segments)
 
 
+def cached_mps_reverse_segments(
+    tape: MPSReverseTape, *, fuse_owner_local: bool
+) -> tuple[tuple[tuple[MPSReverseTapeRecord, ...], ...], bool]:
+    """Resolve a bounded identity-keyed plan without retaining old tensors.
+
+    Only record indices are cached.  Every call maps those indices onto the
+    current tape, so the cache cannot retain payloads, parameters, or prior-step
+    tensor storage.
+    """
+    global _REVERSE_SEGMENT_CACHE_HITS, _REVERSE_SEGMENT_CACHE_MISSES
+    key = (tape.identity, bool(fuse_owner_local))
+    indices = _REVERSE_SEGMENT_CACHE.get(key)
+    hit = indices is not None
+    if hit:
+        _REVERSE_SEGMENT_CACHE_HITS += 1
+        _REVERSE_SEGMENT_CACHE.move_to_end(key)
+    else:
+        _REVERSE_SEGMENT_CACHE_MISSES += 1
+        planned = plan_mps_reverse_segments(
+            tape, fuse_owner_local=fuse_owner_local
+        )
+        by_identity = {id(record): index for index, record in enumerate(tape.records)}
+        indices = tuple(
+            tuple(by_identity[id(record)] for record in segment)
+            for segment in planned
+        )
+        _REVERSE_SEGMENT_CACHE[key] = indices
+        while len(_REVERSE_SEGMENT_CACHE) > _REVERSE_SEGMENT_CACHE_MAX_ENTRIES:
+            _REVERSE_SEGMENT_CACHE.popitem(last=False)
+    return (
+        tuple(tuple(tape.records[index] for index in segment) for segment in indices),
+        hit,
+    )
+
+
+def clear_mps_reverse_segment_cache() -> None:
+    global _REVERSE_SEGMENT_CACHE_HITS, _REVERSE_SEGMENT_CACHE_MISSES
+    _REVERSE_SEGMENT_CACHE.clear()
+    _REVERSE_SEGMENT_CACHE_HITS = 0
+    _REVERSE_SEGMENT_CACHE_MISSES = 0
+    _GRADIENT_BUCKET_CACHE.clear()
+
+
+def mps_reverse_segment_cache_stats() -> dict[str, int]:
+    return {
+        "entries": len(_REVERSE_SEGMENT_CACHE),
+        "max_entries": _REVERSE_SEGMENT_CACHE_MAX_ENTRIES,
+        "hits": _REVERSE_SEGMENT_CACHE_HITS,
+        "misses": _REVERSE_SEGMENT_CACHE_MISSES,
+    }
+
+
 def plan_mps_gradient_buckets(
     parameters: Sequence[torch.Tensor],
     owners: Sequence[int] | None,
@@ -104,12 +166,43 @@ def plan_mps_gradient_buckets(
     return tuple(buckets)
 
 
+def cached_mps_gradient_buckets(
+    parameters: Sequence[torch.Tensor],
+    owners: Sequence[int] | None,
+    *,
+    max_bucket_bytes: int,
+) -> tuple[
+    tuple[tuple[torch.dtype, int | None, tuple[tuple[int, int, int], ...]], ...],
+    bool,
+]:
+    """Cache a tensor-free layout by dtype, size, owner, and byte bound."""
+    owner_key = None if owners is None else tuple(int(owner) for owner in owners)
+    key = (
+        tuple((parameter.dtype, parameter.numel()) for parameter in parameters),
+        owner_key,
+        int(max_bucket_bytes),
+    )
+    cached = _GRADIENT_BUCKET_CACHE.get(key)
+    if cached is not None:
+        _GRADIENT_BUCKET_CACHE.move_to_end(key)
+        return cached, True
+    planned = plan_mps_gradient_buckets(
+        parameters, owners, max_bucket_bytes=max_bucket_bytes
+    )
+    _GRADIENT_BUCKET_CACHE[key] = planned
+    while len(_GRADIENT_BUCKET_CACHE) > _GRADIENT_BUCKET_CACHE_MAX_ENTRIES:
+        _GRADIENT_BUCKET_CACHE.popitem(last=False)
+    return planned, False
+
+
 def plan_mps_canonicalization_bonds(
     n_wires: int, dirty_bonds: Sequence[int], policy: str
 ) -> tuple[int, ...]:
     """Plan the minimal canonicalization interval for the declared policy."""
-    if policy not in {"dirty", "full"}:
-        raise ValueError("canonicalization_policy must be dirty or full")
+    if policy not in {"none", "dirty", "full"}:
+        raise ValueError("canonicalization_policy must be none, dirty or full")
+    if policy == "none":
+        return ()
     if policy == "full":
         return tuple(range(max(0, n_wires - 1)))
     dirty = tuple(sorted(set(int(bond) for bond in dirty_bonds)))
@@ -180,10 +273,14 @@ def build_mps_parameter_layout(
 
 
 __all__ = (
+    "cached_mps_gradient_buckets",
+    "cached_mps_reverse_segments",
+    "clear_mps_reverse_segment_cache",
     "plan_mps_canonicalization_bonds",
     "build_mps_parameter_layout",
     "discover_trainable_tensors",
     "plan_mps_gradient_buckets",
     "plan_mps_reverse_segments",
+    "mps_reverse_segment_cache_stats",
     "validate_mps_svd_gaps",
 )

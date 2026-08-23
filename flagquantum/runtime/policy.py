@@ -35,8 +35,6 @@ class RuntimePolicy:
             raise ValueError(f"unsupported fq.Module observable {self.observable!r}")
         if not self.observable_wires or any(wire < 0 for wire in self.observable_wires):
             raise ValueError("observable_wires must contain non-negative wire indices")
-        if self.observable == "z" and len(self.observable_wires) != 1:
-            raise ValueError("observable='z' requires exactly one observable wire")
         if self.mps_max_bond is not None and int(self.mps_max_bond) <= 0:
             raise ValueError("mps_max_bond must be positive when provided")
         if float(self.mps_cutoff) < 0:

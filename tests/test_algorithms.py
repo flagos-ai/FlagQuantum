@@ -143,3 +143,88 @@ def test_run_vqe_reduces_energy():
     assert result.parameters.shape == initial.shape
     assert result.energy < initial_energy
     assert result.history[-1] < result.history[0]
+
+
+def test_run_adapt_vqe_selects_largest_exact_gradient_and_reduces_energy():
+    hamiltonian = fq.Hamiltonian([fq.pauli_term(1.0, "Z", (0,))])
+    pool = ("rx", "ry")
+
+    def builder(operators, parameters):
+        circuit = fq.Circuit(1, dtype=torch.complex128)
+        circuit.h(0)
+        for operator, parameter in zip(operators, parameters):
+            getattr(circuit, operator)(0, theta=parameter)
+        return circuit
+
+    result = fq.run_adapt_vqe(
+        builder,
+        pool,
+        hamiltonian,
+        max_adapt_iterations=1,
+        optimization_steps=50,
+        lr=0.1,
+    )
+
+    assert result.selected_pool_indices == (1,)
+    assert result.n_adapt_iterations == 1
+    assert abs(result.iterations[0].pool_gradients[0]) < 1e-12
+    assert abs(result.iterations[0].pool_gradients[1]) > 0.99
+    assert result.energy < -0.98
+    assert float(result.energy) < result.initial_energy
+
+
+def test_run_adapt_vqe_accepts_tensor_network_energy_evaluator():
+    pool = ("rx", "ry")
+
+    def builder(operators, parameters):
+        circuit = fq.Circuit(1, dtype=torch.complex128)
+        circuit.h(0)
+        for operator, parameter in zip(operators, parameters):
+            getattr(circuit, operator)(0, theta=parameter)
+        return circuit
+
+    def tn_energy(circuit):
+        state = fq.run_native(circuit, mode="tensor_network")
+        return state.expectation_ps(z=(0,))
+
+    result = fq.run_adapt_vqe(
+        builder,
+        pool,
+        energy_function=tn_energy,
+        max_adapt_iterations=1,
+        optimization_steps=20,
+        lr=0.1,
+    )
+
+    assert result.selected_pool_indices == (1,)
+    assert result.energy < -0.8
+
+
+def test_run_adapt_vqe_accepts_exact_screening_function():
+    pool = (("rx", 0), ("ry", 0))
+    target = fq.Hamiltonian([fq.pauli_term(-1.0, "X", (0,))])
+    calls = []
+
+    def builder(operators, parameters):
+        circuit = fq.Circuit(1, dtype=torch.complex128)
+        for (kind, wire), parameter in zip(operators, parameters):
+            getattr(circuit, kind)(wire, theta=parameter)
+        return circuit
+
+    def screen(operators, parameters, candidates):
+        calls.append((operators, tuple(candidates)))
+        return (0.0, -1.0)
+
+    result = fq.run_adapt_vqe(
+        builder,
+        pool,
+        target,
+        screening_function=screen,
+        max_adapt_iterations=1,
+        optimization_steps=2,
+        dtype=torch.float64,
+    )
+
+    assert calls == [((), pool)]
+    assert result.selected_pool_indices == (1,)
+    assert result.iterations[0].pool_gradients == (0.0, -1.0)

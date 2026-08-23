@@ -1,0 +1,95 @@
+{
+  "backend": "tensor_network",
+  "cols": 7,
+  "cycles": 1,
+  "dtype": "complex128",
+  "execution_seconds": 120.62331313779578,
+  "extra_entanglers": 16,
+  "implementation": "FlagQuantum",
+  "initial_energy": -3.95496033584502,
+  "max_intermediate_bytes": 1073741824000,
+  "operator_pool_size": 1,
+  "parameter_dtype": "float64",
+  "path_planning_seconds": 1.5761493961326778,
+  "peak_cuda_allocated_bytes": 11221888512,
+  "planner": "cotengra",
+  "pool_gradients": [
+    0.0031534968732497776
+  ],
+  "qubits": 42,
+  "rows": 6,
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "screening_method": "commutator",
+  "selected_gradient": 0.0031534968732497776,
+  "selected_pool_index": 0,
+  "slicing_plans": {
+    "0": {
+      "baseline_estimated_cost": 155416893422032,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2+binary_reslice",
+      "contraction_path_steps": 397,
+      "element_size_bytes": 16,
+      "n_slices": 64,
+      "peak_bytes": 3959422976,
+      "peak_size": 247463936,
+      "per_slice_cost": 2435538069840,
+      "recomputation_factor": 1.0029439724193017,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "sliced_labels": [
+        394,
+        390,
+        410,
+        455,
+        413,
+        392
+      ],
+      "target_peak_bytes": 1073741824000,
+      "target_peak_size": 67108864000,
+      "total_estimated_cost": 155874436469760
+    },
+    "1": {
+      "baseline_estimated_cost": 47975251868,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2+binary_reslice",
+      "contraction_path_steps": 397,
+      "element_size_bytes": 16,
+      "n_slices": 64,
+      "peak_bytes": 16777216,
+      "peak_size": 1048576,
+      "per_slice_cost": 763669680,
+      "recomputation_factor": 1.0187514940927294,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "sliced_labels": [
+        388,
+        384,
+        386,
+        153,
+        222,
+        152
+      ],
+      "target_peak_bytes": 1073741824000,
+      "target_peak_size": 67108864000,
+      "total_estimated_cost": 48874859520
+    }
+  },
+  "workload": "qubit_adapt_vqe_grid_tfim_screening"
+}

@@ -1,0 +1,19 @@
+{
+  "final_energy_absolute_error": 0.0,
+  "flagquantum_result": "benchmarks/results/adapt_vqe_tn_20260803/fq_4q_1gpu.json",
+  "flagquantum_seconds": 1.304790514986962,
+  "flagquantum_speedup": 6.19997089738552,
+  "initial_energy_absolute_error": 4.440892098500626e-16,
+  "max_optimization_history_absolute_error": 8.881784197001252e-16,
+  "max_pool_gradient_absolute_error": 2.220446049250313e-16,
+  "qubits": 4,
+  "schema_version": 1,
+  "screening_method": "append",
+  "selected_pool_indices": [
+    0
+  ],
+  "status": "pass",
+  "tensorcircuit_ng_result": "benchmarks/results/adapt_vqe_tn_20260803/tcng_4q_1gpu.json",
+  "tensorcircuit_ng_seconds": 8.08966322010383,
+  "tolerance": 1e-12
+}

@@ -1,0 +1,15 @@
+{
+  "baseline": "single_gpu_native_tn_quality_greedy",
+  "completed": true,
+  "cuda_peak_allocated_bytes": 10224128,
+  "cuda_peak_reserved_bytes": 23068672,
+  "elapsed_seconds": 0.059700109995901585,
+  "layers": 9,
+  "output_finite": true,
+  "output_shape": [
+    1
+  ],
+  "planned_peak_bytes": 524288,
+  "planned_peak_elements": 65536,
+  "qubits": 18
+}

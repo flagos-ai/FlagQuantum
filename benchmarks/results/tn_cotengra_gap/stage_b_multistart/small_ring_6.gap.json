@@ -1,0 +1,78 @@
+{
+  "claim_boundary": "Planning-only development evidence; not execution, gradient, production, or scalability evidence.",
+  "comparable": true,
+  "comparison_scope": "planning",
+  "correctness": {
+    "topology_identity_equal": true
+  },
+  "cotengra": {
+    "backend": "cotengra",
+    "backend_version": "0.8.2",
+    "comparison_scope": "planning",
+    "distribution_semantics": "planning_only",
+    "environment": {
+      "isolation": "temporary_target_directory",
+      "python": "3.12.13"
+    },
+    "metrics": {
+      "estimated_flops": 36,
+      "estimated_peak_bytes": 32,
+      "largest_intermediate_elements": 4,
+      "operation_count": 5,
+      "search_time_seconds": 0.0320279817096889,
+      "slice_count": 1,
+      "sliced_labels": []
+    },
+    "scalability_claim_allowed": false,
+    "schema_version": "flagquantum.tn_cotengra_gap.v1",
+    "search_budget_compliant": true,
+    "search_budget_seconds": 1.0,
+    "seed": 0,
+    "status": "completed",
+    "strategy": "HyperOptimizer[greedy,random-greedy]/combo",
+    "workload_identity": "96bbee2f0e0e27c85d992723e724a1b765380dd858a306cef2b4cc5001d06faf",
+    "workload_name": "small_ring_6"
+  },
+  "flagquantum": {
+    "backend": "flagquantum",
+    "backend_version": "0.2.0",
+    "comparison_scope": "planning",
+    "distribution_semantics": "planning_only",
+    "environment": {
+      "python": "3.12.13",
+      "torch": "2.13.0+cu130"
+    },
+    "metrics": {
+      "estimated_flops": 36,
+      "estimated_peak_bytes": 32,
+      "largest_intermediate_elements": 4,
+      "operation_count": 5,
+      "search_time_seconds": 0.009994443040341139,
+      "slice_count": 1,
+      "sliced_labels": [],
+      "total_intermediate_elements": 17
+    },
+    "scalability_claim_allowed": false,
+    "schema_version": "flagquantum.tn_cotengra_gap.v1",
+    "search_budget_compliant": true,
+    "search_budget_seconds": 1.0,
+    "status": "completed",
+    "strategy": "quality_multistart",
+    "workload_identity": "96bbee2f0e0e27c85d992723e724a1b765380dd858a306cef2b4cc5001d06faf",
+    "workload_name": "small_ring_6"
+  },
+  "largest_gap": "path_flops",
+  "next_optimization_target": "improve native multi-start path search",
+  "ratios": {
+    "estimated_flops_flagquantum_over_cotengra": 1.0,
+    "largest_intermediate_flagquantum_over_cotengra": 1.0,
+    "search_time_flagquantum_over_cotengra": 0.31205347657975224
+  },
+  "schema_version": 1,
+  "search_budget_seconds": {
+    "cotengra": 1.0,
+    "flagquantum": 1.0
+  },
+  "workload_identity": "96bbee2f0e0e27c85d992723e724a1b765380dd858a306cef2b4cc5001d06faf",
+  "workload_name": "small_ring_6"
+}

@@ -1,0 +1,17 @@
+{
+  "completed": true,
+  "cuda_peak_allocated_bytes": 14978560,
+  "cuda_peak_reserved_bytes": 25165824,
+  "dag_identity": "eb6c8d9e475286b90413337f07d0790984263994cfd0a23e5b6bc9343f7e9702",
+  "distribution_semantics": "single_device_fast_path",
+  "estimated_flops": 114060817,
+  "execution_seconds": 0.14095457596704364,
+  "largest_intermediate_elements": 262144,
+  "objective": "quality_multistart",
+  "operation_count": 312,
+  "output_finite": true,
+  "planning_seconds": 4.598168589640409,
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "workload": "18q_13l_expectation"
+}

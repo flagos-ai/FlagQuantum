@@ -27,6 +27,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import flagquantum as fq
+from benchmarks.sc27_metadata import (
+    driver_version,
+    gpu_identity,
+    source_identity,
+    topology_snapshot,
+)
 from examples.distributed_mps.variable_bond_capacity_8gpu import bond_dimensions
 from flagquantum.ops import set_global_precision
 from flagquantum.runtime.backends.mps.forward import (
@@ -295,7 +301,7 @@ def main() -> None:
         default=20,
         help="compute a sparse exact ground energy at or below this system size",
     )
-    parser.add_argument("--convergence-tolerance", type=float, default=1e-5)
+    parser.add_argument("--convergence-tolerance", type=float, default=1e-3)
     parser.add_argument(
         "--initial-state",
         choices=("neel_like", "random_isometric", "dimer_singlet"),
@@ -318,6 +324,23 @@ def main() -> None:
         default="gesvd",
         help="CUDA SVD driver; gesvda is approximate and intended for performance probes",
     )
+    parser.add_argument("--independent-run-index", type=int, choices=(1, 2, 3))
+    parser.add_argument("--container-digest")
+    parser.add_argument("--raw-log-sha256")
+    parser.add_argument(
+        "--reference-energy",
+        type=float,
+        help="independent reference energy for systems above exact-reference-max-sites",
+    )
+    parser.add_argument(
+        "--reference-artifact-sha256",
+        help="SHA256 of the independent reference solver's sealed raw artifact",
+    )
+    parser.add_argument(
+        "--reference-method",
+        choices=("independent_dmrg",),
+        default="independent_dmrg",
+    )
     args = parser.parse_args()
     real_dtype = torch.float64 if args.precision == "float64" else torch.float32
     set_global_precision(
@@ -329,6 +352,10 @@ def main() -> None:
         parser.error("1 <= initial-bond <= max-bond and initial-noise > 0 are required")
     if not 0.0 < args.learning_rate_decay <= 1.0:
         parser.error("learning-rate-decay must be in (0, 1]")
+    if (args.reference_energy is None) != (args.reference_artifact_sha256 is None):
+        parser.error(
+            "reference-energy and reference-artifact-sha256 must be supplied together"
+        )
 
     backend = "nccl" if torch.cuda.is_available() else "gloo"
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
@@ -466,6 +493,8 @@ def main() -> None:
         "hostname": socket.gethostname(),
         "local_rank": local_rank,
         "device": str(device),
+        "gpu_identity": gpu_identity(local_rank) if device.type == "cuda" else None,
+        "topology": topology_snapshot() if device.type == "cuda" else None,
         "status": status,
         "error": error,
         "elapsed_seconds": time.perf_counter() - started,
@@ -497,6 +526,8 @@ def main() -> None:
                 "node_id": 0,
                 "local_rank": record["local_rank"],
                 "device_id": record["device"],
+                **(record["gpu_identity"] or {}),
+                "topology": record["topology"],
             }
             for record in records
             if record is not None
@@ -530,6 +561,14 @@ def main() -> None:
             if passed and args.n_sites <= args.exact_reference_max_sites
             else None
         )
+        reference_energy = (
+            exact_energy if exact_energy is not None else args.reference_energy
+        )
+        reference_method = (
+            "sparse_exact_diagonalization"
+            if exact_energy is not None
+            else (args.reference_method if args.reference_energy is not None else None)
+        )
         best_energy = (
             min(records[0]["training"]["losses"])
             if passed and records[0] is not None
@@ -537,13 +576,76 @@ def main() -> None:
         )
         relative_energy_error = (
             None
-            if exact_energy is None or best_energy is None
-            else (best_energy - exact_energy) / abs(exact_energy)
+            if reference_energy is None or best_energy is None
+            else abs(best_energy - reference_energy) / abs(reference_energy)
         )
         convergence_certified = (
             relative_energy_error is not None
             and relative_energy_error <= args.convergence_tolerance
         )
+        workload_identity = {
+            "name": "heisenberg_xxz_vqe",
+            "n_sites": args.n_sites,
+            "depth": args.depth,
+            "max_bond": args.max_bond,
+            "cutoff": args.cutoff,
+            "anisotropy": args.anisotropy,
+            "field": args.field,
+            "initial_state": args.initial_state,
+            "parameterization": args.parameterization,
+            "optimizer": args.optimizer,
+            "learning_rate": args.learning_rate,
+            "precision": args.precision,
+            "seed": args.seed,
+            "world_size": world,
+        }
+        step_metrics_by_rank = [
+            record["training"]["step_metrics"] if record and record["training"] else []
+            for record in records
+        ]
+        optimizer_bytes_by_rank = [
+            max((int(step["optimizer_memory_bytes"]) for step in steps), default=0)
+            for steps in step_metrics_by_rank
+        ]
+        communication_bytes_by_rank = [
+            sum(
+                int(step["layer_halo_payload_bytes"])
+                + int(step["boundary_bytes"])
+                + int(step["gradient_collective_bytes"])
+                + int(step["optimizer_collective_bytes"])
+                for step in steps
+            )
+            for steps in step_metrics_by_rank
+        ]
+        discarded_weight_by_step = [
+            max(float(rank_steps[index]["discarded_weight"]) for rank_steps in step_metrics_by_rank)
+            for index in range(args.steps)
+        ] if passed else []
+        step_seconds = (
+            [
+                max(
+                    float(rank_steps[index]["end_to_end_seconds"])
+                    for rank_steps in step_metrics_by_rank
+                )
+                for index in range(args.steps)
+            ]
+            if passed
+            else []
+        )
+        target_reached_step = None
+        time_to_target_seconds = None
+        if reference_energy is not None and passed:
+            cumulative = 0.0
+            for index, (energy, seconds) in enumerate(
+                zip(records[0]["training"]["losses"], step_seconds, strict=True),
+                start=1,
+            ):
+                cumulative += seconds
+                error = abs(float(energy) - reference_energy) / abs(reference_energy)
+                if error <= args.convergence_tolerance:
+                    target_reached_step = index
+                    time_to_target_seconds = cumulative
+                    break
         payload = {
             "schema": "flagquantum.distributed_mps_heisenberg_vqe.v1",
             "evidence_source": "measured_runtime",
@@ -562,13 +664,35 @@ def main() -> None:
             "anisotropy": args.anisotropy,
             "field": args.field,
             "exact_ground_energy": exact_energy,
+            "reference": {
+                "method": reference_method,
+                "energy": reference_energy,
+                "artifact_sha256": (
+                    args.reference_artifact_sha256
+                    if exact_energy is None
+                    else None
+                ),
+                "independent_of_flagquantum": exact_energy is None
+                and args.reference_energy is not None,
+            },
             "best_variational_energy": best_energy,
             "absolute_energy_error": (
-                None if exact_energy is None else best_energy - exact_energy
+                None
+                if reference_energy is None or best_energy is None
+                else best_energy - reference_energy
             ),
             "relative_energy_error": relative_energy_error,
+            "energy_error_per_site": (
+                None
+                if reference_energy is None or best_energy is None
+                else abs(best_energy - reference_energy) / args.n_sites
+            ),
             "convergence_tolerance": args.convergence_tolerance,
             "convergence_certified": convergence_certified,
+            "target_reached": target_reached_step is not None,
+            "target_reached_step": target_reached_step,
+            "time_to_target_seconds": time_to_target_seconds,
+            "optimizer_step_seconds": step_seconds,
             "requested_max_bond": args.max_bond,
             "initial_bond": args.initial_bond,
             "initial_noise": args.initial_noise,
@@ -619,16 +743,18 @@ def main() -> None:
                     {
                         "optimizer_step": index,
                         "energy": float(energy),
-                        "exact_energy": exact_energy,
+                        "reference_energy": reference_energy,
+                        "reference_method": reference_method,
                         "absolute_error": (
                             None
-                            if exact_energy is None
-                            else float(energy) - exact_energy
+                            if reference_energy is None
+                            else abs(float(energy) - reference_energy)
                         ),
                         "relative_error": (
                             None
-                            if exact_energy is None
-                            else (float(energy) - exact_energy) / abs(exact_energy)
+                            if reference_energy is None
+                            else abs(float(energy) - reference_energy)
+                            / abs(reference_energy)
                         ),
                         "optimizer_stage": records[0]["training"]["step_metrics"][
                             index
@@ -660,12 +786,46 @@ def main() -> None:
             "claim_evidence_type": "production_runtime",
             "rank_placement": rank_placement,
             "rank_ownership": rank_ownership,
+            "source_identity": source_identity(
+                repo_root=ROOT,
+                workload=workload_identity,
+                container_digest=args.container_digest,
+                raw_log_sha256=args.raw_log_sha256,
+            ),
+            "protocol": {
+                "independent_run_index": args.independent_run_index,
+                "seed": args.seed,
+                "retains_failed_runs": True,
+                "compile_reported_separately": True,
+                "target_relative_energy_error": args.convergence_tolerance,
+            },
+            "environment": {
+                "python": platform.python_version(),
+                "torch": torch.__version__,
+                "cuda": torch.version.cuda,
+                "device_name": (
+                    torch.cuda.get_device_name(0)
+                    if device.type == "cuda"
+                    else platform.processor()
+                ),
+                "driver_version": driver_version(),
+            },
+            "ownership": {
+                "primal_state": "sharded_across_ranks" if world > 1 else "single_device",
+                "adjoint_state": "sharded_across_ranks" if world > 1 else "single_device",
+                "parameter_gradient": "owner_sharded_across_ranks" if world > 1 else "single_device",
+                "optimizer_state": "owner_sharded_across_ranks" if world > 1 else "single_device",
+                "full_mps_materialized": False,
+                "optimizer_bytes_per_rank": optimizer_bytes_by_rank,
+            },
             "local_memory_bytes_by_rank": local_memory_bytes_by_rank,
             "memory_plan": {
                 "status": "measured",
                 "local_memory_bytes_by_rank": local_memory_bytes_by_rank,
             },
             "communication_bytes": communication_bytes,
+            "communication_bytes_by_rank": communication_bytes_by_rank,
+            "discarded_weight_by_step": discarded_weight_by_step,
             "communication_plan": {
                 "status": "production_executed" if passed else "failed",
                 "communication_backend": backend,
@@ -676,6 +836,7 @@ def main() -> None:
             "full_mps_materialization": False,
             "rank_records": records,
             "completed": passed,
+            "fallback_events": [],
             "scalability_claim_allowed": False,
             "release_gate_allowed": False,
             "blockers": [

@@ -12,10 +12,10 @@ from ...circuit_statevector import (
     _apply_matrix,
     _apply_single_qubit_fixed,
     _canonical_name,
-    _gate_matrix,
     _statevector_layout,
 )
 from ...core.ir import Instruction
+from ...ops.gate_matrix import gate_matrix
 from ._conditions import classical_width, instruction_conditions
 from .circuit import DynamicCircuit
 from .result import DynamicExecutionResult
@@ -59,7 +59,7 @@ def _apply_instruction(
             instruction.wires[0],
             n_wires,
         )
-    matrix = _gate_matrix(
+    matrix = gate_matrix(
         instruction,
         bsz=state.shape[0],
         device=state.device,

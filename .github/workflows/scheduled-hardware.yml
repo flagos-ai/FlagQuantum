@@ -26,7 +26,7 @@ jobs:
           set -o pipefail
           python tools/run_with_watchdog.py --phase gpu-tier --stall-seconds 240 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-gpu-tier -- python tools/ci_tier.py gpu-scheduled 2>&1 | tee hardware-run/gpu.log
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase jax-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-jax-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend jax --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/jax-performance.json
-          python tools/evaluate_performance_artifact.py hardware-run/jax-performance.json --baseline benchmarks/development/issue077_1gpu_jax_kernel.json
+          python tools/evaluate_performance_artifact.py hardware-run/jax-performance.json --baseline-if-present benchmarks/development/issue077_1gpu_jax_kernel.json
       - name: Record run context
         if: always()
         run: |
@@ -63,7 +63,7 @@ jobs:
             python tools/run_with_watchdog.py --phase scale-mps-stability --stall-seconds 300 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-mps-stability -- torchrun --standalone --nproc-per-node=8 benchmarks/mps_stability.py --optimizer sgd --steps 100 --restart-steps 10 --max-bond 16 --output hardware-run/mps-stability-8.json 2>&1 | tee hardware-run/mps-stability-8.log
           fi
           python tools/run_with_watchdog.py --phase scale-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-benchmark-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/performance-${{ matrix.gpu-count }}.json
-          python tools/evaluate_performance_artifact.py hardware-run/performance-${{ matrix.gpu-count }}.json --baseline benchmarks/development/issue077_${{ matrix.gpu-count }}gpu_topology.json
+          python tools/evaluate_performance_artifact.py hardware-run/performance-${{ matrix.gpu-count }}.json --baseline-if-present benchmarks/development/issue077_${{ matrix.gpu-count }}gpu_topology.json
       - if: always()
         run: >-
           python tools/hardware_run_manifest.py

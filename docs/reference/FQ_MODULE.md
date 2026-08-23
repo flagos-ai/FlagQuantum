@@ -23,6 +23,31 @@ optimizer.step()
 result = model.execute()
 ```
 
+Request several per-wire Z features in one execution by selecting multiple
+observable wires. The result keeps the observable axis instead of reducing it:
+
+```python
+features = fq.Module(
+    circuit,
+    2,
+    policy=fq.RuntimePolicy(observable="z", observable_wires=(0, 1)),
+)()
+assert features.shape == (1, 2)
+```
+
+The leading dimension is the circuit batch dimension, so unbatched circuits
+return `(1, observable_count)` and batched circuits return
+`(batch_size, observable_count)`. Use
+`observable="z_sum"` when the observable axis should be summed. Vector-valued Z
+execution is supported by the local PyTorch statevector, MPS, and
+tensor-network fast paths. JAX and distributed statevector execution remain
+single-observable and fail closed when fallback is disabled.
+
+`forward()` uses a tensor-only local training path: it reuses the compiled
+circuit builder and skips `ExecutionResult`, IR snapshot, topology hash,
+provenance, and runtime-summary construction. Call `execute()` whenever those
+audit fields are required.
+
 Use `mode="distributed_statevector"` under an initialized process group to
 retain the same module and result surface while forward and backward use the
 native sharded statevector runtime. PyTorch is always the stable default. A

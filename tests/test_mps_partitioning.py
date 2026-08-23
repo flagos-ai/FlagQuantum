@@ -5,6 +5,7 @@ from flagquantum.runtime.backends.mps.state import (
     cost_aware_mps_ownership,
     gate_aligned_cost_aware_mps_ownership,
     mps_factorization_site_costs,
+    topology_aware_mps_ownership,
     validate_mps_ownership,
 )
 
@@ -50,6 +51,39 @@ def test_gate_aligned_cost_aware_ownership_keeps_all_internal_cuts_even():
 def test_gate_aligned_cost_aware_ownership_fails_when_cuts_do_not_fit():
     with pytest.raises(ValueError, match="not enough aligned cuts"):
         gate_aligned_cost_aware_mps_ownership((1,) * 7, world_size=5)
+
+
+def test_topology_aware_ownership_moves_hot_cut_off_node_boundary():
+    bonds = (1, *([4] * 11), 1)
+    penalties = [1] * 11
+    penalties[5] = 100
+    ownership = topology_aware_mps_ownership(
+        bonds,
+        world_size=4,
+        local_world_size=2,
+        boundary_penalties=penalties,
+        inter_node_multiplier=16,
+        maximum_load_ratio=1.6,
+    )
+    inter_node_cut = ownership[1][-1]
+    assert inter_node_cut != 5
+    assert tuple(wire for shard in ownership for wire in shard) == tuple(range(12))
+
+
+@pytest.mark.parametrize(
+    ("local_world_size", "multiplier"), ((0, 8), (3, 8), (2, 0))
+)
+def test_topology_aware_ownership_rejects_invalid_topology(
+    local_world_size, multiplier
+):
+    with pytest.raises(ValueError):
+        topology_aware_mps_ownership(
+            (1,) * 9,
+            world_size=4,
+            local_world_size=local_world_size,
+            boundary_penalties=(1,) * 7,
+            inter_node_multiplier=multiplier,
+        )
 
 
 @pytest.mark.parametrize(

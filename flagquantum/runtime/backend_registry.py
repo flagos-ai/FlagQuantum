@@ -17,6 +17,7 @@ from typing import Any, Mapping
 import torch
 
 from ..core.runtime_config import get_runtime_config
+from .platforms import discover_platform_devices, resolve_platform_device
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class AcceleratorInfo:
     name: str
     available: bool = True
     memory_bytes: int | None = None
+    device_type: str = ""
 
 
 @dataclass(frozen=True)
@@ -77,51 +79,39 @@ _BACKENDS: ContextVar[Mapping[str, BackendCapabilities]] = ContextVar(
 )
 
 
-def _accelerator_kind(name: str) -> str:
-    lowered = name.lower()
-    if "hygon" in lowered or "dcu" in lowered or "rocm" in lowered:
-        return "dcu"
-    if "mthreads" in lowered or "musa" in lowered:
-        return "mthreads"
-    if (
-        "nvidia" in lowered
-        or "cuda" in lowered
-        or "geforce" in lowered
-        or "tesla" in lowered
-    ):
-        return "cuda"
-    return "cuda"
+def _accelerator_kind(device_type: str) -> str:
+    """Classify only FlagQuantum platform types, never vendor device names."""
+
+    normalized = device_type.lower().split(":", 1)[0]
+    return normalized if normalized in {"cuda", "flagos"} else "unknown"
 
 
 def detect_accelerators() -> tuple[AcceleratorInfo, ...]:
     """Detect accelerators exposed through the PyTorch runtime."""
 
-    detected: list[AcceleratorInfo] = []
-    if torch.cuda.is_available():
-        for index in range(torch.cuda.device_count()):
-            name = torch.cuda.get_device_name(index)
-            memory = None
-            try:
-                memory = int(torch.cuda.get_device_properties(index).total_memory)
-            except (AssertionError, RuntimeError):
-                memory = None
-            detected.append(
-                AcceleratorInfo(
-                    kind=_accelerator_kind(name),
-                    index=index,
-                    name=name,
-                    memory_bytes=memory,
-                )
-            )
+    detected = [
+        AcceleratorInfo(
+            kind=_accelerator_kind(device.device_type),
+            index=int(device.index or 0),
+            name=device.name,
+            available=device.available,
+            memory_bytes=device.memory_bytes,
+            device_type=device.device_type,
+        )
+        for device in discover_platform_devices()
+        if device.device_type != "cpu"
+    ]
 
     explicit = os.environ.get("FLAGQUANTUM_ACCELERATOR")
     if explicit and not detected:
+        device_type = explicit.lower().split(":", 1)[0]
         detected.append(
             AcceleratorInfo(
-                kind=explicit.lower(),
+                kind=_accelerator_kind(device_type),
                 index=0,
                 name=explicit,
-                available=True,
+                available=False,
+                device_type=device_type,
             )
         )
     return tuple(detected)
@@ -130,8 +120,15 @@ def detect_accelerators() -> tuple[AcceleratorInfo, ...]:
 def _build_pytorch_capabilities() -> BackendCapabilities:
     accelerators = detect_accelerators()
     devices = ["cpu"]
-    if accelerators or torch.cuda.is_available():
-        devices.append("cuda")
+    for accelerator in accelerators:
+        if (
+            accelerator.available
+            and accelerator.device_type
+            and accelerator.device_type not in devices
+        ):
+            devices.append(accelerator.device_type)
+    # FlagOS remains explicit until a workload profile has verified operator and
+    # numerical evidence. Device visibility alone must not change ``auto``.
     preferred = "cuda" if "cuda" in devices else "cpu"
     return BackendCapabilities(
         name="pytorch",
@@ -207,15 +204,18 @@ def resolve_device(
     capabilities = get_backend_capabilities(backend)
     if device is None or str(device) == "auto":
         device = capabilities.preferred_device
-    resolved = torch.device(device)
-    if resolved.type not in capabilities.devices:
+    requested_type = str(device).lower().split(":", 1)[0]
+    if requested_type not in capabilities.devices and requested_type != "flagos":
         raise ValueError(
-            f"Backend {capabilities.name!r} does not expose device {resolved.type!r}."
+            f"Backend {capabilities.name!r} does not expose device "
+            f"{requested_type!r}."
         )
+    try:
+        resolved = resolve_platform_device(device)
+    except KeyError:
+        resolved = torch.device(device)
     if require_accelerator and resolved.type == "cpu":
         raise RuntimeError("No accelerator is available for this backend.")
-    if resolved.type == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("CUDA-compatible accelerator is not available.")
     return resolved
 
 
@@ -282,12 +282,18 @@ def with_accelerators(
     """Return a capability record with updated accelerator metadata."""
 
     devices = ["cpu"]
-    if accelerators:
-        devices.append("cuda")
+    for accelerator in accelerators:
+        if (
+            accelerator.available
+            and accelerator.device_type
+            and accelerator.device_type not in devices
+        ):
+            devices.append(accelerator.device_type)
+    preferred = "cuda" if "cuda" in devices else "cpu"
     return replace(
         capabilities,
         devices=tuple(devices),
-        preferred_device="cuda" if accelerators else "cpu",
+        preferred_device=preferred,
         accelerators=accelerators,
     )
 
@@ -316,6 +322,7 @@ def capability_summary(
                 "name": item.name,
                 "available": item.available,
                 "memory_bytes": item.memory_bytes,
+                "device_type": item.device_type,
             }
             for item in capabilities.accelerators
         ),

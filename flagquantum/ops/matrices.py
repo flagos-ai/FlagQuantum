@@ -88,10 +88,16 @@ class PrecisionConfig:
 
     @classmethod
     def _create_fixed_gate(cls, matrix):
-        """Create a fixed gate matrix with the current precision."""
+        """Create a lossless master matrix for execution-time casting.
+
+        Fixed gates must never be materialized in complex64 and later promoted
+        to complex128: irrational constants such as ``1 / sqrt(2)`` have
+        already lost information by then.  The matrices are tiny, immutable
+        masters; execution paths cast them to the requested state dtype.
+        """
         if isinstance(matrix, torch.Tensor):
-            return matrix.to(dtype=cls.get_dtype())
-        return torch.tensor(matrix, dtype=cls.get_dtype())
+            return matrix.to(dtype=torch.complex128)
+        return torch.tensor(matrix, dtype=torch.complex128)
 
     @classmethod
     def _reconvert_fixed_gates(cls):
@@ -153,14 +159,14 @@ class PrecisionConfig:
         )
 
         # Three-qubit gates
-        toffoli = torch.eye(8, dtype=cls.get_dtype())
+        toffoli = torch.eye(8, dtype=torch.complex128)
         toffoli[6, 6] = 0
         toffoli[6, 7] = 1
         toffoli[7, 6] = 1
         toffoli[7, 7] = 0
         TOFFOLI_MATRIX = toffoli
 
-        fredkin = torch.eye(8, dtype=cls.get_dtype())
+        fredkin = torch.eye(8, dtype=torch.complex128)
         fredkin[4, 4] = 0
         fredkin[4, 5] = 1
         fredkin[5, 4] = 1
@@ -248,6 +254,20 @@ def _parameter_complex_dtype(params: torch.Tensor) -> torch.dtype:
     )
 
 
+def _real_parameters(params: torch.Tensor | Any) -> torch.Tensor:
+    """Keep rotation-angle math real until complex matrix assembly."""
+
+    if not isinstance(params, torch.Tensor):
+        return torch.as_tensor(params, dtype=_precision.get_real_dtype())
+    return params.real if params.is_complex() else params
+
+
+def _unit_phase(angle: torch.Tensor) -> torch.Tensor:
+    """Compute exp(i*angle) through real trig for portable autograd."""
+
+    return torch.complex(torch.cos(angle), torch.sin(angle))
+
+
 # ============================================================================
 # Parameterized Gate Matrices
 # ============================================================================
@@ -255,27 +275,32 @@ def _parameter_complex_dtype(params: torch.Tensor) -> torch.dtype:
 
 def rx_mat(params: torch.Tensor) -> torch.Tensor:
     """Generate RX gate matrix: RX(θ) = [[cos(θ/2), -i sin(θ/2)], [-i sin(θ/2), cos(θ/2)]]"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     half_theta = theta / 2
     cos = torch.cos(half_theta)
     sin = torch.sin(half_theta)
-    return _create_2x2_matrix(cos, -1j * sin, -1j * sin, cos)
+    zero = torch.zeros_like(cos)
+    cos_complex = torch.complex(cos, zero)
+    neg_i_sin = torch.complex(zero, -sin)
+    return _create_2x2_matrix(cos_complex, neg_i_sin, neg_i_sin, cos_complex)
 
 
 def ry_mat(params: torch.Tensor) -> torch.Tensor:
     """Generate RY gate matrix: RY(θ) = [[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     half_theta = theta / 2
     cos = torch.cos(half_theta)
     sin = torch.sin(half_theta)
-    return _create_2x2_matrix(cos, -sin, sin, cos)
+    return _create_2x2_matrix(cos, -sin, sin, cos).to(
+        dtype=_parameter_complex_dtype(params)
+    )
 
 
 def rz_mat(params: torch.Tensor) -> torch.Tensor:
     """Generate RZ gate matrix: RZ(θ) = [[e^{-iθ/2}, 0], [0, e^{iθ/2}]]"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
-    exp_neg = torch.exp(-0.5j * theta)
-    exp_pos = torch.conj(exp_neg)
+    theta = _real_parameters(params)
+    exp_neg = _unit_phase(-0.5 * theta)
+    exp_pos = _unit_phase(0.5 * theta)
     return _create_2x2_matrix(
         exp_neg, torch.zeros_like(exp_neg), torch.zeros_like(exp_pos), exp_pos
     )
@@ -283,8 +308,8 @@ def rz_mat(params: torch.Tensor) -> torch.Tensor:
 
 def phase_mat(params: torch.Tensor) -> torch.Tensor:
     """Phase gate: P(θ) = [[1, 0], [0, e^{iθ}]]"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
-    exp_theta = torch.exp(1j * theta)
+    theta = _real_parameters(params)
+    exp_theta = _unit_phase(theta)
     one = torch.ones_like(exp_theta)
     return _create_2x2_matrix(
         one, torch.zeros_like(one), torch.zeros_like(exp_theta), exp_theta
@@ -358,7 +383,7 @@ def u2_mat(params: torch.Tensor) -> torch.Tensor:
             - 1D tensor: [phi, lam]
             - 2D tensor: [[phi1, lam1], [phi2, lam2], ...] for batch mode
     """
-    params = torch.as_tensor(params, dtype=_precision.get_dtype())
+    params = _real_parameters(params)
     params = _ensure_batch_dim(params, n_params=2)
 
     phi = params[..., 0]
@@ -368,9 +393,9 @@ def u2_mat(params: torch.Tensor) -> torch.Tensor:
 
     # Construct matrix elements element-wise
     a = one_over_sqrt2 * torch.ones_like(phi)  # position [0,0]
-    b = -one_over_sqrt2 * torch.exp(1j * lam)  # position [0,1]
-    c = one_over_sqrt2 * torch.exp(1j * phi)  # position [1,0]
-    d = one_over_sqrt2 * torch.exp(1j * (phi + lam))  # position [1,1]
+    b = -one_over_sqrt2 * _unit_phase(lam)  # position [0,1]
+    c = one_over_sqrt2 * _unit_phase(phi)  # position [1,0]
+    d = one_over_sqrt2 * _unit_phase(phi + lam)  # position [1,1]
 
     # Construct 2x2 matrix [a, b; c, d]
     # Batch version: shape [batch, 2, 2]
@@ -393,7 +418,7 @@ def u3_mat(params: torch.Tensor) -> torch.Tensor:
             - 2D tensor: [[theta1, phi1, lam1], [theta2, phi2, lam2], ...] for batch mode
     """
     # Ensure correct shape
-    params = torch.as_tensor(params, dtype=_precision.get_dtype())
+    params = _real_parameters(params)
     params = _ensure_batch_dim(params, n_params=3)
 
     theta = params[..., 0]
@@ -406,9 +431,9 @@ def u3_mat(params: torch.Tensor) -> torch.Tensor:
 
     # Construct matrix elements element-wise
     a = cos_half  # position [0,0]
-    b = -torch.exp(1j * lam) * sin_half  # position [0,1]
-    c = torch.exp(1j * phi) * sin_half  # position [1,0]
-    d = torch.exp(1j * (phi + lam)) * cos_half  # position [1,1]
+    b = -_unit_phase(lam) * sin_half  # position [0,1]
+    c = _unit_phase(phi) * sin_half  # position [1,0]
+    d = _unit_phase(phi + lam) * cos_half  # position [1,1]
 
     # Construct 2x2 matrix [a, b; c, d]
     matrices = torch.stack(
@@ -420,7 +445,7 @@ def u3_mat(params: torch.Tensor) -> torch.Tensor:
 
 def crx_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled RX gate: CRX(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
 
     # Ensure it's 1D [batch]
     theta = theta.flatten()  # Key: flatten to 1D
@@ -447,7 +472,7 @@ def crx_mat(params: torch.Tensor) -> torch.Tensor:
 
 def cry_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled RY gate: CRY(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
@@ -472,15 +497,15 @@ def cry_mat(params: torch.Tensor) -> torch.Tensor:
 
 def crz_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled RZ gate: CRZ(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
     dtype = _parameter_complex_dtype(params)
 
-    exp_neg = torch.exp(-0.5j * theta)
-    exp_pos = torch.conj(exp_neg)
+    exp_neg = _unit_phase(-0.5 * theta)
+    exp_pos = _unit_phase(0.5 * theta)
 
     matrix = torch.zeros(batch_size, 4, 4, dtype=dtype, device=device)
 
@@ -494,14 +519,14 @@ def crz_mat(params: torch.Tensor) -> torch.Tensor:
 
 def cphase_mat(params: torch.Tensor) -> torch.Tensor:
     """Controlled Phase gate: CPhase(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
     device = theta.device
     dtype = _parameter_complex_dtype(params)
 
-    exp_theta = torch.exp(1j * theta)
+    exp_theta = _unit_phase(theta)
 
     matrix = torch.zeros(batch_size, 4, 4, dtype=dtype, device=device)
 
@@ -515,7 +540,7 @@ def cphase_mat(params: torch.Tensor) -> torch.Tensor:
 
 def rxx_mat(params: torch.Tensor) -> torch.Tensor:
     """Ising XX gate: RXX(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     theta = theta.flatten()  # Flatten to 1D
 
     batch_size = theta.shape[0]
@@ -543,7 +568,7 @@ def rxx_mat(params: torch.Tensor) -> torch.Tensor:
 
 def ryy_mat(params: torch.Tensor) -> torch.Tensor:
     """Ising YY gate: RYY(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     theta = theta.flatten()
 
     batch_size = theta.shape[0]
@@ -571,15 +596,15 @@ def ryy_mat(params: torch.Tensor) -> torch.Tensor:
 
 def rzz_mat(params: torch.Tensor) -> torch.Tensor:
     """Ising ZZ gate: RZZ(θ)"""
-    theta = params.to(dtype=_parameter_complex_dtype(params))
+    theta = _real_parameters(params)
     theta = theta.flatten()
 
     batch_size = theta.shape[0]
     device = theta.device
     dtype = _parameter_complex_dtype(params)
 
-    exp_neg = torch.exp(-0.5j * theta)
-    exp_pos = torch.conj(exp_neg)
+    exp_neg = _unit_phase(-0.5 * theta)
+    exp_pos = _unit_phase(0.5 * theta)
 
     matrix = torch.zeros(batch_size, 4, 4, dtype=dtype, device=device)
 

@@ -1,0 +1,23 @@
+{
+  "schema": "flagquantum.noise_selector_calibration.v1",
+  "torch_version": "2.13.0+cu130",
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "trajectory_batch_size": 64,
+  "requested_trajectories": 512,
+  "world_size": 1,
+  "records": [
+    {
+      "n_wires": 12,
+      "depth": 8,
+      "noise_kind": "full",
+      "channel_count": 184,
+      "circuit_digest": "66605de8362e85a202be4dbe8bb956172a6fbe09b0751097933bbc780ba6ceba",
+      "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+      "mode": "noisy_statevector",
+      "median_seconds": 11.068497657775879,
+      "max_cuda_peak_allocated_bytes": 35827712,
+      "executed_trajectories": 512
+    }
+  ],
+  "source_benchmark": "benchmarks/results/noisy_statevector_a800_1gpu_20260806.json"
+}

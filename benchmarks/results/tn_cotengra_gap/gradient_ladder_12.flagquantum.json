@@ -1,0 +1,28 @@
+{
+  "backend": "flagquantum",
+  "backend_version": "0.2.0",
+  "comparison_scope": "planning",
+  "distribution_semantics": "planning_only",
+  "environment": {
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "metrics": {
+    "estimated_flops": 432,
+    "estimated_peak_bytes": 64,
+    "largest_intermediate_elements": 8,
+    "operation_count": 34,
+    "search_time_seconds": 0.04047721205279231,
+    "slice_count": 1,
+    "sliced_labels": [],
+    "total_intermediate_elements": 204
+  },
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.tn_cotengra_gap.v1",
+  "search_budget_compliant": true,
+  "search_budget_seconds": 1.0,
+  "status": "completed",
+  "strategy": "memory_greedy",
+  "workload_identity": "5db23615a74f118bba7dd591a97f98da2fe128c10bf27789ed86d7bbcdfc34db",
+  "workload_name": "gradient_ladder_12"
+}

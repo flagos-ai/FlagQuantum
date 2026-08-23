@@ -1,0 +1,86 @@
+{
+  "benchmark": "tn_sparse_capacity",
+  "cuda_version": "13.0",
+  "distributed": {
+    "backend": "nccl",
+    "estimated_per_slice_cost": 41364848296,
+    "estimated_per_slice_peak": 536870912,
+    "expected_slice_tasks": 128,
+    "sliced_labels": [
+      436,
+      540,
+      82,
+      558,
+      232,
+      574,
+      282
+    ],
+    "world_size": 1
+  },
+  "execution_summary": {
+    "distribution_semantics": "slice_parallel_sparse_output_all_reduce",
+    "full_state_materialized": false,
+    "output_target": "few_amplitudes",
+    "rank_partial_bytes_by_rank": {
+      "0": 8
+    },
+    "reduction_payload_bytes": 8,
+    "shared_contraction": true,
+    "slice_tasks": 128,
+    "state_mode": "distributed_tensor_network_amplitudes",
+    "target_count": 1,
+    "tasks_by_rank": {
+      "0": 128
+    },
+    "world_size": 1
+  },
+  "git_sha": "5c08b45c5466a3cc262b7b10300e0fe12dc738b6",
+  "host": "p-kt-lc-a800-04",
+  "latency_seconds_max_rank_median": 33.97783660888672,
+  "peak_memory_bytes_max": 17188620800,
+  "phase_timings_seconds_max_rank": {
+    "circuit_build": 0.006462412886321545,
+    "projection_and_slice_selection": 10.51084173284471,
+    "tensor_network_build": 2.7486042520031333
+  },
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "rank_records": [
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 0,
+      "median_seconds": 33.97783660888672,
+      "peak_memory_bytes": 17188620800,
+      "phase_timings_seconds": {
+        "circuit_build": 0.006462412886321545,
+        "projection_and_slice_selection": 10.51084173284471,
+        "tensor_network_build": 2.7486042520031333
+      },
+      "rank": 0,
+      "times_seconds": [
+        33.97783532412723
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "status": "measured_success",
+  "timestamp_utc": "2026-07-30T06:01:00Z",
+  "torch_version": "2.13.0+cu130",
+  "values_imag": [
+    [
+      0.0
+    ]
+  ],
+  "values_real": [
+    [
+      0.9848881959915161
+    ]
+  ],
+  "workload": {
+    "depth": 4,
+    "dtype": "complex64",
+    "qubits": 36,
+    "target": "few_amplitudes",
+    "target_count": 1,
+    "topology": "grid_4x9"
+  }
+}

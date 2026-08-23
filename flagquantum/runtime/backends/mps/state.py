@@ -286,6 +286,91 @@ def communication_aware_mps_ownership(
     return validate_mps_ownership(ownership, n_wires, world_size)
 
 
+def topology_aware_mps_ownership(
+    bond_dimensions: Sequence[int],
+    world_size: int,
+    *,
+    local_world_size: int,
+    boundary_penalties: Sequence[int],
+    inter_node_multiplier: int = 8,
+    maximum_load_ratio: float = 1.25,
+) -> tuple[tuple[int, ...], ...]:
+    """Place expensive cuts inside nodes while bounding factorization load.
+
+    Rank shards remain ordered and contiguous.  A cut after every
+    ``local_world_size`` ranks is classified as inter-node and receives the
+    declared multiplier; this models placement cost without claiming an exact
+    NCCL physical route.
+    """
+    bonds = tuple(int(value) for value in bond_dimensions)
+    n_wires = len(bonds) - 1
+    penalties = tuple(int(value) for value in boundary_penalties)
+    if not 1 <= world_size <= n_wires:
+        raise ValueError(
+            "topology-aware ownership requires 1 <= world_size <= n_wires"
+        )
+    if not 1 <= local_world_size <= world_size:
+        raise ValueError("local_world_size must be between one and world_size")
+    if world_size % local_world_size != 0:
+        raise ValueError("world_size must be divisible by local_world_size")
+    if len(penalties) != max(0, n_wires - 1) or any(value < 0 for value in penalties):
+        raise ValueError(
+            "boundary_penalties must contain one non-negative value per bond"
+        )
+    if inter_node_multiplier < 1:
+        raise ValueError("inter_node_multiplier must be positive")
+    if maximum_load_ratio < 1:
+        raise ValueError("maximum_load_ratio must be at least one")
+    if world_size == 1:
+        return (tuple(range(n_wires)),)
+
+    weights = mps_factorization_site_costs(bonds)
+    prefix = [0]
+    for weight in weights:
+        prefix.append(prefix[-1] + int(weight))
+    average = prefix[-1] / world_size
+    maximum = average * maximum_load_ratio
+    states: dict[tuple[int, int], tuple[int, float, tuple[int, ...]]] = {
+        (0, 0): (0, 0.0, ())
+    }
+    for rank_count in range(1, world_size + 1):
+        minimum_end = rank_count
+        maximum_end = n_wires - (world_size - rank_count)
+        for end in range(minimum_end, maximum_end + 1):
+            candidates = []
+            for start in range(rank_count - 1, end):
+                previous = states.get((rank_count - 1, start))
+                if previous is None:
+                    continue
+                load = prefix[end] - prefix[start]
+                if load > maximum:
+                    continue
+                multiplier = (
+                    inter_node_multiplier
+                    if end < n_wires and rank_count % local_world_size == 0
+                    else 1
+                )
+                cut_penalty = 0 if end == n_wires else penalties[end - 1] * multiplier
+                candidates.append(
+                    (
+                        previous[0] + cut_penalty,
+                        max(previous[1], abs(load - average)),
+                        (*previous[2], end),
+                    )
+                )
+            if candidates:
+                states[(rank_count, end)] = min(candidates)
+    result = states.get((world_size, n_wires))
+    if result is None:
+        raise ValueError("no topology-aware ownership satisfies the load bound")
+    boundaries = (0, *result[2])
+    ownership = tuple(
+        tuple(range(boundaries[rank], boundaries[rank + 1]))
+        for rank in range(world_size)
+    )
+    return validate_mps_ownership(ownership, n_wires, world_size)
+
+
 def _owner(ownership: Sequence[Sequence[int]], wire: int) -> int:
     for rank, wires in enumerate(ownership):
         if int(wire) in wires:
@@ -418,5 +503,6 @@ __all__ = (
     "initialize_reverse_mps_state",
     "mps_factorization_site_costs",
     "normalize_rank_owned_initial_tensors",
+    "topology_aware_mps_ownership",
     "validate_mps_ownership",
 )

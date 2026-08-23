@@ -14,6 +14,11 @@ code must not reach sideways into implementation modules.
 | Governance | `flagquantum.runtime.audit` | Evidence validation and release gates |
 | Adapters | `deployment`, `devices`, `extensions` | External systems and plugins |
 
+The v0.1 DTensor device subsystem is a closed internal compatibility island,
+not an adapter extension point. Its exact modules are declared in
+`architecture.toml`. New imports into that island are forbidden by policy, and
+none of its symbols belongs to the v0.2 stable API.
+
 Canonical audit wildcard exports use capability vocabulary. Historical
 milestone-numbered names remain available only as lazy explicit-import aliases.
 The compatibility-heavy `flagquantum.api` wildcard surface follows the same

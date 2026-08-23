@@ -1,0 +1,23 @@
+{
+  "backend": "TensorCircuit-NG 1.8.0 DistributedContractor / JAX",
+  "cycles": 1,
+  "devices": 1,
+  "dtype": "complex128",
+  "extra_entanglers": 6,
+  "failure": {
+    "exception": "ValueError: Maximum allowed size exceeded",
+    "phase": "first selected-operator value_and_grad contractor construction",
+    "planned_slices": 267848934664472337904453025792
+  },
+  "mpo_compression": "direct",
+  "optimization_steps": 1,
+  "pool_limit": 1,
+  "qubits": 48,
+  "rows": 6,
+  "cols": 8,
+  "schema_version": 1,
+  "screening": "commutator",
+  "status": "failed",
+  "target_size_elements": 268435456,
+  "workload": "qubit_adapt_vqe_grid_tfim"
+}

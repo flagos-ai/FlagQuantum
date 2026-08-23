@@ -444,11 +444,79 @@ def test_structured_modes_execute_the_selected_backend(mode, executor) -> None:
     assert result.runtime["executor"] == executor
 
 
-def test_policy_rejects_unknown_modes_and_ambiguous_z_observables() -> None:
+def test_policy_rejects_unknown_modes() -> None:
     with pytest.raises(ValueError, match="unsupported fq.Module mode"):
         fq.RuntimePolicy(mode="bogus")
-    with pytest.raises(ValueError, match="exactly one"):
-        fq.RuntimePolicy(observable="z", observable_wires=(0, 1))
+
+
+@pytest.mark.parametrize("mode", ("statevector", "mps", "tensor_network"))
+def test_module_returns_multiple_z_observables_in_one_execution(mode) -> None:
+    parameters = torch.tensor([0.2, -0.3], requires_grad=True)
+    module = fq.Module(
+        build_circuit,
+        2,
+        init=parameters,
+        policy=fq.RuntimePolicy(
+            mode=mode,
+            observable="z",
+            observable_wires=(0, 1),
+        ),
+    )
+
+    value = module()
+    reference_parameters = parameters.detach().clone().requires_grad_(True)
+    reference = build_circuit(reference_parameters).expectation_z((0, 1))
+
+    assert value.shape == (1, 2)
+    torch.testing.assert_close(value, reference, atol=1e-5, rtol=1e-5)
+    value.square().sum().backward()
+    reference.square().sum().backward()
+    torch.testing.assert_close(
+        module.parameters_tensor.grad,
+        reference_parameters.grad,
+        atol=1e-5,
+        rtol=1e-5,
+    )
+
+
+def test_batched_module_returns_batch_by_observable_shape() -> None:
+    def batched(parameters, inputs):
+        circuit = fq.Circuit(2, bsz=inputs.shape[0], device=inputs.device)
+        return (
+            circuit.ry(0, inputs[:, 0] + parameters[0])
+            .cx(0, 1)
+            .ry(1, inputs[:, 1] + parameters[1])
+        )
+
+    module = fq.Module(
+        batched,
+        2,
+        policy=fq.RuntimePolicy(observable="z", observable_wires=(0, 1)),
+    )
+    inputs = torch.randn(5, 2, requires_grad=True)
+    value = module(inputs)
+
+    assert value.shape == (5, 2)
+    value.sum().backward()
+    assert inputs.grad is not None
+    assert module.parameters_tensor.grad is not None
+
+
+def test_local_forward_uses_tensor_only_fast_path(monkeypatch) -> None:
+    module = fq.Module(
+        build_circuit,
+        2,
+        policy=fq.RuntimePolicy(observable="z", observable_wires=(0, 1)),
+    )
+
+    def reject_execute(*args, **kwargs):
+        raise AssertionError("forward should not construct an ExecutionResult")
+
+    monkeypatch.setattr(module, "execute", reject_execute)
+    value = module()
+    assert value.shape == (1, 2)
+    value.sum().backward()
+    assert module.parameters_tensor.grad is not None
 
 
 def test_single_rank_distributed_policy_reports_local_parallel_semantics() -> None:

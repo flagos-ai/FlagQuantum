@@ -668,6 +668,11 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         wires = self.policy.observable_wires or (0,)
         if requested_backend == "jax":
             try:
+                if self.policy.observable == "z" and len(wires) > 1:
+                    raise NotImplementedError(
+                        "JAX fq.Module does not yet support vector-valued Z "
+                        "observables; use the PyTorch local fast path"
+                    )
                 if isinstance(selected_parameters, Mapping):
                     raise NotImplementedError(
                         "JAX execution of named parameter groups requires an "
@@ -824,7 +829,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 value = (
                     values.sum(dim=-1)
                     if self.policy.observable == "z_sum"
-                    else values[..., 0]
+                    else values if len(wires) > 1 else values[..., 0]
                 )
             runtime = {
                 "executor": executor,
@@ -899,9 +904,76 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         inputs: torch.Tensor | None = None,
         parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
     ) -> torch.Tensor:
+        if self.policy.backend == "pytorch" and self.policy.mode in {
+            "statevector",
+            "mps",
+            "tensor_network",
+        }:
+            return self._forward_local_tensor(inputs, parameters)
         result = self.execute(inputs, parameters)
         assert result.value is not None
         return result.value
+
+    def _forward_local_tensor(
+        self,
+        inputs: torch.Tensor | None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None,
+    ) -> torch.Tensor:
+        """Execute the local training fast path without result metadata."""
+
+        selected_parameters = (
+            self._owned_parameters() if parameters is None else parameters
+        )
+        try:
+            circuit = self._build(inputs, selected_parameters)
+            if not isinstance(circuit, Circuit):
+                raise TypeError(
+                    "local fq.Module execution requires a Circuit builder result"
+                )
+            self._last_ir = detached_ir_snapshot(ensure_circuit_ir(circuit))
+            wires = self.policy.observable_wires or (0,)
+            backend_state: Any = None
+            if self.policy.mode == "statevector":
+                circuit.state(refresh=True)
+                values = circuit.expectation_z(wires)
+            elif self.policy.mode == "mps":
+                from ..simulation.mps import run_mps
+
+                backend_state = run_mps(
+                    circuit,
+                    max_bond=self.policy.mps_max_bond,
+                    cutoff=self.policy.mps_cutoff,
+                )
+                values = backend_state.expectation_z(wires)
+            else:
+                from ..simulation.tensor import run_tensor_network
+
+                backend_state = run_tensor_network(circuit, dense_observable_wires=12)
+                values = backend_state.expectation_z(wires)
+
+            if self.policy.observable == "hamiltonian":
+                if self.policy.mode == "tensor_network":
+                    raise NotImplementedError(
+                        "tensor_network Module does not yet support Hamiltonian "
+                        "observables without explicit term execution"
+                    )
+                if self.hamiltonian is None:
+                    raise ValueError("hamiltonian observable requires a Hamiltonian")
+                value = self.hamiltonian.expectation(
+                    circuit if self.policy.mode == "statevector" else backend_state
+                )
+            elif self.policy.observable == "z_sum":
+                value = values.sum(dim=-1)
+            else:
+                value = values if len(wires) > 1 else values[..., 0]
+
+            if self.policy.correctness_debug:
+                from .training_state import assert_finite_training
+
+                assert_finite_training(self, value=value, include_gradients=False)
+            return value
+        finally:
+            self._builder_bindings.clear()
 
     def get_extra_state(self) -> dict[str, Any]:
         return {

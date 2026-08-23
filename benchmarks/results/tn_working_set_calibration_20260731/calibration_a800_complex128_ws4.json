@@ -1,0 +1,25 @@
+{
+  "accelerator_name": "NVIDIA A800-SXM4-80GB",
+  "blockers": [],
+  "claim_evidence_type": "development_hardware_calibration",
+  "complex_bytes": 16,
+  "distinct_prediction_count": 3,
+  "evidence_level": "development_hardware_calibration",
+  "fixed_reserved_overhead_bytes": 10527703040,
+  "identity": "344aff09e9d997da7a09a22f86424284ee54bc748e41bdb1e7b34d0d53a99f01",
+  "maximum_allocated_to_predicted_ratio": 3.004202127456665,
+  "maximum_reserved_to_predicted_ratio": 4.9150390625,
+  "measurement_digest": "394fd704e7f603142b5039390341a5c62bdea7831a8ed01fa3cf152e1908fcd8",
+  "passed": true,
+  "recommended_safety_factor": 4.0583984375,
+  "sample_count": 12,
+  "scalability_claim_allowed": false,
+  "sources": [
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_complex128_grid4x9_c4_ws4_budget8.json",
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_complex128_grid4x9_c4_ws4_budget16.json",
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_complex128_grid4x9_c4_ws4_budget32.json"
+  ],
+  "topology_class": "single_node_nv8",
+  "version": "flagquantum.tn_working_set_calibration.v1",
+  "world_size": 4
+}

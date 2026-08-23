@@ -12,6 +12,8 @@ from .correctness import (
 )
 from .mps_capacity_certification import (
     MPSCapacityCertificationError,
+    finalize_capacity_source_integrity,
+    require_capacity_source_integrity,
     require_general_mps_capacity,
 )
 from .mps_certification import (
@@ -51,6 +53,8 @@ __all__ = (
     "MPSCertificationError",
     "require_mps_numerical_certification",
     "MPSCapacityCertificationError",
+    "finalize_capacity_source_integrity",
+    "require_capacity_source_integrity",
     "require_general_mps_capacity",
     "MPSStabilityCertificationError",
     "require_mps_stability",

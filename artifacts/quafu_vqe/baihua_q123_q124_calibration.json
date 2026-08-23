@@ -1,0 +1,58 @@
+{
+  "basis_gates": [
+    "h",
+    "rx",
+    "ry",
+    "rz",
+    "cz"
+  ],
+  "calibration_time": "2026-08-06 19:07:05",
+  "chip": "Baihua",
+  "couplers_info": {
+    "C145": {
+      "fidelity": 0.991,
+      "index": 145,
+      "label": "C145",
+      "length": 2.24e-07,
+      "qubits_index": [
+        123,
+        124
+      ]
+    }
+  },
+  "qubits_info": {
+    "Q123": {
+      "T1": 36.414,
+      "T2": 68.655,
+      "coordinate": [
+        6,
+        9
+      ],
+      "fidelity": 0.999,
+      "frequency": 3.985,
+      "index": 123,
+      "label": "Q123",
+      "length": 6.4e-08,
+      "readout e_fidelity": 0.0,
+      "readout frequency": 6.69,
+      "readout g_fidelity": 0.0
+    },
+    "Q124": {
+      "T1": 27.679,
+      "T2": 9.455,
+      "coordinate": [
+        7,
+        9
+      ],
+      "fidelity": 0.999,
+      "frequency": 4.357,
+      "index": 124,
+      "label": "Q124",
+      "length": 6.4e-08,
+      "readout e_fidelity": 0.0,
+      "readout frequency": 6.999,
+      "readout g_fidelity": 0.0
+    }
+  },
+  "schema": "flagquantum_quafu_chip_calibration_snapshot_v1"
+}

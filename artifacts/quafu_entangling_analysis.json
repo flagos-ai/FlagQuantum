@@ -1,0 +1,2234 @@
+{
+  "batches": [
+    {
+      "calibration_time": "2026-08-07 08:44:49",
+      "execution_mode": "provider_compile",
+      "label": "provider compile",
+      "manifest_sha256": "1dca9141d5f7e732f2d8bccb8decd8f5d728e5bd44e0d9eee8869da7aabd8e1c",
+      "rows": [
+        {
+          "actual_cz_count": 0,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.013142007961869213,
+          "blind_tv_statevector_hardware": 0.05478211194276807,
+          "depth_parameter": 0,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.53681640625,
+            0.11982421875,
+            0.27998046875,
+            0.06337890625
+          ],
+          "key": "n2:d0:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.5478734374046326,
+            0.12208600342273712,
+            0.2717694640159607,
+            0.05827108025550842
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.5915985107421875,
+            0.0892091765999794,
+            0.27736714482307434,
+            0.041825152933597565
+          ],
+          "task_id": "2608071049383130403",
+          "tv_noise_model_hardware": 0.01331882327795026,
+          "tv_statevector_hardware": 0.05478211194276807
+        },
+        {
+          "actual_cz_count": 0,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.0264734089374542,
+          "blind_tv_statevector_hardware": 0.062011733651161194,
+          "depth_parameter": 0,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.28232421875,
+            0.23544921875,
+            0.2796875,
+            0.2025390625
+          ],
+          "key": "n2:d0:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.2858178913593292,
+            0.25293129682540894,
+            0.2534223794937134,
+            0.20782822370529175
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.2499999701976776,
+            0.25,
+            0.25,
+            0.25
+          ],
+          "task_id": "2608071049498795884",
+          "tv_noise_model_hardware": 0.026265016198158242,
+          "tv_statevector_hardware": 0.062011733651161194
+        },
+        {
+          "actual_cz_count": 0,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.008610397763550305,
+          "blind_tv_statevector_hardware": 0.09933646041899921,
+          "depth_parameter": 0,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.709765625,
+            0.181640625,
+            0.0880859375,
+            0.0205078125
+          ],
+          "key": "n2:d0:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.7185811400413513,
+            0.18188989162445068,
+            0.07928570359945297,
+            0.020243199542164803
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.8091021180152893,
+            0.1570616215467453,
+            0.028335820883512497,
+            0.005500504747033119
+          ],
+          "task_id": "2608071049275026547",
+          "tv_noise_model_hardware": 0.009064814262092137,
+          "tv_statevector_hardware": 0.09933646041899921
+        },
+        {
+          "actual_cz_count": 1,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.22805662676692012,
+          "blind_tv_statevector_hardware": 0.2830882299691439,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.3703125,
+            0.27060546875,
+            0.2279296875,
+            0.13115234375
+          ],
+          "key": "n2:d1:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.46693849563598633,
+            0.12357985228300095,
+            0.3573039770126343,
+            0.05217760056257248
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.48404425382614136,
+            0.10271380096673965,
+            0.3972861170768738,
+            0.015955734997987747
+          ],
+          "task_id": "2608071050119357105",
+          "tv_noise_model_hardware": 0.2260003224015236,
+          "tv_statevector_hardware": 0.28308822996914385
+        },
+        {
+          "actual_cz_count": 1,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.1200104996562004,
+          "blind_tv_statevector_hardware": 0.25160779505968095,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.272265625,
+            0.26630859375,
+            0.19541015625,
+            0.266015625
+          ],
+          "key": "n2:d1:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.37104055285453796,
+            0.1790078580379486,
+            0.16271434724330902,
+            0.2872370779514313
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.3949444890022278,
+            0.10505544394254684,
+            0.10505544394254684,
+            0.3949444890022278
+          ],
+          "task_id": "2608071050246744635",
+          "tv_noise_model_hardware": 0.1199964627623558,
+          "tv_statevector_hardware": 0.25160779505968095
+        },
+        {
+          "actual_cz_count": 1,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.053355556353926664,
+          "blind_tv_statevector_hardware": 0.07125637494027615,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.583984375,
+            0.2490234375,
+            0.1234375,
+            0.0435546875
+          ],
+          "key": "n2:d1:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.5543200969696045,
+            0.29270654916763306,
+            0.10015939176082611,
+            0.052813995629549026
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.5777620673179626,
+            0.3202798068523407,
+            0.06559552997350693,
+            0.03636258468031883
+          ],
+          "task_id": "2608071050013859468",
+          "tv_noise_model_hardware": 0.052942403033375746,
+          "tv_statevector_hardware": 0.07125637494027615
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.23468726351857183,
+          "blind_tv_statevector_hardware": 0.3202764962567016,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.3453125,
+            0.32314453125,
+            0.1703125,
+            0.16123046875
+          ],
+          "key": "n2:d2:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.5084704160690308,
+            0.09113248437643051,
+            0.23463359475135803,
+            0.165763258934021
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.5758436918258667,
+            0.0028679987881332636,
+            0.20724287629127502,
+            0.21404536068439484
+          ],
+          "task_id": "2608071050468422529",
+          "tv_noise_model_hardware": 0.23201192393898962,
+          "tv_statevector_hardware": 0.3202764962567016
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.16809290349483488,
+          "blind_tv_statevector_hardware": 0.33961914181709285,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.284765625,
+            0.253515625,
+            0.21064453125,
+            0.25107421875
+          ],
+          "key": "n2:d2:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.39476278424263,
+            0.1584307849407196,
+            0.13746513426303864,
+            0.3093409836292267
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.43772944808006287,
+            0.06227045878767967,
+            0.06227046623826027,
+            0.43772944808006287
+          ],
+          "task_id": "2608071050580949580",
+          "tv_noise_model_hardware": 0.1682640805840492,
+          "tv_statevector_hardware": 0.33961914181709285
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.22069470472633837,
+          "blind_tv_statevector_hardware": 0.36844369703903795,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.44619140625,
+            0.290234375,
+            0.19296875,
+            0.07060546875
+          ],
+          "key": "n2:d2:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.2729943096637726,
+            0.5087246894836426,
+            0.15697047114372253,
+            0.0613102912902832
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.16200079023838043,
+            0.6586780548095703,
+            0.16802145540714264,
+            0.011299665085971355
+          ],
+          "task_id": "2608071050362594261",
+          "tv_noise_model_hardware": 0.2184904336929321,
+          "tv_statevector_hardware": 0.36844369703903795
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.24119687005877496,
+          "blind_tv_statevector_hardware": 0.4503002252429724,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.26376953125,
+            0.30625,
+            0.19921875,
+            0.23076171875
+          ],
+          "key": "n2:d4:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.09264582395553589,
+            0.2930555045604706,
+            0.14194665849208832,
+            0.4723514914512634
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.02464945986866951,
+            0.23229438066482544,
+            0.06199425458908081,
+            0.6810619831085205
+          ],
+          "task_id": "2608071051206134651",
+          "tv_noise_model_hardware": 0.24159003347158434,
+          "tv_statevector_hardware": 0.4503002252429724
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.0572082355618477,
+          "blind_tv_statevector_hardware": 0.018750000000000017,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.23408203125,
+            0.24716796875,
+            0.26982421875,
+            0.24892578125
+          ],
+          "key": "n2:d4:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.2836263179779053,
+            0.25483211874961853,
+            0.25575482845306396,
+            0.20578616857528687
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.24521805346012115,
+            0.2547820210456848,
+            0.2547820210456848,
+            0.24521805346012115
+          ],
+          "task_id": "2608071051316721509",
+          "tv_noise_model_hardware": 0.057208719849586503,
+          "tv_statevector_hardware": 0.018750000000000017
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.355426225066185,
+          "blind_tv_statevector_hardware": 0.4277614878490567,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.32119140625,
+            0.187890625,
+            0.35341796875,
+            0.1375
+          ],
+          "key": "n2:d4:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.6446234583854675,
+            0.21867690980434418,
+            0.0993722528219223,
+            0.03732690215110779
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.7337824106216431,
+            0.20306117832660675,
+            0.047367293387651443,
+            0.015789257362484932
+          ],
+          "task_id": "2608071051096473953",
+          "tv_noise_model_hardware": 0.35421857535839085,
+          "tv_statevector_hardware": 0.42776148784905677
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.25823725610971454,
+          "blind_tv_statevector_hardware": 0.40414595734328035,
+          "depth_parameter": 8,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.2458984375,
+            0.273046875,
+            0.2580078125,
+            0.223046875
+          ],
+          "key": "n2:d8:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.16051529347896576,
+            0.09998223185539246,
+            0.4856517016887665,
+            0.25384947657585144
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.09432748705148697,
+            0.020471962168812752,
+            0.5755584239959717,
+            0.30964231491088867
+          ],
+          "task_id": "2608071051528018829",
+          "tv_noise_model_hardware": 0.2584471389651299,
+          "tv_statevector_hardware": 0.40414595734328035
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.1566557183861732,
+          "blind_tv_statevector_hardware": 0.30220536217093463,
+          "depth_parameter": 8,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.2458984375,
+            0.2611328125,
+            0.26162109375,
+            0.23134765625
+          ],
+          "key": "n2:d8:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.35768163204193115,
+            0.19059506058692932,
+            0.17693251371383667,
+            0.27478960156440735
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.38972577452659607,
+            0.1102742999792099,
+            0.11027427762746811,
+            0.3897257149219513
+          ],
+          "task_id": "2608071052044097634",
+          "tv_noise_model_hardware": 0.1552257359027862,
+          "tv_statevector_hardware": 0.30220536217093463
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            49,
+            36
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.29102070406079295,
+          "blind_tv_statevector_hardware": 0.45155376810580494,
+          "depth_parameter": 8,
+          "executed_mapping": [
+            49,
+            36
+          ],
+          "hardware_probabilities": [
+            0.3005859375,
+            0.25654296875,
+            0.27275390625,
+            0.1701171875
+          ],
+          "key": "n2:d8:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.21055680513381958,
+            0.45597001910209656,
+            0.07949286699295044,
+            0.25397923588752747
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.10640924423933029,
+            0.5469774007797241,
+            0.015376938506960869,
+            0.3312366306781769
+          ],
+          "task_id": "2608071051422112117",
+          "tv_noise_model_hardware": 0.283289635181427,
+          "tv_statevector_hardware": 0.45155376810580494
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.09243029840290547,
+          "blind_tv_statevector_hardware": 0.18022223534062504,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.27841796875,
+            0.046875,
+            0.2107421875,
+            0.05595703125,
+            0.137890625,
+            0.09248046875,
+            0.0912109375,
+            0.08642578125
+          ],
+          "key": "n3:d1:x",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.26458075642585754,
+            0.04455576837062836,
+            0.23270514607429504,
+            0.06615320593118668,
+            0.06800094991922379,
+            0.12150029093027115,
+            0.08428455889225006,
+            0.11821911484003067
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.23001809418201447,
+            0.01449133362621069,
+            0.27888765931129456,
+            0.06336092203855515,
+            0.040396615862846375,
+            0.11735475808382034,
+            0.08926618844270706,
+            0.16622430086135864
+          ],
+          "task_id": "2608071052259504327",
+          "tv_noise_model_hardware": 0.09297239333391188,
+          "tv_statevector_hardware": 0.18022223534062504
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.09273207914084194,
+          "blind_tv_statevector_hardware": 0.19833962619304654,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.2099609375,
+            0.0875,
+            0.08359375,
+            0.14248046875,
+            0.1892578125,
+            0.07099609375,
+            0.07626953125,
+            0.13994140625
+          ],
+          "key": "n3:d1:y",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.21491745114326477,
+            0.06538131088018417,
+            0.06885320693254471,
+            0.18188899755477905,
+            0.21447376906871796,
+            0.08161094784736633,
+            0.034410376101732254,
+            0.13846375048160553
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.19857251644134521,
+            0.014276592060923576,
+            0.0514274500310421,
+            0.2357233315706253,
+            0.23572339117527008,
+            0.051427457481622696,
+            0.014276595786213875,
+            0.19857251644134521
+          ],
+          "task_id": "2608071052366598455",
+          "tv_noise_model_hardware": 0.08019594810903072,
+          "tv_statevector_hardware": 0.19833962619304657
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.1964291201904416,
+          "blind_tv_statevector_hardware": 0.2402648439630866,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.3244140625,
+            0.27783203125,
+            0.21748046875,
+            0.06787109375,
+            0.04140625,
+            0.03486328125,
+            0.02880859375,
+            0.00732421875
+          ],
+          "key": "n3:d1:z",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.2599859833717346,
+            0.3574545085430145,
+            0.11727765947580338,
+            0.157978817820549,
+            0.03113752044737339,
+            0.042537886649370193,
+            0.01431362610310316,
+            0.01931402087211609
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.21483765542507172,
+            0.36292439699172974,
+            0.11909428983926773,
+            0.20118550956249237,
+            0.024391338229179382,
+            0.04120418801903725,
+            0.013521227985620499,
+            0.022841354832053185
+          ],
+          "task_id": "2608071052151216500",
+          "tv_noise_model_hardware": 0.18939459724351762,
+          "tv_statevector_hardware": 0.2402648439630866
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.15647485926747323,
+          "blind_tv_statevector_hardware": 0.31434017305728046,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.23212890625,
+            0.11435546875,
+            0.12978515625,
+            0.23857421875,
+            0.055859375,
+            0.05078125,
+            0.06318359375,
+            0.11533203125
+          ],
+          "key": "n3:d2:x",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.3248567283153534,
+            0.1295696198940277,
+            0.05531582236289978,
+            0.25186529755592346,
+            0.029307503253221512,
+            0.04198984056711197,
+            0.02400081232190132,
+            0.14309431612491608
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.34661316871643066,
+            0.06386872380971909,
+            0.011389425955712795,
+            0.3427787125110626,
+            0.016537366434931755,
+            0.0056104096584022045,
+            0.002218677429482341,
+            0.21098338067531586
+          ],
+          "task_id": "2608071052592941029",
+          "tv_noise_model_hardware": 0.14899536669254304,
+          "tv_statevector_hardware": 0.31434017305728046
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.12530105970799923,
+          "blind_tv_statevector_hardware": 0.2335141781019047,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.1841796875,
+            0.09248046875,
+            0.10380859375,
+            0.12431640625,
+            0.2001953125,
+            0.0990234375,
+            0.06494140625,
+            0.1310546875
+          ],
+          "key": "n3:d2:y",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.2066260278224945,
+            0.06014130637049675,
+            0.0773804634809494,
+            0.18690700829029083,
+            0.22054219245910645,
+            0.08916708827018738,
+            0.028115786612033844,
+            0.13112013041973114
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.1886947900056839,
+            0.0020646550692617893,
+            0.06130516529083252,
+            0.24793528020381927,
+            0.24793531000614166,
+            0.06130516529083252,
+            0.0020646557677537203,
+            0.1886948049068451
+          ],
+          "task_id": "2608071053103315356",
+          "tv_noise_model_hardware": 0.1054492633789778,
+          "tv_statevector_hardware": 0.23351417810190472
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.17978879483416677,
+          "blind_tv_statevector_hardware": 0.29861303680809215,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.16611328125,
+            0.30732421875,
+            0.24169921875,
+            0.10263671875,
+            0.0462890625,
+            0.10478515625,
+            0.01845703125,
+            0.0126953125
+          ],
+          "key": "n3:d2:z",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.12343992292881012,
+            0.4403151273727417,
+            0.2281113713979721,
+            0.02814752794802189,
+            0.02123316191136837,
+            0.12427780032157898,
+            0.008844710886478424,
+            0.02563050016760826
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.024827443063259125,
+            0.4997885823249817,
+            0.2905888855457306,
+            0.005473949480801821,
+            0.0032078430522233248,
+            0.14250706136226654,
+            0.0013738075504079461,
+            0.03223240002989769
+          ],
+          "task_id": "2608071052474715893",
+          "tv_noise_model_hardware": 0.16541867889463902,
+          "tv_statevector_hardware": 0.29861303680809215
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "x",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.2909702848643064,
+          "blind_tv_statevector_hardware": 0.5547850914532318,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.17744140625,
+            0.11064453125,
+            0.271484375,
+            0.08583984375,
+            0.100390625,
+            0.10654296875,
+            0.08623046875,
+            0.06142578125
+          ],
+          "key": "n3:d4:x",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.14867812395095825,
+            0.03572383522987366,
+            0.5062800049781799,
+            0.039140745997428894,
+            0.060817819088697433,
+            0.16155686974525452,
+            0.02975156530737877,
+            0.018050823360681534
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.02185468003153801,
+            0.0018651648424565792,
+            0.728261411190033,
+            0.006920604966580868,
+            0.030013710260391235,
+            0.20455093681812286,
+            0.002323691500350833,
+            0.004209626000374556
+          ],
+          "task_id": "2608071053376874085",
+          "tv_noise_model_hardware": 0.28980963714420793,
+          "tv_statevector_hardware": 0.5547850914532318
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "y",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.08232258111238479,
+          "blind_tv_statevector_hardware": 0.11072076112031937,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.125,
+            0.162109375,
+            0.17822265625,
+            0.090625,
+            0.12109375,
+            0.1423828125,
+            0.10234375,
+            0.07822265625
+          ],
+          "key": "n3:d4:y",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.13608063757419586,
+            0.13125406205654144,
+            0.14625699818134308,
+            0.1165960431098938,
+            0.157676100730896,
+            0.15001320838928223,
+            0.09191370010375977,
+            0.07020876556634903
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.08531492948532104,
+            0.10461121052503586,
+            0.16468502581119537,
+            0.14538876712322235,
+            0.14538876712322235,
+            0.1646849513053894,
+            0.10461121052503586,
+            0.08531492948532104
+          ],
+          "task_id": "2608071053483254468",
+          "tv_noise_model_hardware": 0.08126466944813727,
+          "tv_statevector_hardware": 0.11072076112031937
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            106,
+            119,
+            120
+          ],
+          "basis": "z",
+          "batch": "provider compile",
+          "blind_tv_noise_model_hardware": 0.19140772558748723,
+          "blind_tv_statevector_hardware": 0.349524528044276,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            120,
+            119,
+            106
+          ],
+          "hardware_probabilities": [
+            0.14462890625,
+            0.16552734375,
+            0.11455078125,
+            0.0982421875,
+            0.1630859375,
+            0.157421875,
+            0.11005859375,
+            0.046484375
+          ],
+          "key": "n3:d4:z",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.21508878469467163,
+            0.09074180573225021,
+            0.0693993866443634,
+            0.15384601056575775,
+            0.12057023495435715,
+            0.2110777050256729,
+            0.11722832918167114,
+            0.02204766869544983
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.21241173148155212,
+            0.025175614282488823,
+            0.03594168275594711,
+            0.21706648170948029,
+            0.07582917809486389,
+            0.27145349979400635,
+            0.1589442938566208,
+            0.0031773506198078394
+          ],
+          "task_id": "2608071053261519709",
+          "tv_noise_model_hardware": 0.18688930422067646,
+          "tv_statevector_hardware": 0.349524528044276
+        }
+      ]
+    },
+    {
+      "calibration_time": "2026-08-07 08:56:18",
+      "execution_mode": "sealed_physical_qasm",
+      "label": "compile=False request",
+      "manifest_sha256": "995d5f834aff4e67952b61f3fa6a3278f34774bd9e347bf29f8c8b65da916b0a",
+      "rows": [
+        {
+          "actual_cz_count": 0,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.007100545987486863,
+          "blind_tv_statevector_hardware": 0.009789027273654917,
+          "depth_parameter": 0,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.59599609375,
+            0.09326171875,
+            0.267578125,
+            0.0431640625
+          ],
+          "key": "n2:d0:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.5992012023925781,
+            0.097770094871521,
+            0.26079028844833374,
+            0.04223833605647087
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.5915985107421875,
+            0.0892091765999794,
+            0.27736714482307434,
+            0.041825152933597565
+          ],
+          "task_id": "2608071100246726346",
+          "tv_noise_model_hardware": 0.0077135238796472785,
+          "tv_statevector_hardware": 0.009789027273654917
+        },
+        {
+          "actual_cz_count": 0,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.014438101649284357,
+          "blind_tv_statevector_hardware": 0.052246108651161194,
+          "depth_parameter": 0,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.2900390625,
+            0.2318359375,
+            0.26220703125,
+            0.21591796875
+          ],
+          "key": "n2:d0:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.3032984733581543,
+            0.23347073793411255,
+            0.2620012164115906,
+            0.2012295126914978
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.2499999701976776,
+            0.25,
+            0.25,
+            0.25
+          ],
+          "task_id": "2608071100351033411",
+          "tv_noise_model_hardware": 0.014894241094589228,
+          "tv_statevector_hardware": 0.052246108651161194
+        },
+        {
+          "actual_cz_count": 0,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.005423413123935463,
+          "blind_tv_statevector_hardware": 0.021504429168999195,
+          "depth_parameter": 0,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.78759765625,
+            0.16259765625,
+            0.04228515625,
+            0.00751953125
+          ],
+          "key": "n2:d0:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.7928308248519897,
+            0.15719400346279144,
+            0.04197445511817932,
+            0.008000645786523819
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.8091021180152893,
+            0.1570616215467453,
+            0.028335820883512497,
+            0.005500504747033119
+          ],
+          "task_id": "2608071100140899616",
+          "tv_noise_model_hardware": 0.005714318528771399,
+          "tv_statevector_hardware": 0.021504429168999195
+        },
+        {
+          "actual_cz_count": 1,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.020378006808459755,
+          "blind_tv_statevector_hardware": 0.04279397614300252,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.49052734375,
+            0.12197265625,
+            0.3544921875,
+            0.0330078125
+          ],
+          "key": "n2:d1:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.505034863948822,
+            0.10544733703136444,
+            0.3586849272251129,
+            0.03083265945315361
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.48404425382614136,
+            0.10271380096673965,
+            0.3972861170768738,
+            0.015955734997987747
+          ],
+          "task_id": "2608071100560387864",
+          "tv_noise_model_hardware": 0.01870036609470844,
+          "tv_statevector_hardware": 0.04279397614300252
+        },
+        {
+          "actual_cz_count": 1,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.045440728962421406,
+          "blind_tv_statevector_hardware": 0.06957654505968092,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.3873046875,
+            0.1466796875,
+            0.1330078125,
+            0.3330078125
+          ],
+          "key": "n2:d1:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.4013141095638275,
+            0.13510793447494507,
+            0.1648128777742386,
+            0.2987646758556366
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.3949444890022278,
+            0.10505544394254684,
+            0.10505544394254684,
+            0.3949444890022278
+          ],
+          "task_id": "2608071101079295990",
+          "tv_noise_model_hardware": 0.04581468850374221,
+          "tv_statevector_hardware": 0.06957654505968092
+        },
+        {
+          "actual_cz_count": 1,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.019819932803511617,
+          "blind_tv_statevector_hardware": 0.019498562440276146,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.5849609375,
+            0.30078125,
+            0.07490234375,
+            0.03935546875
+          ],
+          "key": "n2:d1:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.6027412414550781,
+            0.28360557556152344,
+            0.07696676254272461,
+            0.03668623045086861
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.5777620673179626,
+            0.3202798068523407,
+            0.06559552997350693,
+            0.03636258468031883
+          ],
+          "task_id": "2608071100455218425",
+          "tv_noise_model_hardware": 0.019844817742705342,
+          "tv_statevector_hardware": 0.019498562440276146
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.00835079923272131,
+          "blind_tv_statevector_hardware": 0.059908619965426596,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.55634765625,
+            0.04697265625,
+            0.223046875,
+            0.1736328125
+          ],
+          "key": "n2:d2:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.5497480034828186,
+            0.04844982922077179,
+            0.2370322197675705,
+            0.16476985812187195
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.5758436918258667,
+            0.0028679987881332636,
+            0.20724287629127502,
+            0.21404536068439484
+          ],
+          "task_id": "2608071101308973162",
+          "tv_noise_model_hardware": 0.015462562441825891,
+          "tv_statevector_hardware": 0.059908619965426596
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.025949310511350653,
+          "blind_tv_statevector_hardware": 0.1057324230670929,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.42861328125,
+            0.11884765625,
+            0.11142578125,
+            0.34111328125
+          ],
+          "key": "n2:d2:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.4262167811393738,
+            0.11011721938848495,
+            0.14012058079242706,
+            0.32354527711868286
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.43772944808006287,
+            0.06227045878767967,
+            0.06227046623826027,
+            0.43772944808006287
+          ],
+          "task_id": "2608071101422585579",
+          "tv_noise_model_hardware": 0.028694870322942732,
+          "tv_statevector_hardware": 0.1057324230670929
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.023198449611663813,
+          "blind_tv_statevector_hardware": 0.10882843369618059,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.25673828125,
+            0.56083984375,
+            0.15703125,
+            0.025390625
+          ],
+          "key": "n2:d2:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.2842746675014496,
+            0.5332181453704834,
+            0.1531859040260315,
+            0.029321325942873955
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.16200079023838043,
+            0.6586780548095703,
+            0.16802145540714264,
+            0.011299665085971355
+          ],
+          "task_id": "2608071101191781241",
+          "tv_noise_model_hardware": 0.03146706577390432,
+          "tv_statevector_hardware": 0.10882843369618059
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.05003845468163489,
+          "blind_tv_statevector_hardware": 0.14014397524297237,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.06611328125,
+            0.25849609375,
+            0.13447265625,
+            0.54091796875
+          ],
+          "key": "n2:d4:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.10167195647954941,
+            0.252004474401474,
+            0.16557492315769196,
+            0.48074856400489807
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.02464945986866951,
+            0.23229438066482544,
+            0.06199425458908081,
+            0.6810619831085205
+          ],
+          "task_id": "2608071102034193476",
+          "tv_noise_model_hardware": 0.06666098311543464,
+          "tv_statevector_hardware": 0.14014397524297237
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.08281333148479464,
+          "blind_tv_statevector_hardware": 0.08623046875000001,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.25654296875,
+            0.19697265625,
+            0.3296875,
+            0.216796875
+          ],
+          "key": "n2:d4:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.29678788781166077,
+            0.2400042563676834,
+            0.26845669746398926,
+            0.1947508603334427
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.24521805346012115,
+            0.2547820210456848,
+            0.2547820210456848,
+            0.24521805346012115
+          ],
+          "task_id": "2608071102153817741",
+          "tv_noise_model_hardware": 0.08327666819095614,
+          "tv_statevector_hardware": 0.08623046875000001
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.025044535100460032,
+          "blind_tv_statevector_hardware": 0.049504997022449954,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.68427734375,
+            0.21728515625,
+            0.07294921875,
+            0.02548828125
+          ],
+          "key": "n2:d4:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.6858620047569275,
+            0.20710402727127075,
+            0.07699725031852722,
+            0.03003663569688797
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.7337824106216431,
+            0.20306117832660675,
+            0.047367293387651443,
+            0.015789257362484932
+          ],
+          "task_id": "2608071101528590790",
+          "tv_noise_model_hardware": 0.01018108800053594,
+          "tv_statevector_hardware": 0.049504997022449954
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.022908192873001082,
+          "blind_tv_statevector_hardware": 0.09936080109328033,
+          "depth_parameter": 8,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.15107421875,
+            0.0630859375,
+            0.54814453125,
+            0.2376953125
+          ],
+          "key": "n2:d8:x",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.17855092883110046,
+            0.08821451663970947,
+            0.4982888698577881,
+            0.23494499921798706
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.09432748705148697,
+            0.020471962168812752,
+            0.5755584239959717,
+            0.30964231491088867
+          ],
+          "task_id": "2608071102365458169",
+          "tv_noise_model_hardware": 0.052605631947517384,
+          "tv_statevector_hardware": 0.09936080109328033
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.023776791989803328,
+          "blind_tv_statevector_hardware": 0.09644364342093469,
+          "depth_parameter": 8,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.3724609375,
+            0.14248046875,
+            0.17451171875,
+            0.310546875
+          ],
+          "key": "n2:d8:y",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.37592175602912903,
+            0.16059021651744843,
+            0.18999089300632477,
+            0.27349674701690674
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.38972577452659607,
+            0.1102742999792099,
+            0.11027427762746811,
+            0.3897257149219513
+          ],
+          "task_id": "2608071102479365265",
+          "tv_noise_model_hardware": 0.037049934267997756,
+          "tv_statevector_hardware": 0.09644364342093469
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            124,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.03638909459114076,
+          "blind_tv_statevector_hardware": 0.1607334556058049,
+          "depth_parameter": 8,
+          "executed_mapping": [
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.21845703125,
+            0.483984375,
+            0.0640625,
+            0.23349609375
+          ],
+          "key": "n2:d8:z",
+          "n_wires": 2,
+          "noise_model_probabilities": [
+            0.22198404371738434,
+            0.4315651059150696,
+            0.10076890140771866,
+            0.2456815391778946
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.10640924423933029,
+            0.5469774007797241,
+            0.015376938506960869,
+            0.3312366306781769
+          ],
+          "task_id": "2608071102259448191",
+          "tv_noise_model_hardware": 0.05241906419396403,
+          "tv_statevector_hardware": 0.1607334556058049
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.05167244300246237,
+          "blind_tv_statevector_hardware": 0.11025831373408437,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.21806640625,
+            0.04560546875,
+            0.228515625,
+            0.073828125,
+            0.08818359375,
+            0.108984375,
+            0.11015625,
+            0.12666015625
+          ],
+          "key": "n3:d1:x",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.22343206405639648,
+            0.045753173530101776,
+            0.23333540558815002,
+            0.07291167974472046,
+            0.08890805393457413,
+            0.10044007003307343,
+            0.11477688699960709,
+            0.12044273316860199
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.23001809418201447,
+            0.01449133362621069,
+            0.27888765931129456,
+            0.06336092203855515,
+            0.040396615862846375,
+            0.11735475808382034,
+            0.08926618844270706,
+            0.16622430086135864
+          ],
+          "task_id": "2608071103138195839",
+          "tv_noise_model_hardware": 0.015678206831216797,
+          "tv_statevector_hardware": 0.11025831373408437
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.05303842909634113,
+          "blind_tv_statevector_hardware": 0.11038870513439178,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.186328125,
+            0.05546875,
+            0.08564453125,
+            0.18740234375,
+            0.214453125,
+            0.055078125,
+            0.04560546875,
+            0.17001953125
+          ],
+          "key": "n3:d1:y",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.2039906531572342,
+            0.05066697672009468,
+            0.07900325208902359,
+            0.18057012557983398,
+            0.21364028751850128,
+            0.06612582504749298,
+            0.0509522370994091,
+            0.15505076944828033
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.19857251644134521,
+            0.014276592060923576,
+            0.0514274500310421,
+            0.2357233315706253,
+            0.23572339117527008,
+            0.051427457481622696,
+            0.014276595786213875,
+            0.19857251644134521
+          ],
+          "task_id": "2608071103243282588",
+          "tv_noise_model_hardware": 0.0340569332242012,
+          "tv_statevector_hardware": 0.11038870513439178
+        },
+        {
+          "actual_cz_count": 2,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.08604958914220334,
+          "blind_tv_statevector_hardware": 0.11625836361199621,
+          "depth_parameter": 1,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.22880859375,
+            0.2953125,
+            0.12626953125,
+            0.1525390625,
+            0.05634765625,
+            0.076171875,
+            0.02744140625,
+            0.037109375
+          ],
+          "key": "n3:d1:z",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.24147897958755493,
+            0.2889845669269562,
+            0.12013163417577744,
+            0.14614705741405487,
+            0.06059025228023529,
+            0.07346559315919876,
+            0.030479585751891136,
+            0.03872253745794296
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.21483765542507172,
+            0.36292439699172974,
+            0.11909428983926773,
+            0.20118550956249237,
+            0.024391338229179382,
+            0.04120418801903725,
+            0.013521227985620499,
+            0.022841354832053185
+          ],
+          "task_id": "2608071102585214501",
+          "tv_noise_model_hardware": 0.02156422045081852,
+          "tv_statevector_hardware": 0.11625836361199621
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.07330628838390112,
+          "blind_tv_statevector_hardware": 0.20701595430728048,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.27431640625,
+            0.09072265625,
+            0.07373046875,
+            0.24501953125,
+            0.0642578125,
+            0.03857421875,
+            0.03935546875,
+            0.1740234375
+          ],
+          "key": "n3:d2:x",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.28032219409942627,
+            0.0909852460026741,
+            0.07776009291410446,
+            0.24085856974124908,
+            0.06554055213928223,
+            0.03862079605460167,
+            0.04141594469547272,
+            0.16449689865112305
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.34661316871643066,
+            0.06386872380971909,
+            0.011389425955712795,
+            0.3427787125110626,
+            0.016537366434931755,
+            0.0056104096584022045,
+            0.002218677429482341,
+            0.21098338067531586
+          ],
+          "task_id": "2608071103468453018",
+          "tv_noise_model_hardware": 0.013687647506594666,
+          "tv_statevector_hardware": 0.20701595430728048
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.058966226503253,
+          "blind_tv_statevector_hardware": 0.12072120935190467,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.1849609375,
+            0.049609375,
+            0.0904296875,
+            0.17490234375,
+            0.2302734375,
+            0.06328125,
+            0.044140625,
+            0.16240234375
+          ],
+          "key": "n3:d2:y",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.19336998462677002,
+            0.04920197278261185,
+            0.08995551615953445,
+            0.18175816535949707,
+            0.21617037057876587,
+            0.07574812322854996,
+            0.04799423739314079,
+            0.14580203592777252
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.1886947900056839,
+            0.0020646550692617893,
+            0.06130516529083252,
+            0.24793528020381927,
+            0.24793531000614166,
+            0.06130516529083252,
+            0.0020646557677537203,
+            0.1886948049068451
+          ],
+          "task_id": "2608071103578451394",
+          "tv_noise_model_hardware": 0.03158515132963658,
+          "tv_statevector_hardware": 0.12072120935190467
+        },
+        {
+          "actual_cz_count": 4,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.09621081883087754,
+          "blind_tv_statevector_hardware": 0.1916528504458256,
+          "depth_parameter": 2,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.108203125,
+            0.37880859375,
+            0.22421875,
+            0.027734375,
+            0.03857421875,
+            0.15498046875,
+            0.03955078125,
+            0.0279296875
+          ],
+          "key": "n3:d2:z",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.12027942389249802,
+            0.37163376808166504,
+            0.2161037176847458,
+            0.032877787947654724,
+            0.039197687059640884,
+            0.15240000188350677,
+            0.038950033485889435,
+            0.028558019548654556
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.024827443063259125,
+            0.4997885823249817,
+            0.2905888855457306,
+            0.005473949480801821,
+            0.0032078430522233248,
+            0.14250706136226654,
+            0.0013738075504079461,
+            0.03223240002989769
+          ],
+          "task_id": "2608071103364237569",
+          "tv_noise_model_hardware": 0.018471292406320554,
+          "tv_statevector_hardware": 0.19165285044582564
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "x",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.09426987878978255,
+          "blind_tv_statevector_hardware": 0.29775384145323186,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.09228515625,
+            0.04462890625,
+            0.48037109375,
+            0.03544921875,
+            0.059375,
+            0.1546875,
+            0.10615234375,
+            0.02705078125
+          ],
+          "key": "n3:d4:x",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.10829354077577591,
+            0.05125723034143448,
+            0.44951239228248596,
+            0.04418477416038513,
+            0.07395651936531067,
+            0.1353883445262909,
+            0.09937277436256409,
+            0.03803475946187973
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.02185468003153801,
+            0.0018651648424565792,
+            0.728261411190033,
+            0.006920604966580868,
+            0.030013710260391235,
+            0.20455093681812286,
+            0.002323691500350833,
+            0.004209626000374556
+          ],
+          "task_id": "2608071104187997048",
+          "tv_noise_model_hardware": 0.05693759396672248,
+          "tv_statevector_hardware": 0.2977538414532319
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "y",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.11276373341679574,
+          "blind_tv_statevector_hardware": 0.0931182011961937,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.09052734375,
+            0.083984375,
+            0.13671875,
+            0.11162109375,
+            0.14423828125,
+            0.155078125,
+            0.16025390625,
+            0.117578125
+          ],
+          "key": "n3:d4:y",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.13152429461479187,
+            0.11831296235322952,
+            0.1513264775276184,
+            0.11337871104478836,
+            0.15019375085830688,
+            0.13485097885131836,
+            0.11449454724788666,
+            0.08591850847005844
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.08531492948532104,
+            0.10461121052503586,
+            0.16468502581119537,
+            0.14538876712322235,
+            0.14538876712322235,
+            0.1646849513053894,
+            0.10461121052503586,
+            0.08531492948532104
+          ],
+          "task_id": "2608071104305100882",
+          "tv_noise_model_hardware": 0.0976462371647358,
+          "tv_statevector_hardware": 0.0931182011961937
+        },
+        {
+          "actual_cz_count": 8,
+          "assignment_mapping": [
+            124,
+            125,
+            123
+          ],
+          "basis": "z",
+          "batch": "compile=False request",
+          "blind_tv_noise_model_hardware": 0.035573567822575584,
+          "blind_tv_statevector_hardware": 0.19991515304427596,
+          "depth_parameter": 4,
+          "executed_mapping": [
+            125,
+            124,
+            123
+          ],
+          "hardware_probabilities": [
+            0.18955078125,
+            0.08525390625,
+            0.0857421875,
+            0.15439453125,
+            0.131640625,
+            0.189453125,
+            0.1265625,
+            0.03740234375
+          ],
+          "key": "n3:d4:z",
+          "n_wires": 3,
+          "noise_model_probabilities": [
+            0.1961371749639511,
+            0.08922096341848373,
+            0.091554656624794,
+            0.13784170150756836,
+            0.13691368699073792,
+            0.1767071634531021,
+            0.12582090497016907,
+            0.04580424726009369
+          ],
+          "shots": 10240,
+          "statevector_probabilities": [
+            0.21241173148155212,
+            0.025175614282488823,
+            0.03594168275594711,
+            0.21706648170948029,
+            0.07582917809486389,
+            0.27145349979400635,
+            0.1589442938566208,
+            0.0031773506198078394
+          ],
+          "task_id": "2608071104082990958",
+          "tv_noise_model_hardware": 0.030040635913610454,
+          "tv_statevector_hardware": 0.19991515304427593
+        }
+      ]
+    }
+  ],
+  "interpretation": {
+    "blind": "frozen before held-out execution but compiler mapping differed",
+    "postcompile": "retrospective replay of the returned physical QLisp"
+  },
+  "primary_batch": "compile=False request",
+  "primary_summary": {
+    "2": {
+      "NoiseModel": {
+        "mean": 0.03269998827328285,
+        "shot_bootstrap_95": [
+          0.031322498136510446,
+          0.0355435493302842
+        ]
+      },
+      "Statevector": {
+        "mean": 0.07481969777339449,
+        "shot_bootstrap_95": [
+          0.07275749732647091,
+          0.07720648525003343
+        ]
+      },
+      "relative_reduction": 0.5629494739163354
+    },
+    "3": {
+      "NoiseModel": {
+        "mean": 0.0355186576437619,
+        "shot_bootstrap_95": [
+          0.03423385661716263,
+          0.039755979124456636
+        ]
+      },
+      "Statevector": {
+        "mean": 0.1607869546976872,
+        "shot_bootstrap_95": [
+          0.1580280552879493,
+          0.1639011634174838
+        ]
+      },
+      "relative_reduction": 0.7790949041198999
+    }
+  },
+  "schema": "flagquantum.quafu_entangling_analysis.v1"
+}

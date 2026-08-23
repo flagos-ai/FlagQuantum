@@ -1,9 +1,16 @@
 """Tests for general tensor-network circuit contraction."""
 
+import pytest
 import torch
 
 import flagquantum as fq
 import flagquantum.simulation.tensor as tensor_runtime
+import flagquantum.simulation.tensor_execution as tensor_execution
+from flagquantum.compilation import build_tn_working_set_calibration
+from flagquantum.runtime.backends.tensor_network import (
+    DistributedTNWorkingSetPolicy,
+)
+from flagquantum.runtime.distributed import tensor_network_execution as distributed_tn
 
 
 def test_tensor_network_bell_state_matches_statevector():
@@ -18,6 +25,59 @@ def test_tensor_network_bell_state_matches_statevector():
     assert tn.summary()["n_nodes"] == 4
     assert torch.allclose(tn.to_statevector(), circuit.state(), atol=1e-6)
     assert torch.allclose(tn.expectation_z(), circuit.expectation_z(), atol=1e-6)
+
+
+def test_hamiltonian_mpo_compression_is_reused_for_static_observable(monkeypatch):
+    tensor_execution._PAULI_MPO_CORE_CACHE.clear()
+    calls = 0
+    original = tensor_execution._compress_pauli_sum_mpo
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(tensor_execution, "_compress_pauli_sum_mpo", counted)
+    target = fq.Hamiltonian(
+        [fq.pauli_term(-1.0, "ZZ", (0, 1)), fq.pauli_term(-0.7, "X", (0,))]
+    )
+    first = fq.Circuit(2).ry(0, 0.1)
+    second = fq.Circuit(2).ry(0, 0.2)
+
+    first_value = fq.build_tensor_network_hamiltonian_expectation(first, target).contract()
+    second_value = fq.build_tensor_network_hamiltonian_expectation(second, target).contract()
+
+    assert calls == 1
+    assert torch.isfinite(first_value).all()
+    assert torch.isfinite(second_value).all()
+
+
+def test_persistent_distributed_plan_round_trip(tmp_path):
+    plan = fq.build_tensor_network(fq.Circuit(3).h(0).cx(0, 2))
+    nodes, outputs = tensor_runtime._amplitude_projection(plan, "101")
+    slicing = tensor_runtime._build_slicing_plan(nodes, outputs)
+    steps = tensor_runtime._contract_nodes_quality_multistart(nodes, outputs)
+    key = distributed_tn._persistent_plan_key(
+        nodes,
+        outputs,
+        max_intermediate_size=None,
+        max_intermediate_bytes=None,
+        sliced_labels=None,
+    )
+    path = tmp_path / "plan.json"
+
+    distributed_tn._write_persistent_plan(
+        path,
+        cache_key=key,
+        slicing=slicing,
+        steps=steps,
+    )
+    restored = distributed_tn._load_persistent_plan(path, expected_key=key)
+
+    assert restored == (slicing, steps)
+    assert distributed_tn._load_persistent_plan(path, expected_key="different") is None
+    path.write_text("{truncated", encoding="utf-8")
+    assert distributed_tn._load_persistent_plan(path, expected_key=key) is None
 
 
 def test_tensor_network_alias_and_top_level_runner():
@@ -57,6 +117,19 @@ def test_tensor_network_parameter_gradient_matches_statevector():
 
     assert theta.grad is not None
     assert torch.allclose(theta.grad, -torch.sin(theta.detach()), atol=1e-6)
+
+
+def test_tensor_network_complex128_parameter_matrix_is_generated_in_float64():
+    theta = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta=theta)
+
+    plan = fq.build_tensor_network(circuit, dtype=torch.complex128)
+    ry = next(node.tensor for node in plan.nodes if node.name.endswith(":ry"))
+    expected = torch.cos(theta.detach() / 2)
+
+    assert ry.dtype == torch.complex128
+    assert torch.equal(ry[0, 0, 0].real, expected)
+    assert abs(ry[0, 0, 0].real.item() - 0.9987502694129944) > 1e-9
 
 
 def test_tensor_network_sampling_counts_and_pauli_expectation():
@@ -159,6 +232,88 @@ def test_tensor_network_memory_greedy_profile_and_contract():
     assert torch.allclose(
         plan.contract(strategy="memory_greedy"), circuit.state(), atol=1e-6
     )
+    assert torch.allclose(
+        plan.contract(strategy="quality_greedy"),
+        plan.contract(strategy="greedy"),
+        atol=1e-6,
+    )
+
+
+def test_tensor_network_memory_greedy_avoids_outer_products_while_connected():
+    nodes = (
+        fq.TensorNetworkNode(torch.ones(2), (0,), name="left"),
+        fq.TensorNetworkNode(torch.ones(2, 2), (0, 1), name="bridge"),
+        fq.TensorNetworkNode(torch.ones(2), (1,), name="right"),
+        fq.TensorNetworkNode(torch.ones(2), (2,), name="component_a"),
+        fq.TensorNetworkNode(torch.ones(2), (2,), name="component_b"),
+    )
+    plan = fq.TensorNetworkContractionPlan(
+        n_wires=0,
+        bsz=1,
+        nodes=nodes,
+        output_labels=(),
+        path=(),
+    )
+    steps = plan.quality_greedy_path()
+    for step in steps[:-1]:
+        assert set(step.left_labels) & set(step.right_labels)
+
+
+def test_tensor_network_quality_multistart_is_deterministic_and_not_worse():
+    circuit = fq.Circuit(6)
+    for qubit in range(6):
+        circuit.ry(qubit, theta=0.1 * (qubit + 1))
+    for left, right in ((0, 1), (2, 3), (4, 5), (1, 2), (3, 4)):
+        circuit.cx(left, right)
+    plan = fq.build_tensor_network_expectation(circuit, z=range(6))
+
+    baseline = plan.contraction_profile("quality_greedy")
+    first = plan.contraction_profile("quality_multistart")
+    second = plan.contraction_profile("quality_multistart")
+
+    assert first is second
+    assert (first.peak_size, first.estimated_cost) <= (
+        baseline.peak_size,
+        baseline.estimated_cost,
+    )
+    assert plan.quality_multistart_path() == plan.quality_multistart_path()
+
+
+def test_tensor_network_quality_reconfiguration_is_bounded_and_not_worse():
+    nodes = tuple(
+        [
+            fq.TensorNetworkNode(
+                torch.ones(2, 2, 2),
+                (3 * index, 3 * index + 1, 3 * index + 2),
+                name=f"site:{index}",
+            )
+            for index in range(6)
+        ]
+        + [
+            fq.TensorNetworkNode(
+                torch.ones(2, 2),
+                (3 * index + 1, 3 * (index + 1)),
+                name=f"bond:{index}",
+            )
+            for index in range(5)
+        ]
+        + [
+            fq.TensorNetworkNode(
+                torch.ones(2),
+                (3 * index + 2,),
+                name=f"vector:{index}",
+            )
+            for index in range(6)
+        ]
+    )
+    plan = fq.TensorNetworkContractionPlan(0, 1, nodes, (), ())
+    baseline = plan.contraction_profile("quality_multistart")
+    reconfigured = plan.contraction_profile("quality_reconfigured")
+    assert (reconfigured.peak_size, reconfigured.estimated_cost) <= (
+        baseline.peak_size,
+        baseline.estimated_cost,
+    )
+    assert plan.quality_reconfigured_path() == plan.quality_reconfigured_path()
 
 
 def test_tensor_network_beam_profile_cache_and_auto_slicing():
@@ -169,7 +324,7 @@ def test_tensor_network_beam_profile_cache_and_auto_slicing():
     beam_profile = plan.contraction_profile("beam", beam_width=4)
     cached_profile = plan.contraction_profile("beam", beam_width=4)
     greedy_profile = plan.contraction_profile("greedy")
-    target_peak = max(1, greedy_profile.peak_size // 2)
+    target_peak = max(greedy_profile.output_size, greedy_profile.peak_size // 2)
     sliced_profile = plan.contraction_profile(
         "auto_sliced", max_intermediate_size=target_peak
     )
@@ -224,20 +379,199 @@ def test_tensor_network_sliced_contract_matches_greedy_contract():
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
     plan = fq.build_tensor_network(circuit)
     greedy_cost = plan.contraction_cost()
-    slicing = plan.slicing_plan(
-        max_intermediate_size=max(1, greedy_cost["peak_size"] // 2)
-    )
+    output_size = plan.contraction_profile("greedy").output_size
+    target_peak = max(output_size, greedy_cost["peak_size"] // 2)
+    slicing = plan.slicing_plan(max_intermediate_size=target_peak)
 
     assert isinstance(slicing, fq.TensorNetworkSlicingPlan)
     assert slicing.n_slices >= 1
     assert slicing.peak_size <= greedy_cost["peak_size"]
+    assert slicing.budget_satisfied
+    assert slicing.baseline_estimated_cost == greedy_cost["estimated_cost"]
+    assert slicing.recomputation_factor >= 0.0
+    assert slicing.summary()["budget_satisfied"] is True
+    assert slicing.element_size_bytes == plan.nodes[0].tensor.element_size()
+    assert slicing.peak_bytes == slicing.peak_size * slicing.element_size_bytes
     assert torch.allclose(
         plan.contract(
             strategy="sliced",
-            max_intermediate_size=max(1, greedy_cost["peak_size"] // 2),
+            max_intermediate_size=target_peak,
         ),
         plan.contract(strategy="greedy"),
         atol=1e-6,
+    )
+
+
+def test_tensor_network_slicing_budget_fails_closed():
+    node = fq.TensorNetworkNode(
+        torch.ones(2, 2),
+        (0, 1),
+        name="output",
+    )
+    plan = fq.TensorNetworkContractionPlan(
+        n_wires=1,
+        bsz=1,
+        nodes=(node,),
+        output_labels=(0, 1),
+        path=(),
+    )
+
+    with pytest.raises(ValueError, match="max_intermediate_size must be >= 1"):
+        plan.slicing_plan(max_intermediate_size=0)
+    with pytest.raises(ValueError, match="cannot satisfy"):
+        plan.slicing_plan(max_intermediate_size=1)
+    with pytest.raises(ValueError, match="max_intermediate_bytes must be >= 1"):
+        plan.slicing_plan(max_intermediate_bytes=0)
+    with pytest.raises(ValueError, match="cannot hold one"):
+        plan.slicing_plan(max_intermediate_bytes=1)
+
+
+def test_tensor_network_dry_run_uses_meta_for_huge_intermediate():
+    dimension = 2**32
+    nodes = (
+        fq.TensorNetworkNode(
+            torch.empty(dimension, device="meta"),
+            (0,),
+            name="left",
+        ),
+        fq.TensorNetworkNode(
+            torch.empty(dimension, device="meta"),
+            (1,),
+            name="right",
+        ),
+    )
+    plan = fq.TensorNetworkContractionPlan(
+        n_wires=0,
+        bsz=1,
+        nodes=nodes,
+        output_labels=(0, 1),
+        path=(),
+    )
+
+    profile = plan.contraction_profile("greedy")
+
+    assert profile.peak_size == 2**64
+    assert profile.estimated_cost == 2**64
+
+
+def test_tensor_network_slicing_accepts_byte_budget_and_quality_path():
+    circuit = fq.Circuit(4)
+    circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
+    plan = fq.build_tensor_network(circuit)
+    baseline = plan.contraction_profile("quality_multistart")
+    element_size = max(node.tensor.element_size() for node in plan.nodes)
+    target_elements = max(baseline.output_size, baseline.peak_size // 2)
+
+    slicing = plan.slicing_plan(
+        max_intermediate_bytes=target_elements * element_size,
+        contraction_strategy="quality_multistart",
+    )
+
+    assert slicing.target_peak_bytes == target_elements * element_size
+    assert slicing.target_peak_size == target_elements
+    assert slicing.peak_bytes <= slicing.target_peak_bytes
+    assert slicing.baseline_estimated_cost == baseline.estimated_cost
+    assert slicing.budget_satisfied
+    assert slicing.reduction_method == "kahan_compensated"
+    assert slicing.summary()["reduction_method"] == "kahan_compensated"
+    profile = plan.contraction_profile(
+        "quality_sliced",
+        max_intermediate_bytes=target_elements * element_size,
+    )
+    assert profile.peak_size == slicing.peak_size
+    assert profile.n_slices == slicing.n_slices
+    assert torch.allclose(
+        plan.contract(
+            strategy="quality_sliced",
+            max_intermediate_bytes=target_elements * element_size,
+        ),
+        plan.contract(strategy="greedy"),
+        atol=1e-6,
+    )
+
+
+def test_quality_slicing_batch_selects_peak_labels_to_meet_budget():
+    nodes = (
+        fq.TensorNetworkNode(
+            torch.empty(2, 2, 2, 2),
+            (0, 1, 2, 3),
+            name="left",
+        ),
+        fq.TensorNetworkNode(
+            torch.empty(2, 2, 2, 2),
+            (0, 1, 4, 5),
+            name="right",
+        ),
+        fq.TensorNetworkNode(
+            torch.empty(2, 2, 2, 2),
+            (2, 3, 6, 7),
+            name="top",
+        ),
+        fq.TensorNetworkNode(
+            torch.empty(2, 2, 2, 2),
+            (4, 5, 6, 7),
+            name="bottom",
+        ),
+    )
+    plan = fq.TensorNetworkContractionPlan(0, 1, nodes, (), ())
+    baseline = plan.contraction_profile("quality_multistart")
+
+    slicing = plan.slicing_plan(
+        max_intermediate_size=max(1, baseline.peak_size // 4),
+    )
+
+    assert slicing.budget_satisfied
+    assert slicing.peak_size <= baseline.peak_size // 4
+    assert slicing.n_slices >= 4
+
+
+def test_quality_sliced_compensated_reduction_preserves_autograd():
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(4)
+    circuit.h(0).cx(0, 3).ry(1, theta=theta).rzz(2, 3, theta=-0.4)
+    ket_plan = fq.build_tensor_network(circuit, dtype=torch.complex128)
+    assert {node.tensor.dtype for node in ket_plan.nodes} == {torch.complex128}
+    plan = fq.build_tensor_network_expectation(ket_plan, z=[0, 1, 2, 3])
+    baseline = plan.contraction_profile("quality_multistart")
+    target_peak = max(baseline.output_size, baseline.peak_size // 2)
+
+    sliced = plan.contract(
+        strategy="quality_sliced",
+        max_intermediate_size=target_peak,
+    )
+    reference = plan.contract(strategy="greedy")
+    sliced_gradient = torch.autograd.grad(sliced.real, theta, retain_graph=True)[0]
+    reference_gradient = torch.autograd.grad(reference.real, theta)[0]
+
+    assert torch.allclose(sliced, reference, atol=1e-12, rtol=1e-10)
+    assert torch.allclose(
+        sliced_gradient,
+        reference_gradient,
+        atol=1e-12,
+        rtol=1e-10,
+    )
+
+
+def test_cotengra_slicing_plan_executes_external_path_with_autograd():
+    pytest.importorskip("cotengra")
+    theta = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(3, dtype=torch.complex128)
+    circuit.h(0).ry(1, theta=theta).cx(0, 2).rzz(1, 2, theta=-0.27)
+    plan = fq.build_tensor_network_expectation(circuit, x=(0,), z=(2,))
+    baseline = plan.contraction_profile("greedy")
+    slicing = plan.cotengra_slicing_plan(
+        target_peak_elements=max(baseline.output_size, baseline.peak_size // 2),
+        max_repeats=1,
+    )
+
+    actual = plan.contract_slicing_plan(slicing)
+    reference = plan.contract(strategy="greedy")
+    actual_gradient = torch.autograd.grad(actual.real, theta, retain_graph=True)[0]
+    reference_gradient = torch.autograd.grad(reference.real, theta)[0]
+
+    torch.testing.assert_close(actual, reference, atol=1e-12, rtol=1e-10)
+    torch.testing.assert_close(
+        actual_gradient, reference_gradient, atol=1e-12, rtol=1e-10
     )
 
 
@@ -350,7 +684,8 @@ def test_tensor_network_run_accepts_sliced_strategy_options():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)
     plan = fq.build_tensor_network(circuit)
-    target_peak = max(1, plan.contraction_cost()["peak_size"] // 2)
+    profile = plan.contraction_profile("greedy")
+    target_peak = max(profile.output_size, profile.peak_size // 2)
 
     tn = fq.run_native(
         circuit,
@@ -461,3 +796,532 @@ def test_plan_accepts_tensor_network_state_mode():
     assert plan.state_mode == "tensor_network"
     assert plan.recommended_mode == "tensor_network"
     assert plan.state_bytes == fq.estimate_tensor_network_bytes(4)
+
+
+@pytest.mark.parametrize("bitstring", [0, 3, "101", (1, 1, 0)])
+def test_tensor_network_single_amplitude_matches_dense_state(bitstring):
+    circuit = fq.Circuit(3)
+    circuit.h(0).cx(0, 2).ry(1, theta=0.37)
+    index = (
+        bitstring
+        if isinstance(bitstring, int)
+        else int(
+            bitstring if isinstance(bitstring, str) else "".join(map(str, bitstring)),
+            2,
+        )
+    )
+
+    amplitude = fq.tensor_network_amplitude(circuit, bitstring)
+
+    assert torch.allclose(amplitude, circuit.state()[:, index], atol=1e-6)
+
+
+def test_sliced_single_amplitude_budget_excludes_full_state_output():
+    circuit = fq.Circuit(5)
+    circuit.h(0).cx(0, 4).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+
+    amplitude = fq.tensor_network_amplitude(
+        circuit,
+        "10001",
+        max_intermediate_size=8,
+    )
+
+    assert torch.allclose(amplitude, circuit.state()[:, 0b10001], atol=1e-6)
+
+
+def test_tensor_network_single_amplitude_validates_bitstrings():
+    circuit = fq.Circuit(3)
+
+    with pytest.raises(ValueError, match="bitstring"):
+        fq.tensor_network_amplitude(circuit, "01")
+    with pytest.raises(ValueError, match="state space"):
+        fq.tensor_network_amplitude(circuit, 8)
+
+
+def test_tensor_network_single_amplitude_preserves_parameter_gradients():
+    theta = torch.tensor(0.37, requires_grad=True)
+    circuit = fq.Circuit(3)
+    circuit.h(0).ry(1, theta=theta).cx(1, 2)
+
+    amplitude = fq.tensor_network_amplitude(circuit, "011")
+    loss = amplitude.abs().square().sum()
+    (gradient,) = torch.autograd.grad(loss, (theta,))
+
+    reference_theta = theta.detach().clone().requires_grad_(True)
+    reference = fq.Circuit(3)
+    reference.h(0).ry(1, theta=reference_theta).cx(1, 2)
+    reference_loss = reference.state()[:, 0b011].abs().square().sum()
+    (reference_gradient,) = torch.autograd.grad(reference_loss, (reference_theta,))
+
+    assert torch.allclose(gradient, reference_gradient, atol=1e-6)
+
+
+def test_distributed_single_amplitude_reduces_only_sparse_output():
+    circuit = fq.Circuit(5)
+    circuit.h(0).cx(0, 4).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+
+    result = fq.distributed_tensor_network_amplitude(
+        circuit,
+        "10001",
+        world_size=2,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+        max_intermediate_size=8,
+    )
+    summary = result.summary()
+
+    assert torch.allclose(result.value, circuit.state()[:, 0b10001], atol=1e-6)
+    assert summary["output_target"] == "single_amplitude"
+    assert summary["full_state_materialized"] is False
+    assert (
+        summary["reduction_payload_bytes"]
+        == result.value.numel() * result.value.element_size()
+    )
+    assert summary["distribution_semantics"] == (
+        "local_simulated_slice_parallel_sparse_output_reduction"
+    )
+    preflight = summary["working_set_preflight"]
+    assert preflight["model"] == "calibrated_peak_safety_factor"
+    assert preflight["budget_satisfied"] is True
+    assert preflight["fail_closed"] is True
+    assert preflight["predicted_working_set_bytes"] == (
+        preflight["tensor_peak_bytes"] * 4
+    )
+
+
+def test_distributed_single_amplitude_local_simulator_preserves_gradients():
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(4)
+    circuit.h(0).ry(1, theta=theta).cx(1, 3)
+
+    result = fq.distributed_tensor_network_amplitude(
+        circuit,
+        "0101",
+        world_size=2,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+    )
+    (gradient,) = torch.autograd.grad(result.value.abs().square().sum(), (theta,))
+
+    reference_theta = theta.detach().clone().requires_grad_(True)
+    reference = fq.Circuit(4)
+    reference.h(0).ry(1, theta=reference_theta).cx(1, 3)
+    reference_loss = reference.state()[:, 0b0101].abs().square().sum()
+    (reference_gradient,) = torch.autograd.grad(reference_loss, (reference_theta,))
+
+    assert torch.allclose(gradient, reference_gradient, atol=1e-6)
+
+
+@pytest.mark.parametrize(
+    ("options", "message"),
+    [
+        ({"max_slices": 2}, "slice_count=4"),
+        ({"max_recomputation_factor": 2.0}, "recomputation_factor"),
+    ],
+)
+def test_single_amplitude_rejects_uneconomic_slicing(options, message):
+    circuit = fq.Circuit(5)
+    circuit.h(0).cx(0, 4).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+
+    with pytest.raises(ValueError, match=message):
+        fq.tensor_network_amplitude(
+            circuit,
+            "10001",
+            max_intermediate_size=4,
+            **options,
+        )
+
+
+def test_distributed_single_amplitude_rejects_before_rank_execution():
+    circuit = fq.Circuit(5)
+    circuit.h(0).cx(0, 4).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+
+    with pytest.raises(ValueError, match="slice_count=4"):
+        fq.distributed_tensor_network_amplitude(
+            circuit,
+            "10001",
+            world_size=2,
+            distributed_profile="development",
+            torch_backend="local_tensor",
+            max_intermediate_size=4,
+            max_slices=2,
+        )
+
+
+@pytest.mark.parametrize(
+    ("options", "message"),
+    [
+        ({"max_working_set_bytes": 0}, "max_working_set_bytes must be positive"),
+        (
+            {"max_working_set_bytes": 1024, "working_set_safety_factor": 0.5},
+            "working_set_safety_factor must be >= 1",
+        ),
+    ],
+)
+def test_distributed_single_amplitude_validates_working_set_policy(
+    options,
+    message,
+):
+    circuit = fq.Circuit(3)
+    circuit.h(0).cx(0, 2)
+
+    with pytest.raises(ValueError, match=message):
+        fq.distributed_tensor_network_amplitude(
+            circuit,
+            "101",
+            world_size=1,
+            distributed_profile="development",
+            torch_backend="local_tensor",
+            **options,
+        )
+
+
+def test_distributed_single_amplitude_enforces_explicit_working_set_components():
+    circuit = fq.Circuit(3)
+    circuit.h(0).cx(0, 2)
+    policy = DistributedTNWorkingSetPolicy(
+        kernel_workspace_output_multiplier=2.0,
+        communication_buffer_output_multiplier=3.0,
+        allocator_headroom_fraction=0.25,
+        minimum_allocator_headroom_bytes=4096,
+    )
+
+    result = fq.distributed_tensor_network_amplitude(
+        circuit,
+        "101",
+        world_size=1,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+        working_set_policy=policy,
+    )
+    preflight = result.summary()["working_set_preflight"]
+
+    assert preflight["model"] == "explicit_end_to_end_components"
+    assert preflight["working_set_policy"]["allocator_headroom_fraction"] == 0.25
+    assert preflight["kernel_workspace_bytes"] > 0
+    assert preflight["communication_buffer_bytes"] > 0
+    assert preflight["allocator_headroom_bytes"] >= 4096
+    assert preflight["predicted_working_set_bytes"] == sum(
+        preflight[field]
+        for field in (
+            "tensor_peak_bytes",
+            "kernel_workspace_bytes",
+            "communication_buffer_bytes",
+            "allocator_headroom_bytes",
+        )
+    )
+    with pytest.raises(ValueError, match="working-set preflight rejected"):
+        fq.distributed_tensor_network_amplitude(
+            circuit,
+            "101",
+            world_size=1,
+            distributed_profile="development",
+            torch_backend="local_tensor",
+            max_working_set_bytes=1024,
+            working_set_policy=policy,
+        )
+
+
+def test_distributed_single_amplitude_applies_scoped_memory_calibration():
+    circuit = fq.Circuit(3)
+    circuit.h(0).cx(0, 2)
+    calibration = build_tn_working_set_calibration(
+        (
+            {
+                "predicted_working_set_bytes": predicted,
+                "cuda_peak_allocated_bytes": predicted + 128,
+                "cuda_peak_reserved_bytes": predicted + 256,
+            }
+            for predicted in (1024, 2048, 4096)
+        ),
+        accelerator_name="cpu",
+        complex_bytes=8,
+        world_size=1,
+        topology_class="single_device_test",
+    )
+
+    result = fq.distributed_tensor_network_amplitude(
+        circuit,
+        "101",
+        world_size=1,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+        memory_calibration=calibration,
+    )
+    preflight = result.summary()["working_set_preflight"]
+
+    assert preflight["model"] == "measured_reserved_memory_calibration"
+    assert preflight["memory_calibration_identity"] == calibration.identity
+    with pytest.raises(ValueError, match="scope mismatch"):
+        fq.distributed_tensor_network_amplitude(
+            circuit,
+            "101",
+            world_size=2,
+            distributed_profile="development",
+            torch_backend="local_tensor",
+            memory_calibration=calibration,
+        )
+
+
+def test_distributed_local_observable_avoids_full_state_materialization():
+    circuit = fq.Circuit(6)
+    circuit.h(0).cx(0, 5).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+
+    result = fq.distributed_tensor_network_expectation(
+        circuit,
+        x=(0,),
+        z=(2, 5),
+        world_size=2,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+    )
+    summary = result.summary()
+
+    assert torch.allclose(
+        result.value,
+        circuit.expectation_ps(x=(0,), z=(2, 5)),
+        atol=1e-6,
+    )
+    assert summary["output_target"] == "local_observables"
+    assert summary["observable_wires"] == (0, 2, 5)
+    assert summary["full_state_materialized"] is False
+    assert (
+        summary["reduction_payload_bytes"]
+        == result.value.numel() * result.value.element_size()
+    )
+
+
+def test_distributed_local_observable_preserves_parameter_gradients():
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(4)
+    circuit.h(0).ry(1, theta=theta).cx(1, 3)
+
+    result = fq.distributed_tensor_network_expectation(
+        circuit,
+        z=(1, 3),
+        world_size=2,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+    )
+    (gradient,) = torch.autograd.grad(result.value.sum(), (theta,))
+
+    reference_theta = theta.detach().clone().requires_grad_(True)
+    reference = fq.Circuit(4)
+    reference.h(0).ry(1, theta=reference_theta).cx(1, 3)
+    reference_loss = reference.expectation_ps(z=(1, 3)).sum()
+    (reference_gradient,) = torch.autograd.grad(reference_loss, (reference_theta,))
+
+    assert torch.allclose(gradient, reference_gradient, atol=1e-6)
+
+
+def test_tensor_network_amplitude_batch_matches_dense_gather():
+    circuit = fq.Circuit(6)
+    circuit.h(0).cx(0, 5).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+    bitstrings = ("000000", "100001", "010100", "111111")
+    indices = torch.tensor([int(bits, 2) for bits in bitstrings])
+
+    values = fq.tensor_network_amplitudes(circuit, bitstrings)
+
+    assert values.shape == (1, len(bitstrings))
+    assert torch.allclose(values, circuit.state()[:, indices], atol=1e-6)
+
+
+def test_distributed_amplitude_batch_uses_one_shared_reduction():
+    circuit = fq.Circuit(6)
+    circuit.h(0).cx(0, 5).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+    bitstrings = ("000000", "100001", "010100", "111111")
+    indices = torch.tensor([int(bits, 2) for bits in bitstrings])
+
+    result = fq.distributed_tensor_network_amplitudes(
+        circuit,
+        bitstrings,
+        world_size=2,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+    )
+    summary = result.summary()
+
+    assert torch.allclose(result.values, circuit.state()[:, indices], atol=1e-6)
+    assert summary["target_count"] == len(bitstrings)
+    assert summary["shared_contraction"] is True
+    assert summary["full_state_materialized"] is False
+    assert summary["reduction_payload_bytes"] == (
+        result.values.numel() * result.values.element_size()
+    )
+
+
+def test_tensor_network_amplitude_batch_preserves_shared_gradient():
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(4)
+    circuit.h(0).ry(1, theta=theta).cx(1, 3)
+    bitstrings = ("0000", "0101", "1111")
+
+    values = fq.tensor_network_amplitudes(circuit, bitstrings)
+    (gradient,) = torch.autograd.grad(values.abs().square().sum(), (theta,))
+
+    reference_theta = theta.detach().clone().requires_grad_(True)
+    reference = fq.Circuit(4)
+    reference.h(0).ry(1, theta=reference_theta).cx(1, 3)
+    indices = torch.tensor([int(bits, 2) for bits in bitstrings])
+    reference_loss = reference.state()[:, indices].abs().square().sum()
+    (reference_gradient,) = torch.autograd.grad(reference_loss, (reference_theta,))
+
+    assert torch.allclose(gradient, reference_gradient, atol=1e-6)
+
+
+def test_tensor_network_observable_batch_matches_individual_expectations():
+    circuit = fq.Circuit(6)
+    circuit.h(0).cx(0, 5).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+    observables = (
+        {"x": (0,), "z": (2, 5)},
+        {"y": (1, 3)},
+        {"z": (0, 1, 2)},
+        {},
+    )
+
+    values = fq.tensor_network_expectations(circuit, observables)
+    reference = torch.stack(
+        [
+            circuit.expectation_ps(
+                x=observable.get("x"),
+                y=observable.get("y"),
+                z=observable.get("z"),
+            )
+            for observable in observables
+        ],
+        dim=-1,
+    )
+
+    assert values.shape == (1, len(observables))
+    assert torch.allclose(values, reference, atol=1e-6)
+
+
+def test_tensor_network_observable_batch_preserves_shared_gradient():
+    theta = torch.tensor(0.31, requires_grad=True)
+    circuit = fq.Circuit(4)
+    circuit.h(0).ry(1, theta=theta).cx(1, 3)
+    observables = ({"z": (1,)}, {"x": (0,), "z": (3,)})
+
+    values = fq.tensor_network_expectations(circuit, observables)
+    (gradient,) = torch.autograd.grad(values.sum(), (theta,))
+
+    reference_theta = theta.detach().clone().requires_grad_(True)
+    reference = fq.Circuit(4)
+    reference.h(0).ry(1, theta=reference_theta).cx(1, 3)
+    reference_loss = sum(
+        reference.expectation_ps(
+            x=observable.get("x"),
+            z=observable.get("z"),
+        ).sum()
+        for observable in observables
+    )
+    (reference_gradient,) = torch.autograd.grad(reference_loss, (reference_theta,))
+
+    assert torch.allclose(gradient, reference_gradient, atol=1e-6)
+
+
+def test_distributed_observable_batch_uses_one_shared_reduction():
+    circuit = fq.Circuit(6)
+    circuit.h(0).cx(0, 5).ry(2, theta=0.2).rzz(1, 3, theta=-0.4)
+    observables = (
+        {"x": (0,), "z": (2, 5)},
+        {"y": (1, 3)},
+        {"z": (0, 1, 2)},
+    )
+
+    result = fq.distributed_tensor_network_expectations(
+        circuit,
+        observables,
+        world_size=2,
+        distributed_profile="development",
+        torch_backend="local_tensor",
+    )
+    reference = fq.tensor_network_expectations(circuit, observables)
+    summary = result.summary()
+
+    assert torch.allclose(result.values, reference, atol=1e-6)
+    assert summary["observable_count"] == len(observables)
+    assert summary["shared_contraction"] is True
+    assert summary["full_state_materialized"] is False
+    assert summary["reduction_payload_bytes"] == (
+        result.values.numel() * result.values.element_size()
+    )
+
+
+def test_parallel_slice_planner_reduces_rank_local_cost_vs_label_order():
+    circuit = fq.Circuit(12)
+    for layer in range(4):
+        for wire in range(12):
+            circuit.ry(wire, theta=0.01)
+        for wire in range(layer % 2, 11, 2):
+            circuit.cx(wire, wire + 1)
+    plan = fq.build_tensor_network(circuit)
+    nodes, outputs = tensor_runtime._amplitude_batch_projection(
+        plan,
+        ("0" * 12,),
+    )
+    candidates = tensor_runtime._internal_slice_candidates(nodes, outputs)
+
+    selected = tensor_runtime._parallel_slice_labels(nodes, outputs, 8)
+    selected_cost = tensor_runtime._cost_for_sliced_labels(
+        nodes,
+        outputs,
+        selected,
+        contraction_strategy="quality_multistart",
+    )
+    label_order_cost = tensor_runtime._cost_for_sliced_labels(
+        nodes,
+        outputs,
+        candidates[:3],
+        contraction_strategy="quality_multistart",
+    )
+
+    assert len(selected) == 3
+    assert selected_cost["estimated_cost"] < label_order_cost["estimated_cost"]
+
+
+def test_tensor_network_hamiltonian_mpo_matches_termwise_value_and_gradient():
+    parameters = torch.tensor([0.23, -0.31], dtype=torch.float64, requires_grad=True)
+    reference_parameters = parameters.detach().clone().requires_grad_(True)
+    hamiltonian = fq.Hamiltonian(
+        (
+            fq.pauli_term(-0.7, "ZZ", (0, 1)),
+            fq.pauli_term(0.2, "X", (0,)),
+            fq.pauli_term(-0.13, "Y", (1,)),
+        )
+    )
+
+    def circuit(values):
+        return fq.Circuit(2, dtype=torch.complex128).ry(0, values[0]).rx(1, values[1]).cx(0, 1)
+
+    plan = fq.build_tensor_network_hamiltonian_expectation(
+        circuit(parameters), hamiltonian
+    )
+    actual = plan.contract(strategy="greedy").real.sum()
+    reference = hamiltonian.expectation(circuit(reference_parameters)).sum()
+    actual_gradient = torch.autograd.grad(actual, parameters)[0]
+    reference_gradient = torch.autograd.grad(reference, reference_parameters)[0]
+
+    torch.testing.assert_close(actual, reference, atol=1e-12, rtol=1e-12)
+    torch.testing.assert_close(
+        actual_gradient, reference_gradient, atol=1e-12, rtol=1e-12
+    )
+
+
+def test_tensor_network_hamiltonian_block_mpo_matches_individual_expectations():
+    parameter = torch.tensor(0.37, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(2, dtype=torch.complex128).ry(0, parameter).cx(0, 1)
+    observables = (
+        fq.Hamiltonian((fq.pauli_term(0.5, "ZZ", (0, 1)),)),
+        fq.Hamiltonian(
+            (fq.pauli_term(-0.7, "X", (0,)), fq.pauli_term(0.2, "Z", (1,)))
+        ),
+    )
+
+    plan = fq.build_tensor_network_hamiltonian_expectations(circuit, observables)
+    actual = plan.contract(strategy="greedy").real.squeeze(0)
+    reference = torch.stack(
+        tuple(observable.expectation(circuit).sum() for observable in observables)
+    )
+
+    torch.testing.assert_close(actual, reference, atol=1e-12, rtol=1e-12)

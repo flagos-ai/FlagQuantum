@@ -76,6 +76,53 @@ def test_confidence_interval_selects_speed_path_and_exposes_rationale():
     assert plan.distribution_semantics == "sharded_across_ranks"
 
 
+def test_planner_avoids_over_parallelizing_past_measured_crossover():
+    plan = fq.plan_production_mps(
+        circuit(n_wires=128),
+        estimated_workload_bytes=500,
+        single_gpu_capacity_bytes=1000,
+        gates=gates(),
+        crossover=(
+            measurement(2, 0, 1000, 1.55),
+            measurement(4, 0, 1000, 2.07),
+            measurement(8, 0, 1000, 2.54),
+            measurement(16, 0, 1000, 2.36),
+        ),
+        available_gpu_count=16,
+    )
+    assert plan.execution_class == "speed_oriented_distribution"
+    assert plan.world_size == 8
+    assert plan.matched_measurement is not None
+    assert plan.matched_measurement.speedup_ci_low == 2.54
+
+
+def test_planner_selects_sixteen_only_in_the_larger_measured_interval():
+    measurements = (
+        measurement(8, 0, 999, 2.54),
+        measurement(16, 0, 999, 2.36),
+        measurement(8, 1000, 2000, 2.53),
+        measurement(16, 1000, 2000, 2.84),
+    )
+    small = fq.plan_production_mps(
+        circuit(n_wires=128),
+        estimated_workload_bytes=500,
+        single_gpu_capacity_bytes=3000,
+        gates=gates(),
+        crossover=measurements,
+        available_gpu_count=16,
+    )
+    large = fq.plan_production_mps(
+        circuit(n_wires=256),
+        estimated_workload_bytes=1500,
+        single_gpu_capacity_bytes=3000,
+        gates=gates(),
+        crossover=measurements,
+        available_gpu_count=16,
+    )
+    assert small.world_size == 8
+    assert large.world_size == 16
+
+
 def test_capacity_path_requires_matching_measured_artifact():
     with pytest.raises(fq.MPSProductionAcceptanceError, match="no matching"):
         fq.plan_production_mps(
@@ -123,6 +170,34 @@ def test_support_matrix_is_public_and_exact():
     assert support["precisions"] == ("complex64", "complex128")
     assert support["full_mps_materialization_allowed"] is False
     assert support["jax_required"] is False
+    assert support["world_sizes"] == (2, 4, 8, 16)
+
+
+def test_sixteen_rank_measurement_can_drive_only_a_measured_speed_path():
+    plan = fq.plan_production_mps(
+        circuit(n_wires=32),
+        estimated_workload_bytes=500,
+        single_gpu_capacity_bytes=1000,
+        gates=gates(),
+        crossover=(measurement(16, 0, 1000, 1.05),),
+    )
+    assert plan.execution_class == "speed_oriented_distribution"
+    assert plan.world_size == 16
+    assert plan.matched_measurement is not None
+    assert plan.matched_measurement.measured is True
+
+
+def test_sixteen_rank_availability_without_evidence_stays_local():
+    plan = fq.plan_production_mps(
+        circuit(n_wires=32),
+        estimated_workload_bytes=500,
+        single_gpu_capacity_bytes=1000,
+        gates=gates(),
+        crossover=(),
+        available_gpu_count=16,
+    )
+    assert plan.execution_class == "single_gpu_fast_path"
+    assert plan.world_size == 1
 
 
 def test_module_routes_incomplete_release_evidence_to_native_local_mps():

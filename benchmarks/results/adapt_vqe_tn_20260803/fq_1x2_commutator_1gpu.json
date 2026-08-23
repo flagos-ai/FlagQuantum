@@ -1,0 +1,81 @@
+{
+  "adapt_iterations_completed": 1,
+  "adapt_iterations_requested": 1,
+  "backend": "tensor_network",
+  "cols": 2,
+  "converged": false,
+  "cycles": 1,
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex128",
+  "execution_seconds": 0.783216540236026,
+  "final_energy": -1.2556014839208691,
+  "hamiltonian_terms": 5,
+  "implementation": "FlagQuantum",
+  "initial_energy": -1.2538289850244602,
+  "iterations": [
+    {
+      "energy_after": -1.2556014839208691,
+      "energy_before": -1.2538289850244602,
+      "optimization_history": [
+        -1.2538289850244602,
+        -1.256809874276147,
+        -1.256552293422577
+      ],
+      "optimization_seconds": 0.08836185978725553,
+      "pool_gradients": [
+        -0.05969700810080236,
+        0.03283320114624544,
+        0.0,
+        0.0
+      ],
+      "screening_seconds": 0.01854698220267892,
+      "selected_gradient": -0.05969700810080236,
+      "selected_pool_index": 0
+    }
+  ],
+  "max_intermediate_bytes": null,
+  "operator_pool": [
+    {
+      "kind": "ry",
+      "wires": [
+        0
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        1
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        0,
+        1
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        0,
+        1
+      ]
+    }
+  ],
+  "operator_pool_size": 4,
+  "optimization_steps_per_iteration": 3,
+  "parameter_dtype": "float64",
+  "parameters": [
+    0.17689247020405938
+  ],
+  "peak_cuda_allocated_bytes": 17054720,
+  "qubits": 2,
+  "rows": 1,
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "screening_method": "commutator",
+  "selected_pool_indices": [
+    0
+  ],
+  "workload": "qubit_adapt_vqe_grid_tfim"
+}

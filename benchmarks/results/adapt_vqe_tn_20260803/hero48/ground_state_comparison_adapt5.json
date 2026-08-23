@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "workload": "48q_grid_tfim_ground_state_comparison",
+  "adapt_vqe": {
+    "artifact": "fq_meanfield_adapt5_adam100_8gpu.json",
+    "adapt_iterations": 5,
+    "optimization_steps_per_iteration": 100,
+    "selected_pool_indices": [15, 13, 12, 9, 11],
+    "initial_energy": -85.59209506156127,
+    "final_energy": -85.5941590121169,
+    "best_iteration_energies": [
+      -85.59304427560781,
+      -85.59346984108419,
+      -85.59381905277513,
+      -85.59401758511311,
+      -85.59415909720326
+    ],
+    "execution_seconds": 332.11319245630875,
+    "peak_cuda_allocated_bytes": 79729683968
+  },
+  "dmrg_reference": {
+    "artifact": "dmrg_reference_random_bond256_seed0.json",
+    "energy": -85.61320789522475,
+    "energy_variance": 1.7260390450246632e-7
+  },
+  "absolute_energy_gap": 0.019048883107842585,
+  "fraction_of_initial_gap_closed": 0.0977581024193632,
+  "continuation_blocker": "one rank reached 74.25 GiB peak allocation; add screening memory controls before more ADAPT iterations",
+  "scalability_claim_allowed": false
+}

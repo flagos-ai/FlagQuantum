@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "campaign": "tn_mps_crossover_20260730",
+  "status": "completed",
+  "hardware": "1x NVIDIA A800-SXM4-80GB",
+  "output_target": "four_amplitudes",
+  "gates": {
+    "chain_routes_to_mps_by_default": true,
+    "nonlocal_low_treewidth_routes_to_tensor_network": true,
+    "mps_sparse_output_avoids_full_state": true,
+    "tn_sparse_output_avoids_full_state": true,
+    "binary_tree_crossover_demonstrated": true,
+    "arbitrary_high_treewidth_claim_allowed": false
+  },
+  "artifacts": {
+    "raw": "raw/",
+    "summary_csv": "figures/summary.csv",
+    "summary_json": "figures/summary.json",
+    "figure_png": "figures/tn_mps_crossover.png",
+    "figure_pdf": "figures/tn_mps_crossover.pdf",
+    "report": "REPORT.md"
+  }
+}

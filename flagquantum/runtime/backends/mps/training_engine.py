@@ -5,9 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
+import pickle
+import shutil
+import socket
 import time
 from contextlib import nullcontext
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, Literal, Mapping, Sequence
 
@@ -23,6 +27,7 @@ from .reverse import execute_torch_distributed_mps_reverse
 from .reverse_planning import build_mps_parameter_layout
 from .state import (
     initial_mps_ownership,
+    topology_aware_mps_ownership,
     validate_mps_ownership,
 )
 from .training import (
@@ -40,8 +45,488 @@ def _nvtx_phase(name: str, device: torch.device):
     return torch.cuda.nvtx.range(name) if device.type == "cuda" else nullcontext()
 
 
-def _checkpoint_path(root: Path, rank: int) -> Path:
-    return root / f"rank-{rank}.pt"
+def _checkpoint_path(root: Path, rank: int, step: int | None = None) -> Path:
+    suffix = "" if step is None else f"-step-{step}"
+    return root / f"rank-{rank}{suffix}.pt"
+
+
+def _checkpoint_manifest_path(root: Path) -> Path:
+    return root / "COMMITTED.json"
+
+
+def _checkpoint_checksum_path(path: Path) -> Path:
+    return path.with_suffix(path.suffix + ".sha256")
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _commit_checkpoint_generation(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    step: int,
+    path: Path,
+    contract_fingerprint: str,
+) -> Path:
+    """Publish one immutable, complete rank-shard checkpoint generation."""
+    records = all_gather_json(
+        {
+            "rank": rank,
+            "completed_steps": step,
+            "file": path.name,
+            "sha256": _file_sha256(path),
+        }
+    )
+    if len(records) != world_size or {
+        int(record["rank"]) for record in records
+    } != set(range(world_size)):
+        raise MPSTrainingError("checkpoint generation has incomplete rank membership")
+    if {int(record["completed_steps"]) for record in records} != {step}:
+        raise MPSTrainingError("checkpoint generations differ across ranks")
+    manifest = _checkpoint_manifest_path(root)
+    if rank == 0:
+        temporary = manifest.with_suffix(".json.tmp")
+        temporary.write_text(
+            json.dumps(
+                {
+                    "schema": "sharded_mps_checkpoint_manifest_v1",
+                    "world_size": world_size,
+                    "completed_steps": step,
+                    "contract_fingerprint": contract_fingerprint,
+                    "shards": sorted(records, key=lambda record: int(record["rank"])),
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        with temporary.open("rb") as stream:
+            os.fsync(stream.fileno())
+        temporary.replace(manifest)
+        directory_fd = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    dist.barrier()
+    return manifest
+
+
+def _preflight_checkpoint_generation(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    contract_fingerprint: str,
+) -> tuple[int, Path]:
+    """Collectively reject an uncommitted, incomplete, or corrupt generation."""
+    issue = ""
+    step = -1
+    path = _checkpoint_path(root, rank)
+    try:
+        manifest = json.loads(_checkpoint_manifest_path(root).read_text("utf-8"))
+        if manifest.get("schema") != "sharded_mps_checkpoint_manifest_v1":
+            raise ValueError("checkpoint manifest schema mismatch")
+        if int(manifest.get("world_size", -1)) != world_size:
+            raise ValueError("checkpoint manifest topology mismatch")
+        if manifest.get("contract_fingerprint") != contract_fingerprint:
+            raise ValueError("checkpoint manifest contract fingerprint mismatch")
+        shards = manifest.get("shards")
+        if not isinstance(shards, list) or len(shards) != world_size:
+            raise ValueError("checkpoint manifest rank membership incomplete")
+        shard = next(
+            (record for record in shards if int(record.get("rank", -1)) == rank),
+            None,
+        )
+        if shard is None:
+            raise ValueError(f"checkpoint manifest missing rank {rank}")
+        step = int(manifest.get("completed_steps", -1))
+        if int(shard.get("completed_steps", -2)) != step or step < 0:
+            raise ValueError("checkpoint manifest generation mismatch")
+        path = root / str(shard.get("file", ""))
+        if path.parent != root or not path.is_file():
+            raise ValueError(f"checkpoint shard missing for rank {rank}")
+        expected = str(shard.get("sha256", ""))
+        if len(expected) != 64 or _file_sha256(path) != expected:
+            raise ValueError(f"checkpoint shard integrity mismatch for rank {rank}")
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError) as error:
+        issue = str(error)
+    reports = all_gather_json({"rank": rank, "issue": issue})
+    failures = tuple(
+        f"rank {report['rank']}: {report['issue']}"
+        for report in reports
+        if report.get("issue")
+    )
+    if failures:
+        raise MPSTrainingError(
+            "checkpoint generation preflight failed: " + "; ".join(failures)
+        )
+    return step, path
+
+
+def _checkpoint_start_policy_error(
+    *, committed_manifest_exists: bool, resume: bool, allow_overwrite: bool
+) -> str | None:
+    if committed_manifest_exists and not resume and not allow_overwrite:
+        return (
+            "checkpoint directory already contains a committed generation; "
+            "set resume=True or explicitly allow checkpoint overwrite"
+        )
+    if resume and not committed_manifest_exists:
+        return "resume requires a committed checkpoint manifest"
+    return None
+
+
+def _validate_checkpoint_start_policy_collective(
+    root: Path,
+    *,
+    rank: int,
+    resume: bool,
+    allow_overwrite: bool,
+) -> None:
+    local_exists = _checkpoint_manifest_path(root).is_file()
+    reports = all_gather_json({"rank": rank, "manifest_exists": local_exists})
+    visibility = {bool(report["manifest_exists"]) for report in reports}
+    if len(visibility) != 1:
+        raise MPSTrainingError(
+            "checkpoint manifest visibility differs across ranks"
+        )
+    error = _checkpoint_start_policy_error(
+        committed_manifest_exists=local_exists,
+        resume=resume,
+        allow_overwrite=allow_overwrite,
+    )
+    if error is not None:
+        raise MPSTrainingError(error)
+
+
+def _checkpoint_writer_lease_path(root: Path) -> Path:
+    return root / "ACTIVE_WRITER.json"
+
+
+def _acquire_checkpoint_writer_lease(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    contract_fingerprint: str,
+    allow_break: bool,
+    stale_seconds: float,
+) -> None:
+    issue = ""
+    if rank == 0:
+        lease = _checkpoint_writer_lease_path(root)
+        if allow_break and lease.exists():
+            stale_issue = ""
+            try:
+                existing = json.loads(lease.read_text(encoding="utf-8"))
+                heartbeat = float(
+                    existing.get(
+                        "heartbeat_unix_seconds",
+                        existing.get("created_unix_seconds", 0.0),
+                    )
+                )
+                age = max(0.0, time.time() - heartbeat)
+                if age < stale_seconds:
+                    stale_issue = (
+                        "checkpoint writer lease is not stale: "
+                        f"age_seconds={age:.3f}, stale_seconds={stale_seconds:.3f}"
+                    )
+                elif existing.get("hostname") == socket.gethostname():
+                    pid = int(existing.get("pid", -1))
+                    if pid <= 0:
+                        stale_issue = "checkpoint writer lease contains an invalid PID"
+                    else:
+                        try:
+                            os.kill(pid, 0)
+                        except ProcessLookupError:
+                            pass
+                        except PermissionError:
+                            stale_issue = "checkpoint writer lease PID is still active"
+                        else:
+                            stale_issue = "checkpoint writer lease PID is still active"
+            except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+                age = max(0.0, time.time() - lease.stat().st_mtime)
+                if age < stale_seconds:
+                    stale_issue = (
+                        "invalid checkpoint writer lease is not old enough to break: "
+                        f"age_seconds={age:.3f}, stale_seconds={stale_seconds:.3f}"
+                    )
+            if stale_issue:
+                issue = stale_issue
+            else:
+                lease.unlink(missing_ok=True)
+        try:
+            if issue:
+                raise FileExistsError
+            descriptor = os.open(
+                lease,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
+            )
+            payload = (
+                json.dumps(
+                    {
+                        "schema": "sharded_mps_checkpoint_writer_lease_v1",
+                        "contract_fingerprint": contract_fingerprint,
+                        "world_size": world_size,
+                        "hostname": socket.gethostname(),
+                        "pid": os.getpid(),
+                        "created_unix_seconds": time.time(),
+                        "heartbeat_unix_seconds": time.time(),
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n"
+            ).encode("utf-8")
+            try:
+                os.write(descriptor, payload)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        except FileExistsError:
+            if not issue:
+                issue = (
+                    "checkpoint directory has an active writer lease; inspect "
+                    "ACTIVE_WRITER.json before explicitly breaking a stale lease"
+                )
+        except OSError as error:
+            issue = f"checkpoint writer lease acquisition failed: {error}"
+    reports = all_gather_json({"rank": rank, "issue": issue})
+    failures = tuple(
+        str(report["issue"]) for report in reports if report.get("issue")
+    )
+    if failures:
+        raise MPSTrainingError("; ".join(failures))
+    dist.barrier()
+
+
+def _refresh_checkpoint_writer_lease(
+    root: Path,
+    *,
+    rank: int,
+    contract_fingerprint: str,
+) -> None:
+    issue = ""
+    if rank == 0:
+        lease = _checkpoint_writer_lease_path(root)
+        try:
+            payload = json.loads(lease.read_text(encoding="utf-8"))
+            if payload.get("schema") != "sharded_mps_checkpoint_writer_lease_v1":
+                raise ValueError("checkpoint writer lease schema mismatch")
+            if payload.get("contract_fingerprint") != contract_fingerprint:
+                raise ValueError("checkpoint writer lease contract mismatch")
+            payload["heartbeat_unix_seconds"] = time.time()
+            temporary = lease.with_suffix(".json.tmp")
+            temporary.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            with temporary.open("rb") as stream:
+                os.fsync(stream.fileno())
+            temporary.replace(lease)
+        except (
+            OSError,
+            UnicodeError,
+            json.JSONDecodeError,
+            TypeError,
+            ValueError,
+        ) as error:
+            issue = f"checkpoint writer lease heartbeat failed: {error}"
+    reports = all_gather_json({"rank": rank, "issue": issue})
+    failures = tuple(
+        str(report["issue"]) for report in reports if report.get("issue")
+    )
+    if failures:
+        raise MPSTrainingError("; ".join(failures))
+
+
+def _release_checkpoint_writer_lease(root: Path, *, rank: int) -> None:
+    if rank == 0:
+        _checkpoint_writer_lease_path(root).unlink(missing_ok=True)
+    dist.barrier()
+
+
+def _prune_checkpoint_generations(
+    root: Path,
+    *,
+    rank: int,
+    committed_step: int,
+    keep_generations: int | None,
+) -> tuple[str, ...]:
+    """Bound rank-local checkpoint storage without touching the committed shard."""
+    if keep_generations is None:
+        return ()
+    candidates: list[tuple[int, Path]] = []
+    prefix = f"rank-{rank}-step-"
+    for path in root.glob(f"{prefix}*.pt"):
+        try:
+            step = int(path.stem.removeprefix(prefix))
+        except ValueError:
+            continue
+        candidates.append((step, path))
+    retained_steps = {
+        step
+        for step, _ in sorted(
+            (candidate for candidate in candidates if candidate[0] <= committed_step),
+            reverse=True,
+        )[:keep_generations]
+    }
+    retained_steps.add(committed_step)
+    deleted: list[str] = []
+    for step, path in candidates:
+        if step in retained_steps:
+            continue
+        checksum = _checkpoint_checksum_path(path)
+        path.unlink(missing_ok=True)
+        checksum.unlink(missing_ok=True)
+        deleted.extend((str(path), str(checksum)))
+    return tuple(deleted)
+
+
+def _prune_checkpoint_generations_collective(
+    root: Path,
+    *,
+    rank: int,
+    committed_step: int,
+    keep_generations: int | None,
+) -> tuple[str, ...]:
+    deleted: tuple[str, ...] = ()
+    issue = ""
+    try:
+        deleted = _prune_checkpoint_generations(
+            root,
+            rank=rank,
+            committed_step=committed_step,
+            keep_generations=keep_generations,
+        )
+    except OSError as error:
+        issue = str(error)
+    reports = all_gather_json({"rank": rank, "issue": issue})
+    failures = tuple(
+        f"rank {report['rank']}: {report['issue']}"
+        for report in reports
+        if report.get("issue")
+    )
+    if failures:
+        raise MPSTrainingError(
+            "checkpoint retention cleanup failed: " + "; ".join(failures)
+        )
+    return deleted
+
+
+def _tensor_bytes_in(value: Any) -> int:
+    if isinstance(value, torch.Tensor):
+        return value.numel() * value.element_size()
+    if isinstance(value, Mapping):
+        return sum(_tensor_bytes_in(item) for item in value.values())
+    if isinstance(value, (tuple, list)):
+        return sum(_tensor_bytes_in(item) for item in value)
+    return 0
+
+
+def _checkpoint_capacity_error(
+    *,
+    minimum_free_bytes: int,
+    estimated_generation_bytes: int,
+    reserve_bytes: int,
+) -> str | None:
+    required = estimated_generation_bytes + reserve_bytes
+    if minimum_free_bytes >= required:
+        return None
+    return (
+        "checkpoint storage capacity preflight failed: "
+        f"minimum_free_bytes={minimum_free_bytes}, "
+        f"estimated_generation_bytes={estimated_generation_bytes}, "
+        f"reserve_bytes={reserve_bytes}, required_bytes={required}"
+    )
+
+
+def _checkpoint_storage_preflight(
+    root: Path,
+    *,
+    rank: int,
+    owned_indices: tuple[int, ...],
+    parameters: tuple[torch.Tensor, ...],
+    optimizer: torch.optim.Optimizer | None,
+    reserve_bytes: int,
+) -> tuple[int, int]:
+    local_estimate = 1 << 20
+    local_estimate += sum(
+        parameters[index].numel() * parameters[index].element_size()
+        for index in owned_indices
+    )
+    if optimizer is not None:
+        local_estimate += _tensor_bytes_in(optimizer.state_dict())
+    local_free = int(shutil.disk_usage(root).free)
+    reports = all_gather_json(
+        {"rank": rank, "free_bytes": local_free, "estimated_bytes": local_estimate}
+    )
+    minimum_free = min(int(report["free_bytes"]) for report in reports)
+    generation_estimate = sum(int(report["estimated_bytes"]) for report in reports)
+    error = _checkpoint_capacity_error(
+        minimum_free_bytes=minimum_free,
+        estimated_generation_bytes=generation_estimate,
+        reserve_bytes=reserve_bytes,
+    )
+    if error is not None:
+        raise MPSTrainingError(error)
+    return minimum_free, generation_estimate
+
+
+def _validate_shared_checkpoint_root(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    contract_fingerprint: str,
+) -> None:
+    """Prove every rank observes the same checkpoint namespace before I/O."""
+    if world_size == 1:
+        return
+    probe = root / ".fq-mps-shared-root-probe"
+    expected = f"{contract_fingerprint}:{world_size}\n"
+    if rank == 0:
+        temporary = probe.with_suffix(".tmp")
+        temporary.write_text(expected, encoding="ascii")
+        with temporary.open("rb") as stream:
+            os.fsync(stream.fileno())
+        temporary.replace(probe)
+        directory_fd = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    dist.barrier()
+    issue = ""
+    try:
+        observed = probe.read_text(encoding="ascii")
+        if observed != expected:
+            issue = "checkpoint root probe content mismatch"
+    except (OSError, UnicodeError) as error:
+        issue = f"checkpoint root probe unavailable: {error}"
+    reports = all_gather_json({"rank": rank, "issue": issue})
+    if rank == 0:
+        probe.unlink(missing_ok=True)
+    dist.barrier()
+    failures = tuple(
+        f"rank {report['rank']}: {report['issue']}"
+        for report in reports
+        if report.get("issue")
+    )
+    if failures:
+        raise MPSTrainingError(
+            "checkpoint shared storage validation failed: " + "; ".join(failures)
+        )
 
 
 def _initial_state_contract(
@@ -50,7 +535,13 @@ def _initial_state_contract(
     initial_bond_dimension: int,
     site_ownership: tuple[tuple[int, ...], ...],
 ) -> tuple[str, dict[int, tuple[int, ...]]]:
+    digest_cache: dict[tuple[int, int], str] = {}
+
     def tensor_digest(tensor: torch.Tensor) -> str:
+        cache_key = (id(tensor), int(tensor._version))
+        cached = digest_cache.get(cache_key)
+        if cached is not None:
+            return cached
         digest = hashlib.sha256()
         value = tensor.detach().contiguous()
         # PyTorch 2.13 rejects a direct complex-to-byte view for some otherwise
@@ -62,8 +553,11 @@ def _initial_state_contract(
         raw = value.contiguous().view(torch.uint8).reshape(-1)
         chunk_bytes = 8 * 1024 * 1024
         for start in range(0, raw.numel(), chunk_bytes):
-            digest.update(bytes(raw[start : start + chunk_bytes].cpu().tolist()))
-        return digest.hexdigest()
+            chunk = raw[start : start + chunk_bytes].cpu().numpy()
+            digest.update(chunk.tobytes())
+        result = digest.hexdigest()
+        digest_cache[cache_key] = result
+        return result
 
     if initial_mps_tensors is None:
         local_descriptors = {
@@ -149,6 +643,34 @@ def _contract(
     }
 
 
+def _resolve_compile_site_kernels(
+    requested: bool | None,
+    *,
+    ir: Any,
+    device: torch.device,
+    steps: int,
+    checkpointing: bool = False,
+) -> tuple[bool, str]:
+    """Choose compiled MPS site buckets without changing unsupported circuits."""
+    if requested is not None:
+        return bool(requested), "explicit_compiled" if requested else "explicit_eager"
+    if checkpointing:
+        return False, "auto_checkpoint_compatibility_uses_eager"
+    if device.type != "cuda":
+        return False, "auto_cpu_eager_fast_path"
+    if steps < 3:
+        return False, "auto_short_training_avoids_compile_warmup"
+    reversed_rotations = any(
+        instruction.name in {"rxx", "ryy", "rzz"}
+        and tuple(map(int, instruction.wires))
+        != tuple(sorted(map(int, instruction.wires)))
+        for instruction in ir.instructions
+    )
+    if reversed_rotations:
+        return False, "auto_incompatible_wire_order_uses_eager"
+    return True, "auto_cuda_repeated_training"
+
+
 def _save_checkpoint(
     root: Path,
     *,
@@ -162,10 +684,14 @@ def _save_checkpoint(
     bond_layout: Mapping[int, tuple[int, ...]],
 ) -> Path:
     root.mkdir(parents=True, exist_ok=True)
-    path = _checkpoint_path(root, rank)
+    path = _checkpoint_path(root, rank, step)
     temporary = path.with_suffix(".pt.tmp")
+    checksum_path = _checkpoint_checksum_path(path)
+    checksum_temporary = checksum_path.with_suffix(checksum_path.suffix + ".tmp")
     torch.save(
         {
+            "schema_version": "sharded_mps_training_checkpoint_v2",
+            "rank": rank,
             "contract": dict(contract),
             "world_size": world_size,
             "completed_steps": step,
@@ -184,7 +710,18 @@ def _save_checkpoint(
         },
         temporary,
     )
+    with temporary.open("rb") as stream:
+        os.fsync(stream.fileno())
+    checksum_temporary.write_text(_file_sha256(temporary) + "\n", encoding="ascii")
+    with checksum_temporary.open("rb") as stream:
+        os.fsync(stream.fileno())
     temporary.replace(path)
+    checksum_temporary.replace(checksum_path)
+    directory_fd = os.open(root, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
     return path
 
 
@@ -198,11 +735,41 @@ def _load_checkpoint(
     optimizer: torch.optim.Optimizer | None,
     contract: Mapping[str, Any],
     bond_layout: Mapping[int, tuple[int, ...]],
+    checkpoint_path: Path | None = None,
+    expected_completed_steps: int | None = None,
 ) -> int:
-    path = _checkpoint_path(root, rank)
+    path = checkpoint_path or _checkpoint_path(root, rank)
     if not path.exists():
         raise MPSTrainingError(f"checkpoint missing for rank {rank}: {path}")
-    payload = torch.load(path, map_location=parameters[0].device, weights_only=False)
+    checksum_path = _checkpoint_checksum_path(path)
+    if not checksum_path.exists():
+        raise MPSTrainingError(
+            f"checkpoint integrity metadata missing for rank {rank}: {checksum_path}"
+        )
+    try:
+        expected_checksum = checksum_path.read_text(encoding="ascii").strip()
+    except (OSError, UnicodeError) as error:
+        raise MPSTrainingError(
+            f"checkpoint integrity metadata invalid for rank {rank}: {checksum_path}"
+        ) from error
+    if len(expected_checksum) != 64 or _file_sha256(path) != expected_checksum:
+        raise MPSTrainingError(
+            f"checkpoint integrity mismatch for rank {rank}: {path}"
+        )
+    try:
+        payload = torch.load(
+            path, map_location=parameters[0].device, weights_only=True
+        )
+    except (OSError, RuntimeError, ValueError, EOFError, pickle.UnpicklingError) as error:
+        raise MPSTrainingError(
+            f"checkpoint deserialization failed for rank {rank}: {path}"
+        ) from error
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "sharded_mps_training_checkpoint_v2"
+        or payload.get("rank") != rank
+    ):
+        raise MPSTrainingError("checkpoint schema or rank identity mismatch")
     if (
         payload.get("contract") != dict(contract)
         or payload.get("world_size") != world_size
@@ -212,25 +779,193 @@ def _load_checkpoint(
         raise MPSTrainingError("checkpoint optimizer ownership mismatch")
     if payload.get("bond_layout") != dict(bond_layout):
         raise MPSTrainingError("checkpoint MPS bond layout mismatch")
-    for index, value in payload["parameters"].items():
-        parameters[int(index)].data.copy_(value.to(parameters[int(index)].device))
-    if optimizer is not None and payload.get("optimizer_state") is not None:
-        optimizer.load_state_dict(payload["optimizer_state"])
-    torch.set_rng_state(payload["torch_rng_state"].cpu())
+    saved_parameters = payload.get("parameters")
+    if not isinstance(saved_parameters, Mapping):
+        raise MPSTrainingError("checkpoint parameter payload must be a mapping")
+    try:
+        saved_indices = {int(index) for index in saved_parameters}
+    except (TypeError, ValueError) as error:
+        raise MPSTrainingError("checkpoint parameter indices are invalid") from error
+    if saved_indices != set(owned_indices):
+        raise MPSTrainingError("checkpoint parameter shard membership mismatch")
+    validated_parameters: list[tuple[int, torch.Tensor]] = []
+    for raw_index, value in saved_parameters.items():
+        index = int(raw_index)
+        target = parameters[index]
+        if not isinstance(value, torch.Tensor):
+            raise MPSTrainingError("checkpoint parameter value must be a tensor")
+        if tuple(value.shape) != tuple(target.shape) or value.dtype != target.dtype:
+            raise MPSTrainingError(
+                "checkpoint parameter shape or dtype mismatch: "
+                f"index={index}, saved_shape={tuple(value.shape)}, "
+                f"target_shape={tuple(target.shape)}, saved_dtype={value.dtype}, "
+                f"target_dtype={target.dtype}"
+            )
+        validated_parameters.append((index, value))
+    optimizer_state = payload.get("optimizer_state")
+    if optimizer is None and optimizer_state is not None:
+        raise MPSTrainingError("checkpoint contains unexpected optimizer state")
+    if optimizer is not None and not isinstance(optimizer_state, Mapping):
+        raise MPSTrainingError("checkpoint optimizer state must be a mapping")
+    torch_rng_state = payload.get("torch_rng_state")
+    if not isinstance(torch_rng_state, torch.Tensor) or torch_rng_state.dtype != torch.uint8:
+        raise MPSTrainingError("checkpoint CPU RNG state is invalid")
+    cuda_rng_state = payload.get("cuda_rng_state")
+    if cuda_rng_state is not None and (
+        not isinstance(cuda_rng_state, torch.Tensor)
+        or cuda_rng_state.dtype != torch.uint8
+    ):
+        raise MPSTrainingError("checkpoint CUDA RNG state is invalid")
+    completed_steps = payload.get("completed_steps")
+    if not isinstance(completed_steps, int) or completed_steps < 0:
+        raise MPSTrainingError("checkpoint completed step is invalid")
+    if (
+        expected_completed_steps is not None
+        and completed_steps != expected_completed_steps
+    ):
+        raise MPSTrainingError("checkpoint payload and manifest generation mismatch")
+
+    try:
+        if optimizer is not None:
+            optimizer.load_state_dict(optimizer_state)
+        for index, value in validated_parameters:
+            parameters[index].data.copy_(value.to(parameters[index].device))
+        torch.set_rng_state(torch_rng_state.cpu())
+    except (RuntimeError, ValueError, KeyError, TypeError) as error:
+        raise MPSTrainingError("checkpoint state restoration failed") from error
     if (
         parameters[0].device.type == "cuda"
-        and payload.get("cuda_rng_state") is not None
+        and cuda_rng_state is not None
     ):
-        torch.cuda.set_rng_state(payload["cuda_rng_state"].cpu(), parameters[0].device)
-    return int(payload["completed_steps"])
+        torch.cuda.set_rng_state(cuda_rng_state.cpu(), parameters[0].device)
+    return completed_steps
+
+
+@dataclass(frozen=True)
+class _ParameterAllGatherBucket:
+    indices_by_owner: tuple[tuple[int, ...], ...]
+    input_buffer: torch.Tensor
+    output_buffer: torch.Tensor
+    pack_targets: tuple[torch.Tensor, ...]
+    pack_sources: tuple[torch.Tensor, ...]
+    unpack_targets: tuple[torch.Tensor, ...]
+    unpack_sources: tuple[torch.Tensor, ...]
+    payload_bytes: int
+
+
+def _parameter_broadcast_buckets(
+    parameters: tuple[torch.Tensor, ...],
+    owners: tuple[int, ...],
+    *,
+    max_bucket_bytes: int,
+    world_size: int | None = None,
+    rank: int = 0,
+) -> tuple[_ParameterAllGatherBucket, ...]:
+    """Allocate reusable dtype buckets for one-collective owner synchronization."""
+
+    if len(parameters) != len(owners):
+        raise ValueError("parameters and owners must have equal length")
+    world_size = world_size or (max(owners, default=-1) + 1)
+    if any(owner < 0 or owner >= world_size for owner in owners):
+        raise ValueError("parameter owner is outside world_size")
+    if rank < 0 or rank >= world_size:
+        raise ValueError("rank is outside world_size")
+    grouped: dict[tuple[torch.dtype, torch.device], list[list[int]]] = {}
+    for index, (parameter, owner) in enumerate(zip(parameters, owners)):
+        key = (parameter.dtype, parameter.device)
+        grouped.setdefault(key, [[] for _ in range(world_size)])[owner].append(index)
+    buckets: list[_ParameterAllGatherBucket] = []
+    for (dtype, device), indices_by_owner in grouped.items():
+        element_size = torch.empty((), dtype=dtype).element_size()
+        owner_chunks: list[list[tuple[int, ...]]] = []
+        for indices in indices_by_owner:
+            chunks: list[tuple[int, ...]] = []
+            current: list[int] = []
+            current_bytes = 0
+            for index in indices:
+                parameter_bytes = parameters[index].numel() * element_size
+                if current and current_bytes + parameter_bytes > max_bucket_bytes:
+                    chunks.append(tuple(current))
+                    current = []
+                    current_bytes = 0
+                current.append(index)
+                current_bytes += parameter_bytes
+            if current:
+                chunks.append(tuple(current))
+            owner_chunks.append(chunks)
+        for round_index in range(max(map(len, owner_chunks), default=0)):
+            round_indices = tuple(
+                chunks[round_index] if round_index < len(chunks) else ()
+                for chunks in owner_chunks
+            )
+            owner_elements = [
+                sum(parameters[index].numel() for index in indices)
+                for indices in round_indices
+            ]
+            stride = max(owner_elements)
+            input_buffer = torch.empty(stride, dtype=dtype, device=device)
+            output_buffer = torch.empty(
+                world_size * stride, dtype=dtype, device=device
+            )
+            pack_targets = []
+            pack_sources = []
+            offset = 0
+            for index in round_indices[rank]:
+                parameter = parameters[index]
+                count = parameter.numel()
+                pack_targets.append(
+                    input_buffer[offset : offset + count].reshape_as(parameter)
+                )
+                pack_sources.append(parameter)
+                offset += count
+            unpack_targets = []
+            unpack_sources = []
+            for owner, indices in enumerate(round_indices):
+                if rank == owner:
+                    continue
+                offset = 0
+                for index in indices:
+                    parameter = parameters[index]
+                    count = parameter.numel()
+                    start = owner * stride + offset
+                    unpack_targets.append(parameter)
+                    unpack_sources.append(
+                        output_buffer[start : start + count].reshape_as(parameter)
+                    )
+                    offset += count
+            buckets.append(
+                _ParameterAllGatherBucket(
+                    indices_by_owner=round_indices,
+                    input_buffer=input_buffer,
+                    output_buffer=output_buffer,
+                    pack_targets=tuple(pack_targets),
+                    pack_sources=tuple(pack_sources),
+                    unpack_targets=tuple(unpack_targets),
+                    unpack_sources=tuple(unpack_sources),
+                    payload_bytes=sum(owner_elements) * element_size,
+                )
+            )
+    return tuple(buckets)
 
 
 def _broadcast_parameters(
-    parameters: tuple[torch.Tensor, ...], owners: tuple[int, ...]
-) -> int:
-    for parameter, owner in zip(parameters, owners):
-        dist.broadcast(parameter.data, src=owner)
-    return len(parameters)
+    parameters: tuple[torch.Tensor, ...],
+    buckets: tuple[_ParameterAllGatherBucket, ...],
+) -> tuple[int, int]:
+    """Synchronize owner shards with bounded, reusable flat all-gathers."""
+
+    byte_count = 0
+    with torch.no_grad():
+        for bucket in buckets:
+            buffer = bucket.input_buffer
+            buffer.zero_()
+            if bucket.pack_targets:
+                torch._foreach_copy_(bucket.pack_targets, bucket.pack_sources)
+            dist.all_gather_single(bucket.output_buffer, buffer)
+            byte_count += bucket.payload_bytes
+            if bucket.unpack_targets:
+                torch._foreach_copy_(bucket.unpack_targets, bucket.unpack_sources)
+    return len(buckets), byte_count
 
 
 def _distributed_dot(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
@@ -311,20 +1046,28 @@ def train_distributed_mps(
     gradient_tolerance: float = 0.0,
     checkpoint_dir: str | Path | None = None,
     checkpoint_interval: int = 1,
+    checkpoint_retention_generations: int | None = 2,
+    checkpoint_free_space_reserve_bytes: int = 1 << 30,
+    allow_checkpoint_overwrite: bool = False,
+    allow_checkpoint_writer_lease_break: bool = False,
+    checkpoint_writer_lease_stale_seconds: float = 3600.0,
     resume: bool = False,
     memory_leak_tolerance_bytes: int = 0,
     initial_bond_dimension: int = 1,
     initial_mps_tensors: Mapping[int, torch.Tensor] | None = None,
     initial_mps_left_canonical: bool = False,
     site_ownership: Sequence[Sequence[int]] | None = None,
+    site_ownership_policy: Literal["balanced", "topology_aware"] = "balanced",
+    inter_node_cut_multiplier: int = 8,
+    ownership_maximum_load_ratio: float = 1.25,
     reverse_checkpoint_policy: MPSReverseCheckpointPolicy | None = None,
     memory_warmup_steps: int = 1,
     gradient_bucket_bytes: int = 25 * 1024 * 1024,
-    compile_site_kernels: bool = False,
+    compile_site_kernels: bool | None = None,
     prefetch_layer_halos: bool = True,
     compile_observables: bool = False,
     fuse_local_reverse: bool = True,
-    canonicalization_policy: Literal["dirty", "full"] = "dirty",
+    canonicalization_policy: Literal["none", "dirty", "full"] = "dirty",
     svd_driver: str | None = "gesvd",
     record_parameter_gradients: bool = False,
 ) -> ShardedMPSTrainingResult:
@@ -344,6 +1087,15 @@ def train_distributed_mps(
         raise MPSTrainingError("train_distributed_mps requires torch.distributed")
     if steps <= 0 or lr <= 0 or checkpoint_interval <= 0:
         raise ValueError("steps, lr and checkpoint_interval must be positive")
+    if (
+        checkpoint_retention_generations is not None
+        and checkpoint_retention_generations <= 0
+    ):
+        raise ValueError("checkpoint_retention_generations must be positive or None")
+    if checkpoint_free_space_reserve_bytes < 0:
+        raise ValueError("checkpoint_free_space_reserve_bytes must be non-negative")
+    if checkpoint_writer_lease_stale_seconds <= 0:
+        raise ValueError("checkpoint_writer_lease_stale_seconds must be positive")
     if not math.isfinite(lr_decay) or not 0.0 < lr_decay <= 1.0:
         raise ValueError("lr_decay must be finite and in (0, 1]")
     if optimizer not in {"sgd", "adam", "adam_lbfgs"}:
@@ -364,8 +1116,10 @@ def train_distributed_mps(
         raise ValueError("memory_warmup_steps must be non-negative")
     if gradient_bucket_bytes <= 0:
         raise ValueError("gradient_bucket_bytes must be positive")
-    if canonicalization_policy not in {"dirty", "full"}:
-        raise ValueError("canonicalization_policy must be dirty or full")
+    if canonicalization_policy not in {"none", "dirty", "full"}:
+        raise ValueError("canonicalization_policy must be none, dirty or full")
+    if site_ownership_policy not in {"balanced", "topology_aware"}:
+        raise ValueError("site_ownership_policy must be balanced or topology_aware")
     circuit_factory = circuit_or_ir if callable(circuit_or_ir) else None
     ir = ensure_circuit_ir(
         circuit_factory() if circuit_factory is not None else circuit_or_ir
@@ -375,12 +1129,35 @@ def train_distributed_mps(
             "circuit_factory training does not yet support checkpoint/resume"
         )
     rank, world_size = dist.get_rank(), dist.get_world_size()
-    resolved_site_ownership = (
-        _initial_ownership(ir.n_wires, world_size)
-        if site_ownership is None
-        else validate_mps_ownership(site_ownership, ir.n_wires, world_size)
-    )
     local_world_size = int(__import__("os").environ.get("LOCAL_WORLD_SIZE", world_size))
+    if site_ownership is not None:
+        resolved_site_ownership = validate_mps_ownership(
+            site_ownership, ir.n_wires, world_size
+        )
+        resolved_site_ownership_policy = "explicit"
+    elif site_ownership_policy == "topology_aware" and world_size > 1:
+        boundary_penalties = [1] * max(0, ir.n_wires - 1)
+        for instruction in ir.instructions:
+            wires = tuple(int(wire) for wire in instruction.wires)
+            if len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
+                boundary_penalties[min(wires)] += 1
+        bonds = (
+            1,
+            *([int(initial_bond_dimension)] * max(0, ir.n_wires - 1)),
+            1,
+        )
+        resolved_site_ownership = topology_aware_mps_ownership(
+            bonds,
+            world_size,
+            local_world_size=local_world_size,
+            boundary_penalties=boundary_penalties,
+            inter_node_multiplier=inter_node_cut_multiplier,
+            maximum_load_ratio=ownership_maximum_load_ratio,
+        )
+        resolved_site_ownership_policy = "topology_aware"
+    else:
+        resolved_site_ownership = _initial_ownership(ir.n_wires, world_size)
+        resolved_site_ownership_policy = "balanced"
     backend = str(dist.get_backend())
     resolved_device = torch.device(
         device
@@ -388,11 +1165,27 @@ def train_distributed_mps(
     )
     if backend == "nccl" and resolved_device.type != "cuda":
         raise MPSTrainingError("NCCL MPS training requires a CUDA device")
+    resolved_compile_site_kernels, site_kernel_selection_reason = (
+        _resolve_compile_site_kernels(
+            compile_site_kernels,
+            ir=ir,
+            device=resolved_device,
+            steps=steps,
+            checkpointing=checkpoint_dir is not None or resume,
+        )
+    )
 
     parameters, _ = _parameter_layout(ir)
     owners = tuple(index % world_size for index in range(len(parameters)))
     owned_indices = tuple(index for index, owner in enumerate(owners) if owner == rank)
     owned = [parameters[index] for index in owned_indices]
+    parameter_broadcast_buckets = _parameter_broadcast_buckets(
+        parameters,
+        owners,
+        max_bucket_bytes=gradient_bucket_bytes,
+        world_size=world_size,
+        rank=rank,
+    )
     optimizer_obj: torch.optim.Optimizer | None = None
     if owned:
         optimizer_obj = (
@@ -418,7 +1211,7 @@ def train_distributed_mps(
         initial_mps_left_canonical=initial_mps_left_canonical,
         reverse_checkpoint_policy=selected_reverse_policy,
         gradient_bucket_bytes=gradient_bucket_bytes,
-        compile_site_kernels=compile_site_kernels,
+        compile_site_kernels=resolved_compile_site_kernels,
         prefetch_layer_halos=prefetch_layer_halos,
         compile_observables=compile_observables,
         fuse_local_reverse=fuse_local_reverse,
@@ -430,10 +1223,43 @@ def train_distributed_mps(
     ).hexdigest()
     communication_setup_seconds = warmup_mps_neighbor_communicators(resolved_device)
     root = Path(checkpoint_dir) if checkpoint_dir is not None else None
+    checkpoint_storage_probe_seconds = 0.0
+    if root is not None:
+        root.mkdir(parents=True, exist_ok=True)
+        storage_probe_started = time.perf_counter()
+        _validate_shared_checkpoint_root(
+            root,
+            rank=rank,
+            world_size=world_size,
+            contract_fingerprint=contract_fingerprint,
+        )
+        checkpoint_storage_probe_seconds = (
+            time.perf_counter() - storage_probe_started
+        )
+        _validate_checkpoint_start_policy_collective(
+            root,
+            rank=rank,
+            resume=resume,
+            allow_overwrite=allow_checkpoint_overwrite,
+        )
+        _acquire_checkpoint_writer_lease(
+            root,
+            rank=rank,
+            world_size=world_size,
+            contract_fingerprint=contract_fingerprint,
+            allow_break=allow_checkpoint_writer_lease_break,
+            stale_seconds=checkpoint_writer_lease_stale_seconds,
+        )
     start_step = 0
     if resume:
         if root is None:
             raise ValueError("resume requires checkpoint_dir")
+        committed_step, committed_path = _preflight_checkpoint_generation(
+            root,
+            rank=rank,
+            world_size=world_size,
+            contract_fingerprint=contract_fingerprint,
+        )
         start_step = _load_checkpoint(
             root,
             rank=rank,
@@ -443,6 +1269,8 @@ def train_distributed_mps(
             optimizer=optimizer_obj,
             contract=contract,
             bond_layout=local_bond_layout,
+            checkpoint_path=committed_path,
+            expected_completed_steps=committed_step,
         )
         if start_step > steps:
             raise MPSTrainingError(
@@ -453,18 +1281,38 @@ def train_distributed_mps(
         dist.all_gather(gathered, completed)
         if len({int(value.item()) for value in gathered}) != 1:
             raise MPSTrainingError("checkpoint generations differ across ranks")
-        _broadcast_parameters(parameters, owners)
+        _broadcast_parameters(parameters, parameter_broadcast_buckets)
 
     if resolved_device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(resolved_device)
     losses: list[float] = []
     metrics: list[MPSStepMetrics] = []
     checkpoints: list[str] = []
+    pruned_checkpoint_files: list[str] = []
+    checkpoint_write_seconds = 0.0
+    checkpoint_commit_seconds = 0.0
+    checkpoint_prune_seconds = 0.0
+    checkpoint_bytes_written = 0
+    checkpoint_min_free_bytes_observed = 0
+    checkpoint_estimated_generation_bytes = 0
+    checkpoint_writer_lease_heartbeat_count = 0
+    checkpoint_writer_lease_heartbeat_seconds = 0.0
     memories: list[int] = []
     lbfgs_history: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
     previous_lbfgs_parameters: torch.Tensor | None = None
     previous_lbfgs_gradient: torch.Tensor | None = None
     for step in range(start_step, steps):
+        if root is not None:
+            heartbeat_started = time.perf_counter()
+            _refresh_checkpoint_writer_lease(
+                root,
+                rank=rank,
+                contract_fingerprint=contract_fingerprint,
+            )
+            checkpoint_writer_lease_heartbeat_seconds += (
+                time.perf_counter() - heartbeat_started
+            )
+            checkpoint_writer_lease_heartbeat_count += 1
         if resolved_device.type == "cuda":
             torch.cuda.synchronize(resolved_device)
             torch.cuda.reset_peak_memory_stats(resolved_device)
@@ -500,7 +1348,7 @@ def train_distributed_mps(
                 site_ownership=resolved_site_ownership,
                 gradient_owner_ranks=owners,
                 gradient_bucket_bytes=gradient_bucket_bytes,
-                compile_site_kernels=compile_site_kernels,
+                compile_site_kernels=resolved_compile_site_kernels,
                 prefetch_layer_halos=prefetch_layer_halos,
                 compile_observables=compile_observables,
                 fuse_local_reverse=fuse_local_reverse,
@@ -556,6 +1404,7 @@ def train_distributed_mps(
             _nvtx_phase("flagquantum::mps::optimizer", resolved_device),
         ):
             optimizer_collective_count = 0
+            optimizer_collective_bytes = 0
             if optimizer_stage == "lbfgs":
                 current_parameters = _owner_flatten(owned, gradients=False)
                 current_gradient = _owner_flatten(owned, gradients=True)
@@ -580,10 +1429,20 @@ def train_distributed_mps(
                 optimizer_obj.step()
                 for parameter_group in optimizer_obj.param_groups:
                     parameter_group["lr"] *= lr_decay
-            _broadcast_parameters(parameters, owners)
+            optimizer_collective_bytes += (
+                optimizer_collective_count
+                * torch.empty((), dtype=parameters[0].dtype).element_size()
+            )
+            parameter_collectives, parameter_bytes = _broadcast_parameters(
+                parameters, parameter_broadcast_buckets
+            )
+            optimizer_collective_count += parameter_collectives
+            optimizer_collective_bytes += parameter_bytes
         if resolved_device.type == "cuda":
             torch.cuda.synchronize(resolved_device)
         optimizer_seconds = time.perf_counter() - optimizer_started
+        diagnostics_started = time.perf_counter()
+        training_compute_seconds = diagnostics_started - step_started
         if resolved_device.type == "cuda":
             torch.cuda.synchronize(resolved_device)
             memory = max(forward_peak_memory, reverse_peak_memory)
@@ -596,23 +1455,53 @@ def train_distributed_mps(
             allocated_memory = memory
             reserved_memory = memory
         memories.append(allocated_memory)
-        owned_records = [
-            record for record in reverse.tape.records if record.compute_owner == rank
-        ]
-        owned_site = sum(record.kind == "one_site" for record in owned_records)
-        owned_bond = sum(record.kind != "one_site" for record in owned_records)
-        boundaries = sum(
-            record.communication_peer is not None and rank in record.owner_ranks
-            for record in reverse.tape.records
-        )
-        boundary_records = tuple(
-            record
-            for record in reverse.tape.records
-            if record.communication_peer is not None and rank in record.owner_ranks
-        )
         element_size = torch.empty((), dtype=getattr(torch, ir.dtype)).element_size()
-        bond_updates = tuple(
-            {
+        owned_site = 0
+        owned_bond = 0
+        two_site_splits = 0
+        truncated_splits = 0
+        discarded_weight = 0.0
+        qr_activity = 0
+        largest_realized_bond = 1
+        boundaries = 0
+        boundary_bytes = 0
+        bond_updates_list: list[dict[str, Any]] = []
+        for record in reverse.tape.records:
+            owned_record = record.compute_owner == rank
+            if owned_record:
+                if record.kind == "one_site":
+                    owned_site += 1
+                else:
+                    owned_bond += 1
+                if record.kind == "two_site":
+                    two_site_splits += 1
+                    discarded_weight += record.discarded_weight
+                    if record.kept_rank is not None:
+                        largest_realized_bond = max(
+                            largest_realized_bond, int(record.kept_rank)
+                        )
+                        if (
+                            record.original_rank is not None
+                            and record.kept_rank < record.original_rank
+                        ):
+                            truncated_splits += 1
+                if record.kind.startswith("canonicalize"):
+                    qr_activity += 1
+            boundary_record = (
+                record.communication_peer is not None and rank in record.owner_ranks
+            )
+            if not boundary_record:
+                continue
+            boundaries += 1
+            record_bytes = sum(
+                math.prod(shape) * element_size
+                for shape in record.input_shapes + record.output_shapes
+            )
+            boundary_bytes += record_bytes
+            if record.kind != "two_site":
+                continue
+            bond_updates_list.append(
+                {
                 "operation_id": record.operation_id,
                 "bond": min(record.wires),
                 "owner_ranks": record.owner_ranks,
@@ -624,23 +1513,12 @@ def train_distributed_mps(
                 "communication_sequence": record.communication_sequence,
                 "input_shapes": record.input_shapes,
                 "output_shapes": record.output_shapes,
-                "payload_bytes": sum(
-                    math.prod(shape) * element_size
-                    for shape in record.input_shapes + record.output_shapes
-                ),
+                "payload_bytes": record_bytes,
                 "forward_transport": "batched_isend_irecv",
                 "reverse_transport": "batched_isend_irecv",
-            }
-            for record in reverse.tape.records
-            if record.kind == "two_site"
-            and record.communication_peer is not None
-            and rank in record.owner_ranks
-        )
-        boundary_bytes = sum(
-            sum(math.prod(shape) * element_size for shape in record.input_shapes)
-            + sum(math.prod(shape) * element_size for shape in record.output_shapes)
-            for record in boundary_records
-        )
+                }
+            )
+        bond_updates = tuple(bond_updates_list)
         optimizer_memory = (
             0
             if optimizer_obj is None
@@ -663,6 +1541,7 @@ def train_distributed_mps(
         )
         loss = float(reverse.value.detach().cpu())
         losses.append(loss)
+        diagnostics_seconds = time.perf_counter() - diagnostics_started
         metrics.append(
             MPSStepMetrics(
                 step=step,
@@ -671,30 +1550,29 @@ def train_distributed_mps(
                 reverse_seconds=reverse_seconds,
                 optimizer_seconds=optimizer_seconds,
                 end_to_end_seconds=time.perf_counter() - step_started,
+                training_compute_seconds=training_compute_seconds,
+                diagnostics_seconds=diagnostics_seconds,
+                static_qr_metadata_records=reverse.static_qr_metadata_records,
+                dynamic_metadata_broadcasts=reverse.dynamic_metadata_broadcasts,
+                reverse_segment_cache_hit=reverse.reverse_segment_cache_hit,
+                gradient_bucket_cache_hit=reverse.gradient_bucket_cache_hit,
+                layer_halo_message_count=reverse.layer_halo_message_count,
+                layer_halo_payload_bytes=reverse.layer_halo_payload_bytes,
+                layer_halo_intra_node_bytes=reverse.layer_halo_intra_node_bytes,
+                layer_halo_inter_node_bytes=reverse.layer_halo_inter_node_bytes,
+                layer_halo_wait_seconds=reverse.layer_halo_wait_seconds,
                 owned_site_work=owned_site,
                 owned_bond_work=owned_bond,
                 boundary_exchanges=boundaries,
-                svd_activity=sum(record.kind == "two_site" for record in owned_records),
-                qr_activity=sum(
-                    record.kind.startswith("canonicalize") for record in owned_records
-                ),
+                svd_activity=two_site_splits,
+                qr_activity=qr_activity,
                 peak_memory_bytes=memory,
                 useful_work_completed=(owned_site + owned_bond) > 0,
-                two_site_splits=sum(
-                    record.kind == "two_site" for record in owned_records
-                ),
-                truncated_splits=sum(
-                    record.kind == "two_site"
-                    and record.kept_rank is not None
-                    and record.original_rank is not None
-                    and record.kept_rank < record.original_rank
-                    for record in owned_records
-                ),
-                discarded_weight=sum(
-                    record.discarded_weight for record in owned_records
-                ),
-                boundary_forward_exchanges=len(boundary_records),
-                boundary_reverse_exchanges=len(boundary_records),
+                two_site_splits=two_site_splits,
+                truncated_splits=truncated_splits,
+                discarded_weight=discarded_weight,
+                boundary_forward_exchanges=boundaries,
+                boundary_reverse_exchanges=boundaries,
                 boundary_bytes=boundary_bytes,
                 bond_updates=bond_updates,
                 allocated_memory_bytes=allocated_memory,
@@ -704,19 +1582,22 @@ def train_distributed_mps(
                 communication_buffer_bytes=boundary_bytes,
                 gradient_collective_count=reverse.gradient_collective_count,
                 gradient_collective_bytes=reverse.gradient_collective_bytes,
+                gradient_bucket_count=reverse.gradient_bucket_count,
+                gradient_bucket_fill_ratio=reverse.gradient_bucket_fill_ratio,
+                reverse_tape_segments=reverse.reverse_tape_segments,
+                fused_reverse_segments=reverse.fused_reverse_segments,
+                reverse_autograd_grad_invocations=(
+                    reverse.reverse_autograd_grad_invocations
+                ),
+                reverse_python_dispatches=reverse.reverse_python_dispatches,
+                qr_factorization_count=reverse.qr_factorization_count,
+                svd_factorization_count=reverse.svd_factorization_count,
                 objective_scan_pairs=reverse.objective_scan_pairs,
                 objective_scan_forward_messages=reverse.objective_scan_forward_messages,
                 objective_scan_reverse_messages=reverse.objective_scan_reverse_messages,
                 objective_execution=reverse.objective_execution,
                 learning_rate=step_learning_rate,
-                largest_realized_bond=max(
-                    (
-                        int(record.kept_rank)
-                        for record in owned_records
-                        if record.kind == "two_site" and record.kept_rank is not None
-                    ),
-                    default=1,
-                ),
+                largest_realized_bond=largest_realized_bond,
                 forward_peak_memory_bytes=forward_peak_memory,
                 reverse_peak_memory_bytes=reverse_peak_memory,
                 optimizer_stage=optimizer_stage,
@@ -731,14 +1612,28 @@ def train_distributed_mps(
                 ),
                 parameter_values=diagnostic_parameter_values,
                 optimizer_collective_count=optimizer_collective_count,
-                optimizer_collective_bytes=(
-                    optimizer_collective_count
-                    * torch.empty((), dtype=parameters[0].dtype).element_size()
-                ),
+                optimizer_collective_bytes=optimizer_collective_bytes,
                 lbfgs_history_length=len(lbfgs_history),
             )
         )
         if root is not None and (step + 1) % checkpoint_interval == 0:
+            free_bytes, estimated_bytes = _checkpoint_storage_preflight(
+                root,
+                rank=rank,
+                owned_indices=owned_indices,
+                parameters=parameters,
+                optimizer=optimizer_obj,
+                reserve_bytes=checkpoint_free_space_reserve_bytes,
+            )
+            checkpoint_min_free_bytes_observed = (
+                free_bytes
+                if checkpoint_min_free_bytes_observed == 0
+                else min(checkpoint_min_free_bytes_observed, free_bytes)
+            )
+            checkpoint_estimated_generation_bytes = max(
+                checkpoint_estimated_generation_bytes, estimated_bytes
+            )
+            checkpoint_started = time.perf_counter()
             path = _save_checkpoint(
                 root,
                 rank=rank,
@@ -750,8 +1645,30 @@ def train_distributed_mps(
                 contract=contract,
                 bond_layout=local_bond_layout,
             )
+            checkpoint_write_seconds += time.perf_counter() - checkpoint_started
+            checkpoint_bytes_written += path.stat().st_size
+            checkpoint_bytes_written += _checkpoint_checksum_path(path).stat().st_size
             checkpoints.append(str(path))
-            dist.barrier()
+            commit_started = time.perf_counter()
+            _commit_checkpoint_generation(
+                root,
+                rank=rank,
+                world_size=world_size,
+                step=step + 1,
+                path=path,
+                contract_fingerprint=contract_fingerprint,
+            )
+            checkpoint_commit_seconds += time.perf_counter() - commit_started
+            prune_started = time.perf_counter()
+            pruned_checkpoint_files.extend(
+                _prune_checkpoint_generations_collective(
+                    root,
+                    rank=rank,
+                    committed_step=step + 1,
+                    keep_generations=checkpoint_retention_generations,
+                )
+            )
+            checkpoint_prune_seconds += time.perf_counter() - prune_started
 
     stable_memories = memories[min(memory_warmup_steps, len(memories) - 1) :]
     growth = (
@@ -765,11 +1682,18 @@ def train_distributed_mps(
             owner_rank=owner,
             optimizer_state_local=owner == rank,
             gradient_route="bounded_dtype_owner_reduce",
-            update_route="owner_step_then_broadcast",
+            update_route="owner_step_then_bounded_dtype_all_gather",
         )
         for index, owner in enumerate(owners)
     )
-    return ShardedMPSTrainingResult(
+    checkpoint_retained_bytes = 0
+    if root is not None:
+        for path in root.glob(f"rank-{rank}-step-*.pt"):
+            checkpoint_retained_bytes += path.stat().st_size
+            checksum = _checkpoint_checksum_path(path)
+            if checksum.is_file():
+                checkpoint_retained_bytes += checksum.stat().st_size
+    result = ShardedMPSTrainingResult(
         losses=tuple(losses),
         completed_steps=steps,
         start_step=start_step,
@@ -779,13 +1703,45 @@ def train_distributed_mps(
         optimizer=optimizer,
         ownership=ownership,
         steps=tuple(metrics),
-        checkpoint_files=tuple(checkpoints),
+        checkpoint_files=tuple(path for path in checkpoints if Path(path).is_file()),
         memory_growth_bytes=growth,
         suspected_memory_leak=growth > memory_leak_tolerance_bytes,
         checkpoint_contract_fingerprint=contract_fingerprint,
         memory_warmup_steps=memory_warmup_steps,
         communication_setup_seconds=communication_setup_seconds,
+        site_kernel_execution=(
+            "compiled" if resolved_compile_site_kernels else "eager"
+        ),
+        site_kernel_selection_reason=site_kernel_selection_reason,
+        site_ownership=resolved_site_ownership,
+        site_ownership_policy=resolved_site_ownership_policy,
+        checkpoint_retention_generations=checkpoint_retention_generations,
+        checkpoint_pruned_files=tuple(pruned_checkpoint_files),
+        checkpoint_write_seconds=checkpoint_write_seconds,
+        checkpoint_commit_seconds=checkpoint_commit_seconds,
+        checkpoint_prune_seconds=checkpoint_prune_seconds,
+        checkpoint_bytes_written=checkpoint_bytes_written,
+        checkpoint_retained_bytes=checkpoint_retained_bytes,
+        checkpoint_free_space_reserve_bytes=checkpoint_free_space_reserve_bytes,
+        checkpoint_min_free_bytes_observed=checkpoint_min_free_bytes_observed,
+        checkpoint_estimated_generation_bytes=checkpoint_estimated_generation_bytes,
+        checkpoint_storage_semantics=(
+            "shared_filesystem_verified" if world_size > 1 else "local_filesystem"
+        ),
+        checkpoint_storage_probe_seconds=checkpoint_storage_probe_seconds,
+        checkpoint_overwrite_allowed=allow_checkpoint_overwrite,
+        checkpoint_writer_lease_break_allowed=allow_checkpoint_writer_lease_break,
+        checkpoint_writer_lease_stale_seconds=checkpoint_writer_lease_stale_seconds,
+        checkpoint_writer_lease_heartbeat_count=(
+            checkpoint_writer_lease_heartbeat_count
+        ),
+        checkpoint_writer_lease_heartbeat_seconds=(
+            checkpoint_writer_lease_heartbeat_seconds
+        ),
     )
+    if root is not None:
+        _release_checkpoint_writer_lease(root, rank=rank)
+    return result
 
 
 __all__ = (

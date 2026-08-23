@@ -1,0 +1,28 @@
+{
+  "backend": "cotengra",
+  "backend_version": "0.8.2",
+  "comparison_scope": "planning",
+  "distribution_semantics": "planning_only",
+  "environment": {
+    "isolation": "temporary_target_directory",
+    "python": "3.12.13"
+  },
+  "metrics": {
+    "estimated_flops": 584,
+    "estimated_peak_bytes": 128,
+    "largest_intermediate_elements": 16,
+    "operation_count": 15,
+    "search_time_seconds": 0.08680826611816883,
+    "slice_count": 1,
+    "sliced_labels": []
+  },
+  "scalability_claim_allowed": false,
+  "schema_version": "flagquantum.tn_cotengra_gap.v1",
+  "search_budget_compliant": true,
+  "search_budget_seconds": 1.0,
+  "seed": 0,
+  "status": "completed",
+  "strategy": "HyperOptimizer[greedy,random-greedy]/combo",
+  "workload_identity": "6d861b8291c72619a9cbd7ee9987a006056ee01d216896284f6bcfca2fbced62",
+  "workload_name": "medium_grid_4x4"
+}

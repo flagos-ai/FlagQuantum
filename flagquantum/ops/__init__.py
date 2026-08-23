@@ -19,7 +19,8 @@ _MODULE_EXPORTS = {
     + tuple(f"{name}_inv" for name in matrices.GATE_MAT_DICT)
     + ("apply_unitary_bmm", "gate"),
     "invertible": ("InvertibleUnitary", "make_noisy_layer"),
-    "operator": ("Op", "op_factory"),
+    "operator": ("Op", "op_factory")
+    + tuple(name.upper() for name in matrices.GATE_MAT_DICT),
     "registry": ("RegisteredGate", "register_gate", "registered_gates"),
     "lowering": (
         "BACKENDS",

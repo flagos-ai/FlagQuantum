@@ -1,0 +1,82 @@
+{
+  "artifact_class": "derived_development_report",
+  "benchmark_evidence_class": "non_release_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "cuda": "13.0",
+    "device": "cuda:0",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "torch": "2.13.0+cu130"
+  },
+  "promotion": {
+    "allowed": false,
+    "blockers": [
+      "cusolver_gesvd_invalidates_cuda_graph_capture"
+    ],
+    "contraction_threshold_passed": true,
+    "full_factorization_capture_required": true,
+    "full_factorization_capture_supported": false,
+    "maximum_relative_error": 0.00002,
+    "minimum_required_speedup": 1.05
+  },
+  "provenance": {
+    "dirty_paths": [],
+    "source_commit": "9b0b57a89a8928ac0c7917f11f1a49171d53219a"
+  },
+  "records": [
+    {
+      "active_dim": 32,
+      "compiled_seconds_per_replay": 0.00022248209919780492,
+      "graph_seconds_per_replay": 0.00004774566739797592,
+      "matrix_shape": [
+        64,
+        64
+      ],
+      "relative_error": 0.0,
+      "speedup_compiled_over_graph": 4.659733779472451
+    },
+    {
+      "active_dim": 64,
+      "compiled_seconds_per_replay": 0.0002260136790573597,
+      "graph_seconds_per_replay": 0.00005221622996032238,
+      "matrix_shape": [
+        128,
+        128
+      ],
+      "relative_error": 0.0,
+      "speedup_compiled_over_graph": 4.328418180115666
+    },
+    {
+      "active_dim": 128,
+      "compiled_seconds_per_replay": 0.00022126964293420315,
+      "graph_seconds_per_replay": 0.00007176985032856464,
+      "matrix_shape": [
+        256,
+        256
+      ],
+      "relative_error": 0.0,
+      "speedup_compiled_over_graph": 3.08304450853978
+    }
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_cuda_graph_probe.v1",
+  "status": "passed",
+  "svd_capture": {
+    "error": "CUDA error: operation failed due to a previous error during capture\nSearch for `cudaErrorStreamCaptureInvalidated' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.\nFor more detailed error information, run with CUDA_LOG_FILE=stderr\n",
+    "error_type": "AcceleratorError",
+    "supported": false
+  },
+  "workload": {
+    "batch_size": 1,
+    "batches": 5,
+    "dtype": "complex64",
+    "replays_per_batch": 100
+  },
+  "benchmark": "mps_cuda_graph_probe",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "claim_evidence_type": "development_smoke",
+  "scalability_blockers": [
+    "derived development report is not release-certified"
+  ]
+}

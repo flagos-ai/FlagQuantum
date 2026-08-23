@@ -55,10 +55,18 @@ def mps_expectation_and_adjoints(
     state: RankOwnedMPSState,
     observable: Mapping[int, str],
     target: torch.Tensor | float | None = None,
+    *,
+    adjoint_wires: Sequence[int] | None = None,
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor]]:
     """Evaluate one Pauli observable and its rank-local tensor adjoints."""
 
     reference = next(iter(state.local_tensors.values()))
+    requested_adjoint_wires = (
+        set(state.local_tensors)
+        if adjoint_wires is None
+        else {int(wire) for wire in adjoint_wires}
+    )
+    local_adjoint_wires = requested_adjoint_wires.intersection(state.local_tensors)
     left_envs: dict[int, torch.Tensor] = {}
     env: torch.Tensor | None = None
     with record_function("flagquantum::mps::left_environment_scan"):
@@ -74,7 +82,8 @@ def mps_expectation_and_adjoints(
                     )
                 assert env is not None
                 for wire in state.ownership[owner]:
-                    left_envs[wire] = env
+                    if wire in local_adjoint_wires:
+                        left_envs[wire] = env
                     tensor = state.local_tensors[wire]
                     operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
                         device=tensor.device, dtype=tensor.dtype
@@ -139,7 +148,8 @@ def mps_expectation_and_adjoints(
                     )
                 assert right is not None
                 for wire in reversed(state.ownership[owner]):
-                    right_envs[wire] = right
+                    if wire in local_adjoint_wires:
+                        right_envs[wire] = right
                     tensor = state.local_tensors[wire]
                     operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
                         device=tensor.device, dtype=tensor.dtype
@@ -167,7 +177,8 @@ def mps_expectation_and_adjoints(
 
     adjoints = {}
     with record_function("flagquantum::mps::objective_adjoint"):
-        for wire, tensor in state.local_tensors.items():
+        for wire in sorted(local_adjoint_wires):
+            tensor = state.local_tensors[wire]
             variable = tensor.detach().requires_grad_(True)
             operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
                 device=tensor.device, dtype=tensor.dtype

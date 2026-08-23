@@ -182,6 +182,17 @@ def complex_einsum_pair(
     if not left.is_cuda:
         # Native CPU complex einsum is faster than four real contractions.
         return torch.einsum(equation, left, right)
+    if left.is_conj() or right.is_conj():
+        # Preserve lazy conjugation for reverse-mode capacity: resolving a
+        # multi-GiB operand would create a full-size temporary before the
+        # contraction output is allocated.
+        return torch.einsum(equation, left, right)
+    if left.dtype != torch.complex64 or right.dtype != torch.complex64:
+        # The layout BMM kernel is fused only for complex64. Its generic
+        # complex128 fallback reshapes permuted high-rank operands and may
+        # materialize multi-GiB contiguous copies. Native einsum avoids that
+        # hidden workspace and is the production high-precision path.
+        return torch.einsum(equation, left, right)
     layout = _canonical_bmm_layout(equation, left, right)
     if layout is not None:
         _, _, (b, m, n), _, _, shapes = layout
@@ -205,9 +216,14 @@ def complex_einsum_pair(
                 output_permutation,
                 _,
             ) = layout
-            result = fused_complex_layout_bmm(
-                left, right, left_permutation, right_permutation, shapes
-            ).reshape(output_shape)
+            try:
+                result = fused_complex_layout_bmm(
+                    left, right, left_permutation, right_permutation, shapes
+                ).reshape(output_shape)
+            except ValueError as error:
+                if "supports at most 8 axes per group" not in str(error):
+                    raise
+                return torch.einsum(equation, left, right)
             if output_permutation != tuple(range(len(output_permutation))):
                 result = result.permute(output_permutation)
             return result

@@ -77,7 +77,7 @@ class MPSProductionSupport:
     precisions: tuple[str, ...] = ("complex64", "complex128")
     truncation_policies: tuple[str, ...] = ("exact", "max_bond_cutoff")
     optimizers: tuple[str, ...] = ("sgd", "adam")
-    world_sizes: tuple[int, ...] = (2, 4, 8)
+    world_sizes: tuple[int, ...] = (2, 4, 8, 16)
     full_mps_materialization_allowed: bool = False
     jax_required: bool = False
 
@@ -140,8 +140,8 @@ class MPSCrossoverMeasurement:
         return cls(**{key: payload[key] for key in cls.__dataclass_fields__})
 
     def __post_init__(self) -> None:
-        if self.world_size not in {2, 4, 8}:
-            raise ValueError("MPS crossover world_size must be 2, 4, or 8")
+        if self.world_size not in {2, 4, 8, 16}:
+            raise ValueError("MPS crossover world_size must be 2, 4, 8, or 16")
         if (
             self.workload_min_bytes < 0
             or self.workload_max_bytes < self.workload_min_bytes
@@ -195,9 +195,9 @@ def validate_production_mps_workload(circuit_or_ir: Any, *, world_size: int) -> 
     """Validate the complete workload before any executor tensor allocation."""
 
     ir = ensure_circuit_ir(circuit_or_ir)
-    if world_size not in {1, 2, 4, 8}:
+    if world_size not in {1, 2, 4, 8, 16}:
         raise MPSProductionAcceptanceError(
-            "production MPS world_size must be 1, 2, 4, or 8"
+            "production MPS world_size must be 1, 2, 4, 8, or 16"
         )
     if world_size > ir.n_wires:
         raise MPSProductionAcceptanceError("MPS world_size cannot exceed wire count")

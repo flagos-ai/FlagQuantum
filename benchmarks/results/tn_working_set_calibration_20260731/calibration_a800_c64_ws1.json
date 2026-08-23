@@ -1,0 +1,26 @@
+{
+  "accelerator_name": "NVIDIA A800-SXM4-80GB",
+  "blockers": [],
+  "claim_evidence_type": "development_hardware_calibration",
+  "complex_bytes": 8,
+  "distinct_prediction_count": 4,
+  "evidence_level": "development_hardware_calibration",
+  "fixed_reserved_overhead_bytes": 23068672,
+  "identity": "f55398d8faec6bba66ebe1258c2532df86ebdcf885be154717e9f641f26dfaf1",
+  "maximum_allocated_to_predicted_ratio": 1053.0,
+  "maximum_reserved_to_predicted_ratio": 2816.0,
+  "measurement_digest": "32fafd88edc71a8213a80e59e234bf01db67e2169c11f2e61c41a175f0725527",
+  "passed": true,
+  "recommended_safety_factor": 7.104345703125,
+  "sample_count": 4,
+  "scalability_claim_allowed": false,
+  "sources": [
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_c64_q14_l6.json",
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_c64_q18_l9.json",
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_c64_q22_l12.json",
+    "benchmarks/results/tn_working_set_calibration_20260731/a800_c64_grid4x9_c4_ws1.json"
+  ],
+  "topology_class": "single_gpu",
+  "version": "flagquantum.tn_working_set_calibration.v1",
+  "world_size": 1
+}

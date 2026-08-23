@@ -3,6 +3,20 @@
 Release notes describe user-visible behavior and support-boundary changes.
 Benchmark claims require audited artifacts and are not inferred from this file.
 
+## 0.2.0
+
+- Established FlagQuantum IR, `fq.Circuit`, `fq.Module`, `fq.run`, runtime
+  planning, explicit sharded statevector/MPS execution, distributed training,
+  deployment packaging, and versioned result contracts as the maintained
+  product architecture.
+- Classified the v0.1 `DistributedQuantumDevice`, `GeneralEncoder`,
+  `InvertibleUnitary`, DTensor interchange helpers, and device-oriented
+  measurement path as an internal compatibility subsystem. They are excluded
+  from the v0.2 stable API and cannot be used as evidence for v0.2 capability
+  or patent claims.
+- Deprecated construction of `GeneralEncoder` and `InvertibleUnitary`.
+- Fixed the package release identity at `0.2.0`.
+
 ## Unreleased
 
 - Added fail-closed single-node MPS development evidence on 8×A800:

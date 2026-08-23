@@ -3,11 +3,88 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 
 [boundaries]
 core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
+noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
+compilation_noise_forbidden = ["circuit", "deployment", "runtime", "simulation"]
+density_backend_forbidden = ["circuit", "deployment", "simulation"]
+trajectory_runtime_forbidden = ["circuit", "simulation", "backends", "deployment"]
 executor_policy_forbidden = ["audit", "release_policy"]
 default_module_line_ceiling = 1250
 root_init_line_ceiling = 140
 
+[accelerator_boundaries]
+torch_fl_import_allowed = [
+    "flagquantum/runtime/platforms/flagos.py",
+]
+direct_cuda_allowed = [
+    "flagquantum/runtime/platforms/pytorch.py",
+]
+
+[accelerator_boundaries.direct_cuda_call_ceiling]
+"flagquantum/algorithms/optimization.py" = 6
+"flagquantum/benchmarking/statevector_local.py" = 7
+"flagquantum/devices/distributed_device.py" = 1
+"flagquantum/runtime/backends/mps/compiled_layers.py" = 3
+"flagquantum/runtime/backends/mps/factorization.py" = 7
+"flagquantum/runtime/backends/mps/metadata_transport.py" = 1
+"flagquantum/runtime/backends/mps/records.py" = 1
+"flagquantum/runtime/backends/mps/reverse_transport.py" = 6
+"flagquantum/runtime/backends/mps/site_kernels.py" = 1
+"flagquantum/runtime/backends/mps/training_engine.py" = 16
+"flagquantum/runtime/backends/statevector/checkpointing.py" = 2
+"flagquantum/runtime/backends/statevector/forward_executor.py" = 1
+"flagquantum/runtime/backends/statevector/reverse.py" = 1
+"flagquantum/runtime/backends/statevector/reverse_adjoint.py" = 3
+"flagquantum/runtime/backends/statevector/training.py" = 7
+"flagquantum/runtime/backends/tensor_network/distributed_execution.py" = 1
+"flagquantum/runtime/backends/tensor_network/distributed_optimizer.py" = 2
+"flagquantum/runtime/backends/tensor_network/distributed_sliced_reverse.py" = 6
+"flagquantum/runtime/distributed/models.py" = 4
+"flagquantum/runtime/distributed/mps_transport.py" = 8
+"flagquantum/runtime/distributed/tensor_network_execution.py" = 1
+"flagquantum/runtime/operator_backends.py" = 2
+"flagquantum/runtime/training_state.py" = 8
+
 [legacy_exceptions."flagquantum/api.py"]
-line_ceiling = 800
+line_ceiling = 830
 owner = "FlagQuantum core maintainers"
 removal_version = "0.3.0"
+
+[legacy_exceptions."flagquantum/deployment/providers.py"]
+line_ceiling = 1443
+owner = "FlagQuantum deployment maintainers"
+removal_version = "0.3.0"
+
+[legacy_exceptions."flagquantum/runtime/backends/mps/training_engine.py"]
+line_ceiling = 1753
+owner = "FlagQuantum MPS maintainers"
+removal_version = "0.3.0"
+
+[legacy_exceptions."flagquantum/simulation/tensor_contraction.py"]
+line_ceiling = 2206
+owner = "FlagQuantum tensor-network maintainers"
+removal_version = "0.3.0"
+
+[legacy_subsystems.v01_dtensor_device]
+classification = "internal_compatibility_adapter"
+public_api = false
+new_dependencies_allowed = false
+modules = [
+    "flagquantum/devices/distributed_device.py",
+    "flagquantum/encoding/encoder.py",
+    "flagquantum/measurement/measure.py",
+    "flagquantum/ops/invertible.py",
+    "flagquantum/utils/interchange.py",
+    "flagquantum/utils/maybe_dtensor.py",
+]
+allowed_importers = [
+    "flagquantum/api.py",
+    "flagquantum/devices/__init__.py",
+    "flagquantum/devices/distributed_device.py",
+    "flagquantum/encoding/__init__.py",
+    "flagquantum/encoding/encoder.py",
+    "flagquantum/measurement/__init__.py",
+    "flagquantum/measurement/measure.py",
+    "flagquantum/ops/functional.py",
+    "flagquantum/ops/invertible.py",
+    "flagquantum/runtime/execution.py",
+]

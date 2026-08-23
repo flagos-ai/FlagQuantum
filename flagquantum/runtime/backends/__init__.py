@@ -10,7 +10,7 @@ from __future__ import annotations
 from importlib import import_module
 from types import ModuleType
 
-__all__ = ("jax", "mps", "statevector", "tensor_network")
+__all__ = ("density_matrix", "jax", "mps", "statevector", "tensor_network")
 
 _BACKEND_MODULES = {name: f"{__name__}.{name}" for name in __all__}
 

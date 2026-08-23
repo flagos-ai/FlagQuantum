@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "benchmark": "tn_mps_crossover",
+  "status": "measured_success",
+  "topology": "binary_tree",
+  "backend": "tensor_network",
+  "qubits": 24,
+  "depth": 2,
+  "target_count": 4,
+  "iterations": 2,
+  "cold_start_seconds": 3.1462570470757782,
+  "steady_state_seconds": 0.014350862707942724,
+  "times_seconds": [
+    3.1462570470757782,
+    0.014350862707942724
+  ],
+  "peak_memory_bytes": 8573440,
+  "observed_max_bond": null,
+  "full_state_materialized": false,
+  "values_real": [
+    [
+      0.9848654270172119,
+      1.692789246450499e-13,
+      1.67705941654368e-20,
+      -1.069839987710979e-15
+    ]
+  ],
+  "values_imag": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ]
+}

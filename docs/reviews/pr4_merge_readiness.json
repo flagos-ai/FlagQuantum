@@ -1,0 +1,94 @@
+{
+  "schema": "flagquantum_merge_readiness_v1",
+  "audit_date": "2026-08-23",
+  "pull_request": 4,
+  "base_commit": "e65adba619eaac25b18c7c71e3e8ac43634e8336",
+  "audited_implementation_commit": "fe736ebb112d97b4ba4d8796670cca2a9023e23a",
+  "decision": "conditionally_ready",
+  "merge_authorized": false,
+  "metrics": {
+    "commit_count": 21,
+    "changed_files": 1111,
+    "additions": 1098767,
+    "deletions": 1557,
+    "changed_head_blob_mib_approx": 51.94,
+    "stable_root_exports": 60
+  },
+  "findings": [
+    {
+      "id": "dependency_core",
+      "status": "pass",
+      "detail": "Core installation depends on PyTorch only."
+    },
+    {
+      "id": "torch_fl_boundary",
+      "status": "pass",
+      "detail": "Torch-FL is lazily activated and isolated to the FlagOS production adapter."
+    },
+    {
+      "id": "cuda_preservation",
+      "status": "pass",
+      "detail": "Native CUDA remains an independent first-class platform path."
+    },
+    {
+      "id": "public_api_snapshot",
+      "status": "pass",
+      "detail": "The v1 stable API has 60 snapshot-governed exports with verification mappings."
+    },
+    {
+      "id": "module_growth_budget",
+      "status": "follow_up_required",
+      "detail": "Root API and two legacy runtime modules are at or within three lines of their ceilings."
+    },
+    {
+      "id": "dependency_policy_sync",
+      "status": "follow_up_required",
+      "detail": "Provider extras in pyproject.toml are not fully represented by dependency-policy.toml."
+    },
+    {
+      "id": "reviewability",
+      "status": "approval_required",
+      "detail": "The historical integration tree requires six directory/contract review lanes."
+    },
+    {
+      "id": "github_required_checks",
+      "status": "external_blocked",
+      "detail": "GitHub-hosted jobs cannot start because of account-level Actions billing/spending state."
+    }
+  ],
+  "validation": {
+    "implementation_commit": "fe736ebb112d97b4ba4d8796670cca2a9023e23a",
+    "static_contracts": "pass",
+    "pr_default": {
+      "passed": 557,
+      "skipped": 11
+    },
+    "pr_runtime": {
+      "passed": 137,
+      "skipped": 6
+    },
+    "distributed_cpu": {
+      "passed": 336,
+      "skipped": 16
+    },
+    "benchmark_release_contracts": {
+      "passed": 113,
+      "skipped": 45
+    },
+    "a800_one_gpu": "pass",
+    "a800_two_gpu": "pass",
+    "github_hosted": "external_blocked"
+  },
+  "review_lanes": [
+    {"id": "A", "name": "product_api", "status": "approval_required"},
+    {"id": "B", "name": "accelerator_boundary", "status": "approval_required"},
+    {"id": "C", "name": "numerical_runtime", "status": "approval_required"},
+    {"id": "D", "name": "distributed_mps_tn", "status": "approval_required"},
+    {"id": "E", "name": "providers_noise", "status": "approval_required"},
+    {"id": "F", "name": "evidence_release", "status": "approval_required"}
+  ],
+  "required_checks_source": ".github/required-checks.json",
+  "recommended_merge_method": "squash",
+  "split_current_pr": false,
+  "invalidation_rule": "Any post-audit executable, dependency, workflow, profile, benchmark-evidence, or generated-source-of-truth change requires affected validation to rerun."
+}

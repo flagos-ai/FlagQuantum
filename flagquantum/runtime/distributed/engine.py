@@ -60,7 +60,17 @@ from .mps_transport import (
     _send_tensor_async_p2p,
     _send_tensor_p2p,
 )
-from .tensor_network_execution import run_distributed_tensor_network
+from .tensor_network_execution import (
+    DistributedTensorNetworkAmplitude,
+    DistributedTensorNetworkAmplitudes,
+    DistributedTensorNetworkExpectation,
+    DistributedTensorNetworkExpectations,
+    distributed_tensor_network_amplitude,
+    distributed_tensor_network_amplitudes,
+    distributed_tensor_network_expectation,
+    distributed_tensor_network_expectations,
+    run_distributed_tensor_network,
+)
 
 _PARAM_ALIASES = {
     "rx": ("theta",),
@@ -1168,11 +1178,19 @@ __all__ = [
     "DistributedShardPlan",
     "DistributedSliceTask",
     "DistributedTensorNetworkState",
+    "DistributedTensorNetworkAmplitude",
+    "DistributedTensorNetworkAmplitudes",
+    "DistributedTensorNetworkExpectation",
+    "DistributedTensorNetworkExpectations",
     "ShardedMPSState",
     "TorchDistributedContext",
     "destroy_torch_distributed",
     "init_torch_distributed",
     "run_distributed_mps",
+    "distributed_tensor_network_amplitude",
+    "distributed_tensor_network_amplitudes",
+    "distributed_tensor_network_expectation",
+    "distributed_tensor_network_expectations",
     "run_distributed_tensor_network",
     "torch_distributed_is_available",
 ]

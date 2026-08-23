@@ -1,0 +1,40 @@
+{
+  "cols": 5,
+  "cycles": 6,
+  "dtype": "complex128",
+  "implementation": "FlagQuantum",
+  "operator_pool_size": 16,
+  "path_method": "greedy",
+  "planner": "cotengra",
+  "plans": {
+    "energy": {
+      "baseline_estimated_cost": 271054817648,
+      "budget_satisfied": true,
+      "canonicalize_unit_extent_labels": true,
+      "contraction_path_source": "cotengra:0.8.2",
+      "contraction_path_steps": 325,
+      "element_size_bytes": 16,
+      "n_slices": 71,
+      "peak_bytes": 268435456,
+      "peak_size": 16777216,
+      "per_slice_cost": 8905805488,
+      "planning_seconds": 1.4933802797459066,
+      "recomputation_factor": 2.332783438917289,
+      "reduction_method": "kahan_compensated",
+      "slice_shape": [
+        71
+      ],
+      "sliced_labels": [
+        503
+      ],
+      "target_peak_bytes": 2147483648,
+      "target_peak_size": 134217728,
+      "total_estimated_cost": 632312189648
+    }
+  },
+  "qubits": 20,
+  "rows": 4,
+  "schema_version": 1,
+  "target_peak_bytes": 2147483648,
+  "workload": "qubit_adapt_vqe_grid_tfim_planning_preflight"
+}

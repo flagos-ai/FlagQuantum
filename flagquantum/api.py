@@ -17,8 +17,30 @@ Examples
 import logging
 
 # Also expose submodules for advanced users
-from . import algorithms, deployment, devices, drawer, encoding, measurement, ops, utils
+from . import (
+    algorithms,
+    deployment,
+    devices,
+    drawer,
+    encoding,
+    measurement,
+    noise,
+    ops,
+    utils,
+)
+from .agent import (
+    AgentExecutionPlan,
+    DeploymentPreflightReport,
+    ValidationIssue,
+    ValidationReport,
+    capabilities,
+    preflight_deployment,
+    preflight_execution,
+    validate,
+)
 from .algorithms import (
+    AdaptVQEIteration,
+    AdaptVQEResult,
     Hamiltonian,
     HamiltonianTerm,
     VQEResult,
@@ -27,6 +49,7 @@ from .algorithms import (
     pauli_term,
     qaoa_circuit,
     qaoa_loss,
+    run_adapt_vqe,
     run_vqe,
     transverse_field_ising,
     vqe_loss,
@@ -35,6 +58,17 @@ from .algorithms import (
 from .circuit import Circuit, expectation
 from .compilation import compiler, planner
 from .compilation.compiler import CouplingMap, compile_for_backend, route_to_topology
+from .compilation.noise import (
+    NOISE_SELECTOR_CALIBRATION_SCHEMA,
+    NoiseBackendCandidate,
+    NoiseExecutionSelection,
+    NoiseSelectorCalibration,
+    NoiseSelectorCalibrationRecord,
+    channel_instruction,
+    load_noise_selector_calibration,
+    lower_noise_model,
+    plan_noise_execution_selection,
+)
 from .compilation.planner import (
     ExecutionPlan,
     RuntimeCandidate,
@@ -47,6 +81,7 @@ from .compilation.planner import (
     plan,
     plan_for_backend,
     plan_runtime_selection,
+    select_backend_by_cost,
     select_execution_mode,
 )
 from .core.ir import (
@@ -95,9 +130,44 @@ from .deployment import (
     expectation_z_from_counts,
     hamiltonian_expectation_from_counts,
     hamiltonian_expectation_from_grouped_counts,
+    quafu_noise_model_from_chip_info,
 )
 from .gradients import parameter_shift_gradient
 from .models import HybridQuantumClassifier, VariationalEnergyModel
+from .noise import (
+    CorrelatedReadoutError,
+    DeviceNoiseProfile,
+    GateDuration,
+    KrausChannel,
+    NoiseModel,
+    NoiseRule,
+    QubitNoiseCalibration,
+    ReadoutError,
+    ReadoutRule,
+    amplitude_damping_channel,
+    bit_flip_channel,
+    coherent_overrotation_channel,
+    depolarizing_channel,
+    phase_damping_channel,
+    phase_flip_channel,
+    reset_error_channel,
+    thermal_relaxation_channel,
+    two_qubit_depolarizing_channel,
+)
+from .runtime.backends.density_matrix import (
+    apply_kraus_density,
+    apply_unitary_density,
+    density_matrix,
+    density_matrix_from_ir,
+    expand_operator,
+    expectation_z_density,
+    noisy_density_matrix,
+)
+from .runtime.backends.statevector import (
+    BatchedStatevectorTrajectoryResult,
+    merge_noisy_statevector_results,
+    run_noisy_statevector,
+)
 from .runtime.compatibility import (
     FLAGGEMS_EXPERIMENTAL_OPS,
     FLAGGEMS_FEATURE_REQUESTS,
@@ -207,6 +277,10 @@ from .runtime.compatibility import (
     detect_accelerators,
     distributed,
     distributed_backend_env_help,
+    distributed_tensor_network_amplitude,
+    distributed_tensor_network_amplitudes,
+    distributed_tensor_network_expectation,
+    distributed_tensor_network_expectations,
     estimate_distributed_statevector_performance,
     evaluate_distributed_evidence_contract,
     evaluate_distributed_transport_evidence,
@@ -281,7 +355,8 @@ from .runtime.compatibility import (
     validate_production_mps_workload,
 )
 from .runtime.result import MeasurementResult
-from .simulation import graph, linalg, mps, noise, tensor
+from .runtime.target_execution import TargetExecutionResult, run_target
+from .simulation import graph, linalg, mps, tensor
 from .simulation.linalg import expm, random_unitary
 from .simulation.mps import (
     MPSAdaptiveBondPlan,
@@ -292,28 +367,11 @@ from .simulation.mps import (
     MPSMonteCarloResult,
     MPSState,
     MPSTruncationRecord,
+    merge_noisy_mps_results,
     run_mps,
     run_mps_adaptive,
     run_noisy_mps,
     run_noisy_mps_trajectory,
-)
-from .simulation.noise import (
-    KrausChannel,
-    NoiseModel,
-    NoiseRule,
-    amplitude_damping_channel,
-    apply_kraus_density,
-    apply_unitary_density,
-    bit_flip_channel,
-    channel_instruction,
-    density_matrix,
-    density_matrix_from_ir,
-    depolarizing_channel,
-    expand_operator,
-    expectation_z_density,
-    lower_noise_model,
-    noisy_density_matrix,
-    phase_flip_channel,
 )
 from .simulation.tensor import (
     ContractionPathStep,
@@ -326,8 +384,13 @@ from .simulation.tensor import (
     TensorNetworkState,
     build_tensor_network,
     build_tensor_network_expectation,
+    build_tensor_network_hamiltonian_expectation,
+    build_tensor_network_hamiltonian_expectations,
     run_tensor_network,
+    tensor_network_amplitude,
+    tensor_network_amplitudes,
     tensor_network_expectation_ps,
+    tensor_network_expectations,
 )
 from .utils.qcis_exporter import QCISInstruction, export_to_qcis_str
 from .version import __version__, get_version
@@ -403,11 +466,21 @@ __all__ = (
     # Unified circuit and engine exports
     [
         "Circuit",
+        "AgentExecutionPlan",
+        "DeploymentPreflightReport",
+        "ValidationIssue",
+        "ValidationReport",
+        "capabilities",
+        "preflight_deployment",
+        "preflight_execution",
+        "validate",
         "Parameter",
         "ParameterExpression",
         "parameter_shift_gradient",
         "Hamiltonian",
         "HamiltonianTerm",
+        "AdaptVQEIteration",
+        "AdaptVQEResult",
         "VQEResult",
         "AcceleratorInfo",
         "BackendCapabilities",
@@ -430,6 +503,7 @@ __all__ = (
         "QuantumProvider",
         "QuantumCloudTransport",
         "QuafuProvider",
+        "quafu_noise_model_from_chip_info",
         "TencentQuantumProvider",
         "TianyanProvider",
         "UrllibTransport",
@@ -494,10 +568,16 @@ __all__ = (
         "run_distributed",
         "run",
         "run_distributed_mps",
+        "distributed_tensor_network_amplitude",
+        "distributed_tensor_network_amplitudes",
+        "distributed_tensor_network_expectation",
+        "distributed_tensor_network_expectations",
         "run_distributed_tensor_network",
         "run_native",
+        "run_target",
         "ExecutionResult",
         "MeasurementResult",
+        "TargetExecutionResult",
         "HybridParallelPlan",
         "Module",
         "GateInfo",
@@ -562,6 +642,7 @@ __all__ = (
         "qaoa_loss",
         "qaoa_circuit",
         "run_vqe",
+        "run_adapt_vqe",
         "transverse_field_ising",
         "vqe_loss",
         "zz_chain_hamiltonian",
@@ -609,6 +690,7 @@ __all__ = (
         "plan",
         "plan_for_backend",
         "plan_runtime_selection",
+        "select_backend_by_cost",
         "select_execution_mode",
         "expm",
         "random_unitary",
@@ -663,12 +745,18 @@ __all__ = (
         "TensorNetworkState",
         "build_tensor_network",
         "build_tensor_network_expectation",
+        "build_tensor_network_hamiltonian_expectation",
+        "build_tensor_network_hamiltonian_expectations",
+        "merge_noisy_mps_results",
         "run_mps",
         "run_mps_adaptive",
         "run_noisy_mps",
         "run_noisy_mps_trajectory",
         "run_tensor_network",
+        "tensor_network_amplitude",
+        "tensor_network_amplitudes",
         "tensor_network_expectation_ps",
+        "tensor_network_expectations",
         "FLAGGEMS_EXPERIMENTAL_OPS",
         "FLAGGEMS_FEATURE_REQUESTS",
         "FLAGGEMS_NATIVE_PYTORCH_HOTSPOTS",
@@ -681,12 +769,25 @@ __all__ = (
         "runtime_backend",
         "runtime_dtype",
         "KrausChannel",
+        "CorrelatedReadoutError",
+        "DeviceNoiseProfile",
+        "GateDuration",
         "NoiseModel",
+        "NoiseBackendCandidate",
+        "NoiseExecutionSelection",
+        "NoiseSelectorCalibration",
+        "NoiseSelectorCalibrationRecord",
+        "NOISE_SELECTOR_CALIBRATION_SCHEMA",
+        "load_noise_selector_calibration",
         "NoiseRule",
+        "ReadoutError",
+        "ReadoutRule",
+        "QubitNoiseCalibration",
         "amplitude_damping_channel",
         "apply_kraus_density",
         "apply_unitary_density",
         "bit_flip_channel",
+        "coherent_overrotation_channel",
         "channel_instruction",
         "density_matrix",
         "density_matrix_from_ir",
@@ -695,7 +796,15 @@ __all__ = (
         "expand_operator",
         "lower_noise_model",
         "noisy_density_matrix",
+        "plan_noise_execution_selection",
+        "BatchedStatevectorTrajectoryResult",
+        "merge_noisy_statevector_results",
+        "run_noisy_statevector",
         "phase_flip_channel",
+        "phase_damping_channel",
+        "reset_error_channel",
+        "thermal_relaxation_channel",
+        "two_qubit_depolarizing_channel",
     ]
     +
     # Devices exports

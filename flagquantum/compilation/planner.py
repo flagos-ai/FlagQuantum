@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from ..core.ir import CircuitIR
+from .backend_selection import OutputTarget, select_backend_by_cost
 from .candidates import (
     CandidateBuildContext,
     RuntimeCandidate,
@@ -36,6 +38,7 @@ from .providers import (
 )
 from .selection_context import build_runtime_selection_context
 from .selection_result import finalize_runtime_selection
+from .tn_calibration import TNWorkingSetCalibration
 from .training_preflight import collect_distributed_training_preflight
 
 
@@ -99,6 +102,11 @@ def plan_runtime_selection(
     jax_backward_backend: str = "auto",
     inspect_jax_devices: bool = False,
     assume_jax_devices_ready: bool = False,
+    target: OutputTarget = "full_state",
+    target_count: int = 1,
+    tn_memory_calibration: TNWorkingSetCalibration | None = None,
+    require_tn_memory_calibration: bool = False,
+    accelerator_name: str | None = None,
 ) -> RuntimeSelectionPlan:
     """Explain how FlagQuantum should run one workload.
 
@@ -111,6 +119,25 @@ def plan_runtime_selection(
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     analysis = analyze(ir)
+    cost_selection = select_backend_by_cost(
+        ir,
+        target=target,
+        require_gradients=require_gradients,
+        world_size=world_size,
+        bsz=bsz,
+        complex_bytes=complex_bytes,
+        memory_limit_bytes=memory_limit_bytes,
+        max_bond=max_bond,
+        allow_approximate=allow_approximate,
+        requested_backend=state_mode,
+        target_count=target_count,
+        tn_memory_calibration=tn_memory_calibration,
+        require_tn_memory_calibration=require_tn_memory_calibration,
+        accelerator_name=accelerator_name,
+    )
+    tn_cost = next(
+        item for item in cost_selection.candidates if item.backend == "tensor_network"
+    )
     selection = build_runtime_selection_context(
         analysis,
         bsz=bsz,
@@ -119,7 +146,11 @@ def plan_runtime_selection(
         node_count=node_count,
         complex_bytes=complex_bytes,
         max_bond=max_bond,
-        max_intermediate_size=max_intermediate_size,
+        max_intermediate_size=(
+            max_intermediate_size
+            if max_intermediate_size is not None
+            else (tn_cost.estimated_memory_bytes if target != "full_state" else None)
+        ),
         state_mode=state_mode,
         prefer_jax=prefer_jax,
         prefer_distributed=prefer_distributed,
@@ -221,6 +252,33 @@ def plan_runtime_selection(
             mps_blockers=training_preflight.mps_blockers,
         )
 
+    cost_summary = cost_selection.summary()
+    candidates = [
+        replace(
+            candidate,
+            score=(
+                candidate.score + 120
+                if candidate.state_mode == cost_selection.selected_backend
+                else candidate.score
+            ),
+            reasons=(
+                (*candidate.reasons, "selected_by_output_and_structure_cost_model")
+                if candidate.state_mode == cost_selection.selected_backend
+                else candidate.reasons
+            ),
+            warnings=(
+                (*candidate.warnings, *cost_selection.warnings)
+                if candidate.state_mode == cost_selection.selected_backend
+                else candidate.warnings
+            ),
+            metadata={
+                **dict(candidate.metadata or {}),
+                "backend_cost_selection": cost_summary,
+            },
+        )
+        for candidate in candidates
+    ]
+
     return finalize_runtime_selection(
         analysis=analysis,
         candidates=candidates,
@@ -243,35 +301,66 @@ def select_execution_mode(
     max_bond: int | None = None,
     cutoff: float = 0.0,
     trajectories: int | None = None,
+    trajectory_batch_size: int = 32,
+    target: OutputTarget = "full_state",
+    require_gradients: bool = False,
+    allow_approximate: bool = True,
+    target_count: int = 1,
+    noise_performance_calibration: Any | None = None,
+    min_trajectories: int = 1,
+    target_standard_error: float | None = None,
+    pilot_variance: float | None = None,
+    pilot_trajectories: int | None = None,
+    pilot_confidence_level: float | None = None,
+    pilot_observable_count: int = 1,
 ) -> str:
     """Choose the native execution mode for automatic dispatch."""
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     if noise_model is not None:
-        if trajectories is not None or max_bond is not None or cutoff > 0:
-            return "noisy_mps"
-        density_bytes = estimate_density_bytes(
-            ir.n_wires,
+        from .noise import plan_noise_execution_selection
+
+        return plan_noise_execution_selection(
+            ir,
+            noise_model,
             bsz=bsz,
+            world_size=world_size,
             complex_bytes=complex_bytes,
-        )
-        if memory_limit_bytes is not None and density_bytes > int(memory_limit_bytes):
-            return "noisy_mps"
-        return "density_matrix"
-    if int(world_size) > 1:
-        if max_bond is not None or cutoff > 0:
-            return "distributed_mps"
-        return "distributed_statevector"
-    if max_bond is not None or cutoff > 0:
-        return "mps"
-    state_bytes = estimate_state_bytes(
-        ir.n_wires,
+            memory_limit_bytes=memory_limit_bytes,
+            trajectories=trajectories,
+            trajectory_batch_size=trajectory_batch_size,
+            max_bond=max_bond,
+            cutoff=cutoff,
+            allow_approximate=allow_approximate,
+            calibration=noise_performance_calibration,
+            min_trajectories=min_trajectories,
+            target_standard_error=target_standard_error,
+            pilot_variance=pilot_variance,
+            pilot_trajectories=pilot_trajectories,
+            pilot_confidence_level=pilot_confidence_level,
+            pilot_observable_count=pilot_observable_count,
+        ).selected_mode
+    selection = select_backend_by_cost(
+        ir,
+        target=target,
+        require_gradients=require_gradients,
+        world_size=world_size,
         bsz=bsz,
         complex_bytes=complex_bytes,
+        memory_limit_bytes=memory_limit_bytes,
+        max_bond=max_bond,
+        allow_approximate=allow_approximate,
+        target_count=target_count,
     )
-    if memory_limit_bytes is not None and state_bytes > int(memory_limit_bytes):
-        return "mps"
-    return "statevector"
+    selected = selection.selected_backend
+    if int(world_size) > 1:
+        if selected == "statevector":
+            return "distributed_statevector"
+        if selected == "mps":
+            return "distributed_mps"
+        if selected == "tensor_network":
+            return "distributed_tensor_network"
+    return selected
 
 
 def plan(
@@ -286,6 +375,10 @@ def plan(
     max_bond: int | None = None,
     cutoff: float = 0.0,
     trajectories: int | None = None,
+    target: OutputTarget = "full_state",
+    require_gradients: bool = False,
+    allow_approximate: bool = True,
+    target_count: int = 1,
     coupling_map: Any | None = None,
     routing_strategy: str = "restore_after_each_gate",
     optimize: bool = True,
@@ -305,7 +398,7 @@ def plan(
         config=selected_config,
     )
     if noise_model is not None:
-        from ..simulation.noise import lower_noise_model
+        from .noise import lower_noise_model
 
         ir = lower_noise_model(ir, noise_model)
     analysis = analyze(ir)
@@ -321,6 +414,10 @@ def plan(
             max_bond=max_bond,
             cutoff=cutoff,
             trajectories=trajectories,
+            target=target,
+            require_gradients=require_gradients,
+            allow_approximate=allow_approximate,
+            target_count=target_count,
         )
     state_mode = normalize_execution_state_mode(
         state_mode,
@@ -414,5 +511,6 @@ __all__ = [
     "plan",
     "plan_for_backend",
     "plan_runtime_selection",
+    "select_backend_by_cost",
     "select_execution_mode",
 ]

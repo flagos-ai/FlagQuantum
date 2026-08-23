@@ -1,0 +1,105 @@
+{
+  "benchmark": "tn_sparse_capacity",
+  "cuda_version": "13.0",
+  "distributed": {
+    "backend": "nccl",
+    "estimated_per_slice_cost": 41364848296,
+    "estimated_per_slice_peak": 536870912,
+    "expected_slice_tasks": 128,
+    "max_working_set_gib": 32.0,
+    "memory_calibration_identity": "f55398d8faec6bba66ebe1258c2532df86ebdcf885be154717e9f641f26dfaf1",
+    "plan_cache_path": null,
+    "sliced_labels": [
+      436,
+      540,
+      82,
+      558,
+      232,
+      574,
+      282
+    ],
+    "working_set_safety_factor": 4.0,
+    "world_size": 1
+  },
+  "execution_summary": {
+    "distribution_semantics": "slice_parallel_sparse_output_all_reduce",
+    "full_state_materialized": false,
+    "output_target": "few_amplitudes",
+    "rank_partial_bytes_by_rank": {
+      "0": 8
+    },
+    "reduction_payload_bytes": 8,
+    "shared_contraction": true,
+    "slice_tasks": 128,
+    "state_mode": "distributed_tensor_network_amplitudes",
+    "target_count": 1,
+    "tasks_by_rank": {
+      "0": 128
+    },
+    "working_set_preflight": {
+      "allocator_headroom_bytes": 26241033831,
+      "budget_satisfied": true,
+      "communication_buffer_bytes": 0,
+      "fail_closed": true,
+      "kernel_workspace_bytes": 0,
+      "max_working_set_bytes": 34359738368,
+      "memory_calibration_identity": "f55398d8faec6bba66ebe1258c2532df86ebdcf885be154717e9f641f26dfaf1",
+      "model": "measured_reserved_memory_calibration",
+      "predicted_working_set_bytes": 30536001127,
+      "tensor_peak_bytes": 4294967296,
+      "working_set_policy": null
+    },
+    "world_size": 1
+  },
+  "git_sha": "5c08b45c5466a3cc262b7b10300e0fe12dc738b6",
+  "host": "p-kt-lc-a800-04",
+  "latency_seconds_max_rank_median": 33.93680191040039,
+  "peak_memory_bytes_max": 17188620800,
+  "peak_reserved_memory_bytes_max": 27762098176,
+  "phase_timings_seconds_max_rank": {
+    "circuit_build": 0.004445842932909727,
+    "projection_and_slice_selection": 10.803946882952005,
+    "tensor_network_build": 0.8717542192898691
+  },
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "rank_records": [
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 0,
+      "median_seconds": 33.93680191040039,
+      "peak_memory_bytes": 17188620800,
+      "peak_reserved_memory_bytes": 27762098176,
+      "phase_timings_seconds": {
+        "circuit_build": 0.004445842932909727,
+        "projection_and_slice_selection": 10.803946882952005,
+        "tensor_network_build": 0.8717542192898691
+      },
+      "rank": 0,
+      "times_seconds": [
+        33.936803734861314
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "status": "measured_success",
+  "timestamp_utc": "2026-07-31T05:35:59Z",
+  "torch_version": "2.13.0+cu130",
+  "values_imag": [
+    [
+      0.0
+    ]
+  ],
+  "values_real": [
+    [
+      0.9848881959915161
+    ]
+  ],
+  "workload": {
+    "depth": 4,
+    "dtype": "complex64",
+    "qubits": 36,
+    "target": "few_amplitudes",
+    "target_count": 1,
+    "topology": "grid_4x9"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "cache_key": "a75fac2efc206c220a6d2051e4b68d832ff46d24bb64a43605ad749297585909",
+  "expected_slice_tasks": 128,
+  "schema_version": 1,
+  "slice_cost": {
+    "estimated_cost": 41364848296,
+    "peak_size": 536870912
+  },
+  "sliced_labels": [
+    436,
+    540,
+    82,
+    558,
+    232,
+    574,
+    282
+  ]
+}

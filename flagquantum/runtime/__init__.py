@@ -18,12 +18,18 @@ __all__ = (
     "run",
     "run_native",
     "run_distributed",
+    "run_target",
     "train",
     "get_backend",
     "set_backend",
     "runtime_backend",
     "get_dtype",
     "set_dtype",
+    "FallbackPolicy",
+    "FallbackEvent",
+    "RouteCategory",
+    "RouteExplanation",
+    "StrictExecutionScope",
 )
 
 _EXPORTS = {
@@ -35,12 +41,18 @@ _EXPORTS = {
     "run": (".execution", "run"),
     "run_native": (".execution", "run_native"),
     "run_distributed": (".execution", "run_distributed"),
+    "run_target": (".target_execution", "run_target"),
     "train": (".training", "train"),
     "get_backend": (".configuration", "get_backend"),
     "set_backend": (".configuration", "set_backend"),
     "runtime_backend": (".configuration", "runtime_backend"),
     "get_dtype": (".configuration", "get_dtype"),
     "set_dtype": (".configuration", "set_dtype"),
+    "FallbackPolicy": (".fallback", "FallbackPolicy"),
+    "FallbackEvent": (".routing", "FallbackEvent"),
+    "RouteCategory": (".routing", "RouteCategory"),
+    "RouteExplanation": (".routing", "RouteExplanation"),
+    "StrictExecutionScope": (".routing", "StrictExecutionScope"),
 }
 
 

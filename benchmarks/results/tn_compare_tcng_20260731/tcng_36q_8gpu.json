@@ -1,0 +1,28 @@
+{
+  "devices": 8,
+  "dtype": "complex128",
+  "first_step_seconds": 14.355800595134497,
+  "gradient": "exact_jax_reverse_mode",
+  "gradient_l2": 0.2761637700504591,
+  "host": "p-kt-lc-a800-04",
+  "implementation": "TensorCircuit-NG 1.8.0 DistributedContractor",
+  "optimizer": "sgd",
+  "parameter_and_gradient_layout": "replicated_on_all_devices",
+  "parameter_dtype": "float64",
+  "path_repeats": 16,
+  "planning_seconds": 0.029291531071066856,
+  "qubits": 36,
+  "schema_version": 1,
+  "slices": 2,
+  "steady_step_seconds": 5.826258542016149,
+  "target_size_elements": 268435456,
+  "timed_step_seconds": [
+    5.826258542016149
+  ],
+  "tree_flops": 164660405664.0,
+  "tree_max_size_elements": 16777216,
+  "tree_write": 158083098.0,
+  "value_real": 0.07673561411935212,
+  "warmup_step_seconds": [],
+  "workload": "4x9_4c_global_z"
+}

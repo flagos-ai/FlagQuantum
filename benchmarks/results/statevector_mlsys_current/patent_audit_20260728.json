@@ -1,0 +1,836 @@
+{
+  "benchmark": "scalability_results_audit",
+  "claimable_count": 0,
+  "claimable_paths": [],
+  "file_count": 37,
+  "invalid_count": 29,
+  "invalid_paths": [
+    "benchmarks/results/statevector_mlsys_current/bootstrap_ci_31q_2plus5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/contaminated/flagquantum_31q_d8_brickwork_2gpu_warm2_rep5_shared_gpu_invalid.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_16gpu_dependency_schedule_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_16gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_2gpu_dependency_schedule_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_2gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_4gpu_dependency_schedule_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_4gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_8gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_linear_16gpu_final_rerun.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_16gpu_final_rerun.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_16gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_2gpu_dag_cxsegment_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_2gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_4gpu_dag_cxsegment_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_4gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_correct_runner_ch16.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_correct_runner_final.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_optimized_final.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_optimized_final_v2.json",
+    "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_warm2_rep5.json",
+    "benchmarks/results/statevector_mlsys_current/manifest.json",
+    "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_brickwork_8gpu_dependency_schedule_profile.json",
+    "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_brickwork_8gpu_profile.json",
+    "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_linear_8gpu_profile.json",
+    "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_ring_8gpu_dag_cxsegment_profile.json",
+    "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_ring_8gpu_dependency_schedule_profile.json",
+    "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_ring_8gpu_profile.json",
+    "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_16gpu_2node_censored.json"
+  ],
+  "records": [
+    {
+      "benchmark": null,
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks/results/statevector_mlsys_current/bootstrap_ci_31q_2plus5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/contaminated/flagquantum_31q_d8_brickwork_2gpu_warm2_rep5_shared_gpu_invalid.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_16gpu_dependency_schedule_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_16gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "single_device_fast_path",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_1gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "single_device_fast_path",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_2gpu_dependency_schedule_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_2gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_4gpu_dependency_schedule_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_4gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_brickwork_8gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_linear_16gpu_final_rerun.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_16gpu_final_rerun.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_16gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "single_device_fast_path",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_1gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "single_device_fast_path",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_2gpu_dag_cxsegment_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_2gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_4gpu_dag_cxsegment_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_4gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_correct_runner_ch16.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_correct_runner_final.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "statevector_differentiable_training_scaling",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_optimized_final.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "statevector_differentiable_training_scaling",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_optimized_final_v2.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_8gpu_warm2_rep5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": null,
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks/results/statevector_mlsys_current/manifest.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_brickwork_8gpu_dependency_schedule_profile.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_brickwork_8gpu_profile.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_linear_8gpu_profile.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_ring_8gpu_dag_cxsegment_profile.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_ring_8gpu_dependency_schedule_profile.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "flagquantum_adjoint_value_and_full_gradient",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/profiler/flagquantum_31q_d8_ring_8gpu_profile.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [
+          "sharded payload must report per-rank memory evidence",
+          "sharded payload must report communication evidence"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": [
+          "sharded_across_ranks payload does not allow scalability claim"
+        ]
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": null,
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "unknown",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_16gpu_2node_censored.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "unknown",
+        "errors": [
+          "missing distribution_semantics"
+        ],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": false,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "torchquantum_dist_invertible_training",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_dtensor_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_16gpu_2plus5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_dtensor_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "torchquantum_dist_invertible_training",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_dtensor_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_2gpu_2plus5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_dtensor_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "torchquantum_dist_invertible_training",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_dtensor_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_2gpu_smoke.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_dtensor_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "torchquantum_dist_invertible_training",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_dtensor_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_4gpu_2plus5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_dtensor_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "torchquantum_dist_invertible_training",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_dtensor_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_4gpu_smoke.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_dtensor_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    },
+    {
+      "benchmark": "torchquantum_dist_invertible_training",
+      "claim_evidence_type": "unknown",
+      "distribution_semantics": "sharded_across_dtensor_ranks",
+      "path": "benchmarks/results/statevector_mlsys_current/tqd_current/tqd_31q_8gpu_2plus5.json",
+      "release_gate_allowed": false,
+      "scalability_audit": {
+        "claim_evidence_type": "unknown",
+        "distribution_semantics": "sharded_across_dtensor_ranks",
+        "errors": [],
+        "release_gate_allowed": false,
+        "scalability_claim_allowed": false,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": false,
+      "status": "ok"
+    }
+  ]
+}

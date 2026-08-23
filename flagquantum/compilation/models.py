@@ -10,6 +10,7 @@ from ..core.ir import Instruction
 from .candidates import RuntimeCandidate
 
 if TYPE_CHECKING:
+    from .noise.planning import NoisyExecutionPlan
     from .performance_calibration import CalibratedPlanCost
 
 
@@ -47,6 +48,7 @@ class ExecutionPlan:
     usability_contract: str = "single_api_fast_path"
     runtime_config: Mapping[str, Any] | None = None
     routing_plan: Mapping[str, Any] | None = None
+    noisy_execution_plan: NoisyExecutionPlan | None = None
 
     def to_contract(self) -> RuntimePlanContract:
         from .contract_adapter import execution_plan_contract
@@ -94,6 +96,11 @@ class ExecutionPlan:
             "shardable_wires": self.shardable_wires,
             "runtime_config": dict(self.runtime_config or {}),
             "routing_plan": dict(self.routing_plan or {}),
+            "noisy_execution_plan": (
+                None
+                if self.noisy_execution_plan is None
+                else self.noisy_execution_plan.summary()
+            ),
         }
 
 

@@ -1,0 +1,948 @@
+{
+  "backward_distribution_semantics": "sharded_across_ranks",
+  "benchmark": "flagquantum_tn_36q_hard_gate",
+  "benchmark_evidence_class": "development_hardware_evidence",
+  "capacity_baseline_device": "single_A800_80GB",
+  "capacity_failure_reason": "complex128_statevector_requires_1TiB_and_MPS_estimate_exceeds_36TiB",
+  "claim_evidence_type": "production_runtime",
+  "communication_bytes": 592,
+  "communication_plan": {
+    "executed_collective_route": {
+      "backend": "nccl",
+      "route": "ib_gdrdma",
+      "scope": "multi_node_production_transport"
+    },
+    "logical_payload_bytes_per_rank": 592,
+    "network_backend": "nccl",
+    "optimizer_collectives_per_rank": 36,
+    "physical_inter_node_bytes": "nccl_topology_dependent",
+    "rdma_preflight_bandwidth_gib_per_second": 6.189117777096132,
+    "rdma_preflight_payload_bytes": 268435456,
+    "reverse_collectives_per_rank": 37,
+    "topology_scope": "multi_node_production_transport",
+    "transport_backend": "rdma"
+  },
+  "distributed_evidence_contract": {
+    "backend_family": "tensor_network",
+    "blockers": [
+      "signed_release_artifact_pending"
+    ],
+    "checks": {
+      "blockers_empty_for_release": false,
+      "communication_plan_reported": true,
+      "known_backend_family": true,
+      "known_claim_evidence_type": true,
+      "memory_plan_reported": true,
+      "multi_node_transport_evidence_complete": true,
+      "not_replicated_or_rank_local": true,
+      "rank_ownership_reported": true,
+      "release_claim_allowed": true,
+      "release_training_evidence_complete": true,
+      "sharding_semantics_available": true,
+      "topology_reported": true
+    },
+    "claim_evidence_type": "production_runtime",
+    "claimability_status": "blocked",
+    "claimable_production_training": false,
+    "communication_plan": {
+      "communication_bytes": 592,
+      "communication_evidence_reported": true,
+      "executed_collective_route": {
+        "backend": "nccl",
+        "route": "ib_gdrdma",
+        "scope": "multi_node_production_transport"
+      },
+      "logical_payload_bytes_per_rank": 592,
+      "network_backend": "nccl",
+      "optimizer_collectives_per_rank": 36,
+      "physical_inter_node_bytes": "nccl_topology_dependent",
+      "rdma_preflight_bandwidth_gib_per_second": 6.189117777096132,
+      "rdma_preflight_payload_bytes": 268435456,
+      "reverse_collectives_per_rank": 37,
+      "topology_scope": "multi_node_production_transport",
+      "transport_backend": "rdma"
+    },
+    "contract_version": "distributed_evidence_contract_v1",
+    "distribution_semantics": "sharded_across_ranks",
+    "errors": [],
+    "fail_closed": true,
+    "memory_plan": {
+      "checkpoint_budget_bytes_per_rank": 17179869184,
+      "complete_intermediate_materialized": false,
+      "complete_unsliced_tape_materialized": false,
+      "full_state_materialized": false,
+      "local_memory_bytes_by_rank": [
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992
+      ],
+      "measured_checkpoint_bytes_per_rank": [
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280,
+        17170055280
+      ],
+      "measured_peak_reserved_bytes_per_rank": [
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992,
+        52000980992
+      ],
+      "mps_estimated_bond": 262144,
+      "mps_estimated_storage_bytes_lower_bound": 39582418599936,
+      "rank_memory_reported": true,
+      "statevector_complex128_bytes": 1099511627776
+    },
+    "rank_ownership": [
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 0,
+        "owned_slice_count": 8,
+        "rank": 0
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 1,
+        "owned_slice_count": 8,
+        "rank": 1
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 2,
+        "owned_slice_count": 8,
+        "rank": 2
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 3,
+        "owned_slice_count": 8,
+        "rank": 3
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 4,
+        "owned_slice_count": 8,
+        "rank": 4
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 5,
+        "owned_slice_count": 8,
+        "rank": 5
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 6,
+        "owned_slice_count": 8,
+        "rank": 6
+      },
+      {
+        "hostname": "p-kt-lc-a800-04",
+        "local_rank": 7,
+        "owned_slice_count": 8,
+        "rank": 7
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 0,
+        "owned_slice_count": 8,
+        "rank": 8
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 1,
+        "owned_slice_count": 8,
+        "rank": 9
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 2,
+        "owned_slice_count": 8,
+        "rank": 10
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 3,
+        "owned_slice_count": 8,
+        "rank": 11
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 4,
+        "owned_slice_count": 8,
+        "rank": 12
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 5,
+        "owned_slice_count": 8,
+        "rank": 13
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 6,
+        "owned_slice_count": 8,
+        "rank": 14
+      },
+      {
+        "hostname": "p-kt-lc-a800-06",
+        "local_rank": 7,
+        "owned_slice_count": 8,
+        "rank": 15
+      }
+    ],
+    "status": "blocked",
+    "transport_evidence": {
+      "blockers": [],
+      "communication_bytes_reported": true,
+      "errors": [],
+      "network_backend": "nccl",
+      "node_count": 2,
+      "rank_placement_reported": true,
+      "route": {
+        "backend": "nccl",
+        "route": "ib_gdrdma",
+        "scope": "multi_node_production_transport"
+      },
+      "status": "multi_node_production_transport",
+      "topology_dependent": false,
+      "topology_scope": "multi_node_production_transport",
+      "warnings": []
+    },
+    "warnings": [
+      "production_runtime evidence is not release-grade training evidence",
+      "non-release evidence carries blockers and remains fail-closed"
+    ]
+  },
+  "distribution_semantics": "sharded_across_ranks",
+  "executed_collective_route": {
+    "backend": "nccl",
+    "route": "ib_gdrdma",
+    "scope": "multi_node_production_transport"
+  },
+  "forward_distribution_semantics": "sharded_across_ranks",
+  "gradient_aggregation_semantics": "reduce_to_parameter_owner",
+  "gradient_distribution_semantics": "sharded_across_ranks",
+  "gradient_ownership": [
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        0,
+        1,
+        2
+      ],
+      "rank": 0,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        3,
+        4
+      ],
+      "rank": 1,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        5,
+        6
+      ],
+      "rank": 2,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        7,
+        8
+      ],
+      "rank": 3,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        9,
+        10,
+        11
+      ],
+      "rank": 4,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        12,
+        13
+      ],
+      "rank": 5,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        14,
+        15
+      ],
+      "rank": 6,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        16,
+        17
+      ],
+      "rank": 7,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        18,
+        19,
+        20
+      ],
+      "rank": 8,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        21,
+        22
+      ],
+      "rank": 9,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        23,
+        24
+      ],
+      "rank": 10,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        25,
+        26
+      ],
+      "rank": 11,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        27,
+        28,
+        29
+      ],
+      "rank": 12,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        30,
+        31
+      ],
+      "rank": 13,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        32,
+        33
+      ],
+      "rank": 14,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        34,
+        35
+      ],
+      "rank": 15,
+      "writeback_route": "owner_update_then_broadcast"
+    }
+  ],
+  "gradient_ownership_semantics": "sharded_across_ranks",
+  "gradients_finite": true,
+  "hard_gate": {
+    "gradient_result_sharded_to_optimizer_owners": true,
+    "mps_bond_memory_infeasible": true,
+    "multi_step_optimizer_soak": true,
+    "no_complete_intermediate_materialization": true,
+    "no_complete_unsliced_tape_materialization": true,
+    "no_statevector_materialization": true,
+    "positive_scaling_1_2_4_8_16": true,
+    "qubits_at_least_36": true,
+    "rdma_collective_correctness": true,
+    "rdma_two_node_16_rank": true,
+    "reverse_uses_checkpointing": true,
+    "reverse_uses_rematerialization": true,
+    "reverse_uses_slicing": true,
+    "statevector_device_memory_infeasible": true,
+    "two_node_forward_backward_optimizer": true
+  },
+  "hard_gate_passed": true,
+  "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
+  "local_memory_bytes_by_rank": [
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992,
+    52000980992
+  ],
+  "local_world_size": 8,
+  "memory_plan": {
+    "checkpoint_budget_bytes_per_rank": 17179869184,
+    "complete_intermediate_materialized": false,
+    "complete_unsliced_tape_materialized": false,
+    "full_state_materialized": false,
+    "measured_checkpoint_bytes_per_rank": [
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280,
+      17170055280
+    ],
+    "measured_peak_reserved_bytes_per_rank": [
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992,
+      52000980992
+    ],
+    "mps_estimated_bond": 262144,
+    "mps_estimated_storage_bytes_lower_bound": 39582418599936,
+    "statevector_complex128_bytes": 1099511627776
+  },
+  "network_backend": "nccl",
+  "node_count": 2,
+  "non_release_evidence": true,
+  "optimizer_update_ownership": [
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        0,
+        1,
+        2
+      ],
+      "rank": 0,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        3,
+        4
+      ],
+      "rank": 1,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        5,
+        6
+      ],
+      "rank": 2,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        7,
+        8
+      ],
+      "rank": 3,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        9,
+        10,
+        11
+      ],
+      "rank": 4,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        12,
+        13
+      ],
+      "rank": 5,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        14,
+        15
+      ],
+      "rank": 6,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        16,
+        17
+      ],
+      "rank": 7,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        18,
+        19,
+        20
+      ],
+      "rank": 8,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        21,
+        22
+      ],
+      "rank": 9,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        23,
+        24
+      ],
+      "rank": 10,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        25,
+        26
+      ],
+      "rank": 11,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        27,
+        28,
+        29
+      ],
+      "rank": 12,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        30,
+        31
+      ],
+      "rank": 13,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        32,
+        33
+      ],
+      "rank": 14,
+      "writeback_route": "owner_update_then_broadcast"
+    },
+    {
+      "ownership": "rank_owned_optimizer_update",
+      "parameter_indices": [
+        34,
+        35
+      ],
+      "rank": 15,
+      "writeback_route": "owner_update_then_broadcast"
+    }
+  ],
+  "optimizer_update_ownership_semantics": "sharded_across_ranks",
+  "optimizer_update_semantics": "sharded_across_ranks",
+  "output_finite": true,
+  "parameter_distribution_after_step": "replicated_for_next_forward",
+  "rank_ownership": [
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "owned_slice_count": 8,
+      "rank": 0
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "owned_slice_count": 8,
+      "rank": 1
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "owned_slice_count": 8,
+      "rank": 2
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "owned_slice_count": 8,
+      "rank": 3
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "owned_slice_count": 8,
+      "rank": 4
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "owned_slice_count": 8,
+      "rank": 5
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "owned_slice_count": 8,
+      "rank": 6
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "owned_slice_count": 8,
+      "rank": 7
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 0,
+      "owned_slice_count": 8,
+      "rank": 8
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 1,
+      "owned_slice_count": 8,
+      "rank": 9
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 2,
+      "owned_slice_count": 8,
+      "rank": 10
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 3,
+      "owned_slice_count": 8,
+      "rank": 11
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 4,
+      "owned_slice_count": 8,
+      "rank": 12
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 5,
+      "owned_slice_count": 8,
+      "rank": 13
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 6,
+      "owned_slice_count": 8,
+      "rank": 14
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 7,
+      "owned_slice_count": 8,
+      "rank": 15
+    }
+  ],
+  "rank_placement": [
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 0,
+      "owned_slice_count": 8,
+      "rank": 0
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 1,
+      "owned_slice_count": 8,
+      "rank": 1
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 2,
+      "owned_slice_count": 8,
+      "rank": 2
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 3,
+      "owned_slice_count": 8,
+      "rank": 3
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 4,
+      "owned_slice_count": 8,
+      "rank": 4
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 5,
+      "owned_slice_count": 8,
+      "rank": 5
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 6,
+      "owned_slice_count": 8,
+      "rank": 6
+    },
+    {
+      "hostname": "p-kt-lc-a800-04",
+      "local_rank": 7,
+      "owned_slice_count": 8,
+      "rank": 7
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 0,
+      "owned_slice_count": 8,
+      "rank": 8
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 1,
+      "owned_slice_count": 8,
+      "rank": 9
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 2,
+      "owned_slice_count": 8,
+      "rank": 10
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 3,
+      "owned_slice_count": 8,
+      "rank": 11
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 4,
+      "owned_slice_count": 8,
+      "rank": 12
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 5,
+      "owned_slice_count": 8,
+      "rank": 13
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 6,
+      "owned_slice_count": 8,
+      "rank": 14
+    },
+    {
+      "hostname": "p-kt-lc-a800-06",
+      "local_rank": 7,
+      "owned_slice_count": 8,
+      "rank": 15
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_audit": {
+    "claim_evidence_type": "production_runtime",
+    "distribution_semantics": "sharded_across_ranks",
+    "errors": [],
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "valid": true,
+    "warnings": [
+      "sharded_across_ranks payload does not allow scalability claim"
+    ]
+  },
+  "scalability_blockers": [
+    "signed_release_artifact_pending"
+  ],
+  "scalability_claim_allowed": false,
+  "scaling": [
+    {
+      "node_count": 1,
+      "seconds": 140.90381801407784,
+      "speedup_vs_1gpu": 1.0,
+      "world_size": 1
+    },
+    {
+      "node_count": 1,
+      "seconds": 73.06478730821982,
+      "speedup_vs_1gpu": 1.9284777689105255,
+      "world_size": 2
+    },
+    {
+      "node_count": 1,
+      "seconds": 36.741593764163554,
+      "speedup_vs_1gpu": 3.8349947179349204,
+      "world_size": 4
+    },
+    {
+      "node_count": 1,
+      "seconds": 17.64647368201986,
+      "speedup_vs_1gpu": 7.9848144480925916,
+      "world_size": 8
+    },
+    {
+      "node_count": 2,
+      "seconds": 8.965484960004687,
+      "speedup_vs_1gpu": 15.716251674354956,
+      "total_training_seconds": 87.21333248913288,
+      "training_step_count": 10,
+      "world_size": 16
+    }
+  ],
+  "schema_version": 1,
+  "single_gpu_expected_oom": true,
+  "source_artifacts": [
+    {
+      "path": "benchmarks/results/tn_gradient_capacity_scaling_20260730/raw/36q_4x9_c4_1gpu.json",
+      "sha256": "da42462b984ccf7064469b4dd55f650283547645a9e3f6b5eb99d32e8d550b6c"
+    },
+    {
+      "path": "benchmarks/results/tn_gradient_capacity_scaling_20260730/raw/36q_4x9_c4_2gpu.json",
+      "sha256": "d5ca3e0fcf9f5df468058ed773b5935c02c31667b6f1a74e0cd918ef82652dfd"
+    },
+    {
+      "path": "benchmarks/results/tn_gradient_capacity_scaling_20260730/raw/36q_4x9_c4_4gpu.json",
+      "sha256": "f1cb1e535b176a1db34ec836c2c1447f20244d3d5c3688fe6917a855f88b2ae1"
+    },
+    {
+      "path": "benchmarks/results/tn_gradient_capacity_scaling_20260730/raw/36q_4x9_c4_8gpu.json",
+      "sha256": "4d5b234fe30c637eb9e3f07710c32d4629ae92237b786cceed111e063f4e7e4e"
+    },
+    {
+      "path": "/tmp/fq-tn-36q-10step-owner-grad-2n16g-20260731/result.json",
+      "sha256": "ad6c8e5f61555edbf135b81ba4d24bd25d96dc5eedce1895a1514fc30ec5907d"
+    },
+    {
+      "path": "/tmp/fq-tn-rdma-preflight-20260731/node172-16rank.log",
+      "sha256": "37a37ad4591f22a84fb932e11ca968542084519cacd318a02d2586f126d6aa50"
+    }
+  ],
+  "state_mode": "distributed_tensor_network",
+  "topology_scope": "multi_node_production_transport",
+  "training_step_count": 10,
+  "transport_backend": "rdma",
+  "unsigned_release_candidate_projection": {
+    "audit": {
+      "claim_evidence_type": "release_payload",
+      "distribution_semantics": "sharded_across_ranks",
+      "errors": [],
+      "release_gate_allowed": true,
+      "scalability_claim_allowed": true,
+      "valid": true,
+      "warnings": []
+    },
+    "blocker": "release_authorized_signing_key_and_committed_source_required",
+    "release_artifact_emitted": false,
+    "signing_key_present": false
+  },
+  "world_size": 16
+}

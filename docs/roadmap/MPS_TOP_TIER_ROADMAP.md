@@ -186,6 +186,58 @@ performance evidence.
 - Support atomic rank-shard checkpoints and validated restart manifests.
 - Add optional world-size-changing reshard as an experimental feature.
 
+Implementation status: immutable per-step rank shards, SHA-256 validation and
+an atomically published cross-rank `COMMITTED.json` manifest are implemented.
+CPU two-rank normal-resume and injected-failure contracts pass; the ten-cycle
+SGD/Adam restart paths also match uninterrupted loss and parameters at `1e-10`
+and isolate a corrupted stale generation. The accelerator restart acceptance
+gate above remains open pending hardware evidence. Committed generations use a
+cross-rank cleanup contract and retain the newest two generations by default;
+audit runs can explicitly retain every immutable generation. Runtime summaries
+report shard write, manifest commit and pruning latency together with written
+and retained bytes. Missing/corrupt manifests, corrupt committed shards and
+incomplete writes have two-rank fail-closed fault-injection coverage. Before
+allocation, all ranks also aggregate a conservative generation-size estimate
+and the minimum shared-filesystem free space, preserving a configurable 1 GiB
+emergency reserve instead of using ENOSPC retry as normal control flow.
+Multi-rank save/resume also performs a contract-fingerprinted namespace probe;
+node-local paths that merely share the same pathname fail collectively before
+any checkpoint shard is allocated. A directory with an existing committed
+generation rejects a fresh run by default; users must select resume or
+explicitly authorize overwrite, and the manifest binds recovery to the exact
+training-contract fingerprint. Checkpoint payloads are deserialized with
+PyTorch's tensor/container-only `weights_only` policy; a payload containing an
+unallowlisted Python object is rejected even when its sidecar checksum matches.
+Parameter membership, shape, dtype, optimizer/RNG structure and manifest
+generation are validated before restored values are copied into live training
+state. An atomic `ACTIVE_WRITER.json` lease prevents concurrent training
+sessions from writing the same namespace; normal completion releases it, while
+abnormal termination leaves auditable owner metadata and requires an explicit
+stale-lease break decision. Explicit break is still rejected before a
+configurable age threshold (one hour by default); same-host leases additionally
+require the recorded PID to be absent, preventing operator error from stealing
+an active writer. Rank 0 atomically refreshes a contract-bound heartbeat every
+training step; remote stale decisions use the most recent heartbeat rather than
+the original lease creation time, and heartbeat latency/count are reported.
+
+On 2026-08-05, matched eager/eager 16-wire checkpoint acceptance completed on
+one node and 8×A800 for both SGD and Adam. Ten restart cycles matched the
+uninterrupted loss and final parameter exactly (`0.0` max absolute error), all
+eight ranks completed useful sharded work, maximum observed checkpoint shard
+write latency was 2.21 ms and maximum manifest commit latency was 1.97 ms. The
+development artifacts are
+`benchmarks/results/local/mps_checkpoint_restart_8xa800_{sgd,adam}_10cycle_20260805.json`.
+They remain non-release evidence pending a clean/signable source snapshot,
+long-soak and capacity gates.
+
+On 2026-08-05, the same frozen eager/eager acceptance completed on two nodes
+and 16×A800 for both SGD and Adam, using the verified shared `/nfs` checkpoint
+root. Ten restart cycles again matched uninterrupted loss and final parameters
+exactly (`0.0` max absolute error); every rank owned one useful site, manifests
+contained all 16 immutable shards, and corrupting a stale generation did not
+affect recovery of the committed generation. Evidence is stored in
+`benchmarks/results/local/mps_checkpoint_restart_16xa800_2node_{sgd,adam}_10cycle_20260805.json`.
+
 Deliverable: single-GPU and four-GPU capacity failures matched to successful
 eight-GPU completion.
 
@@ -328,11 +380,19 @@ passing one capability does not promote the others.
       0.997×/1.019×/1.036× speedup and identical peak allocation versus the
       separate compiled-contraction/SVD path. This misses the frozen 1.05×
       promotion threshold, so the fused graph is rejected from production.
-- [ ] Add steady-state CUDA Graph evaluation.
+- [x] Evaluate steady-state CUDA Graph capture on A800. Static compiled
+      contraction replay is exact and 3.0×--4.6× faster than repeated Python
+      invocation for 64/128/256 output matrices, but cuSOLVER `gesvd`
+      invalidates stream capture. Because full factorization capture is a
+      frozen requirement, partial contraction-only graphs are not promoted;
+      native solver integration must first provide a capture-safe contract.
 
 ### Sprint 4 — Capacity and comparison
 
 - [ ] Produce matched one-GPU/four-GPU failure and eight-GPU completion.
+      The runner now supports fail-closed 1/4-GPU capacity baselines and binds
+      both workload fingerprints into the 8-GPU artifact; the measured
+      four-GPU OOM and matched 8-GPU completion remain to be collected.
 - [ ] Run cuTensorNet/CUDA-Q/PennyLane comparisons.
 - [ ] Report error, throughput, memory and cost together.
 - [ ] Seal and audit eligible candidates.
@@ -365,6 +425,21 @@ Update this table as work lands:
 | 2026-07-28 | M3 | Hybrid large-bond contraction/factorization | `3914274` | `benchmarks/results/smoke/release_candidates/mps_large_bond_hybrid/` | Compiled batched contraction restored; per-matrix strict factorization; 8×A800 plateau passes with zero fallback/retry/OOM | Non-release single run; batched large-bond factorization and staging-pool reuse remain quarantined |
 | 2026-07-28 | M3 | Solver-native workspace capability probe | `22187f6` | `benchmarks/results/smoke/release_candidates/mps_solver_workspace_probe/` | CUDA 13 exports classic complex `gesvd` and `Xgesvd` explicit workspace APIs; PyTorch 2.13 has no public external-workspace contract | Capability evidence only; compiled extension, stream/allocator contract, and numerical parity remain |
 | 2026-07-28 | M3 | Contraction/SVD full-graph fusion A/B | `5a93d59` | `benchmarks/results/smoke/release_candidates/mps_contraction_svd_fusion/` | Reconstruction error below 2e-6, but repeated A800 speedups are 0.999×/1.009×/1.008× with identical peak allocation | Rejected: misses the frozen 1.05× promotion threshold on every tested shape |
+| 2026-07-28 | M3 | Steady-state CUDA Graph A/B | `9b0b57a` | `benchmarks/results/smoke/release_candidates/mps_cuda_graph_probe/` | Static compiled contraction replay is exact and 4.66×/4.33×/3.08× faster for 64/128/256 output matrices | Rejected for production: cuSOLVER `gesvd` invalidates capture, so full factorization graphs are unavailable |
+| 2026-08-05 | M4 | 8×A800 checkpoint/restart | working tree | `benchmarks/results/local/mps_checkpoint_restart_8xa800_{sgd,adam}_10cycle_20260805.json` | Matched eager/eager SGD and Adam complete 10 restart cycles with zero loss/parameter delta; all ranks useful; max shard write 2.21 ms, commit 1.97 ms | Development evidence only; dirty unsigned source, long-soak and capacity gates remain |
+| 2026-08-05 | M4 | Two-node 16×A800 checkpoint/restart | working tree | `benchmarks/results/local/mps_checkpoint_restart_16xa800_2node_{sgd,adam}_10cycle_20260805.json` | Matched eager/eager SGD and Adam complete 10 restart cycles with zero loss/parameter delta; shared NFS verified; all 16 ranks useful; stale corruption isolated | Development evidence only; dirty unsigned source, long-soak and capacity gates remain |
+| 2026-08-05 | M4 | Owner parameter all-gather buckets | working tree | `benchmarks/results/local/mps_parameter_broadcast_{8xa800,16xa800_2node}_20260805.json` | Matched 1000-parameter A/B reduces collectives 1000→1 and precomputes foreach pack/unpack views; 8×A800 reaches 110.93× and two-node 16×A800 reaches 116.76×, with exact parameter parity | Specialized development microbenchmark; end-to-end repeated scaling matrix remains |
+| 2026-08-05 | M4 | Skip optional final canonicalization | working tree | `benchmarks/results/local/mps_training_32q_l2_b16_adam_{4gpu,8gpu,16gpu}_*canonicalization_20260805.json` | Explicit `canonicalization_policy=none` removes 30 QR/VJP records and improves matched P50 by 1.141×/1.146×/1.178× on 4/8/16 A800; loss delta is 1.31e-6 and CPU distributed loss/parameter/gradient parity passes | Development evidence only; optimized 4→8 and 8→16 strong scaling remains 0.915×/0.754× |
+| 2026-08-05 | M4 | Work-density-aware exact crossover | working tree | `benchmarks/results/local/mps_training_128q_l3_b64_adam_{1,2,4,8,16}gpu_exact_prefetch_probe_20260805.json` | Production-default halo prefetch matrix reaches 1.695×/2.336×/2.754×/2.577× over one A800 on 2/4/8/16 GPUs; max loss delta is 1.79e-7 and all workload hashes match | Eight GPUs are the measured optimum; dual-node 8→16 is 0.936×, so the planner must reject over-parallelization; repeated runs, clean source and release payload remain |
+| 2026-08-05 | M4 | Reverse layer-halo prefetch A/B | working tree | `benchmarks/results/local/mps_training_128q_l3_b64_adam_{8,16}gpu_exact_{density,prefetch}_probe_20260805.json` | Exact parity is unchanged; mean improves 4.45% on 8 GPUs and 4.17% on two-node 16 GPUs, while 16-GPU P50 improves 5.83% | Retained as the production default but not claimed as a standalone ≥1.05× mean-speedup promotion |
+| 2026-08-05 | M4 | 256-site dual-node crossover | working tree | `benchmarks/results/local/mps_training_256q_l3_b64_adam_{1,2,4,8,16}gpu_exact_prefetch_probe_20260805.json` | Matched exact-gradient speedups are 1.648×/2.359×/2.725×/2.927× on 2/4/8/16 A800 GPUs; 8→16 improves 1.074× and max loss delta is 1.49e-6 | Development evidence establishes a workload-dependent 8/16-GPU crossover; repeated runs, larger χ, capacity failure and clean release source remain |
+| 2026-08-05 | M4 | χ32 dual-node crossover probe | working tree | `benchmarks/results/local/mps_training_128q_l4_b64_adam_{8,16}gpu_exact_bond_probe_20260805.json` | Actual bond reaches 32 with zero discarded weight and 5.96e-8 cross-scale loss delta, but 8→16 is only 0.924× | Reject bond-only routing: both per-rank site work and realized bond compute must select execution width |
+| 2026-08-05 | M4 | A800/16-rank capacity contract | working tree | `flagquantum/testing/mps_capacity_certification.py` | Capacity certification now accepts measured 8- or 16-rank completion, validates every adjacent boundary, and derives the OOM memory threshold from measured device capacity instead of a hard-coded 40 GB | Hardware capacity run remains pending; legacy A100 artifacts retain the old fallback threshold |
+| 2026-08-05 | M4 | 8×A800 beyond-device capacity | working tree | `benchmarks/results/local/mps_capacity_12288q_chi768_{1xa800_oom,8xa800_complete}_20260805.json` | A matched one-A800 OOM is recovered by an eight-rank sharded completion for 12,288 sites, χ768, batch one, and 107.84 GiB logical state; all seven boundaries have forward/reverse transport, discarded weight is 4.04e-6 under the 0.1 budget, and post-run source hashes are sealed and verified | Development evidence only; repeat capacity trials, long-soak, clean/signable source, and release payload remain |
+| 2026-08-05 | M4 | 8×A800 SGD/Adam 100-step soak | working tree | `benchmarks/results/local/mps_stability_{sgd,adam}_100step_8xa800_20260805.json` | Both optimizers produce complete 100-point timelines on every rank, zero measured live-memory growth, zero restart parameter/loss error, and useful work on all eight ranks under matched eager/eager execution | Development evidence only; capacity multi-step soak, sealed fault matrix, clean/signable source, and release payload remain |
+| 2026-08-05 | M4 | Two-node 16×A800 top-capacity point | working tree | `benchmarks/results/local/mps_capacity_24576q_chi768_{1xa800_oom,16xa800_complete}_20260805.json` | A matched one-A800 OOM is recovered by 16 sharded ranks for 24,576 sites, χ768, batch one, and 215.84 GiB logical state; all 15 boundaries pass and discarded weight is 8.39e-6. Layer halo precomputation and one metadata collective reduce broadcasts 15→1. Restricting objective adjoints to the 31 tape-touched sites lowers the sealed run from 97.76 s to 72.34 s and peak allocation from roughly 27 GiB to 13.91 GiB/rank; cleanup passes under a bounded 32–64 MiB runtime-cache allowance. | Total improvement from the 103.49 s baseline is 30.1%. Capacity and sparse-objective efficiency are strong; repeated runs, multi-step capacity soak, the sealed fault matrix, and release governance remain open. |
+| 2026-08-05 | M4 | Two-node 16×A800 extended capacity | working tree | `benchmarks/results/local/mps_capacity_{65536q,98304q,114688q}_chi768_16xa800_complete_20260805.json` | Independently attributed and sealed χ768 workloads culminate formally at 114,688 sites: 1007.84 GiB logical state and 330.60 s. A 131,072-site candidate initially OOMs with 7.8 GiB reserved-but-unallocated fragmentation, then completes with expandable allocator segments: 1151.84 GiB, 373.80 s, 72.41 GiB allocated and 72.46 GiB reserved/rank; 16/16 ranks, 15/15 boundaries, error, and cleanup pass. | Formal capacity is 114,688 sites. The 131,072 candidate needs an independent workload, repeat, and seal; allocator policy must be captured as provenance. |
+| 2026-08-06 | M4 | Two-node 16×A800 131,072-site repeat/seal | working tree | `benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json` | An independently attributed χ768 workload repeats the 131,072-site completion in 367.37 s at 1151.84 GiB logical state, following the 373.80 s candidate. Peak allocation/reservation remains 72.41/72.46 GiB per rank; 16/16 ranks, 15/15 boundaries, the 0.1 error budget, and cleanup pass. Raw log, 100 ms telemetry, single-GPU OOM, workload sources, and `expandable_segments:True` allocator provenance are sealed. | Formal development capacity advances to 131,072 sites. Capacity multi-step soak, sealed fault matrix, clean/signable source, and release payload remain open. |
 
 ## Claim policy
 

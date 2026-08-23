@@ -8,6 +8,7 @@ PennyLane and cuQuantum are never FlagQuantum runtime dependencies.
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 import os
 import platform
@@ -26,8 +27,26 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from benchmarks.gpu_memory_sampler import NvmlMemorySampler  # noqa: E402
+from benchmarks.sc27_metadata import (  # noqa: E402
+    build_optimizer,
+    driver_version,
+    gpu_identity,
+    optimizer_state_bytes,
+    parameter_vector,
+    reference_errors,
+    source_identity,
+    tensor_bytes,
+    topology_snapshot,
+)
 
 SCHEMA = "flagquantum.external.pennylane_lightning_gpu_training.v1"
+
+
+def _package_version(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 def parameters(n_wires: int, layers: int, seed: int) -> torch.Tensor:
@@ -107,11 +126,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         mpi_buf_size=args.mpi_buf_size,
     )
     values = parameters(args.n_wires, args.layers, args.seed)
+    optimizer = build_optimizer(
+        args.optimizer, [values], learning_rate=args.learning_rate
+    )
 
     def value_and_grad() -> tuple[
-        float, tuple[float, ...], float, float, int, int
+        float, tuple[float, ...], float, float, float, int, int, int
     ]:
-        values.grad = None
+        if optimizer is None:
+            values.grad = None
+        else:
+            optimizer.zero_grad(set_to_none=True)
         if comm is not None:
             comm.Barrier()
         with NvmlMemorySampler(local_rank) as memory:
@@ -124,11 +149,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             result.backward()
             torch.cuda.synchronize()
             backward_seconds = time.perf_counter() - backward_started
-        peak_per_rank = memory.peak_bytes
-        peak_aggregate = memory.peak_bytes
+            optimizer_started = time.perf_counter()
+            if optimizer is not None:
+                optimizer.step()
+            torch.cuda.synchronize()
+            optimizer_seconds = time.perf_counter() - optimizer_started
+        local_peak_bytes = int(memory.peak_bytes)
+        peak_per_rank = local_peak_bytes
+        peak_aggregate = local_peak_bytes
         if comm is not None:
             forward_seconds = comm.allreduce(forward_seconds, op=MPI.MAX)
             backward_seconds = comm.allreduce(backward_seconds, op=MPI.MAX)
+            optimizer_seconds = comm.allreduce(optimizer_seconds, op=MPI.MAX)
             peak_per_rank = comm.allreduce(peak_per_rank, op=MPI.MAX)
             peak_aggregate = comm.allreduce(peak_aggregate, op=MPI.SUM)
         assert values.grad is not None
@@ -137,36 +169,90 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             tuple(float(item) for item in values.grad.detach()),
             forward_seconds,
             backward_seconds,
+            optimizer_seconds,
             peak_per_rank,
             peak_aggregate,
+            local_peak_bytes,
         )
 
     initial_value = None
     initial_gradients = None
     for _ in range(args.warmup):
-        initial_value, initial_gradients, _, _, _, _ = value_and_grad()
+        value, gradients, _, _, _, _, _, _ = value_and_grad()
+        if initial_value is None:
+            initial_value, initial_gradients = value, gradients
     forward_samples: list[float] = []
     backward_samples: list[float] = []
+    optimizer_samples: list[float] = []
     value_and_grad_samples: list[float] = []
+    training_step_samples: list[float] = []
     peak_memory_per_rank_samples: list[int] = []
     peak_memory_aggregate_samples: list[int] = []
+    local_peak_memory_samples: list[int] = []
     for _ in range(args.repetitions):
         (
             value,
             gradients,
             forward_seconds,
             backward_seconds,
+            optimizer_seconds,
             peak_per_rank,
             peak_aggregate,
+            local_peak_bytes,
         ) = value_and_grad()
         if initial_value is None:
             initial_value, initial_gradients = value, gradients
         forward_samples.append(forward_seconds)
         backward_samples.append(backward_seconds)
+        optimizer_samples.append(optimizer_seconds)
         value_and_grad_samples.append(forward_seconds + backward_seconds)
+        training_step_samples.append(
+            forward_seconds + backward_seconds + optimizer_seconds
+        )
         peak_memory_per_rank_samples.append(peak_per_rank)
         peak_memory_aggregate_samples.append(peak_aggregate)
+        local_peak_memory_samples.append(local_peak_bytes)
     assert initial_value is not None and initial_gradients is not None
+    placement = {
+        "rank": rank,
+        "local_rank": local_rank,
+        "hostname": platform.node(),
+        **gpu_identity(local_rank),
+        "topology": topology_snapshot(),
+    }
+    placements = [placement]
+    peak_bytes_by_rank = [max(local_peak_memory_samples)]
+    parameter_vectors = [parameter_vector([values]).tolist()]
+    local_parameter_bytes = tensor_bytes([values])
+    local_gradient_bytes = tensor_bytes([values.grad]) if values.grad is not None else 0
+    measured_optimizer_bytes = optimizer_state_bytes(optimizer)
+    parameter_bytes_by_rank = [local_parameter_bytes]
+    gradient_bytes_by_rank = [local_gradient_bytes]
+    optimizer_bytes_by_rank = [measured_optimizer_bytes]
+    if comm is not None:
+        placements = comm.allgather(placement)
+        peak_bytes_by_rank = comm.allgather(max(local_peak_memory_samples))
+        parameter_vectors = comm.allgather(parameter_vector([values]).tolist())
+        parameter_bytes_by_rank = comm.allgather(local_parameter_bytes)
+        gradient_bytes_by_rank = comm.allgather(local_gradient_bytes)
+        optimizer_bytes_by_rank = comm.allgather(measured_optimizer_bytes)
+    parameters_equal_across_ranks = all(
+        item == parameter_vectors[0] for item in parameter_vectors
+    )
+    distributed = args.mpi and world_size > 1
+    workload = {
+        "name": "full_width_linear_hea",
+        "n_wires": args.n_wires,
+        "layers": args.layers,
+        "gate_count": (2 * args.n_wires - 1) * args.layers,
+        "parameter_count": args.n_wires * args.layers,
+        "gate_set": ["RY", "CNOT"],
+        "entanglement": "directed_cnot_linear",
+        "observable": f"Z({args.n_wires // 2})",
+        "dtype": "complex64",
+        "parameter_dtype": "float32",
+        "seed": args.seed,
+    }
     return {
         "schema": SCHEMA,
         "benchmark": "pennylane_lightning_gpu_adjoint_training",
@@ -175,7 +261,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
         "distribution_semantics": (
-            "sharded_across_mpi_ranks" if args.mpi else "single_device_fast_path"
+            "sharded_across_mpi_ranks" if distributed else "single_device_fast_path"
+        ),
+        "world_size": world_size,
+        "local_world_size": int(
+            os.environ.get("OMPI_COMM_WORLD_LOCAL_SIZE", world_size)
+        ),
+        "node_count": len({item["hostname"] for item in placements}),
+        "rank_placement": placements,
+        "source_identity": source_identity(
+            repo_root=REPO_ROOT,
+            workload=workload,
+            container_digest=args.container_digest,
+            raw_log_sha256=args.raw_log_sha256,
         ),
         "external_baseline_isolation": {
             "purpose": "benchmark_only",
@@ -187,32 +285,27 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "hostname": platform.node(),
             "python": platform.python_version(),
             "pennylane": qml.__version__,
+            "pennylane_lightning": _package_version("pennylane-lightning"),
+            "cuquantum_python": _package_version("cuquantum-python"),
             "torch": torch.__version__,
             "cuda": torch.version.cuda,
             "device_name": torch.cuda.get_device_name(local_rank),
             "rank": rank,
             "local_rank": local_rank,
             "world_size": world_size,
+            "driver_version": driver_version(),
         },
-        "workload": {
-            "name": "full_width_linear_hea",
-            "n_wires": args.n_wires,
-            "layers": args.layers,
-            "gate_count": (2 * args.n_wires - 1) * args.layers,
-            "parameter_count": args.n_wires * args.layers,
-            "gate_set": ["RY", "CNOT"],
-            "entanglement": "directed_cnot_linear",
-            "observable": f"Z({args.n_wires // 2})",
-            "dtype": "complex64",
-            "parameter_dtype": "float32",
-            "seed": args.seed,
-        },
+        "workload": workload,
         "protocol": {
             "interface": "torch",
             "gradient_method": "adjoint",
-            "fixed_parameters_across_samples": True,
+            "fixed_parameters_across_samples": optimizer is None,
+            "optimizer_included": optimizer is not None,
+            "optimizer": args.optimizer,
+            "learning_rate": args.learning_rate,
             "warmup": args.warmup,
             "repetitions": args.repetitions,
+            "independent_run_index": args.independent_run_index,
             "synchronization": "cuda_device_synchronized_wall_clock",
             "mpi": args.mpi,
             "mpi_buf_size_mib": args.mpi_buf_size if args.mpi else None,
@@ -227,10 +320,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 np.isfinite(initial_value)
                 and np.isfinite(np.asarray(initial_gradients)).all()
             ),
+            **reference_errors(
+                value=initial_value,
+                gradients=initial_gradients,
+                reference_path=args.correctness_reference,
+            ),
         },
         "forward": _timing(forward_samples),
         "backward": _timing(backward_samples),
+        "optimizer_timing": _timing(optimizer_samples),
         "value_and_grad": _timing(value_and_grad_samples),
+        "training_step": _timing(training_step_samples),
         "memory": {
             "measurement": "NVML device-used bytes sampled every 20 ms",
             "exclusive_gpu_required": True,
@@ -238,19 +338,64 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "peak_bytes_aggregate_max": max(peak_memory_aggregate_samples),
             "samples_per_rank_max_bytes": peak_memory_per_rank_samples,
             "samples_aggregate_bytes": peak_memory_aggregate_samples,
+            "peak_bytes_by_rank": peak_bytes_by_rank,
         },
+        "communication": {
+            "bytes_by_rank": None,
+            "measurement": "not_exposed_by_lightning_gpu_python_interface",
+        },
+        "ownership": {
+            "primal_state": (
+                "backend_documented_sharded_across_ranks"
+                if distributed
+                else "single_device"
+            ),
+            "adjoint_state": (
+                "backend_documented_sharded_across_ranks"
+                if distributed
+                else "single_device"
+            ),
+            "parameter_gradient": (
+                "replicated_across_ranks" if distributed else "single_device"
+            ),
+            "optimizer_state": (
+                "replicated_across_ranks"
+                if distributed and optimizer is not None
+                else "not_present" if optimizer is None else "single_device"
+            ),
+            "full_quantum_state_materialized": "not_observable_from_python_api",
+            "parameter_bytes_per_rank": parameter_bytes_by_rank,
+            "gradient_bytes_per_rank": gradient_bytes_by_rank,
+            "optimizer_bytes_per_rank": optimizer_bytes_by_rank,
+        },
+        "optimizer": {
+            "name": args.optimizer,
+            "executed": optimizer is not None,
+            "step_seconds": statistics.median(optimizer_samples),
+            "parameters_equal_across_ranks": parameters_equal_across_ranks,
+            "state_bytes_per_rank": measured_optimizer_bytes,
+        },
+        "fallback_events": [],
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--n-wires", type=int, required=True)
-    parser.add_argument("--layers", type=int, default=1)
-    parser.add_argument("--seed", type=int, default=440044)
+    parser.add_argument("--layers", type=int, default=8)
+    parser.add_argument("--seed", type=int, default=41)
     parser.add_argument("--warmup", type=int, default=5)
-    parser.add_argument("--repetitions", type=int, default=30)
+    parser.add_argument("--repetitions", type=int, default=20)
     parser.add_argument("--mpi", action="store_true")
     parser.add_argument("--mpi-buf-size", type=int, default=64)
+    parser.add_argument(
+        "--optimizer", choices=("none", "sgd", "adam"), default="adam"
+    )
+    parser.add_argument("--learning-rate", type=float, default=0.01)
+    parser.add_argument("--independent-run-index", type=int, choices=(1, 2, 3))
+    parser.add_argument("--container-digest")
+    parser.add_argument("--raw-log-sha256")
+    parser.add_argument("--correctness-reference", type=Path)
     parser.add_argument("--json-output", type=Path, required=True)
     args = parser.parse_args()
     payload = run(args)

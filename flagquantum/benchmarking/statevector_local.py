@@ -20,7 +20,8 @@ from typing import Any, Callable
 import torch
 
 import flagquantum as fq
-from flagquantum.circuit import _apply_matrix, _gate_matrix
+from flagquantum.circuit import _apply_matrix
+from flagquantum.ops.gate_matrix import gate_matrix
 
 SCHEMA = "flagquantum.statevector.local_performance.v1"
 
@@ -63,7 +64,7 @@ def build_workload(
 def sequential_reference(circuit: fq.Circuit) -> torch.Tensor:
     state = circuit.initial_state()
     for instruction in circuit.to_ir().instructions:
-        matrix = _gate_matrix(
+        matrix = gate_matrix(
             instruction,
             bsz=state.shape[0],
             device=state.device,

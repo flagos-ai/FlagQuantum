@@ -1,0 +1,69 @@
+{
+  "schema_version": "flagquantum.distributed_tn_patent_evidence.v1",
+  "recorded_at": "2026-07-29",
+  "scope": "single-A800 failure and eight-A800 success on the same circuit-derived TN",
+  "workload": {
+    "qubits": 18,
+    "layers": 13,
+    "target_operation_id": "contract:311",
+    "output": "direct expectation scalar",
+    "planned_native_peak_bytes": 34359738368
+  },
+  "single_gpu_native_tn": {
+    "gpu": "NVIDIA A800-SXM4-80GB",
+    "status": "failed_oom",
+    "elapsed_seconds": 0.923049203120172,
+    "allocated_bytes_at_failure": 69801902080,
+    "reserved_bytes_at_failure": 69837258752,
+    "error_type": "OutOfMemoryError",
+    "oom_caught_and_cache_released": true
+  },
+  "eight_gpu_multi_axis_tn": {
+    "gpu": "8 x NVIDIA A800-SXM4-80GB",
+    "status": "passed",
+    "passed_ranks": 8,
+    "output_finite_on_all_ranks": true,
+    "reference_checked_at_this_scale": false,
+    "peak_plan": {
+      "identity": "6d7ab208a180930942b4b3520b5e62acba8082202205dbf55bafb83fc6a067fc",
+      "candidate_count": 2600,
+      "selected_shard_labels": [23, 37, 316],
+      "mesh_shape": [2, 2, 2],
+      "predicted_peak_local_bytes": 25971130368,
+      "predicted_peak_logical_bytes": 69524783104
+    },
+    "measured_per_rank": {
+      "partitioned_raw_input_count": 6,
+      "partitioned_intermediate_count": 36,
+      "target_local_input_bytes": 134217728,
+      "target_logical_input_bytes": 1073741824,
+      "peak_live_local_tensor_bytes": 25971130368,
+      "peak_live_logical_tensor_bytes": 69793218560,
+      "cuda_peak_allocated_bytes": 51749614080,
+      "cuda_peak_reserved_bytes": 51973718016,
+      "released_value_count": 622,
+      "collective_count": 1,
+      "collective_bytes": 8,
+      "high_rank_einsum_fallback_count": 0
+    },
+    "elapsed_seconds_range": [5.207971174269915, 5.209143980871886],
+    "full_target_inputs_materialized": false,
+    "prefix_full_intermediates_materialized": false,
+    "full_state_materialization": false,
+    "silent_statevector_fallback": false
+  },
+  "correctness_chain": {
+    "same_executor_small_scale_reference_check": "8-qubit circuit, 8 ranks, all ranks match native memory_greedy expectation",
+    "same_workload_large_scale_checks": [
+      "all eight ranks completed",
+      "all eight rank outputs are finite",
+      "all eight ranks used the same versioned DAG and peak-plan identity"
+    ]
+  },
+  "claim_limits": [
+    "The large capacity run skipped a full native numerical reference because that path is the OOM baseline.",
+    "Numerical equivalence is established on smaller circuit-derived workloads using the same executor and invariants.",
+    "The result supports a capacity claim, not a speedup claim; the distributed run is slower.",
+    "Explicit reverse-mode and parameter-gradient evidence remain pending."
+  ]
+}

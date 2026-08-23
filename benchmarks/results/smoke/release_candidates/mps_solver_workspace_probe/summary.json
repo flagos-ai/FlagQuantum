@@ -28,5 +28,14 @@
     "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35"
   },
   "schema": "flagquantum.mps_solver_workspace_probe.v1",
-  "status": "passed"
+  "status": "passed",
+  "benchmark": "mps_solver_workspace_probe",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_blockers": [
+    "derived development report is not release-certified"
+  ]
 }

@@ -1,0 +1,78 @@
+{
+  "claim_boundary": "Planning-only development evidence; not execution, gradient, production, or scalability evidence.",
+  "comparable": true,
+  "comparison_scope": "planning",
+  "correctness": {
+    "topology_identity_equal": true
+  },
+  "cotengra": {
+    "backend": "cotengra",
+    "backend_version": "0.8.2",
+    "comparison_scope": "planning",
+    "distribution_semantics": "planning_only",
+    "environment": {
+      "isolation": "temporary_target_directory",
+      "python": "3.12.13"
+    },
+    "metrics": {
+      "estimated_flops": 178876962,
+      "estimated_peak_bytes": 2097152,
+      "largest_intermediate_elements": 262144,
+      "operation_count": 312,
+      "search_time_seconds": 3.169702018145472,
+      "slice_count": 1,
+      "sliced_labels": []
+    },
+    "scalability_claim_allowed": false,
+    "schema_version": "flagquantum.tn_cotengra_gap.v1",
+    "search_budget_compliant": true,
+    "search_budget_seconds": 10.0,
+    "seed": 0,
+    "status": "completed",
+    "strategy": "HyperOptimizer[greedy,random-greedy]/combo",
+    "workload_identity": "6ac4cf2d5b09623986ec0bb2396e1be7fa621b0be97730bd924e0bf7ed670d8c",
+    "workload_name": "flagquantum_18q_13l_expectation"
+  },
+  "flagquantum": {
+    "backend": "flagquantum",
+    "backend_version": "0.2.0",
+    "comparison_scope": "planning",
+    "distribution_semantics": "planning_only",
+    "environment": {
+      "python": "3.12.13",
+      "torch": "2.13.0+cu130"
+    },
+    "metrics": {
+      "estimated_flops": 119233297,
+      "estimated_peak_bytes": 2097152,
+      "largest_intermediate_elements": 262144,
+      "operation_count": 312,
+      "search_time_seconds": 1.180014060344547,
+      "slice_count": 1,
+      "sliced_labels": [],
+      "total_intermediate_elements": 28673154
+    },
+    "scalability_claim_allowed": false,
+    "schema_version": "flagquantum.tn_cotengra_gap.v1",
+    "search_budget_compliant": true,
+    "search_budget_seconds": 10.0,
+    "status": "completed",
+    "strategy": "quality_greedy",
+    "workload_identity": "6ac4cf2d5b09623986ec0bb2396e1be7fa621b0be97730bd924e0bf7ed670d8c",
+    "workload_name": "flagquantum_18q_13l_expectation"
+  },
+  "largest_gap": "largest_intermediate",
+  "next_optimization_target": "improve memory-aware path search and slicing",
+  "ratios": {
+    "estimated_flops_flagquantum_over_cotengra": 0.6665659773448075,
+    "largest_intermediate_flagquantum_over_cotengra": 1.0,
+    "search_time_flagquantum_over_cotengra": 0.3722791775344703
+  },
+  "schema_version": 1,
+  "search_budget_seconds": {
+    "cotengra": 10.0,
+    "flagquantum": 10.0
+  },
+  "workload_identity": "6ac4cf2d5b09623986ec0bb2396e1be7fa621b0be97730bd924e0bf7ed670d8c",
+  "workload_name": "flagquantum_18q_13l_expectation"
+}

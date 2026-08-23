@@ -1,0 +1,143 @@
+{
+  "adapt_iterations_completed": 1,
+  "adapt_iterations_requested": 1,
+  "backend": "tensor_network",
+  "cols": 2,
+  "converged": false,
+  "cycles": 1,
+  "distribution_semantics": "single_device_fast_path",
+  "dtype": "complex128",
+  "execution_seconds": 1.304790514986962,
+  "final_energy": -2.4032366184966207,
+  "hamiltonian_terms": 12,
+  "implementation": "FlagQuantum",
+  "initial_energy": -2.345615516909678,
+  "iterations": [
+    {
+      "energy_after": -2.4032366184966207,
+      "energy_before": -2.345615516909678,
+      "optimization_history": [
+        -2.345615516909678,
+        -2.3650053897860426,
+        -2.3804667402217774,
+        -2.391906799439191,
+        -2.3993954800032467
+      ],
+      "optimization_seconds": 0.10473922966048121,
+      "pool_gradients": [
+        -0.265611779888447,
+        0.03128845398377478,
+        -0.03270572019732443,
+        -0.08335739854903612,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "screening_seconds": 0.4768203110434115,
+      "selected_gradient": -0.265611779888447,
+      "selected_pool_index": 0
+    }
+  ],
+  "operator_pool": [
+    {
+      "kind": "ry",
+      "wires": [
+        0
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        1
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        2
+      ]
+    },
+    {
+      "kind": "ry",
+      "wires": [
+        3
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        0,
+        1
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        0,
+        2
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "rxx",
+      "wires": [
+        2,
+        3
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        0,
+        1
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        0,
+        2
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        1,
+        3
+      ]
+    },
+    {
+      "kind": "rzz",
+      "wires": [
+        2,
+        3
+      ]
+    }
+  ],
+  "operator_pool_size": 12,
+  "optimization_steps_per_iteration": 5,
+  "parameter_dtype": "float64",
+  "parameters": [
+    0.38180921219771397
+  ],
+  "peak_cuda_allocated_bytes": 17100288,
+  "qubits": 4,
+  "rows": 2,
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "selected_pool_indices": [
+    0
+  ],
+  "workload": "qubit_adapt_vqe_grid_tfim"
+}

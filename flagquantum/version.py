@@ -1,13 +1,13 @@
 # version.py
 """Version information for the distributed quantum device package."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 VERSION_INFO = {
     "major": 0,
-    "minor": 1,
+    "minor": 2,
     "patch": 0,
-    "release_level": "development",  # "development", "alpha", "beta", "rc", "final"
+    "release_level": "final",  # "development", "alpha", "beta", "rc", "final"
 }
 
 

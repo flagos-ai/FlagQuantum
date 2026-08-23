@@ -37,6 +37,7 @@ __all__ = (  # noqa: F822
     "MPSMonteCarloResult",
     "MPSState",
     "MPSTruncationRecord",
+    "merge_noisy_mps_results",
     "run_mps",
     "run_mps_adaptive",
     "run_noisy_mps",

@@ -127,6 +127,49 @@ class TensorNetworkSlicingPlan:
     total_estimated_cost: int
     peak_size: int
     target_peak_size: int | None = None
+    baseline_estimated_cost: int = 0
+    recomputation_factor: float = 1.0
+    budget_satisfied: bool = True
+    element_size_bytes: int = 0
+    peak_bytes: int = 0
+    target_peak_bytes: int | None = None
+    reduction_method: str = "kahan_compensated"
+    contraction_path: tuple[PairContractionStep, ...] = ()
+    contraction_path_source: str = "native"
+    canonicalize_unit_extent_labels: bool = False
+
+    def validate_economics(
+        self,
+        *,
+        max_slices: int | None = 4096,
+        max_recomputation_factor: float | None = 64.0,
+    ) -> None:
+        """Fail closed when slicing saves memory through excessive recomputation."""
+
+        if max_slices is not None and int(max_slices) < 1:
+            raise ValueError("max_slices must be >= 1 or None")
+        if (
+            max_recomputation_factor is not None
+            and float(max_recomputation_factor) < 1.0
+        ):
+            raise ValueError("max_recomputation_factor must be >= 1 or None")
+        blockers = []
+        if max_slices is not None and self.n_slices > int(max_slices):
+            blockers.append(
+                f"slice_count={self.n_slices} exceeds max_slices={int(max_slices)}"
+            )
+        if max_recomputation_factor is not None and self.recomputation_factor > float(
+            max_recomputation_factor
+        ):
+            blockers.append(
+                f"recomputation_factor={self.recomputation_factor:.6g} exceeds "
+                f"max_recomputation_factor={float(max_recomputation_factor):.6g}"
+            )
+        if blockers:
+            raise ValueError(
+                "tensor-network slicing rejected by economics preflight: "
+                + "; ".join(blockers)
+            )
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -137,6 +180,16 @@ class TensorNetworkSlicingPlan:
             "total_estimated_cost": self.total_estimated_cost,
             "peak_size": self.peak_size,
             "target_peak_size": self.target_peak_size,
+            "baseline_estimated_cost": self.baseline_estimated_cost,
+            "recomputation_factor": self.recomputation_factor,
+            "budget_satisfied": self.budget_satisfied,
+            "element_size_bytes": self.element_size_bytes,
+            "peak_bytes": self.peak_bytes,
+            "target_peak_bytes": self.target_peak_bytes,
+            "reduction_method": self.reduction_method,
+            "contraction_path_source": self.contraction_path_source,
+            "contraction_path_steps": len(self.contraction_path),
+            "canonicalize_unit_extent_labels": self.canonicalize_unit_extent_labels,
         }
 
 
@@ -173,6 +226,24 @@ class TensorNetworkContractionPlan:
         )
         return steps
 
+    def quality_greedy_path(self) -> tuple[PairContractionStep, ...]:
+        """Return a connected-first greedy path for large sparse networks."""
+
+        _, steps = _contract_nodes_greedy(
+            self.nodes, self.output_labels, dry_run=True, objective="quality"
+        )
+        return steps
+
+    def quality_multistart_path(self) -> tuple[PairContractionStep, ...]:
+        """Return the best deterministic connected-first multi-start path."""
+
+        return _contract_nodes_quality_multistart(self.nodes, self.output_labels)
+
+    def quality_reconfigured_path(self) -> tuple[PairContractionStep, ...]:
+        """Return a multi-start path with bounded exact subtree replacement."""
+
+        return _contract_nodes_quality_reconfigured(self.nodes, self.output_labels)
+
     def beam_path(self, *, beam_width: int = 8) -> tuple[PairContractionStep, ...]:
         """Return a beam-search contraction path."""
 
@@ -194,6 +265,7 @@ class TensorNetworkContractionPlan:
         strategy: str = "greedy",
         *,
         max_intermediate_size: int | None = None,
+        max_intermediate_bytes: int | None = None,
         sliced_labels: Sequence[int] | None = None,
         beam_width: int = 8,
     ) -> TensorNetworkContractionProfile:
@@ -204,6 +276,7 @@ class TensorNetworkContractionPlan:
             self.output_labels,
             strategy=strategy,
             max_intermediate_size=max_intermediate_size,
+            max_intermediate_bytes=max_intermediate_bytes,
             sliced_labels=sliced_labels,
             beam_width=beam_width,
         )
@@ -224,7 +297,9 @@ class TensorNetworkContractionPlan:
         self,
         *,
         max_intermediate_size: int | None = None,
+        max_intermediate_bytes: int | None = None,
         sliced_labels: Sequence[int] | None = None,
+        contraction_strategy: str = "quality_multistart",
     ) -> TensorNetworkSlicingPlan:
         """Plan internal-edge slicing for bounded-memory contraction."""
 
@@ -232,7 +307,58 @@ class TensorNetworkContractionPlan:
             self.nodes,
             self.output_labels,
             max_intermediate_size=max_intermediate_size,
+            max_intermediate_bytes=max_intermediate_bytes,
             sliced_labels=sliced_labels,
+            contraction_strategy=contraction_strategy,
+        )
+
+    def cotengra_slicing_plan(
+        self,
+        *,
+        target_peak_elements: int,
+        max_repeats: int = 16,
+        minimize: str = "write",
+        parallel: bool | str = False,
+        methods: Sequence[str] | None = None,
+        seed: int = 0,
+        target_slices: int | None = None,
+    ) -> TensorNetworkSlicingPlan:
+        """Jointly plan contraction and slicing with optional cotengra."""
+
+        return _cotengra_slicing_plan(
+            self.nodes,
+            self.output_labels,
+            target_peak_elements=target_peak_elements,
+            max_repeats=max_repeats,
+            minimize=minimize,
+            parallel=parallel,
+            methods=methods,
+            seed=seed,
+            target_slices=target_slices,
+        )
+
+    def contract_slicing_plan(
+        self, slicing: TensorNetworkSlicingPlan
+    ) -> torch.Tensor:
+        """Execute a precomputed native or external slicing plan."""
+
+        return _contract_nodes_with_slicing_plan(
+            self.nodes, self.output_labels, slicing
+        )
+
+    def reslice_external_plan(
+        self,
+        slicing: TensorNetworkSlicingPlan,
+        *,
+        target_slices: int,
+    ) -> TensorNetworkSlicingPlan:
+        """Add low-cost slice axes to an imported contraction path."""
+
+        return _reslice_external_slicing_plan(
+            self.nodes,
+            self.output_labels,
+            slicing,
+            target_slices=target_slices,
         )
 
     def contract(
@@ -240,11 +366,16 @@ class TensorNetworkContractionPlan:
         *,
         strategy: str = "greedy",
         max_intermediate_size: int | None = None,
+        max_intermediate_bytes: int | None = None,
         sliced_labels: Sequence[int] | None = None,
         beam_width: int = 8,
     ) -> torch.Tensor:
-        if strategy in {"greedy", "memory_greedy"}:
-            objective = "memory" if strategy == "memory_greedy" else "balanced"
+        if strategy in {"greedy", "memory_greedy", "quality_greedy"}:
+            objective = {
+                "greedy": "balanced",
+                "memory_greedy": "memory",
+                "quality_greedy": "quality",
+            }[strategy]
             result, _ = _contract_nodes_greedy(
                 self.nodes, self.output_labels, objective=objective
             )
@@ -257,19 +388,24 @@ class TensorNetworkContractionPlan:
         if strategy == "optimal":
             result, _ = _contract_nodes_optimal(self.nodes, self.output_labels)
             return result.reshape(self.bsz, 2**self.n_wires)
-        if strategy in {"sliced", "auto_sliced", "beam_sliced"}:
+        if strategy in {"sliced", "auto_sliced", "beam_sliced", "quality_sliced"}:
+            sliced_strategy = {
+                "beam_sliced": "beam",
+                "quality_sliced": "quality_multistart",
+            }.get(strategy, "greedy")
             result, _ = _contract_nodes_sliced(
                 self.nodes,
                 self.output_labels,
                 max_intermediate_size=max_intermediate_size,
+                max_intermediate_bytes=max_intermediate_bytes,
                 sliced_labels=sliced_labels,
-                contraction_strategy="beam" if strategy == "beam_sliced" else "greedy",
+                contraction_strategy=sliced_strategy,
                 beam_width=beam_width,
             )
             return result.reshape(self.bsz, 2**self.n_wires)
         if strategy != "einsum":
             raise ValueError(
-                "strategy must be 'greedy', 'memory_greedy', 'beam', 'optimal', 'einsum', 'sliced', 'auto_sliced', or 'beam_sliced'."
+                "strategy must be 'greedy', 'memory_greedy', 'quality_greedy', 'beam', 'optimal', 'einsum', 'sliced', 'auto_sliced', or 'beam_sliced'."
             )
         operands: list[Any] = []
         for node in self.nodes:
@@ -479,6 +615,24 @@ class TensorNetworkExpectationPlan:
         )
         return steps
 
+    def quality_greedy_path(self) -> tuple[PairContractionStep, ...]:
+        """Return a connected-first path for direct expectation contraction."""
+
+        _, steps = _contract_nodes_greedy(
+            self.nodes, self.output_labels, dry_run=True, objective="quality"
+        )
+        return steps
+
+    def quality_multistart_path(self) -> tuple[PairContractionStep, ...]:
+        """Return the best deterministic expectation multi-start path."""
+
+        return _contract_nodes_quality_multistart(self.nodes, self.output_labels)
+
+    def quality_reconfigured_path(self) -> tuple[PairContractionStep, ...]:
+        """Return an expectation path with bounded exact subtree replacement."""
+
+        return _contract_nodes_quality_reconfigured(self.nodes, self.output_labels)
+
     def beam_path(self, *, beam_width: int = 8) -> tuple[PairContractionStep, ...]:
         """Return a beam-search path for direct expectation contraction."""
 
@@ -500,6 +654,7 @@ class TensorNetworkExpectationPlan:
         strategy: str = "greedy",
         *,
         max_intermediate_size: int | None = None,
+        max_intermediate_bytes: int | None = None,
         sliced_labels: Sequence[int] | None = None,
         beam_width: int = 8,
     ) -> TensorNetworkContractionProfile:
@@ -510,6 +665,7 @@ class TensorNetworkExpectationPlan:
             self.output_labels,
             strategy=strategy,
             max_intermediate_size=max_intermediate_size,
+            max_intermediate_bytes=max_intermediate_bytes,
             sliced_labels=sliced_labels,
             beam_width=beam_width,
         )
@@ -530,7 +686,9 @@ class TensorNetworkExpectationPlan:
         self,
         *,
         max_intermediate_size: int | None = None,
+        max_intermediate_bytes: int | None = None,
         sliced_labels: Sequence[int] | None = None,
+        contraction_strategy: str = "quality_multistart",
     ) -> TensorNetworkSlicingPlan:
         """Plan internal-edge slicing for direct expectation contraction."""
 
@@ -538,7 +696,58 @@ class TensorNetworkExpectationPlan:
             self.nodes,
             self.output_labels,
             max_intermediate_size=max_intermediate_size,
+            max_intermediate_bytes=max_intermediate_bytes,
             sliced_labels=sliced_labels,
+            contraction_strategy=contraction_strategy,
+        )
+
+    def cotengra_slicing_plan(
+        self,
+        *,
+        target_peak_elements: int,
+        max_repeats: int = 16,
+        minimize: str = "write",
+        parallel: bool | str = False,
+        methods: Sequence[str] | None = None,
+        seed: int = 0,
+        target_slices: int | None = None,
+    ) -> TensorNetworkSlicingPlan:
+        """Jointly plan expectation contraction and slicing with cotengra."""
+
+        return _cotengra_slicing_plan(
+            self.nodes,
+            self.output_labels,
+            target_peak_elements=target_peak_elements,
+            max_repeats=max_repeats,
+            minimize=minimize,
+            parallel=parallel,
+            methods=methods,
+            seed=seed,
+            target_slices=target_slices,
+        )
+
+    def contract_slicing_plan(
+        self, slicing: TensorNetworkSlicingPlan
+    ) -> torch.Tensor:
+        """Execute a precomputed native or external slicing plan."""
+
+        return _contract_nodes_with_slicing_plan(
+            self.nodes, self.output_labels, slicing
+        )
+
+    def reslice_external_plan(
+        self,
+        slicing: TensorNetworkSlicingPlan,
+        *,
+        target_slices: int,
+    ) -> TensorNetworkSlicingPlan:
+        """Add low-cost slice axes to an imported expectation path."""
+
+        return _reslice_external_slicing_plan(
+            self.nodes,
+            self.output_labels,
+            slicing,
+            target_slices=target_slices,
         )
 
     def contract(
@@ -546,11 +755,16 @@ class TensorNetworkExpectationPlan:
         *,
         strategy: str = "greedy",
         max_intermediate_size: int | None = None,
+        max_intermediate_bytes: int | None = None,
         sliced_labels: Sequence[int] | None = None,
         beam_width: int = 8,
     ) -> torch.Tensor:
-        if strategy in {"greedy", "memory_greedy"}:
-            objective = "memory" if strategy == "memory_greedy" else "balanced"
+        if strategy in {"greedy", "memory_greedy", "quality_greedy"}:
+            objective = {
+                "greedy": "balanced",
+                "memory_greedy": "memory",
+                "quality_greedy": "quality",
+            }[strategy]
             result, _ = _contract_nodes_greedy(
                 self.nodes, self.output_labels, objective=objective
             )
@@ -563,19 +777,24 @@ class TensorNetworkExpectationPlan:
         if strategy == "optimal":
             result, _ = _contract_nodes_optimal(self.nodes, self.output_labels)
             return result
-        if strategy in {"sliced", "auto_sliced", "beam_sliced"}:
+        if strategy in {"sliced", "auto_sliced", "beam_sliced", "quality_sliced"}:
+            sliced_strategy = {
+                "beam_sliced": "beam",
+                "quality_sliced": "quality_multistart",
+            }.get(strategy, "greedy")
             result, _ = _contract_nodes_sliced(
                 self.nodes,
                 self.output_labels,
                 max_intermediate_size=max_intermediate_size,
+                max_intermediate_bytes=max_intermediate_bytes,
                 sliced_labels=sliced_labels,
-                contraction_strategy="beam" if strategy == "beam_sliced" else "greedy",
+                contraction_strategy=sliced_strategy,
                 beam_width=beam_width,
             )
             return result
         if strategy != "einsum":
             raise ValueError(
-                "strategy must be 'greedy', 'memory_greedy', 'beam', 'optimal', 'einsum', 'sliced', 'auto_sliced', or 'beam_sliced'."
+                "strategy must be 'greedy', 'memory_greedy', 'quality_greedy', 'beam', 'optimal', 'einsum', 'sliced', 'auto_sliced', or 'beam_sliced'."
             )
         operands: list[Any] = []
         for node in self.nodes:
@@ -623,12 +842,32 @@ def _contraction_profile(*args: Any, **kwargs: Any) -> Any:
     return _contraction_call("_contraction_profile", *args, **kwargs)
 
 
+def _cotengra_slicing_plan(*args: Any, **kwargs: Any) -> Any:
+    return _contraction_call("_cotengra_slicing_plan", *args, **kwargs)
+
+
+def _reslice_external_slicing_plan(*args: Any, **kwargs: Any) -> Any:
+    return _contraction_call("_reslice_external_slicing_plan", *args, **kwargs)
+
+
 def _contract_nodes_beam(*args: Any, **kwargs: Any) -> Any:
     return _contraction_call("_contract_nodes_beam", *args, **kwargs)
 
 
 def _contract_nodes_greedy(*args: Any, **kwargs: Any) -> Any:
     return _contraction_call("_contract_nodes_greedy", *args, **kwargs)
+
+
+def _contract_nodes_quality_multistart(*args: Any, **kwargs: Any) -> Any:
+    return _contraction_call("_contract_nodes_quality_multistart", *args, **kwargs)
+
+
+def _contract_nodes_with_slicing_plan(*args: Any, **kwargs: Any) -> Any:
+    return _contraction_call("_contract_nodes_with_slicing_plan", *args, **kwargs)
+
+
+def _contract_nodes_quality_reconfigured(*args: Any, **kwargs: Any) -> Any:
+    return _contraction_call("_contract_nodes_quality_reconfigured", *args, **kwargs)
 
 
 def _contract_nodes_optimal(*args: Any, **kwargs: Any) -> Any:

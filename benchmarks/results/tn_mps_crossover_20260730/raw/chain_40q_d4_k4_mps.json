@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "benchmark": "tn_mps_crossover",
+  "status": "measured_success",
+  "topology": "chain",
+  "backend": "mps",
+  "qubits": 40,
+  "depth": 4,
+  "target_count": 4,
+  "iterations": 3,
+  "latency_seconds": 0.04072350217029452,
+  "times_seconds": [
+    2.7401216439902782,
+    0.04072350217029452,
+    0.040982927195727825
+  ],
+  "peak_memory_bytes": 15050752,
+  "observed_max_bond": 16,
+  "full_state_materialized": false,
+  "values_real": [
+    [
+      0.9018078446388245,
+      -6.61529455394901e-21,
+      5.1378454320546944e-18,
+      3.503064812818688e-18
+    ]
+  ],
+  "values_imag": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ]
+}

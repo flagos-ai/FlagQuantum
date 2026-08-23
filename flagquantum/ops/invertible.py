@@ -69,6 +69,7 @@ Notes
 - The module is invertible for memory-efficient backpropagation
 """
 
+import warnings
 from typing import List, Optional, Tuple, Union
 
 import torch
@@ -164,6 +165,13 @@ class InvertibleUnitary(nn.Module):
         >>> # With different probabilities for 1q and 2q
         >>> layer = InvertibleUnitary(gates, error_probs=[0.005, 0.02])
         """
+        warnings.warn(
+            "InvertibleUnitary belongs to the FlagQuantum v0.1 device API and "
+            "is not the v0.2 sharded adjoint runtime. Use fq.Module or "
+            "fq.train_distributed_statevector instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
 
         # Store gates as ModuleList

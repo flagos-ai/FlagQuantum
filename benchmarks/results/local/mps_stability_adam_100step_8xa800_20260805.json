@@ -1,0 +1,7409 @@
+{
+  "all_ranks_useful": true,
+  "command": "benchmarks/mps_stability.py --optimizer adam --steps 100 --restart-steps 10 --max-bond 16 --output benchmarks/results/local/mps_stability_adam_100step_8xa800_20260805.json",
+  "commit": "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708",
+  "full_mps_materialization": false,
+  "max_bond": 16,
+  "memory_growth_tolerance_bytes": 67108864,
+  "memory_stable": true,
+  "optimizer": "adam",
+  "rank_records": [
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-0-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-0-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17075200,
+          "reserved": 23068672,
+          "step": 0,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 1,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 2,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 3,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 4,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 5,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 6,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 7,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 8,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 9,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 10,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 11,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 12,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 13,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 14,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 15,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 16,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 17,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 18,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 19,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 20,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 21,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 22,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 23,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 24,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 25,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 26,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 27,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 28,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 29,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 30,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 31,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 32,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 33,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 34,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 35,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 36,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 37,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 38,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 39,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 40,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 41,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 42,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 43,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 44,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 45,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 46,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 47,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 48,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 49,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 50,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 51,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 52,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 53,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 54,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 55,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 56,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 57,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 58,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 59,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 60,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 61,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 62,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 63,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 64,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 65,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 66,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 67,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 68,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 69,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 70,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 71,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 72,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 73,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 74,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 75,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 76,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 77,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 78,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 79,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 80,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 81,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 82,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 83,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 84,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 85,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 86,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 87,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 88,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 89,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 90,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 91,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 92,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 93,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 94,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 95,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 96,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 97,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 98,
+          "tape": 2560
+        },
+        {
+          "allocated": 17054720,
+          "communication": 6144,
+          "optimizer": 12,
+          "peak": 17085952,
+          "reserved": 23068672,
+          "step": 99,
+          "tape": 2560
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 0,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-1-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-1-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23377408,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 15360
+        },
+        {
+          "allocated": 17070080,
+          "communication": 20480,
+          "optimizer": 12,
+          "peak": 23392768,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 15360
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 1,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-2-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-2-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23377408,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 15360
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 2,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-3-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-3-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23377408,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 15360
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 3,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-4-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-4-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23377408,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 15360
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 4,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-5-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-5-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23377408,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 15360
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 5,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-6-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-6-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23377408,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 15360
+        },
+        {
+          "allocated": 17068544,
+          "communication": 28672,
+          "optimizer": 0,
+          "peak": 23391232,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 15360
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 6,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    },
+    {
+      "checkpoint_contract_fingerprint": "f62dd09dbc3876b4645d5a3d84c481b15f4160b9ef4cde34e93f3907cecb7891",
+      "checkpoint_files": [
+        "/tmp/fq-issue093-adam/rank-7-step-5.pt",
+        "/tmp/fq-issue093-adam/rank-7-step-10.pt"
+      ],
+      "completed_steps": 100,
+      "memory_growth_bytes": 0,
+      "memory_timeline": [
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23356928,
+          "reserved": 44040192,
+          "step": 0,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 1,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 2,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 3,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 4,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 5,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 6,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 7,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 8,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 9,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 10,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 11,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 12,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 13,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 14,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 15,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 16,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 17,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 18,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 19,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 20,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 21,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 22,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 23,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 24,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 25,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 26,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 27,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 28,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 29,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 30,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 31,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 32,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 33,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 34,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 35,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 36,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 37,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 38,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 39,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 40,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 41,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 42,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 43,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 44,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 45,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 46,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 47,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 48,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 49,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 50,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 51,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 52,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 53,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 54,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 55,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 56,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 57,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 58,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 59,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 60,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 61,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 62,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 63,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 64,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 65,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 66,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 67,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 68,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 69,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 70,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 71,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 72,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 73,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 74,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 75,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 76,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 77,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 78,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 79,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 80,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 81,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 82,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 83,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 84,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 85,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 86,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 87,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 88,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 89,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 90,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 91,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 92,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 93,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 94,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 95,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 96,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 97,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 98,
+          "tape": 3488
+        },
+        {
+          "allocated": 17055744,
+          "communication": 14336,
+          "optimizer": 0,
+          "peak": 23358976,
+          "reserved": 44040192,
+          "step": 99,
+          "tape": 3488
+        }
+      ],
+      "optimizer": "adam",
+      "rank": 7,
+      "rank_useful_work": true,
+      "restart_loss_error": 0.0,
+      "restart_parameter_error": 0.0,
+      "restart_start_step": 5,
+      "suspected_memory_leak": false
+    }
+  ],
+  "release_gate_allowed": false,
+  "restart_equivalent": true,
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_stability_run.v1",
+  "steps": 100,
+  "warmup_steps": 5,
+  "workload_sha256": "6f43395af217e9479e172a7812e73a3c453060d9ff7424c2774577a01386b496",
+  "world_size": 8,
+  "benchmark": "mps_stability_adam_100step_8xa800_20260805",
+  "benchmark_evidence_class": "local_non_release",
+  "non_release_evidence": true,
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "sharded_across_ranks",
+  "scalability_blockers": [
+    "development A800 stability evidence is not release-certified"
+  ],
+  "local_world_size": 8,
+  "node_count": 1,
+  "rank_shards": [
+    {
+      "rank": 0,
+      "local_memory_bytes": 17085952
+    },
+    {
+      "rank": 1,
+      "local_memory_bytes": 23392768
+    },
+    {
+      "rank": 2,
+      "local_memory_bytes": 23391232
+    },
+    {
+      "rank": 3,
+      "local_memory_bytes": 23391232
+    },
+    {
+      "rank": 4,
+      "local_memory_bytes": 23391232
+    },
+    {
+      "rank": 5,
+      "local_memory_bytes": 23391232
+    },
+    {
+      "rank": 6,
+      "local_memory_bytes": 23391232
+    },
+    {
+      "rank": 7,
+      "local_memory_bytes": 23358976
+    }
+  ],
+  "communication_bytes": 18432000
+}

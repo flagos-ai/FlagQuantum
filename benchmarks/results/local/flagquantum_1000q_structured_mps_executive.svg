@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760">
+  <rect width="1400" height="760" fill="#ffffff"/>
+  <style>
+    text { font-family: Inter, Arial, sans-serif; fill: #111827; }
+    .muted { fill: #64748b; }
+    .grid { stroke: #dbe3ec; stroke-width: 1; }
+    .axis { stroke: #475569; stroke-width: 1.5; }
+  </style>
+  <text x="62" y="68" font-size="34" font-weight="700">FlagQuantum: Structured 1,000-Qubit MPS Training</text>
+  <text x="62" y="104" font-size="18" class="muted">Measured development evidence | 1,000 optimizer steps | CPU, PyTorch-facing JAX kernel</text>
+
+  <rect x="60" y="145" width="870" height="520" rx="16" fill="#fafbff" stroke="#dbe3ec"/>
+  <text x="92" y="190" font-size="23" font-weight="700">Training convergence</text>
+  <text x="92" y="218" font-size="14" class="muted">Teacher-student observable loss (log scale)</text>
+
+  <line x1="125" y1="250" x2="125" y2="590" class="axis"/>
+  <line x1="125" y1="590" x2="875" y2="590" class="axis"/>
+  <g class="grid">
+    <line x1="125" y1="250" x2="875" y2="250"/><line x1="125" y1="318" x2="875" y2="318"/>
+    <line x1="125" y1="386" x2="875" y2="386"/><line x1="125" y1="454" x2="875" y2="454"/>
+    <line x1="125" y1="522" x2="875" y2="522"/><line x1="125" y1="590" x2="875" y2="590"/>
+  </g>
+  <g font-size="13" class="muted" text-anchor="end">
+    <text x="113" y="255">10⁰</text><text x="113" y="323">10⁻²</text><text x="113" y="391">10⁻⁴</text>
+    <text x="113" y="459">10⁻⁶</text><text x="113" y="527">10⁻⁸</text><text x="113" y="595">10⁻¹⁰</text>
+  </g>
+  <g font-size="13" class="muted" text-anchor="middle">
+    <text x="125" y="617">0</text><text x="275" y="617">200</text><text x="425" y="617">400</text>
+    <text x="575" y="617">600</text><text x="725" y="617">800</text><text x="875" y="617">1000</text>
+    <text x="500" y="647" font-size="15">Optimizer step</text>
+  </g>
+  <path d="M125 270 L275 451 L425 563 L575 582 L725 588 L875 590 L875 590 L125 590 Z" fill="#8b5cf6" opacity="0.10"/>
+  <polyline points="125,270 275,451 425,563 575,582 725,588 875,590" fill="none" stroke="#6d28d9" stroke-width="5" stroke-linejoin="round"/>
+  <g fill="#6d28d9" stroke="#ffffff" stroke-width="3">
+    <circle cx="125" cy="270" r="8"/><circle cx="275" cy="451" r="8"/><circle cx="425" cy="563" r="8"/>
+    <circle cx="575" cy="582" r="8"/><circle cx="725" cy="588" r="8"/><circle cx="875" cy="590" r="8"/>
+  </g>
+  <text x="150" y="260" font-size="15" font-weight="700" fill="#6d28d9">Initial loss  2.63×10⁻¹</text>
+  <text x="655" y="558" font-size="15" font-weight="700" fill="#6d28d9">Final loss  6.01×10⁻¹¹</text>
+
+  <rect x="965" y="145" width="375" height="520" rx="16" fill="#f8fafc" stroke="#dbe3ec"/>
+  <text x="1000" y="191" font-size="23" font-weight="700">Experiment summary</text>
+  <g>
+    <text x="1000" y="245" font-size="29" font-weight="700" fill="#047857">1,000</text><text x="1120" y="245" font-size="16" class="muted">qubits</text>
+    <line x1="1000" y1="266" x2="1305" y2="266" class="grid"/>
+    <text x="1000" y="310" font-size="29" font-weight="700" fill="#047857">500</text><text x="1120" y="310" font-size="16" class="muted">dimer pairs</text>
+    <line x1="1000" y1="331" x2="1305" y2="331" class="grid"/>
+    <text x="1000" y="375" font-size="29" font-weight="700" fill="#047857">1,500</text><text x="1120" y="375" font-size="16" class="muted">trainable parameters</text>
+    <line x1="1000" y1="396" x2="1305" y2="396" class="grid"/>
+    <text x="1000" y="440" font-size="29" font-weight="700" fill="#047857">χ = 2</text><text x="1120" y="440" font-size="16" class="muted">MPS bond dimension</text>
+    <line x1="1000" y1="461" x2="1305" y2="461" class="grid"/>
+    <text x="1000" y="505" font-size="29" font-weight="700" fill="#047857">0.605 ms</text><text x="1000" y="529" font-size="14" class="muted">steady loss + gradient</text>
+  </g>
+  <rect x="995" y="558" width="315" height="78" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="1012" y="583" font-size="14" font-weight="700" fill="#b45309">Evidence boundary</text>
+  <text x="1012" y="606" font-size="12.5" class="muted">Structured low-entanglement MPS; single-device path.</text>
+  <text x="1012" y="625" font-size="12.5" class="muted">Not an arbitrary 1,000-qubit or distributed claim.</text>
+
+  <text x="62" y="716" font-size="13" class="muted">Source: flagquantum_1000q_structured_mps_cpu_jax.json | Experiment date: 2026-07-08</text>
+</svg>

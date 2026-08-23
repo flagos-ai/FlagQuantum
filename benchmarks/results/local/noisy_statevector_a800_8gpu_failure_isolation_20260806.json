@@ -1,0 +1,74 @@
+{
+  "benchmark": "noisy_statevector_a800_8gpu_failure_isolation_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "claim_evidence_type": "development_smoke",
+  "completed_trajectories": 127,
+  "converged": false,
+  "depth": 8,
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "distribution_semantics": "rank_local_replicated_kernel",
+  "failures": [
+    {
+      "error_type": "RuntimeError",
+      "message": "injected benchmark trajectory failure",
+      "retryable": true,
+      "trajectory_id": 3
+    }
+  ],
+  "global_expectation_z": [
+    [
+      0.43778204917907715,
+      0.5415586829185486,
+      0.3131471872329712,
+      -0.520593523979187,
+      -0.3769543170928955,
+      0.19630078971385956,
+      0.06975618004798889,
+      0.01670731045305729,
+      -0.40073227882385254,
+      -0.46633121371269226,
+      -0.07340077310800552,
+      -0.04091079160571098
+    ]
+  ],
+  "global_variance": [
+    [
+      0.007490325719118118,
+      0.04729681834578514,
+      0.017872223630547523,
+      0.03208932280540466,
+      0.021204164251685143,
+      0.0496249794960022,
+      0.010911760851740837,
+      0.017280833795666695,
+      0.031582243740558624,
+      0.04870259016752243,
+      0.010132716037333012,
+      0.027960674837231636
+    ]
+  ],
+  "max_cuda_peak_allocated_bytes": 15373824,
+  "max_cuda_peak_reserved_bytes": 27262976,
+  "median_seconds": 2.7044026851654053,
+  "min_trajectories": 1,
+  "n_wires": 12,
+  "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "repeat_seconds": [
+    2.7044026851654053
+  ],
+  "requested_trajectories": 128,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noisy_statevector_distributed_benchmark.v1",
+  "seed": 20260806,
+  "stopped_early": false,
+  "target_standard_error": null,
+  "torch_version": "2.13.0+cu130",
+  "trajectories_per_second": 46.9604621740096,
+  "trajectory_batch_size": 16,
+  "world_size": 8
+}

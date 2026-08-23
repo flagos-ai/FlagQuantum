@@ -1,0 +1,7 @@
+{
+  "absolute_error": 1.0869083411080283e-13,
+  "append_autograd_gradient": 0.7211139163891597,
+  "commutator_gradient": 0.721113916389051,
+  "dtype": "complex128",
+  "energy": -2.5941211908267388
+}

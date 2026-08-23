@@ -2,9 +2,9 @@
 
 from typing import Any
 
-from . import mps, noise, tensor
+from . import mps, noise, small_statevector, tensor
 
-_EXPORT_MODULES = (mps, noise, tensor)
+_EXPORT_MODULES = (mps, noise, small_statevector, tensor)
 __all__ = list(
     dict.fromkeys(name for module in _EXPORT_MODULES for name in module.__all__)
 )

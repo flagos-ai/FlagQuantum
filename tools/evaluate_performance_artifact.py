@@ -48,16 +48,35 @@ def evaluate_path(
     return bool(payload["performance_gate"]["passed"])
 
 
+def resolve_optional_baseline(path: Path | None) -> Path | None:
+    """Return an optional baseline only when its artifact is available."""
+    if path is None or path.exists():
+        return path
+    print(
+        f"performance baseline not present: {path}; "
+        "evaluating intrinsic thresholds only"
+    )
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="+", type=Path)
     parser.add_argument("--write", action="store_true")
-    parser.add_argument("--baseline", type=Path)
+    baseline_group = parser.add_mutually_exclusive_group()
+    baseline_group.add_argument("--baseline", type=Path)
+    baseline_group.add_argument("--baseline-if-present", type=Path)
     args = parser.parse_args()
-    if args.baseline is not None and len(args.paths) != 1:
-        parser.error("--baseline requires exactly one current artifact")
+    requested_baseline = args.baseline or args.baseline_if_present
+    if requested_baseline is not None and len(args.paths) != 1:
+        parser.error("a baseline requires exactly one current artifact")
+    baseline = (
+        args.baseline
+        if args.baseline is not None
+        else resolve_optional_baseline(args.baseline_if_present)
+    )
     passed = all(
-        evaluate_path(path, write=args.write, baseline_path=args.baseline)
+        evaluate_path(path, write=args.write, baseline_path=baseline)
         for path in args.paths
     )
     return 0 if passed else 1

@@ -1,0 +1,154 @@
+{
+  "benchmark": "tn_sparse_capacity",
+  "cuda_version": "13.0",
+  "distributed": {
+    "backend": "nccl",
+    "estimated_per_slice_cost": 80718201304,
+    "estimated_per_slice_peak": 1073741824,
+    "expected_slice_tasks": 32,
+    "max_working_set_gib": 32.0,
+    "memory_calibration_identity": null,
+    "plan_cache_path": null,
+    "sliced_labels": [
+      436,
+      540,
+      82,
+      558,
+      232
+    ],
+    "working_set_safety_factor": 4.0,
+    "world_size": 4
+  },
+  "execution_summary": {
+    "distribution_semantics": "slice_parallel_sparse_output_all_reduce",
+    "full_state_materialized": false,
+    "output_target": "few_amplitudes",
+    "rank_partial_bytes_by_rank": {
+      "0": 8
+    },
+    "reduction_payload_bytes": 8,
+    "shared_contraction": true,
+    "slice_tasks": 32,
+    "state_mode": "distributed_tensor_network_amplitudes",
+    "target_count": 1,
+    "tasks_by_rank": {
+      "0": 8,
+      "1": 8,
+      "2": 8,
+      "3": 8
+    },
+    "working_set_preflight": {
+      "allocator_headroom_bytes": 25769803776,
+      "budget_satisfied": true,
+      "communication_buffer_bytes": 0,
+      "fail_closed": true,
+      "kernel_workspace_bytes": 0,
+      "max_working_set_bytes": 34359738368,
+      "memory_calibration_identity": null,
+      "model": "calibrated_peak_safety_factor",
+      "predicted_working_set_bytes": 34359738368,
+      "tensor_peak_bytes": 8589934592,
+      "working_set_policy": null
+    },
+    "world_size": 4
+  },
+  "git_sha": "5c08b45c5466a3cc262b7b10300e0fe12dc738b6",
+  "host": "p-kt-lc-a800-04",
+  "latency_seconds_max_rank_median": 4.405631065368652,
+  "peak_memory_bytes_max": 34368489984,
+  "peak_reserved_memory_bytes_max": 55507419136,
+  "phase_timings_seconds_max_rank": {
+    "circuit_build": 0.007401896174997091,
+    "projection_and_slice_selection": 10.875126550905406,
+    "tensor_network_build": 1.0385410711169243
+  },
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "rank_records": [
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 0,
+      "median_seconds": 4.405561923980713,
+      "peak_memory_bytes": 34368489984,
+      "peak_reserved_memory_bytes": 55507419136,
+      "phase_timings_seconds": {
+        "circuit_build": 0.007359594572335482,
+        "projection_and_slice_selection": 10.799294308759272,
+        "tensor_network_build": 1.0385410711169243
+      },
+      "rank": 0,
+      "times_seconds": [
+        4.40556178195402
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 1,
+      "median_seconds": 4.405578136444092,
+      "peak_memory_bytes": 34368489984,
+      "peak_reserved_memory_bytes": 55507419136,
+      "phase_timings_seconds": {
+        "circuit_build": 0.0062216706573963165,
+        "projection_and_slice_selection": 10.875126550905406,
+        "tensor_network_build": 0.9385827761143446
+      },
+      "rank": 1,
+      "times_seconds": [
+        4.405578134115785
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 2,
+      "median_seconds": 4.405631065368652,
+      "peak_memory_bytes": 34368489984,
+      "peak_reserved_memory_bytes": 55507419136,
+      "phase_timings_seconds": {
+        "circuit_build": 0.007401896174997091,
+        "projection_and_slice_selection": 10.781114493031055,
+        "tensor_network_build": 1.0365305640734732
+      },
+      "rank": 2,
+      "times_seconds": [
+        4.4056310299783945
+      ]
+    },
+    {
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "local_rank": 3,
+      "median_seconds": 4.4056267738342285,
+      "peak_memory_bytes": 34368489984,
+      "peak_reserved_memory_bytes": 55507419136,
+      "phase_timings_seconds": {
+        "circuit_build": 0.006174036767333746,
+        "projection_and_slice_selection": 10.776401583105326,
+        "tensor_network_build": 1.037639653775841
+      },
+      "rank": 3,
+      "times_seconds": [
+        4.4056266839616
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "status": "measured_success",
+  "timestamp_utc": "2026-07-31T05:50:03Z",
+  "torch_version": "2.13.0+cu130",
+  "values_imag": [
+    [
+      0.0
+    ]
+  ],
+  "values_real": [
+    [
+      0.9848882555961609
+    ]
+  ],
+  "workload": {
+    "depth": 4,
+    "dtype": "complex64",
+    "qubits": 36,
+    "target": "few_amplitudes",
+    "target_count": 1,
+    "topology": "grid_4x9"
+  }
+}

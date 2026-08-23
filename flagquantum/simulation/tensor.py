@@ -30,8 +30,13 @@ __all__ = (
     "TensorNode",
     "build_tensor_network",
     "build_tensor_network_expectation",
+    "build_tensor_network_hamiltonian_expectation",
+    "build_tensor_network_hamiltonian_expectations",
     "run_tensor_network",
+    "tensor_network_amplitude",
+    "tensor_network_amplitudes",
     "tensor_network_expectation_ps",
+    "tensor_network_expectations",
 )
 
 

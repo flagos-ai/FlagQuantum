@@ -66,6 +66,7 @@ def train(
         resume=resume,
         memory_leak_tolerance_bytes=64 << 20,
         memory_warmup_steps=5,
+        compile_site_kernels=False,
     )
 
 
@@ -164,6 +165,15 @@ def main():
     }
     records = [None] * world
     dist.all_gather_object(records, local)
+    restart_equivalent = all(
+        record["restart_parameter_error"] <= 1e-7
+        and record["restart_loss_error"] <= 1e-7
+        and record["restart_start_step"] == args.restart_steps // 2
+        for record in records
+    )
+    memory_stable = all(
+        not record["suspected_memory_leak"] for record in records
+    )
     if rank == 0:
         payload = {
             "schema": "flagquantum.mps_stability_run.v1",
@@ -174,15 +184,8 @@ def main():
             "warmup_steps": 5,
             "memory_growth_tolerance_bytes": 64 << 20,
             "rank_records": records,
-            "restart_equivalent": all(
-                record["restart_parameter_error"] <= 1e-7
-                and record["restart_loss_error"] <= 1e-7
-                and record["restart_start_step"] == args.restart_steps // 2
-                for record in records
-            ),
-            "memory_stable": all(
-                not record["suspected_memory_leak"] for record in records
-            ),
+            "restart_equivalent": restart_equivalent,
+            "memory_stable": memory_stable,
             "all_ranks_useful": all(record["rank_useful_work"] for record in records),
             "full_mps_materialization": False,
             "scalability_claim_allowed": False,
@@ -206,6 +209,8 @@ def main():
             flush=True,
         )
     dist.destroy_process_group()
+    if not memory_stable or not restart_equivalent:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

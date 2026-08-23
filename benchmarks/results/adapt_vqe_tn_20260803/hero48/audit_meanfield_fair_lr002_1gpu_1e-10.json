@@ -1,0 +1,22 @@
+{
+  "final_energy_absolute_error": 1.638511548662791e-11,
+  "flagquantum_result": "benchmarks/results/adapt_vqe_tn_20260803/hero48/fq_meanfield_fair_lr002_1gpu.json",
+  "flagquantum_seconds": 20.607247789856046,
+  "flagquantum_speedup": 4.104067734394876,
+  "initial_energy_absolute_error": 1.6271428648906294e-11,
+  "initial_product_state_energy_absolute_error": 0.0,
+  "max_optimization_history_absolute_error": 1.6299850358336698e-11,
+  "max_pool_gradient_absolute_error": 2.3306009899748403e-15,
+  "performance_comparison_authorized": false,
+  "performance_comparison_blocker": "matching Cotengra policy does not prove an identical contraction tree",
+  "qubits": 48,
+  "schema_version": 1,
+  "screening_method": "commutator",
+  "selected_pool_indices": [
+    15
+  ],
+  "status": "pass",
+  "tensorcircuit_ng_result": "benchmarks/results/adapt_vqe_tn_20260803/hero48/tcng_meanfield_fair_lr002_1gpu.json",
+  "tensorcircuit_ng_seconds": 84.57354074902833,
+  "tolerance": 1e-10
+}

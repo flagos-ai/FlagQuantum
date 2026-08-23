@@ -1,0 +1,57 @@
+{
+  "evidence_type": "partial_mesh_reverse_with_replicated_dimensions",
+  "date": "2026-07-29",
+  "environment": {
+    "accelerator_count": 8,
+    "accelerator": "NVIDIA A800",
+    "backend": "NCCL",
+    "dtype": "torch.complex64"
+  },
+  "contraction": {
+    "left_labels": [0, 1, 2, 3],
+    "right_labels": [2, 3, 4, 5],
+    "output_labels": [0, 1, 4, 5],
+    "mesh_labels": [0, 2, 4],
+    "mesh_shape": [2, 2, 2]
+  },
+  "layouts": {
+    "left_partitioned_mesh_labels": [0, 2],
+    "left_replicated_mesh_labels": [4],
+    "right_partitioned_mesh_labels": [2, 4],
+    "right_replicated_mesh_labels": [0],
+    "output_partitioned_mesh_labels": [0, 4],
+    "output_replicated_mesh_labels": [2]
+  },
+  "reverse": {
+    "left_cotangent_reduction_mesh_labels": [4],
+    "right_cotangent_reduction_mesh_labels": [0],
+    "subgroup_collective_count_per_rank": 2,
+    "subgroup_collective_bytes_per_rank": 64,
+    "cached_mesh_group_count": 12,
+    "mesh_groups_explicitly_released": true,
+    "passed_ranks": 8,
+    "left_cotangent_matches_full_vjp_partition": true,
+    "right_cotangent_matches_full_vjp_partition": true,
+    "full_logical_tensor_materialized_by_executor": false
+  },
+  "partial_mesh_redistribution": {
+    "source_mesh_labels": [0, 2, 4],
+    "destination_mesh_labels": [1, 3, 6],
+    "destination_replicated_mesh_labels": [6],
+    "plan_identity": "2bf7844481a5a1903565cbf935392fc631128dcc47f82db79ea47e8a0ca71b89",
+    "canonical_source_rank_count": 4,
+    "destination_replication_factor": 2,
+    "delivered_bytes_global": 256,
+    "network_bytes_global": 224,
+    "self_bytes_global": 32,
+    "all_destination_ranks_match_full_vjp_partition": true,
+    "duplicate_source_replicas_sent": false
+  },
+  "claim_boundary": [
+    "This establishes executable reverse VJP semantics for tensors replicated along absent mesh dimensions.",
+    "The test uses a synthetic pair contraction and not yet a circuit-derived reverse record.",
+    "Dynamic redistribution between two partial meshes is included using one canonical owner for every duplicate source slice.",
+    "The partial-mesh VJP and redistribution are not yet connected to a circuit-derived reverse record.",
+    "Subgroups are cached for one mesh-cache lifetime and explicitly released; cross-run caching and topology optimization remain pending."
+  ]
+}

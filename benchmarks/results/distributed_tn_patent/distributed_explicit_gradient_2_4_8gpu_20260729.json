@@ -1,0 +1,86 @@
+{
+  "evidence_type": "distributed_explicit_tensor_network_parameter_gradient",
+  "date": "2026-07-29",
+  "environment": {
+    "accelerator": "NVIDIA A800",
+    "backend": "NCCL",
+    "dtype": "float64 parameters / complex tensor network"
+  },
+  "workload": {
+    "qubits": 8,
+    "parameter_count": 8,
+    "parameterized_gate": "RY",
+    "entangling_gate": "CX",
+    "entangling_layers": 3,
+    "observable": "Z on all 8 qubits"
+  },
+  "method": {
+    "forward": "multi-axis sharded target-cone execution",
+    "reverse": "deterministic explicit reverse DAG",
+    "adjoint_ownership": "forward multi-axis mesh inherited per cotangent value with rank-local shape validation",
+    "parameter_pullback": "gate-local Jacobian-vector product",
+    "gradient_collective": "NCCL all-reduce",
+    "reference": "native tensor-network expectation with PyTorch autograd",
+    "full_state_materialization": false,
+    "silent_statevector_fallback": false
+  },
+  "results": [
+    {
+      "world_size": 2,
+      "passed_ranks": 2,
+      "forward_dag_identity": "09bbf9dc67a495cf563059af26918af3e6cee3eb0484f5ec37d7b5c0cb8c241f",
+      "reverse_dag_identity": "16023aa0bae07a9ad01ce3c73bcac66c0628c8d3bb47e1c42f7cbf6ae8f4a807",
+      "adjoint_layout_identity": "14154a3d637901ab5e0bff9003f95758c049be604372adc96a1c53e2fafb3966",
+      "peak_plan_identity": "92bed98d3110be2f298716f6cf4a9d8624b5a8b68d58ed791eba945903ea9672",
+      "shard_labels": [17],
+      "partitioned_adjoint_value_count": 9,
+      "fully_replicated_adjoint_value_count": 116,
+      "forward_collectives_per_rank": 1,
+      "parameter_gradient_collectives_per_rank": 1,
+      "nonfinite_cotangent_count": 0,
+      "gradient_max_abs_error": 3.2014213502407074e-08
+    },
+    {
+      "world_size": 4,
+      "passed_ranks": 4,
+      "forward_dag_identity": "1351664b5d6b96bd6be21acaed2269064e491f6090677e7383d0f8fa9be5e6e1",
+      "reverse_dag_identity": "cda4ddb443651eb64005109257b2896c3198b48a8b02c4ce7183c356d8a9f15a",
+      "adjoint_layout_identity": "eb50fb09e03b063a74f7a7d9d59ab045ce6c3763b055bcd9dd0a7b9f32ba4400",
+      "peak_plan_identity": "5e4e4a4b1b508d2de15d02a0df21d798a7b50d5553f74238b332b479c03a1a39",
+      "shard_labels": [17, 26],
+      "partitioned_adjoint_value_count": 14,
+      "fully_replicated_adjoint_value_count": 111,
+      "forward_collectives_per_rank": 1,
+      "parameter_gradient_collectives_per_rank": 1,
+      "nonfinite_cotangent_count": 0,
+      "gradient_max_abs_error": 3.314926289021969e-08
+    },
+    {
+      "world_size": 8,
+      "passed_ranks": 8,
+      "forward_dag_identity": "91e730bb01e34d13e4305a2e383ffa50b84c11f77745f98b470e93f83e3ab70f",
+      "reverse_dag_identity": "5f0bb699f92935b8afe10d2c85af40b4b6e918a41a9ef028a74db46f7e3250d5",
+      "adjoint_layout_identity": "4255460fdb2baf18c59e77c7d5a40563a016859f6aed95ac19e870d144ee176b",
+      "peak_plan_identity": "4a87632c82c590b1a8078b97631e5c596a44080213afcf48ebd280b105a80302",
+      "shard_labels": [20, 17, 26],
+      "partitioned_adjoint_value_count": 19,
+      "fully_replicated_adjoint_value_count": 106,
+      "forward_collectives_per_rank": 1,
+      "parameter_gradient_collectives_per_rank": 1,
+      "nonfinite_cotangent_count": 0,
+      "gradient_max_abs_error": 3.992136043962091e-08
+    }
+  ],
+  "regression": {
+    "command": "python -m pytest -q tests/distributed/test_tn_circuit_multi_axis_gradient.py",
+    "result": "3 passed",
+    "elapsed_seconds": 75.45
+  },
+  "claim_boundary": [
+    "The contraction reverse is explicit and does not delegate to generic contraction autograd.",
+    "Gate-local parameter pullback currently uses PyTorch autograd.",
+    "The evidence establishes small-circuit gradient correctness, not large-model reverse capacity or speedup.",
+    "This distributed gradient run retains all forward values; checkpoint/rematerialization has separate single-device execution evidence.",
+    "The fixed-mesh cone inherits layouts without an intermediate all-to-all; dynamic mesh-label changes remain unimplemented."
+  ]
+}

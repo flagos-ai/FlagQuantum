@@ -1,0 +1,16 @@
+{
+  "devices": 1,
+  "dtype": "complex128",
+  "implementation": "TensorCircuit-NG 1.8.0 DistributedContractor",
+  "path_repeats": 4,
+  "planning_only": true,
+  "planning_seconds": 88.27762079937384,
+  "qubits": 40,
+  "schema_version": 1,
+  "slices": 512,
+  "target_size_elements": 67108864,
+  "tree_flops": 124139698225152.0,
+  "tree_max_size_elements": 67108864,
+  "tree_write": 174310679040.0,
+  "workload": "5x8_4c_global_z"
+}

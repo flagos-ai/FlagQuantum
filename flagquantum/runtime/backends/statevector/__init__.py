@@ -6,6 +6,8 @@ from importlib import import_module
 from typing import Any
 
 __all__ = (
+    "BatchedStatevectorTrajectoryResult",
+    "merge_noisy_statevector_results",
     "execute_torch_distributed_statevector",
     "execute_torch_distributed_statevector_reverse",
     "initialize_statevector_shard",
@@ -15,9 +17,22 @@ __all__ = (
     "TorchDistributedStatevectorGradientResult",
     "TorchDistributedStatevectorResult",
     "train_distributed_statevector",
+    "run_noisy_statevector",
 )
 
 _EXPORTS = {
+    "BatchedStatevectorTrajectoryResult": (
+        "flagquantum.runtime.backends.statevector.noisy",
+        "BatchedStatevectorTrajectoryResult",
+    ),
+    "run_noisy_statevector": (
+        "flagquantum.runtime.backends.statevector.noisy",
+        "run_noisy_statevector",
+    ),
+    "merge_noisy_statevector_results": (
+        "flagquantum.runtime.backends.statevector.noisy",
+        "merge_noisy_statevector_results",
+    ),
     "TorchDistributedStatevectorResult": (
         "flagquantum.runtime.backends.statevector.forward",
         "TorchDistributedStatevectorResult",

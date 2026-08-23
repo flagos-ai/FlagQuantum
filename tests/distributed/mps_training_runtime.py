@@ -76,6 +76,87 @@ def main():
         )
         assert result.completed_steps == 3
         assert all(item.useful_work_completed for item in result.steps)
+        assert result.steps[0].reverse_segment_cache_hit is False
+        assert all(item.reverse_segment_cache_hit for item in result.steps[1:])
+        assert result.steps[0].gradient_bucket_cache_hit is False
+        assert all(item.gradient_bucket_cache_hit for item in result.steps[1:])
+        assert all(item.static_qr_metadata_records > 0 for item in result.steps)
+        assert all(item.dynamic_metadata_broadcasts == 0 for item in result.steps)
+        assert result.checkpoint_write_seconds > 0
+        assert result.checkpoint_commit_seconds > 0
+        assert result.checkpoint_prune_seconds > 0
+        assert result.checkpoint_bytes_written > 0
+        assert result.checkpoint_retained_bytes > 0
+        assert result.checkpoint_free_space_reserve_bytes == 1 << 30
+        assert result.checkpoint_min_free_bytes_observed > 0
+        assert result.checkpoint_estimated_generation_bytes > 0
+        assert result.checkpoint_storage_semantics == "shared_filesystem_verified"
+        assert result.checkpoint_storage_probe_seconds > 0
+        assert result.checkpoint_writer_lease_heartbeat_count == 3
+        assert result.checkpoint_writer_lease_heartbeat_seconds > 0
+        assert result.checkpoint_min_free_bytes_observed > (
+            result.checkpoint_free_space_reserve_bytes
+            + result.checkpoint_estimated_generation_bytes
+        )
+        assert len(result.checkpoint_files) == 2
+        assert result.checkpoint_pruned_files
+        topology_workload, _ = circuit(device, dist.get_world_size())
+        topology_result = fq.train_distributed_mps(
+            topology_workload,
+            steps=1,
+            optimizer="sgd",
+            device=device,
+            site_ownership_policy="topology_aware",
+            ownership_maximum_load_ratio=2.0,
+        )
+        assert topology_result.site_ownership_policy == "topology_aware"
+        assert tuple(
+            wire for shard in topology_result.site_ownership for wire in shard
+        ) == tuple(range(topology_workload.to_ir().n_wires))
+        dirty_workload, dirty_parameters = circuit(device, dist.get_world_size())
+        dirty = fq.train_distributed_mps(
+            dirty_workload,
+            steps=2,
+            optimizer="sgd",
+            lr=0.01,
+            device=device,
+            canonicalization_policy="dirty",
+            record_parameter_gradients=True,
+        )
+        none_workload, none_parameters = circuit(device, dist.get_world_size())
+        none = fq.train_distributed_mps(
+            none_workload,
+            steps=2,
+            optimizer="sgd",
+            lr=0.01,
+            device=device,
+            canonicalization_policy="none",
+            record_parameter_gradients=True,
+        )
+        torch.testing.assert_close(
+            torch.tensor(none.losses),
+            torch.tensor(dirty.losses),
+            rtol=2e-5,
+            atol=2e-6,
+        )
+        torch.testing.assert_close(
+            torch.stack([item.detach() for item in none_parameters]),
+            torch.stack([item.detach() for item in dirty_parameters]),
+            rtol=2e-5,
+            atol=2e-6,
+        )
+        assert tuple(index for index, _ in none.steps[-1].parameter_gradients) == tuple(
+            index for index, _ in dirty.steps[-1].parameter_gradients
+        )
+        torch.testing.assert_close(
+            torch.tensor([value for _, value in none.steps[-1].parameter_gradients]),
+            torch.tensor([value for _, value in dirty.steps[-1].parameter_gradients]),
+            rtol=2e-5,
+            atol=2e-6,
+        )
+        assert none.steps[-1].qr_factorization_count < (
+            dirty.steps[-1].qr_factorization_count
+        )
         checkpoint_parameters = tuple(float(item.detach()) for item in parameters)
         resumed_workload, resumed_parameters = circuit(device, dist.get_world_size())
         resumed = fq.train_distributed_mps(

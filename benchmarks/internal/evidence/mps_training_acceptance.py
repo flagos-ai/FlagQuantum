@@ -27,13 +27,18 @@ def source_identity() -> tuple[str, bool]:
         capture_output=True,
         text=True,
     ).stdout.strip()
-    tracked_changes = subprocess.run(
-        ("git", "diff", "--quiet"),
-        check=False,
-    ).returncode != 0 or subprocess.run(
-        ("git", "diff", "--cached", "--quiet"),
-        check=False,
-    ).returncode != 0
+    tracked_changes = (
+        subprocess.run(
+            ("git", "diff", "--quiet"),
+            check=False,
+        ).returncode
+        != 0
+        or subprocess.run(
+            ("git", "diff", "--cached", "--quiet"),
+            check=False,
+        ).returncode
+        != 0
+    )
     return commit or "unavailable", tracked_changes
 
 
@@ -80,6 +85,14 @@ def distributed_run(args, device):
         memory_leak_tolerance_bytes=args.memory_leak_tolerance_bytes,
         gradient_policy=args.gradient_policy,
         gradient_tolerance=args.gradient_tolerance,
+        compile_site_kernels=args.compile_site_kernels,
+        prefetch_layer_halos=args.prefetch_layer_halos,
+        compile_observables=args.compile_observables,
+        fuse_local_reverse=args.fuse_local_reverse,
+        site_ownership_policy=args.site_ownership_policy,
+        inter_node_cut_multiplier=args.inter_node_cut_multiplier,
+        ownership_maximum_load_ratio=args.ownership_maximum_load_ratio,
+        canonicalization_policy=args.canonicalization_policy,
     )
     local = [item.end_to_end_seconds for item in result.steps]
     local_components = [
@@ -87,6 +100,13 @@ def distributed_run(args, device):
             "forward": item.forward_seconds,
             "reverse": item.reverse_seconds,
             "optimizer": item.optimizer_seconds,
+            "training_compute": item.training_compute_seconds,
+            "diagnostics": item.diagnostics_seconds,
+            "layer_halo_wait": item.layer_halo_wait_seconds,
+            "layer_halo_messages": item.layer_halo_message_count,
+            "layer_halo_payload_bytes": item.layer_halo_payload_bytes,
+            "layer_halo_intra_node_bytes": item.layer_halo_intra_node_bytes,
+            "layer_halo_inter_node_bytes": item.layer_halo_inter_node_bytes,
             "end_to_end": item.end_to_end_seconds,
         }
         for item in result.steps
@@ -154,8 +174,34 @@ def main():
         default="circuit_training",
     )
     parser.add_argument("--scaling-mode", choices=("strong", "weak"), default="strong")
-    parser.add_argument("--gradient-policy", choices=("exact", "approximate"), default="exact")
+    parser.add_argument(
+        "--gradient-policy", choices=("exact", "approximate"), default="exact"
+    )
     parser.add_argument("--gradient-tolerance", type=float, default=0.0)
+    parser.add_argument(
+        "--compile-site-kernels",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
+    parser.add_argument(
+        "--prefetch-layer-halos",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--compile-observables", action="store_true")
+    parser.add_argument("--fuse-local-reverse", action="store_true")
+    parser.add_argument(
+        "--site-ownership-policy",
+        choices=("balanced", "topology_aware"),
+        default="balanced",
+    )
+    parser.add_argument("--inter-node-cut-multiplier", type=int, default=8)
+    parser.add_argument("--ownership-maximum-load-ratio", type=float, default=1.25)
+    parser.add_argument(
+        "--canonicalization-policy",
+        choices=("none", "dirty", "full"),
+        default="dirty",
+    )
     parser.add_argument("--seed", type=int, default=520052)
     args = parser.parse_args()
     torch.manual_seed(args.seed)
@@ -198,6 +244,16 @@ def main():
             "learning_rate": args.lr,
             "family": args.family,
             "scaling_mode": args.scaling_mode,
+            "gradient_policy": args.gradient_policy,
+            "gradient_tolerance": args.gradient_tolerance,
+            "compile_site_kernels": args.compile_site_kernels,
+            "prefetch_layer_halos": args.prefetch_layer_halos,
+            "compile_observables": args.compile_observables,
+            "fuse_local_reverse": args.fuse_local_reverse,
+            "site_ownership_policy": args.site_ownership_policy,
+            "inter_node_cut_multiplier": args.inter_node_cut_multiplier,
+            "ownership_maximum_load_ratio": args.ownership_maximum_load_ratio,
+            "canonicalization_policy": args.canonicalization_policy,
             "seed": args.seed,
         }
         local_memory_bytes_by_rank = [
@@ -212,10 +268,22 @@ def main():
             )
             for summary in rank_training
         ]
+        owned_sites_by_rank = [
+            int(summary["step_metrics"][-1]["owned_site_work"])
+            for summary in rank_training
+        ]
+        owned_bonds_by_rank = [
+            int(summary["step_metrics"][-1]["owned_bond_work"])
+            for summary in rank_training
+        ]
+        largest_realized_bond_by_rank = [
+            int(summary["step_metrics"][-1]["largest_realized_bond"])
+            for summary in rank_training
+        ]
         source_commit, source_tree_dirty = source_identity()
         payload = {
             "schema": "flagquantum.issue052.mps_training_measurement.v1",
-            "benchmark": "mps_single_node_training_certification",
+            "benchmark": "mps_training_certification",
             "evidence_source": "measured_runtime",
             "measured": True,
             "source_commit": source_commit,
@@ -233,6 +301,18 @@ def main():
             "local_memory_bytes_by_rank": local_memory_bytes_by_rank,
             "communication_bytes": max(communication_bytes_by_rank, default=0),
             "communication_bytes_by_rank": communication_bytes_by_rank,
+            "work_density": {
+                "owned_sites_by_rank": owned_sites_by_rank,
+                "minimum_owned_sites_per_rank": min(owned_sites_by_rank),
+                "owned_bonds_by_rank": owned_bonds_by_rank,
+                "minimum_owned_bonds_per_rank": min(owned_bonds_by_rank),
+                "largest_realized_bond_by_rank": largest_realized_bond_by_rank,
+                "maximum_realized_bond": max(largest_realized_bond_by_rank),
+                "latency_stress_workload": (
+                    min(owned_sites_by_rank) < 8
+                    and max(largest_realized_bond_by_rank) < 64
+                ),
+            },
             "communication_protocol": (
                 "none"
                 if world_size == 1
@@ -267,9 +347,9 @@ def main():
             "memory_growth_bytes": max(0, memories[-1] - memories[0]),
             "losses": losses,
             "completed_work_units": len(samples),
-            "rank_useful_work": True
-            if training is None
-            else training["rank_useful_work"],
+            "rank_useful_work": (
+                True if training is None else training["rank_useful_work"]
+            ),
             "full_mps_materialization": False,
             "training": training,
             "scalability_claim_allowed": False,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+import time
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, Mapping, Sequence
@@ -32,6 +33,10 @@ class ReverseLayerHaloPrefetch:
     buffers: tuple[torch.Tensor, ...]
     received: dict[int, torch.Tensor]
     stream: torch.cuda.Stream | None
+    message_count: int
+    payload_bytes: int
+    intra_node_payload_bytes: int
+    inter_node_payload_bytes: int
 
 
 _LAYER_HALO_STREAMS: dict[int | None, torch.cuda.Stream] = {}
@@ -52,10 +57,12 @@ def begin_reverse_layer_halo_prefetch(
     operations = []
     buffers = []
     received = {}
+    peers = []
     for index, left_wire, left_owner, right_owner in boundary:
         if state.rank == right_owner:
             value = state.local_tensors[left_wire + 1].contiguous().reshape(-1)
             buffers.append(value)
+            peers.append(left_owner)
             operations.append(dist.P2POp(dist.isend, value, left_owner))
         elif state.rank == left_owner:
             shape = tuple(int(value) for value in global_shapes[left_wire + 1])
@@ -66,6 +73,7 @@ def begin_reverse_layer_halo_prefetch(
                 device=reference.device,
             )
             buffers.append(value)
+            peers.append(right_owner)
             received[index] = value.reshape(shape)
             operations.append(dist.P2POp(dist.irecv, value, right_owner))
     if not operations:
@@ -82,18 +90,37 @@ def begin_reverse_layer_halo_prefetch(
             requests = tuple(dist.batch_isend_irecv(operations))
     else:
         requests = tuple(dist.batch_isend_irecv(operations))
-    return ReverseLayerHaloPrefetch(requests, tuple(buffers), received, stream), indices
+    local_world_size = max(
+        1, int(os.environ.get("LOCAL_WORLD_SIZE", state.world_size))
+    )
+    payload_bytes = sum(value.numel() * value.element_size() for value in buffers)
+    intra_node_payload_bytes = sum(
+        value.numel() * value.element_size()
+        for value, peer in zip(buffers, peers)
+        if state.rank // local_world_size == peer // local_world_size
+    )
+    return ReverseLayerHaloPrefetch(
+        requests=requests,
+        buffers=tuple(buffers),
+        received=received,
+        stream=stream,
+        message_count=len(operations),
+        payload_bytes=payload_bytes,
+        intra_node_payload_bytes=intra_node_payload_bytes,
+        inter_node_payload_bytes=payload_bytes - intra_node_payload_bytes,
+    ), indices
 
 
 def finish_reverse_layer_halo_prefetch(
     prefetch: ReverseLayerHaloPrefetch | None,
-) -> None:
+) -> float:
     """Wait for a prefetched boundary layer and join its CUDA stream."""
     if prefetch is None:
-        return
+        return 0.0
     timeout = timedelta(
         seconds=float(os.environ.get("FLAGQUANTUM_MPS_P2P_TIMEOUT_SECONDS", "120"))
     )
+    started = time.perf_counter()
     with record_function("flagquantum::mps::p2p_layer_prefetch_wait"):
         for request in prefetch.requests:
             completed = request.wait(timeout=timeout)
@@ -101,6 +128,7 @@ def finish_reverse_layer_halo_prefetch(
                 raise MPSReverseContractError("MPS layer halo prefetch timed out")
     if prefetch.stream is not None:
         torch.cuda.current_stream().wait_stream(prefetch.stream)
+    return time.perf_counter() - started
 
 
 def send_reverse_tensor(
@@ -207,6 +235,30 @@ def broadcast_reverse_record(
     return decode_reverse_record(schema)
 
 
+def all_reduce_reverse_layer_records(
+    payloads: Mapping[int, dict[str, Any]],
+    entries: Sequence[tuple[int, int]],
+    reference: torch.Tensor,
+) -> dict[int, dict[str, Any]]:
+    """Exchange one disjoint layer's dynamic metadata in one collective."""
+    if not entries:
+        return {}
+    schemas = torch.zeros(
+        (len(entries), 21), dtype=torch.float64, device=reference.device
+    )
+    rank = dist.get_rank()
+    for position, (instruction_index, owner) in enumerate(entries):
+        if rank == owner:
+            schemas[position].copy_(
+                encode_reverse_record(payloads[instruction_index], reference)
+            )
+    dist.all_reduce(schemas, op=dist.ReduceOp.SUM)
+    return {
+        instruction_index: decode_reverse_record(schemas[position])
+        for position, (instruction_index, _) in enumerate(entries)
+    }
+
+
 def static_shape_generation(shape: Sequence[int]) -> int:
     content = ",".join(str(int(value)) for value in shape).encode()
     return int.from_bytes(hashlib.sha256(content).digest()[:7], "little")
@@ -245,6 +297,7 @@ __all__ = (
     "ReverseLayerHaloPrefetch",
     "begin_reverse_layer_halo_prefetch",
     "broadcast_reverse_record",
+    "all_reduce_reverse_layer_records",
     "decode_reverse_record",
     "encode_reverse_record",
     "finish_reverse_layer_halo_prefetch",

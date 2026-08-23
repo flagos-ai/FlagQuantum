@@ -219,7 +219,7 @@
     "target_depth": 4
   },
   "blockers": [],
-  "distribution_semantics": "sharded_across_ranks",
+  "distribution_semantics": "requires_runtime_summary",
   "environment": {
     "compile_cache_dir": "/tmp/torchinductor_root",
     "cuda": "13.0",
@@ -1831,7 +1831,7 @@
           ],
           "peak_allocated_memory_bytes": 24466432,
           "seconds": 9.374893283005804,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -2758,7 +2758,7 @@
           ],
           "peak_allocated_memory_bytes": 28606464,
           "seconds": 9.486355324741453,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -3685,7 +3685,7 @@
           ],
           "peak_allocated_memory_bytes": 28606464,
           "seconds": 9.36049811495468,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -4612,7 +4612,7 @@
           ],
           "peak_allocated_memory_bytes": 28606464,
           "seconds": 9.397452827077359,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -5539,7 +5539,7 @@
           ],
           "peak_allocated_memory_bytes": 28606464,
           "seconds": 9.375767595134676,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -6466,7 +6466,7 @@
           ],
           "peak_allocated_memory_bytes": 28606464,
           "seconds": 9.407123323064297,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -7393,7 +7393,7 @@
           ],
           "peak_allocated_memory_bytes": 28606464,
           "seconds": 9.494508104864508,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -9026,7 +9026,7 @@
           ],
           "peak_allocated_memory_bytes": 24456704,
           "seconds": 9.395366444718093,
-          "truncation_error": 3.157185212258338e-27
+          "truncation_error": 3.157185212258338E-27
         }
       ],
       "site_kernel_stats": {
@@ -9077,5 +9077,14 @@
     "max_bond": 128,
     "n_wires": 64,
     "observation_stride": 8
-  }
+  },
+  "benchmark": "mps_large_bond_hybrid",
+  "benchmark_evidence_class": "non_release_smoke",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "claim_evidence_type": "development_smoke",
+  "intended_distribution_semantics": "sharded_across_ranks",
+  "scalability_blockers": [
+    "complete per-rank runtime summary is not attached"
+  ]
 }

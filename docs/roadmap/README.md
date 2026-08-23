@@ -3,6 +3,7 @@
 Long-term direction, capability maturity, ecosystem plans, and staged delivery
 targets.
 
+- [Noisy simulation implementation roadmap](NOISY_SIMULATION_ROADMAP.md)
 - [FlagQuantum vision](FLAGQUANTUM_VISION.md)
 - [Capability maturity](CAPABILITY_MATURITY.md)
 - [Product roadmap](FLAGOS_ALIGNED_RELEASE_TRAIN.md)

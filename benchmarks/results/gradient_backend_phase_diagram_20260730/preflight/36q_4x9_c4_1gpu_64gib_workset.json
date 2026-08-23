@@ -1,0 +1,34 @@
+{
+  "capacity_preflight_passed": true,
+  "distribution_semantics": "planned_rank_owned_tn_slices",
+  "dtype": "complex128",
+  "execution_started": false,
+  "local_world_size": 1,
+  "node_count": 1,
+  "rank_preflights": [
+    {
+      "checkpoint_budget_bytes": 17179869184,
+      "checkpoint_memory_plan": {
+        "checkpoint_budget_bytes": 17179869184,
+        "checkpoint_count": 371,
+        "forward_peak_bytes": 50764668576,
+        "forward_workspace_multiplier": 2,
+        "logical_forward_peak_bytes": 25382334288,
+        "predicted_working_set_bytes": 50764668576,
+        "raw_input_bytes": 67856,
+        "rematerialization_peak_bytes": 8589934592,
+        "reverse_cotangent_peak_bytes": 4295030928,
+        "saved_checkpoint_bytes": 17169987408
+      },
+      "estimated_full_tape_bytes": 52184105072,
+      "full_tape_budget_bytes": 68719476736,
+      "passed": true,
+      "rank": 0
+    }
+  ],
+  "scalability_claim_allowed": false,
+  "schema_version": 1,
+  "slice_count": 128,
+  "workload": "4x9_4c_checkpoint_preflight",
+  "world_size": 1
+}

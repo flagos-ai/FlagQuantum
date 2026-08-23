@@ -86,7 +86,7 @@ def test_jax_distributed_plans_share_distributed_evidence_contract(
     circuit.h(0).cx(0, 1).cx(2, 3)
     kwargs = {"max_bond": 4} if mode == "mps" else {}
     if mode == "tensor_network":
-        kwargs = {"max_intermediate_size": 4}
+        kwargs = {"max_intermediate_size": 64}
 
     summary = fq.plan_jax_distributed_quantum_backend(
         circuit, mode=mode, bsz=2, **kwargs
@@ -482,7 +482,7 @@ def test_jax_distributed_tensor_network_plan_tracks_slice_tasks():
         circuit,
         mode="tensor_network",
         world_size=2,
-        max_intermediate_size=4,
+        max_intermediate_size=16,
     )
     summary = plan.summary()
 
@@ -562,7 +562,7 @@ def test_distributed_runtime_summaries_attach_jax_distributed_plan(monkeypatch):
 
     statevector = circuit.run(mode="distributed_statevector", device="cpu")
     mps = circuit.run(mode="distributed_mps", max_bond=4)
-    tn = circuit.run(mode="distributed_tensor_network", max_intermediate_size=4)
+    tn = circuit.run(mode="distributed_tensor_network", max_intermediate_size=16)
 
     statevector_jax = statevector.summary()["jax_distributed_plan"]
     mps_jax = mps.summary()["jax_distributed_plan"]

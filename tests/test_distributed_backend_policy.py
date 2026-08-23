@@ -243,7 +243,7 @@ def test_distributed_tensor_network_run_uses_backend_policy_transparently(monkey
     result = circuit.run(
         mode="distributed_tensor_network",
         world_size=2,
-        max_intermediate_size=2,
+        max_intermediate_size=8,
     )
     plan = result.plan
     summary = result.summary()
@@ -266,7 +266,7 @@ def test_distributed_tensor_network_uses_env_local_world_size_without_code_chang
 
     result = circuit.run(
         mode="distributed_tensor_network",
-        max_intermediate_size=2,
+        max_intermediate_size=8,
     )
     plan = result.plan
     summary = result.summary()
@@ -345,7 +345,7 @@ def test_development_production_tensor_network_parity_contract():
         circuit,
         mode="distributed_tensor_network",
         world_size=2,
-        max_intermediate_size=2,
+        max_intermediate_size=8,
         atol=1e-6,
     )
     summary = report.summary()

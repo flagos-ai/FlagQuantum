@@ -10,7 +10,22 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: python -m pip install -e '.[dev]'
+        with:
+          sparse-checkout: |
+            flagquantum
+            tests
+            tools
+            benchmarks/continuous_performance.py
+            benchmarks/development
+            pyproject.toml
+            pytest.ini
+            README.md
+            LICENSE
+          sparse-checkout-cone-mode: false
+      - name: Install FlagQuantum without replacing the runner's framework stack
+        run: |
+          python -c "import pytest, torch"
+          python -m pip install --no-deps --no-build-isolation -e .
       - name: One-GPU local behavior
         run: |
           mkdir -p hardware-run
@@ -19,7 +34,7 @@ jobs:
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_device.py::TestDeviceInitialization::test_cuda_device -q -rs 2>&1 | tee hardware-run/one-gpu.log
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
-          python tools/evaluate_performance_artifact.py hardware-run/one-gpu-performance.json --baseline benchmarks/development/issue077_1gpu_local_kernel.json
+          python tools/evaluate_performance_artifact.py hardware-run/one-gpu-performance.json --baseline-if-present benchmarks/development/issue077_1gpu_local_kernel.json
       - if: always()
         run: >-
           python tools/hardware_run_manifest.py
@@ -39,7 +54,22 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - run: python -m pip install -e '.[dev]'
+        with:
+          sparse-checkout: |
+            flagquantum
+            tests
+            tools
+            benchmarks/continuous_performance.py
+            benchmarks/development
+            pyproject.toml
+            pytest.ini
+            README.md
+            LICENSE
+          sparse-checkout-cone-mode: false
+      - name: Install FlagQuantum without replacing the runner's framework stack
+        run: |
+          python -c "import pytest, torch"
+          python -m pip install --no-deps --no-build-isolation -e .
       - name: Required two-GPU correctness and lifecycle gate
         run: |
           mkdir -p hardware-run
@@ -53,12 +83,12 @@ jobs:
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs 2>&1 | tee hardware-run/two-gpu-jax.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_issue049_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/two-gpu-performance.json
-          python tools/evaluate_performance_artifact.py hardware-run/two-gpu-performance.json --baseline benchmarks/development/issue077_2gpu_sharded.json
+          python tools/evaluate_performance_artifact.py hardware-run/two-gpu-performance.json --baseline-if-present benchmarks/development/issue077_2gpu_sharded.json
       - if: always()
         run: >-
           CUDA_VISIBLE_DEVICES=0,1 python tools/hardware_run_manifest.py
           --output hardware-run/two-gpu.json
-          --command 'two A100 torchrun native correctness/autograd plus JAX MPS backward/optimizer'
+          --command 'two local GPUs torchrun native correctness/autograd plus JAX MPS backward/optimizer'
           --world-size 2
           --evidence-scope two_gpu_semantic_regression
           --log hardware-run/two-gpu-torch.log

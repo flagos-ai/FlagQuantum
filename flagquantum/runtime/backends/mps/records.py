@@ -48,7 +48,6 @@ class ReverseCheckpointBudget:
     device: torch.device
     saved_bytes: int = 0
     saved_factorization_bytes: int = 0
-
     def _collective_max(self, candidate: int) -> int:
         maximum = torch.tensor([candidate], dtype=torch.int64, device=self.device)
         dist.all_reduce(maximum, op=dist.ReduceOp.MAX)
@@ -214,6 +213,15 @@ class TorchDistributedMPSGradientResult:
     planned_canonicalization_bonds: tuple[int, ...] = ()
     qr_factorization_count: int = 0
     svd_factorization_count: int = 0
+    static_qr_metadata_records: int = 0
+    dynamic_metadata_broadcasts: int = 0
+    reverse_segment_cache_hit: bool = False
+    gradient_bucket_cache_hit: bool = False
+    layer_halo_message_count: int = 0
+    layer_halo_payload_bytes: int = 0
+    layer_halo_intra_node_bytes: int = 0
+    layer_halo_inter_node_bytes: int = 0
+    layer_halo_wait_seconds: float = 0.0
     _backward_status: str = "ready"
     _backward_error: str | None = None
     _last_completed_record: int | None = None
@@ -304,6 +312,15 @@ class TorchDistributedMPSGradientResult:
             "planned_canonicalization_bonds": self.planned_canonicalization_bonds,
             "qr_factorization_count": self.qr_factorization_count,
             "svd_factorization_count": self.svd_factorization_count,
+            "static_qr_metadata_records": self.static_qr_metadata_records,
+            "dynamic_metadata_broadcasts": self.dynamic_metadata_broadcasts,
+            "reverse_segment_cache_hit": self.reverse_segment_cache_hit,
+            "gradient_bucket_cache_hit": self.gradient_bucket_cache_hit,
+            "layer_halo_message_count": self.layer_halo_message_count,
+            "layer_halo_payload_bytes": self.layer_halo_payload_bytes,
+            "layer_halo_intra_node_bytes": self.layer_halo_intra_node_bytes,
+            "layer_halo_inter_node_bytes": self.layer_halo_inter_node_bytes,
+            "layer_halo_wait_seconds": self.layer_halo_wait_seconds,
             "canonicalization_pullback": "explicit_owner_local_qr_vjp",
             "truncation_pullback": "explicit_owner_local_svd_vjp",
             "singular_value_degeneracy_policy": "fail_closed_at_truncation_boundary",

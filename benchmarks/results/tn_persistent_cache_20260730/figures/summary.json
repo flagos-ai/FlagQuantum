@@ -1,0 +1,17 @@
+{
+  "planning_seconds": {
+    "cold miss": 16.837134215049446,
+    "cold hit": 1.5069675003178418
+  },
+  "execution_seconds": {
+    "cold miss": 4.681969165802002,
+    "cold hit": 4.696355819702148
+  },
+  "cold_end_to_end_seconds": {
+    "cold miss": 24.272277324926108,
+    "cold hit": 7.278726901859045
+  },
+  "planning_speedup": 11.17285821459205,
+  "cold_end_to_end_speedup": 3.3346871852997775,
+  "cache_bytes": 556790
+}

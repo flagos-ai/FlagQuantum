@@ -9,6 +9,7 @@ optimization, or graph packages.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from time import perf_counter
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import torch
@@ -298,6 +299,36 @@ class VQEResult:
         return len(self.history)
 
 
+@dataclass(frozen=True)
+class AdaptVQEIteration:
+    """One operator-selection and variational re-optimization stage."""
+
+    selected_pool_index: int
+    selected_gradient: float
+    pool_gradients: tuple[float, ...]
+    energy_before: float
+    energy_after: float
+    optimization_history: tuple[float, ...]
+    screening_seconds: float
+    optimization_seconds: float
+
+
+@dataclass(frozen=True)
+class AdaptVQEResult:
+    """Result of a deterministic PyTorch-native ADAPT-VQE growth loop."""
+
+    selected_pool_indices: tuple[int, ...]
+    parameters: torch.Tensor
+    energy: torch.Tensor
+    initial_energy: float
+    iterations: tuple[AdaptVQEIteration, ...]
+    converged: bool
+
+    @property
+    def n_adapt_iterations(self) -> int:
+        return len(self.iterations)
+
+
 def pauli_term(
     coefficient: float | complex | torch.Tensor,
     pauli: str | Mapping[int, str],
@@ -565,6 +596,160 @@ def run_vqe(
     )
 
 
+def run_adapt_vqe(
+    circuit_builder: Callable[[tuple[object, ...], torch.Tensor], Circuit],
+    operator_pool: Sequence[object],
+    hamiltonian: Hamiltonian | None = None,
+    *,
+    energy_function: Callable[[Circuit], torch.Tensor] | None = None,
+    screening_function: Callable[
+        [tuple[object, ...], torch.Tensor, tuple[object, ...]], Sequence[float]
+    ]
+    | None = None,
+    max_adapt_iterations: int = 8,
+    optimization_steps: int = 50,
+    lr: float = 0.05,
+    gradient_tolerance: float = 1e-6,
+    optimizer_cls: type[torch.optim.Optimizer] = torch.optim.Adam,
+    dtype: torch.dtype = torch.float64,
+    device: torch.device | str = "cpu",
+) -> AdaptVQEResult:
+    """Grow and optimize an ansatz using exact candidate gradients.
+
+    ``circuit_builder`` receives the selected operator records and one scalar
+    parameter per selected operator. Candidate operators are screened by
+    appending them at zero angle and differentiating the exact Hamiltonian
+    expectation. The selected operator is then retained and all accumulated
+    parameters are re-optimized. ``screening_function`` may provide an exact,
+    workload-specific gradient evaluator; it receives the current operators,
+    parameters, and the currently available pool operators in that order.
+    """
+
+    pool = tuple(operator_pool)
+    if not pool:
+        raise ValueError("ADAPT-VQE requires a non-empty operator pool")
+    if max_adapt_iterations <= 0:
+        raise ValueError("max_adapt_iterations must be positive")
+    if optimization_steps <= 0:
+        raise ValueError("optimization_steps must be positive")
+    if not torch.empty((), dtype=dtype).is_floating_point():
+        raise ValueError("ADAPT-VQE parameters require a floating dtype")
+    tolerance = float(gradient_tolerance)
+    if tolerance < 0.0:
+        raise ValueError("gradient_tolerance must be non-negative")
+    if (hamiltonian is None) == (energy_function is None):
+        raise ValueError(
+            "provide exactly one of hamiltonian or energy_function"
+        )
+
+    selected_indices: list[int] = []
+    selected_operators: list[object] = []
+    parameters = torch.empty(0, dtype=dtype, device=device)
+
+    def energy(operators: tuple[object, ...], values: torch.Tensor) -> torch.Tensor:
+        circuit = circuit_builder(operators, values)
+        evaluated = (
+            hamiltonian.expectation(circuit)
+            if hamiltonian is not None
+            else energy_function(circuit)
+        )
+        return evaluated.sum()
+
+    initial_energy = float(energy((), parameters).detach())
+    records: list[AdaptVQEIteration] = []
+    converged = False
+    for _ in range(int(max_adapt_iterations)):
+        screening_started = perf_counter()
+        available = [
+            pool_index
+            for pool_index in range(len(pool))
+            if pool_index not in selected_indices
+        ]
+        if not available:
+            converged = True
+            break
+        if screening_function is None:
+            gradients: list[float] = []
+            for pool_index in available:
+                candidate_values = torch.cat(
+                    (parameters.detach(), parameters.new_zeros(1))
+                ).requires_grad_(True)
+                candidate_energy = energy(
+                    (*selected_operators, pool[pool_index]), candidate_values
+                )
+                candidate_gradient = torch.autograd.grad(
+                    candidate_energy, candidate_values
+                )[0][-1]
+                gradients.append(float(candidate_gradient.detach()))
+        else:
+            evaluated = tuple(
+                screening_function(
+                    tuple(selected_operators),
+                    parameters.detach(),
+                    tuple(pool[index] for index in available),
+                )
+            )
+            if len(evaluated) != len(available):
+                raise ValueError(
+                    "screening_function must return one gradient per candidate"
+                )
+            gradients = [float(gradient) for gradient in evaluated]
+        best_position = max(
+            range(len(available)), key=lambda index: abs(gradients[index])
+        )
+        best_index = available[best_position]
+        best_gradient = gradients[best_position]
+        if abs(best_gradient) <= tolerance:
+            converged = True
+            break
+        screening_seconds = perf_counter() - screening_started
+
+        energy_before = float(energy(tuple(selected_operators), parameters).detach())
+        selected_indices.append(best_index)
+        selected_operators.append(pool[best_index])
+        parameters = torch.cat(
+            (parameters.detach(), parameters.new_zeros(1))
+        ).requires_grad_(True)
+        optimizer = optimizer_cls([parameters], lr=lr)
+        history: list[float] = []
+        optimization_started = perf_counter()
+        for _ in range(int(optimization_steps)):
+            optimizer.zero_grad(set_to_none=True)
+            loss = energy(tuple(selected_operators), parameters)
+            loss.backward()
+            optimizer.step()
+            history.append(float(loss.detach()))
+        optimization_seconds = perf_counter() - optimization_started
+        energy_after = float(
+            energy(tuple(selected_operators), parameters).detach()
+        )
+        full_gradients = [0.0] * len(pool)
+        for pool_index, gradient in zip(available, gradients):
+            full_gradients[pool_index] = gradient
+        records.append(
+            AdaptVQEIteration(
+                selected_pool_index=best_index,
+                selected_gradient=best_gradient,
+                pool_gradients=tuple(full_gradients),
+                energy_before=energy_before,
+                energy_after=energy_after,
+                optimization_history=tuple(history),
+                screening_seconds=screening_seconds,
+                optimization_seconds=optimization_seconds,
+            )
+        )
+
+    final_energy = energy(tuple(selected_operators), parameters).detach()
+    return AdaptVQEResult(
+        selected_pool_indices=tuple(selected_indices),
+        parameters=parameters.detach().clone(),
+        energy=final_energy,
+        initial_energy=initial_energy,
+        iterations=tuple(records),
+        converged=converged,
+    )
+
+
 def run_hybrid_vqe(
     circuit_builder: Callable[[torch.Tensor], Circuit],
     initial_parameters: torch.Tensor | Sequence[float],
@@ -690,6 +875,8 @@ def qaoa_loss(
 
 
 __all__ = [
+    "AdaptVQEIteration",
+    "AdaptVQEResult",
     "Hamiltonian",
     "HamiltonianTerm",
     "LayerwiseVQEResult",
@@ -703,6 +890,7 @@ __all__ = [
     "qaoa_loss",
     "qaoa_circuit",
     "run_vqe",
+    "run_adapt_vqe",
     "run_hybrid_vqe",
     "run_layerwise_vqe",
     "transverse_field_ising",

@@ -52,6 +52,7 @@ Inverse for invertible backpropagation:
 >>> encoder.inverse(device, x)  # Apply inverse of all gates
 """
 
+import warnings
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -98,6 +99,13 @@ class GeneralEncoder(torch.nn.Module):
     """
 
     def __init__(self, func_list: List[Dict[str, Any]]) -> None:
+        warnings.warn(
+            "GeneralEncoder belongs to the FlagQuantum v0.1 device API and is "
+            "not part of the v0.2 stable API. Build parameterized programs with "
+            "fq.Circuit and fq.Module instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__()
         self.func_list = func_list
 

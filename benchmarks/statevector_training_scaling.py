@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import gc
 import json
 import math
@@ -23,6 +24,17 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402, I001
+from benchmarks.sc27_metadata import (  # noqa: E402
+    canonical_sha256,
+    cuda_profile_metrics,
+    driver_version,
+    file_sha256,
+    gpu_identity,
+    optimizer_state_bytes,
+    source_identity,
+    tensor_bytes,
+    topology_snapshot,
+)
 from flagquantum.runtime.backends.statevector.forward import (  # noqa: E402
     execute_torch_distributed_statevector,
 )
@@ -67,6 +79,7 @@ def build_full_width_workload(
     layers: int,
     seed: int,
     entanglement: str,
+    parameter_dtype: torch.dtype = torch.float32,
 ) -> tuple[fq.Circuit, tuple[torch.Tensor, ...], dict[str, Any]]:
     """Build a deterministic full-width HEA with explicit entanglement topology."""
 
@@ -76,6 +89,7 @@ def build_full_width_workload(
         torch.tensor(
             0.11 + 0.013 * ((seed + layer * n_wires + wire) % 37),
             device=device,
+            dtype=parameter_dtype,
             requires_grad=True,
         )
         for layer in range(layers)
@@ -175,8 +189,49 @@ def _timing(samples: list[float]) -> dict[str, Any]:
     }
 
 
+def _validate_ablation_configuration(args: argparse.Namespace) -> None:
+    actual = {
+        "persistent_layout_off": bool(args.disable_persistent_layout),
+        "communication_overlap_off": bool(args.disable_gradient_overlap),
+        "gradient_bucketing_off": bool(args.disable_gradient_bucketing),
+        "unique_optimizer_ownership_off": bool(args.replicated_optimizer),
+        "reverse_rematerialization": args.checkpoint_strategy
+        == "full_rematerialization",
+    }
+    expected = {name: False for name in actual}
+    if args.ablation_id != "full":
+        expected[args.ablation_id] = True
+    if actual != expected:
+        raise ValueError(
+            f"ablation-id {args.ablation_id!r} requires {expected}, got {actual}"
+        )
+
+
 def run(args: argparse.Namespace) -> dict[str, Any] | None:
-    if args.repetitions < 3 or args.warmup < 0:
+    _validate_ablation_configuration(args)
+    if args.capacity_evidence:
+        frozen_capacity = {
+            "n_wires": 35,
+            "workload": "full-width-linear",
+            "layers": 1,
+            "seed": 20260722,
+            "warmup": 0,
+            "repetitions": 1,
+            "learning_rate": 0.01,
+            "ablation_id": "full",
+            "dtype": "complex64",
+            "optimizer": "adam",
+        }
+        drift = {
+            key: (getattr(args, key), expected)
+            for key, expected in frozen_capacity.items()
+            if getattr(args, key) != expected
+        }
+        if drift:
+            raise ValueError(f"SC27 capacity workload drift: {drift}")
+        if args.independent_run_index not in {1, 2, 3}:
+            raise ValueError("capacity evidence requires independent-run-index 1, 2, or 3")
+    elif args.repetitions < 3 or args.warmup < 0:
         raise ValueError("repetitions >= 3 and warmup >= 0 required")
     if args.reverse_chunk_amplitudes <= 0 or args.reverse_chunk_amplitudes & (
         args.reverse_chunk_amplitudes - 1
@@ -212,6 +267,15 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
     os.environ["FQ_STATEVECTOR_TOPOLOGY_AWARE_RANK_BITS"] = (
         "0" if args.disable_topology_aware_rank_bits else "1"
     )
+    os.environ["FQ_SV_PERSISTENT_LAYOUT"] = (
+        "0" if args.disable_persistent_layout else "1"
+    )
+    os.environ["FQ_STATEVECTOR_GRADIENT_REDUCTION_OVERLAP"] = (
+        "0" if args.disable_gradient_overlap else "1"
+    )
+    os.environ["FQ_STATEVECTOR_GRADIENT_BUCKETING"] = (
+        "0" if args.disable_gradient_bucketing else "1"
+    )
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
     dist.init_process_group("nccl", device_id=device)
@@ -234,14 +298,27 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 layers=args.layers,
                 seed=args.seed,
                 entanglement=entanglement,
+                parameter_dtype=(
+                    torch.float64 if args.dtype == "complex128" else torch.float32
+                ),
             )
             checkpoint_policy = StatevectorCheckpointPolicy(
-                strategy="reversible_adjoint"
+                strategy=args.checkpoint_strategy,
+                interval=args.checkpoint_interval,
             )
             observable_wire = args.n_wires // 2
         owners = tuple(index % world for index in range(len(parameters)))
-        owned = [p for p, owner in zip(parameters, owners) if owner == rank]
-        optimizer = torch.optim.Adam(owned, lr=args.learning_rate) if owned else None
+        owned = (
+            list(parameters)
+            if args.replicated_optimizer
+            else [p for p, owner in zip(parameters, owners) if owner == rank]
+        )
+        if not owned:
+            optimizer = None
+        elif args.optimizer == "adam":
+            optimizer = torch.optim.Adam(owned, lr=args.learning_rate)
+        else:
+            optimizer = torch.optim.SGD(owned, lr=args.learning_rate)
         parameter_synchronizer = OwnerShardedParameterSynchronizer(
             parameters=parameters,
             owners=owners,
@@ -290,13 +367,14 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             optimizer_started = time.perf_counter()
             if update and optimizer is not None:
                 optimizer.step()
-            if update and world > 1:
+            if update and world > 1 and not args.replicated_optimizer:
                 if args.disable_batched_parameter_sync:
                     for parameter, owner in zip(parameters, owners):
                         dist.broadcast(parameter.data, src=owner)
                 else:
                     parameter_synchronizer.synchronize()
             optimizer_seconds = _elapsed_seconds(optimizer_started, device)
+            after = tuple(float(parameter.detach().cpu()) for parameter in parameters)
             end_to_end = _elapsed_seconds(end_to_end_started, device)
             (
                 differentiable_forward,
@@ -332,6 +410,7 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 "peak_memory_bytes": int(peak_memory),
                 "value": value,
                 "parameters": before,
+                "parameters_after": after,
                 "expected_value": expected_value,
                 "gradients": gradients,
                 "expected_gradients": expected_gradients,
@@ -344,6 +423,18 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 ],
                 "backward_communication_count": reverse_summary[
                     "backward_communication_count"
+                ],
+                "gradient_collective_count": reverse_summary[
+                    "gradient_collective_count"
+                ],
+                "async_gradient_collective_count": reverse_summary[
+                    "async_gradient_collective_count"
+                ],
+                "overlapped_gradient_collective_count": reverse_summary[
+                    "overlapped_gradient_collective_count"
+                ],
+                "persistent_layout_enabled": reverse_summary[
+                    "persistent_layout_enabled"
                 ],
                 "backward_intra_node_communication_count": reverse_summary[
                     "backward_intra_node_communication_count"
@@ -402,6 +493,11 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 forward = execute_torch_distributed_statevector(
                     circuit,
                     device=device,
+                    dtype=(
+                        torch.complex128
+                        if args.dtype == "complex128"
+                        else torch.complex64
+                    ),
                     wire_layout=args.wire_layout.replace("-", "_"),
                     preferred_local_wires=(observable_wire,),
                 )
@@ -452,6 +548,49 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             measured.append(reverse_pass(update=True))
             _release_phase_storage(device)
 
+        profile_by_rank = None
+        if args.profile:
+            saved_parameters = [parameter.detach().clone() for parameter in parameters]
+            saved_optimizer = (
+                None if optimizer is None else copy.deepcopy(optimizer.state_dict())
+            )
+            dist.barrier()
+            _sync(device)
+            profile_started = time.perf_counter()
+            with torch.profiler.profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA,
+                ]
+            ) as profile:
+                profiled = reverse_pass(update=True)
+            _sync(device)
+            profile_wall = time.perf_counter() - profile_started
+            parameter_sync_bytes = (
+                0
+                if world == 1 or args.replicated_optimizer
+                else sum(parameter.numel() * parameter.element_size() for parameter in parameters)
+            )
+            local_profile = cuda_profile_metrics(
+                profile,
+                wall_seconds=profile_wall,
+                logical_communication_bytes=(
+                    int(profiled["backward_communication_bytes"])
+                    + max(forward_communication_bytes)
+                    + parameter_sync_bytes
+                ),
+            )
+            with torch.no_grad():
+                for parameter, saved in zip(parameters, saved_parameters, strict=True):
+                    parameter.copy_(saved)
+            if optimizer is not None and saved_optimizer is not None:
+                optimizer.load_state_dict(saved_optimizer)
+            dist.barrier()
+            _sync(device)
+            profile_by_rank = [None] * world
+            dist.all_gather_object(profile_by_rank, local_profile)
+            _release_phase_storage(device)
+
         final_parameters = tuple(
             float(parameter.detach().cpu()) for parameter in parameters
         )
@@ -460,6 +599,8 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             "rank": rank,
             "hostname": platform.node(),
             "local_rank": local_rank,
+            "gpu_identity": gpu_identity(local_rank),
+            "topology": topology_snapshot(),
             "final_parameters": final_parameters,
             "initial_parameters": measured_initial["parameters"],
             "initial_value": measured_initial["value"],
@@ -474,6 +615,18 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             "backward_communication_bytes": max(
                 row["backward_communication_bytes"] for row in measured
             ),
+            "owned_parameter_bytes": tensor_bytes(owned),
+            "gradient_bytes": tensor_bytes(
+                parameter.grad
+                for parameter in parameters
+                if parameter.grad is not None
+            ),
+            "optimizer_state_bytes": optimizer_state_bytes(optimizer),
+            "owned_parameter_indices": tuple(
+                range(len(parameters))
+                if args.replicated_optimizer
+                else (index for index, owner in enumerate(owners) if owner == rank)
+            ),
         }
         records: list[dict[str, Any] | None] = [None] * world
         dist.all_gather_object(records, local_record)
@@ -485,6 +638,8 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 "rank": record["rank"],
                 "hostname": record["hostname"],
                 "local_rank": record["local_rank"],
+                **record["gpu_identity"],
+                "topology": record["topology"],
             }
             for record in complete_records
         ]
@@ -511,6 +666,8 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
         )
         reference_value_error = None
         reference_gradient_error = None
+        reference_parameter_error = None
+        reference_trajectory_compared = False
         reference_world_size = None
         if args.reference_json is not None:
             reference = json.loads(args.reference_json.read_text(encoding="utf-8"))
@@ -519,6 +676,8 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 reference_workload.get("n_wires") != args.n_wires
                 or reference_workload.get("name") != workload_metadata["name"]
                 or reference_workload.get("layers") != workload_metadata["layers"]
+                or reference_workload.get("dtype") != args.dtype
+                or reference_workload.get("seed") != args.seed
             ):
                 raise ValueError("reference JSON workload does not match this run")
             reference_correctness = reference.get("correctness", {})
@@ -537,24 +696,116 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 )
             )
             reference_world_size = reference.get("world_size")
+            reference_trajectory = reference_correctness.get("trajectory")
+            if reference_trajectory is not None:
+                if (
+                    reference_workload.get("optimizer") != args.optimizer
+                    or reference_workload.get("learning_rate") != args.learning_rate
+                ):
+                    raise ValueError(
+                        "trajectory reference optimizer configuration does not match"
+                    )
+                if len(reference_trajectory) != len(measured):
+                    raise ValueError("reference correctness trajectory length mismatch")
+                reference_trajectory_compared = True
+                reference_value_error = max(
+                    abs(actual["value"] - float(expected["value"]))
+                    for actual, expected in zip(
+                        measured, reference_trajectory, strict=True
+                    )
+                )
+                reference_gradient_error = max(
+                    abs(float(actual_gradient) - float(expected_gradient))
+                    for actual, expected in zip(
+                        measured, reference_trajectory, strict=True
+                    )
+                    for actual_gradient, expected_gradient in zip(
+                        actual["gradients"], expected["gradients"], strict=True
+                    )
+                )
+                reference_parameter_error = max(
+                    abs(float(actual_parameter) - float(expected_parameter))
+                    for actual, expected in zip(
+                        measured, reference_trajectory, strict=True
+                    )
+                    for actual_parameter, expected_parameter in zip(
+                        actual["parameters_after"],
+                        expected["parameters_after"],
+                        strict=True,
+                    )
+                )
         reference_matches = (
             reference_value_error is None
             or (
                 reference_value_error <= args.atol
                 and reference_gradient_error is not None
                 and reference_gradient_error <= args.atol
+                and (
+                    reference_parameter_error is None
+                    or reference_parameter_error <= args.atol
+                )
             )
         )
+        workload = {
+            "n_wires": args.n_wires,
+            **workload_metadata,
+            "observable": f"Z({observable_wire})",
+            "dtype": args.dtype,
+            "optimizer": args.optimizer,
+            "optimizer_ownership": (
+                "replicated_across_ranks"
+                if args.replicated_optimizer
+                else "owner_sharded_across_ranks"
+            ),
+            "learning_rate": args.learning_rate,
+            "local_amplitudes": 2**args.n_wires // world,
+        }
+        semantic_workload = {
+            "n_wires": args.n_wires,
+            "name": workload_metadata["name"],
+            "layers": workload_metadata["layers"],
+            "gate_count": workload_metadata["gate_count"],
+            "active_wire_count": workload_metadata["active_wire_count"],
+            "parameter_count": workload_metadata["parameter_count"],
+            "entanglement": workload_metadata["entanglement"],
+            "observable": f"Z({observable_wire})",
+            "dtype": args.dtype,
+            "seed": args.seed,
+            "optimizer": args.optimizer,
+            "learning_rate": args.learning_rate,
+        }
+        workload["semantic_sha256"] = canonical_sha256(semantic_workload)
+        training_step_timing = _timing(
+            [row["end_to_end_seconds"] for row in measured]
+        )
+        value_and_grad_timing = _timing(
+            [
+                row["differentiable_forward_seconds"] + row["backward_seconds"]
+                for row in measured
+            ]
+        )
+        communication_bytes_per_rank = [
+            int(record["backward_communication_bytes"])
+            + max(forward_communication_bytes)
+            for record in complete_records
+        ]
+        evidence_class = args.evidence_class
+        is_candidate = evidence_class == "sc27_candidate"
         payload = {
+            "schema": SCHEMA,
             "schema_version": SCHEMA,
             "benchmark": "statevector_differentiable_training_scaling",
-            "artifact_class": "measured_development_run",
-            "benchmark_evidence_class": "non_release_smoke",
-            "non_release_evidence": True,
-            "scalability_claim_allowed": False,
-            "release_gate_allowed": False,
-            "scalability_blockers": [
-                "hardware_certification_development_run_not_release_evidence"
+            "artifact_class": (
+                "measured_production_run" if is_candidate else
+                "measured_profile_preflight" if evidence_class == "profile_preflight"
+                else "measured_development_run"
+            ),
+            "benchmark_evidence_class": evidence_class,
+            "non_release_evidence": not is_candidate,
+            "scalability_claim_allowed": is_candidate,
+            "release_gate_allowed": is_candidate,
+            "scalability_blockers": [] if is_candidate else [
+                f"evidence_class_{evidence_class}_not_release_evidence"
             ],
             "backend": "nccl",
             "world_size": world,
@@ -573,17 +824,32 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 "backward_distribution_semantics"
             ],
             "gradient_distribution": measured_initial["gradient_distribution"],
-            "workload": {
-                "n_wires": args.n_wires,
-                **workload_metadata,
-                "observable": f"Z({observable_wire})",
-                "dtype": "complex64",
-                "optimizer": "adam",
-                "learning_rate": args.learning_rate,
-                "local_amplitudes": 2**args.n_wires // world,
+            "source_identity": source_identity(
+                repo_root=REPO_ROOT,
+                workload=workload,
+                container_digest=args.container_digest,
+                raw_log_sha256=args.raw_log_sha256,
+            ),
+            "workload": workload,
+            "environment": {
+                "python": platform.python_version(),
+                "torch": torch.__version__,
+                "cuda": torch.version.cuda,
+                "device_name": torch.cuda.get_device_name(device),
+                "driver_version": driver_version(),
             },
             "warmup": args.warmup,
             "repetitions": args.repetitions,
+            "protocol": {
+                "gradient_method": "reversible_adjoint",
+                "synchronization": "barrier_rank_max_cuda_wall_clock",
+                "warmup": args.warmup,
+                "repetitions": args.repetitions,
+                "independent_run_index": args.independent_run_index,
+                "optimizer": args.optimizer,
+                "learning_rate": args.learning_rate,
+                "capacity_evidence": args.capacity_evidence,
+            },
             "forward": {
                 **_timing(forward_samples),
                 "logical_to_physical_wires": forward_summary[
@@ -606,11 +872,135 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 [row["differentiable_forward_seconds"] for row in measured]
             ),
             "backward": _timing([row["backward_seconds"] for row in measured]),
-            "optimizer": _timing([row["optimizer_seconds"] for row in measured]),
+            "value_and_grad": value_and_grad_timing,
+            "optimizer": {
+                **_timing([row["optimizer_seconds"] for row in measured]),
+                "name": args.optimizer,
+                "executed": True,
+                "step_seconds": statistics.median(
+                    [row["optimizer_seconds"] for row in measured]
+                ),
+                "parameters_equal_across_ranks": parameter_spread == 0.0,
+                "state_bytes_by_rank": [
+                    int(record["optimizer_state_bytes"])
+                    for record in complete_records
+                ],
+            },
             "end_to_end": {
-                **_timing([row["end_to_end_seconds"] for row in measured]),
+                **training_step_timing,
                 "peak_memory_bytes_max": max(
                     row["peak_memory_bytes"] for row in measured
+                ),
+            },
+            "training_step": training_step_timing,
+            "ownership": {
+                "primal_state": forward_summary["distribution_semantics"],
+                "adjoint_state": measured_initial[
+                    "backward_distribution_semantics"
+                ],
+                "parameter_gradient": "replicated_across_ranks",
+                "optimizer_state": (
+                    "replicated_across_ranks"
+                    if args.replicated_optimizer
+                    else "owner_sharded_across_ranks"
+                ),
+                "full_quantum_state_materialized": False,
+                "parameter_bytes_per_rank": [
+                    int(record["owned_parameter_bytes"])
+                    for record in complete_records
+                ],
+                "gradient_bytes_per_rank": [
+                    int(record["gradient_bytes"])
+                    for record in complete_records
+                ],
+                "optimizer_bytes_per_rank": [
+                    int(record["optimizer_state_bytes"])
+                    for record in complete_records
+                ],
+                "optimizer_parameter_indices_by_rank": [
+                    list(record["owned_parameter_indices"])
+                    for record in complete_records
+                ],
+            },
+            "communication": {
+                "bytes_by_rank": communication_bytes_per_rank,
+                "scope": "forward_global_per_rank_max_plus_rank_backward_logical_bytes",
+                "profile_by_rank": profile_by_rank,
+                "device_seconds_max": (
+                    None
+                    if profile_by_rank is None
+                    else max(
+                        row["communication_device_seconds_union"]
+                        for row in profile_by_rank
+                        if row is not None
+                    )
+                ),
+                "exposed_device_seconds_max": (
+                    None
+                    if profile_by_rank is None
+                    else max(
+                        row["exposed_communication_device_seconds"]
+                        for row in profile_by_rank
+                        if row is not None
+                    )
+                ),
+                "profiling_step_excluded_from_timing_samples": args.profile,
+            },
+            "memory": {
+                "peak_bytes_by_rank": [
+                    int(record["peak_memory_bytes"])
+                    for record in complete_records
+                ],
+            },
+            "fallback_events": [],
+            "ablation": {
+                "id": args.ablation_id,
+                "single_factor": args.ablation_id != "full",
+                "persistent_layout_enabled_observed": all(
+                    row["persistent_layout_enabled"] for row in measured
+                ),
+                "gradient_collective_count_max": max(
+                    row["gradient_collective_count"] for row in measured
+                ),
+                "async_gradient_collective_count_max": max(
+                    row["async_gradient_collective_count"] for row in measured
+                ),
+                "overlapped_gradient_collective_count_max": max(
+                    row["overlapped_gradient_collective_count"] for row in measured
+                ),
+                "optimizer_state_bytes_by_rank": [
+                    int(record["optimizer_state_bytes"])
+                    for record in complete_records
+                ],
+                "checkpoint_strategy_observed": measured[0]["checkpoint_policy"][
+                    "strategy"
+                ],
+                "profile_communication_seconds_max": (
+                    None
+                    if profile_by_rank is None
+                    else max(
+                        row["communication_device_seconds_union"]
+                        for row in profile_by_rank
+                        if row is not None
+                    )
+                ),
+                "profile_overlap_fraction_max": (
+                    None
+                    if profile_by_rank is None
+                    else max(
+                        row["overlap_fraction_of_communication"]
+                        for row in profile_by_rank
+                        if row is not None
+                    )
+                ),
+                "profile_gradient_all_reduce_overlap_fraction_max": (
+                    None
+                    if profile_by_rank is None
+                    else max(
+                        row["gradient_all_reduce_overlap_fraction"]
+                        for row in profile_by_rank
+                        if row is not None
+                    )
                 ),
             },
             "correctness": {
@@ -634,10 +1024,27 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 "initial_value": measured_initial["value"],
                 "initial_gradients": measured_initial["gradients"],
                 "reference_world_size": reference_world_size,
+                "reference_artifact_sha256": (
+                    None
+                    if args.reference_json is None
+                    else file_sha256(args.reference_json)
+                ),
                 "reference_value_absolute_error": reference_value_error,
                 "reference_gradient_absolute_error_max": reference_gradient_error,
+                "reference_parameter_absolute_error_max": reference_parameter_error,
+                "reference_trajectory_compared": reference_trajectory_compared,
                 "all_values_and_gradients_finite": finite_results,
                 "validation_method": workload_metadata["validation"],
+                "trajectory": [
+                    {
+                        "step": index,
+                        "parameters_before": list(row["parameters"]),
+                        "value": row["value"],
+                        "gradients": list(row["gradients"]),
+                        "parameters_after": list(row["parameters_after"]),
+                    }
+                    for index, row in enumerate(measured)
+                ],
             },
             "backward_communication_bytes_per_rank_max": max(
                 row["backward_communication_bytes"] for row in measured
@@ -707,18 +1114,35 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 ),
                 "reverse_cross_shard_cx_pack": args.enable_cross_shard_cx_pack,
                 "reverse_exchange_workspace": not args.disable_reverse_workspace,
+                "persistent_layout": not args.disable_persistent_layout,
+                "gradient_reduction_overlap": not args.disable_gradient_overlap,
+                "gradient_bucketing": not args.disable_gradient_bucketing,
+                "optimizer_ownership": (
+                    "replicated_across_ranks"
+                    if args.replicated_optimizer
+                    else "owner_sharded_across_ranks"
+                ),
+                "checkpoint_strategy": args.checkpoint_strategy,
                 "initial_state": "dense_storage_zero_basis_then_all_wire_rotations",
                 "statistics": "median_with_coefficient_of_variation",
                 "sample_count": args.repetitions,
                 "parameter_synchronization": (
-                    "per_parameter_owner_broadcast"
-                    if args.disable_batched_parameter_sync
-                    else "owner_masked_packed_all_reduce"
+                    "none_replicated_optimizer"
+                    if args.replicated_optimizer
+                    else (
+                        "per_parameter_owner_broadcast"
+                        if args.disable_batched_parameter_sync
+                        else "owner_masked_packed_all_reduce"
+                    )
                 ),
                 "parameter_synchronization_collectives_per_step": (
-                    len(parameters)
-                    if world > 1 and args.disable_batched_parameter_sync
-                    else int(world > 1)
+                    0
+                    if args.replicated_optimizer
+                    else (
+                        len(parameters)
+                        if world > 1 and args.disable_batched_parameter_sync
+                        else int(world > 1)
+                    )
                 ),
                 "full_state_materialization": False,
                 "communication_tier_accounting": (
@@ -730,6 +1154,11 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                 "device": torch.cuda.get_device_name(device),
                 "torch": torch.__version__,
                 "cuda": torch.version.cuda,
+                "driver_version": driver_version(),
+                "topology_by_host": {
+                    record["hostname"]: record["topology"]
+                    for record in complete_records
+                },
             },
             "validation_blockers": [],
         }
@@ -773,6 +1202,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--learning-rate", type=float, default=0.05)
+    parser.add_argument("--dtype", choices=("complex64", "complex128"), default="complex64")
+    parser.add_argument("--optimizer", choices=("sgd", "adam"), default="adam")
     parser.add_argument("--atol", type=float, default=3e-5)
     parser.add_argument("--reverse-chunk-amplitudes", type=int, default=1 << 22)
     parser.add_argument("--disable-reverse-workspace", action="store_true")
@@ -782,7 +1213,39 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--enable-forward-cross-shard-cx-pack", action="store_true")
     parser.add_argument("--disable-topology-aware-rank-bits", action="store_true")
     parser.add_argument("--disable-batched-parameter-sync", action="store_true")
+    parser.add_argument(
+        "--ablation-id",
+        choices=(
+            "full",
+            "persistent_layout_off",
+            "communication_overlap_off",
+            "gradient_bucketing_off",
+            "unique_optimizer_ownership_off",
+            "reverse_rematerialization",
+        ),
+        default="full",
+    )
+    parser.add_argument("--disable-persistent-layout", action="store_true")
+    parser.add_argument("--disable-gradient-overlap", action="store_true")
+    parser.add_argument("--disable-gradient-bucketing", action="store_true")
+    parser.add_argument("--replicated-optimizer", action="store_true")
+    parser.add_argument(
+        "--checkpoint-strategy",
+        choices=("reversible_adjoint", "full_rematerialization"),
+        default="reversible_adjoint",
+    )
+    parser.add_argument("--checkpoint-interval", type=int, default=8)
     parser.add_argument("--reference-json", type=Path)
+    parser.add_argument("--independent-run-index", type=int, choices=(1, 2, 3))
+    parser.add_argument("--container-digest")
+    parser.add_argument("--raw-log-sha256")
+    parser.add_argument("--capacity-evidence", action="store_true")
+    parser.add_argument("--profile", action="store_true")
+    parser.add_argument(
+        "--evidence-class",
+        choices=("development", "profile_preflight", "sc27_candidate"),
+        default="development",
+    )
     parser.add_argument("--json-output", type=Path)
     return parser.parse_args()
 

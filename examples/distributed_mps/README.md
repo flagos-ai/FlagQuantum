@@ -55,16 +55,41 @@ For the general entangling capacity gate with dynamic bond truncation and all
 seven rank boundaries active, run:
 
 ```bash
+# Record the matched one-GPU capacity failure.
+CUDA_VISIBLE_DEVICES=0 timeout --signal=TERM --kill-after=30s 30m \
+  torchrun --standalone --nproc-per-node=1 \
+  benchmarks/internal/evidence/general_mps_capacity.py \
+  --profile capacity \
+  --output /tmp/issue092-capacity-1gpu.json
+
+# Record the same logical workload on four GPUs. This artifact is accepted as
+# a capacity baseline only when CUDA OOM is measured and no rank reports a
+# different runtime failure.
+CUDA_VISIBLE_DEVICES=0,1,2,3 timeout --signal=TERM --kill-after=30s 2h \
+  torchrun --standalone --nproc-per-node=4 \
+  benchmarks/internal/evidence/general_mps_capacity.py \
+  --profile capacity \
+  --output /tmp/issue092-capacity-4gpu.json
+
+# Complete the matched workload on eight GPUs and attach both baselines.
 timeout --signal=TERM --kill-after=30s 2h \
   torchrun --standalone --nproc-per-node=8 \
   benchmarks/internal/evidence/general_mps_capacity.py \
   --profile capacity \
   --single-gpu-artifact /tmp/issue092-capacity-1gpu.json \
+  --four-gpu-artifact /tmp/issue092-capacity-4gpu.json \
+  --raw-log /tmp/issue092-capacity-8gpu.log \
+  --gpu-samples /tmp/issue092-capacity-8gpu-samples.csv \
   --output /tmp/issue092-capacity-8gpu.json
 ```
 
 Its compact audited result is
 `benchmarks/development/issue092_general_mps_capacity.json`.
+The current frozen capacity profile is not assumed to fail on four GPUs.
+If it completes, the emitted artifact correctly records no four-GPU capacity
+failure and the eight-GPU `capacity_gate` remains blocked. Select and freeze a
+larger matched workload before collecting promotion evidence; never edit a
+measured artifact into an expected OOM.
 
 ## Scientific VQE limit probe
 

@@ -37,6 +37,7 @@ from .providers import (
     UrllibTransport,
     braket_backend_profile,
 )
+from .quafu_calibration import quafu_noise_model_from_chip_info
 
 __all__ = [
     "CloudBackendProfile",
@@ -72,4 +73,5 @@ __all__ = [
     "TianyanProvider",
     "UrllibTransport",
     "braket_backend_profile",
+    "quafu_noise_model_from_chip_info",
 ]

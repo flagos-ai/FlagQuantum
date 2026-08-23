@@ -597,6 +597,10 @@ def test_noisy_mps_trajectory_amplitude_damping():
     )
 
     assert plan.state_mode == "mps"
+    assert plan.noisy_execution_plan is not None
+    assert plan.noisy_execution_plan.representation == "mps"
+    assert plan.noisy_execution_plan.evolution == "quantum_trajectory"
+    assert plan.noisy_execution_plan.trajectory.count == 1
     assert torch.allclose(mps.expectation_z(0), torch.ones(1, 1), atol=1e-6)
 
 
@@ -633,5 +637,7 @@ def test_run_native_noisy_mps_mode():
     )
 
     assert plan.state_mode == "mps"
+    assert plan.noisy_execution_plan is not None
+    assert plan.noisy_execution_plan.trajectory.count == 3
     assert result.n_trajectories == 3
     assert torch.allclose(result.expectation_z_mean, torch.ones(1, 1), atol=1e-6)

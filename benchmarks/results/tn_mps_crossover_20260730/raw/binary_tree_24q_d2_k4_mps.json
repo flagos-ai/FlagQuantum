@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "benchmark": "tn_mps_crossover",
+  "status": "measured_success",
+  "topology": "binary_tree",
+  "backend": "mps",
+  "qubits": 24,
+  "depth": 2,
+  "target_count": 4,
+  "iterations": 2,
+  "cold_start_seconds": 12.729501473717391,
+  "steady_state_seconds": 7.832522539887577,
+  "times_seconds": [
+    12.729501473717391,
+    7.832522539887577
+  ],
+  "peak_memory_bytes": 1299005952,
+  "observed_max_bond": 4096,
+  "full_state_materialized": false,
+  "values_real": [
+    [
+      0.9848646521568298,
+      4.421507580096122e-14,
+      5.128411462314818e-14,
+      -7.194360992363036e-12
+    ]
+  ],
+  "values_imag": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ]
+}

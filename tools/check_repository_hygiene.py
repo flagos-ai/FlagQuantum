@@ -22,7 +22,11 @@ FORBIDDEN_SUFFIXES = {
 }
 ALLOWED_LARGE_FILES: dict[Path, int] = {}
 DEFAULT_MAX_FILE_BYTES = 2_000_000
-DEFAULT_MAX_TOTAL_BYTES = 50_000_000
+# The integrated MPS/statevector evidence corpus is part of the reproducibility
+# contract and is referenced by benchmark-contract tests and public reports.
+# Keep a bounded repository-wide budget while retaining the stricter per-file
+# and forbidden-artifact checks above.
+DEFAULT_MAX_TOTAL_BYTES = 110_000_000
 
 
 def tracked_files(root: Path) -> tuple[Path, ...]:

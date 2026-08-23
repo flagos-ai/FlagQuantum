@@ -12,6 +12,7 @@ from ..compilation.compiler import compile_for_backend
 from ..compilation.planner import ExecutionPlan, select_execution_mode
 from ..compilation.planner import plan as build_plan
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
+from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
 from ..core.parameters import value_to_tensor
 from ..core.runtime_config import (
     RuntimeConfig,
@@ -155,6 +156,63 @@ def _env_int(name: str, default: int = 0) -> int:
         return int(raw)
     except ValueError:
         return int(default)
+
+
+def _statevector_preflight_dtype(ir: CircuitIR, options: dict[str, Any]) -> str:
+    requested = str(options.get("dtype") or ir.dtype).removeprefix("torch.")
+    aliases = {
+        "float32": "complex64",
+        "float64": "complex128",
+    }
+    normalized = aliases.get(requested, requested)
+    if normalized not in {"complex64", "complex128"}:
+        raise ValueError(f"unsupported statevector preflight dtype: {requested!r}")
+    return normalized
+
+
+def _preflight_flagos_statevector(
+    ir: CircuitIR,
+    options: dict[str, Any],
+) -> Any | None:
+    requested_device = options.get("device", "auto")
+    device = resolve_device(requested_device)
+    if device.type != "flagos":
+        return None
+    from .operator_probes import preflight_statevector_local_p0
+    from .platforms import get_platform_runtime
+
+    platform = get_platform_runtime("flagos")
+    report = preflight_statevector_local_p0(
+        device=device,
+        dtype=_statevector_preflight_dtype(ir, options),
+        provider=platform.identity().provider,
+    )
+    report.require_supported()
+    return report
+
+
+def _certify_flagos_statevector(
+    ir: CircuitIR,
+    options: dict[str, Any],
+    *,
+    provider: str,
+    accuracy_requirement: Any = None,
+    precision_plan: Any = None,
+) -> tuple[Any, Any, Any]:
+    from .numerical_validation import certify_statevector_local_p0
+
+    dtype = _statevector_preflight_dtype(ir, options)
+    accuracy = coerce_accuracy_requirement(accuracy_requirement, dtype=dtype)
+    precision = coerce_precision_plan(precision_plan, dtype=dtype)
+    report = certify_statevector_local_p0(
+        device=resolve_device(options.get("device", "auto")),
+        dtype=dtype,
+        provider=provider,
+        accuracy_requirement=accuracy,
+        precision_plan=precision,
+    )
+    report.require_accepted()
+    return accuracy, precision, report
 
 
 def _distributed_world_size_from_options(
@@ -394,6 +452,16 @@ def run_native(
         mode = "distributed_tensor_network"
     if mode == "jax_sharded_tn":
         mode = "jax_sharded_tensor_network"
+    output_target = options.pop("output_target", "full_state")
+    target_count = int(options.pop("target_count", 1))
+    require_gradients = bool(options.pop("require_gradients", False))
+    noise_performance_calibration = options.pop("noise_performance_calibration", None)
+    selector_min_trajectories = int(options.get("min_trajectories", 1))
+    selector_target_standard_error = options.get("target_standard_error")
+    selector_pilot_variance = options.pop("pilot_variance", None)
+    selector_pilot_trajectories = options.pop("pilot_trajectories", None)
+    selector_pilot_confidence_level = options.pop("pilot_confidence_level", None)
+    selector_pilot_observable_count = int(options.pop("pilot_observable_count", 1))
     ir = ensure_circuit_ir(circuit_or_ir)
     distributed_mode_requested = mode in {
         "auto",
@@ -419,6 +487,9 @@ def run_native(
             if distributed_mode_requested
             else local_mode_world_size
         ),
+        "target": output_target,
+        "target_count": target_count,
+        "require_gradients": require_gradients,
     }
     if "max_bond" in options:
         plan_options["max_bond"] = options["max_bond"]
@@ -446,6 +517,14 @@ def run_native(
         mode = select_execution_mode(
             execution_ir,
             noise_model=noise_model,
+            trajectory_batch_size=int(options.get("trajectory_batch_size", 32)),
+            noise_performance_calibration=noise_performance_calibration,
+            min_trajectories=selector_min_trajectories,
+            target_standard_error=selector_target_standard_error,
+            pilot_variance=selector_pilot_variance,
+            pilot_trajectories=selector_pilot_trajectories,
+            pilot_confidence_level=selector_pilot_confidence_level,
+            pilot_observable_count=selector_pilot_observable_count,
             **plan_options,
         )
 
@@ -468,6 +547,27 @@ def run_native(
     if mode == "statevector":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
+        accuracy_requirement_option = options.pop("accuracy_requirement", None)
+        precision_plan_option = options.pop("precision_plan", None)
+        operator_preflight = _preflight_flagos_statevector(execution_ir, options)
+        numerical_contracts = None
+        if operator_preflight is not None:
+            from .platforms import get_platform_runtime
+
+            numerical_contracts = _certify_flagos_statevector(
+                execution_ir,
+                options,
+                provider=get_platform_runtime("flagos").identity().provider,
+                accuracy_requirement=accuracy_requirement_option,
+                precision_plan=precision_plan_option,
+            )
+        elif (
+            accuracy_requirement_option is not None or precision_plan_option is not None
+        ):
+            raise NotImplementedError(
+                "explicit numerical contract enforcement is currently available "
+                "only for local statevector execution through flagos"
+            )
         if coupling_map is None and hasattr(circuit_or_ir, "state"):
             result = circuit_or_ir.state()
         else:
@@ -483,18 +583,52 @@ def run_native(
         execution_plan = build_plan(
             execution_ir, state_mode="statevector", **plan_options
         )
+        if operator_preflight is not None:
+            routing_plan = dict(execution_plan.routing_plan or {})
+            routing_plan["operator_preflight"] = operator_preflight.to_dict()
+            assert numerical_contracts is not None
+            accuracy_requirement, precision_plan, numerical_validation = (
+                numerical_contracts
+            )
+            routing_plan["accuracy_requirement"] = accuracy_requirement.to_dict()
+            routing_plan["accuracy_requirement_hash"] = (
+                accuracy_requirement.content_hash()
+            )
+            routing_plan["precision_plan"] = precision_plan.to_dict()
+            routing_plan["precision_plan_hash"] = precision_plan.content_hash()
+            routing_plan["numerical_validation"] = numerical_validation.to_dict()
+            execution_plan = replace(execution_plan, routing_plan=routing_plan)
     elif mode == "density_matrix":
-        from ..simulation.noise import density_matrix_from_ir, lower_noise_model
+        from ..compilation.noise import (
+            build_noisy_execution_plan,
+            lower_noise_model,
+        )
+        from .noise_registry import execute_noisy_plan
 
         lowered = lower_noise_model(execution_ir, noise_model)
-        density_options = dict(options)
-        density_options.pop("coupling_map", None)
-        density_options.pop("optimize", None)
-        result = density_matrix_from_ir(lowered, **density_options)
         execution_plan = build_plan(
             lowered,
             state_mode="density_matrix",
             **plan_options,
+        )
+        noisy_plan = build_noisy_execution_plan(
+            execution_plan,
+            representation="density_matrix",
+            evolution="exact_channel",
+            memory_limit_bytes=options.get("memory_limit_bytes"),
+            noise_model_identity=getattr(noise_model, "identity", None),
+        )
+        execution_plan = replace(
+            execution_plan,
+            noisy_execution_plan=noisy_plan,
+        )
+        density_options = dict(options)
+        density_options.pop("coupling_map", None)
+        density_options.pop("optimize", None)
+        result = execute_noisy_plan(
+            lowered,
+            noisy_plan,
+            options=density_options,
         )
     elif mode == "mps":
         if noise_model is not None:
@@ -670,7 +804,62 @@ def run_native(
                 key: value for key, value in plan_options.items() if key != "world_size"
             },
         )
+    elif mode == "noisy_statevector":
+        if noise_model is None:
+            raise ValueError("noisy_statevector mode requires a noise_model")
+        from ..compilation.noise import build_noisy_execution_plan
+        from .backends.statevector import run_noisy_statevector
+
+        statevector_options = dict(options)
+        statevector_options.pop("memory_limit_bytes", None)
+        if "world_sz" in statevector_options:
+            statevector_options["world_size"] = int(statevector_options.pop("world_sz"))
+        statevector_options.pop("coupling_map", None)
+        statevector_options.pop("optimize", None)
+        result = run_noisy_statevector(
+            execution_ir if coupling_map is not None else circuit_or_ir,
+            noise_model,
+            **statevector_options,
+        )
+        execution_plan = build_plan(
+            execution_ir,
+            noise_model=noise_model,
+            state_mode="statevector",
+            **plan_options,
+        )
+        execution_plan = replace(
+            execution_plan,
+            noisy_execution_plan=build_noisy_execution_plan(
+                execution_plan,
+                representation="statevector",
+                evolution="quantum_trajectory",
+                trajectories=int(options.get("trajectories", 32)),
+                seed=options.get("seed", 0),
+                min_trajectories=int(options.get("min_trajectories", 1)),
+                target_standard_error=options.get("target_standard_error"),
+                memory_limit_bytes=options.get("memory_limit_bytes"),
+                estimated_memory_bytes=(
+                    execution_plan.state_bytes
+                    * min(
+                        int(options.get("trajectories", 32)),
+                        int(options.get("trajectory_batch_size", 32)),
+                    )
+                    * (
+                        2
+                        + max(
+                            4 if noise_model.device_profile else 1,
+                            max(
+                                (len(rule.channel.kraus) for rule in noise_model.rules),
+                                default=1,
+                            ),
+                        )
+                    )
+                ),
+                noise_model_identity=noise_model.identity,
+            ),
+        )
     elif mode == "mps_trajectory":
+        from ..compilation.noise import build_noisy_execution_plan
         from ..simulation.mps import run_noisy_mps_trajectory
 
         mps_options = dict(options)
@@ -690,13 +879,37 @@ def run_native(
             state_mode="mps",
             **plan_options,
         )
+        execution_plan = replace(
+            execution_plan,
+            noisy_execution_plan=build_noisy_execution_plan(
+                execution_plan,
+                representation="mps",
+                evolution="quantum_trajectory",
+                trajectories=1,
+                seed=options.get("seed"),
+                cutoff=float(options.get("cutoff", 0.0)),
+                memory_limit_bytes=options.get("memory_limit_bytes"),
+                noise_model_identity=getattr(noise_model, "identity", None),
+            ),
+        )
     elif mode == "noisy_mps":
+        from ..compilation.noise import build_noisy_execution_plan
         from ..simulation.mps import run_noisy_mps
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)
-        mps_options.pop("world_size", None)
-        mps_options.pop("world_sz", None)
+        mps_options["world_size"] = int(
+            mps_options.pop(
+                "world_sz",
+                mps_options.get("world_size", 1),
+            )
+        )
+        if mps_options["world_size"] > 1 and "rank" not in mps_options:
+            raise NotImplementedError(
+                "public noisy_mps execution does not perform distributed statistics "
+                "reduction; pass an explicit rank for rank-local execution and "
+                "merge_noisy_mps_results, or use noisy_statevector"
+            )
         mps_options.pop("coupling_map", None)
         mps_options.pop("optimize", None)
         result = run_noisy_mps(
@@ -710,9 +923,24 @@ def run_native(
             state_mode="mps",
             **plan_options,
         )
+        execution_plan = replace(
+            execution_plan,
+            noisy_execution_plan=build_noisy_execution_plan(
+                execution_plan,
+                representation="mps",
+                evolution="quantum_trajectory",
+                trajectories=int(options.get("trajectories", 32)),
+                seed=options.get("seed"),
+                min_trajectories=int(options.get("min_trajectories", 1)),
+                target_standard_error=options.get("target_standard_error"),
+                cutoff=float(options.get("cutoff", 0.0)),
+                memory_limit_bytes=options.get("memory_limit_bytes"),
+                noise_model_identity=getattr(noise_model, "identity", None),
+            ),
+        )
     else:
         raise ValueError(
-            "mode must be 'auto', 'statevector', 'distributed_statevector', 'density_matrix', 'mps', 'adaptive_mps', 'distributed_mps', 'jax_sharded_mps', 'tensor_network', 'distributed_tensor_network', 'jax_sharded_tensor_network', 'jax_sharded_tn', 'distributed_tn', 'tn', 'mps_trajectory', or 'noisy_mps'."
+            "mode must be 'auto', 'statevector', 'distributed_statevector', 'density_matrix', 'mps', 'adaptive_mps', 'distributed_mps', 'jax_sharded_mps', 'tensor_network', 'distributed_tensor_network', 'jax_sharded_tensor_network', 'jax_sharded_tn', 'distributed_tn', 'tn', 'noisy_statevector', 'mps_trajectory', or 'noisy_mps'."
         )
 
     if return_plan:
@@ -781,7 +1009,15 @@ def run(
     }
     selected_mode = aliases.get(mode, mode)
     if selected_mode == "auto":
-        selected_mode = execution_plan.state_mode
+        noisy_plan = execution_plan.noisy_execution_plan
+        if (
+            noisy_plan is not None
+            and noisy_plan.representation == "statevector"
+            and noisy_plan.evolution == "quantum_trajectory"
+        ):
+            selected_mode = "noisy_statevector"
+        else:
+            selected_mode = execution_plan.state_mode
     result = normalize_execution_result(
         output,
         mode=selected_mode,

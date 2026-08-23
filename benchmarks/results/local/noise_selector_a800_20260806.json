@@ -1,0 +1,100 @@
+{
+  "benchmark": "noise_selector_a800_20260806",
+  "benchmark_evidence_class": "local_non_release",
+  "candidates": [
+    {
+      "eligible": false,
+      "estimated_memory_bytes": 134217728,
+      "evolution": "exact_channel",
+      "exact_quantum_channel": true,
+      "fits_memory": true,
+      "metadata": {},
+      "mode": "density_matrix",
+      "reasons": [
+        "small_system_correctness_oracle"
+      ],
+      "rejection_reasons": [
+        "trajectory_execution_explicitly_requested"
+      ],
+      "representation": "density_matrix",
+      "sampling_error": false,
+      "truncation_error": false
+    },
+    {
+      "eligible": true,
+      "estimated_memory_bytes": 12582912,
+      "evolution": "quantum_trajectory",
+      "exact_quantum_channel": false,
+      "fits_memory": true,
+      "metadata": {
+        "trajectory_batch_size": 64,
+        "workspace_factor": 6,
+        "world_size": 8
+      },
+      "mode": "noisy_statevector",
+      "reasons": [
+        "general_dense_circuit_trajectory_path"
+      ],
+      "rejection_reasons": [],
+      "representation": "statevector",
+      "sampling_error": true,
+      "truncation_error": false
+    },
+    {
+      "eligible": true,
+      "estimated_memory_bytes": 786432,
+      "evolution": "quantum_trajectory",
+      "exact_quantum_channel": false,
+      "fits_memory": true,
+      "metadata": {
+        "cutoff": 0.0,
+        "max_bond": null,
+        "world_size": 8
+      },
+      "mode": "noisy_mps",
+      "reasons": [
+        "compressed_state_fallback"
+      ],
+      "rejection_reasons": [],
+      "representation": "mps",
+      "sampling_error": true,
+      "truncation_error": true
+    }
+  ],
+  "circuit_digest": "66605de8362e85a202be4dbe8bb956172a6fbe09b0751097933bbc780ba6ceba",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "maximum_kraus_rank": 4,
+  "memory_limit_bytes": 85899345920,
+  "noise_event_count": 184,
+  "noise_model_identity": "a584ec06caa52afbb50fea3fd6b236e3a3bd8014f5a65c51aefc12b52a6ca2c2",
+  "non_release_evidence": true,
+  "planner": "noise_execution_selection_v1",
+  "release_gate_allowed": false,
+  "scalability_blockers": [
+    "local benchmark is not release-certified scalability evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.noise_execution_selection_evidence.v1",
+  "selected_candidate": {
+    "eligible": true,
+    "estimated_memory_bytes": 12582912,
+    "evolution": "quantum_trajectory",
+    "exact_quantum_channel": false,
+    "fits_memory": true,
+    "metadata": {
+      "trajectory_batch_size": 64,
+      "workspace_factor": 6,
+      "world_size": 8
+    },
+    "mode": "noisy_statevector",
+    "reasons": [
+      "general_dense_circuit_trajectory_path"
+    ],
+    "rejection_reasons": [],
+    "representation": "statevector",
+    "sampling_error": true,
+    "truncation_error": false
+  },
+  "selected_mode": "noisy_statevector"
+}
