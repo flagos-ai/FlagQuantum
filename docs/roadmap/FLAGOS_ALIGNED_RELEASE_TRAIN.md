@@ -52,7 +52,8 @@ instead of exposing accelerator-specific behavior to users.
 
 Planned capabilities:
 
-- a stable `flagquantum.backends.flagos` integration;
+- a stable, Torch-FL-backed FlagOS provider integration with no core-package
+  hard dependency;
 - unified device, stream, memory, kernel, and collective contracts;
 - optimized contraction, complex linear algebra, QR, and SVD kernels for MPS
   training;
