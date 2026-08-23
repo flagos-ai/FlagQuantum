@@ -286,8 +286,28 @@ def replace_generated_region(
     match = matches[0]
     replacement = f"{match.group('begin')}\n{body.rstrip()}\n{match.group('end')}"
     return text[: match.start()] + replacement + text[match.end() :]
+def capability_api_is_available(
+    module: object,
+    stable: set[str],
+    name: str,
+    maturity: str,
+) -> bool:
+    """Accept stable APIs or importable APIs in the explicit experimental namespace."""
 
-
+    if name in stable:
+        return True
+    if maturity != "experimental" or not name.startswith("experimental."):
+        return False
+    module_name = getattr(module, "__name__", None)
+    if not isinstance(module_name, str):
+        return False
+    try:
+        target = importlib.import_module(f"{module_name}.experimental")
+        for part in name.split(".")[1:]:
+            target = getattr(target, part)
+    except (AttributeError, ModuleNotFoundError):
+        return False
+    return True
 def render_capabilities(data: dict[str, object]) -> str:
     capabilities = data["capabilities"]
     assert isinstance(capabilities, dict)
@@ -465,9 +485,15 @@ def validate() -> list[str]:
     maturity = tomllib.loads(maturity_path.read_text(encoding="utf-8"))
     for capability_name, capability in maturity["capabilities"].items():
         for name in capability["public_apis"]:
-            if name not in stable:
+            if not capability_api_is_available(
+                module,
+                stable,
+                name,
+                capability["level"],
+            ):
                 errors.append(
-                    f"{capability_name}: capability API is not stable: fq.{name}"
+                    f"{capability_name}: capability API is neither stable nor an "
+                    f"importable experimental API: fq.{name}"
                 )
     for doc in config["stable_documents"]:
         path = ROOT / doc

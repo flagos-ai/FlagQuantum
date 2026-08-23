@@ -47,12 +47,19 @@ __all__ = (
     "run_dynamic_conformance",
     "run_qiskit_aer_dynamic",
     "run_qiskit_aer_qasm3_round_trip",
+    "TEBDResult",
+    "run_tebd",
 )
 
 
 def __getattr__(name: str) -> Any:
     if name not in __all__:
         raise AttributeError(name)
+    if name in {
+        "TEBDResult",
+        "run_tebd",
+    }:
+        return getattr(import_module("flagquantum.simulation.tebd"), name)
     if name in {
         "TorchDistributedStatevectorResult",
         "execute_torch_distributed_statevector",

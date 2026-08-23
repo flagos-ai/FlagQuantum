@@ -186,6 +186,23 @@ label = "Topology fingerprint"
 selector = "topology_fingerprint"
 format = "string"
 
+[capabilities.local_mps_tebd]
+title = "Constrained local MPS TEBD"
+summary = "Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD."
+category = "simulation_and_training"
+user_goals = ["Reproduce small open-chain imaginary-time TEBD studies", "Cross-check MPS evolution against an independent oracle", "Inspect truncation and normalization evidence"]
+public_apis = ["experimental.run_tebd", "experimental.TEBDResult"]
+runtime_modes = ["mps_tebd"]
+hardware = ["cpu", "single_gpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/guides/TEBD.md"
+documentation = "docs/guides/TEBD.md"
+level = "experimental"
+owner = "MPS maintainers"
+limitations = "Static real one-site and adjacent two-site Pauli terms on an open chain, batch one, second-order imaginary-time evolution, and product initial states only. Real-time evolution, periodic and nonlocal terms, gradients, TDVP, distributed execution, and production or scalability claims are unsupported."
+focused_tests = "tests/test_tebd.py"
+
 [capabilities.tensor_network_training]
 title = "Tensor-network execution and training"
 summary = "Execute tensor-network circuit paths and evaluate experimental contraction and gradient workflows."

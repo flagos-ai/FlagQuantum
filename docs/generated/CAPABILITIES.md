@@ -35,6 +35,9 @@ This catalog is generated from the machine-validated
 | Train a large low-entanglement system | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Distribute one MPS across several GPUs | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Inspect variable-bond MPS capacity | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
+| Reproduce small open-chain imaginary-time TEBD studies | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
+| Cross-check MPS evolution against an independent oracle | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
+| Inspect truncation and normalization evidence | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Evaluate a circuit with tensor-network contraction | Tensor-network execution and training | Experimental | [Run example](../../examples/vqe_switch_sv_mps_tn.py) |
 | Compare statevector, MPS, and tensor-network modes | Tensor-network execution and training | Experimental | [Run example](../../examples/vqe_switch_sv_mps_tn.py) |
 | Validate small noisy circuits exactly | Exact and trajectory-based noisy simulation | Experimental | [Run example](../../examples/noisy_simulation_v1.py) |
@@ -95,6 +98,20 @@ Exercise the local differentiable statevector path through Torch-FL's logical fl
 - **Start:** [quick example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md)
 - **Documentation:** [guide](../../docs/reference/STATEVECTOR_OPERATOR_PROFILES.md)
 - **Known boundary:** CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim.
+
+### Constrained local MPS TEBD
+
+Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental.run_tebd`, `fq.experimental.TEBDResult`
+- **Runtime modes:** `mps_tebd`
+- **Hardware:** `cpu`, `single_gpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/guides/TEBD.md)
+- **Documentation:** [guide](../../docs/guides/TEBD.md)
+- **Known boundary:** Static real one-site and adjacent two-site Pauli terms on an open chain, batch one, second-order imaginary-time evolution, and product initial states only. Real-time evolution, periodic and nonlocal terms, gradients, TDVP, distributed execution, and production or scalability claims are unsupported.
 
 ### Tensor-network execution and training
 

@@ -101,7 +101,10 @@ Retained development evidence:
 - [ ] Circuit MPS and variable-bond training are stable.
 - [ ] MPO expectation and MPO×MPS are stable.
 - [ ] One-site and two-site DMRG are available.
-- [ ] TEBD and one-site/two-site TDVP are available.
+- [x] Constrained single-device, second-order imaginary-time TEBD is available
+  for open-chain local Pauli Hamiltonians; production, distributed, real-time,
+  and general MPO support remain open.
+- [ ] One-site/two-site TDVP is available.
 - [ ] Conditional sampling and marginals are available.
 - [ ] Dynamic measurement/reset can use an MPS trajectory backend.
 - [ ] Unsupported combinations fail closed through the planner.
@@ -252,7 +255,8 @@ eight-GPU completion.
 
 - Stabilize MPO expectation and Hamiltonian lowering.
 - Add one-site/two-site DMRG with sweep and convergence records.
-- Add TEBD and one-site/two-site TDVP.
+- Extend constrained TEBD beyond its experimental open-chain imaginary-time
+  boundary and add one-site/two-site TDVP.
 - Add MPS sampling, marginals and reduced density matrices.
 - Add symmetry-aware block-sparse tensors after dense correctness freezes.
 - Add noisy and dynamic MPS trajectories as experimental capabilities.
