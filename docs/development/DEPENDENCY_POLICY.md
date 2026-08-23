@@ -17,7 +17,8 @@ External framework imports are also namespace-governed. Qiskit imports belong
 only under `flagquantum.interop.qiskit`; the architecture check rejects direct
 Qiskit dependencies in core IR, compilers, runtimes, kernels, and distributed
 workers. Existing experimental Aer entry points are compatibility wrappers over
-that adapter.
+that adapter. The common registry stores only module paths and adapter metadata;
+listing or resolving an adapter must not import its external framework.
 
 Torch-FL is different from an interop SDK: it owns the FlagOS platform and
 vendor-runtime boundary. It is deliberately recorded as

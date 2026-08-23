@@ -9,6 +9,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
+from .adapter import QISKIT_ADAPTER, QiskitAdapter
 from .conformance import (
     QiskitConformanceCaseResult,
     QiskitConformanceResult,
@@ -37,6 +38,8 @@ __all__ = (
     "QiskitExportResult",
     "QiskitImportResult",
     "QiskitInteropError",
+    "QISKIT_ADAPTER",
+    "QiskitAdapter",
     "export_qiskit",
     "from_qiskit",
     "import_qiskit",

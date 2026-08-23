@@ -47,6 +47,13 @@ jobs:
           flagquantum/runtime/distributed/protocols.py
           flagquantum/runtime/backend_registry.py
           flagquantum/deployment
+      - name: Strict typed interoperability contract
+        run: >-
+          mypy --strict --no-site-packages --ignore-missing-imports
+          --follow-imports skip
+          flagquantum/interop/contracts.py flagquantum/interop/registry.py
+          flagquantum/interop/qiskit/adapter.py
+          flagquantum/interop/qiskit/models.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
       - name: Enforce core, extras, interop, and external-platform dependencies

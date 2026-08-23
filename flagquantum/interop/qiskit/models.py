@@ -6,45 +6,34 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from ...core.ir import CircuitIR
-
-IssueSeverity = Literal["info", "warning", "error"]
+from ..contracts import (
+    InteropConversionError,
+    InteropConversionIssue,
+    InteropConversionReport,
+    InteropDependencyError,
+    InteropError,
+    InteropExportResult,
+    InteropImportResult,
+    IssueSeverity,
+)
 
 
 @dataclass(frozen=True)
-class QiskitConversionIssue:
+class QiskitConversionIssue(InteropConversionIssue):
     """One explicit semantic difference or conversion blocker."""
 
-    code: str
-    message: str
-    severity: IssueSeverity
-    operation_index: int | None = None
-    operation_name: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "code": self.code,
-            "message": self.message,
-            "severity": self.severity,
-            "operation_index": self.operation_index,
-            "operation_name": self.operation_name,
-        }
-
-
-@dataclass(frozen=True)
-class QiskitConversionReport:
+@dataclass(frozen=True, init=False)
+class QiskitConversionReport(InteropConversionReport):
     """Machine-readable account of a Qiskit boundary conversion."""
 
-    direction: Literal["from_qiskit", "to_qiskit"]
-    framework_version: str | None
-    issues: tuple[QiskitConversionIssue, ...] = ()
-
-    @property
-    def lossless(self) -> bool:
-        return not any(issue.severity != "info" for issue in self.issues)
-
-    @property
-    def blockers(self) -> tuple[QiskitConversionIssue, ...]:
-        return tuple(issue for issue in self.issues if issue.severity == "error")
+    def __init__(
+        self,
+        direction: Literal["from_qiskit", "to_qiskit"],
+        framework_version: str | None,
+        issues: tuple[QiskitConversionIssue, ...] = (),
+    ) -> None:
+        super().__init__("qiskit", direction, framework_version, issues)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -57,35 +46,35 @@ class QiskitConversionReport:
 
 
 @dataclass(frozen=True)
-class QiskitImportResult:
+class QiskitImportResult(InteropImportResult):
     """FlagQuantum IR plus its Qiskit import diagnostics."""
 
     ir: CircuitIR
     report: QiskitConversionReport
 
 
-@dataclass(frozen=True)
-class QiskitExportResult:
+@dataclass(frozen=True, init=False)
+class QiskitExportResult(InteropExportResult):
     """Qiskit circuit plus its FlagQuantum export diagnostics."""
 
-    circuit: Any
-    report: QiskitConversionReport
+    def __init__(self, circuit: Any, report: QiskitConversionReport) -> None:
+        super().__init__(circuit, report)
+
+    @property
+    def circuit(self) -> Any:
+        return self.artifact
 
 
-class QiskitInteropError(Exception):
+class QiskitInteropError(InteropError):
     """Base error for the optional Qiskit boundary."""
 
 
-class QiskitDependencyError(QiskitInteropError, ImportError):
+class QiskitDependencyError(QiskitInteropError, InteropDependencyError):
     """Raised only when a Qiskit operation is requested without Qiskit."""
 
 
-class QiskitConversionError(QiskitInteropError, ValueError):
+class QiskitConversionError(QiskitInteropError, InteropConversionError):
     """Raised when a conversion would lose or invent semantics."""
-
-    def __init__(self, message: str, report: QiskitConversionReport) -> None:
-        super().__init__(message)
-        self.report = report
 
 
 __all__ = (

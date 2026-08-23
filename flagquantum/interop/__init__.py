@@ -9,7 +9,44 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-__all__ = ("qiskit",)
+from .contracts import (
+    INTEROP_API_VERSION,
+    InteropAdapter,
+    InteropConversionError,
+    InteropConversionIssue,
+    InteropConversionReport,
+    InteropDependencyError,
+    InteropError,
+    InteropExportResult,
+    InteropImportResult,
+)
+from .registry import (
+    DEFAULT_INTEROP_REGISTRY,
+    InteropAdapterSpec,
+    InteropRegistry,
+    InteropRegistryError,
+    available_adapters,
+    get_adapter,
+)
+
+__all__ = (
+    "DEFAULT_INTEROP_REGISTRY",
+    "INTEROP_API_VERSION",
+    "InteropAdapter",
+    "InteropAdapterSpec",
+    "InteropConversionError",
+    "InteropConversionIssue",
+    "InteropConversionReport",
+    "InteropDependencyError",
+    "InteropError",
+    "InteropExportResult",
+    "InteropImportResult",
+    "InteropRegistry",
+    "InteropRegistryError",
+    "available_adapters",
+    "get_adapter",
+    "qiskit",
+)
 
 
 def __getattr__(name: str) -> Any:

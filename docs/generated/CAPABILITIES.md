@@ -46,6 +46,9 @@ This catalog is generated from the machine-validated
 | Package a trained parameterized circuit | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Export a circuit for a provider | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
+| Discover registered interoperability adapters | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
+| Implement a framework adapter without changing FlagQuantum core | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
+| Handle conversion diagnostics consistently | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
@@ -191,6 +194,20 @@ Package trained circuits, export provider formats, and route them through deploy
 - **Start:** [quick example](../../examples/train_parameterized_circuit_then_deploy.py)
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Provider support and credential/runtime behavior vary; no provider is release-certified by this matrix.
+
+### Interoperability adapter contract
+
+Implement optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental`
+- **Runtime modes:** `control_plane_conversion`
+- **Hardware:** `cpu_control_plane`
+- **Gradient support:** `adapter_defined`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/reference/API.md)
+- **Documentation:** [guide](../../docs/architecture/ARCHITECTURE_DEPENDENCIES.md)
+- **Known boundary:** The adapter API is experimental and currently has one registered implementation, Qiskit. Registration does not install dependencies, sandbox third-party Python, certify provider hardware, or permit external objects to enter runtime and accelerator layers.
 
 ### Qiskit IR interoperability
 

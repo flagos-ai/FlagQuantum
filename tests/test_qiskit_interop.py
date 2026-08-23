@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.interop import get_adapter
 from flagquantum.interop.qiskit import (
     QiskitConversionError,
     export_qiskit,
@@ -20,6 +21,20 @@ from qiskit.circuit import Parameter as QiskitParameter  # noqa: E402
 from qiskit.circuit.library import UnitaryGate  # noqa: E402
 
 pytestmark = [pytest.mark.integration, pytest.mark.qiskit]
+
+
+def test_registered_adapter_delegates_through_common_contract() -> None:
+    adapter = get_adapter("qiskit")
+    circuit = QuantumCircuit(2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+
+    imported = adapter.import_program(circuit)
+    exported = adapter.export_program(imported.ir)
+
+    assert imported.report.adapter == "qiskit"
+    assert tuple(item.name for item in imported.ir.instructions) == ("h", "cx")
+    assert tuple(item.operation.name for item in exported.artifact.data) == ("h", "cx")
 
 
 def test_qiskit_import_builds_versioned_ir_with_parameters_and_measurements() -> None:

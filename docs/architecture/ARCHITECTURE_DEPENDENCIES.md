@@ -47,6 +47,7 @@ Every exception names an owner and removal version. Run
 | Optional kernels | backend adapters behind `flagquantum.runtime.backends` |
 | Measurements | `flagquantum.measurement` |
 | Deployment/providers | `flagquantum.deployment` |
+| External framework adapter contract | `flagquantum.interop` |
 | External framework conversion | `flagquantum.interop.<framework>` |
 | Evidence and audit policy | `flagquantum.runtime.audit` |
 
@@ -58,7 +59,10 @@ The circuit implementation lives at `flagquantum.circuit`; `flagquantum.core`
 contains backend-neutral IR, operator schemas, parameters, configuration, and
 versioned contracts only.
 
-External framework objects stop at `flagquantum.interop`. The Qiskit adapter
-converts to or from versioned FlagQuantum IR, reports semantic loss explicitly,
-and loads Qiskit only when an adapter function is called. Runtime kernels,
-distributed worker contracts, CUDA, and FlagOS never receive Qiskit objects.
+External framework objects stop at `flagquantum.interop`. Its immutable lazy
+registry and framework-neutral conversion contracts are the shared control-plane
+boundary; concrete implementations live under `flagquantum.interop.<framework>`.
+The Qiskit adapter converts to or from versioned FlagQuantum IR, reports
+semantic loss explicitly, and loads Qiskit only when conversion is called.
+Runtime kernels, distributed worker contracts, CUDA, and FlagOS never receive
+external framework objects.

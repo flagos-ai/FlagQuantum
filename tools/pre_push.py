@@ -81,6 +81,21 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             ),
         ),
         Check(
+            "strict typed interoperability contract",
+            (
+                mypy,
+                "--strict",
+                "--no-site-packages",
+                "--ignore-missing-imports",
+                "--follow-imports",
+                "skip",
+                "flagquantum/interop/contracts.py",
+                "flagquantum/interop/registry.py",
+                "flagquantum/interop/qiskit/adapter.py",
+                "flagquantum/interop/qiskit/models.py",
+            ),
+        ),
+        Check(
             "capability maturity",
             (python_executable, "tools/check_capability_maturity.py"),
         ),

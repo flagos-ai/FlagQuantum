@@ -264,6 +264,30 @@ pytest -m qiskit
 pytest -m braket
 ```
 
+### Interoperability adapter contract
+
+External framework adapters implement one experimental, framework-neutral
+contract under `flagquantum.interop`. The default registry stores import-safe
+descriptors and loads an adapter implementation only when requested:
+
+```python
+from flagquantum.interop import available_adapters, get_adapter
+
+assert available_adapters() == ("qiskit",)
+adapter = get_adapter("qiskit")
+result = adapter.import_program(external_circuit)
+flagquantum_ir = result.ir
+```
+
+`InteropConversionIssue`, `InteropConversionReport`, `InteropImportResult`,
+and `InteropExportResult` define the common diagnostics boundary. Registries
+are immutable: adding a descriptor returns a new registry and cannot alter the
+process-wide default. Resolving the Qiskit descriptor imports no Qiskit module;
+the external dependency is loaded only when conversion is requested. Adapter
+API mismatches and registered/loaded identity mismatches fail before use.
+`DEFAULT_INTEROP_REGISTRY.to_dict()` provides a stable machine-readable
+inventory for tooling and review without probing or importing dependencies.
+
 ### Qiskit IR interoperability
 
 Qiskit is an optional control-plane adapter, not a FlagQuantum runtime
@@ -276,6 +300,10 @@ from flagquantum.interop.qiskit import from_qiskit, to_qiskit
 ir = from_qiskit(qiskit_circuit)
 round_trip = to_qiskit(ir)
 ```
+
+These existing Qiskit-specific functions and result types remain compatible;
+they now implement the common adapter contract rather than defining a parallel
+framework architecture.
 
 Both directions fail closed when an operation, control-flow construct, or
 parameter expression cannot be represented losslessly. Use `import_qiskit()`
