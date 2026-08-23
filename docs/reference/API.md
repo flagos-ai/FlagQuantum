@@ -288,6 +288,14 @@ API mismatches and registered/loaded identity mismatches fail before use.
 `DEFAULT_INTEROP_REGISTRY.to_dict()` provides a stable machine-readable
 inventory for tooling and review without probing or importing dependencies.
 
+Adapter authors use `InteropRoundTripCase`, `InteropRejectionCase`, and
+`run_adapter_conformance()` to apply the same framework-neutral identity,
+lossless round-trip, fail-closed, and explicit-loss checks to every adapter.
+The returned `InteropConformanceResult.to_dict()` payload uses the versioned
+`flagquantum_interop_conformance_v1` schema. See
+[Interoperability adapter development](../development/INTEROP_ADAPTERS.md) for
+the required adapter layout and evidence boundary.
+
 ### Qiskit IR interoperability
 
 Qiskit is an optional control-plane adapter, not a FlagQuantum runtime

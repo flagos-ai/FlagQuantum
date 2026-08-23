@@ -48,6 +48,7 @@ This catalog is generated from the machine-validated
 | Run a circuit through a deployment abstraction | Circuit packaging and cloud deployment | Development evidence | [Run example](../../examples/train_parameterized_circuit_then_deploy.py) |
 | Discover registered interoperability adapters | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Implement a framework adapter without changing FlagQuantum core | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
+| Certify round-trip and fail-closed adapter behavior | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Handle conversion diagnostics consistently | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
@@ -197,7 +198,7 @@ Package trained circuits, export provider formats, and route them through deploy
 
 ### Interoperability adapter contract
 
-Implement optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract.
+Implement and certify optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract.
 
 - **Maturity:** Experimental
 - **Public API:** `fq.experimental`
@@ -206,8 +207,8 @@ Implement optional external-framework conversion behind one immutable lazy regis
 - **Gradient support:** `adapter_defined`
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick example](../../docs/reference/API.md)
-- **Documentation:** [guide](../../docs/architecture/ARCHITECTURE_DEPENDENCIES.md)
-- **Known boundary:** The adapter API is experimental and currently has one registered implementation, Qiskit. Registration does not install dependencies, sandbox third-party Python, certify provider hardware, or permit external objects to enter runtime and accelerator layers.
+- **Documentation:** [guide](../../docs/development/INTEROP_ADAPTERS.md)
+- **Known boundary:** The adapter API and conformance schema are experimental and currently have one registered implementation, Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers.
 
 ### Qiskit IR interoperability
 

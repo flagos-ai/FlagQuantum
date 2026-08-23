@@ -51,8 +51,10 @@ jobs:
         run: >-
           mypy --strict --no-site-packages --ignore-missing-imports
           --follow-imports skip
-          flagquantum/interop/contracts.py flagquantum/interop/registry.py
+          flagquantum/interop/contracts.py flagquantum/interop/conformance.py
+          flagquantum/interop/registry.py
           flagquantum/interop/qiskit/adapter.py
+          flagquantum/interop/qiskit/conformance.py
           flagquantum/interop/qiskit/models.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py

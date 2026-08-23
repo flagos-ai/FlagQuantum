@@ -12,6 +12,7 @@ from flagquantum.interop import (
     INTEROP_API_VERSION,
     InteropAdapter,
     InteropAdapterSpec,
+    InteropConformanceResult,
     InteropConversionError,
     InteropConversionIssue,
     InteropConversionReport,
@@ -20,8 +21,11 @@ from flagquantum.interop import (
     InteropImportResult,
     InteropRegistry,
     InteropRegistryError,
+    InteropRoundTripCase,
     available_adapters,
     get_adapter,
+    run_adapter_conformance,
+    semantic_fingerprint,
 )
 from flagquantum.interop.qiskit import (
     QISKIT_ADAPTER,
@@ -172,3 +176,10 @@ def test_generic_result_and_error_preserve_typed_diagnostics() -> None:
     assert InteropExportResult("artifact", report).artifact == "artifact"
     error = InteropConversionError("blocked", report)
     assert error.report is report
+
+
+def test_conformance_kit_is_available_without_external_frameworks() -> None:
+    assert InteropConformanceResult.__module__ == "flagquantum.interop.conformance"
+    assert InteropRoundTripCase.__module__ == "flagquantum.interop.conformance"
+    assert callable(run_adapter_conformance)
+    assert callable(semantic_fingerprint)

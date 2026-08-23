@@ -257,20 +257,20 @@ development_artifact = "flagquantum/deployment"
 
 [capabilities.interop_adapter_contract]
 title = "Interoperability adapter contract"
-summary = "Implement optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract."
+summary = "Implement and certify optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract."
 category = "deployment_and_extension"
-user_goals = ["Discover registered interoperability adapters", "Implement a framework adapter without changing FlagQuantum core", "Handle conversion diagnostics consistently"]
+user_goals = ["Discover registered interoperability adapters", "Implement a framework adapter without changing FlagQuantum core", "Certify round-trip and fail-closed adapter behavior", "Handle conversion diagnostics consistently"]
 public_apis = ["experimental"]
 runtime_modes = ["control_plane_conversion"]
 hardware = ["cpu_control_plane"]
 gradient_support = "adapter_defined"
 distribution_semantics = "not_applicable"
 quick_start = "docs/reference/API.md"
-documentation = "docs/architecture/ARCHITECTURE_DEPENDENCIES.md"
+documentation = "docs/development/INTEROP_ADAPTERS.md"
 level = "experimental"
 owner = "interop maintainers"
-limitations = "The adapter API is experimental and currently has one registered implementation, Qiskit. Registration does not install dependencies, sandbox third-party Python, certify provider hardware, or permit external objects to enter runtime and accelerator layers."
-focused_tests = "tests/unit/test_interop_adapter_contract.py"
+limitations = "The adapter API and conformance schema are experimental and currently have one registered implementation, Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers."
+focused_tests = "tests/unit/test_interop_conformance.py"
 
 [capabilities.qiskit_interop]
 title = "Qiskit IR interoperability"

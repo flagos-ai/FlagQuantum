@@ -20,6 +20,15 @@ from .contracts import (
     InteropExportResult,
     InteropImportResult,
 )
+from .conformance import (
+    InteropConformanceCaseResult,
+    InteropConformanceResult,
+    InteropConformanceViolation,
+    InteropRejectionCase,
+    InteropRoundTripCase,
+    run_adapter_conformance,
+    semantic_fingerprint,
+)
 from .registry import (
     DEFAULT_INTEROP_REGISTRY,
     InteropAdapterSpec,
@@ -34,6 +43,9 @@ __all__ = (
     "INTEROP_API_VERSION",
     "InteropAdapter",
     "InteropAdapterSpec",
+    "InteropConformanceCaseResult",
+    "InteropConformanceResult",
+    "InteropConformanceViolation",
     "InteropConversionError",
     "InteropConversionIssue",
     "InteropConversionReport",
@@ -41,11 +53,15 @@ __all__ = (
     "InteropError",
     "InteropExportResult",
     "InteropImportResult",
+    "InteropRejectionCase",
     "InteropRegistry",
     "InteropRegistryError",
+    "InteropRoundTripCase",
     "available_adapters",
     "get_adapter",
     "qiskit",
+    "run_adapter_conformance",
+    "semantic_fingerprint",
 )
 
 

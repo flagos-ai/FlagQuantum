@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
@@ -12,6 +10,16 @@ import torch
 
 from ...circuit import Circuit
 from ...core.ir import ensure_circuit_ir
+from ..conformance import (
+    InteropConformanceResult,
+    InteropRejectionCase,
+    InteropRoundTripCase,
+    run_adapter_conformance,
+)
+from ..conformance import (
+    semantic_fingerprint as framework_neutral_fingerprint,
+)
+from .adapter import QISKIT_ADAPTER
 from .conversion import from_qiskit, to_qiskit
 from .models import QiskitDependencyError
 
@@ -46,16 +54,20 @@ class QiskitConformanceResult:
     qiskit_version: str
     cases: tuple[QiskitConformanceCaseResult, ...]
     passed: bool
+    adapter_contract: InteropConformanceResult | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return the versioned machine-readable certification payload."""
 
-        return {
+        payload = {
             "schema": self.schema,
             "qiskit_version": self.qiskit_version,
             "passed": self.passed,
             "cases": [case.to_dict() for case in self.cases],
         }
+        if self.adapter_contract is not None:
+            payload["adapter_contract"] = self.adapter_contract.to_dict()
+        return payload
 
 
 def semantic_fingerprint(program: Any) -> str:
@@ -66,15 +78,12 @@ def semantic_fingerprint(program: Any) -> str:
     global_phase = (
         interop.get("global_phase", 0.0) if isinstance(interop, dict) else 0.0
     )
-    payload = {
-        "schema": "flagquantum_qiskit_semantics_v1",
-        "ir_version": ir.version,
-        "n_wires": ir.n_wires,
-        "instructions": ir.to_dict()["instructions"],
-        "global_phase": 0.0 if global_phase is None else global_phase,
-    }
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+    return framework_neutral_fingerprint(
+        ir,
+        semantic_metadata={
+            "global_phase": 0.0 if global_phase is None else global_phase
+        },
+    )
 
 
 def qiskit_statevector_to_flagquantum(statevector: Any, n_wires: int) -> torch.Tensor:
@@ -130,7 +139,8 @@ def run_qiskit_conformance(*, atol: float = 1e-10) -> QiskitConformanceResult:
         ) from exc
 
     results: list[QiskitConformanceCaseResult] = []
-    for name, source in _cases():
+    source_cases = _cases()
+    for name, source in source_cases:
         source_ir = source.to_ir()
         qiskit_circuit = to_qiskit(source_ir)
         round_trip_ir = from_qiskit(qiskit_circuit)
@@ -159,11 +169,29 @@ def run_qiskit_conformance(*, atol: float = 1e-10) -> QiskitConformanceResult:
             )
         )
     cases = tuple(results)
+    barrier = qiskit.QuantumCircuit(1)
+    barrier.barrier(0)
+    adapter_contract = run_adapter_conformance(
+        QISKIT_ADAPTER,
+        tuple(
+            InteropRoundTripCase(name, source.to_ir()) for name, source in source_cases
+        ),
+        rejection_cases=(
+            InteropRejectionCase(
+                "barrier_requires_explicit_lossy_import",
+                "import",
+                barrier,
+                "barrier_dropped",
+            ),
+        ),
+        fingerprint=semantic_fingerprint,
+    )
     return QiskitConformanceResult(
         schema="flagquantum_qiskit_conformance_v1",
         qiskit_version=str(qiskit.__version__),
+        adapter_contract=adapter_contract,
         cases=cases,
-        passed=all(case.passed for case in cases),
+        passed=adapter_contract.passed and all(case.passed for case in cases),
     )
 
 

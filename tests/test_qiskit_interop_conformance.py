@@ -92,6 +92,14 @@ def test_statevector_and_round_trip_golden_cases_pass() -> None:
     assert result.schema == "flagquantum_qiskit_conformance_v1"
     assert result.qiskit_version.startswith(("2.0.", "2.5."))
     assert result.passed
+    assert result.adapter_contract is not None
+    assert result.adapter_contract.passed
+    assert [case.kind for case in result.adapter_contract.cases] == [
+        "round_trip",
+        "round_trip",
+        "round_trip",
+        "rejection",
+    ]
     assert len(result.cases) == 3
     assert all(case.maximum_absolute_error <= 1e-10 for case in result.cases)
     assert all(
@@ -100,6 +108,9 @@ def test_statevector_and_round_trip_golden_cases_pass() -> None:
     payload = result.to_dict()
     assert payload["schema"] == result.schema
     assert payload["passed"] is True
+    assert payload["adapter_contract"]["schema"] == (
+        "flagquantum_interop_conformance_v1"
+    )
     assert [case["name"] for case in payload["cases"]] == [
         case.name for case in result.cases
     ]
