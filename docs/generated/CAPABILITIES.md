@@ -35,6 +35,9 @@ This catalog is generated from the machine-validated
 | Train a large low-entanglement system | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Distribute one MPS across several GPUs | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Inspect variable-bond MPS capacity | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
+| Evaluate software-extended precision on FP32 hardware | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
+| Measure cancellation error against a float64 reference | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
+| Prepare a precision provider without changing the runtime | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
 | Reproduce small open-chain imaginary-time TEBD studies | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Cross-check MPS evolution against an independent oracle | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Inspect truncation and normalization evidence | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
@@ -108,6 +111,20 @@ Exercise the local differentiable statevector path through Torch-FL's logical fl
 - **Start:** [quick example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md)
 - **Documentation:** [guide](../../docs/reference/STATEVECTOR_OPERATOR_PROFILES.md)
 - **Known boundary:** CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim.
+
+### Double-Single FP32 numerical primitives
+
+Use residual-preserving pairs of float32 tensors for bounded real and split-complex arithmetic experiments on PyTorch devices.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental.run_double_single_conformance`
+- **Runtime modes:** `numerical_primitive_conformance`
+- **Hardware:** `cpu`, `device_generic_pytorch`
+- **Gradient support:** `experimental_composed_primitives`
+- **Distribution semantics:** `single_device_primitive_only`
+- **Start:** [quick example](../../docs/reference/DOUBLE_SINGLE_FP32.md)
+- **Documentation:** [guide](../../docs/reference/DOUBLE_SINGLE_FP32.md)
+- **Known boundary:** Pure FP32 real and split-complex eager primitives plus bounded CPU-reference conformance only. The statevector runtime still rejects Double-Single plans. Gate generation, compiled execution, distributed collectives, decompositions, optimizer state, checkpoints, Torch-FL, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128.
 
 ### Constrained local MPS TEBD
 

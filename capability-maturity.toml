@@ -186,6 +186,23 @@ label = "Topology fingerprint"
 selector = "topology_fingerprint"
 format = "string"
 
+[capabilities.double_single_fp32]
+title = "Double-Single FP32 numerical primitives"
+summary = "Use residual-preserving pairs of float32 tensors for bounded real and split-complex arithmetic experiments on PyTorch devices."
+category = "simulation_and_training"
+user_goals = ["Evaluate software-extended precision on FP32 hardware", "Measure cancellation error against a float64 reference", "Prepare a precision provider without changing the runtime"]
+public_apis = ["experimental.run_double_single_conformance"]
+runtime_modes = ["numerical_primitive_conformance"]
+hardware = ["cpu", "device_generic_pytorch"]
+gradient_support = "experimental_composed_primitives"
+distribution_semantics = "single_device_primitive_only"
+quick_start = "docs/reference/DOUBLE_SINGLE_FP32.md"
+documentation = "docs/reference/DOUBLE_SINGLE_FP32.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Pure FP32 real and split-complex eager primitives plus bounded CPU-reference conformance only. The statevector runtime still rejects Double-Single plans. Gate generation, compiled execution, distributed collectives, decompositions, optimizer state, checkpoints, Torch-FL, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128."
+focused_tests = "tests/test_double_single_conformance.py"
+
 [capabilities.local_mps_tebd]
 title = "Constrained local MPS TEBD"
 summary = "Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD."

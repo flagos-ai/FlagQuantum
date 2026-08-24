@@ -117,6 +117,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_pennylane_interop_contract.py"),
         ),
         Check(
+            "Double-Single FP32 contract",
+            (python_executable, "tools/check_double_single_contract.py"),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

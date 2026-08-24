@@ -51,6 +51,7 @@ __all__ = (
     "to_qiskit",
     "TEBDResult",
     "run_tebd",
+    "run_double_single_conformance",
 )
 
 
@@ -62,6 +63,8 @@ def __getattr__(name: str) -> Any:
         "run_tebd",
     }:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
+    if name == "run_double_single_conformance":
+        return getattr(import_module("flagquantum.numerics.conformance"), name)
     if name in {
         "TorchDistributedStatevectorResult",
         "execute_torch_distributed_statevector",

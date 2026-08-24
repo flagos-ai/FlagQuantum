@@ -249,6 +249,9 @@ The checked-in `ci.yml` maps this policy to five primary CPU jobs:
   environment;
 - `pennylane-optional`: the IR-only contract and complex128 QuantumScript
   semantics against the minimum 0.44.1 and latest 0.45.1 supported lanes;
+- Double-Single primitives run in the ordinary CPU unit/integration tiers;
+  the same conformance is marked `distributed_accel and gpu` for the scheduled
+  CUDA runner, without turning that result into vendor certification;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
   commit/environment/checksum manifest.
 

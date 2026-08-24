@@ -1,0 +1,41 @@
+schema = "flagquantum_double_single_contract_v1"
+maturity = "experimental"
+implementation = "flagquantum.numerics.double_single"
+storage_dtype = "float32"
+compute_dtype = "float32"
+reference_dtype = "float64_and_complex128_cpu_only"
+runtime_integration = false
+default_selection_allowed = false
+torch_fl_dependency_allowed = false
+external_dependency_allowed = false
+
+[arithmetic]
+representation = "unevaluated_normalized_high_plus_low"
+splitter = 4097.0
+sum_algorithm = "knuth_two_sum"
+renormalization_algorithm = "knuth_two_sum_general"
+product_algorithm = "dekker_split_product"
+reduction_order = "deterministic_input_order"
+autograd = "pytorch_composed_operations"
+
+[scope]
+supported = ["real_add", "real_subtract", "real_multiply", "real_sum", "real_dot", "complex_add", "complex_multiply", "complex_abs_squared"]
+unsupported = ["statevector_runtime", "gate_kernel_dispatch", "distributed_collectives", "optimizer_master_state", "checkpoint_encoding", "compiled_execution", "torch_fl_provider", "vendor_certification"]
+
+[thresholds.cancellation_sum]
+max_absolute_error = 0.0
+min_improvement_factor = 1000000.0
+
+[thresholds.cancellation_dot]
+max_absolute_error = 0.0
+min_improvement_factor = 1000000.0
+
+[thresholds.complex_phase_chain]
+max_absolute_error = 1e-10
+min_improvement_factor = 100.0
+
+[verification]
+contract = "tests/unit/test_double_single_contract.py"
+primitives = "tests/unit/test_double_single.py"
+conformance = "tests/test_double_single_conformance.py"
+policy = "tools/check_double_single_contract.py"
