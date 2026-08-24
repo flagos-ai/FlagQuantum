@@ -203,6 +203,23 @@ owner = "numerical trust maintainers"
 limitations = "Pure FP32 real and split-complex eager primitives plus bounded CPU-reference conformance only. The statevector runtime still rejects Double-Single plans. Gate generation, compiled execution, distributed collectives, decompositions, optimizer state, checkpoints, Torch-FL, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128."
 focused_tests = "tests/test_double_single_conformance.py"
 
+[capabilities.split_real_imag_statevector_p0]
+title = "Split real/imag FP32 local statevector P0"
+summary = "Execute a bounded forward-only statevector using two device-resident float32 tensors without requiring accelerator complex dtypes."
+category = "simulation_and_training"
+user_goals = ["Evaluate statevector forward execution on FP32-only PyTorch devices", "Validate Torch-FL flagos logical-device residency", "Compare split FP32 numerical error with a CPU complex128 reference"]
+public_apis = ["experimental.execute_split_real_imag_statevector", "experimental.run_split_real_imag_conformance"]
+runtime_modes = ["split_real_imag_statevector_p0"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+focused_tests = "tests/test_split_real_imag_conformance.py"
+
 [capabilities.local_mps_tebd]
 title = "Constrained local MPS TEBD"
 summary = "Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD."

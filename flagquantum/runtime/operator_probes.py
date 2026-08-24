@@ -24,6 +24,10 @@ def _dtype_name(dtype: str | torch.dtype) -> str:
     return str(dtype).removeprefix("torch.")
 
 
+def _real_dtype_for(dtype: torch.dtype) -> torch.dtype:
+    return torch.float32 if dtype in {torch.float32, torch.complex64} else torch.float64
+
+
 def _make_tensor(
     shape: tuple[int, ...],
     *,
@@ -34,9 +38,11 @@ def _make_tensor(
     count = 1
     for dimension in shape:
         count *= dimension
-    values = [
-        complex((index + 1) / 7.0, (count - index) / 11.0) for index in range(count)
-    ]
+    values = (
+        [complex((index + 1) / 7.0, (count - index) / 11.0) for index in range(count)]
+        if dtype.is_complex
+        else [(index + 1) / 7.0 for index in range(count)]
+    )
     tensor = torch.tensor(values, dtype=dtype, device=device).reshape(shape)
     return tensor.requires_grad_(requires_grad)
 
@@ -64,6 +70,9 @@ def _execute_probe(
     if operator == "aten::permute":
         tensor = make((2, 2, 2))
         return tensor.permute(0, 2, 1), (tensor,)
+    if operator == "aten::transpose":
+        tensor = make((2, 3))
+        return tensor.transpose(0, 1), (tensor,)
     if operator == "aten::expand":
         tensor = make((1, 2, 2))
         return tensor.expand(3, -1, -1), (tensor,)
@@ -71,6 +80,15 @@ def _execute_probe(
         left = make((2, 2, 3))
         right = make((2, 3, 2))
         return torch.bmm(left, right), (left, right)
+    if operator == "aten::matmul":
+        left = make((4, 4))
+        right = make((4, 4))
+        return torch.matmul(left, right), (left, right)
+    if operator in {"aten::add", "aten::sub"}:
+        left = make((2, 3))
+        right = make((2, 3))
+        output = left + right if operator == "aten::add" else left - right
+        return output, (left, right)
     if operator == "aten::diagonal":
         tensor = make((2, 3, 3))
         return torch.diagonal(tensor, dim1=-2, dim2=-1), (tensor,)
@@ -78,7 +96,7 @@ def _execute_probe(
         tensor = make((2, 3))
         return tensor.unsqueeze(-1), (tensor,)
     if operator == "aten::mul":
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         left = torch.tensor(
             [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
             dtype=real_dtype,
@@ -107,7 +125,7 @@ def _execute_probe(
         right = make((2, 3))
         return torch.cat((left, right), dim=1), (left, right)
     if operator == "aten::_to_copy":
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         tensor = torch.tensor(
             [[0.25, -0.5, 0.75]],
             dtype=real_dtype,
@@ -116,7 +134,7 @@ def _execute_probe(
         )
         return tensor.to(dtype=dtype), (tensor,)
     if operator == "aten::complex":
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         real = torch.tensor(
             [[0.25, -0.5, 0.75]],
             dtype=real_dtype,
@@ -131,7 +149,7 @@ def _execute_probe(
         )
         return torch.complex(real, imag), (real, imag)
     if operator == "aten::cos":
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         tensor = torch.tensor(
             [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
             dtype=real_dtype,
@@ -140,7 +158,7 @@ def _execute_probe(
         )
         return torch.cos(tensor), (tensor,)
     if operator == "aten::sin":
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         tensor = torch.tensor(
             [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
             dtype=real_dtype,
@@ -155,7 +173,7 @@ def _execute_probe(
         tensor = make((2, 3))
         return torch.conj(tensor), (tensor,)
     if operator in {"aten::real", "aten::imag"}:
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         real = torch.tensor(
             [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
             dtype=real_dtype,
@@ -172,7 +190,7 @@ def _execute_probe(
         output = tensor.real if operator == "aten::real" else tensor.imag
         return output, (real, imag)
     if operator == "aten::neg":
-        real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+        real_dtype = _real_dtype_for(dtype)
         tensor = torch.tensor(
             [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
             dtype=real_dtype,
@@ -224,7 +242,7 @@ def _probe_requirement(
     profile_hash: str,
 ) -> CapabilityEvidence:
     dtype = getattr(torch, dtype_name)
-    tolerance = 2e-5 if dtype_name == "complex64" else 1e-11
+    tolerance = 2e-5 if dtype_name in {"float32", "complex64"} else 1e-11
     forward = False
     backward = False
     details = ""
@@ -304,7 +322,7 @@ def probe_operator_profile(
 
     resolved_device = torch.device(device)
     dtype_name = _dtype_name(dtype)
-    if dtype_name not in {"complex64", "complex128"}:
+    if dtype_name not in {"float32", "float64", "complex64", "complex128"}:
         raise ValueError(f"unsupported statevector probe dtype: {dtype_name!r}")
     key = (profile.profile_hash, str(resolved_device), dtype_name, provider)
     with _PROBE_CACHE_LOCK:
@@ -352,7 +370,32 @@ def preflight_statevector_local_p0(
     )
 
 
+def preflight_split_real_imag_statevector_p0(
+    *,
+    device: str | torch.device,
+    provider: str,
+    refresh: bool = False,
+) -> CapabilityPreflightReport:
+    """Probe the pure-FP32 operator slice used by split statevector P0."""
+
+    profile = load_operator_profile("split_real_imag_statevector_p0")
+    evidence = probe_operator_profile(
+        profile,
+        device=device,
+        dtype="float32",
+        provider=provider,
+        refresh=refresh,
+    )
+    return preflight_operator_profile(
+        profile,
+        evidence,
+        device_type=torch.device(device).type,
+        required_dtypes=("float32",),
+    )
+
+
 __all__ = (
+    "preflight_split_real_imag_statevector_p0",
     "preflight_statevector_local_p0",
     "probe_operator_profile",
 )

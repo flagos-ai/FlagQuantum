@@ -23,6 +23,15 @@ Every requirement independently declares supported dtypes and whether forward,
 backward, and deterministic behavior are required. P0 contains `complex64` and
 `complex128`; execution selects only the requested dtype slice.
 
+## `split_real_imag_statevector_p0`
+
+The split profile is a separate forward-only FP32 contract for the explicit
+experimental executor. It covers allocation, reshape/permute/transpose,
+matrix multiplication, real add/subtract/multiply, stack, and real
+trigonometric gate generation. It does not inherit the complex profile and
+does not claim gradients. See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P0.md`](SPLIT_REAL_IMAG_STATEVECTOR_P0.md).
+
 ## Execution behavior
 
 For CPU and native CUDA, existing behavior is unchanged. For local statevector
@@ -80,6 +89,12 @@ or:
 
 ```bash
 FLAGQUANTUM_TEST_FLAGOS_CUDA=1 pytest tests/test_flagos_cuda_reference.py -v
+```
+
+Run the forward-only split FP32 integration separately:
+
+```bash
+python tools/validate_split_real_imag_flagos.py --device flagos:0
 ```
 
 The 2026-08-21 A100 reference run passed all 21 profile requirements, both

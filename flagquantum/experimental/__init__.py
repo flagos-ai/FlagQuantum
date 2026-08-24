@@ -52,6 +52,10 @@ __all__ = (
     "TEBDResult",
     "run_tebd",
     "run_double_single_conformance",
+    "SplitRealImagConformanceReport",
+    "SplitRealImagStatevectorResult",
+    "execute_split_real_imag_statevector",
+    "run_split_real_imag_conformance",
 )
 
 
@@ -65,6 +69,16 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
     if name == "run_double_single_conformance":
         return getattr(import_module("flagquantum.numerics.conformance"), name)
+    if name in {
+        "SplitRealImagConformanceReport",
+        "SplitRealImagStatevectorResult",
+        "execute_split_real_imag_statevector",
+        "run_split_real_imag_conformance",
+    }:
+        return getattr(
+            import_module("flagquantum.runtime.backends.statevector.split_real_imag"),
+            name,
+        )
     if name in {
         "TorchDistributedStatevectorResult",
         "execute_torch_distributed_statevector",

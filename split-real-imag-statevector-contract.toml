@@ -1,0 +1,33 @@
+schema = "flagquantum_split_real_imag_statevector_contract_v1"
+maturity = "experimental"
+implementation = "flagquantum.runtime.backends.statevector.split_real_imag"
+operator_profile = "split_real_imag_statevector_p0"
+representation = "split_real_imag"
+storage_dtype = "float32"
+compute_dtype = "float32"
+gate_generation_dtype = "float32"
+reference_dtype = "complex128_cpu_only"
+distribution_semantics = "single_device_fast_path"
+runtime_default = false
+host_fallback_allowed = false
+complex_accelerator_tensor_allowed = false
+torch_fl_core_dependency_allowed = false
+external_dependency_allowed = false
+
+[scope]
+supported_gates = ["i", "x", "y", "z", "h", "s", "sdg", "t", "tdg", "sx", "sxdg", "rx", "ry", "rz", "phase", "u1", "u2", "u3", "cx", "cy", "cz", "swap", "crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz"]
+supported_state = "batch_one_zero_state"
+unsupported = ["custom_initial_state", "batched_state", "custom_matrices", "trainable_parameters", "gradients", "optimizer_step", "distributed_execution", "sampling", "observables_api", "checkpoint_encoding", "compiled_execution", "double_single_storage", "automatic_runtime_selection", "vendor_certification"]
+
+[thresholds]
+depths = [8, 32, 128]
+max_state_absolute_error = 5e-5
+max_norm_drift = 5e-5
+max_state_infidelity = 5e-6
+
+[verification]
+contract = "tests/unit/test_split_real_imag_contract.py"
+executor = "tests/unit/test_split_real_imag_statevector.py"
+conformance = "tests/test_split_real_imag_conformance.py"
+flagos_validator = "tools/validate_split_real_imag_flagos.py"
+policy = "tools/check_split_real_imag_contract.py"

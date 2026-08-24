@@ -69,6 +69,8 @@ jobs:
         run: python tools/check_pennylane_interop_contract.py
       - name: Verify Double-Single FP32 numerical contract
         run: python tools/check_double_single_contract.py
+      - name: Verify split real/imag statevector P0 contract
+        run: python tools/check_split_real_imag_contract.py
       - name: Verify operator capability manifest
         run: python tools/operator_manifest.py --check
       - name: Verify runtime contract schema

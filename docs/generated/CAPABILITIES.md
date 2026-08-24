@@ -38,6 +38,9 @@ This catalog is generated from the machine-validated
 | Evaluate software-extended precision on FP32 hardware | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
 | Measure cancellation error against a float64 reference | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
 | Prepare a precision provider without changing the runtime | Double-Single FP32 numerical primitives | Experimental | [Run example](../../docs/reference/DOUBLE_SINGLE_FP32.md) |
+| Evaluate statevector forward execution on FP32-only PyTorch devices | Split real/imag FP32 local statevector P0 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md) |
+| Validate Torch-FL flagos logical-device residency | Split real/imag FP32 local statevector P0 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md) |
+| Compare split FP32 numerical error with a CPU complex128 reference | Split real/imag FP32 local statevector P0 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md) |
 | Reproduce small open-chain imaginary-time TEBD studies | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Cross-check MPS evolution against an independent oracle | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Inspect truncation and normalization evidence | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
@@ -125,6 +128,20 @@ Use residual-preserving pairs of float32 tensors for bounded real and split-comp
 - **Start:** [quick example](../../docs/reference/DOUBLE_SINGLE_FP32.md)
 - **Documentation:** [guide](../../docs/reference/DOUBLE_SINGLE_FP32.md)
 - **Known boundary:** Pure FP32 real and split-complex eager primitives plus bounded CPU-reference conformance only. The statevector runtime still rejects Double-Single plans. Gate generation, compiled execution, distributed collectives, decompositions, optimizer state, checkpoints, Torch-FL, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128.
+
+### Split real/imag FP32 local statevector P0
+
+Execute a bounded forward-only statevector using two device-resident float32 tensors without requiring accelerator complex dtypes.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental.execute_split_real_imag_statevector`, `fq.experimental.run_split_real_imag_conformance`
+- **Runtime modes:** `split_real_imag_statevector_p0`
+- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md)
+- **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P0.md)
+- **Known boundary:** Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only.
 
 ### Constrained local MPS TEBD
 

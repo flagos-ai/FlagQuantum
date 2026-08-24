@@ -18,9 +18,29 @@ __all__ = (
     "TorchDistributedStatevectorResult",
     "train_distributed_statevector",
     "run_noisy_statevector",
+    "SplitRealImagConformanceReport",
+    "SplitRealImagStatevectorResult",
+    "execute_split_real_imag_statevector",
+    "run_split_real_imag_conformance",
 )
 
 _EXPORTS = {
+    "SplitRealImagConformanceReport": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "SplitRealImagConformanceReport",
+    ),
+    "SplitRealImagStatevectorResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "SplitRealImagStatevectorResult",
+    ),
+    "execute_split_real_imag_statevector": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "execute_split_real_imag_statevector",
+    ),
+    "run_split_real_imag_conformance": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "run_split_real_imag_conformance",
+    ),
     "BatchedStatevectorTrajectoryResult": (
         "flagquantum.runtime.backends.statevector.noisy",
         "BatchedStatevectorTrajectoryResult",

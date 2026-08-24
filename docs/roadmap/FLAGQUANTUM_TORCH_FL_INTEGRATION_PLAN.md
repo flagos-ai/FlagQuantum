@@ -15,6 +15,9 @@
 > CUDA reference 验证（36 项测试通过、21 项 P0 requirement、complex64/128、
 > depth 8/32/128）；机器可读证据见
 > [`artifacts/flagos_cuda_reference_a100_20260821.json`](../../artifacts/flagos_cuda_reference_a100_20260821.json)。
+> 2026-08-24 新增的 split real/imag FP32 statevector P0 是隔离的
+> forward-only 实验路径；它通过独立 profile 验证底层 FP32 算子，不改变
+> Torch-FL 的依赖边界，也不自动进入默认 runtime。
 
 ## 1. 执行决策
 

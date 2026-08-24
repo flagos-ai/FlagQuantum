@@ -124,6 +124,9 @@ capability changes cannot silently promote it into hardware certification.
 - The packaged [`statevector_local_p0` profile](STATEVECTOR_OPERATOR_PROFILES.md)
   is enforced before local statevector execution on `flagos`; accepted evidence
   is attached to the execution plan.
+- The separate `split_real_imag_statevector_p0` profile gates an explicit,
+  forward-only experimental executor whose state and gate arithmetic use two
+  FP32 tensors. It is never selected by the default runtime.
 - `FallbackPolicy`, `RouteExplanation`, `FallbackEvent`, and
   `StrictExecutionScope` make portable routes, host transfers, and dtype
   demotion explicit.
@@ -163,7 +166,9 @@ tuple:
 5. real-device convergence and residency evidence;
 6. CUDA non-regression evidence.
 
-The next implementation slice is the target-card-specific statevector P0
-operator profile, followed by split real/imaginary FP32 kernels and numerical
-acceptance monitoring. It requires the target card, Torch-FL/PyTorch version
-matrix, and hardware CI owner to be agreed with the Torch-FL team.
+The split real/imaginary FP32 forward candidate and numerical acceptance suite
+now exist behind an experimental entrypoint. The next implementation slice is
+target-card route and residency evidence for that exact profile, followed by
+parameter gradients and an accuracy monitor. Promotion still requires the
+target card, Torch-FL/PyTorch version matrix, and hardware CI owner to be agreed
+with the Torch-FL team.

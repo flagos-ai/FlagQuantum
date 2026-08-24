@@ -252,6 +252,9 @@ The checked-in `ci.yml` maps this policy to five primary CPU jobs:
 - Double-Single primitives run in the ordinary CPU unit/integration tiers;
   the same conformance is marked `distributed_accel and gpu` for the scheduled
   CUDA runner, without turning that result into vendor certification;
+- split real/imag statevector P0 runs in the ordinary CPU unit/integration
+  tiers; its CUDA and Torch-FL `flagos:0` tests are GPU-marked portability
+  evidence and do not certify a domestic accelerator or provider-internal route;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
   commit/environment/checksum manifest.
 

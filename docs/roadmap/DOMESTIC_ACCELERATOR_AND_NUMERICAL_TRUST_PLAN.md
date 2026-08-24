@@ -6,11 +6,13 @@
 > **核心原则：** 一个 FlagQuantum IR、一个用户 API、显式精度语义、能力证据
 > 驱动、无静默降级
 
-> **实施状态（2026-08-21）：** Phase 0–2 控制面基础已开始落地，准确边界见
+> **实施状态（2026-08-24）：** Phase 0–2 控制面基础已开始落地，准确边界见
 > [Accelerator Platform Runtime](../reference/ACCELERATOR_PLATFORM_RUNTIME.md)。
 > Phase 3 已落地 `statevector_local_p0` profile、可执行 forward/backward probe、
 > `flagos` 执行前 preflight，以及 AccuracyRequirement/PrecisionPlan 绑定的 CPU
-> complex128 小型数值认证；该状态不等于国产卡生产能力认证。
+> complex128 小型数值认证；另有显式、forward-only 的
+> `split_real_imag_statevector_p0` FP32 实验执行器和独立 operator profile。
+> 两者均不等于国产卡生产能力认证。
 
 ## 1. 执行摘要
 
