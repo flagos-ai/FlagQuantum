@@ -493,6 +493,7 @@ flagquantum_density_local_p1
 flagquantum_noisy_trajectory_p1
 flagquantum_split_real_imag_p0
 flagquantum_split_real_imag_p1
+flagquantum_split_real_imag_p2_precision
 flagquantum_extended_precision_p0
 ```
 

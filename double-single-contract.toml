@@ -4,7 +4,7 @@ implementation = "flagquantum.numerics.double_single"
 storage_dtype = "float32"
 compute_dtype = "float32"
 reference_dtype = "float64_and_complex128_cpu_only"
-runtime_integration = false
+runtime_integration = "selective_split_statevector_reductions_p2"
 default_selection_allowed = false
 torch_fl_dependency_allowed = false
 external_dependency_allowed = false
@@ -19,8 +19,8 @@ reduction_order = "deterministic_input_order"
 autograd = "pytorch_composed_operations"
 
 [scope]
-supported = ["real_add", "real_subtract", "real_multiply", "real_sum", "real_dot", "complex_add", "complex_multiply", "complex_abs_squared"]
-unsupported = ["statevector_runtime", "gate_kernel_dispatch", "distributed_collectives", "optimizer_master_state", "checkpoint_encoding", "compiled_execution", "torch_fl_provider", "vendor_certification"]
+supported = ["real_add", "real_subtract", "real_multiply", "real_sum", "real_dot", "complex_add", "complex_multiply", "complex_abs_squared", "split_statevector_pauli_inner_product", "split_statevector_hamiltonian_sum", "split_statevector_parameter_shift_accumulation"]
+unsupported = ["full_statevector_storage", "gate_kernel_dispatch", "distributed_collectives", "optimizer_master_state", "checkpoint_residual_encoding", "compiled_execution", "torch_fl_provider_ownership", "vendor_certification"]
 
 [thresholds.cancellation_sum]
 max_absolute_error = 0.0
@@ -39,3 +39,4 @@ contract = "tests/unit/test_double_single_contract.py"
 primitives = "tests/unit/test_double_single.py"
 conformance = "tests/test_double_single_conformance.py"
 policy = "tools/check_double_single_contract.py"
+p2_runtime_contract = "split-real-imag-statevector-p2-precision-contract.toml"

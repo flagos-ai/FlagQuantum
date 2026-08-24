@@ -1,0 +1,101 @@
+{
+  "schema": "flagquantum_split_real_imag_precision_a800_evidence_v1",
+  "recorded_on": "2026-08-24",
+  "status": "passed",
+  "source": {
+    "revision": "71f69fb7e75e9e49d6db07876cc046d64e0f68d6",
+    "archive_sha256": "6c8eafd7d4b25736a77815d795237960448e0f4bd791afbcec6463d539af8fd9",
+    "tree_dirty": false
+  },
+  "hardware": {
+    "host": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "driver_version": "580.126.20",
+    "visible_gpu_count": 8,
+    "validation_gpu_count": 1
+  },
+  "operator_profile": {
+    "name": "split_real_imag_statevector_p2_precision",
+    "sha256": "0988ca5d6111b63b75d46d79f6532e89a3679a54a32cbc698f28cba4ac6e52e7"
+  },
+  "conformance_workload": {
+    "cancellation_large_coefficient": 100000000.0,
+    "cancellation_small_term_count": 8,
+    "cancellation_small_coefficient": 1.0
+  },
+  "matrix": {
+    "depths": [8, 32, 128],
+    "seeds": [0, 7]
+  },
+  "thresholds": {
+    "max_expectation_absolute_error": 0.00005,
+    "max_gradient_relative_error": 0.002,
+    "min_expectation_improvement_factor": 100.0,
+    "min_gradient_improvement_factor": 100.0
+  },
+  "environment": {
+    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642",
+    "native_cuda_image_id": "sha256:a6a6d2c4d50c9ac503eeae562e841add24a1b71a7e70410709c6ca6a87722d7b",
+    "flagos_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "flagos_image_id": "sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "torch_fl_revision": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "torch_fl_source_archive_sha256": "cde803ab5d5f4d8cdd9a730215ffd8b4d0f98ef8de7c808296ca2b61e5e47444",
+    "torch_fl_package": "0.1.0",
+    "torch_fl_wheel_sha256": "84edde0b1f5dd11460db14eca72faca57dc5b82d5d6e4b65f0fc3cf036b03895",
+    "torch_fl_build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "FLAGOS_BUILD_JOBS": "8",
+      "TORCH_DEVICE_BACKEND_AUTOLOAD": "0"
+    }
+  },
+  "routes": [
+    {
+      "name": "native_cuda",
+      "status": "passed",
+      "device": "cuda:0",
+      "provider": "pytorch_cuda",
+      "torch_version": "2.13.0+cu130",
+      "cuda_version": "13.0",
+      "raw_result_sha256": "b949749666d7ed5efa1f07a6256f4492f788041677bd3d687d9c6311ee3c11a3",
+      "logical_device_residency": true
+    },
+    {
+      "name": "torch_fl_flagos",
+      "status": "passed",
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "torch_version": "2.11.0+cu130",
+      "torch_fl_package": "0.1.0",
+      "raw_result_sha256": "bf4ba270f6563fe0bbcedade17c582bcd537b8cacc6ec371f7e856741988e003",
+      "logical_device_residency": true,
+      "flagquantum_host_fallback": false,
+      "provider_internal_route_audited": false,
+      "opt_in_integration_test": "passed"
+    }
+  ],
+  "cases": [
+    {"depth": 8, "seed": 0, "expectation_abs_error": 1.776878935544346e-06, "fp32_expectation_abs_error": 7.76494370764981, "expectation_improvement_factor": 4369990.297212355, "gradient_relative_error": 2.6473292461636553e-07, "fp32_gradient_relative_error": 1.0, "gradient_improvement_factor": 3777391.8807006637, "passed": true},
+    {"depth": 8, "seed": 7, "expectation_abs_error": 2.0414675390156845e-06, "fp32_expectation_abs_error": 7.70783363281835, "expectation_improvement_factor": 3775633.69757756, "gradient_relative_error": 2.971674218142835e-07, "fp32_gradient_relative_error": 1.0, "gradient_improvement_factor": 3365106.423492666, "passed": true},
+    {"depth": 32, "seed": 0, "expectation_abs_error": 7.077781059017241e-07, "fp32_expectation_abs_error": 0.2058451696959831, "expectation_improvement_factor": 290832.91497655475, "gradient_relative_error": 2.1730179018185755e-07, "fp32_gradient_relative_error": 1.0, "gradient_improvement_factor": 4601894.900005705, "passed": true},
+    {"depth": 32, "seed": 7, "expectation_abs_error": 2.9115557520498214e-08, "fp32_expectation_abs_error": 0.5444418632076977, "expectation_improvement_factor": 18699345.283853643, "gradient_relative_error": 3.784900207695393e-07, "fp32_gradient_relative_error": 1.0, "gradient_improvement_factor": 2642077.5849435013, "passed": true},
+    {"depth": 128, "seed": 0, "expectation_abs_error": 1.7759418819984774e-06, "fp32_expectation_abs_error": 0.7236041250610019, "expectation_improvement_factor": 407448.08847388974, "gradient_relative_error": 6.706153025750171e-06, "fp32_gradient_relative_error": 1.0, "gradient_improvement_factor": 149116.78814369687, "passed": true},
+    {"depth": 128, "seed": 7, "expectation_abs_error": 6.9018322612635075e-06, "fp32_expectation_abs_error": 1.2629744831603382, "expectation_improvement_factor": 182991.18775296453, "gradient_relative_error": 1.91631375870605e-06, "fp32_gradient_relative_error": 1.0, "gradient_improvement_factor": 521835.21380926087, "passed": true}
+  ],
+  "claims": {
+    "maturity": "experimental",
+    "validation_scope": "cuda_and_flagos_portability_reference",
+    "distribution_semantics": "single_device_fast_path",
+    "full_state_double_single": false,
+    "convergence_certification": false,
+    "hardware_certification": false,
+    "domestic_accelerator_certification": false,
+    "provider_internal_route_audited": false,
+    "scalability_claim_allowed": false,
+    "performance_claim_allowed": false,
+    "production_claim_allowed": false
+  }
+}

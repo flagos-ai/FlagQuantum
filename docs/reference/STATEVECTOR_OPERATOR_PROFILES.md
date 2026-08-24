@@ -41,6 +41,14 @@ autograd. Its API, supported gates, observable boundary, and fail-closed
 parameter rules are documented in
 [`SPLIT_REAL_IMAG_STATEVECTOR_P1.md`](SPLIT_REAL_IMAG_STATEVECTOR_P1.md).
 
+## `split_real_imag_statevector_p2_precision`
+
+P2 is a forward-only FP32 operator profile for the explicit selective
+Double-Single reduction path. It adds finite/range validation and real
+residual arithmetic to the split statevector surface. It does not describe a
+full Double-Single state or native autograd. See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md`](SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md).
+
 ## Execution behavior
 
 For CPU and native CUDA, existing behavior is unchanged. For local statevector
@@ -110,6 +118,12 @@ Run the split FP32 observable and parameter-shift integration separately:
 
 ```bash
 python tools/validate_split_real_imag_training_flagos.py --device flagos:0
+```
+
+Run the selective Double-Single P2 integration separately:
+
+```bash
+python tools/validate_split_real_imag_precision_flagos.py --device flagos:0
 ```
 
 The 2026-08-24 A800 reference run passed all 21 profile requirements, both

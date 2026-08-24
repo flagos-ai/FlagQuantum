@@ -44,6 +44,9 @@ This catalog is generated from the machine-validated
 | Evaluate Pauli expectation values on FP32-only PyTorch devices | Split real/imag FP32 observable and parameter-shift P1 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md) |
 | Compute explicit parameter-shift gradients for named rotation parameters | Split real/imag FP32 observable and parameter-shift P1 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md) |
 | Compare training primitives with a CPU complex128 reference | Split real/imag FP32 observable and parameter-shift P1 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md) |
+| Survive cancellation-sensitive Hamiltonian reductions on FP32-only devices | Selective Double-Single split statevector precision P2 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md) |
+| Request an auditable selective precision plan | Selective Double-Single split statevector precision P2 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md) |
+| Fail closed when requested accuracy exceeds certified evidence | Selective Double-Single split statevector precision P2 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md) |
 | Reproduce small open-chain imaginary-time TEBD studies | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Cross-check MPS evolution against an independent oracle | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Inspect truncation and normalization evidence | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
@@ -130,7 +133,7 @@ Use residual-preserving pairs of float32 tensors for bounded real and split-comp
 - **Distribution semantics:** `single_device_primitive_only`
 - **Start:** [quick example](../../docs/reference/DOUBLE_SINGLE_FP32.md)
 - **Documentation:** [guide](../../docs/reference/DOUBLE_SINGLE_FP32.md)
-- **Known boundary:** Pure FP32 real and split-complex eager primitives plus bounded CPU-reference conformance only. The statevector runtime still rejects Double-Single plans. Gate generation, compiled execution, distributed collectives, decompositions, optimizer state, checkpoints, Torch-FL, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128.
+- **Known boundary:** Pure FP32 real and split-complex eager primitives plus selective split-statevector P2 reductions. State storage, gate generation, and gate application remain ordinary split FP32; full Double-Single statevectors remain rejected. Compiled execution, distributed collectives, decompositions, optimizer state, residual checkpoints, provider-owned Torch-FL routing, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128.
 
 ### Split real/imag FP32 local statevector P0
 
@@ -159,6 +162,20 @@ Evaluate bounded Pauli Hamiltonians and explicit parameter-shift gradients using
 - **Start:** [quick example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md)
 - **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md)
 - **Known boundary:** Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only.
+
+### Selective Double-Single split statevector precision P2
+
+Retain FP32 state and gates while upgrading Pauli inner products, Hamiltonian sums, and parameter-shift accumulation to explicit Double-Single high/low reductions.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental.execute_split_real_imag_precision_expectation`, `fq.experimental.parameter_shift_split_real_imag_precision_gradient`, `fq.experimental.run_split_real_imag_precision_conformance`, `fq.experimental.split_real_imag_p2_precision_plan`, `fq.experimental.split_real_imag_p2_accuracy_envelope`
+- **Runtime modes:** `split_real_imag_statevector_p2_precision`
+- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
+- **Gradient support:** `parameter_shift_selective_double_single_experimental`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md)
+- **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md)
+- **Known boundary:** Explicit experimental selective precision path only. State storage, gate generation, and gate application remain split FP32; only Pauli inner products, Hamiltonian term sums, and parameter-shift accumulation retain Double-Single high/low words. Full Double-Single statevectors, native autograd, optimizer integration, residual checkpoints, decomposition, compilation, distributed execution, automatic selection, convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported.
 
 ### Constrained local MPS TEBD
 

@@ -204,6 +204,12 @@ def _execute_probe(
     if operator == "aten::sum":
         tensor = make((2, 3))
         return torch.sum(tensor, dim=1), (tensor,)
+    if operator == "aten::isfinite":
+        tensor = make((2, 3))
+        return torch.isfinite(tensor), (tensor,)
+    if operator == "aten::all":
+        tensor = make((2, 3))
+        return torch.all(torch.isfinite(tensor)), (tensor,)
     raise KeyError(f"no executable probe registered for {operator!r}")
 
 
@@ -227,10 +233,15 @@ def _max_error(actual: Any, expected: Any) -> float:
     expected_tensors = _output_tensors(expected)
     if len(actual_tensors) != len(expected_tensors):
         return float("inf")
-    return max(
-        float(torch.max(torch.abs(left.detach().cpu() - right.detach().cpu())).item())
-        for left, right in zip(actual_tensors, expected_tensors)
-    )
+    errors = []
+    for left, right in zip(actual_tensors, expected_tensors):
+        left_cpu = left.detach().cpu()
+        right_cpu = right.detach().cpu()
+        if left_cpu.dtype == torch.bool or right_cpu.dtype == torch.bool:
+            errors.append(0.0 if torch.equal(left_cpu, right_cpu) else float("inf"))
+        else:
+            errors.append(float(torch.max(torch.abs(left_cpu - right_cpu)).item()))
+    return max(errors)
 
 
 def _probe_requirement(
@@ -418,9 +429,34 @@ def preflight_split_real_imag_statevector_p1(
     )
 
 
+def preflight_split_real_imag_statevector_p2(
+    *,
+    device: str | torch.device,
+    provider: str,
+    refresh: bool = False,
+) -> CapabilityPreflightReport:
+    """Probe the FP32 surface used by selective Double-Single reductions."""
+
+    profile = load_operator_profile("split_real_imag_statevector_p2_precision")
+    evidence = probe_operator_profile(
+        profile,
+        device=device,
+        dtype="float32",
+        provider=provider,
+        refresh=refresh,
+    )
+    return preflight_operator_profile(
+        profile,
+        evidence,
+        device_type=torch.device(device).type,
+        required_dtypes=("float32",),
+    )
+
+
 __all__ = (
     "preflight_split_real_imag_statevector_p0",
     "preflight_split_real_imag_statevector_p1",
+    "preflight_split_real_imag_statevector_p2",
     "preflight_statevector_local_p0",
     "probe_operator_profile",
 )

@@ -17,10 +17,10 @@ def test_double_single_contract_is_current() -> None:
 
 def test_contract_rejects_runtime_and_default_selection_claims() -> None:
     contract = load_toml(ROOT / "double-single-contract.toml")
-    contract["runtime_integration"] = True
+    contract["runtime_integration"] = "full_statevector"
     contract["default_selection_allowed"] = True
     errors = contract_errors(contract)
-    assert "Double-Single contract runtime_integration must be False" in errors
+    assert any("runtime_integration" in error for error in errors)
     assert "Double-Single contract default_selection_allowed must be False" in errors
 
 

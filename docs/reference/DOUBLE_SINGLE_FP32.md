@@ -42,10 +42,24 @@ Scheduled accelerator CI runs the same FP32 operations on CUDA when a hardware
 runner is available; that is portability evidence, not domestic-card
 certification.
 
+## Selective P2 runtime integration
+
+The explicit split real/imag P2 precision executor now composes these
+primitives for Pauli inner products, Hamiltonian term sums, and
+parameter-shift gradient accumulation. State storage, gate generation, and
+gate application remain ordinary split FP32. P2 returns both high and low
+words and reconstructs float64 only after moving diagnostic values to CPU.
+See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md`](SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md).
+
+This is a narrow runtime integration, not a full Double-Single statevector or
+an automatic precision provider.
+
 ## Deliberate limitations
 
-The default statevector runtime continues to reject a Double-Single precision
-plan. This PR does not provide gate dispatch, transcendental gate generation,
+The default statevector runtime continues to reject a full Double-Single
+precision plan. P2 does not provide Double-Single gate dispatch, state storage,
+transcendental gate generation,
 distributed collectives, decomposition kernels, optimizer master state,
 checkpoint encoding, Torch-FL integration, or vendor certification. It also
 does not certify compiled execution and does not silently fall back to CPU or

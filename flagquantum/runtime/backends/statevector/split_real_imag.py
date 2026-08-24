@@ -94,7 +94,13 @@ class SplitRealImagStatevectorResult:
         return torch.complex(real, imag)
 
     def summary(self) -> dict[str, Any]:
-        p1 = self.executor == "split_real_imag_statevector_p1"
+        training = self.executor in {
+            "split_real_imag_statevector_p1",
+            "split_real_imag_statevector_p2_precision",
+        }
+        selective_double_single = (
+            self.executor == "split_real_imag_statevector_p2_precision"
+        )
         return {
             "schema": SPLIT_REAL_IMAG_SCHEMA,
             "executor": self.executor,
@@ -109,9 +115,12 @@ class SplitRealImagStatevectorResult:
             "complex_accelerator_tensor_materialized": False,
             "flagquantum_host_fallback": False,
             "provider_internal_route_audited": False,
-            "observable_supported": p1,
-            "gradient_supported": p1,
-            "gradient_method": "parameter_shift" if p1 else None,
+            "observable_supported": training,
+            "gradient_supported": training,
+            "gradient_method": "parameter_shift" if training else None,
+            "reduction_dtype": (
+                "double_single_fp32" if selective_double_single else "float32"
+            ),
             "native_autograd_supported": False,
             "distributed_supported": False,
             "scalability_claim_allowed": False,
@@ -472,13 +481,18 @@ def _execute_bound_split_statevector(
         from ...operator_probes import (
             preflight_split_real_imag_statevector_p0,
             preflight_split_real_imag_statevector_p1,
+            preflight_split_real_imag_statevector_p2,
         )
 
-        preflight_fn = (
-            preflight_split_real_imag_statevector_p1
-            if profile_name == "split_real_imag_statevector_p1"
-            else preflight_split_real_imag_statevector_p0
-        )
+        preflight_fn = {
+            "split_real_imag_statevector_p0": preflight_split_real_imag_statevector_p0,
+            "split_real_imag_statevector_p1": preflight_split_real_imag_statevector_p1,
+            "split_real_imag_statevector_p2_precision": preflight_split_real_imag_statevector_p2,
+        }.get(profile_name)
+        if preflight_fn is None:
+            raise ValueError(
+                f"unknown split real/imag operator profile {profile_name!r}"
+            )
         operator_report = preflight_fn(
             device=resolved_device,
             provider=identity.provider,

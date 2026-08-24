@@ -24,15 +24,18 @@ EXPECTED_SUPPORTED = {
     "complex_add",
     "complex_multiply",
     "complex_abs_squared",
+    "split_statevector_pauli_inner_product",
+    "split_statevector_hamiltonian_sum",
+    "split_statevector_parameter_shift_accumulation",
 }
 EXPECTED_UNSUPPORTED = {
-    "statevector_runtime",
+    "full_statevector_storage",
     "gate_kernel_dispatch",
     "distributed_collectives",
     "optimizer_master_state",
-    "checkpoint_encoding",
+    "checkpoint_residual_encoding",
     "compiled_execution",
-    "torch_fl_provider",
+    "torch_fl_provider_ownership",
     "vendor_certification",
 }
 
@@ -50,7 +53,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "storage_dtype": "float32",
         "compute_dtype": "float32",
         "reference_dtype": "float64_and_complex128_cpu_only",
-        "runtime_integration": False,
+        "runtime_integration": "selective_split_statevector_reductions_p2",
         "default_selection_allowed": False,
         "torch_fl_dependency_allowed": False,
         "external_dependency_allowed": False,

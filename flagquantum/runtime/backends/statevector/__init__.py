@@ -23,14 +23,54 @@ __all__ = (
     "SplitRealImagParameterShiftResult",
     "SplitRealImagStatevectorResult",
     "SplitRealImagTrainingConformanceReport",
+    "SplitRealImagPrecisionConformanceReport",
+    "SplitRealImagPrecisionExpectationResult",
+    "SplitRealImagPrecisionGradientResult",
     "execute_split_real_imag_expectation",
+    "execute_split_real_imag_precision_expectation",
     "execute_split_real_imag_statevector",
     "parameter_shift_split_real_imag_gradient",
+    "parameter_shift_split_real_imag_precision_gradient",
     "run_split_real_imag_conformance",
     "run_split_real_imag_training_conformance",
+    "run_split_real_imag_precision_conformance",
+    "split_real_imag_p2_accuracy_envelope",
+    "split_real_imag_p2_precision_plan",
 )
 
 _EXPORTS = {
+    "SplitRealImagPrecisionConformanceReport": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "SplitRealImagPrecisionConformanceReport",
+    ),
+    "SplitRealImagPrecisionExpectationResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "SplitRealImagPrecisionExpectationResult",
+    ),
+    "SplitRealImagPrecisionGradientResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "SplitRealImagPrecisionGradientResult",
+    ),
+    "execute_split_real_imag_precision_expectation": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "execute_split_real_imag_precision_expectation",
+    ),
+    "parameter_shift_split_real_imag_precision_gradient": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "parameter_shift_split_real_imag_precision_gradient",
+    ),
+    "run_split_real_imag_precision_conformance": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "run_split_real_imag_precision_conformance",
+    ),
+    "split_real_imag_p2_accuracy_envelope": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "split_real_imag_p2_accuracy_envelope",
+    ),
+    "split_real_imag_p2_precision_plan": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision",
+        "split_real_imag_p2_precision_plan",
+    ),
     "SplitRealImagConformanceReport": (
         "flagquantum.runtime.backends.statevector.split_real_imag",
         "SplitRealImagConformanceReport",
