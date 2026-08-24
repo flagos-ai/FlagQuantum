@@ -50,6 +50,9 @@ This catalog is generated from the machine-validated
 | Implement a framework adapter without changing FlagQuantum core | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Certify round-trip and fail-closed adapter behavior | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
 | Handle conversion diagnostics consistently | Interoperability adapter contract | Experimental | [Run example](../../docs/reference/API.md) |
+| Import a supported PennyLane QuantumScript | PennyLane QuantumScript interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Export static FlagQuantum IR to PennyLane | PennyLane QuantumScript interoperability | Experimental | [Run example](../../docs/reference/API.md) |
+| Audit semantic loss at the boundary | PennyLane QuantumScript interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
@@ -208,7 +211,21 @@ Implement and certify optional external-framework conversion behind one immutabl
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/development/INTEROP_ADAPTERS.md)
-- **Known boundary:** The adapter API and conformance schema are experimental and currently have one registered implementation, Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers.
+- **Known boundary:** The adapter API and conformance schema are experimental and currently have two registered implementations, PennyLane and Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers.
+
+### PennyLane QuantumScript interoperability
+
+Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental`
+- **Runtime modes:** `control_plane_conversion`
+- **Hardware:** `cpu_control_plane`
+- **Gradient support:** `bound_parameters_only`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick example](../../docs/reference/API.md)
+- **Documentation:** [guide](../../docs/reference/API.md)
+- **Known boundary:** Certified with PennyLane 0.44.1 and 0.45.1 on Python 3.11 or newer for static QuantumScript conversion and complex128 numerical semantics. QNode, device execution, shots, measurements, trainable parameters, arbitrary wire labels without explicit lossy flattening, and idle wire extents are outside v1. PennyLane objects never enter FlagQuantum runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers.
 
 ### Qiskit IR interoperability
 

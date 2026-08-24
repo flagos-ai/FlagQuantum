@@ -62,7 +62,9 @@ versioned contracts only.
 External framework objects stop at `flagquantum.interop`. Its immutable lazy
 registry and framework-neutral conversion contracts are the shared control-plane
 boundary; concrete implementations live under `flagquantum.interop.<framework>`.
-The Qiskit adapter converts to or from versioned FlagQuantum IR, reports
-semantic loss explicitly, and loads Qiskit only when conversion is called.
+The Qiskit and PennyLane adapters convert to or from versioned FlagQuantum IR,
+report semantic loss explicitly, and load their external framework only when
+conversion is called. PennyLane v1 stops specifically at immutable
+`QuantumScript`; QNodes, devices, execution, and autograd remain outside it.
 Runtime kernels, distributed worker contracts, CUDA, and FlagOS never receive
 external framework objects.

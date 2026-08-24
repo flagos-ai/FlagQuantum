@@ -123,7 +123,15 @@ QISKIT_ADAPTER_SPEC = InteropAdapterSpec(
     attribute="QISKIT_ADAPTER",
     dependency_extra="qiskit",
 )
-DEFAULT_INTEROP_REGISTRY = InteropRegistry({"qiskit": QISKIT_ADAPTER_SPEC})
+PENNYLANE_ADAPTER_SPEC = InteropAdapterSpec(
+    name="pennylane",
+    module="flagquantum.interop.pennylane.adapter",
+    attribute="PENNYLANE_ADAPTER",
+    dependency_extra="pennylane",
+)
+DEFAULT_INTEROP_REGISTRY = InteropRegistry(
+    {"pennylane": PENNYLANE_ADAPTER_SPEC, "qiskit": QISKIT_ADAPTER_SPEC}
+)
 
 
 def available_adapters() -> tuple[str, ...]:
@@ -140,6 +148,7 @@ def get_adapter(name: str) -> InteropAdapter:
 
 __all__ = (
     "DEFAULT_INTEROP_REGISTRY",
+    "PENNYLANE_ADAPTER_SPEC",
     "QISKIT_ADAPTER_SPEC",
     "InteropAdapterSpec",
     "InteropRegistry",

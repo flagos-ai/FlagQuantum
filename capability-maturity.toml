@@ -269,8 +269,25 @@ quick_start = "docs/reference/API.md"
 documentation = "docs/development/INTEROP_ADAPTERS.md"
 level = "experimental"
 owner = "interop maintainers"
-limitations = "The adapter API and conformance schema are experimental and currently have one registered implementation, Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers."
+limitations = "The adapter API and conformance schema are experimental and currently have two registered implementations, PennyLane and Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers."
 focused_tests = "tests/unit/test_interop_conformance.py"
+
+[capabilities.pennylane_interop]
+title = "PennyLane QuantumScript interoperability"
+summary = "Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter."
+category = "deployment_and_extension"
+user_goals = ["Import a supported PennyLane QuantumScript", "Export static FlagQuantum IR to PennyLane", "Audit semantic loss at the boundary"]
+public_apis = ["experimental"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "bound_parameters_only"
+distribution_semantics = "not_applicable"
+quick_start = "docs/reference/API.md"
+documentation = "docs/reference/API.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Certified with PennyLane 0.44.1 and 0.45.1 on Python 3.11 or newer for static QuantumScript conversion and complex128 numerical semantics. QNode, device execution, shots, measurements, trainable parameters, arbitrary wire labels without explicit lossy flattening, and idle wire extents are outside v1. PennyLane objects never enter FlagQuantum runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers."
+focused_tests = "tests/test_pennylane_interop.py"
 
 [capabilities.qiskit_interop]
 title = "Qiskit IR interoperability"

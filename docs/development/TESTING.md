@@ -247,6 +247,8 @@ The checked-in `ci.yml` maps this policy to five primary CPU jobs:
   Qiskit IR, statevector, wire-order, classical-bit, and local Aer conformance
   on the certified Qiskit 2.0.x and 2.5.x lanes, isolated from the core
   environment;
+- `pennylane-optional`: the IR-only contract and complex128 QuantumScript
+  semantics against the minimum 0.44.1 and latest 0.45.1 supported lanes;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
   commit/environment/checksum manifest.
 

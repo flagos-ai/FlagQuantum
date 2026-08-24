@@ -261,6 +261,7 @@ Optional integration suites can be selected independently:
 
 ```bash
 pytest -m qiskit
+pytest -m pennylane
 pytest -m braket
 ```
 
@@ -273,7 +274,7 @@ descriptors and loads an adapter implementation only when requested:
 ```python
 from flagquantum.interop import available_adapters, get_adapter
 
-assert available_adapters() == ("qiskit",)
+assert available_adapters() == ("pennylane", "qiskit")
 adapter = get_adapter("qiskit")
 result = adapter.import_program(external_circuit)
 flagquantum_ir = result.ir
@@ -287,6 +288,28 @@ the external dependency is loaded only when conversion is requested. Adapter
 API mismatches and registered/loaded identity mismatches fail before use.
 `DEFAULT_INTEROP_REGISTRY.to_dict()` provides a stable machine-readable
 inventory for tooling and review without probing or importing dependencies.
+
+### PennyLane QuantumScript interoperability
+
+PennyLane is an optional control-plane adapter and is never a FlagQuantum
+runtime dependency. On Python 3.11 or newer, install it with
+`pip install 'flagquantum[pennylane]'` and convert only at the immutable
+`QuantumScript` boundary:
+
+```python
+from flagquantum.interop.pennylane import from_pennylane, to_pennylane
+
+ir = from_pennylane(quantum_script)
+round_trip = to_pennylane(ir)
+```
+
+The v1 adapter is intentionally static and complex128-first. It supports the
+gate map recorded in `pennylane-interop-contract.toml`, bound real scalar
+parameters, and contiguous integer wires. QNodes, devices, execution, shots,
+measurement processes, autograd bridges, and symbolic parameters remain out of
+scope and fail closed. Nonstandard wire labels can only be flattened with an
+explicit `allow_lossy=True` report. PennyLane objects do not cross into the
+compiler, PyTorch runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers.
 
 Adapter authors use `InteropRoundTripCase`, `InteropRejectionCase`, and
 `run_adapter_conformance()` to apply the same framework-neutral identity,

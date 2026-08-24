@@ -92,6 +92,9 @@ def checks(python_executable: str) -> tuple[Check, ...]:
                 "flagquantum/interop/contracts.py",
                 "flagquantum/interop/conformance.py",
                 "flagquantum/interop/registry.py",
+                "flagquantum/interop/pennylane/adapter.py",
+                "flagquantum/interop/pennylane/conformance.py",
+                "flagquantum/interop/pennylane/models.py",
                 "flagquantum/interop/qiskit/adapter.py",
                 "flagquantum/interop/qiskit/conformance.py",
                 "flagquantum/interop/qiskit/models.py",
@@ -108,6 +111,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         Check(
             "Qiskit interoperability contract",
             (python_executable, "tools/check_qiskit_interop_contract.py"),
+        ),
+        Check(
+            "PennyLane interoperability contract",
+            (python_executable, "tools/check_pennylane_interop_contract.py"),
         ),
         Check(
             "required-check contract",

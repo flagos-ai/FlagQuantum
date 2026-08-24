@@ -8,17 +8,18 @@ drift, unclassified extras and aggregate extras that no longer equal their
 components.
 
 JAX, Triton, visualization, examples and provider SDKs remain separate extras.
-`interop-all` is the explicit aggregate for the Braket, Quafu and Qiskit
+`interop-all` is the explicit aggregate for the Braket, PennyLane, Quafu and Qiskit
 adapters; it is not part of the historical `all` development/runtime bundle.
 Installing core FlagQuantum therefore never installs an external quantum
 framework.
 
-External framework imports are also namespace-governed. Qiskit imports belong
-only under `flagquantum.interop.qiskit`; the architecture check rejects direct
-Qiskit dependencies in core IR, compilers, runtimes, kernels, and distributed
-workers. Existing experimental Aer entry points are compatibility wrappers over
-that adapter. The common registry stores only module paths and adapter metadata;
-listing or resolving an adapter must not import its external framework.
+External framework imports are also namespace-governed. Qiskit and PennyLane
+imports belong only under their matching `flagquantum.interop` namespaces; the
+architecture check rejects either dependency in core IR, compilers, runtimes,
+kernels, and distributed workers. Existing experimental Aer entry points are
+compatibility wrappers over the Qiskit adapter. The common registry stores only
+module paths and adapter metadata; listing or resolving an adapter must not
+import its external framework.
 
 Torch-FL is different from an interop SDK: it owns the FlagOS platform and
 vendor-runtime boundary. It is deliberately recorded as

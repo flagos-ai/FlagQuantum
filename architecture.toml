@@ -23,6 +23,9 @@ direct_cuda_allowed = [
 qiskit_import_allowed_prefixes = [
     "flagquantum/interop/qiskit/",
 ]
+pennylane_import_allowed_prefixes = [
+    "flagquantum/interop/pennylane/",
+]
 
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/algorithms/optimization.py" = 6

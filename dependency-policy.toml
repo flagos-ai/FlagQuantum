@@ -9,24 +9,25 @@ cuda = ["triton>=3.1,<4"]
 braket = ["amazon-braket-sdk>=1.117,<2"]
 quafu = ["quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'"]
 qiskit = ["qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1"]
+pennylane = ["pennylane>=0.44.1,<0.46; python_version >= '3.11'"]
 examples = ["datasets>=2.20.0", "transformers>=4.40.0"]
 viz = ["matplotlib>=3.5.0"]
 invertible = ["torch>=2.5,<2.14"]
 all = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-xdist>=3.0.0", "ruff>=0.1.0", "black>=23.0", "mypy>=1.0", "build>=1.2.0", "pre-commit>=3.7.0", "tomli>=2.0; python_version < '3.11'", "matplotlib>=3.5.0", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
-interop-all = ["amazon-braket-sdk>=1.117,<2", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1"]
+interop-all = ["amazon-braket-sdk>=1.117,<2", "pennylane>=0.44.1,<0.46; python_version >= '3.11'", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1"]
 
 [classes]
 development = ["dev"]
 accelerator_kernel = ["cuda"]
 optional_runtime = ["jax"]
-interop = ["braket", "quafu", "qiskit"]
+interop = ["braket", "pennylane", "quafu", "qiskit"]
 user_experience = ["examples", "viz"]
 compatibility = ["invertible"]
 aggregate = ["all", "interop-all"]
 
 [aggregates]
 all = ["dev", "viz", "jax", "examples", "cuda"]
-interop-all = ["braket", "quafu", "qiskit"]
+interop-all = ["braket", "pennylane", "quafu", "qiskit"]
 
 [external_platforms.flagos]
 owner = "Torch-FL"
@@ -38,12 +39,13 @@ optional_extra_allowed = false
 
 [import_policy]
 core_allowed_distributions = ["torch"]
-core_forbidden_imports = ["braket", "datasets", "jax", "jaxlib", "matplotlib", "qiskit", "qiskit_aer", "quark", "torch_fl", "transformers", "triton"]
+core_forbidden_imports = ["braket", "datasets", "jax", "jaxlib", "matplotlib", "pennylane", "qiskit", "qiskit_aer", "quark", "torch_fl", "transformers", "triton"]
 
 [tested]
 torch = ["2.5", "2.13"]
 jax = ["0.10"]
 qiskit = ["2.0", "2.5"]
+pennylane = ["0.44.1", "0.45.1"]
 
 [updates]
 cadence = "monthly"

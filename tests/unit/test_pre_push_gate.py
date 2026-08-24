@@ -22,11 +22,13 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
     ) in commands
     assert ("python", "tools/check_dependency_policy.py") in commands
     assert ("python", "tools/check_qiskit_interop_contract.py") in commands
+    assert ("python", "tools/check_pennylane_interop_contract.py") in commands
     assert any(
         check.name == "strict typed interoperability contract"
         and "flagquantum/interop/contracts.py" in check.command
         and "flagquantum/interop/conformance.py" in check.command
         and "flagquantum/interop/qiskit/conformance.py" in check.command
+        and "flagquantum/interop/pennylane/adapter.py" in check.command
         for check in checks("python")
     )
     for tier in ("pr-default", "pr-runtime", "pr-distributed"):

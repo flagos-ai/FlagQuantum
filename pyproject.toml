@@ -53,8 +53,13 @@ qiskit = [
     "qiskit-aer>=0.17,<1",
 ]
 
+pennylane = [
+    "pennylane>=0.44.1,<0.46; python_version >= '3.11'",
+]
+
 interop-all = [
     "amazon-braket-sdk>=1.117,<2",
+    "pennylane>=0.44.1,<0.46; python_version >= '3.11'",
     "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'",
     "qiskit[qasm3-import]>=2,<3",
     "qiskit-aer>=0.17,<1",

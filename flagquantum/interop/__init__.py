@@ -59,6 +59,7 @@ __all__ = (
     "InteropRoundTripCase",
     "available_adapters",
     "get_adapter",
+    "pennylane",
     "qiskit",
     "run_adapter_conformance",
     "semantic_fingerprint",
@@ -66,8 +67,8 @@ __all__ = (
 
 
 def __getattr__(name: str) -> Any:
-    if name == "qiskit":
-        return import_module(".qiskit", __name__)
+    if name in {"pennylane", "qiskit"}:
+        return import_module(f".{name}", __name__)
     raise AttributeError(name)
 
 

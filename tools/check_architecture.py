@@ -55,6 +55,9 @@ def architecture_errors() -> tuple[str, ...]:
     qiskit_import_allowed_prefixes = tuple(
         interop_boundaries.get("qiskit_import_allowed_prefixes", ())
     )
+    pennylane_import_allowed_prefixes = tuple(
+        interop_boundaries.get("pennylane_import_allowed_prefixes", ())
+    )
     direct_cuda_allowed = set(accelerator_boundaries.get("direct_cuda_allowed", ()))
     direct_cuda_call_ceiling = {
         str(path): int(count)
@@ -123,6 +126,13 @@ def architecture_errors() -> tuple[str, ...]:
                 errors.append(
                     f"{relative}: Qiskit imports are isolated to "
                     "flagquantum.interop.qiskit"
+                )
+            if (
+                module == "pennylane" or module.startswith("pennylane.")
+            ) and not relative.startswith(pennylane_import_allowed_prefixes):
+                errors.append(
+                    f"{relative}: PennyLane imports are isolated to "
+                    "flagquantum.interop.pennylane"
                 )
         for subsystem_name, policy in legacy_subsystems.items():
             allowed_importers = set(policy.get("allowed_importers", ()))
