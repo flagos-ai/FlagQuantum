@@ -394,8 +394,33 @@ def preflight_split_real_imag_statevector_p0(
     )
 
 
+def preflight_split_real_imag_statevector_p1(
+    *,
+    device: str | torch.device,
+    provider: str,
+    refresh: bool = False,
+) -> CapabilityPreflightReport:
+    """Probe P1 FP32 expectation and gradient-supporting operators."""
+
+    profile = load_operator_profile("split_real_imag_statevector_p1")
+    evidence = probe_operator_profile(
+        profile,
+        device=device,
+        dtype="float32",
+        provider=provider,
+        refresh=refresh,
+    )
+    return preflight_operator_profile(
+        profile,
+        evidence,
+        device_type=torch.device(device).type,
+        required_dtypes=("float32",),
+    )
+
+
 __all__ = (
     "preflight_split_real_imag_statevector_p0",
+    "preflight_split_real_imag_statevector_p1",
     "preflight_statevector_local_p0",
     "probe_operator_profile",
 )

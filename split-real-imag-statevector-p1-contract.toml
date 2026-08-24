@@ -1,0 +1,39 @@
+schema = "flagquantum_split_real_imag_statevector_p1_contract_v1"
+maturity = "experimental"
+implementation = "flagquantum.runtime.backends.statevector.split_real_imag"
+operator_profile = "split_real_imag_statevector_p1"
+representation = "split_real_imag"
+storage_dtype = "float32"
+compute_dtype = "float32"
+reference_dtype = "complex128_cpu_only"
+gradient_method = "parameter_shift"
+distribution_semantics = "single_device_fast_path"
+runtime_default = false
+host_fallback_allowed = false
+complex_accelerator_tensor_allowed = false
+native_autograd_claim_allowed = false
+hardware_certification = false
+
+[scope]
+supported_observables = ["pauli_term", "pauli_hamiltonian", "flagquantum_ir_observable"]
+parameter_shift_gates = ["rx", "ry", "rz", "rxx", "ryy", "rzz"]
+supported_state = "batch_one_zero_state"
+unsupported = ["anonymous_trainable_parameters", "parameter_expressions", "trainable_hamiltonian_coefficients", "custom_initial_state", "batched_state", "custom_matrices", "sampling", "native_autograd", "optimizer_step_api", "distributed_execution", "automatic_runtime_selection", "vendor_certification"]
+
+[thresholds]
+depths = [8, 32, 128]
+seeds = [0, 7]
+max_expectation_absolute_error = 5e-5
+max_expectation_relative_error = 5e-4
+max_gradient_relative_error = 2e-3
+min_gradient_cosine_similarity = 0.999
+max_norm_drift = 5e-5
+
+[verification]
+contract = "tests/unit/test_split_real_imag_p1_contract.py"
+training = "tests/unit/test_split_real_imag_training.py"
+conformance = "tests/test_split_real_imag_training_conformance.py"
+flagos_validator = "tools/validate_split_real_imag_training_flagos.py"
+reference_evidence = "artifacts/split_real_imag_training_a800_20260824.json"
+evidence_validator = "tools/validate_split_real_imag_training_evidence.py"
+policy = "tools/check_split_real_imag_p1_contract.py"

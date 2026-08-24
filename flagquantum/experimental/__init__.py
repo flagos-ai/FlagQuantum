@@ -53,9 +53,15 @@ __all__ = (
     "run_tebd",
     "run_double_single_conformance",
     "SplitRealImagConformanceReport",
+    "SplitRealImagExpectationResult",
+    "SplitRealImagParameterShiftResult",
     "SplitRealImagStatevectorResult",
+    "SplitRealImagTrainingConformanceReport",
+    "execute_split_real_imag_expectation",
     "execute_split_real_imag_statevector",
+    "parameter_shift_split_real_imag_gradient",
     "run_split_real_imag_conformance",
+    "run_split_real_imag_training_conformance",
 )
 
 
@@ -71,9 +77,15 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("flagquantum.numerics.conformance"), name)
     if name in {
         "SplitRealImagConformanceReport",
+        "SplitRealImagExpectationResult",
+        "SplitRealImagParameterShiftResult",
         "SplitRealImagStatevectorResult",
+        "SplitRealImagTrainingConformanceReport",
+        "execute_split_real_imag_expectation",
         "execute_split_real_imag_statevector",
+        "parameter_shift_split_real_imag_gradient",
         "run_split_real_imag_conformance",
+        "run_split_real_imag_training_conformance",
     }:
         return getattr(
             import_module("flagquantum.runtime.backends.statevector.split_real_imag"),

@@ -67,6 +67,11 @@ to measure sensitive reductions and selected gate kernels, then introduce
 Double-Single only where those measurements require it. Keeping representation
 portability separate from precision escalation makes both paths reviewable.
 
+P1 adds an independent, opt-in Pauli expectation and parameter-shift layer on
+top of this representation. See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P1.md`](SPLIT_REAL_IMAG_STATEVECTOR_P1.md). P0
+itself remains forward-only and continues to reject trainable parameters.
+
 ## Deliberate limitations
 
 P0 rejects custom initial states, batches larger than one, custom matrices, and

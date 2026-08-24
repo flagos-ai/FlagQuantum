@@ -32,6 +32,15 @@ trigonometric gate generation. It does not inherit the complex profile and
 does not claim gradients. See
 [`SPLIT_REAL_IMAG_STATEVECTOR_P0.md`](SPLIT_REAL_IMAG_STATEVECTOR_P0.md).
 
+## `split_real_imag_statevector_p1`
+
+P1 is a separate FP32 profile for bounded Pauli expectation values and
+explicit parameter-shift gradients. It adds backward probes for the real
+operator surface used by the training primitive, but does not claim native
+autograd. Its API, supported gates, observable boundary, and fail-closed
+parameter rules are documented in
+[`SPLIT_REAL_IMAG_STATEVECTOR_P1.md`](SPLIT_REAL_IMAG_STATEVECTOR_P1.md).
+
 ## Execution behavior
 
 For CPU and native CUDA, existing behavior is unchanged. For local statevector
@@ -95,6 +104,12 @@ Run the forward-only split FP32 integration separately:
 
 ```bash
 python tools/validate_split_real_imag_flagos.py --device flagos:0
+```
+
+Run the split FP32 observable and parameter-shift integration separately:
+
+```bash
+python tools/validate_split_real_imag_training_flagos.py --device flagos:0
 ```
 
 The 2026-08-24 A800 reference run passed all 21 profile requirements, both

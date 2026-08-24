@@ -19,9 +19,15 @@ __all__ = (
     "train_distributed_statevector",
     "run_noisy_statevector",
     "SplitRealImagConformanceReport",
+    "SplitRealImagExpectationResult",
+    "SplitRealImagParameterShiftResult",
     "SplitRealImagStatevectorResult",
+    "SplitRealImagTrainingConformanceReport",
+    "execute_split_real_imag_expectation",
     "execute_split_real_imag_statevector",
+    "parameter_shift_split_real_imag_gradient",
     "run_split_real_imag_conformance",
+    "run_split_real_imag_training_conformance",
 )
 
 _EXPORTS = {
@@ -33,6 +39,22 @@ _EXPORTS = {
         "flagquantum.runtime.backends.statevector.split_real_imag",
         "SplitRealImagStatevectorResult",
     ),
+    "SplitRealImagExpectationResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "SplitRealImagExpectationResult",
+    ),
+    "SplitRealImagParameterShiftResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "SplitRealImagParameterShiftResult",
+    ),
+    "SplitRealImagTrainingConformanceReport": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "SplitRealImagTrainingConformanceReport",
+    ),
+    "execute_split_real_imag_expectation": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "execute_split_real_imag_expectation",
+    ),
     "execute_split_real_imag_statevector": (
         "flagquantum.runtime.backends.statevector.split_real_imag",
         "execute_split_real_imag_statevector",
@@ -40,6 +62,14 @@ _EXPORTS = {
     "run_split_real_imag_conformance": (
         "flagquantum.runtime.backends.statevector.split_real_imag",
         "run_split_real_imag_conformance",
+    ),
+    "parameter_shift_split_real_imag_gradient": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "parameter_shift_split_real_imag_gradient",
+    ),
+    "run_split_real_imag_training_conformance": (
+        "flagquantum.runtime.backends.statevector.split_real_imag",
+        "run_split_real_imag_training_conformance",
     ),
     "BatchedStatevectorTrajectoryResult": (
         "flagquantum.runtime.backends.statevector.noisy",

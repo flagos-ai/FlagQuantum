@@ -11,7 +11,8 @@
 > Phase 3 已落地 `statevector_local_p0` profile、可执行 forward/backward probe、
 > `flagos` 执行前 preflight，以及 AccuracyRequirement/PrecisionPlan 绑定的 CPU
 > complex128 小型数值认证；另有显式、forward-only 的
-> `split_real_imag_statevector_p0` FP32 实验执行器和独立 operator profile。
+> `split_real_imag_statevector_p0` FP32 实验执行器，以及在其上提供受限 Pauli
+> 期望值和显式 parameter-shift 梯度的 `split_real_imag_statevector_p1` profile。
 > 两者均不等于国产卡生产能力认证。
 
 ## 1. 执行摘要

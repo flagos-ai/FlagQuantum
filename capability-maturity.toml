@@ -220,6 +220,23 @@ owner = "numerical trust maintainers"
 limitations = "Explicit experimental forward-only executor for a bounded built-in gate set using separate FP32 real and imaginary tensors. It is not selected by the default runtime. Custom matrices, gradients, optimizer steps, sampling and observables APIs, compiled execution, distributed execution, Double-Single storage, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
 focused_tests = "tests/test_split_real_imag_conformance.py"
 
+[capabilities.split_real_imag_statevector_p1]
+title = "Split real/imag FP32 observable and parameter-shift P1"
+summary = "Evaluate bounded Pauli Hamiltonians and explicit parameter-shift gradients using two device-resident float32 state tensors without accelerator complex dtypes."
+category = "simulation_and_training"
+user_goals = ["Evaluate Pauli expectation values on FP32-only PyTorch devices", "Compute explicit parameter-shift gradients for named rotation parameters", "Compare training primitives with a CPU complex128 reference"]
+public_apis = ["experimental.execute_split_real_imag_expectation", "experimental.parameter_shift_split_real_imag_gradient", "experimental.run_split_real_imag_training_conformance"]
+runtime_modes = ["split_real_imag_statevector_p1"]
+hardware = ["cpu", "single_cuda_reference", "device_generic_pytorch"]
+gradient_support = "parameter_shift_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P1.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit experimental batch-one Pauli expectation and occurrence-wise two-term parameter-shift gradients for direct named scalar parameters on RX, RY, RZ, RXX, RYY, and RZZ. It is not native autograd and provides no optimizer integration. Parameter expressions, trainable coefficients, custom matrices or states, sampling, compilation, distributed execution, automatic runtime selection, performance, convergence, provider-internal route auditing, and domestic-hardware certification remain unsupported. CUDA or CUDA-backed flagos evidence is portability evidence only."
+focused_tests = "tests/test_split_real_imag_training_conformance.py"
+
 [capabilities.local_mps_tebd]
 title = "Constrained local MPS TEBD"
 summary = "Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD."
