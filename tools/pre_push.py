@@ -150,6 +150,20 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             ),
         ),
         Check(
+            "split real/imag statevector P3 Double-Single contract",
+            (
+                python_executable,
+                "tools/check_split_real_imag_p3_double_single_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P3 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_double_single_evidence.py",
+            ),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

@@ -143,6 +143,43 @@ class DoubleSingleTensor:
     def square(self) -> "DoubleSingleTensor":
         return self.multiply(self)
 
+    def reciprocal(self, *, iterations: int = 2) -> "DoubleSingleTensor":
+        """Return a Newton-refined reciprocal using FP32 tensor operations."""
+
+        if iterations < 1:
+            raise ValueError("reciprocal requires at least one refinement iteration")
+        estimate = DoubleSingleTensor.from_float32(torch.reciprocal(self.to_float32()))
+        one = DoubleSingleTensor.from_float32(torch.ones_like(self.high))
+        for _ in range(iterations):
+            estimate = estimate.multiply(one.subtract(self.multiply(estimate))).add(
+                estimate
+            )
+        return estimate.renormalized()
+
+    def reciprocal_sqrt(self, *, iterations: int = 2) -> "DoubleSingleTensor":
+        """Return a Newton-refined reciprocal square root in Double-Single."""
+
+        if iterations < 1:
+            raise ValueError(
+                "reciprocal_sqrt requires at least one refinement iteration"
+            )
+        if bool(torch.any(self.to_float32() <= 0).item()):
+            raise ValueError("reciprocal_sqrt requires strictly positive values")
+        estimate = DoubleSingleTensor.from_float32(torch.rsqrt(self.to_float32()))
+        half = DoubleSingleTensor.from_float32(torch.full_like(self.high, 0.5))
+        three_halves = DoubleSingleTensor.from_float32(torch.full_like(self.high, 1.5))
+        for _ in range(iterations):
+            correction = three_halves.subtract(
+                half.multiply(self).multiply(estimate.square())
+            )
+            estimate = estimate.multiply(correction)
+        return estimate.renormalized()
+
+    def sqrt(self, *, iterations: int = 2) -> "DoubleSingleTensor":
+        """Return a Double-Single square root using reciprocal-sqrt refinement."""
+
+        return self.multiply(self.reciprocal_sqrt(iterations=iterations))
+
     def negate(self) -> "DoubleSingleTensor":
         return DoubleSingleTensor(-self.high, -self.low)
 

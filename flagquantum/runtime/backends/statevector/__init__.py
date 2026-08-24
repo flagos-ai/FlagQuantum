@@ -26,6 +26,10 @@ __all__ = (
     "SplitRealImagPrecisionConformanceReport",
     "SplitRealImagPrecisionExpectationResult",
     "SplitRealImagPrecisionGradientResult",
+    "SplitRealImagDoubleSingleConformanceReport",
+    "SplitRealImagDoubleSingleExpectationResult",
+    "SplitRealImagDoubleSingleGradientResult",
+    "SplitRealImagDoubleSingleStatevectorResult",
     "execute_split_real_imag_expectation",
     "execute_split_real_imag_precision_expectation",
     "execute_split_real_imag_statevector",
@@ -36,9 +40,55 @@ __all__ = (
     "run_split_real_imag_precision_conformance",
     "split_real_imag_p2_accuracy_envelope",
     "split_real_imag_p2_precision_plan",
+    "execute_split_real_imag_double_single_expectation",
+    "execute_split_real_imag_double_single_statevector",
+    "parameter_shift_split_real_imag_double_single_gradient",
+    "run_split_real_imag_double_single_conformance",
+    "split_real_imag_p3_accuracy_envelope",
+    "split_real_imag_p3_precision_plan",
 )
 
 _EXPORTS = {
+    "SplitRealImagDoubleSingleConformanceReport": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single_conformance",
+        "SplitRealImagDoubleSingleConformanceReport",
+    ),
+    "SplitRealImagDoubleSingleExpectationResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "SplitRealImagDoubleSingleExpectationResult",
+    ),
+    "SplitRealImagDoubleSingleGradientResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "SplitRealImagDoubleSingleGradientResult",
+    ),
+    "SplitRealImagDoubleSingleStatevectorResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "SplitRealImagDoubleSingleStatevectorResult",
+    ),
+    "execute_split_real_imag_double_single_expectation": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "execute_split_real_imag_double_single_expectation",
+    ),
+    "execute_split_real_imag_double_single_statevector": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "execute_split_real_imag_double_single_statevector",
+    ),
+    "parameter_shift_split_real_imag_double_single_gradient": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "parameter_shift_split_real_imag_double_single_gradient",
+    ),
+    "run_split_real_imag_double_single_conformance": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single_conformance",
+        "run_split_real_imag_double_single_conformance",
+    ),
+    "split_real_imag_p3_accuracy_envelope": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "split_real_imag_p3_accuracy_envelope",
+    ),
+    "split_real_imag_p3_precision_plan": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "split_real_imag_p3_precision_plan",
+    ),
     "SplitRealImagPrecisionConformanceReport": (
         "flagquantum.runtime.backends.statevector.split_real_imag_precision",
         "SplitRealImagPrecisionConformanceReport",

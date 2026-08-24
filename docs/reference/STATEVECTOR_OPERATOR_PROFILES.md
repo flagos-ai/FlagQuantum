@@ -49,6 +49,15 @@ residual arithmetic to the split statevector surface. It does not describe a
 full Double-Single state or native autograd. See
 [`SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md`](SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md).
 
+## `split_real_imag_statevector_p3_double_single`
+
+P3 is a forward-only FP32 operator profile for four-word Double-Single complex
+state storage, eager gate application, Newton-refined periodic normalization,
+observable reductions, and parameter-shift accumulation. CPU complex128 gate
+encoding is an explicit preprocessing boundary; the state remains on the
+logical execution device. See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md`](SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md).
+
 ## Execution behavior
 
 For CPU and native CUDA, existing behavior is unchanged. For local statevector
@@ -124,6 +133,12 @@ Run the selective Double-Single P2 integration separately:
 
 ```bash
 python tools/validate_split_real_imag_precision_flagos.py --device flagos:0
+```
+
+Run the full-state Double-Single P3 integration separately:
+
+```bash
+python tools/validate_split_real_imag_double_single_flagos.py --device flagos:0
 ```
 
 The 2026-08-24 A800 reference run passed all 21 profile requirements, both

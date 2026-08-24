@@ -64,6 +64,12 @@ def _execute_probe(
 
     if operator == "aten::zeros":
         return torch.zeros((2, 4), dtype=dtype, device=device), ()
+    if operator == "aten::ones_like":
+        tensor = make((2, 4))
+        return torch.ones_like(tensor), (tensor,)
+    if operator == "aten::full_like":
+        tensor = make((2, 4))
+        return torch.full_like(tensor, 0.5), (tensor,)
     if operator == "aten::reshape":
         tensor = make((2, 4))
         return tensor.reshape(1, 2, 4), (tensor,)
@@ -110,6 +116,12 @@ def _execute_probe(
             requires_grad=requires_grad,
         )
         return left * right, (left, right)
+    if operator == "aten::reciprocal":
+        tensor = make((2, 3)).abs() + 0.5
+        return torch.reciprocal(tensor), (tensor,)
+    if operator == "aten::rsqrt":
+        tensor = make((2, 3)).abs() + 0.5
+        return torch.rsqrt(tensor), (tensor,)
     if operator == "aten::unbind":
         tensor = make((2, 3, 2))
         return torch.unbind(tensor, dim=1), (tensor,)
@@ -210,6 +222,9 @@ def _execute_probe(
     if operator == "aten::all":
         tensor = make((2, 3))
         return torch.all(torch.isfinite(tensor)), (tensor,)
+    if operator == "aten::any":
+        tensor = make((2, 3))
+        return torch.any(tensor > 0), (tensor,)
     raise KeyError(f"no executable probe registered for {operator!r}")
 
 
@@ -453,10 +468,35 @@ def preflight_split_real_imag_statevector_p2(
     )
 
 
+def preflight_split_real_imag_statevector_p3(
+    *,
+    device: str | torch.device,
+    provider: str,
+    refresh: bool = False,
+) -> CapabilityPreflightReport:
+    """Probe the FP32 surface used by full Double-Single state evolution."""
+
+    profile = load_operator_profile("split_real_imag_statevector_p3_double_single")
+    evidence = probe_operator_profile(
+        profile,
+        device=device,
+        dtype="float32",
+        provider=provider,
+        refresh=refresh,
+    )
+    return preflight_operator_profile(
+        profile,
+        evidence,
+        device_type=torch.device(device).type,
+        required_dtypes=("float32",),
+    )
+
+
 __all__ = (
     "preflight_split_real_imag_statevector_p0",
     "preflight_split_real_imag_statevector_p1",
     "preflight_split_real_imag_statevector_p2",
+    "preflight_split_real_imag_statevector_p3",
     "preflight_statevector_local_p0",
     "probe_operator_profile",
 )

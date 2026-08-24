@@ -15,6 +15,9 @@
 > 期望值和显式 parameter-shift 梯度的 `split_real_imag_statevector_p1` profile。
 > `split_real_imag_statevector_p2_precision` 已进一步将 Pauli 内积、Hamiltonian
 > 求和和 parameter-shift 累加选择性升级为 Double-Single；状态和门仍为 FP32。
+> `split_real_imag_statevector_p3_double_single` 进一步提供四 FP32 word 的完整
+> 状态演化、门作用和周期归一化实验；当前门矩阵仍由 CPU complex128 显式编码，
+> 不构成纯设备端高精度或算法收敛认证。
 > 以上路径均不等于国产卡生产能力认证。
 
 ## 1. 执行摘要

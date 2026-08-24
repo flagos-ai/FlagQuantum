@@ -18,6 +18,7 @@ The foundation implements:
 - Knuth `two_sum` and Dekker `quick_two_sum`;
 - binary32 splitting with splitter 4097 and residual-preserving products;
 - normalized real add, subtract, multiply, sum, and dot;
+- Newton-refined reciprocal, reciprocal square root, and square root;
 - split-real/imaginary complex add, multiply, and magnitude squared;
 - PyTorch-composed autograd and device preservation;
 - deterministic CPU complex128/float64 conformance probes.
@@ -52,18 +53,21 @@ words and reconstructs float64 only after moving diagnostic values to CPU.
 See
 [`SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md`](SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md).
 
-This is a narrow runtime integration, not a full Double-Single statevector or
-an automatic precision provider.
+P3 extends the same primitives to four-word complex state storage, eager gate
+application, periodic normalization, observables, and parameter-shift gradients.
+It explicitly uses CPU complex128 gate encoding before transferring FP32 words
+to the execution device. See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md`](SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md).
+
+Neither P2 nor P3 is an automatic precision provider.
 
 ## Deliberate limitations
 
-The default statevector runtime continues to reject a full Double-Single
-precision plan. P2 does not provide Double-Single gate dispatch, state storage,
-transcendental gate generation,
+The default statevector runtime continues to reject a Double-Single precision
+plan. P3 is explicit and experimental; it does not provide device-only
+Double-Single transcendental gate generation, optimized/fused dispatch,
 distributed collectives, decomposition kernels, optimizer master state,
-checkpoint encoding, Torch-FL integration, or vendor certification. It also
-does not certify compiled execution and does not silently fall back to CPU or
-float64.
+compiled execution, Torch-FL route auditing, or vendor certification.
 
 Inputs to Dekker splitting must be finite and small enough that multiplication
 by 4097 does not overflow. Runtime integration must add range monitoring,

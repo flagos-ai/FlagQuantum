@@ -70,6 +70,16 @@ __all__ = (
     "run_split_real_imag_precision_conformance",
     "split_real_imag_p2_accuracy_envelope",
     "split_real_imag_p2_precision_plan",
+    "SplitRealImagDoubleSingleConformanceReport",
+    "SplitRealImagDoubleSingleExpectationResult",
+    "SplitRealImagDoubleSingleGradientResult",
+    "SplitRealImagDoubleSingleStatevectorResult",
+    "execute_split_real_imag_double_single_expectation",
+    "execute_split_real_imag_double_single_statevector",
+    "parameter_shift_split_real_imag_double_single_gradient",
+    "run_split_real_imag_double_single_conformance",
+    "split_real_imag_p3_accuracy_envelope",
+    "split_real_imag_p3_precision_plan",
 )
 
 
@@ -83,6 +93,32 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
     if name == "run_double_single_conformance":
         return getattr(import_module("flagquantum.numerics.conformance"), name)
+    if name in {
+        "SplitRealImagDoubleSingleConformanceReport",
+        "run_split_real_imag_double_single_conformance",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_double_single_conformance"
+            ),
+            name,
+        )
+    if name in {
+        "SplitRealImagDoubleSingleExpectationResult",
+        "SplitRealImagDoubleSingleGradientResult",
+        "SplitRealImagDoubleSingleStatevectorResult",
+        "execute_split_real_imag_double_single_expectation",
+        "execute_split_real_imag_double_single_statevector",
+        "parameter_shift_split_real_imag_double_single_gradient",
+        "split_real_imag_p3_accuracy_envelope",
+        "split_real_imag_p3_precision_plan",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_double_single"
+            ),
+            name,
+        )
     if name in {
         "SplitRealImagPrecisionConformanceReport",
         "SplitRealImagPrecisionExpectationResult",

@@ -47,6 +47,9 @@ This catalog is generated from the machine-validated
 | Survive cancellation-sensitive Hamiltonian reductions on FP32-only devices | Selective Double-Single split statevector precision P2 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md) |
 | Request an auditable selective precision plan | Selective Double-Single split statevector precision P2 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md) |
 | Fail closed when requested accuracy exceeds certified evidence | Selective Double-Single split statevector precision P2 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md) |
+| Evaluate full Double-Single state evolution on FP32-only PyTorch devices | Full Double-Single split statevector P3 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md) |
+| Break the FP32 state-evolution error floor | Full Double-Single split statevector P3 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md) |
+| Measure state, norm, expectation, and gradient errors against complex128 | Full Double-Single split statevector P3 | Experimental | [Run example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md) |
 | Reproduce small open-chain imaginary-time TEBD studies | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Cross-check MPS evolution against an independent oracle | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
 | Inspect truncation and normalization evidence | Constrained local MPS TEBD | Experimental | [Run example](../../docs/guides/TEBD.md) |
@@ -133,7 +136,7 @@ Use residual-preserving pairs of float32 tensors for bounded real and split-comp
 - **Distribution semantics:** `single_device_primitive_only`
 - **Start:** [quick example](../../docs/reference/DOUBLE_SINGLE_FP32.md)
 - **Documentation:** [guide](../../docs/reference/DOUBLE_SINGLE_FP32.md)
-- **Known boundary:** Pure FP32 real and split-complex eager primitives plus selective split-statevector P2 reductions. State storage, gate generation, and gate application remain ordinary split FP32; full Double-Single statevectors remain rejected. Compiled execution, distributed collectives, decompositions, optimizer state, residual checkpoints, provider-owned Torch-FL routing, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128.
+- **Known boundary:** Pure FP32 real and split-complex eager primitives, selective split-statevector P2 reductions, and the explicit full-state P3 experiment are available. P3 requires CPU float64/complex128 parameter and gate encoding before device execution; device-only Double-Single trigonometry, optimized gate kernels, compiled execution, distributed collectives, decompositions, optimizer state, provider-owned Torch-FL route auditing, domestic accelerators, performance, convergence, and production use remain uncertified. Double-Single retains FP32 exponent range and is not generally equivalent to FP64 or complex128.
 
 ### Split real/imag FP32 local statevector P0
 
@@ -176,6 +179,20 @@ Retain FP32 state and gates while upgrading Pauli inner products, Hamiltonian su
 - **Start:** [quick example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md)
 - **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P2_PRECISION.md)
 - **Known boundary:** Explicit experimental selective precision path only. State storage, gate generation, and gate application remain split FP32; only Pauli inner products, Hamiltonian term sums, and parameter-shift accumulation retain Double-Single high/low words. Full Double-Single statevectors, native autograd, optimizer integration, residual checkpoints, decomposition, compilation, distributed execution, automatic selection, convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported.
+
+### Full Double-Single split statevector P3
+
+Store every complex amplitude as four FP32 high/low words and retain residuals through gate application, periodic normalization, observables, and parameter-shift gradients.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.experimental.execute_split_real_imag_double_single_statevector`, `fq.experimental.execute_split_real_imag_double_single_expectation`, `fq.experimental.parameter_shift_split_real_imag_double_single_gradient`, `fq.experimental.run_split_real_imag_double_single_conformance`, `fq.experimental.split_real_imag_p3_precision_plan`, `fq.experimental.split_real_imag_p3_accuracy_envelope`
+- **Runtime modes:** `split_real_imag_statevector_p3_double_single`
+- **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
+- **Gradient support:** `parameter_shift_full_double_single_experimental`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md)
+- **Documentation:** [guide](../../docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md)
+- **Known boundary:** Explicit correctness-first full Double-Single state experiment. CPU float64/complex128 parameter and gate encoding is required before four FP32 words are transferred to the execution device; state evolution itself has no host fallback. Device-only Double-Single trigonometry, optimized/fused kernels, native autograd, optimizer integration, compilation, distributed execution, automatic selection, algorithmic convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported.
 
 ### Constrained local MPS TEBD
 
