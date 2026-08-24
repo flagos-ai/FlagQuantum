@@ -1,20 +1,29 @@
 {
-  "schema": "flagquantum_flagos_environment_lock_v1",
+  "schema": "flagquantum_flagos_environment_lock_v2",
   "purpose": "cuda_reference_harness",
   "production_install_supported": false,
   "container_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
   "python": "3.12.13",
-  "cuda": "13.0.2",
   "torch": {
-    "control_package": "2.10.0+cpu",
-    "cuda_assets": "2.10.0+cu130",
-    "minor_line": "2.10"
+    "package": "2.11.0+cu130",
+    "distribution": "cuda_enabled",
+    "cuda_runtime": "13.0",
+    "minor_line": "2.11"
   },
   "torch_fl": {
     "repository": "https://github.com/flagos-ai/PyTorch-Plugin-FL.git",
     "commit": "2e00b393cf80088706b460a187aef185d3a283f4",
-    "accelerator": "cuda",
-    "cuda_kernel": true
+    "package": "0.1.0",
+    "install_mode": "source_wheel_target",
+    "build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "build_isolation": false,
+      "dependencies": false
+    }
   },
   "runtime_contract": {
     "import_order": [

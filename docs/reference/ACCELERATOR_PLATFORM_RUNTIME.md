@@ -53,18 +53,20 @@ gradient correctness, convergence, distributed collectives, and performance.
 
 ## CUDA reference environment
 
-Torch-FL's CUDA boxing design intentionally uses the PyTorch 2.10 CPU control
-package and preloads a version-matched external `libtorch_cuda.so`. The `+cpu`
-package label therefore describes the Python/ATen host package; it does not by
-itself mean that `flagos:0` executed the workload on the CPU. FlagQuantum still
-requires device residency, device memory, operator, gradient, and numerical
-evidence from the logical FlagOS device.
+The current CUDA reference uses the digest-pinned image's PyTorch
+`2.11.0+cu130` package and builds the pinned Torch-FL source as a slim CUDA
+boxing wheel without rebundling CUDA assets. This is a reference-harness
+choice, not a core FlagQuantum dependency rule. FlagQuantum still requires
+device residency, device memory, operator, gradient, and numerical evidence
+from the logical FlagOS device.
 
 The exact development harness is frozen in
 [`ci/flagos_cuda_reference.lock.json`](../../ci/flagos_cuda_reference.lock.json).
-It pins the container digest, Python, CUDA, PyTorch control package and CUDA
-assets, Torch-FL commit, profile, dtypes, depths, and claim boundary. This lock
-is a reproducibility contract for the reference lane, not a supported end-user
+Its v2 schema pins the container digest, Python and PyTorch runtime identity,
+Torch-FL package and source commit, the complete wheel build recipe, profile,
+dtypes, depths, and claim boundary. Strict validation compares measured
+runtime fields and provisioner-owned identities with the lock. This is a
+reproducibility contract for the reference lane, not a supported end-user
 installation or a dependency of `pip install flagquantum`.
 
 Torch-FL's CUDA backend provides the executable reference path. In a fresh
@@ -89,21 +91,22 @@ device residency, and synchronizes through
 `hardware_certification=false`; it proves the joint FlagOS integration path,
 not Hygon hardware quality or performance.
 
-The CUDA reference was executed successfully on 2026-08-21 with an NVIDIA A100,
-Torch-FL commit `2e00b393cf80088706b460a187aef185d3a283f4`, and PyTorch
-2.10.0 CUDA 13.0 assets. All 36 selected tests passed, all 21 P0 requirements
-were observed, and the complex64/complex128 depth scan passed at depths
-8/32/128. The complete immutable result is recorded in
-[`artifacts/flagos_cuda_reference_a100_20260821.json`](../../artifacts/flagos_cuda_reference_a100_20260821.json).
+The current CUDA reference was executed successfully on 2026-08-24 with an
+NVIDIA A800, Torch-FL commit
+`2e00b393cf80088706b460a187aef185d3a283f4`, and PyTorch `2.11.0+cu130`.
+All 21 P0 requirements were observed, and the complex64/complex128 depth scan
+passed at depths 8/32/128. The complete immutable result is recorded in
+[`artifacts/flagos_cuda_reference_a800_20260824.json`](../../artifacts/flagos_cuda_reference_a800_20260824.json).
 This remains CUDA reference evidence rather than domestic-card certification.
 
 The manually triggered
 [`FlagOS CUDA Reference`](../../.github/workflows/flagos-reference.yml) workflow
 runs on a separately provisioned `flagos-cuda-reference` runner. It deliberately
-does not install or mutate Torch-FL during the job: the Torch-FL team owns that
-versioned runner image, while FlagQuantum verifies it against the lock before
-accepting evidence. The job runs bounded focused tests, emits a raw JSON
-artifact, and applies
+does not install or mutate Torch-FL during the job: the provisioner supplies the
+container, pinned Torch-FL wheel, and identity environment. The workflow does
+not manufacture those identity fields from the repository lock; missing or
+different provisioner metadata fails closed. The job runs bounded focused
+tests, emits a raw JSON artifact, and applies
 [`tools/validate_flagos_reference_evidence.py`](../../tools/validate_flagos_reference_evidence.py).
 The ordinary CPU CI also validates the checked-in artifact so documentation or
 capability changes cannot silently promote it into hardware certification.

@@ -1,0 +1,297 @@
+{
+  "artifact_class": "development_reference",
+  "atol": 2e-05,
+  "claim_blockers": [
+    "domestic_accelerator_hardware_not_exercised",
+    "route_fallback_absence_not_certified",
+    "production_performance_not_measured"
+  ],
+  "device": "flagos:0",
+  "device_count": 1,
+  "device_name": "FlagOS device 0",
+  "distribution_semantics": "single_device_fast_path",
+  "environment": {
+    "container_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "physical_accelerator": "NVIDIA_A800-SXM4-80GB",
+    "python": "3.12.13",
+    "torch_cuda_runtime": "13.0",
+    "torch_distribution": "cuda_enabled",
+    "torch_fl_build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "build_isolation": false,
+      "dependencies": false
+    },
+    "torch_fl_commit": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "torch_fl_package": "0.1.0",
+    "torch_package": "2.11.0+cu130"
+  },
+  "environment_lock": {
+    "path": "ci/flagos_cuda_reference.lock.json",
+    "schema": "flagquantum_flagos_environment_lock_v2",
+    "sha256": "d48bd5750094965cdfeb91f297c32aea054ffefa0ae8e85918b63a759bad81ed"
+  },
+  "event_type": "Event",
+  "hardware_certification": false,
+  "host": {
+    "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+    "python": "3.12.13"
+  },
+  "memory_allocated_bytes": 17043968,
+  "memory_reserved_bytes": 23068672,
+  "operator_evidence_count": 21,
+  "operator_profile": "statevector_local_p0",
+  "operator_profile_hash": "96235c9057c046d5ba8992969e23883c014b2f69232eac1bd565643be31cdfae",
+  "platform_provider": "torch_fl",
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum_flagos_cuda_reference_evidence_v2",
+  "source": {
+    "revision": "837bc06f82f46d02df8317eb088368fedfff70c4",
+    "tree_dirty": false
+  },
+  "statevector_dtype": "torch.complex64",
+  "status": "passed",
+  "stream_type": "Stream",
+  "torch_cuda_runtime": "13.0",
+  "torch_distribution": "cuda_enabled",
+  "torch_fl_package": "0.1.0",
+  "torch_fl_version": "unknown",
+  "torch_version": "2.11.0+cu130",
+  "validated_depths": [
+    8,
+    32,
+    128
+  ],
+  "validated_dtypes": [
+    "complex64",
+    "complex128"
+  ],
+  "validation_matrix": [
+    {
+      "accuracy_requirement_hash": "6f7dafaba9184f35b20506b9cf6ee4d603d2bbb27c968b91201dbc59315ffd46",
+      "depth": 8,
+      "dtype": "complex64",
+      "numerical_validation": {
+        "accuracy_requirement_hash": "6f7dafaba9184f35b20506b9cf6ee4d603d2bbb27c968b91201dbc59315ffd46",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "flagos",
+        "dtype": "complex64",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 1.669446217378301e-08,
+          "expectation_rel_error": 1.194862385811614e-07,
+          "gradient_cosine_similarity": 0.9999999999990534,
+          "gradient_rel_error": 1.7419694544694786e-06,
+          "norm_drift": 5.825907867240687e-08,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 1.1102230246251565e-15,
+          "state_max_abs_error": 4.417830273091352e-08,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "a29091a5c9d337025d20ff11e01c916c65ad0649fae751cbddb2a7c56efcd419",
+        "provider": "torch_fl",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "precision_plan_hash": "a29091a5c9d337025d20ff11e01c916c65ad0649fae751cbddb2a7c56efcd419",
+      "state_metrics": {
+        "max_abs_error": 1.1026684120939786e-07,
+        "norm_drift": 2.58424959209691e-08,
+        "state_infidelity": 1.7541523789077473e-14
+      }
+    },
+    {
+      "accuracy_requirement_hash": "6f7dafaba9184f35b20506b9cf6ee4d603d2bbb27c968b91201dbc59315ffd46",
+      "depth": 32,
+      "dtype": "complex64",
+      "numerical_validation": {
+        "accuracy_requirement_hash": "6f7dafaba9184f35b20506b9cf6ee4d603d2bbb27c968b91201dbc59315ffd46",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "flagos",
+        "dtype": "complex64",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 1.669446217378301e-08,
+          "expectation_rel_error": 1.194862385811614e-07,
+          "gradient_cosine_similarity": 0.9999999999990534,
+          "gradient_rel_error": 1.7419694544694786e-06,
+          "norm_drift": 5.825907867240687e-08,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 1.1102230246251565e-15,
+          "state_max_abs_error": 4.417830273091352e-08,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "a29091a5c9d337025d20ff11e01c916c65ad0649fae751cbddb2a7c56efcd419",
+        "provider": "torch_fl",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "precision_plan_hash": "a29091a5c9d337025d20ff11e01c916c65ad0649fae751cbddb2a7c56efcd419",
+      "state_metrics": {
+        "max_abs_error": 1.6061909029286455e-07,
+        "norm_drift": 4.375081008589632e-08,
+        "state_infidelity": 4.729550084903167e-14
+      }
+    },
+    {
+      "accuracy_requirement_hash": "6f7dafaba9184f35b20506b9cf6ee4d603d2bbb27c968b91201dbc59315ffd46",
+      "depth": 128,
+      "dtype": "complex64",
+      "numerical_validation": {
+        "accuracy_requirement_hash": "6f7dafaba9184f35b20506b9cf6ee4d603d2bbb27c968b91201dbc59315ffd46",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "flagos",
+        "dtype": "complex64",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 1.669446217378301e-08,
+          "expectation_rel_error": 1.194862385811614e-07,
+          "gradient_cosine_similarity": 0.9999999999990534,
+          "gradient_rel_error": 1.7419694544694786e-06,
+          "norm_drift": 5.825907867240687e-08,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 1.1102230246251565e-15,
+          "state_max_abs_error": 4.417830273091352e-08,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "a29091a5c9d337025d20ff11e01c916c65ad0649fae751cbddb2a7c56efcd419",
+        "provider": "torch_fl",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "precision_plan_hash": "a29091a5c9d337025d20ff11e01c916c65ad0649fae751cbddb2a7c56efcd419",
+      "state_metrics": {
+        "max_abs_error": 1.8151589277133925e-06,
+        "norm_drift": 3.1792247165984833e-06,
+        "state_infidelity": 4.374278717023117e-13
+      }
+    },
+    {
+      "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+      "depth": 8,
+      "dtype": "complex128",
+      "numerical_validation": {
+        "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "flagos",
+        "dtype": "complex128",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 0.0,
+          "expectation_rel_error": 0.0,
+          "gradient_cosine_similarity": 1.0,
+          "gradient_rel_error": 4.803526903332504e-16,
+          "norm_drift": 1.1102230246251565e-16,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 2.220446049250313e-16,
+          "state_max_abs_error": 0.0,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+        "provider": "torch_fl",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+      "state_metrics": {
+        "max_abs_error": 2.7809732887839817e-17,
+        "norm_drift": 0.0,
+        "state_infidelity": 0.0
+      }
+    },
+    {
+      "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+      "depth": 32,
+      "dtype": "complex128",
+      "numerical_validation": {
+        "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "flagos",
+        "dtype": "complex128",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 0.0,
+          "expectation_rel_error": 0.0,
+          "gradient_cosine_similarity": 1.0,
+          "gradient_rel_error": 4.803526903332504e-16,
+          "norm_drift": 1.1102230246251565e-16,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 2.220446049250313e-16,
+          "state_max_abs_error": 0.0,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+        "provider": "torch_fl",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+      "state_metrics": {
+        "max_abs_error": 4.518280359883027e-16,
+        "norm_drift": 2.220446049250313e-16,
+        "state_infidelity": 0.0
+      }
+    },
+    {
+      "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+      "depth": 128,
+      "dtype": "complex128",
+      "numerical_validation": {
+        "accuracy_requirement_hash": "3639fbdd88576f67021f3e0777d61f9e65f6d463fa39a6bb7786dbbc156a0dc4",
+        "blockers": [],
+        "convergence_evidence": true,
+        "deterministic": true,
+        "device_type": "flagos",
+        "dtype": "complex128",
+        "metrics": {
+          "decomposition_residual": 0.0,
+          "expectation_abs_error": 0.0,
+          "expectation_rel_error": 0.0,
+          "gradient_cosine_similarity": 1.0,
+          "gradient_rel_error": 4.803526903332504e-16,
+          "norm_drift": 1.1102230246251565e-16,
+          "reference_norm_drift": 1.1102230246251565e-16,
+          "state_infidelity": 2.220446049250313e-16,
+          "state_max_abs_error": 0.0,
+          "truncation_error": 0.0
+        },
+        "passed": true,
+        "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+        "provider": "torch_fl",
+        "reference": "cpu_complex128",
+        "validation_version": "1.0",
+        "workload": "statevector_local_p0"
+      },
+      "precision_plan_hash": "b154c22e2acbe06bef53a282a1265cb860439c85098329be2bba1114e052522e",
+      "state_metrics": {
+        "max_abs_error": 6.894341957538586e-16,
+        "norm_drift": 1.3322676295501878e-15,
+        "state_infidelity": 0.0
+      }
+    }
+  ],
+  "validation_scope": "flagos_cuda_reference"
+}

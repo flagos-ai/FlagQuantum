@@ -11,15 +11,20 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}
       CUDA_VISIBLE_DEVICES: "0"
       TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
-      FLAGQUANTUM_TORCH_FL_COMMIT: 2e00b393cf80088706b460a187aef185d3a283f4
-      FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE: harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b
-      FLAGQUANTUM_TORCH_CUDA_ASSETS: 2.10.0+cu130
     steps:
       - uses: actions/checkout@v4
+      - name: Require provisioner-owned environment identity
+        run: >-
+          python -c "import os;
+          required = ('FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE',
+          'FLAGQUANTUM_TORCH_FL_COMMIT', 'FLAGQUANTUM_TORCH_FL_BUILD',
+          'FLAGQUANTUM_ACCELERATOR_MODEL');
+          missing = [name for name in required if not os.environ.get(name)];
+          assert not missing, f'FlagOS reference provisioner identity missing: {missing}'"
       - name: Validate checked-in development evidence
         run: >-
           python tools/validate_flagos_reference_evidence.py
-          artifacts/flagos_cuda_reference_a100_20260821.json
+          artifacts/flagos_cuda_reference_a800_20260824.json
       - name: Run focused CPU contract tests
         run: >-
           python -m pytest

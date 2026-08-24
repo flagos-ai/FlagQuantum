@@ -84,7 +84,7 @@ jobs:
       - name: Verify checked-in FlagOS reference evidence
         run: >-
           python tools/validate_flagos_reference_evidence.py
-          artifacts/flagos_cuda_reference_a100_20260821.json
+          artifacts/flagos_cuda_reference_a800_20260824.json
       - name: Verify branch-protection required-check contract
         run: python tools/validate_required_checks.py
       - name: Repository size and forbidden artifacts

@@ -55,6 +55,8 @@ def evidence_errors(
 
     errors: list[str] = []
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    if lock.get("schema") != "flagquantum_flagos_environment_lock_v2":
+        errors.append("environment_lock_schema_unsupported")
     profile_hash, requirement_count = _profile_identity(profile_path)
     expected_pairs = {
         (str(dtype), int(depth))
@@ -63,7 +65,7 @@ def evidence_errors(
     }
 
     expected_scalars = {
-        "schema": "flagquantum_flagos_cuda_reference_evidence_v1",
+        "schema": "flagquantum_flagos_cuda_reference_evidence_v2",
         "status": "passed",
         "validation_scope": "flagos_cuda_reference",
         "artifact_class": "development_reference",
@@ -89,13 +91,35 @@ def evidence_errors(
         if lock_evidence.get("schema") != lock.get("schema"):
             errors.append("environment_lock_schema_mismatch")
 
+    environment = payload.get("environment")
+    expected_environment = {
+        "container_image": lock["container_image"],
+        "python": lock["python"],
+        "torch_package": lock["torch"]["package"],
+        "torch_distribution": lock["torch"]["distribution"],
+        "torch_cuda_runtime": lock["torch"]["cuda_runtime"],
+        "torch_fl_package": lock["torch_fl"]["package"],
+        "torch_fl_commit": lock["torch_fl"]["commit"],
+        "torch_fl_build": lock["torch_fl"]["build"],
+    }
+    if not isinstance(environment, Mapping):
+        errors.append("environment_identity_missing")
+    else:
+        if environment.get("physical_accelerator") in {None, "", "unavailable"}:
+            errors.append("environment_physical_accelerator_missing")
+        for field, expected in expected_environment.items():
+            if environment.get(field) != expected:
+                errors.append(f"environment_{field}_mismatch")
+
     source = payload.get("source")
-    if (
-        not isinstance(source, Mapping)
-        or source.get("revision") in {None, "", "unavailable"}
-        or not isinstance(source.get("tree_dirty"), bool)
-    ):
+    if not isinstance(source, Mapping) or source.get("revision") in {
+        None,
+        "",
+        "unavailable",
+    }:
         errors.append("source_revision_missing")
+    elif source.get("tree_dirty") is not False:
+        errors.append("source_tree_dirty")
 
     blockers = set(payload.get("claim_blockers", ()))
     required_blockers = {

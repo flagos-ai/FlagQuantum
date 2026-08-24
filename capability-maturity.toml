@@ -98,7 +98,7 @@ level = "development_evidence"
 owner = "FlagQuantum and Torch-FL integration maintainers"
 limitations = "CUDA-backed development reference only. It does not certify a domestic accelerator, prove absence of Torch-FL host fallback, establish production performance, or authorize a scalability claim."
 focused_tests = "tests/unit/test_flagos_reference_evidence.py"
-development_artifact = "artifacts/flagos_cuda_reference_a100_20260821.json"
+development_artifact = "artifacts/flagos_cuda_reference_a800_20260824.json"
 
 [capabilities.sharded_mps_training]
 title = "Differentiable and sharded MPS training"

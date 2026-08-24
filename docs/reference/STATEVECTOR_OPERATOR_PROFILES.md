@@ -97,20 +97,21 @@ Run the forward-only split FP32 integration separately:
 python tools/validate_split_real_imag_flagos.py --device flagos:0
 ```
 
-The 2026-08-21 A100 reference run passed all 21 profile requirements, both
+The 2026-08-24 A800 reference run passed all 21 profile requirements, both
 complex dtypes, and depths 8/32/128. Its machine-readable environment,
 isolation record, runtime evidence, and numerical metrics are stored in
-[`artifacts/flagos_cuda_reference_a100_20260821.json`](../../artifacts/flagos_cuda_reference_a100_20260821.json).
+[`artifacts/flagos_cuda_reference_a800_20260824.json`](../../artifacts/flagos_cuda_reference_a800_20260824.json).
 
 Validate a checked-in or newly generated result without accelerator access:
 
 ```bash
 python tools/validate_flagos_reference_evidence.py \
-  artifacts/flagos_cuda_reference_a100_20260821.json
+  artifacts/flagos_cuda_reference_a800_20260824.json
 ```
 
 The gate recomputes the packaged profile hash, checks exact dtype/depth
-coverage and numerical bounds, verifies the environment-lock digest, and
+coverage and numerical bounds, verifies the environment-lock digest and every
+runtime/build identity field, requires a clean auditable source revision, and
 rejects hardware, production, or scalability promotion fields.
 
 ## Claim boundary

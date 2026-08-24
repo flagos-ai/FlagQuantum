@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib
+import importlib.metadata
 import json
 import os
 import platform
@@ -62,19 +63,27 @@ def _source_provenance() -> dict[str, Any]:
 def _require_locked_environment(
     *, environment_lock: dict[str, Any], payload: dict[str, Any]
 ) -> None:
+    torch_lock = environment_lock["torch"]
+    torch_fl_lock = environment_lock["torch_fl"]
     expected = {
         "python": environment_lock["python"],
-        "torch": environment_lock["torch"]["control_package"],
-        "torch_fl_commit": environment_lock["torch_fl"]["commit"],
+        "torch": torch_lock["package"],
+        "torch_distribution": torch_lock["distribution"],
+        "torch_cuda_runtime": torch_lock["cuda_runtime"],
+        "torch_fl_package": torch_fl_lock["package"],
+        "torch_fl_commit": torch_fl_lock["commit"],
+        "torch_fl_build": torch_fl_lock["build"],
         "container_image": environment_lock["container_image"],
-        "torch_cuda_assets": environment_lock["torch"]["cuda_assets"],
     }
     actual = {
         "python": platform.python_version(),
         "torch": payload["torch_version"],
+        "torch_distribution": payload["torch_distribution"],
+        "torch_cuda_runtime": payload["torch_cuda_runtime"],
+        "torch_fl_package": payload["torch_fl_package"],
         "torch_fl_commit": os.environ.get("FLAGQUANTUM_TORCH_FL_COMMIT"),
+        "torch_fl_build": _declared_torch_fl_build(),
         "container_image": os.environ.get("FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE"),
-        "torch_cuda_assets": os.environ.get("FLAGQUANTUM_TORCH_CUDA_ASSETS"),
     }
     mismatches = [
         f"{name}: expected {expected[name]!r}, got {actual[name]!r}"
@@ -83,12 +92,31 @@ def _require_locked_environment(
     ]
     if mismatches:
         raise RuntimeError("environment lock mismatch; " + "; ".join(mismatches))
+    if not os.environ.get("FLAGQUANTUM_ACCELERATOR_MODEL"):
+        raise RuntimeError(
+            "environment lock mismatch; physical accelerator identity is missing"
+        )
     expected_count = environment_lock["runtime_contract"]["visible_device_count"]
     if payload["device_count"] != expected_count:
         raise RuntimeError(
             "environment lock mismatch; visible_device_count: "
             f"expected {expected_count!r}, got {payload['device_count']!r}"
         )
+
+
+def _declared_torch_fl_build() -> dict[str, Any] | None:
+    encoded = os.environ.get("FLAGQUANTUM_TORCH_FL_BUILD")
+    if encoded is None:
+        return None
+    try:
+        payload = json.loads(encoded)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _torch_distribution(torch_version: str) -> str:
+    return "cuda_enabled" if "+cu" in torch_version else "cpu_control"
 
 
 def _assert_close(torch: Any, actual: Any, expected: Any, *, atol: float) -> None:
@@ -240,6 +268,9 @@ def validate(
         "device_count": len(discovered),
         "torch_version": str(torch.__version__),
         "torch_fl_version": str(getattr(torch_fl, "__version__", "unknown")),
+        "torch_fl_package": importlib.metadata.version("torch-fl"),
+        "torch_distribution": _torch_distribution(str(torch.__version__)),
+        "torch_cuda_runtime": str(torch.version.cuda),
         "platform_provider": identity.provider,
         "stream_type": type(stream).__name__,
         "event_type": type(event).__name__,
@@ -286,7 +317,7 @@ def main() -> int:
         _require_locked_environment(environment_lock=environment_lock, payload=payload)
     payload.update(
         {
-            "schema": "flagquantum_flagos_cuda_reference_evidence_v1",
+            "schema": "flagquantum_flagos_cuda_reference_evidence_v2",
             "artifact_class": "development_reference",
             "distribution_semantics": "single_device_fast_path",
             "scalability_claim_allowed": False,
@@ -299,6 +330,17 @@ def main() -> int:
                 ),
                 "sha256": _sha256(args.environment_lock),
                 "schema": environment_lock.get("schema"),
+            },
+            "environment": {
+                "physical_accelerator": os.environ.get("FLAGQUANTUM_ACCELERATOR_MODEL"),
+                "container_image": os.environ.get("FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE"),
+                "python": platform.python_version(),
+                "torch_package": payload["torch_version"],
+                "torch_distribution": payload["torch_distribution"],
+                "torch_cuda_runtime": payload["torch_cuda_runtime"],
+                "torch_fl_package": payload["torch_fl_package"],
+                "torch_fl_commit": os.environ.get("FLAGQUANTUM_TORCH_FL_COMMIT"),
+                "torch_fl_build": _declared_torch_fl_build(),
             },
             "host": {
                 "python": platform.python_version(),

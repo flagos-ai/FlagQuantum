@@ -11,10 +11,10 @@
 > [Accelerator Platform Runtime](../reference/ACCELERATOR_PLATFORM_RUNTIME.md)。
 > `statevector_local_p0` 已接入 CUDA-backed `flagos:0` 联合验证、执行前
 > operator preflight、数值契约与 CPU complex128 小型认证；尚未声明任何具体
-> 国产卡 profile 达到生产成熟度。2026-08-21 已在 NVIDIA A100 上完成 Torch-FL
-> CUDA reference 验证（36 项测试通过、21 项 P0 requirement、complex64/128、
+> 国产卡 profile 达到生产成熟度。2026-08-24 已在 NVIDIA A800 上按 v2 环境锁
+> 完成 Torch-FL CUDA reference 验证（21 项 P0 requirement、complex64/128、
 > depth 8/32/128）；机器可读证据见
-> [`artifacts/flagos_cuda_reference_a100_20260821.json`](../../artifacts/flagos_cuda_reference_a100_20260821.json)。
+> [`artifacts/flagos_cuda_reference_a800_20260824.json`](../../artifacts/flagos_cuda_reference_a800_20260824.json)。
 > 2026-08-24 新增的 split real/imag FP32 statevector P0 是隔离的
 > forward-only 实验路径；它通过独立 profile 验证底层 FP32 算子，不改变
 > Torch-FL 的依赖边界，也不自动进入默认 runtime。
