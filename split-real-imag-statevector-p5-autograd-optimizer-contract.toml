@@ -1,14 +1,16 @@
 schema = "flagquantum_split_real_imag_statevector_p5_autograd_optimizer_contract_v1"
-maturity = "design_only"
-phase_status = "contract_only"
+maturity = "experimental"
+phase_status = "cpu_autograd_bridge"
 base_executor = "split_real_imag_statevector_p4_device_double_single"
 runtime_module_reserved = "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer"
+implementation = "flagquantum.runtime.backends.statevector.split_real_imag_autograd"
+operator_profile = "split_real_imag_statevector_p4_device_double_single"
 representation = "double_single_fp32_complex"
 distribution_semantics = "single_device_fast_path"
 runtime_default = false
-implementation_available = false
-public_api_available = false
-native_autograd_available = false
+implementation_available = true
+public_api_available = true
+native_autograd_available = true
 optimizer_available = false
 end_to_end_double_single_gradient_claim_allowed = false
 convergence_claim_allowed = false
@@ -40,6 +42,12 @@ reference = "cpu_complex128_diagnostic_only"
 native_autograd_claim_requires_implementation = true
 native_autograd_claim_requires_gradcheck = true
 native_autograd_claim_requires_device_evidence = true
+device_scope = "cpu_only"
+higher_order_autograd = false
+gradcheck_dtype = "float32"
+gradcheck_epsilon = 1e-3
+gradcheck_absolute_tolerance = 1e-4
+gradcheck_relative_tolerance = 1e-3
 
 [precision_optimizer]
 initial_algorithm = "double_single_sgd_without_momentum"
@@ -59,7 +67,7 @@ parameter_inputs = "direct_named_device_float32"
 output = "real_scalar_expectation"
 batch_size = 1
 initial_optimizer = "double_single_sgd_without_momentum"
-unsupported = ["parameter_expressions", "trainable_observable_coefficients", "float64_accelerator_tensors", "custom_matrices", "custom_initial_states", "standard_torch_optimizer_equivalence", "double_single_tensor_grad_claim", "adam", "adamw", "momentum", "weight_decay", "mixed_precision_scaler", "compiled_autograd", "distributed_execution", "flagcx_collectives", "automatic_runtime_selection", "algorithmic_convergence_certification", "provider_internal_route_audit", "vendor_certification", "performance_claim", "production_claim"]
+unsupported = ["parameter_expressions", "trainable_observable_coefficients", "float64_accelerator_tensors", "custom_matrices", "custom_initial_states", "standard_torch_optimizer_equivalence", "double_single_tensor_grad_claim", "adam", "adamw", "momentum", "weight_decay", "mixed_precision_scaler", "higher_order_autograd", "accelerator_autograd", "compiled_autograd", "distributed_execution", "flagcx_collectives", "automatic_runtime_selection", "algorithmic_convergence_certification", "provider_internal_route_audit", "vendor_certification", "performance_claim", "production_claim"]
 
 [acceptance_matrix]
 depths = [8, 32, 128]
@@ -69,16 +77,17 @@ workloads = ["two_qubit_vqe_trajectory", "three_qubit_qaoa_trajectory"]
 devices = ["cpu", "single_cuda_reference", "single_flagos_reference"]
 
 [acceptance_thresholds]
-max_forward_absolute_error = 1e-9
+max_forward_absolute_error = 1e-6
 max_explicit_double_single_gradient_relative_error = 1e-8
 max_autograd_bridge_gradient_relative_error = 1e-5
 min_autograd_bridge_gradient_cosine_similarity = 0.99999
+max_finite_difference_gradient_relative_error = 2e-5
 max_optimizer_parameter_absolute_error = 1e-8
 max_optimizer_loss_trajectory_absolute_error = 1e-7
 max_optimizer_state_norm_drift = 1e-9
 
 [claim_gates]
-contract_only = true
+contract_only = false
 cpu_reference_required = true
 finite_difference_diagnostic_required = true
 torch_gradcheck_required = true
@@ -92,3 +101,6 @@ flagcx_required_for_distributed_claim = true
 contract = "tests/unit/test_split_real_imag_p5_autograd_optimizer_contract.py"
 policy = "tools/check_split_real_imag_p5_autograd_optimizer_contract.py"
 documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+implementation = "flagquantum/runtime/backends/statevector/split_real_imag_autograd.py"
+unit = "tests/unit/test_split_real_imag_autograd.py"
+conformance = "tests/test_split_real_imag_autograd_conformance.py"

@@ -90,6 +90,10 @@ __all__ = (
     "run_split_real_imag_device_double_single_conformance",
     "split_real_imag_p4_accuracy_envelope",
     "split_real_imag_p4_precision_plan",
+    "SplitRealImagAutogradConformanceReport",
+    "run_split_real_imag_autograd_conformance",
+    "split_real_imag_device_double_single_autograd_expectation",
+    "split_real_imag_p5_autograd_bridge_summary",
 )
 
 
@@ -103,6 +107,26 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
     if name == "run_double_single_conformance":
         return getattr(import_module("flagquantum.numerics.conformance"), name)
+    if name in {
+        "SplitRealImagAutogradConformanceReport",
+        "run_split_real_imag_autograd_conformance",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_autograd_conformance"
+            ),
+            name,
+        )
+    if name in {
+        "split_real_imag_device_double_single_autograd_expectation",
+        "split_real_imag_p5_autograd_bridge_summary",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_autograd"
+            ),
+            name,
+        )
     if name in {
         "SplitRealImagDeviceDoubleSingleConformanceReport",
         "run_split_real_imag_device_double_single_conformance",

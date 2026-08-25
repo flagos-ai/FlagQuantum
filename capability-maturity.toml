@@ -288,6 +288,23 @@ owner = "numerical trust maintainers"
 limitations = "Explicit correctness-first P4 path for built-in gates and direct scalar parameters within |angle| <= 1024. Python scalars are host-ingested as FP32 values; device-resident FP32 or Double-Single parameters remain on device. Parameter expressions, float64 parameter tensors, custom matrices, unbounded angles, native autograd, optimizer integration, compilation, distributed execution, automatic selection, algorithmic convergence certification, provider-internal route auditing, domestic-hardware certification, performance, and production use remain unsupported."
 focused_tests = "tests/test_split_real_imag_device_double_single_conformance.py"
 
+[capabilities.split_real_imag_statevector_p5_autograd_bridge]
+title = "CPU PyTorch autograd bridge over Double-Single P5"
+summary = "Expose a bounded first-order PyTorch autograd path whose forward and parameter-shift backward use P4 Double-Single arithmetic before an explicit FP32 tensor delivery boundary."
+category = "simulation_and_training"
+user_goals = ["Train through a conventional PyTorch scalar loss on CPU", "Retain Double-Single arithmetic inside forward and parameter-shift evaluation", "Audit the exact boundary where PyTorch receives one FP32 gradient word"]
+public_apis = ["experimental.split_real_imag_device_double_single_autograd_expectation", "experimental.split_real_imag_p5_autograd_bridge_summary", "experimental.run_split_real_imag_autograd_conformance"]
+runtime_modes = ["split_real_imag_statevector_p5_autograd_bridge"]
+hardware = ["cpu"]
+gradient_support = "first_order_parameter_shift_internal_double_single_float32_delivery_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit CPU-only first-order PyTorch autograd bridge for direct named scalar FP32 parameters and bounded Pauli expectations. Forward and backward use P4 Double-Single arithmetic internally, but the scalar loss and Tensor.grad are one-word FP32 delivery boundaries and no end-to-end Double-Single gradient claim is made. The precision optimizer, higher-order and compiled autograd, CUDA, Torch-FL flagos, FlagCX, distributed execution, automatic selection, convergence, hardware certification, performance, and production use remain unsupported."
+focused_tests = "tests/test_split_real_imag_autograd_conformance.py"
+
 [capabilities.local_mps_tebd]
 title = "Constrained local MPS TEBD"
 summary = "Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD."

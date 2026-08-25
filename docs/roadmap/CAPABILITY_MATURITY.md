@@ -25,3 +25,9 @@ displayed measurements and recorded environment from JSON selectors, and state
 its exact scope and metadata boundary. The documentation generator emits the
 same validated values into the README, capability catalog, and Known
 Limitations; edits inside generated regions are rejected by the CI check.
+
+The split real/imag P5 line currently exposes an experimental CPU-only
+first-order PyTorch autograd bridge over P4 Double-Single execution. Its
+returned loss and `.grad` are explicitly FP32 delivery boundaries. The
+precision-preserving optimizer, accelerator routes, higher-order autograd, and
+distributed execution remain gated future work.

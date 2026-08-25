@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the contract-only P5 autograd and optimizer boundary."""
+"""Validate the staged P5 autograd and optimizer boundary."""
 
 from __future__ import annotations
 
@@ -23,15 +23,15 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     errors: list[str] = []
     expected = {
         "schema": "flagquantum_split_real_imag_statevector_p5_autograd_optimizer_contract_v1",
-        "maturity": "design_only",
-        "phase_status": "contract_only",
+        "maturity": "experimental",
+        "phase_status": "cpu_autograd_bridge",
         "base_executor": "split_real_imag_statevector_p4_device_double_single",
         "representation": "double_single_fp32_complex",
         "distribution_semantics": "single_device_fast_path",
         "runtime_default": False,
-        "implementation_available": False,
-        "public_api_available": False,
-        "native_autograd_available": False,
+        "implementation_available": True,
+        "public_api_available": True,
+        "native_autograd_available": True,
         "optimizer_available": False,
         "end_to_end_double_single_gradient_claim_allowed": False,
         "convergence_claim_allowed": False,
@@ -70,6 +70,17 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     ):
         if bridge.get(name) is not True:
             errors.append(f"split real/imag P5 autograd claim gate {name} is required")
+    expected_bridge_boundary = {
+        "device_scope": "cpu_only",
+        "higher_order_autograd": False,
+        "gradcheck_dtype": "float32",
+        "gradcheck_epsilon": 1e-3,
+        "gradcheck_absolute_tolerance": 1e-4,
+        "gradcheck_relative_tolerance": 1e-3,
+    }
+    for name, value in expected_bridge_boundary.items():
+        if bridge.get(name) != value:
+            errors.append(f"split real/imag P5 autograd boundary {name} drifted")
 
     optimizer = contract.get("precision_optimizer", {})
     if optimizer.get("initial_algorithm") != "double_single_sgd_without_momentum":
@@ -105,6 +116,8 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "adam",
         "adamw",
         "momentum",
+        "higher_order_autograd",
+        "accelerator_autograd",
         "compiled_autograd",
         "distributed_execution",
         "flagcx_collectives",
@@ -130,8 +143,9 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         errors.append("split real/imag P5 acceptance thresholds must be positive")
 
     gates = contract.get("claim_gates", {})
+    if gates.get("contract_only") is not False:
+        errors.append("split real/imag P5 must report the implemented CPU slice")
     required_gates = {
-        "contract_only",
         "cpu_reference_required",
         "finite_difference_diagnostic_required",
         "torch_gradcheck_required",
@@ -143,6 +157,19 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     }
     if any(gates.get(name) is not True for name in required_gates):
         errors.append("split real/imag P5 claim gates must remain fail-closed")
+
+    implementation = (
+        ROOT / "flagquantum/runtime/backends/statevector/split_real_imag_autograd.py"
+    )
+    source = implementation.read_text(encoding="utf-8")
+    required_source_tokens = {
+        "torch.autograd.Function",
+        "parameter_shift_split_real_imag_device_double_single_gradient",
+        '"float32_boundary"',
+        'resolved_device.type != "cpu"',
+    }
+    if any(token not in source for token in required_source_tokens):
+        errors.append("split real/imag P5 CPU bridge implementation drifted")
 
     for name, raw_path in contract.get("verification", {}).items():
         if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():

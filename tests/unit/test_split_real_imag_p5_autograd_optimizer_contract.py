@@ -18,10 +18,10 @@ def test_checked_in_split_p5_contract_passes() -> None:
     assert contract_errors(load_toml(CONTRACT)) == ()
 
 
-def test_split_p5_contract_rejects_premature_implementation_claim() -> None:
+def test_split_p5_contract_rejects_premature_optimizer_claim() -> None:
     contract = load_toml(CONTRACT)
-    contract["native_autograd_available"] = True
-    assert "native_autograd_available" in " ".join(contract_errors(contract))
+    contract["optimizer_available"] = True
+    assert "optimizer_available" in " ".join(contract_errors(contract))
 
 
 def test_split_p5_contract_rejects_single_word_double_single_gradient_claim() -> None:

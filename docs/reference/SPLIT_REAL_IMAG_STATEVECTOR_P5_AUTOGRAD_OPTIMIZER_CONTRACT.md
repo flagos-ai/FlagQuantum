@@ -1,53 +1,74 @@
 # P5 autograd and optimizer contract
 
-P5 is currently a design contract, not an implemented runtime capability. It
-defines how FlagQuantum may connect P4's Double-Single execution to PyTorch
-autograd and precision-preserving optimizer updates without overstating the
-precision of a standard `Tensor.grad`.
+P5 now provides an experimental **CPU-only PyTorch autograd bridge** over the
+P4 device-generated Double-Single executor. The precision-preserving optimizer
+lane remains a contract and is not implemented. The default FlagQuantum
+runtime is unchanged.
 
-## The precision boundary
+## Available CPU autograd bridge
 
-P4 represents a scalar gradient as two FP32 words. A normal FP32 PyTorch leaf
-stores one FP32 word in `.grad`; that object cannot be relabeled as a
-Double-Single gradient. P5 therefore separates two lanes:
+The bridge accepts direct named scalar `torch.float32` parameters, returns a
+scalar FP32 loss, and supplies first-order gradients through a custom
+`torch.autograd.Function`:
 
-1. A PyTorch autograd bridge may expose a conventional FP32 `.grad` for normal
-   training-loop interoperability. Its reported precision remains
-   `float32_boundary` until a mathematically valid paired-gradient
-   representation exists and passes gradcheck.
-2. The precision optimizer consumes the explicit high/low parameter-shift
-   result and updates a high/low parameter master state. Its initial scope is
-   Double-Single SGD without momentum, weight decay, or mixed-precision loss
-   scaling.
+```python
+import torch
 
-This separation prevents a convenient PyTorch API from silently discarding the
-low word while claiming end-to-end Double-Single gradients.
+import flagquantum as fq
+from flagquantum.algorithms import pauli_term
 
-## Initial implementation scope
+theta = torch.tensor(0.23, dtype=torch.float32, requires_grad=True)
+loss = fq.experimental.split_real_imag_device_double_single_autograd_expectation(
+    fq.Circuit(1).ry(0, theta=fq.Parameter("theta")),
+    pauli_term(1.0, "Z", (0,)),
+    parameter_bindings={"theta": theta},
+    device="cpu",
+)
+loss.backward()
+```
 
-The future implementation is limited to direct named device-FP32 parameters on
-RX, RY, RZ, RXX, RYY, and RZZ; bounded real Pauli Hamiltonians; batch size one;
-and a scalar expectation output. The default runtime remains unchanged.
+The first slice supports direct named parameters on RX, RY, RZ, RXX, RYY, and
+RZZ; bounded real Pauli Hamiltonians; batch size one; and a scalar expectation
+output. Higher-order and compiled autograd are rejected rather than silently
+falling back.
 
-Parameter expressions, trainable Hamiltonian coefficients, standard optimizer
-equivalence, Adam/AdamW, momentum, weight decay, compiled autograd,
-distributed execution, and automatic runtime selection are outside the first
-implementation slice.
+## Precision boundary
 
-## Evidence required before capability claims
+P4 represents an expectation and parameter-shift gradient with two FP32 words.
+A normal FP32 PyTorch leaf stores one FP32 word in `.grad`; that tensor cannot
+honestly be relabeled as a Double-Single gradient. The bridge therefore:
 
-Implementation work must provide:
+1. evaluates the forward expectation with P4 Double-Single arithmetic;
+2. evaluates the backward pass with P4 explicit high/low parameter shift; and
+3. rounds once to FP32 when returning the scalar loss and PyTorch `.grad`.
 
-- CPU complex128 and finite-difference diagnostics;
-- PyTorch gradcheck for the declared autograd boundary;
-- depths 8, 32, and 128 with seeds 0 and 7;
-- one-, 16-, and 64-step optimizer trajectory comparisons;
-- two-qubit VQE and three-qubit QAOA trajectory workloads;
-- native CUDA and single-device Torch-FL `flagos:0` evidence.
+The reported PyTorch boundary is `float32_boundary`. End-to-end Double-Single
+gradient precision is not claimed. The future precision optimizer lane will
+instead consume the explicit high/low gradient and maintain a high/low master
+parameter, initially using Double-Single SGD without momentum or weight decay.
 
-Trajectory agreement is numerical integration evidence, not algorithmic
-convergence certification. FlagCX collectives are explicitly excluded from P5;
-a distributed claim requires a later contract and real distributed evidence.
+## CPU numerical evidence
+
+The checked conformance workload compares depths 8, 32, and 128 with seeds 0
+and 7 against independent CPU complex128 parameter-shift and finite-difference
+diagnostics. The current six-case result passes with:
+
+- maximum forward absolute error: `1.343e-8`;
+- maximum gradient relative error: `3.508e-8`;
+- minimum gradient cosine similarity: `0.9999999999999996`; and
+- maximum finite-difference gradient relative error: `1.861e-7`.
+
+These are CPU reference results, not accelerator, optimizer-trajectory,
+convergence, performance, or production evidence.
+
+## Remaining scope
+
+The precision optimizer, parameter expressions, trainable Hamiltonian
+coefficients, standard optimizer equivalence, Adam/AdamW, momentum, weight
+decay, mixed-precision loss scaling, CUDA, Torch-FL `flagos:0`, distributed
+execution, and automatic runtime selection remain unavailable in P5.
+FlagCX collectives are explicitly excluded; a distributed claim requires a
+later contract and real distributed evidence.
 
 The authoritative machine-readable declaration is
 [`split-real-imag-statevector-p5-autograd-optimizer-contract.toml`](../../split-real-imag-statevector-p5-autograd-optimizer-contract.toml).
