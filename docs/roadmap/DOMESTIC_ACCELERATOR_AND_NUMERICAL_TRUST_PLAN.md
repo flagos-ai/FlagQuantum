@@ -20,6 +20,8 @@
 > `split_real_imag_statevector_p4_device_double_single` 已在受限内置门和
 > `|angle| <= 1024` 范围内将参数门三角函数及门矩阵生成迁移到设备端纯 FP32
 > Double-Single 路径；它仍不构成算法收敛、国产硬件、性能或生产认证。
+> P5 已建立 autograd/optimizer 的 contract-only 边界：标准 PyTorch FP32
+> `.grad` 与显式 Double-Single high/low 梯度严格分离，当前尚无运行时能力声明。
 > 以上路径均不等于国产卡生产能力认证。
 
 ## 1. 执行摘要

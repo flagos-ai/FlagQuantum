@@ -178,6 +178,13 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             ),
         ),
         Check(
+            "split real/imag statevector P5 autograd/optimizer contract",
+            (
+                python_executable,
+                "tools/check_split_real_imag_p5_autograd_optimizer_contract.py",
+            ),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

@@ -20,6 +20,8 @@
 > Torch-FL 的依赖边界，也不自动进入默认 runtime。后续 P2/P3/P4 精度实验
 > 仍保持 FlagQuantum 核心不依赖 Torch-FL；其中 P4 在有 Torch-FL 的验证环境
 > 中只通过 `flagos:0` 逻辑设备运行设备端 FP32 Double-Single 门生成与状态演化。
+> P5 当前仅建立 autograd/optimizer 设计契约；未来单设备 `flagos:0` 验证与
+> FlagCX 分布式验证保持独立，不能用前者替代后者。
 
 ## 1. 执行决策
 

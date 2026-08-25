@@ -54,6 +54,10 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         "python",
         "tools/validate_split_real_imag_device_double_single_evidence.py",
     ) in commands
+    assert (
+        "python",
+        "tools/check_split_real_imag_p5_autograd_optimizer_contract.py",
+    ) in commands
     assert any(
         check.name == "strict typed interoperability contract"
         and "flagquantum/interop/contracts.py" in check.command
