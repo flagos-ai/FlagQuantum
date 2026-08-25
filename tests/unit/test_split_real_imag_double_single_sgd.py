@@ -57,6 +57,9 @@ def test_split_real_imag_double_single_sgd_uses_explicit_p4_gradient() -> None:
     assert result.summary()["tensor_grad_used"] is False
     assert result.summary()["gradient_representation"] == "double_single_high_low"
     assert result.summary()["torch_optimizer_compatible"] is False
+    assert result.summary()["native_cuda_evidence"] is True
+    assert result.summary()["torch_fl_flagos_evidence"] is True
+    assert result.summary()["accelerator_float64_tensor_materialized"] is False
 
 
 def test_double_single_sgd_rejects_precision_and_order_demotion() -> None:

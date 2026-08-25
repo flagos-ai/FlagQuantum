@@ -1,6 +1,6 @@
 schema = "flagquantum_split_real_imag_statevector_p5_autograd_optimizer_contract_v1"
 maturity = "experimental"
-phase_status = "cpu_autograd_and_double_single_sgd"
+phase_status = "cpu_autograd_and_accelerator_double_single_sgd_reference"
 base_executor = "split_real_imag_statevector_p4_device_double_single"
 runtime_module_reserved = "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer"
 implementation = "flagquantum.runtime.backends.statevector.split_real_imag_autograd"
@@ -52,7 +52,7 @@ gradcheck_relative_tolerance = 1e-3
 
 [precision_optimizer]
 initial_algorithm = "double_single_sgd_without_momentum"
-device_scope = "cpu_only"
+device_scope = "single_device_cpu_cuda_flagos_reference"
 parameter_state = ["high_float32", "low_float32"]
 gradient_source = "explicit_double_single_parameter_shift_result"
 update = "renormalized_double_single_parameter_subtract"
@@ -99,6 +99,8 @@ native_cuda_required = true
 torch_fl_flagos_required = true
 optimizer_trajectory_required = true
 cpu_optimizer_trajectory_evidence = true
+native_cuda_optimizer_trajectory_evidence = true
+torch_fl_flagos_optimizer_trajectory_evidence = true
 algorithmic_convergence_required_for_convergence_claim = true
 flagcx_required_for_distributed_claim = true
 
@@ -112,3 +114,8 @@ conformance = "tests/test_split_real_imag_autograd_conformance.py"
 optimizer_implementation = "flagquantum/runtime/backends/statevector/split_real_imag_autograd_optimizer.py"
 optimizer_unit = "tests/unit/test_split_real_imag_double_single_sgd.py"
 optimizer_conformance = "tests/test_split_real_imag_optimizer_conformance.py"
+optimizer_accelerator_route = "tests/test_split_real_imag_optimizer_accelerator.py"
+optimizer_accelerator_validator = "tools/validate_split_real_imag_optimizer_accelerator.py"
+optimizer_evidence = "artifacts/split_real_imag_optimizer_a800_20260825.json"
+optimizer_evidence_policy = "tools/validate_split_real_imag_optimizer_evidence.py"
+optimizer_evidence_unit = "tests/unit/test_split_real_imag_optimizer_evidence.py"

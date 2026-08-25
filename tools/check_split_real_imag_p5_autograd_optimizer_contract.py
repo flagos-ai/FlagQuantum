@@ -24,7 +24,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     expected = {
         "schema": "flagquantum_split_real_imag_statevector_p5_autograd_optimizer_contract_v1",
         "maturity": "experimental",
-        "phase_status": "cpu_autograd_and_double_single_sgd",
+        "phase_status": "cpu_autograd_and_accelerator_double_single_sgd_reference",
         "base_executor": "split_real_imag_statevector_p4_device_double_single",
         "representation": "double_single_fp32_complex",
         "distribution_semantics": "single_device_fast_path",
@@ -89,8 +89,8 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "explicit_double_single_parameter_shift_result"
     ):
         errors.append("P5 optimizer must consume an explicit Double-Single gradient")
-    if optimizer.get("device_scope") != "cpu_only":
-        errors.append("P5 optimizer implementation must remain CPU-only")
+    if optimizer.get("device_scope") != "single_device_cpu_cuda_flagos_reference":
+        errors.append("P5 optimizer single-device reference scope drifted")
     if optimizer.get("implementation_available") is not True:
         errors.append("P5 optimizer implementation availability drifted")
     if optimizer.get("tensor_grad_used") is not False:
@@ -167,6 +167,12 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         errors.append("split real/imag P5 claim gates must remain fail-closed")
     if gates.get("cpu_optimizer_trajectory_evidence") is not True:
         errors.append("split real/imag P5 CPU optimizer evidence must be recorded")
+    for name in (
+        "native_cuda_optimizer_trajectory_evidence",
+        "torch_fl_flagos_optimizer_trajectory_evidence",
+    ):
+        if gates.get(name) is not True:
+            errors.append(f"split real/imag P5 optimizer evidence {name} is required")
 
     implementation = (
         ROOT / "flagquantum/runtime/backends/statevector/split_real_imag_autograd.py"

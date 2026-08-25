@@ -185,6 +185,13 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             ),
         ),
         Check(
+            "split real/imag P5 optimizer A800 reference evidence",
+            (
+                python_executable,
+                "tools/validate_split_real_imag_optimizer_evidence.py",
+            ),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

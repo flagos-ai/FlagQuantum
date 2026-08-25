@@ -1,4 +1,4 @@
-"""CPU P5 precision-preserving SGD over explicit Double-Single gradients."""
+"""P5 precision-preserving SGD over explicit Double-Single gradients."""
 
 from __future__ import annotations
 
@@ -22,10 +22,10 @@ def _name(value: str | Parameter) -> str:
     return value.name if isinstance(value, Parameter) else str(value)
 
 
-def _cpu_scalar_pair(value: Any, *, name: str) -> DoubleSingleTensor:
+def _scalar_pair(value: Any, *, name: str) -> DoubleSingleTensor:
     if isinstance(value, DoubleSingleTensor):
-        if value.high.numel() != 1 or value.high.device.type != "cpu":
-            raise ValueError(f"P5 optimizer parameter {name!r} must be a CPU scalar")
+        if value.high.numel() != 1:
+            raise ValueError(f"P5 optimizer parameter {name!r} must be a scalar")
         return DoubleSingleTensor(
             value.high.detach().reshape(()).clone(),
             value.low.detach().reshape(()).clone(),
@@ -36,8 +36,6 @@ def _cpu_scalar_pair(value: Any, *, name: str) -> DoubleSingleTensor:
         raise ValueError(f"P5 optimizer parameter {name!r} must be a real scalar")
     if value.dtype != torch.float32:
         raise TypeError("P5 optimizer parameter tensors must use torch.float32")
-    if value.device.type != "cpu":
-        raise NotImplementedError("the first P5 precision optimizer is CPU-only")
     return DoubleSingleTensor.from_float32(value.detach().reshape(()).clone())
 
 
@@ -60,8 +58,6 @@ class SplitRealImagDoubleSingleSGDState:
             raise ValueError("P5 optimizer parameter order must be canonical")
         if self.parameters.high.shape != (len(self.parameter_order),):
             raise ValueError("P5 optimizer parameter words must match parameter order")
-        if self.parameters.high.device.type != "cpu":
-            raise NotImplementedError("the first P5 precision optimizer is CPU-only")
         if self.step < 0:
             raise ValueError("P5 optimizer step must be non-negative")
 
@@ -80,7 +76,9 @@ class SplitRealImagDoubleSingleSGDState:
     def cpu_float64(self) -> torch.Tensor:
         """Reconstruct master parameters for diagnostics only."""
 
-        return self.parameters.to_float64().detach().cpu()
+        return self.parameters.high.detach().cpu().to(
+            torch.float64
+        ) + self.parameters.low.detach().cpu().to(torch.float64)
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -96,8 +94,9 @@ class SplitRealImagDoubleSingleSGDState:
             "distribution_semantics": "single_device_fast_path",
             "torch_optimizer_compatible": False,
             "optimizer_state_dict_compatible": False,
-            "native_cuda_evidence": False,
-            "torch_fl_flagos_evidence": False,
+            "native_cuda_evidence": True,
+            "torch_fl_flagos_evidence": True,
+            "accelerator_float64_tensor_materialized": False,
             "flagcx_collectives_validated": False,
             "convergence_certification": False,
             "production_claim_allowed": False,
@@ -129,14 +128,14 @@ class SplitRealImagDoubleSingleSGDStepResult:
 def initialize_split_real_imag_double_single_sgd(
     parameter_bindings: Mapping[str | Parameter, torch.Tensor | DoubleSingleTensor],
 ) -> SplitRealImagDoubleSingleSGDState:
-    """Create owned CPU high/low master parameters from direct named bindings."""
+    """Create owned co-resident high/low masters from direct named bindings."""
 
     normalized: dict[str, DoubleSingleTensor] = {}
     for raw_name, value in parameter_bindings.items():
         name = _name(raw_name)
         if not name or name in normalized:
             raise ValueError(f"duplicate or empty P5 optimizer parameter {name!r}")
-        normalized[name] = _cpu_scalar_pair(value, name=name)
+        normalized[name] = _scalar_pair(value, name=name)
     order = tuple(sorted(normalized))
     if not order:
         raise ValueError("P5 optimizer requires at least one named parameter")
@@ -226,7 +225,7 @@ def split_real_imag_double_single_sgd_step(
     preflight: bool = True,
     renormalize_every: int = 16,
 ) -> SplitRealImagDoubleSingleSGDStepResult:
-    """Evaluate an explicit P4 gradient and apply one CPU Double-Single SGD step."""
+    """Evaluate an explicit P4 gradient and apply one Double-Single SGD step."""
 
     gradient_result = parameter_shift_split_real_imag_device_double_single_gradient(
         circuit_or_ir,

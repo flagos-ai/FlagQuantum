@@ -1,4 +1,4 @@
-"""CPU trajectory evidence for the P5 Double-Single SGD optimizer."""
+"""Single-device trajectory evidence for the P5 Double-Single SGD optimizer."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from ....circuit import Circuit
 from ....core.ir import ensure_circuit_ir
 from ....core.parameters import Parameter
 from ....numerics.double_single import DoubleSingleTensor
+from ...platforms import get_platform_runtime, resolve_platform_device
 from .split_real_imag import _normalized_observables, _parameter_occurrences
 from .split_real_imag_autograd_optimizer import (
     double_single_sgd_step,
@@ -115,13 +116,15 @@ def _candidate_loss(
     ir: Any,
     observable: Any,
     bindings: Mapping[str, Any],
+    *,
+    device: torch.device,
 ) -> float:
     return float(
         execute_split_real_imag_device_double_single_expectation(
             ir,
             observable,
             parameter_bindings=bindings,
-            device="cpu",
+            device=device,
             preflight=False,
         )
         .cpu_float64()
@@ -129,14 +132,14 @@ def _candidate_loss(
     )
 
 
-def _cancellation_case(steps: int) -> tuple[float, float]:
+def _cancellation_case(steps: int, *, device: torch.device) -> tuple[float, float]:
     state = initialize_split_real_imag_double_single_sgd(
-        {"theta": torch.tensor(1.0, dtype=torch.float32)}
+        {"theta": torch.tensor(1.0, dtype=torch.float32, device=device)}
     )
     gradient = DoubleSingleTensor.from_float32(
-        torch.tensor([2.0**-31], dtype=torch.float32)
+        torch.tensor([2.0**-31], dtype=torch.float32, device=device)
     )
-    float32_parameter = torch.tensor([1.0], dtype=torch.float32)
+    float32_parameter = torch.tensor([1.0], dtype=torch.float32, device=device)
     for _ in range(steps):
         state, _ = double_single_sgd_step(
             state,
@@ -150,7 +153,9 @@ def _cancellation_case(steps: int) -> tuple[float, float]:
         torch.max(torch.abs(state.cpu_float64() - reference)).item()
     )
     float32_error = float(
-        torch.max(torch.abs(float32_parameter.to(torch.float64) - reference)).item()
+        torch.max(
+            torch.abs(float32_parameter.detach().cpu().to(torch.float64) - reference)
+        ).item()
     )
     return double_single_error, float32_error
 
@@ -166,14 +171,16 @@ def _trajectory(
     max_parameter_absolute_error: float,
     max_loss_absolute_error: float,
     preflight: bool,
+    device: torch.device,
 ) -> tuple[SplitRealImagOptimizerTrajectoryCase, ...]:
     order = tuple(sorted(initial))
     initial_float32 = {
-        name: torch.tensor(initial[name], dtype=torch.float32) for name in order
+        name: torch.tensor(initial[name], dtype=torch.float32, device=device)
+        for name in order
     }
     state = initialize_split_real_imag_double_single_sgd(initial_float32)
     float32_parameters = torch.stack(tuple(initial_float32[name] for name in order))
-    reference_parameters = float32_parameters.to(torch.float64)
+    reference_parameters = float32_parameters.detach().cpu().to(torch.float64)
     ir = ensure_circuit_ir(circuit)
     reference_ir = _p4_reference_ir(ir)
     terms = _normalized_observables(reference_ir, observable)
@@ -196,13 +203,14 @@ def _trajectory(
                 ir,
                 observable,
                 parameter_bindings=float32_bindings,
-                device="cpu",
+                device=device,
                 preflight=False,
             ).gradient.to_float32()
         )
         float32_parameters = (
             float32_parameters
-            - torch.tensor(learning_rate, dtype=torch.float32) * float32_gradient
+            - torch.tensor(learning_rate, dtype=torch.float32, device=device)
+            * float32_gradient
         )
 
         reference_bindings = {
@@ -221,17 +229,24 @@ def _trajectory(
         reference_loss, _ = _reference_value_gradient(
             reference_ir, terms, next_reference_bindings
         )
-        double_single_loss = _candidate_loss(ir, observable, state.bindings())
+        double_single_loss = _candidate_loss(
+            ir, observable, state.bindings(), device=device
+        )
         next_float32_bindings = {
             name: float32_parameters[index] for index, name in enumerate(order)
         }
-        float32_loss = _candidate_loss(ir, observable, next_float32_bindings)
+        float32_loss = _candidate_loss(
+            ir, observable, next_float32_bindings, device=device
+        )
         double_single_parameter_error = float(
             torch.max(torch.abs(state.cpu_float64() - reference_parameters)).item()
         )
         float32_parameter_error = float(
             torch.max(
-                torch.abs(float32_parameters.to(torch.float64) - reference_parameters)
+                torch.abs(
+                    float32_parameters.detach().cpu().to(torch.float64)
+                    - reference_parameters
+                )
             ).item()
         )
         double_single_loss_error = abs(
@@ -266,13 +281,13 @@ def run_split_real_imag_optimizer_conformance(
 ) -> SplitRealImagOptimizerConformanceReport:
     """Compare P5 Double-Single and FP32-master SGD with complex128 trajectories."""
 
-    resolved = torch.device(device)
-    if resolved.type != "cpu":
-        raise NotImplementedError("the first P5 optimizer conformance is CPU-only")
+    resolved = resolve_platform_device(device)
     normalized_checkpoints = tuple(sorted({int(step) for step in checkpoints}))
     if not normalized_checkpoints or normalized_checkpoints[0] < 1:
         raise ValueError("P5 optimizer checkpoints must be positive")
-    cancellation_ds, cancellation_fp32 = _cancellation_case(max(normalized_checkpoints))
+    cancellation_ds, cancellation_fp32 = _cancellation_case(
+        max(normalized_checkpoints), device=resolved
+    )
     cases: list[SplitRealImagOptimizerTrajectoryCase] = []
     for index, (name, workload) in enumerate(
         (("two_qubit_vqe", _vqe_workload()), ("three_qubit_qaoa", _qaoa_workload()))
@@ -289,17 +304,20 @@ def run_split_real_imag_optimizer_conformance(
                 max_parameter_absolute_error=max_parameter_absolute_error,
                 max_loss_absolute_error=max_loss_absolute_error,
                 preflight=index == 0,
+                device=resolved,
             )
         )
     passed = bool(cases) and all(case.passed for case in cases)
     passed = passed and cancellation_ds <= 1e-14 and cancellation_fp32 > 0.0
     return SplitRealImagOptimizerConformanceReport(
         device=str(resolved),
-        provider="pytorch_cpu",
+        provider=get_platform_runtime(resolved.type).identity().provider,
         cases=tuple(cases),
         cancellation_double_single_absolute_error=cancellation_ds,
         cancellation_float32_absolute_error=cancellation_fp32,
         passed=passed,
+        native_cuda_evidence=resolved.type == "cuda",
+        torch_fl_flagos_evidence=resolved.type == "flagos",
     )
 
 

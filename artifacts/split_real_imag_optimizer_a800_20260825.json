@@ -1,0 +1,118 @@
+{
+  "schema": "flagquantum_split_real_imag_p5_optimizer_a800_evidence_v1",
+  "recorded_on": "2026-08-25",
+  "status": "passed",
+  "source": {
+    "revision": "8671e6601a00b2a8f3b2d874c1e79f7752ecafdc",
+    "archive_sha256": "fc1cf4fd9169c0e976076195069bc870ff8d42c11f0080f62d1d85badef26524",
+    "tree_dirty": false
+  },
+  "hardware": {
+    "host": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "driver_version": "580.126.20",
+    "visible_gpu_count": 8,
+    "validation_gpu_count": 1
+  },
+  "operator_profile": {
+    "name": "split_real_imag_statevector_p4_device_double_single",
+    "sha256": "beb0e58248a93d5f9ab17fe61b869f0a4c2925039c29eb9426101ef0c569ac73"
+  },
+  "matrix": {
+    "optimizer_steps": [1, 16, 64],
+    "workloads": ["two_qubit_vqe", "three_qubit_qaoa"]
+  },
+  "thresholds": {
+    "max_optimizer_parameter_absolute_error": 2e-8,
+    "max_optimizer_loss_trajectory_absolute_error": 1e-7,
+    "double_single_must_not_exceed_float32_baseline": true
+  },
+  "environment": {
+    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642",
+    "native_cuda_image_id": "sha256:a6a6d2c4d50c9ac503eeae562e841add24a1b71a7e70410709c6ca6a87722d7b",
+    "flagos_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "flagos_image_id": "sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "torch_fl_revision": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "torch_fl_source_archive_sha256": "efccb4f92615b8f159c17d0f03865de74801d437f2130e70901e54332bdcc916",
+    "torch_fl_package": "0.1.0",
+    "torch_fl_wheel_sha256": "cca7953ac2aed376d83fd7d0dc931c8b2ac0d59d70d4f841691b1f01217f4fec",
+    "torch_fl_build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "FLAGOS_BUILD_JOBS": "8",
+      "TORCH_DEVICE_BACKEND_AUTOLOAD": "0"
+    }
+  },
+  "routes": [
+    {
+      "name": "native_cuda",
+      "status": "passed",
+      "device": "cuda:0",
+      "provider": "pytorch_cuda",
+      "torch_version": "2.13.0+cu130",
+      "cuda_version": "13.0",
+      "raw_result_sha256": "0da112e5f7de7ef180d1820de412f314475ab1a4593921f306449a1953b09084",
+      "logical_device_residency": true,
+      "parameter_word_count": 2,
+      "tensor_grad_used": false,
+      "accelerator_float64_tensor_materialized": false
+    },
+    {
+      "name": "torch_fl_flagos",
+      "status": "passed",
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "torch_version": "2.11.0+cu130",
+      "torch_fl_package": "0.1.0",
+      "cuda_version": "13.0",
+      "raw_result_sha256": "e7d5b474aadd4c1530015f3870bcbed6a684bca7a1e7239ed0e9bf9c95519f3e",
+      "logical_device_residency": true,
+      "parameter_word_count": 2,
+      "tensor_grad_used": false,
+      "accelerator_float64_tensor_materialized": false,
+      "provider_internal_route_audited": false,
+      "flagcx_collectives_validated": false
+    }
+  ],
+  "cancellation": {
+    "steps": 64,
+    "gradient": "2^-31",
+    "double_single_absolute_error": 0.0,
+    "float32_absolute_error": 2.9802322387695312e-8,
+    "passed": true
+  },
+  "cases": [
+    {"workload": "two_qubit_vqe", "step": 1, "double_single_parameter_absolute_error": 7.57030549358717e-11, "float32_parameter_absolute_error": 6.571934718646588e-9, "double_single_loss_absolute_error": 1.4350076682489998e-11, "float32_loss_absolute_error": 1.0332501521048698e-9, "passed": true},
+    {"workload": "two_qubit_vqe", "step": 16, "double_single_parameter_absolute_error": 1.4883545229604778e-9, "float32_parameter_absolute_error": 3.843666609992802e-8, "double_single_loss_absolute_error": 2.6089330695810986e-10, "float32_loss_absolute_error": 5.920190782049417e-9, "passed": true},
+    {"workload": "two_qubit_vqe", "step": 64, "double_single_parameter_absolute_error": 1.2418729322671851e-8, "float32_parameter_absolute_error": 1.1156172324833236e-7, "double_single_loss_absolute_error": 3.322939645666878e-9, "float32_loss_absolute_error": 3.010654886503872e-8, "passed": true},
+    {"workload": "three_qubit_qaoa", "step": 1, "double_single_parameter_absolute_error": 6.537835550712856e-10, "float32_parameter_absolute_error": 1.2360905132791089e-8, "double_single_loss_absolute_error": 8.838876852657052e-10, "float32_loss_absolute_error": 9.587386495812922e-9, "passed": true},
+    {"workload": "three_qubit_qaoa", "step": 16, "double_single_parameter_absolute_error": 9.397301159452809e-9, "float32_parameter_absolute_error": 1.7130831420075765e-8, "double_single_loss_absolute_error": 8.16182854634917e-9, "float32_loss_absolute_error": 1.4207531151555486e-8, "passed": true},
+    {"workload": "three_qubit_qaoa", "step": 64, "double_single_parameter_absolute_error": 3.720761476699863e-10, "float32_parameter_absolute_error": 7.839561844136256e-8, "double_single_loss_absolute_error": 2.2248869413488137e-12, "float32_loss_absolute_error": 4.667368713739961e-10, "passed": true}
+  ],
+  "route_metric_equivalence": {
+    "native_cuda_vs_torch_fl_flagos_max_absolute_delta": 0.0,
+    "passed": true
+  },
+  "claims": {
+    "maturity": "experimental",
+    "validation_scope": "single_device_cuda_and_flagos_portability_reference",
+    "distribution_semantics": "single_device_fast_path",
+    "double_single_optimizer": true,
+    "sub_ulp_updates_retained": true,
+    "native_cuda_portability_evidence": true,
+    "torch_fl_flagos_portability_evidence": true,
+    "complex128_equivalence": false,
+    "torch_optimizer_compatibility": false,
+    "convergence_certification": false,
+    "hardware_certification": false,
+    "domestic_accelerator_certification": false,
+    "provider_internal_route_audited": false,
+    "flagcx_collectives_validated": false,
+    "scalability_claim_allowed": false,
+    "performance_claim_allowed": false,
+    "production_claim_allowed": false
+  }
+}

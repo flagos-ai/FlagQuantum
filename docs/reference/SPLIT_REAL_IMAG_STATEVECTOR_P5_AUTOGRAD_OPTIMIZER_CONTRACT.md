@@ -1,8 +1,9 @@
 # P5 autograd and Double-Single SGD
 
-P5 provides two experimental, CPU-only training lanes over the P4
-device-generated Double-Single executor. The default FlagQuantum runtime is
-unchanged.
+P5 provides two experimental training lanes over the P4 device-generated
+Double-Single executor. The autograd bridge remains CPU-only. The explicit SGD
+lane has single-device CPU, native CUDA, and CUDA-backed Torch-FL `flagos:0`
+portability evidence. The default FlagQuantum runtime is unchanged.
 
 ## PyTorch autograd interoperability lane
 
@@ -82,17 +83,32 @@ FP32 master as well as satisfying the absolute CPU envelope.
 
 These results demonstrate bounded numerical trajectory agreement and recovery
 of sub-ULP parameter updates. They are not algorithmic convergence,
-accelerator, performance, or production certification.
+performance, or production certification.
+
+## A800 CUDA and Torch-FL reference
+
+The exact source revision `8671e660` passed the same 1/16/64-step optimizer
+matrix on an NVIDIA A800-SXM4-80GB through both `cuda:0` and Torch-FL
+`flagos:0`. High and low master words stayed on the selected logical device,
+`Tensor.grad` was not used, and float64 tensors were not materialized on the
+accelerator. The two routes produced zero recorded metric delta.
+
+This is CUDA and Torch-FL portability evidence only. It does not audit
+Torch-FL's provider-internal route, validate FlagCX, certify a domestic
+accelerator, establish FP64/complex128 equivalence, or prove convergence.
+The machine-readable evidence is
+[`split_real_imag_optimizer_a800_20260825.json`](../../artifacts/split_real_imag_optimizer_a800_20260825.json).
 
 ## Scope and remaining gates
 
 Both lanes support direct named parameters on RX, RY, RZ, RXX, RYY, and RZZ;
 bounded real Pauli Hamiltonians; batch size one; and scalar expectations.
 Parameter expressions, trainable coefficients, Adam/AdamW, momentum, weight
-decay, mixed-precision loss scaling, higher-order or compiled autograd, CUDA,
-Torch-FL `flagos:0`, distributed execution, and automatic selection remain
-unavailable. FlagCX is explicitly excluded until a later distributed contract
-has real collective evidence.
+decay, mixed-precision loss scaling, higher-order or compiled autograd,
+distributed execution, and automatic selection remain unavailable. FlagCX is
+explicitly excluded until a later distributed contract has real collective
+evidence. CUDA and `flagos:0` are explicit optimizer routes, not automatic
+runtime selections or hardware certifications.
 
 The authoritative machine-readable declaration is
 [`split-real-imag-statevector-p5-autograd-optimizer-contract.toml`](../../split-real-imag-statevector-p5-autograd-optimizer-contract.toml).
