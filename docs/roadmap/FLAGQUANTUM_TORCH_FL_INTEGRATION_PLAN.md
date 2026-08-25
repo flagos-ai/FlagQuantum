@@ -17,7 +17,9 @@
 > [`artifacts/flagos_cuda_reference_a800_20260824.json`](../../artifacts/flagos_cuda_reference_a800_20260824.json)。
 > 2026-08-24 新增的 split real/imag FP32 statevector P0 是隔离的
 > forward-only 实验路径；它通过独立 profile 验证底层 FP32 算子，不改变
-> Torch-FL 的依赖边界，也不自动进入默认 runtime。
+> Torch-FL 的依赖边界，也不自动进入默认 runtime。后续 P2/P3/P4 精度实验
+> 仍保持 FlagQuantum 核心不依赖 Torch-FL；其中 P4 在有 Torch-FL 的验证环境
+> 中只通过 `flagos:0` 逻辑设备运行设备端 FP32 Double-Single 门生成与状态演化。
 
 ## 1. 执行决策
 

@@ -12,6 +12,29 @@ from dataclasses import dataclass
 import torch
 
 _SPLITTER = 4097.0  # 2**ceil(24 / 2) + 1 for IEEE-754 binary32.
+_TWO_OVER_PI = (0.6366197466850281, 2.5682552973194106e-8)
+_PI_OVER_TWO = (1.5707963705062866, -4.371138828673793e-8)
+_SIN_COEFFICIENTS = (
+    (-0.1666666716337204, 4.967053879312289e-9),
+    (0.008333333767950535, -4.34617203337595e-10),
+    (-0.00019841270113829523, 2.725596874933456e-12),
+    (2.7557318844628753e-6, 3.793571224297229e-14),
+    (-2.5052107943679403e-8, -4.4176230446483665e-16),
+    (1.6059044372074283e-10, -5.352526511562726e-18),
+    (-7.647163609812713e-13, -1.2200710471178288e-20),
+    (2.8114573589663704e-15, -1.0462084739763658e-22),
+)
+_COS_COEFFICIENTS = (
+    (-0.5, 0.0),
+    (0.0416666679084301, -1.2417634698280722e-9),
+    (-0.0013888889225199819, 3.3631094437103215e-11),
+    (2.4801587642286904e-5, -3.40699609366682e-13),
+    (-2.755731998149713e-7, 7.575112209051195e-15),
+    (2.0876755879584152e-9, 1.1082839809204342e-16),
+    (-1.147074536050896e-11, -2.372207689231238e-19),
+    (4.7794772561329454e-14, 7.62544404448643e-22),
+    (-1.5619206814541513e-16, -1.5404471465941993e-24),
+)
 
 
 def _require_float32(value: torch.Tensor, *, name: str) -> None:
@@ -200,6 +223,76 @@ class DoubleSingleTensor:
         return DoubleSingleTensor(self.high.to(device), self.low.to(device))
 
 
+def _constant_like(
+    value: tuple[float, float], like: torch.Tensor
+) -> DoubleSingleTensor:
+    return DoubleSingleTensor(
+        torch.full_like(like, value[0]), torch.full_like(like, value[1])
+    )
+
+
+def _polynomial(
+    squared: DoubleSingleTensor,
+    coefficients: tuple[tuple[float, float], ...],
+) -> DoubleSingleTensor:
+    result = _constant_like(coefficients[-1], squared.high)
+    for coefficient in reversed(coefficients[:-1]):
+        result = result.multiply(squared).add(_constant_like(coefficient, squared.high))
+    return result
+
+
+def _where(
+    condition: torch.Tensor,
+    left: DoubleSingleTensor,
+    right: DoubleSingleTensor,
+) -> DoubleSingleTensor:
+    return DoubleSingleTensor(
+        torch.where(condition, left.high, right.high),
+        torch.where(condition, left.low, right.low),
+    )
+
+
+def double_single_sin_cos(
+    value: DoubleSingleTensor,
+) -> tuple[DoubleSingleTensor, DoubleSingleTensor]:
+    """Evaluate sine and cosine with FP32-only Double-Single arithmetic.
+
+    Range reduction uses the nearest multiple of pi/2. The quadrant decision is
+    made from the FP32 leading approximation, while the subtraction and both
+    Taylor polynomials retain high/low residuals. The certified P4 envelope
+    limits absolute inputs to 1024 radians; callers enforce that boundary.
+    """
+
+    quadrant = torch.round(value.to_float32() * _TWO_OVER_PI[0])
+    reduced = value.subtract(
+        DoubleSingleTensor.from_float32(quadrant).multiply(
+            _constant_like(_PI_OVER_TWO, value.high)
+        )
+    )
+    squared = reduced.square()
+    one = DoubleSingleTensor.from_float32(torch.ones_like(value.high))
+    sine = reduced.add(
+        reduced.multiply(squared).multiply(_polynomial(squared, _SIN_COEFFICIENTS))
+    )
+    cosine = one.add(squared.multiply(_polynomial(squared, _COS_COEFFICIENTS)))
+
+    phase = torch.remainder(quadrant, 4.0)
+    phase_one = phase == 1.0
+    phase_two = phase == 2.0
+    phase_three = phase == 3.0
+    resolved_sine = _where(
+        phase_one,
+        cosine,
+        _where(phase_two, sine.negate(), _where(phase_three, cosine.negate(), sine)),
+    )
+    resolved_cosine = _where(
+        phase_one,
+        sine.negate(),
+        _where(phase_two, cosine.negate(), _where(phase_three, sine, cosine)),
+    )
+    return resolved_sine.renormalized(), resolved_cosine.renormalized()
+
+
 @dataclass(frozen=True)
 class DoubleSingleComplexTensor:
     """Split real/imaginary complex values with double-single components."""
@@ -291,6 +384,7 @@ __all__ = (
     "DoubleSingleComplexTensor",
     "DoubleSingleTensor",
     "double_single_dot",
+    "double_single_sin_cos",
     "double_single_sum",
     "quick_two_sum",
     "split_float32",

@@ -1,0 +1,77 @@
+schema = "flagquantum_split_real_imag_statevector_p4_device_double_single_contract_v1"
+maturity = "experimental"
+implementation = "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single"
+gate_implementation = "flagquantum.runtime.backends.statevector.double_single_device_gates"
+operator_profile = "split_real_imag_statevector_p4_device_double_single"
+base_executor = "split_real_imag_statevector_p3_double_single"
+representation = "double_single_fp32_complex"
+parameter_input = "float32_or_device_double_single"
+gate_generation = "double_single_fp32_device_trigonometry"
+state_storage_dtype = "four_float32_words_per_complex_amplitude"
+kernel_compute_dtype = "float32"
+reference_dtype = "complex128_cpu_diagnostic_only"
+gradient_method = "parameter_shift"
+distribution_semantics = "single_device_fast_path"
+runtime_default = false
+host_scalar_parameter_ingestion_allowed = true
+host_gate_encoding_allowed = false
+parameter_host_fallback_allowed = false
+state_host_fallback_allowed = false
+complex_accelerator_tensor_allowed = false
+host_sync_safety_checks = true
+native_autograd_claim_allowed = false
+convergence_claim_allowed = false
+hardware_certification = false
+
+[precision_plan]
+complex_representation = "double_single_fp32"
+parameter_dtype = "float32_or_double_single_device"
+gate_generation_dtype = "double_single_fp32_device_trigonometry"
+state_storage_dtype = "float32"
+kernel_compute_dtype = "float32"
+reduction_dtype = "double_single_fp32"
+decomposition_dtype = "not_applicable"
+gradient_dtype = "double_single_fp32"
+optimizer_master_dtype = "not_integrated"
+communication_dtype = "not_applicable"
+checkpoint_dtype = "double_single_fp32"
+refinement = "adaptive_block_replay"
+allow_dtype_demotion = false
+
+[scope]
+parameterized_gates = ["rx", "ry", "rz", "rxx", "ryy", "rzz"]
+fixed_gates = ["i", "x", "y", "z", "h", "s", "sdg", "t", "tdg", "sx", "sxdg", "cx", "cy", "cz", "swap"]
+device_operations = ["angle_range_reduction", "double_single_sine", "double_single_cosine", "gate_matrix_generation", "state_storage", "gate_application", "periodic_normalization", "pauli_inner_product", "hamiltonian_term_sum", "parameter_shift_gradient_accumulation"]
+unsupported = ["parameter_expressions", "float64_parameter_tensors", "custom_matrices", "angles_outside_certified_range", "native_autograd", "optimizer_step_api", "compiled_execution", "distributed_execution", "automatic_runtime_selection", "convergence_certification", "provider_internal_route_audit", "vendor_certification", "performance_claim"]
+
+[trigonometry]
+range_reduction = "nearest_multiple_of_pi_over_two"
+polynomial = "double_single_taylor_horner"
+max_absolute_angle = 1024.0
+max_absolute_error = 1e-11
+
+[normalization]
+default_gate_interval = 16
+reciprocal_sqrt_newton_iterations = 2
+
+[thresholds]
+depths = [8, 32, 128]
+seeds = [0, 7]
+stability_depths = [512]
+stability_seeds = [0]
+max_trigonometry_absolute_error = 1e-11
+max_gate_entry_absolute_error = 1e-11
+max_state_absolute_error = 1e-9
+max_state_infidelity = 1e-9
+max_norm_drift = 1e-9
+max_expectation_absolute_error = 1e-9
+max_gradient_relative_error = 1e-8
+
+[verification]
+contract = "tests/unit/test_split_real_imag_p4_device_double_single_contract.py"
+unit = "tests/unit/test_split_real_imag_device_double_single.py"
+conformance = "tests/test_split_real_imag_device_double_single_conformance.py"
+flagos_validator = "tools/validate_split_real_imag_device_double_single_flagos.py"
+evidence = "artifacts/split_real_imag_device_double_single_a800_20260825.json"
+evidence_validator = "tools/validate_split_real_imag_device_double_single_evidence.py"
+policy = "tools/check_split_real_imag_p4_device_double_single_contract.py"

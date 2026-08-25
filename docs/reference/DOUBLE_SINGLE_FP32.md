@@ -19,6 +19,7 @@ The foundation implements:
 - binary32 splitting with splitter 4097 and residual-preserving products;
 - normalized real add, subtract, multiply, sum, and dot;
 - Newton-refined reciprocal, reciprocal square root, and square root;
+- bounded device-side sine and cosine with Double-Single range reduction;
 - split-real/imaginary complex add, multiply, and magnitude squared;
 - PyTorch-composed autograd and device preservation;
 - deterministic CPU complex128/float64 conformance probes.
@@ -59,15 +60,21 @@ It explicitly uses CPU complex128 gate encoding before transferring FP32 words
 to the execution device. See
 [`SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md`](SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md).
 
-Neither P2 nor P3 is an automatic precision provider.
+P4 removes P3's host gate-encoding boundary for the built-in fixed gates and
+RX/RY/RZ/RXX/RYY/RZZ with direct scalar angles satisfying `|angle| <= 1024`.
+Range reduction, sine/cosine, gate construction, and execution use FP32
+Double-Single words on the logical execution device. See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md`](SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md).
+
+None of P2, P3, or P4 is an automatic precision provider.
 
 ## Deliberate limitations
 
 The default statevector runtime continues to reject a Double-Single precision
-plan. P3 is explicit and experimental; it does not provide device-only
-Double-Single transcendental gate generation, optimized/fused dispatch,
-distributed collectives, decomposition kernels, optimizer master state,
-compiled execution, Torch-FL route auditing, or vendor certification.
+plan. P4 is explicit, bounded, and experimental; it does not provide unbounded
+transcendentals, parameter expressions, optimized/fused dispatch, distributed
+collectives, decomposition kernels, optimizer master state, compiled
+execution, Torch-FL route auditing, or vendor certification.
 
 Inputs to Dekker splitting must be finite and small enough that multiplication
 by 4097 does not overflow. Runtime integration must add range monitoring,

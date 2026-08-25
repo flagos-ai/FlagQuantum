@@ -22,6 +22,7 @@ EXPECTED_SUPPORTED = {
     "real_reciprocal",
     "real_reciprocal_sqrt",
     "real_sqrt",
+    "real_sin_cos_bounded",
     "real_sum",
     "real_dot",
     "complex_add",
@@ -33,9 +34,10 @@ EXPECTED_SUPPORTED = {
     "split_statevector_full_storage",
     "split_statevector_gate_application",
     "split_statevector_periodic_normalization",
+    "split_statevector_device_gate_generation",
 }
 EXPECTED_UNSUPPORTED = {
-    "device_only_double_single_trigonometry",
+    "unbounded_device_trigonometry",
     "optimized_gate_kernel_dispatch",
     "distributed_collectives",
     "optimizer_master_state",
@@ -58,7 +60,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "storage_dtype": "float32",
         "compute_dtype": "float32",
         "reference_dtype": "float64_and_complex128_cpu_only",
-        "runtime_integration": "selective_p2_and_full_state_p3",
+        "runtime_integration": "selective_p2_full_state_p3_and_device_gates_p4",
         "default_selection_allowed": False,
         "torch_fl_dependency_allowed": False,
         "external_dependency_allowed": False,
@@ -88,6 +90,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "cancellation_sum",
         "cancellation_dot",
         "complex_phase_chain",
+        "device_trigonometry",
     }:
         errors.append("Double-Single conformance cases drifted")
     for name, policy in thresholds.items():

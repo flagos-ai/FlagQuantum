@@ -58,6 +58,15 @@ encoding is an explicit preprocessing boundary; the state remains on the
 logical execution device. See
 [`SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md`](SPLIT_REAL_IMAG_STATEVECTOR_P3_DOUBLE_SINGLE.md).
 
+## `split_real_imag_statevector_p4_device_double_single`
+
+P4 extends the P3 FP32 surface with comparison, rounding, remainder, and
+selection operators used by bounded Double-Single angle reduction and
+polynomial sine/cosine. Fixed and supported parameterized gates are generated
+on the logical execution device; no complex accelerator tensor is materialized.
+See
+[`SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md`](SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md).
+
 ## Execution behavior
 
 For CPU and native CUDA, existing behavior is unchanged. For local statevector
@@ -140,6 +149,17 @@ Run the full-state Double-Single P3 integration separately:
 ```bash
 python tools/validate_split_real_imag_double_single_flagos.py --device flagos:0
 ```
+
+Run the device-generated-gate Double-Single P4 integration separately:
+
+```bash
+python tools/validate_split_real_imag_device_double_single_flagos.py \
+  --device flagos:0
+```
+
+The P4 A800 native-CUDA and single-device Torch-FL record is stored in
+[`artifacts/split_real_imag_device_double_single_a800_20260825.json`](../../artifacts/split_real_imag_device_double_single_a800_20260825.json).
+It explicitly leaves FlagCX collectives and distributed execution uncertified.
 
 The 2026-08-24 A800 reference run passed all 21 profile requirements, both
 complex dtypes, and depths 8/32/128. Its machine-readable environment,

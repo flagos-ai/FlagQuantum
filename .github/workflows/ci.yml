@@ -83,6 +83,10 @@ jobs:
         run: python tools/check_split_real_imag_p3_double_single_contract.py
       - name: Verify split real/imag P3 A800 reference evidence
         run: python tools/validate_split_real_imag_double_single_evidence.py
+      - name: Verify split real/imag statevector P4 device Double-Single contract
+        run: python tools/check_split_real_imag_p4_device_double_single_contract.py
+      - name: Verify split real/imag P4 A800 reference evidence
+        run: python tools/validate_split_real_imag_device_double_single_evidence.py
       - name: Verify operator capability manifest
         run: python tools/operator_manifest.py --check
       - name: Verify runtime contract schema

@@ -46,9 +46,59 @@ __all__ = (
     "run_split_real_imag_double_single_conformance",
     "split_real_imag_p3_accuracy_envelope",
     "split_real_imag_p3_precision_plan",
+    "SplitRealImagDeviceDoubleSingleConformanceReport",
+    "SplitRealImagDeviceDoubleSingleExpectationResult",
+    "SplitRealImagDeviceDoubleSingleGradientResult",
+    "SplitRealImagDeviceDoubleSingleStatevectorResult",
+    "execute_split_real_imag_device_double_single_expectation",
+    "execute_split_real_imag_device_double_single_statevector",
+    "parameter_shift_split_real_imag_device_double_single_gradient",
+    "run_split_real_imag_device_double_single_conformance",
+    "split_real_imag_p4_accuracy_envelope",
+    "split_real_imag_p4_precision_plan",
 )
 
 _EXPORTS = {
+    "SplitRealImagDeviceDoubleSingleConformanceReport": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single_conformance",
+        "SplitRealImagDeviceDoubleSingleConformanceReport",
+    ),
+    "SplitRealImagDeviceDoubleSingleExpectationResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "SplitRealImagDeviceDoubleSingleExpectationResult",
+    ),
+    "SplitRealImagDeviceDoubleSingleGradientResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "SplitRealImagDeviceDoubleSingleGradientResult",
+    ),
+    "SplitRealImagDeviceDoubleSingleStatevectorResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "SplitRealImagDeviceDoubleSingleStatevectorResult",
+    ),
+    "execute_split_real_imag_device_double_single_expectation": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "execute_split_real_imag_device_double_single_expectation",
+    ),
+    "execute_split_real_imag_device_double_single_statevector": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "execute_split_real_imag_device_double_single_statevector",
+    ),
+    "parameter_shift_split_real_imag_device_double_single_gradient": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "parameter_shift_split_real_imag_device_double_single_gradient",
+    ),
+    "run_split_real_imag_device_double_single_conformance": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single_conformance",
+        "run_split_real_imag_device_double_single_conformance",
+    ),
+    "split_real_imag_p4_accuracy_envelope": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "split_real_imag_p4_accuracy_envelope",
+    ),
+    "split_real_imag_p4_precision_plan": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single",
+        "split_real_imag_p4_precision_plan",
+    ),
     "SplitRealImagDoubleSingleConformanceReport": (
         "flagquantum.runtime.backends.statevector.split_real_imag_double_single_conformance",
         "SplitRealImagDoubleSingleConformanceReport",

@@ -1,0 +1,131 @@
+{
+  "schema": "flagquantum_split_real_imag_device_double_single_a800_evidence_v1",
+  "recorded_on": "2026-08-25",
+  "status": "passed",
+  "source": {
+    "revision": "bbbd1dc301afdddd3de5bc7686766f84003ab1bc",
+    "archive_sha256": "348a8d7060fb4381a6d577abc17952ecd8b00a90a586ef0660fc77e0e3ad9d77",
+    "tree_dirty": false
+  },
+  "hardware": {
+    "host": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+    "device_name": "NVIDIA A800-SXM4-80GB",
+    "driver_version": "580.126.20",
+    "visible_gpu_count": 8,
+    "validation_gpu_count": 1
+  },
+  "operator_profile": {
+    "name": "split_real_imag_statevector_p4_device_double_single",
+    "sha256": "beb0e58248a93d5f9ab17fe61b869f0a4c2925039c29eb9426101ef0c569ac73"
+  },
+  "matrix": {
+    "depths": [8, 32, 128],
+    "seeds": [0, 7],
+    "stability_depths": [512],
+    "stability_seeds": [0]
+  },
+  "thresholds": {
+    "max_trigonometry_absolute_error": 1e-11,
+    "max_gate_entry_absolute_error": 1e-11,
+    "max_state_absolute_error": 1e-9,
+    "max_state_infidelity": 1e-9,
+    "max_norm_drift": 1e-9,
+    "max_expectation_absolute_error": 1e-9,
+    "max_gradient_relative_error": 1e-8
+  },
+  "environment": {
+    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642",
+    "native_cuda_image_id": "sha256:a6a6d2c4d50c9ac503eeae562e841add24a1b71a7e70410709c6ca6a87722d7b",
+    "flagos_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "flagos_image_id": "sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
+    "torch_fl_revision": "2e00b393cf80088706b460a187aef185d3a283f4",
+    "torch_fl_source_archive_sha256": "cde803ab5d5f4d8cdd9a730215ffd8b4d0f98ef8de7c808296ca2b61e5e47444",
+    "torch_fl_package": "0.1.0",
+    "torch_fl_wheel_sha256": "b3a2d20ab27707ceb4fde38a883bc566e254db5a30d118f03c00ddc5b4fcac21",
+    "torch_fl_build": {
+      "ACCELERATOR": "cuda",
+      "CUDA_KERNEL": "1",
+      "FLAGGEMS_KERNEL": "0",
+      "FLAGGEMS_PYTHON": "0",
+      "FLAGOS_SKIP_CUDA_ASSETS": "1",
+      "FLAGOS_BUILD_JOBS": "8",
+      "TORCH_DEVICE_BACKEND_AUTOLOAD": "0"
+    }
+  },
+  "routes": [
+    {
+      "name": "native_cuda",
+      "status": "passed",
+      "device": "cuda:0",
+      "provider": "pytorch_cuda",
+      "torch_version": "2.13.0+cu130",
+      "cuda_version": "13.0",
+      "raw_result_sha256": "c60d13678abbc76125cc8e38fcdfd1f5c4643bf8f405414354eec6353802b092",
+      "logical_device_residency": true,
+      "device_only_double_single_trigonometry": true,
+      "host_gate_encoding": false,
+      "parameter_host_fallback": false,
+      "state_host_fallback": false,
+      "complex_accelerator_tensor_materialized": false
+    },
+    {
+      "name": "torch_fl_flagos",
+      "status": "passed",
+      "device": "flagos:0",
+      "provider": "torch_fl",
+      "torch_version": "2.11.0+cu130",
+      "torch_fl_package": "0.1.0",
+      "raw_result_sha256": "611b0b54d38450952fcc8e8ebf62642cd2449c25033cdb6ec62dfc9c56c9011d",
+      "logical_device_residency": true,
+      "device_only_double_single_trigonometry": true,
+      "host_gate_encoding": false,
+      "parameter_host_fallback": false,
+      "state_host_fallback": false,
+      "complex_accelerator_tensor_materialized": false,
+      "provider_internal_route_audited": false,
+      "flagcx_collectives_validated": false,
+      "opt_in_integration_test": "passed"
+    }
+  ],
+  "trigonometry": {
+    "max_absolute_angle": 1024.0,
+    "max_absolute_error": 3.4647285040989573e-13,
+    "passed": true
+  },
+  "gate_generation": {
+    "max_entry_absolute_error": 5.45547824116195e-14,
+    "passed": true
+  },
+  "cases": [
+    {"depth": 8, "seed": 0, "max_state_abs_error": 3.557650145358962e-15, "state_infidelity": 2.220446049250313e-16, "norm_drift": 4.884981308350689e-15, "expectation_abs_error": 1.0547118733938987e-15, "gradient_relative_error": 1.4203906136113731e-14, "passed": true},
+    {"depth": 8, "seed": 7, "max_state_abs_error": 9.326709753882454e-15, "state_infidelity": 2.220446049250313e-16, "norm_drift": 3.774758283725532e-15, "expectation_abs_error": 1.1102230246251565e-16, "gradient_relative_error": 2.013704327409214e-14, "passed": true},
+    {"depth": 32, "seed": 0, "max_state_abs_error": 5.039605476882427e-15, "state_infidelity": 0.0, "norm_drift": 1.1102230246251565e-15, "expectation_abs_error": 6.994405055138486e-15, "gradient_relative_error": 1.2511565626645824e-14, "passed": true},
+    {"depth": 32, "seed": 7, "max_state_abs_error": 8.392287393450218e-15, "state_infidelity": 4.440892098500626e-16, "norm_drift": 5.773159728050814e-15, "expectation_abs_error": 3.2751579226442118e-15, "gradient_relative_error": 6.4729129116814136e-15, "passed": true},
+    {"depth": 128, "seed": 0, "max_state_abs_error": 1.1837809942786137e-14, "state_infidelity": 2.220446049250313e-16, "norm_drift": 1.7763568394002505e-15, "expectation_abs_error": 1.2656542480726785e-14, "gradient_relative_error": 1.600997440802847e-13, "passed": true},
+    {"depth": 128, "seed": 7, "max_state_abs_error": 1.7085384424241245e-14, "state_infidelity": 2.220446049250313e-16, "norm_drift": 4.551914400963142e-15, "expectation_abs_error": 2.3037127760972e-15, "gradient_relative_error": 1.233074746878206e-13, "passed": true}
+  ],
+  "stability_cases": [
+    {"depth": 512, "seed": 0, "max_state_abs_error": 4.7719454951891275e-14, "state_infidelity": 0.0, "norm_drift": 0.0, "passed": true}
+  ],
+  "claims": {
+    "maturity": "experimental",
+    "validation_scope": "single_device_cuda_and_flagos_portability_reference",
+    "distribution_semantics": "single_device_fast_path",
+    "full_state_double_single": true,
+    "device_only_double_single_trigonometry": true,
+    "host_gate_encoding": false,
+    "parameter_host_fallback": false,
+    "state_host_fallback": false,
+    "complex_accelerator_tensor_materialized": false,
+    "host_sync_safety_checks": true,
+    "native_autograd_certification": false,
+    "convergence_certification": false,
+    "hardware_certification": false,
+    "domestic_accelerator_certification": false,
+    "provider_internal_route_audited": false,
+    "flagcx_collectives_validated": false,
+    "scalability_claim_allowed": false,
+    "performance_claim_allowed": false,
+    "production_claim_allowed": false
+  }
+}

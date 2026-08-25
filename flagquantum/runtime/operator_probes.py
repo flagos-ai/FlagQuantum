@@ -122,6 +122,20 @@ def _execute_probe(
     if operator == "aten::rsqrt":
         tensor = make((2, 3)).abs() + 0.5
         return torch.rsqrt(tensor), (tensor,)
+    if operator == "aten::round":
+        tensor = make((2, 3)) * 3.0 - 1.0
+        return torch.round(tensor), (tensor,)
+    if operator == "aten::remainder":
+        tensor = make((2, 3)) * 7.0 - 3.0
+        return torch.remainder(tensor, 4.0), (tensor,)
+    if operator in {"aten::eq", "aten::gt"}:
+        tensor = make((2, 3))
+        output = tensor == 0.5 if operator == "aten::eq" else tensor > 0.5
+        return output, (tensor,)
+    if operator == "aten::where":
+        left = make((2, 3))
+        right = -left
+        return torch.where(left > 0.5, left, right), (left, right)
     if operator == "aten::unbind":
         tensor = make((2, 3, 2))
         return torch.unbind(tensor, dim=1), (tensor,)
@@ -492,11 +506,38 @@ def preflight_split_real_imag_statevector_p3(
     )
 
 
+def preflight_split_real_imag_statevector_p4(
+    *,
+    device: str | torch.device,
+    provider: str,
+    refresh: bool = False,
+) -> CapabilityPreflightReport:
+    """Probe full-state DS arithmetic plus device-side range reduction."""
+
+    profile = load_operator_profile(
+        "split_real_imag_statevector_p4_device_double_single"
+    )
+    evidence = probe_operator_profile(
+        profile,
+        device=device,
+        dtype="float32",
+        provider=provider,
+        refresh=refresh,
+    )
+    return preflight_operator_profile(
+        profile,
+        evidence,
+        device_type=torch.device(device).type,
+        required_dtypes=("float32",),
+    )
+
+
 __all__ = (
     "preflight_split_real_imag_statevector_p0",
     "preflight_split_real_imag_statevector_p1",
     "preflight_split_real_imag_statevector_p2",
     "preflight_split_real_imag_statevector_p3",
+    "preflight_split_real_imag_statevector_p4",
     "preflight_statevector_local_p0",
     "probe_operator_profile",
 )

@@ -80,6 +80,16 @@ __all__ = (
     "run_split_real_imag_double_single_conformance",
     "split_real_imag_p3_accuracy_envelope",
     "split_real_imag_p3_precision_plan",
+    "SplitRealImagDeviceDoubleSingleConformanceReport",
+    "SplitRealImagDeviceDoubleSingleExpectationResult",
+    "SplitRealImagDeviceDoubleSingleGradientResult",
+    "SplitRealImagDeviceDoubleSingleStatevectorResult",
+    "execute_split_real_imag_device_double_single_expectation",
+    "execute_split_real_imag_device_double_single_statevector",
+    "parameter_shift_split_real_imag_device_double_single_gradient",
+    "run_split_real_imag_device_double_single_conformance",
+    "split_real_imag_p4_accuracy_envelope",
+    "split_real_imag_p4_precision_plan",
 )
 
 
@@ -93,6 +103,32 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
     if name == "run_double_single_conformance":
         return getattr(import_module("flagquantum.numerics.conformance"), name)
+    if name in {
+        "SplitRealImagDeviceDoubleSingleConformanceReport",
+        "run_split_real_imag_device_double_single_conformance",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single_conformance"
+            ),
+            name,
+        )
+    if name in {
+        "SplitRealImagDeviceDoubleSingleExpectationResult",
+        "SplitRealImagDeviceDoubleSingleGradientResult",
+        "SplitRealImagDeviceDoubleSingleStatevectorResult",
+        "execute_split_real_imag_device_double_single_expectation",
+        "execute_split_real_imag_device_double_single_statevector",
+        "parameter_shift_split_real_imag_device_double_single_gradient",
+        "split_real_imag_p4_accuracy_envelope",
+        "split_real_imag_p4_precision_plan",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single"
+            ),
+            name,
+        )
     if name in {
         "SplitRealImagDoubleSingleConformanceReport",
         "run_split_real_imag_double_single_conformance",
