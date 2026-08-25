@@ -109,7 +109,11 @@ def test_p5_autograd_metadata_keeps_precision_and_claim_boundaries_explicit() ->
     assert summary["delivered_tensor_grad_precision"] == "float32_boundary"
     assert summary["internal_gradient_representation"] == "double_single_high_low"
     assert summary["end_to_end_double_single_gradient_claim_allowed"] is False
-    assert summary["optimizer_available"] is False
+    assert summary["optimizer_available"] is True
+    assert (
+        summary["optimizer_boundary"]
+        == "explicit_double_single_gradient_not_tensor_grad"
+    )
     assert summary["native_cuda_evidence"] is False
     assert summary["torch_fl_flagos_evidence"] is False
     assert summary["flagcx_collectives_validated"] is False

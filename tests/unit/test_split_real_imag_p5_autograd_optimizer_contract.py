@@ -18,9 +18,9 @@ def test_checked_in_split_p5_contract_passes() -> None:
     assert contract_errors(load_toml(CONTRACT)) == ()
 
 
-def test_split_p5_contract_rejects_premature_optimizer_claim() -> None:
+def test_split_p5_contract_rejects_missing_optimizer_implementation_claim() -> None:
     contract = load_toml(CONTRACT)
-    contract["optimizer_available"] = True
+    contract["optimizer_available"] = False
     assert "optimizer_available" in " ".join(contract_errors(contract))
 
 

@@ -45,7 +45,8 @@ class SplitRealImagAutogradConformanceReport:
     delivered_tensor_grad_dtype: str = "float32"
     delivered_tensor_grad_precision: str = "float32_boundary"
     internal_gradient_representation: str = "double_single_high_low"
-    optimizer_available: bool = False
+    optimizer_available: bool = True
+    optimizer_evidence_in_report: bool = False
     native_cuda_evidence: bool = False
     torch_fl_flagos_evidence: bool = False
     convergence_certification: bool = False

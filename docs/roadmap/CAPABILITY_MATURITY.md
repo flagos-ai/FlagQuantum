@@ -28,6 +28,8 @@ Limitations; edits inside generated regions are rejected by the CI check.
 
 The split real/imag P5 line currently exposes an experimental CPU-only
 first-order PyTorch autograd bridge over P4 Double-Single execution. Its
-returned loss and `.grad` are explicitly FP32 delivery boundaries. The
-precision-preserving optimizer, accelerator routes, higher-order autograd, and
-distributed execution remain gated future work.
+returned loss and `.grad` are explicitly FP32 delivery boundaries. A separate
+experimental CPU Double-Single SGD lane consumes explicit high/low gradients
+and retains a high/low master parameter without using `.grad`. Accelerator
+routes, richer optimizers, higher-order autograd, and distributed execution
+remain gated future work.

@@ -94,6 +94,13 @@ __all__ = (
     "run_split_real_imag_autograd_conformance",
     "split_real_imag_device_double_single_autograd_expectation",
     "split_real_imag_p5_autograd_bridge_summary",
+    "SplitRealImagDoubleSingleSGDState",
+    "SplitRealImagDoubleSingleSGDStepResult",
+    "SplitRealImagOptimizerConformanceReport",
+    "double_single_sgd_step",
+    "initialize_split_real_imag_double_single_sgd",
+    "run_split_real_imag_optimizer_conformance",
+    "split_real_imag_double_single_sgd_step",
 )
 
 
@@ -107,6 +114,29 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
     if name == "run_double_single_conformance":
         return getattr(import_module("flagquantum.numerics.conformance"), name)
+    if name in {
+        "SplitRealImagOptimizerConformanceReport",
+        "run_split_real_imag_optimizer_conformance",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_optimizer_conformance"
+            ),
+            name,
+        )
+    if name in {
+        "SplitRealImagDoubleSingleSGDState",
+        "SplitRealImagDoubleSingleSGDStepResult",
+        "double_single_sgd_step",
+        "initialize_split_real_imag_double_single_sgd",
+        "split_real_imag_double_single_sgd_step",
+    }:
+        return getattr(
+            import_module(
+                "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer"
+            ),
+            name,
+        )
     if name in {
         "SplitRealImagAutogradConformanceReport",
         "run_split_real_imag_autograd_conformance",

@@ -16,6 +16,7 @@ def test_split_real_imag_p5_autograd_cpu_conformance() -> None:
     assert report.provider == "pytorch_cpu"
     assert report.delivered_tensor_grad_precision == "float32_boundary"
     assert report.internal_gradient_representation == "double_single_high_low"
-    assert report.optimizer_available is False
+    assert report.optimizer_available is True
+    assert report.optimizer_evidence_in_report is False
     assert report.native_cuda_evidence is False
     assert report.torch_fl_flagos_evidence is False

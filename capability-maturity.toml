@@ -302,8 +302,25 @@ quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_
 documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
 level = "experimental"
 owner = "numerical trust maintainers"
-limitations = "Explicit CPU-only first-order PyTorch autograd bridge for direct named scalar FP32 parameters and bounded Pauli expectations. Forward and backward use P4 Double-Single arithmetic internally, but the scalar loss and Tensor.grad are one-word FP32 delivery boundaries and no end-to-end Double-Single gradient claim is made. The precision optimizer, higher-order and compiled autograd, CUDA, Torch-FL flagos, FlagCX, distributed execution, automatic selection, convergence, hardware certification, performance, and production use remain unsupported."
+limitations = "Explicit CPU-only first-order PyTorch autograd bridge for direct named scalar FP32 parameters and bounded Pauli expectations. Forward and backward use P4 Double-Single arithmetic internally, but the scalar loss and Tensor.grad are one-word FP32 delivery boundaries and no end-to-end Double-Single gradient claim is made. A separate explicit Double-Single SGD lane is available; higher-order and compiled autograd, CUDA, Torch-FL flagos, FlagCX, distributed execution, automatic selection, convergence, hardware certification, performance, and production use remain unsupported."
 focused_tests = "tests/test_split_real_imag_autograd_conformance.py"
+
+[capabilities.split_real_imag_statevector_p5_double_single_sgd]
+title = "CPU precision-preserving Double-Single SGD P5"
+summary = "Consume explicit P4 high/low parameter-shift gradients and return updated high/low master parameters without crossing the one-word PyTorch Tensor.grad boundary."
+category = "simulation_and_training"
+user_goals = ["Preserve parameter updates below one FP32 ULP", "Compare Double-Single and FP32-master optimization against complex128 trajectories", "Run auditable precision SGD without claiming torch.optim compatibility"]
+public_apis = ["experimental.SplitRealImagDoubleSingleSGDState", "experimental.SplitRealImagDoubleSingleSGDStepResult", "experimental.initialize_split_real_imag_double_single_sgd", "experimental.double_single_sgd_step", "experimental.split_real_imag_double_single_sgd_step", "experimental.run_split_real_imag_optimizer_conformance"]
+runtime_modes = ["split_real_imag_statevector_p5_double_single_sgd"]
+hardware = ["cpu"]
+gradient_support = "explicit_parameter_shift_double_single_optimizer_experimental"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+documentation = "docs/reference/SPLIT_REAL_IMAG_STATEVECTOR_P5_AUTOGRAD_OPTIMIZER_CONTRACT.md"
+level = "experimental"
+owner = "numerical trust maintainers"
+limitations = "Explicit CPU-only functional high/low master-parameter SGD using P4 high/low parameter-shift gradients. It is not torch.optim compatible and has no momentum, weight decay, loss scaling, Adam-family algorithm, checkpoint/state-dict compatibility, higher-order autograd, CUDA, Torch-FL flagos, FlagCX, distributed execution, automatic selection, convergence certification, hardware certification, performance, or production claim."
+focused_tests = "tests/test_split_real_imag_optimizer_conformance.py"
 
 [capabilities.local_mps_tebd]
 title = "Constrained local MPS TEBD"

@@ -60,9 +60,44 @@ __all__ = (
     "run_split_real_imag_autograd_conformance",
     "split_real_imag_device_double_single_autograd_expectation",
     "split_real_imag_p5_autograd_bridge_summary",
+    "SplitRealImagDoubleSingleSGDState",
+    "SplitRealImagDoubleSingleSGDStepResult",
+    "SplitRealImagOptimizerConformanceReport",
+    "double_single_sgd_step",
+    "initialize_split_real_imag_double_single_sgd",
+    "run_split_real_imag_optimizer_conformance",
+    "split_real_imag_double_single_sgd_step",
 )
 
 _EXPORTS = {
+    "SplitRealImagOptimizerConformanceReport": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_optimizer_conformance",
+        "SplitRealImagOptimizerConformanceReport",
+    ),
+    "run_split_real_imag_optimizer_conformance": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_optimizer_conformance",
+        "run_split_real_imag_optimizer_conformance",
+    ),
+    "SplitRealImagDoubleSingleSGDState": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer",
+        "SplitRealImagDoubleSingleSGDState",
+    ),
+    "SplitRealImagDoubleSingleSGDStepResult": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer",
+        "SplitRealImagDoubleSingleSGDStepResult",
+    ),
+    "double_single_sgd_step": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer",
+        "double_single_sgd_step",
+    ),
+    "initialize_split_real_imag_double_single_sgd": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer",
+        "initialize_split_real_imag_double_single_sgd",
+    ),
+    "split_real_imag_double_single_sgd_step": (
+        "flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer",
+        "split_real_imag_double_single_sgd_step",
+    ),
     "SplitRealImagAutogradConformanceReport": (
         "flagquantum.runtime.backends.statevector.split_real_imag_autograd_conformance",
         "SplitRealImagAutogradConformanceReport",

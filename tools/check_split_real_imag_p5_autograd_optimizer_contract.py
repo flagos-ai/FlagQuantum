@@ -24,7 +24,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     expected = {
         "schema": "flagquantum_split_real_imag_statevector_p5_autograd_optimizer_contract_v1",
         "maturity": "experimental",
-        "phase_status": "cpu_autograd_bridge",
+        "phase_status": "cpu_autograd_and_double_single_sgd",
         "base_executor": "split_real_imag_statevector_p4_device_double_single",
         "representation": "double_single_fp32_complex",
         "distribution_semantics": "single_device_fast_path",
@@ -32,7 +32,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "implementation_available": True,
         "public_api_available": True,
         "native_autograd_available": True,
-        "optimizer_available": False,
+        "optimizer_available": True,
         "end_to_end_double_single_gradient_claim_allowed": False,
         "convergence_claim_allowed": False,
         "hardware_certification": False,
@@ -89,6 +89,12 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "explicit_double_single_parameter_shift_result"
     ):
         errors.append("P5 optimizer must consume an explicit Double-Single gradient")
+    if optimizer.get("device_scope") != "cpu_only":
+        errors.append("P5 optimizer implementation must remain CPU-only")
+    if optimizer.get("implementation_available") is not True:
+        errors.append("P5 optimizer implementation availability drifted")
+    if optimizer.get("tensor_grad_used") is not False:
+        errors.append("P5 optimizer must not consume Tensor.grad")
     if (
         optimizer.get("standard_torch_optimizer_compatibility_claim_allowed")
         is not False
@@ -141,6 +147,8 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     thresholds = contract.get("acceptance_thresholds", {})
     if not thresholds or any(float(value) <= 0.0 for value in thresholds.values()):
         errors.append("split real/imag P5 acceptance thresholds must be positive")
+    if thresholds.get("max_optimizer_parameter_absolute_error") != 2e-8:
+        errors.append("split real/imag P5 optimizer evidence threshold drifted")
 
     gates = contract.get("claim_gates", {})
     if gates.get("contract_only") is not False:
@@ -157,6 +165,8 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     }
     if any(gates.get(name) is not True for name in required_gates):
         errors.append("split real/imag P5 claim gates must remain fail-closed")
+    if gates.get("cpu_optimizer_trajectory_evidence") is not True:
+        errors.append("split real/imag P5 CPU optimizer evidence must be recorded")
 
     implementation = (
         ROOT / "flagquantum/runtime/backends/statevector/split_real_imag_autograd.py"
@@ -170,6 +180,22 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     }
     if any(token not in source for token in required_source_tokens):
         errors.append("split real/imag P5 CPU bridge implementation drifted")
+
+    optimizer_implementation = (
+        ROOT
+        / "flagquantum/runtime/backends/statevector/split_real_imag_autograd_optimizer.py"
+    )
+    optimizer_source = optimizer_implementation.read_text(encoding="utf-8")
+    required_optimizer_tokens = {
+        "DoubleSingleTensor",
+        "gradient.multiply",
+        ".subtract(",
+        ".renormalized()",
+        '"tensor_grad_used": False',
+        '"torch_optimizer_compatible": False',
+    }
+    if any(token not in optimizer_source for token in required_optimizer_tokens):
+        errors.append("split real/imag P5 Double-Single SGD implementation drifted")
 
     for name, raw_path in contract.get("verification", {}).items():
         if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
