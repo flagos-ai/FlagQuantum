@@ -170,8 +170,13 @@ tuple:
 6. CUDA non-regression evidence.
 
 The split real/imaginary FP32 forward candidate and numerical acceptance suite
-now exist behind an experimental entrypoint. The next implementation slice is
-target-card route and residency evidence for that exact profile, followed by
-parameter gradients and an accuracy monitor. Promotion still requires the
-target card, Torch-FL/PyTorch version matrix, and hardware CI owner to be agreed
-with the Torch-FL team.
+now exist behind an experimental entrypoint, and the P1-P5 line extends that
+bounded path through expectations, parameter-shift gradients, Double-Single
+state evolution, device-generated gates, and explicit Double-Single SGD. The
+[domestic single-card certification harness](DOMESTIC_SINGLE_CARD_CERTIFICATION.md)
+executes the complete fixed P0-P5 matrix only after a provisioner-owned physical
+device and no-host-fallback attestation passes. A successful run is still a
+review candidate rather than automatic hardware certification. Promotion still
+requires a real target card, reviewed raw evidence, a locked Torch-FL/PyTorch
+matrix, CUDA non-regression, reproducibility, and an identified hardware CI
+owner.

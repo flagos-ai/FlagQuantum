@@ -6,7 +6,7 @@
 > **核心原则：** 一个 FlagQuantum IR、一个用户 API、显式精度语义、能力证据
 > 驱动、无静默降级
 
-> **实施状态（2026-08-24）：** Phase 0–2 控制面基础已开始落地，准确边界见
+> **实施状态（2026-08-25）：** Phase 0–2 控制面基础已开始落地，准确边界见
 > [Accelerator Platform Runtime](../reference/ACCELERATOR_PLATFORM_RUNTIME.md)。
 > Phase 3 已落地 `statevector_local_p0` profile、可执行 forward/backward probe、
 > `flagos` 执行前 preflight，以及 AccuracyRequirement/PrecisionPlan 绑定的 CPU
@@ -20,9 +20,11 @@
 > `split_real_imag_statevector_p4_device_double_single` 已在受限内置门和
 > `|angle| <= 1024` 范围内将参数门三角函数及门矩阵生成迁移到设备端纯 FP32
 > Double-Single 路径；它仍不构成算法收敛、国产硬件、性能或生产认证。
-> P5 已建立 autograd/optimizer 的 contract-only 边界：标准 PyTorch FP32
-> `.grad` 与显式 Double-Single high/low 梯度严格分离，当前尚无运行时能力声明。
-> 以上路径均不等于国产卡生产能力认证。
+> P5 已将标准 PyTorch FP32 `.grad` 与显式 Double-Single high/low 梯度严格
+> 分离，并在 A800 原生 CUDA 与 CUDA-backed `flagos:0` 上获得单设备可移植性
+> 证据。现已提供由 Torch-FL/机器 provisioner 物理设备证明驱动的 P0-P5
+> 国产单卡验收工具；未取得并评审真实国产卡结果前，它只生成 certification
+> candidate，不构成国产卡硬件、收敛、性能、FlagCX 或生产认证。
 
 ## 1. 执行摘要
 
@@ -716,6 +718,10 @@ result = fq.run(
 退出条件：不能通过设备名称或环境变量制造未经验证的生产能力。
 
 ### Phase 3：单国产卡 statevector
+
+当前提供 vendor-neutral、fail-closed 的 P0-P5 单卡验收工具。它要求
+provisioner-owned 物理设备与无 CPU fallback 证明，并将真实设备运行结果限制为
+待评审 candidate；不会通过设备名称或环境变量直接提升能力声明。
 
 交付顺序：
 

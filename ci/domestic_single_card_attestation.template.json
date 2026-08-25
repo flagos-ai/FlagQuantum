@@ -1,0 +1,31 @@
+{
+  "schema": "flagquantum_domestic_single_card_attestation_v1",
+  "status": "unverified_template",
+  "accelerator_class": "unverified",
+  "provider": "torch_fl",
+  "logical_device": "flagos:0",
+  "evidence_source": "unverified",
+  "collected_at": "replace-with-utc-timestamp",
+  "provisioner": "replace-with-owner",
+  "physical_device": {
+    "vendor": "replace-with-vendor",
+    "model": "replace-with-model",
+    "architecture": "replace-with-architecture",
+    "device_identifier": "replace-with-device-uuid-or-serial",
+    "logical_device_name": "replace-with-torch-fl-reported-name"
+  },
+  "software": {
+    "driver_version": "replace-with-driver-version",
+    "vendor_runtime_version": "replace-with-runtime-version",
+    "torch_fl_revision": "replace-with-40-character-commit",
+    "container_image_digest": "sha256:replace-with-64-character-digest"
+  },
+  "route_audit": {
+    "provider_internal_route_audited": false,
+    "logical_to_physical_device_verified": false,
+    "physical_device_probe_sha256": "replace-with-64-character-digest",
+    "cpu_fallback_allowed": false,
+    "cpu_fallback_observed": false,
+    "host_execution_observed": false
+  }
+}

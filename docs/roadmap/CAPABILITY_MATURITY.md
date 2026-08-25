@@ -34,4 +34,7 @@ and retains a high/low master parameter without using `.grad`. The identical
 optimizer trajectory has development portability evidence on native A800 CUDA
 and CUDA-backed Torch-FL `flagos:0`; this is not domestic-hardware or
 convergence certification. Richer optimizers, higher-order autograd, and
-distributed execution remain gated future work.
+distributed execution remain gated future work. A separate fail-closed domestic
+single-card harness now collects provisioner-attested P0-P5 execution candidates;
+no domestic capability is promoted until a real-card result is reviewed and
+checked in.

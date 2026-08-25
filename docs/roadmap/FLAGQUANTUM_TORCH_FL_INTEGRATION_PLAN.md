@@ -6,7 +6,7 @@
 > **适用范围：** FlagQuantum、Torch-FL、FlagGems/FlagTree、FlagCX、厂商 SDK
 > 与国产加速器生产环境
 
-> **实施状态（2026-08-21）：** 最小懒加载 FlagOS adapter 与严格 route/fallback
+> **实施状态（2026-08-25）：** 最小懒加载 FlagOS adapter 与严格 route/fallback
 > 契约已开始落地，边界见
 > [Accelerator Platform Runtime](../reference/ACCELERATOR_PLATFORM_RUNTIME.md)。
 > `statevector_local_p0` 已接入 CUDA-backed `flagos:0` 联合验证、执行前
@@ -20,8 +20,11 @@
 > Torch-FL 的依赖边界，也不自动进入默认 runtime。后续 P2/P3/P4 精度实验
 > 仍保持 FlagQuantum 核心不依赖 Torch-FL；其中 P4 在有 Torch-FL 的验证环境
 > 中只通过 `flagos:0` 逻辑设备运行设备端 FP32 Double-Single 门生成与状态演化。
-> P5 当前仅建立 autograd/optimizer 设计契约；未来单设备 `flagos:0` 验证与
-> FlagCX 分布式验证保持独立，不能用前者替代后者。
+> P5 显式 Double-Single SGD 已完成 A800 原生 CUDA 与 CUDA-backed `flagos:0`
+> 单设备可移植性验证。国产单卡 P0-P5 验收工具现要求 Torch-FL/机器
+> provisioner 提供物理设备与无 CPU fallback 证明；真实国产卡证据仍待执行和
+> 评审。单设备 `flagos:0` 验证与 FlagCX 分布式验证保持独立，不能用前者替代
+> 后者。
 
 ## 1. 执行决策
 

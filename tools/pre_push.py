@@ -192,6 +192,13 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             ),
         ),
         Check(
+            "domestic single-card certification contract",
+            (
+                python_executable,
+                "tools/check_domestic_single_card_contract.py",
+            ),
+        ),
+        Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
         ),

@@ -91,6 +91,8 @@ jobs:
         run: python tools/check_split_real_imag_p5_autograd_optimizer_contract.py
       - name: Verify split real/imag P5 optimizer A800 reference evidence
         run: python tools/validate_split_real_imag_optimizer_evidence.py
+      - name: Verify domestic single-card certification contract
+        run: python tools/check_domestic_single_card_contract.py
       - name: Verify operator capability manifest
         run: python tools/operator_manifest.py --check
       - name: Verify runtime contract schema
