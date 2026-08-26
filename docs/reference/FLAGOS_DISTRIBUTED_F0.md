@@ -59,6 +59,9 @@ control-plane plumbing and contract coverage, not a capability-maturity
 promotion. Real single-node and multi-node accelerator tests remain separate
 evidence gates.
 
+The next single-node evidence layer is the
+[FlagOS distributed conformance harness](FLAGOS_DISTRIBUTED_CONFORMANCE.md).
+
 The unit contract is covered by
 `tests/unit/test_flagos_distributed_identity.py`; it uses a mocked public
 process-group boundary and makes no hardware or scalability claim.

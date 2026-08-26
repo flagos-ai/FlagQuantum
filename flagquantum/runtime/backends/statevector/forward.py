@@ -535,11 +535,9 @@ def _independent_tensor_bytes(tensor: torch.Tensor, owner: torch.Tensor) -> int:
 
 
 def _wait_for_exchange(request: Any, device: torch.device) -> None:
-    """Order CUDA compute after NCCL without synchronously polling the host."""
+    """Wait through a route whose stream-ordering semantics are verified."""
 
-    if device.type in {"cuda", "flagos", "privateuseone"} and hasattr(
-        request, "block_current_stream"
-    ):
+    if device.type == "cuda" and hasattr(request, "block_current_stream"):
         request.block_current_stream()
         return
     request.wait()

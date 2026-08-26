@@ -1,0 +1,213 @@
+{
+  "blockers": [
+    "flagcx_inner_backend_unverified",
+    "flagcx_collective_conformance_pending",
+    "host_staging_unverified",
+    "flagcx_provider_identity_unavailable",
+    "single_node_conformance_not_scalability_evidence",
+    "collective_conformance_failed",
+    "complex_reduce_scatter_unavailable"
+  ],
+  "collective_checks": [
+    {
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "elapsed_seconds": 0.003379233181476593,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 16,
+      "primitive": "all_gather_into_tensor"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "elapsed_seconds": 0.0014874069020152092,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 8,
+      "primitive": "all_reduce"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "elapsed_seconds": 0.0002946145832538605,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 8,
+      "primitive": "broadcast"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "elapsed_seconds": 0.14929525554180145,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 8,
+      "primitive": "isend_irecv"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex64",
+      "elapsed_seconds": 0.0,
+      "error": "TypeError: Input tensor data type is not supported for FlagCX process group: ComplexFloat",
+      "max_abs_error": 0.0,
+      "passed": false,
+      "payload_bytes": 0,
+      "primitive": "reduce_scatter_tensor"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "elapsed_seconds": 0.00019873864948749542,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 32,
+      "primitive": "all_gather_into_tensor"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "elapsed_seconds": 0.00023413076996803284,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 16,
+      "primitive": "all_reduce"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "elapsed_seconds": 0.00020117126405239105,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 16,
+      "primitive": "broadcast"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "elapsed_seconds": 0.00030579883605241776,
+      "error": null,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "payload_bytes": 16,
+      "primitive": "isend_irecv"
+    },
+    {
+      "device_type": "flagos",
+      "dtype": "complex128",
+      "elapsed_seconds": 0.0,
+      "error": "TypeError: Input tensor data type is not supported for FlagCX process group: ComplexDouble",
+      "max_abs_error": 0.0,
+      "passed": false,
+      "payload_bytes": 0,
+      "primitive": "reduce_scatter_tensor"
+    }
+  ],
+  "communication_claim_allowed": false,
+  "distributed_identity": {
+    "blockers": [
+      "flagcx_inner_backend_unverified",
+      "flagcx_collective_conformance_pending",
+      "host_staging_unverified"
+    ],
+    "communication_claim_allowed": false,
+    "flagcx_route_status": "unverified",
+    "flagcx_route_verified": false,
+    "host_staging_observed": null,
+    "inner_backend": null,
+    "inner_backend_verified": false,
+    "logical_device": "flagos:0",
+    "outer_backend": "flagos",
+    "platform_identity": {
+      "device_type": "flagos",
+      "metadata": {},
+      "provider": "torch_fl",
+      "provider_version": null,
+      "torch_version": "2.11.0+cu130",
+      "vendor": null
+    },
+    "process_group_initialized": true,
+    "provider": "torch_fl",
+    "provider_version": null,
+    "rank": 0,
+    "schema": "flagquantum_distributed_identity_v1",
+    "world_size": 2
+  },
+  "environment": {
+    "device_name": "unknown",
+    "hostname": "a6146ce2129d",
+    "object_collectives_forbidden": true,
+    "payload_tensor_residency_verified": true,
+    "python": "3.12.13",
+    "reference_materialization": "per_rank_cpu_small_case_only",
+    "source_revision": "6d20e81daf67e7a9fbb946ddf067225aa9c6ddc5",
+    "torch": "2.11.0+cu130",
+    "torch_cuda_runtime": "13.0",
+    "torch_fl": "unknown",
+    "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+  },
+  "flagcx_route_verified": false,
+  "host_staging_observed": null,
+  "local_world_size": 2,
+  "mechanical_conformance_accepted": false,
+  "node_count": 1,
+  "outer_backend": "flagos",
+  "rank_placement": [
+    {
+      "device": "flagos:0",
+      "device_index": 0,
+      "local_rank": 0,
+      "rank": 0
+    },
+    {
+      "device": "flagos:1",
+      "device_index": 1,
+      "local_rank": 1,
+      "rank": 1
+    }
+  ],
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum_flagos_distributed_conformance_v1",
+  "statevector_checks": [
+    {
+      "communication_bytes": 48,
+      "communication_count": 2,
+      "device_type": "flagos",
+      "distributed_gate_count": 3,
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex64",
+      "full_state_materialization": false,
+      "local_amplitudes": 4,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "tolerance": 2e-05,
+      "total_amplitudes": 8
+    },
+    {
+      "communication_bytes": 96,
+      "communication_count": 2,
+      "device_type": "flagos",
+      "distributed_gate_count": 3,
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "full_state_materialization": false,
+      "local_amplitudes": 4,
+      "max_abs_error": 0.0,
+      "passed": true,
+      "tolerance": 1e-11,
+      "total_amplitudes": 8
+    }
+  ],
+  "statevector_workload_conformance_accepted": true,
+  "status": "failed",
+  "validation_scope": "flagos_process_group_single_node_candidate",
+  "world_size": 2
+}

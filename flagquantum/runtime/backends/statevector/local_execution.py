@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+from numbers import Number
 from typing import Any, Mapping, Sequence
 
 import torch
 import torch.distributed as dist
 
 from ....core.ir import Instruction, ensure_circuit_ir
-from ....core.parameters import value_to_tensor
-from ....ops.matrices import GATE_MAT_DICT
+from ....ops.gate_matrix import gate_matrix
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
@@ -29,25 +29,6 @@ _DIAGONAL_GATES = {
     "cphase",
 }
 _TARGET_LAST_GATES = {"cx", "cnot", "cy", "crx", "cry", "crz"}
-_PARAM_ALIASES = {
-    "rx": ("theta",),
-    "ry": ("theta",),
-    "rz": ("theta",),
-    "phase": ("theta",),
-    "p": ("theta",),
-    "u1": ("theta",),
-    "u2": ("phi", "lbd"),
-    "u3": ("theta", "phi", "lbd"),
-    "crx": ("theta",),
-    "cry": ("theta",),
-    "crz": ("theta",),
-    "cphase": ("theta",),
-    "rxx": ("theta",),
-    "ryy": ("theta",),
-    "rzz": ("theta",),
-}
-
-
 from .models import (  # noqa: E402
     DistributedStatevectorPlan,
     LocalDistributedStatevectorResult,
@@ -245,47 +226,26 @@ def apply_gate_to_statevector_shard(
     )
 
 
-def _parameter_tensor(
-    name: str, params: Any, *, device: torch.device
-) -> torch.Tensor | None:
-    aliases = _PARAM_ALIASES.get(name)
-    if aliases is None:
-        return None
-    values = []
-    for alias in aliases:
-        if alias not in params:
-            return None
-        tensor = value_to_tensor(params[alias]).to(device=device)
-        values.append(tensor.reshape(()) if tensor.ndim == 0 else tensor)
-    return torch.stack(values, dim=-1)
-
-
 def _instruction_matrix(
     instruction: Instruction, *, device: torch.device, dtype: torch.dtype
 ) -> torch.Tensor:
-    name = instruction.name
-    if name == "cnot":
-        name = "cx"
-    if instruction.matrix is not None:
-        matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
-        return torch.as_tensor(matrix, dtype=dtype, device=device).reshape(
-            2 ** len(instruction.wires), -1
-        )
-    gate = GATE_MAT_DICT[name]
-    if callable(gate):
-        params = _parameter_tensor(name, instruction.params, device=device)
-        if params is None:
-            raise ValueError(f"Gate {name!r} requires parameters.")
-        matrix = gate(params)
-    else:
-        matrix = gate
+    constant_parameters = instruction.matrix is None and all(
+        isinstance(value, Number) for value in instruction.params.values()
+    )
+    construction_device = torch.device("cpu") if constant_parameters else device
+    matrix = gate_matrix(
+        instruction,
+        bsz=1,
+        device=construction_device,
+        dtype=dtype,
+    ).to(device=device, dtype=dtype)
     if matrix.ndim == 3:
         if matrix.shape[0] != 1:
             raise ValueError(
                 "Local distributed simulator currently expects scalar gate parameters."
             )
         matrix = matrix[0]
-    return matrix.to(device=device, dtype=dtype)
+    return matrix
 
 
 def _reconstruct_from_shards(

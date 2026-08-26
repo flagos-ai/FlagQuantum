@@ -1,5 +1,7 @@
 """Focused contracts for the PyTorch-native sharded forward executor."""
 
+from types import SimpleNamespace
+
 import pytest
 import torch
 
@@ -10,11 +12,40 @@ from flagquantum.runtime.backends.statevector.forward import (
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
     _triton_local_cx_segment_enabled,
+    _wait_for_exchange,
     communication_aware_wire_layout,
     execute_torch_distributed_statevector,
 )
+from flagquantum.runtime.backends.statevector.local_execution import (
+    _instruction_matrix,
+)
 
 pytestmark = pytest.mark.unit
+
+
+class _ExchangeRequest:
+    def __init__(self):
+        self.block_current_stream_calls = 0
+        self.wait_calls = 0
+
+    def block_current_stream(self):
+        self.block_current_stream_calls += 1
+
+    def wait(self):
+        self.wait_calls += 1
+
+
+def test_flagos_exchange_uses_provider_neutral_wait():
+    flagos_request = _ExchangeRequest()
+    cuda_request = _ExchangeRequest()
+
+    _wait_for_exchange(flagos_request, SimpleNamespace(type="flagos"))
+    _wait_for_exchange(cuda_request, SimpleNamespace(type="cuda"))
+
+    assert flagos_request.wait_calls == 1
+    assert flagos_request.block_current_stream_calls == 0
+    assert cuda_request.wait_calls == 0
+    assert cuda_request.block_current_stream_calls == 1
 
 
 def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypatch):
@@ -75,6 +106,73 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
     }
     with pytest.raises(FullStateMaterializationError, match="forbidden"):
         result.full_state()
+
+
+def test_single_rank_parameterized_gates_preserve_complex128_precision():
+    circuit = (
+        fq.Circuit(3, dtype=torch.complex128)
+        .h(0)
+        .rx(2, theta=0.2)
+        .cx(0, 2)
+        .rz(1, theta=-0.3)
+        .cx(2, 1)
+    )
+
+    result = execute_torch_distributed_statevector(
+        circuit,
+        dtype=torch.complex128,
+        persistent_wire_layout=False,
+    )
+
+    torch.testing.assert_close(
+        result.shard_state.amplitudes,
+        circuit.state(),
+        atol=1e-13,
+        rtol=1e-13,
+    )
+
+
+def test_constant_gate_matrix_is_constructed_on_cpu_before_device_transfer(
+    monkeypatch,
+):
+    import flagquantum.runtime.backends.statevector.local_execution as local_execution
+
+    observed = {}
+
+    def recording_gate_matrix(instruction, *, bsz, device, dtype):
+        observed["device"] = torch.device(device)
+        return torch.eye(2, dtype=dtype, device=device)
+
+    monkeypatch.setattr(local_execution, "gate_matrix", recording_gate_matrix)
+    matrix = _instruction_matrix(
+        Instruction("rx", (0,), {"theta": 0.2}),
+        device=torch.device("meta"),
+        dtype=torch.complex128,
+    )
+
+    assert observed["device"].type == "cpu"
+    assert matrix.device.type == "meta"
+    assert matrix.dtype == torch.complex128
+
+
+def test_tensor_parameter_matrix_preserves_device_autograd_path(monkeypatch):
+    import flagquantum.runtime.backends.statevector.local_execution as local_execution
+
+    observed = {}
+    theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
+
+    def recording_gate_matrix(instruction, *, bsz, device, dtype):
+        observed["device"] = torch.device(device)
+        return torch.eye(2, dtype=dtype, device=device)
+
+    monkeypatch.setattr(local_execution, "gate_matrix", recording_gate_matrix)
+    _instruction_matrix(
+        Instruction("rx", (0,), {"theta": theta}),
+        device=torch.device("meta"),
+        dtype=torch.complex128,
+    )
+
+    assert observed["device"].type == "meta"
 
 
 def test_local_world_size_defaults_from_torchrun_environment(monkeypatch):
