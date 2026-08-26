@@ -402,14 +402,16 @@ torch_fl.fallback_events(clear=True) -> tuple[FallbackEvent, ...]
 事件至少包含 operator、overload、input/output dtype、source/target device、原因、
 调用位置、传输字节数和时间戳。FlagQuantum 将其合并进 `ExecutionResult`。
 
-### 8.5 DistributedIdentity
+### 8.5 分布式边界决策
 
-```python
-torch_fl.distributed_identity(group) -> DistributedIdentity
-```
+FlagQuantum 当前不定义或要求 `torch_fl.distributed_identity(group)`。分布式验证
+只依赖 PyTorch/Torch-FL 已有的公开 ProcessGroup 边界，并将结果准确标记为
+`backend="flagos"` 的正确性证据。成功执行 collective 不用于推断 FlagCX、NCCL、
+HCCL、device-direct 或 host-staged 等内层实现。
 
-包含 inner backend、FlagCX/vendor collective、device-direct/host-staged、rank-device
-映射、拓扑、支持 dtype、超时和版本信息。
+如果未来出现必须区分内层通信实现的真实发布或诊断需求，应由 Torch-FL 与
+FlagCX 维护者先共同确定可观测性契约；FlagQuantum 不预设接口名称、schema 或
+实现方式，也不读取私有 ProcessGroup 字段。
 
 ### 8.6 API 兼容规则
 

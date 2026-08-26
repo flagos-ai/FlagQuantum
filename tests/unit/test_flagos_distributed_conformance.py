@@ -95,6 +95,8 @@ def test_flagos_mechanical_conformance_remains_fail_closed_for_flagcx():
     assert payload["scalability_claim_allowed"] is False
     assert payload["release_gate_allowed"] is False
     assert "flagcx_inner_backend_unverified" in payload["blockers"]
+    assert "inner_communication_route_unattributed" in payload["blockers"]
+    assert "flagcx_provider_identity_unavailable" not in payload["blockers"]
     assert "single_node_conformance_not_scalability_evidence" in payload["blockers"]
 
     with pytest.raises(DistributedIdentityError, match="not verified"):

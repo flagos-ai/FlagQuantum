@@ -65,8 +65,9 @@ Consequently:
 
 The correct interpretation is: the measured FlagQuantum sharded-statevector
 workload now preserves complex128 accuracy on this two-A800 FlagOS route, but
-the full collective matrix and provider identity gates are not complete. No
-capability-maturity or production-support level is promoted.
+the full collective matrix is not complete and the inner communication
+implementation is not attributed. No capability-maturity or
+production-support level is promoted.
 
 No Torch-FL or FlagCX source was modified, and no external pull request was
 opened.

@@ -36,9 +36,10 @@ observe through public APIs:
 - whether a process group is initialized;
 - Torch-FL platform identity and version, when provided by the platform API.
 
-F0 deliberately does **not** infer Torch-FL's inner communication route. Until
-a provider-owned public identity and collective conformance record are
-available, the following fields remain fail-closed:
+F0 deliberately does **not** infer Torch-FL's inner communication route.
+FlagQuantum does not require or prescribe a Torch-FL process-group identity
+API. Without independently observable public route evidence, the following
+fields remain fail-closed:
 
 - `inner_backend=None`;
 - `inner_backend_verified=False`;

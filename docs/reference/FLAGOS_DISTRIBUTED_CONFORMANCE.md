@@ -73,8 +73,9 @@ never removes a failed collective and never enables a communication, FlagCX,
 scalability, release, or production claim.
 
 `status="passed"` means only that the mechanical FlagOS ProcessGroup contract
-passed. Until Torch-FL exposes provider-owned public identity and route evidence,
-the same payload must retain:
+passed. FlagQuantum neither requires a Torch-FL process-group identity API nor
+infers an inner provider from successful collectives. The same payload must
+therefore retain:
 
 ```text
 flagcx_route_verified = false

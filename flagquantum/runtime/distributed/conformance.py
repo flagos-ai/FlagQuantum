@@ -120,7 +120,7 @@ class FlagOSDistributedConformanceReport:
     schema: str = "flagquantum_flagos_distributed_conformance_v1"
     blockers: tuple[str, ...] = field(
         default=(
-            "flagcx_provider_identity_unavailable",
+            "inner_communication_route_unattributed",
             "host_staging_unverified",
             "single_node_conformance_not_scalability_evidence",
         )

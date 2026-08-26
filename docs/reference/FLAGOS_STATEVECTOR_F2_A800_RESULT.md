@@ -63,11 +63,11 @@ production_support_claim_allowed = false
 release_gate_allowed = false
 ```
 
-The blockers remain provider identity, host-staging visibility, single-node
-forward-only scope, absent single-device capacity-failure evidence, and absent
-sharded backward/optimizer measurement. F3 should address the last boundary by
-validating the sharded gradient and optimizer loop without reconstructing the
-state.
+The blockers remain unavailable inner-route attribution, host-staging
+visibility, single-node forward-only scope, absent single-device
+capacity-failure evidence, and absent sharded backward/optimizer measurement.
+F3 should address the last boundary by validating the sharded gradient and
+optimizer loop without reconstructing the state.
 
 That follow-up initially failed closed, then F3.1 isolated a broken FlagOS
 complex-conjugation primitive and removed it from FlagQuantum's reverse path.

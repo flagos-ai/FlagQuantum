@@ -147,7 +147,7 @@ class FlagOSTrainingProfile:
     schema: str = "flagquantum_flagos_statevector_training_profile_v1"
     blockers: tuple[str, ...] = field(
         default=(
-            "flagcx_provider_identity_unavailable",
+            "inner_communication_route_unattributed",
             "host_staging_unverified",
             "single_node_bounded_training_development_evidence",
             "single_device_capacity_failure_not_measured",
