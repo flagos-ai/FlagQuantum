@@ -12,6 +12,8 @@ import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ...distributed.flagos_runtime import current_flagos_device
+from ...distributed.identity import build_distributed_identity
 from .forward import (
     StatevectorExchangeWorkspace,
     TorchDistributedStatevectorResult,
@@ -105,14 +107,17 @@ def execute_torch_distributed_statevector(
         # Cross-shard fusion groups are expressed in the initial layout.
         fuse_cross_shard_gates = False
     if device is None:
-        device = (
-            torch.device("cuda", torch.cuda.current_device())
-            if backend == "nccl"
-            else torch.device("cpu")
-        )
+        if backend == "nccl":
+            device = torch.device("cuda", torch.cuda.current_device())
+        elif backend == "flagos":
+            device = current_flagos_device()
+        else:
+            device = torch.device("cpu")
     resolved_device = torch.device(device)
     if backend == "nccl" and resolved_device.type != "cuda":
         raise ValueError("NCCL execution requires a CUDA device")
+    if backend == "flagos" and resolved_device.type != "flagos":
+        raise ValueError("FlagOS execution requires a flagos device")
     if local_world_size is None:
         if process_group is not None:
             # Torchrun topology variables describe the default world and cannot
@@ -573,6 +578,13 @@ def execute_torch_distributed_statevector(
         ),
         wire_layout=wire_layout,
         logical_to_physical_wires=logical_to_physical,
+        distributed_identity=build_distributed_identity(
+            outer_backend=str(backend),
+            logical_device=str(resolved_device),
+            rank=rank,
+            world_size=world_size,
+            process_group_initialized=dist.is_initialized(),
+        ),
         kernel_dispatch_evidence=kernel_dispatch_evidence,
         persistent_inter_node_ket_checkpoints=tuple(
             persistent_inter_node_ket_checkpoints

@@ -12,7 +12,9 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
+from ...distributed.identity import DistributedIdentity
 from .environment import get, get_bool, mode
+from .errors import FullStateMaterializationError
 from .kernel_dispatch import (
     KernelDecision,
     KernelDispatchEvidence,
@@ -385,10 +387,6 @@ class StatevectorExchangeWorkspace:
         return buffer[:required].view(shape)
 
 
-class FullStateMaterializationError(RuntimeError):
-    """Raised when a production shard is asked to reconstruct global state."""
-
-
 @dataclass(frozen=True)
 class TorchDistributedStatevectorResult:
     """Rank-local result from the PyTorch-native numerical executor."""
@@ -419,6 +417,7 @@ class TorchDistributedStatevectorResult:
     inter_node_communication_bytes: int
     wire_layout: str
     logical_to_physical_wires: tuple[int, ...]
+    distributed_identity: DistributedIdentity
     kernel_dispatch_evidence: KernelDispatchEvidence = field(
         default_factory=KernelDispatchEvidence
     )
@@ -433,11 +432,12 @@ class TorchDistributedStatevectorResult:
         )
 
     def summary(self) -> dict[str, Any]:
-        accelerator = self.backend == "nccl"
+        accelerator = self.backend in {"nccl", "flagos"}
         sharded = self.plan.world_size > 1
         return {
             "executor": "pytorch_native_distributed_statevector_v1",
             "backend": self.backend,
+            "distributed_identity": self.distributed_identity.to_dict(),
             "claim_evidence_type": (
                 "accelerator_semantics" if accelerator else "development_semantics"
             ),
@@ -488,7 +488,14 @@ class TorchDistributedStatevectorResult:
             "full_state_materialization": False,
             "scalability_claim_allowed": False,
             "release_gate_allowed": False,
-            "blockers": ("forward_only_no_sharded_backward_or_optimizer",),
+            "blockers": tuple(
+                dict.fromkeys(
+                    (
+                        "forward_only_no_sharded_backward_or_optimizer",
+                        *self.distributed_identity.claim_blockers_for(self.backend),
+                    )
+                )
+            ),
         }
 
 
@@ -530,7 +537,9 @@ def _independent_tensor_bytes(tensor: torch.Tensor, owner: torch.Tensor) -> int:
 def _wait_for_exchange(request: Any, device: torch.device) -> None:
     """Order CUDA compute after NCCL without synchronously polling the host."""
 
-    if device.type == "cuda" and hasattr(request, "block_current_stream"):
+    if device.type in {"cuda", "flagos", "privateuseone"} and hasattr(
+        request, "block_current_stream"
+    ):
         request.block_current_stream()
         return
     request.wait()

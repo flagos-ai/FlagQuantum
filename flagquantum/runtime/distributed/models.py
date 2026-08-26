@@ -40,6 +40,12 @@ from .backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
 )
+from .flagos_runtime import activate_flagos_device, is_flagos_request
+from .identity import (
+    DistributedIdentity,
+    backend_uses_accelerator_tensors,
+    build_distributed_identity,
+)
 
 _PARAM_ALIASES = {
     "rx": ("theta",),
@@ -68,6 +74,25 @@ class TorchDistributedContext:
     local_world_size: int = 1
     node_count: int = 1
     hostname: str = ""
+    identity: DistributedIdentity | None = None
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "rank": self.rank,
+            "world_size": self.world_size,
+            "local_rank": self.local_rank,
+            "local_world_size": self.local_world_size,
+            "node_rank": self.node_rank,
+            "node_count": self.node_count,
+            "hostname": self.hostname,
+            "backend": self.backend,
+            "device": str(self.device),
+            "initialized": self.initialized,
+            "initialized_by_flagquantum": self.initialized_by_flagquantum,
+            "distributed_identity": (
+                self.identity.to_dict() if self.identity is not None else None
+            ),
+        }
 
 
 @dataclass(frozen=True)
@@ -123,14 +148,32 @@ def torch_distributed_is_available() -> bool:
 
 
 def _infer_backend(
-    device: torch.device | str | None = None, backend: str | None = None
+    device: torch.device | str | None = None,
+    backend: str | None = None,
+    *,
+    logical_device_type: str | None = None,
 ) -> str:
-    if backend is not None:
-        return backend
-    device_type = torch.device(
-        device or ("cuda" if torch.cuda.is_available() else "cpu")
-    ).type
+    explicit = str(backend).strip().lower() if backend is not None else None
+    device_type = (
+        logical_device_type
+        or torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu")).type
+    )
+    if device_type == "flagos":
+        if explicit not in (None, "flagos"):
+            raise ValueError(
+                "flagos distributed execution requires backend='flagos'; "
+                f"received {backend!r}"
+            )
+        return "flagos"
+    if explicit == "flagos":
+        raise ValueError("backend='flagos' requires device='flagos:<local_rank>'")
+    if explicit is not None:
+        return explicit
     return "nccl" if device_type == "cuda" and torch.cuda.is_available() else "gloo"
+
+
+def _normalized_active_backend() -> str:
+    return str(dist.get_backend()).strip().lower()
 
 
 def _resolve_local_world_size(world_size: int) -> int:
@@ -189,6 +232,11 @@ def _rank_placement_summary(
         "node_count": node_count,
         "hostname": context.hostname if context else "",
         "device": str(context.device) if context else "cpu",
+        "distributed_identity": (
+            context.identity.to_dict()
+            if context is not None and context.identity is not None
+            else None
+        ),
     }
 
 
@@ -306,13 +354,30 @@ def init_torch_distributed(
     node_rank = _resolve_node_rank(rank, local_world_size)
     node_count = _node_count(world_size, local_world_size)
     hostname = socket.gethostname()
-    resolved_device = torch.device(
-        device or ("cuda" if torch.cuda.is_available() else "cpu")
-    )
+    platform_identity: Mapping[str, Any] = {}
+    flagos_requested = is_flagos_request(device, backend, local_rank=local_rank)
+    if flagos_requested:
+        resolved_device, platform_identity = activate_flagos_device(local_rank)
+    else:
+        resolved_device = torch.device(
+            device or ("cuda" if torch.cuda.is_available() else "cpu")
+        )
     if resolved_device.type == "cuda":
         torch.cuda.set_device(local_rank)
         resolved_device = torch.device("cuda", local_rank)
-    resolved_backend = _infer_backend(resolved_device, backend)
+    resolved_backend = _infer_backend(
+        resolved_device,
+        backend,
+        logical_device_type="flagos" if flagos_requested else resolved_device.type,
+    )
+
+    if dist.is_initialized():
+        active_backend = _normalized_active_backend()
+        if active_backend != resolved_backend:
+            raise RuntimeError(
+                "active torch.distributed backend does not match the requested "
+                f"route: active={active_backend!r}, requested={resolved_backend!r}"
+            )
 
     initialized_by_flagquantum = False
     if (world_size > 1 or force_initialize) and not dist.is_initialized():
@@ -334,6 +399,16 @@ def init_torch_distributed(
         local_world_size = _resolve_local_world_size(world_size)
         node_rank = _resolve_node_rank(rank, local_world_size)
         node_count = _node_count(world_size, local_world_size)
+    identity = build_distributed_identity(
+        outer_backend=resolved_backend,
+        logical_device=(
+            f"flagos:{local_rank}" if flagos_requested else str(resolved_device)
+        ),
+        rank=rank,
+        world_size=world_size,
+        process_group_initialized=dist.is_initialized(),
+        platform_identity=platform_identity,
+    )
     return TorchDistributedContext(
         rank=rank,
         world_size=world_size,
@@ -346,6 +421,7 @@ def init_torch_distributed(
         local_world_size=local_world_size,
         node_count=node_count,
         hostname=hostname,
+        identity=identity,
     )
 
 
@@ -825,7 +901,9 @@ def _broadcast_mps_site_tensor(
 ) -> torch.Tensor:
     """Broadcast one MPS site without pickle or host staging under NCCL."""
     transport_device = (
-        context.device if context.backend.lower() == "nccl" else torch.device("cpu")
+        context.device
+        if backend_uses_accelerator_tensors(context.backend)
+        else torch.device("cpu")
     )
     if context.rank == src:
         if tensor is None:

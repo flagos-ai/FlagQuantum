@@ -37,6 +37,12 @@ from ..backends.mps.operations import (
 from ..backends.mps.operations import (
     tensor_nbytes as _tensor_nbytes,
 )
+from .identity import (
+    DistributedIdentity,
+    DistributedIdentityError,
+    backend_uses_accelerator_tensors,
+    require_verified_flagcx,
+)
 from .models import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
@@ -565,7 +571,9 @@ def _broadcast_mps_metadata(
 ) -> Mapping[str, Any]:
     """Broadcast MPS metadata without pickle or NumPy-backed object collectives."""
     transport_device = (
-        context.device if context.backend == "nccl" else torch.device("cpu")
+        context.device
+        if backend_uses_accelerator_tensors(context.backend)
+        else torch.device("cpu")
     )
     encoded = (
         json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -1172,6 +1180,8 @@ def _run_mps_site_sharded_sync(
 
 
 __all__ = [
+    "DistributedIdentity",
+    "DistributedIdentityError",
     "DistributedBoundaryProtocol",
     "DistributedBoundarySync",
     "DistributedMPSState",
@@ -1186,6 +1196,7 @@ __all__ = [
     "TorchDistributedContext",
     "destroy_torch_distributed",
     "init_torch_distributed",
+    "require_verified_flagcx",
     "run_distributed_mps",
     "distributed_tensor_network_amplitude",
     "distributed_tensor_network_amplitudes",

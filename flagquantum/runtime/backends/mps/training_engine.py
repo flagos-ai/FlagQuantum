@@ -21,6 +21,7 @@ from torch.profiler import record_function
 
 from ....core.ir import ensure_circuit_ir
 from .communication import warmup_mps_neighbor_communicators
+from .device_resolution import resolve_distributed_mps_device
 from .metadata_transport import all_gather_json
 from .records import MPSReverseCheckpointPolicy
 from .reverse import execute_torch_distributed_mps_reverse
@@ -1158,13 +1159,10 @@ def train_distributed_mps(
     else:
         resolved_site_ownership = _initial_ownership(ir.n_wires, world_size)
         resolved_site_ownership_policy = "balanced"
-    backend = str(dist.get_backend())
-    resolved_device = torch.device(
-        device
-        or (f"cuda:{torch.cuda.current_device()}" if backend == "nccl" else "cpu")
-    )
-    if backend == "nccl" and resolved_device.type != "cuda":
-        raise MPSTrainingError("NCCL MPS training requires a CUDA device")
+    backend = str(dist.get_backend()).strip().lower()
+    if device is None and backend == "nccl":
+        device = torch.device("cuda", torch.cuda.current_device())
+    resolved_device = resolve_distributed_mps_device(backend, device)
     resolved_compile_site_kernels, site_kernel_selection_reason = (
         _resolve_compile_site_kernels(
             compile_site_kernels,

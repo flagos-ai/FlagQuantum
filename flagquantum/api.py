@@ -182,6 +182,7 @@ from .runtime.compatibility import (
     DistributedBoundarySync,
     DistributedEvidenceContract,
     DistributedExecutor,
+    DistributedIdentity,
     DistributedMPSState,
     DistributedScalabilityAudit,
     DistributedScalabilityError,
@@ -324,6 +325,7 @@ from .runtime.compatibility import (
     register_backend,
     require_development_production_parity,
     require_distributed_scalability,
+    require_verified_flagcx,
     resolve_device,
     resolve_distributed_backend_policy,
     resolve_dtype,
@@ -403,7 +405,6 @@ logger.addHandler(logging.NullHandler())
 
 __author__ = "FlagQuantum Team"
 __license__ = "Apache-2.0"
-
 # Historical module namespace retained lazily through the compatibility API.
 invertible = ops.invertible
 
@@ -522,6 +523,7 @@ __all__ = (
         "ObservableNode",
         "CouplingMap",
         "DistributedExecutor",
+        "DistributedIdentity",
         "DistributedScalabilityError",
         "DistributedScalabilityAudit",
         "DistributedStatevectorPlan",
@@ -565,6 +567,7 @@ __all__ = (
         "local_fast_path_preflight",
         "local_distributed_development_preflight",
         "resolve_distributed_backend_policy",
+        "require_verified_flagcx",
         "run_distributed",
         "run",
         "run_distributed_mps",

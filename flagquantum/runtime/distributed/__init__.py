@@ -12,6 +12,8 @@ __all__ = (
     "DistributedExecutionRecord",
     "DistributedExecutionRequest",
     "DistributedExecutor",
+    "DistributedIdentity",
+    "DistributedIdentityError",
     "DistributedShardPlan",
     "DistributedSliceTask",
     "DistributedTensorNetworkAmplitude",
@@ -29,6 +31,7 @@ __all__ = (
     "mps_static_descriptor_cache_entries",
     "reset_mps_p2p_stats",
     "resolve_distributed_backend_policy",
+    "require_verified_flagcx",
     "run_distributed_mps",
     "distributed_tensor_network_amplitude",
     "distributed_tensor_network_amplitudes",
@@ -50,6 +53,11 @@ _PROTOCOL_EXPORTS = {
     "DistributedExecutionRecord",
     "DistributedExecutionRequest",
     "DistributedExecutor",
+}
+_IDENTITY_EXPORTS = {
+    "DistributedIdentity",
+    "DistributedIdentityError",
+    "require_verified_flagcx",
 }
 _MPS_TRANSPORT_EXPORTS = {
     "clear_mps_static_descriptor_cache",
@@ -85,6 +93,8 @@ def __getattr__(name: str) -> Any:
         module = import_module(".backend_policy", __name__)
     elif name in _PROTOCOL_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.protocols")
+    elif name in _IDENTITY_EXPORTS:
+        module = import_module("flagquantum.runtime.distributed.identity")
     elif name in _MPS_TRANSPORT_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.mps_transport")
     elif name in _ENGINE_EXPORTS:

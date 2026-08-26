@@ -14,6 +14,7 @@ import torch.distributed as dist
 
 from .canonicalization import MPSCanonicalizationMetrics
 from .errors import MPSReverseContractError
+from .metadata_transport import _collective_device
 from .state import RankOwnedMPSState
 
 
@@ -159,11 +160,7 @@ class MPSReverseTape:
             raise MPSReverseContractError("MPS reverse sequence is not contiguous")
         if dist.is_initialized():
             digest = hashlib.sha256(str(local).encode()).digest()
-            device = (
-                torch.device("cuda", torch.cuda.current_device())
-                if dist.get_backend() == "nccl"
-                else torch.device("cpu")
-            )
+            device = _collective_device()
             encoded = torch.tensor(tuple(digest), dtype=torch.uint8, device=device)
             gathered = [torch.empty_like(encoded) for _ in range(dist.get_world_size())]
             dist.all_gather(gathered, encoded)
@@ -381,7 +378,7 @@ class TorchDistributedMPSForwardResult:
             "backend": self.backend,
             "claim_evidence_type": (
                 "accelerator_semantics"
-                if self.backend == "nccl"
+                if self.backend in {"nccl", "flagos"}
                 else (
                     "local_semantics"
                     if self.shard_state.world_size == 1
