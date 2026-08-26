@@ -159,6 +159,17 @@ def _local_expectation_z_adjoint(
     return adjoint
 
 
+def _real_conjugate_inner_sum(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
+    """Return ``Re(sum(conj(left) * right))`` without a conjugate kernel.
+
+    The decomposition is mathematically exact for complex tensors and avoids
+    relying on provider-specific ``torch.conj`` implementations.  It remains
+    device-resident and preserves the input real dtype.
+    """
+
+    return torch.sum(left.real * right.real + left.imag * right.imag)
+
+
 def _apply_one_gate(
     shard_state: Any,
     *,
@@ -1059,11 +1070,9 @@ def _explicit_sharded_adjoint(
                     local_count = derivative_state.shard.local_amplitudes
                     for start in range(0, local_count, _reverse_chunk_amplitudes()):
                         end = min(local_count, start + _reverse_chunk_amplitudes())
-                        local_derivative += torch.real(
-                            torch.sum(
-                                torch.conj(adjoint[:, start:end])
-                                * derivative_state.amplitudes[:, start:end]
-                            )
+                        local_derivative += _real_conjugate_inner_sum(
+                            adjoint[:, start:end],
+                            derivative_state.amplitudes[:, start:end],
                         ).to(dtype=parameter.dtype)
                 derivatives.append(local_derivative)
                 del derivative_state, derivative_matrix

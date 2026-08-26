@@ -24,9 +24,26 @@ from flagquantum.runtime.backends.statevector.reverse import (
 )
 from flagquantum.runtime.backends.statevector.reverse_adjoint import (
     _compact_reverse_global_indices,
+    _real_conjugate_inner_sum,
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_real_conjugate_inner_sum_matches_complex_definition(dtype):
+    left = torch.tensor(
+        [[0.25 + 0.5j, -0.75 + 0.125j], [0.33 - 0.2j, -0.4 - 0.6j]],
+        dtype=dtype,
+    )
+    right = torch.tensor(
+        [[-0.1 + 0.7j, 0.2 - 0.3j], [0.8 + 0.05j, -0.9 + 0.4j]],
+        dtype=dtype,
+    )
+    expected = torch.real(torch.sum(torch.conj(left) * right))
+    actual = _real_conjugate_inner_sum(left, right)
+    torch.testing.assert_close(actual, expected)
+    assert actual.dtype == left.real.dtype
 
 
 def test_address_sharded_reverse_always_uses_compact_global_indices():

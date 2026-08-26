@@ -68,3 +68,9 @@ forward-only scope, absent single-device capacity-failure evidence, and absent
 sharded backward/optimizer measurement. F3 should address the last boundary by
 validating the sharded gradient and optimizer loop without reconstructing the
 state.
+
+That follow-up initially failed closed, then F3.1 isolated a broken FlagOS
+complex-conjugation primitive and removed it from FlagQuantum's reverse path.
+The final bounded F3 training profile passed. See
+`docs/reference/FLAGOS_STATEVECTOR_F3_A800_RESULT.md`. This does not change the
+remaining FlagCX, multi-node, scalability, production, or release boundaries.
