@@ -14,6 +14,9 @@ __all__ = (
     "DistributedExecutor",
     "DistributedIdentity",
     "DistributedIdentityError",
+    "FlagOSWorkloadCapability",
+    "FlagOSWorkloadCapabilityError",
+    "FlagOSWorkloadCapabilityMatrix",
     "DistributedShardPlan",
     "DistributedSliceTask",
     "DistributedTensorNetworkAmplitude",
@@ -40,6 +43,7 @@ __all__ = (
     "run_distributed_tensor_network",
     "torch_distributed_is_available",
     "warmup_mps_neighbor_communicators",
+    "build_flagos_workload_capability_matrix",
 )
 
 _BACKEND_EXPORTS = {
@@ -58,6 +62,12 @@ _IDENTITY_EXPORTS = {
     "DistributedIdentity",
     "DistributedIdentityError",
     "require_verified_flagcx",
+}
+_WORKLOAD_CAPABILITY_EXPORTS = {
+    "FlagOSWorkloadCapability",
+    "FlagOSWorkloadCapabilityError",
+    "FlagOSWorkloadCapabilityMatrix",
+    "build_flagos_workload_capability_matrix",
 }
 _MPS_TRANSPORT_EXPORTS = {
     "clear_mps_static_descriptor_cache",
@@ -97,6 +107,8 @@ def __getattr__(name: str) -> Any:
         module = import_module("flagquantum.runtime.distributed.identity")
     elif name in _MPS_TRANSPORT_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.mps_transport")
+    elif name in _WORKLOAD_CAPABILITY_EXPORTS:
+        module = import_module("flagquantum.runtime.distributed.workload_capability")
     elif name in _ENGINE_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.engine")
     else:

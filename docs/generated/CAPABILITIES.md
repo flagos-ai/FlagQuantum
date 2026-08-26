@@ -32,6 +32,9 @@ This catalog is generated from the machine-validated
 | Check FlagQuantum and Torch-FL integration | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
 | Audit the statevector operator profile | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
 | Compare complex numerical behavior with a CPU complex128 reference | FlagOS local statevector CUDA reference | Development evidence | [Run example](../../docs/reference/ACCELERATOR_PLATFORM_RUNTIME.md) |
+| Audit FlagOS distributed statevector workload support | FlagOS distributed statevector workloads | Development evidence | [Run example](../../docs/reference/FLAGOS_DISTRIBUTED_CONFORMANCE.md) |
+| Run sharded FlagOS statevector forward workloads | FlagOS distributed statevector workloads | Development evidence | [Run example](../../docs/reference/FLAGOS_DISTRIBUTED_CONFORMANCE.md) |
+| Run bounded sharded FlagOS training trajectories | FlagOS distributed statevector workloads | Development evidence | [Run example](../../docs/reference/FLAGOS_DISTRIBUTED_CONFORMANCE.md) |
 | Train a large low-entanglement system | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Distribute one MPS across several GPUs | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
 | Inspect variable-bond MPS capacity | Differentiable and sharded MPS training | Development evidence | [Run example](../../examples/distributed_mps/variable_bond_capacity_8gpu.py) |
@@ -303,6 +306,20 @@ Partition one logical statevector workload across ranks while preserving differe
 - **Start:** [quick example](../../examples/distributed_statevector_topologies/run.sh)
 - **Documentation:** [guide](../../examples/distributed_statevector_topologies/README.md)
 - **Known boundary:** Multi-node release certification remains dependent on promoted audited hardware evidence.
+
+### FlagOS distributed statevector workloads
+
+Run sharded statevector forward and bounded training workloads through the public FlagOS boundary on the locked CUDA development reference.
+
+- **Maturity:** Development evidence
+- **Public API:** `fq.train_distributed_statevector`
+- **Runtime modes:** `distributed_statevector`
+- **Hardware:** `nvidia_a800_cuda_reference`, `single_node_2_4_8_gpu`
+- **Gradient support:** `development_evidence_exact_autograd`
+- **Distribution semantics:** `sharded_across_ranks`
+- **Start:** [quick example](../../docs/reference/FLAGOS_DISTRIBUTED_CONFORMANCE.md)
+- **Documentation:** [guide](../../docs/reference/FLAGOS_WORKLOAD_CAPABILITY_F4.md)
+- **Known boundary:** Development evidence only for complex64 and complex128 on one CUDA-backed A800 node at 2, 4, and 8 cards. The inner communication route and host staging remain unattributed; complex reduce_scatter_tensor is unsupported in the tested full collective matrix; multi-node behavior, single-device capacity failure, performance, convergence, production support, scalability, and release certification are not established.
 
 ### Differentiable and sharded MPS training
 

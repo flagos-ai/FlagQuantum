@@ -100,6 +100,24 @@ limitations = "CUDA-backed development reference only. It does not certify a dom
 focused_tests = "tests/unit/test_flagos_reference_evidence.py"
 development_artifact = "artifacts/flagos_cuda_reference_a800_20260824.json"
 
+[capabilities.flagos_distributed_statevector_workloads]
+title = "FlagOS distributed statevector workloads"
+summary = "Run sharded statevector forward and bounded training workloads through the public FlagOS boundary on the locked CUDA development reference."
+category = "distributed_execution"
+user_goals = ["Audit FlagOS distributed statevector workload support", "Run sharded FlagOS statevector forward workloads", "Run bounded sharded FlagOS training trajectories"]
+public_apis = ["train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["nvidia_a800_cuda_reference", "single_node_2_4_8_gpu"]
+gradient_support = "development_evidence_exact_autograd"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/reference/FLAGOS_DISTRIBUTED_CONFORMANCE.md"
+documentation = "docs/reference/FLAGOS_WORKLOAD_CAPABILITY_F4.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "Development evidence only for complex64 and complex128 on one CUDA-backed A800 node at 2, 4, and 8 cards. The inner communication route and host staging remain unattributed; complex reduce_scatter_tensor is unsupported in the tested full collective matrix; multi-node behavior, single-device capacity failure, performance, convergence, production support, scalability, and release certification are not established."
+focused_tests = "tests/benchmark_contract/test_flagos_workload_capability.py"
+development_artifact = "artifacts/flagos_workload_capability_f4_20260826.json"
+
 [capabilities.sharded_mps_training]
 title = "Differentiable and sharded MPS training"
 summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."
