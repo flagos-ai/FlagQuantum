@@ -10,6 +10,8 @@ The first measured A800 result and its fail-closed decision are recorded in
 The FlagQuantum-only precision remediation and scoped workload result are
 recorded in
 [FlagOS distributed F1.1 result on A800](FLAGOS_DISTRIBUTED_F11_A800_RESULT.md).
+The next 2/4/8-card forward scale layer is specified in
+[FlagOS statevector F2 single-node scale profile](FLAGOS_STATEVECTOR_F2_SCALE_PROFILE.md).
 
 Run it in an explicitly provisioned Torch-FL environment:
 
