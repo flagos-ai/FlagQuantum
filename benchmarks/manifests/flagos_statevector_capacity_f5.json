@@ -1,0 +1,28 @@
+{
+  "schema": "flagquantum_flagos_statevector_capacity_manifest_v1",
+  "artifact_classification": "development_calibrated_threshold",
+  "release_eligible": false,
+  "workload": {
+    "name": "flagos_statevector_capacity_f5",
+    "n_wires": 32,
+    "dtype": "complex128",
+    "gates": [
+      "H(0)",
+      "RY(1,-0.173)",
+      "RX(31,0.11)",
+      "CX(0,31)",
+      "RZ(31,-0.07)",
+      "CX(31,1)",
+      "H(2)",
+      "CX(2,31)"
+    ],
+    "measurement": "single_full_width_forward_with_fp64_global_norm"
+  },
+  "acceptance": {
+    "completion_world_size": 8,
+    "single_device_measured_oom_required": true,
+    "replicated_all_rank_measured_oom_required": true,
+    "sharded_all_rank_completion_required": true,
+    "full_state_materialization_forbidden_on_sharded_path": true
+  }
+}

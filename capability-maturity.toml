@@ -118,6 +118,24 @@ limitations = "Development evidence only for complex64 and complex128 on one CUD
 focused_tests = "tests/benchmark_contract/test_flagos_workload_capability.py"
 development_artifact = "artifacts/flagos_workload_capability_f4_20260826.json"
 
+[capabilities.flagos_statevector_capacity_expansion]
+title = "FlagOS statevector capacity expansion"
+summary = "Demonstrate one matched complex128 statevector that fails on a single device and completes when sharded across eight devices through the public FlagOS boundary."
+category = "distributed_execution"
+user_goals = ["Audit matched FlagOS statevector capacity expansion", "Run one full-width complex128 statevector across eight ranks", "Inspect fail-closed single, replicated, and sharded capacity evidence"]
+public_apis = ["train_distributed_statevector"]
+runtime_modes = ["distributed_statevector"]
+hardware = ["nvidia_a800_cuda_reference", "single_node_8_gpu"]
+gradient_support = "forward_only_development_evidence"
+distribution_semantics = "sharded_across_ranks"
+quick_start = "docs/reference/FLAGOS_STATEVECTOR_CAPACITY_F5.md"
+documentation = "docs/reference/FLAGOS_STATEVECTOR_CAPACITY_F5.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "One exact 32-qubit complex128 forward workload on one CUDA-backed eight-A800 node. The single-device and replicated paths measured OOM while the eight-rank sharded path completed. The inner communication route and host staging remain unattributed; determinism replay, backward and optimizer capacity, performance, convergence, multi-node behavior, production support, general scalability, and release certification are not established."
+focused_tests = "tests/benchmark_contract/test_flagos_statevector_capacity_evidence.py"
+development_artifact = "artifacts/flagos_statevector_capacity_f5_a800_20260827.json"
+
 [capabilities.sharded_mps_training]
 title = "Differentiable and sharded MPS training"
 summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."

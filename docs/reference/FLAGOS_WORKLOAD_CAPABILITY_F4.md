@@ -54,3 +54,9 @@ not propagate that wording into a provider-identity claim.
 
 All three inputs use the same locked Torch-FL source revision. Their individual
 FlagQuantum source revisions remain visible in the artifact descriptors.
+
+F4 is a historical aggregation of those three inputs, so its
+`single_device_capacity_failure_not_measured` blocker remains unchanged. The
+later matched 32-qubit capacity result is recorded separately in
+[F5](FLAGOS_STATEVECTOR_CAPACITY_F5.md); it does not retroactively rewrite the
+F4 artifact.
