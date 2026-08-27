@@ -1,0 +1,3628 @@
+{
+  "artifact_classification": "development_transport_observation",
+  "blockers": [
+    "provider_owned_inner_route_attestation_unavailable",
+    "flagcx_route_unverified",
+    "absence_of_profiler_event_is_not_no_host_staging_proof",
+    "device_activity_not_observed_profiler_capture_incomplete",
+    "single_node_observation_not_performance_or_scalability_evidence"
+  ],
+  "communication_claim_allowed": false,
+  "device_activity_observed_all": false,
+  "environment": {
+    "source_revision": "4f4158f6250f9f6bf17cac7ae565eb5bf106cee1",
+    "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5"
+  },
+  "explicit_host_transfer_events": [],
+  "flagcx_route_verified": false,
+  "host_staging_observed": null,
+  "inner_communication_route": "unattributed",
+  "no_host_staging_certified": false,
+  "outer_backend": "flagos",
+  "production_support_claim_allowed": false,
+  "profiler_capture_complete": false,
+  "release_gate_allowed": false,
+  "runs": [
+    {
+      "communication_claim_allowed": false,
+      "explicit_host_transfer_events": [],
+      "flagcx_route_verified": false,
+      "host_staging_observed": null,
+      "inner_communication_route": "unattributed",
+      "local_world_size": 2,
+      "no_host_staging_certified": false,
+      "node_count": 1,
+      "outer_backend": "flagos",
+      "production_support_claim_allowed": false,
+      "ranks": [
+        {
+          "device": "flagos:0",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 0,
+          "local_world_size": 2,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.011522646993398666,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 2211.3769999999995,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.0048126112669706345,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1466.51,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.00322920735925436,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1467.226,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.12435851339250803,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 27.13000000000011,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003441380336880684,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 32,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1534.132,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0024947402998805046,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 565.32,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.00262550450861454,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 931.6659999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0034647053107619286,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 21.25499999999988,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 0,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 2
+        },
+        {
+          "device": "flagos:1",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 1,
+          "local_world_size": 2,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.010930454358458519,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1700.312,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.004771314561367035,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1475.7019999999998,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.0033636651933193207,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1483.927,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.12439107056707144,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 21.564999999999827,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003375985659658909,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 32,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1499.565,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0025882264599204063,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 587.064,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0026296498253941536,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 969.047,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0034495675936341286,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 21.789999999999964,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 1,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 2
+        }
+      ],
+      "release_gate_allowed": false,
+      "scalability_claim_allowed": false,
+      "schema": "flagquantum_flagos_transport_observability_run_v1",
+      "source_revision": "4f4158f6250f9f6bf17cac7ae565eb5bf106cee1",
+      "status": "passed",
+      "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5",
+      "world_size": 2
+    },
+    {
+      "communication_claim_allowed": false,
+      "explicit_host_transfer_events": [],
+      "flagcx_route_verified": false,
+      "host_staging_observed": null,
+      "inner_communication_route": "unattributed",
+      "local_world_size": 4,
+      "no_host_staging_certified": false,
+      "node_count": 1,
+      "outer_backend": "flagos",
+      "production_support_claim_allowed": false,
+      "ranks": [
+        {
+          "device": "flagos:0",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 0,
+          "local_world_size": 4,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.014313437975943089,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 32,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1993.585,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005746946670114994,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1481.3129999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.004494093358516693,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1464.392,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.22886156663298607,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 20.92300000000023,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004399619996547699,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1489.795,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003135932609438896,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 682.136,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003053964115679264,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 994.807,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004087374545633793,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 21.90599999999995,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 0,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 4
+        },
+        {
+          "device": "flagos:1",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 1,
+          "local_world_size": 4,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.013822377659380436,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 32,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1615.2889999999998,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005695168860256672,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1468.203,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.0043992046266794205,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1457.708,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.2289536278694868,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 20.67600000000016,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004431764595210552,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1472.6109999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0030931318178772926,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 671.441,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0030625415965914726,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1025.887,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004024947062134743,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.07900000000018,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 1,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 4
+        },
+        {
+          "device": "flagos:2",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 2,
+          "local_world_size": 4,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.014237109571695328,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 32,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1634.8599999999997,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005641268566250801,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1484.6860000000001,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.004367697052657604,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1528.837,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.22896536346524954,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.110000000000127,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004422282800078392,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1485.358,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0031822239980101585,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 651.184,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0030879415571689606,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 989.96,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003995396196842194,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.59400000000005,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 2,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 4
+        },
+        {
+          "device": "flagos:3",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 3,
+          "local_world_size": 4,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.014275478199124336,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 32,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1567.8190000000004,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005688264034688473,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1473.646,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.004360024817287922,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1493.531,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.22871797811239958,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 20.343000000000075,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004298209212720394,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1515.5040000000001,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.00313585065305233,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 663.923,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003086840733885765,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1015.5509999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.00403832271695137,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 21.884000000000015,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 3,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 4
+        }
+      ],
+      "release_gate_allowed": false,
+      "scalability_claim_allowed": false,
+      "schema": "flagquantum_flagos_transport_observability_run_v1",
+      "source_revision": "4f4158f6250f9f6bf17cac7ae565eb5bf106cee1",
+      "status": "passed",
+      "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5",
+      "world_size": 4
+    },
+    {
+      "communication_claim_allowed": false,
+      "explicit_host_transfer_events": [],
+      "flagcx_route_verified": false,
+      "host_staging_observed": null,
+      "inner_communication_route": "unattributed",
+      "local_world_size": 8,
+      "no_host_staging_certified": false,
+      "node_count": 1,
+      "outer_backend": "flagos",
+      "production_support_claim_allowed": false,
+      "ranks": [
+        {
+          "device": "flagos:0",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 0,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.01483858097344637,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 2023.8680000000004,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.008641315624117851,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1528.339,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005045012570917606,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1687.616,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.4696269612759352,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.80399999999986,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.011351721361279488,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1580.8289999999997,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0039330897852778435,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 730.599,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.00363345630466938,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1142.733,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.005240915343165398,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 24.15599999999995,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 0,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:1",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 1,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.015008656308054924,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1739.3539999999998,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.008716047741472721,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1531.2600000000002,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.004902956075966358,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1624.65,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.46957031451165676,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 23.18399999999997,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.011358118616044521,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1777.278,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004027136601507664,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 682.3779999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004062050953507423,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1210.452,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.005252036266028881,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 24.317999999999984,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 1,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:2",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 2,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.01690990198403597,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 4794.129,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.009115228429436684,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1513.7620000000002,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005281140096485615,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1602.756,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.4692749194800854,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.249999999999773,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.011987896636128426,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 4765.877,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004281208850443363,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 647.59,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003950080834329128,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1104.785,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.005308459512889385,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 24.42099999999982,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 2,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:3",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 3,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.015039684250950813,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 2152.9840000000004,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.00875557865947485,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1502.538,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005848783999681473,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1756.7620000000002,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.4690584186464548,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 23.38000000000011,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.011067457497119904,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1564.378,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004133609123528004,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 697.79,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003998580388724804,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1006.6009999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.005006127059459686,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 24.580000000000155,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 3,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:4",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 4,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.015581930056214333,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 2542.308000000001,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.00880834273993969,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1531.817,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005733435973525047,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1736.8470000000002,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.46599735505878925,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.95900000000006,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.01083521731197834,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1690.163,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003908448852598667,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 760.22,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004009176976978779,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1122.192,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.005137956701219082,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 25.517000000000053,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 4,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:5",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 5,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.014751076698303223,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1609.3030000000003,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.008833009749650955,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 3146.154,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.005324066616594791,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1584.391,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.46540887746959925,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.830999999999904,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.011280938982963562,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 4605.041000000001,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003972834907472134,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 747.789,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0040189120918512344,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1149.267,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.0054612234234809875,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 24.84400000000005,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 5,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:6",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 6,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.014910567551851273,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 4512.251000000002,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.008632008917629719,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1508.355,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.0055732084438204765,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1675.73,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.4651699848473072,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 22.38799999999992,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.01108446717262268,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1891.9959999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004043426364660263,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 753.8820000000001,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003943515941500664,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1130.136,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.004968918859958649,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 24.972999999999956,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 6,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        },
+        {
+          "device": "flagos:7",
+          "device_type": "flagos",
+          "environment": {
+            "hostname": "1bf214bacec4",
+            "python": "3.12.13",
+            "torch": "2.11.0+cu130",
+            "torch_cuda_runtime": "13.0",
+            "torch_fl": "unknown"
+          },
+          "local_rank": 7,
+          "local_world_size": 8,
+          "node_count": 1,
+          "observations": [
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.01541779562830925,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 64,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 2897.969,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.008905719965696335,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1505.237,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.00548295583575964,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1603.828,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex64",
+              "elapsed_seconds": 0.4686828041449189,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 8,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 21.865999999999985,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.011612220667302608,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 128,
+              "primitive": "all_gather_into_tensor",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1623.787,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.00404011458158493,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "all_reduce",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 734.4069999999999,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.003995160572230816,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "broadcast",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 1,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 1012.3230000000001,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            },
+            {
+              "device_activity_observed": false,
+              "dtype": "complex128",
+              "elapsed_seconds": 0.005052801221609116,
+              "explicit_host_transfer_events": [],
+              "host_staging_observed": null,
+              "input_device_type": "flagos",
+              "max_abs_error": 0.0,
+              "output_device_type": "flagos",
+              "passed": true,
+              "payload_bytes": 16,
+              "primitive": "isend_irecv",
+              "profiler_activities": [
+                "CPU",
+                "CUDA"
+              ],
+              "profiler_available": true,
+              "profiler_capture_scope": "cpu_operator_only",
+              "profiler_error": null,
+              "profiler_events": [
+                {
+                  "count": 2,
+                  "host_transfer_direction": null,
+                  "name": "aten::view_as_real",
+                  "self_cpu_time_us": 26.307999999999765,
+                  "self_device_time_us": 0.0
+                }
+              ]
+            }
+          ],
+          "physical_device_name": "unknown",
+          "rank": 7,
+          "schema": "flagquantum_flagos_transport_observability_rank_v1",
+          "world_size": 8
+        }
+      ],
+      "release_gate_allowed": false,
+      "scalability_claim_allowed": false,
+      "schema": "flagquantum_flagos_transport_observability_run_v1",
+      "source_revision": "4f4158f6250f9f6bf17cac7ae565eb5bf106cee1",
+      "status": "passed",
+      "torch_fl_source_revision": "1b19383c24d9aa54637dd23557a5a20ef6d52ec5",
+      "world_size": 8
+    }
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum_flagos_transport_observability_f6_v1",
+  "status": "passed",
+  "transport_observation_accepted": true,
+  "validation_scope": "flagos_single_node_transport_observability_ladder",
+  "world_sizes": [
+    2,
+    4,
+    8
+  ]
+}

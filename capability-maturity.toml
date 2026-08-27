@@ -136,6 +136,24 @@ limitations = "One exact 32-qubit complex128 forward workload on one CUDA-backed
 focused_tests = "tests/benchmark_contract/test_flagos_statevector_capacity_evidence.py"
 development_artifact = "artifacts/flagos_statevector_capacity_f5_a800_20260827.json"
 
+[capabilities.flagos_transport_observability]
+title = "FlagOS distributed transport observability"
+summary = "Observe a fixed multi-rank complex collective matrix through the public FlagOS boundary while keeping inner-route and host-staging claims fail-closed."
+category = "distributed_execution"
+user_goals = ["Audit observable FlagOS collective behavior", "Inspect bounded profiler evidence for complex collectives", "Distinguish FlagOS validation from unverified FlagCX route attribution"]
+public_apis = ["train_distributed_statevector"]
+runtime_modes = ["distributed_transport_observation"]
+hardware = ["nvidia_a800_cuda_reference", "single_node_2_4_8_gpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "rank_local_collective_observation"
+quick_start = "docs/reference/FLAGOS_TRANSPORT_OBSERVABILITY_F6.md"
+documentation = "docs/reference/FLAGOS_TRANSPORT_OBSERVABILITY_F6.md"
+level = "development_evidence"
+owner = "FlagQuantum distributed runtime maintainers"
+limitations = "One CUDA-backed A800 node at 2, 4, and 8 ranks for four collectives with complex64 and complex128. Correctness and logical FlagOS residency passed, but CUPTI device activity capture was incomplete. The inner communication route, FlagCX use, absence of host staging, performance, multi-node behavior, scalability, production support, and release certification are not established."
+focused_tests = "tests/benchmark_contract/test_flagos_transport_observability_evidence.py"
+development_artifact = "artifacts/flagos_transport_observability_f6_a800_20260827.json"
+
 [capabilities.sharded_mps_training]
 title = "Differentiable and sharded MPS training"
 summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."
