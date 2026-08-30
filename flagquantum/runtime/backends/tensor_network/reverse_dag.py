@@ -11,10 +11,10 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ....simulation.real_imag_kernels import complex_einsum_pair
-from ....simulation.tensor_contraction import (
-    _batched_pair_equation,
-    _einsum_pair_by_labels,
-    _pair_equation,
+from ....simulation.tensor_stages import (
+    batched_pair_equation,
+    einsum_pair_by_labels,
+    pair_equation,
 )
 from .distributed_dag import DistributedTNContractionDAG
 
@@ -61,9 +61,7 @@ class CompiledTNReverseSchedule:
 
 
 _COMPILED_FORWARD_SCHEDULE_CACHE: dict[str, CompiledTNForwardSchedule] = {}
-_COMPILED_REVERSE_SCHEDULE_CACHE: dict[
-    tuple[str, str], CompiledTNReverseSchedule
-] = {}
+_COMPILED_REVERSE_SCHEDULE_CACHE: dict[tuple[str, str], CompiledTNReverseSchedule] = {}
 
 
 @dataclass(frozen=True)
@@ -515,7 +513,7 @@ def execute_tn_forward_with_tape(
     tape = dict(inputs)
     for operation in dag.operations:
         left_id, right_id = operation.input_value_ids
-        tape[operation.output_value_id] = _einsum_pair_by_labels(
+        tape[operation.output_value_id] = einsum_pair_by_labels(
             tape[left_id],
             values[left_id].labels,
             tape[right_id],
@@ -541,7 +539,9 @@ def compile_tn_forward_schedule(
     }
     levels: dict[int, list[Any]] = {}
     for operation in dag.operations:
-        level = max(value_levels[value_id] for value_id in operation.input_value_ids) + 1
+        level = (
+            max(value_levels[value_id] for value_id in operation.input_value_ids) + 1
+        )
         value_levels[operation.output_value_id] = level
         levels.setdefault(level, []).append(operation)
     stages: list[tuple[CompiledTNForwardBucket, ...]] = []
@@ -549,7 +549,7 @@ def compile_tn_forward_schedule(
         grouped: dict[tuple[Any, ...], list[str]] = {}
         for operation in levels[level]:
             left_id, right_id = operation.input_value_ids
-            equation = _pair_equation(
+            equation = pair_equation(
                 values[left_id].labels,
                 values[right_id].labels,
                 operation.output_labels,
@@ -565,7 +565,7 @@ def compile_tn_forward_schedule(
             tuple(
                 CompiledTNForwardBucket(
                     equation=key[0],
-                    batched_equation=_batched_pair_equation(key[0]),
+                    batched_equation=batched_pair_equation(key[0]),
                     operation_ids=tuple(operation_ids),
                 )
                 for key, operation_ids in grouped.items()
@@ -651,7 +651,7 @@ def execute_tn_forward_with_checkpoint_tape(
     tape = dict(inputs)
     for operation in dag.operations:
         left_id, right_id = operation.input_value_ids
-        output = _einsum_pair_by_labels(
+        output = einsum_pair_by_labels(
             live[left_id],
             values[left_id].labels,
             live[right_id],
@@ -745,7 +745,7 @@ def execute_checkpointed_tn_reverse_dag(
             )
             if any(operand is None for operand in operands):
                 raise RuntimeError("TN rematerialization schedule is incomplete")
-            transient[operation.output_value_id] = _einsum_pair_by_labels(
+            transient[operation.output_value_id] = einsum_pair_by_labels(
                 operands[0],
                 values[operand_ids[0]].labels,
                 operands[1],
@@ -772,14 +772,14 @@ def execute_checkpointed_tn_reverse_dag(
         left, right = materialize_pair(left_id, right_id)
         if left is None or right is None:
             raise RuntimeError("TN rematerialization did not produce both operands")
-        left_cot = _einsum_pair_by_labels(
+        left_cot = einsum_pair_by_labels(
             output_cot,
             record.output_labels,
             right.conj(),
             record.right_labels,
             record.left_labels,
         )
-        right_cot = _einsum_pair_by_labels(
+        right_cot = einsum_pair_by_labels(
             left.conj(),
             record.left_labels,
             output_cot,
@@ -832,12 +832,12 @@ def compile_tn_reverse_schedule(
         grouped: dict[tuple[Any, ...], list[str]] = {}
         for record in levels[level]:
             left_id, right_id = record.input_value_ids
-            left_equation = _pair_equation(
+            left_equation = pair_equation(
                 record.output_labels,
                 record.right_labels,
                 record.left_labels,
             )
-            right_equation = _pair_equation(
+            right_equation = pair_equation(
                 record.left_labels,
                 record.output_labels,
                 record.right_labels,
@@ -854,9 +854,9 @@ def compile_tn_reverse_schedule(
             tuple(
                 CompiledTNReverseBucket(
                     left_equation=key[0],
-                    left_batched_equation=_batched_pair_equation(key[0]),
+                    left_batched_equation=batched_pair_equation(key[0]),
                     right_equation=key[1],
-                    right_batched_equation=_batched_pair_equation(key[1]),
+                    right_batched_equation=batched_pair_equation(key[1]),
                     reverse_ids=tuple(reverse_ids),
                 )
                 for key, reverse_ids in grouped.items()
@@ -1012,14 +1012,14 @@ def execute_explicit_tn_reverse_dag(
         if retained_cotangents is not None:
             retained_cotangents[record.output_value_id] = output_cot
         left_id, right_id = record.input_value_ids
-        left_cot = _einsum_pair_by_labels(
+        left_cot = einsum_pair_by_labels(
             output_cot,
             record.output_labels,
             tape[right_id].conj(),
             record.right_labels,
             record.left_labels,
         )
-        right_cot = _einsum_pair_by_labels(
+        right_cot = einsum_pair_by_labels(
             tape[left_id].conj(),
             record.left_labels,
             output_cot,

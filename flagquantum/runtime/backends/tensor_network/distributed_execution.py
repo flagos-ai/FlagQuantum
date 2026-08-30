@@ -8,7 +8,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_contraction import _einsum_pair_by_labels
+from ....simulation.tensor_stages import einsum_pair_by_labels
 from ...distributed.flagos_runtime import current_flagos_device
 from .distributed_dag import (
     DistributedTNContractionDAG,
@@ -211,7 +211,7 @@ def execute_sharded_tn_contraction_dag(
                     "unsharded TN DAG operation requires locally replicated inputs"
                 )
             left_id, right_id = operation.input_value_ids
-            output = _einsum_pair_by_labels(
+            output = einsum_pair_by_labels(
                 operation_inputs[0],
                 values_by_id[left_id].labels,
                 operation_inputs[1],
@@ -592,7 +592,7 @@ def execute_distributed_tn_contraction_dag(
 
         if actual_rank == owner:
             left, right = operation_inputs
-            output = _einsum_pair_by_labels(
+            output = einsum_pair_by_labels(
                 left,
                 values_by_id[operation.input_value_ids[0]].labels,
                 right,

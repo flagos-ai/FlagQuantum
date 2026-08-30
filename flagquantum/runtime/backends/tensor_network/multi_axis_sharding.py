@@ -12,7 +12,7 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_contraction import _einsum_pair_by_labels
+from ....simulation.tensor_stages import einsum_pair_by_labels
 from .distributed_dag import (
     DistributedTNContractionDAG,
     DistributedTNValueLayout,
@@ -660,7 +660,7 @@ def _contract_pair_with_high_rank_fallback(
     normalized_output = tuple(int(label) for label in output_labels)
     try:
         return (
-            _einsum_pair_by_labels(
+            einsum_pair_by_labels(
                 left,
                 normalized_left,
                 right,

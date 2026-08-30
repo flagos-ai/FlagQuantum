@@ -52,6 +52,10 @@ def architecture_errors() -> tuple[str, ...]:
     root_ceiling = int(boundaries["root_init_line_ceiling"])
     accelerator_boundaries = CONFIG.get("accelerator_boundaries", {})
     interop_boundaries = CONFIG.get("interop_boundaries", {})
+    simulation_boundaries = CONFIG.get("simulation_boundaries", {})
+    simulation_runtime_import_allowed = set(
+        simulation_boundaries.get("runtime_import_allowed", ())
+    )
     qiskit_import_allowed_prefixes = tuple(
         interop_boundaries.get("qiskit_import_allowed_prefixes", ())
     )
@@ -207,6 +211,17 @@ def architecture_errors() -> tuple[str, ...]:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(
                         f"{relative}: trajectory runtime imports forbidden layer {module}"
+                    )
+
+        if (
+            relative.startswith("flagquantum/simulation/")
+            and relative not in simulation_runtime_import_allowed
+        ):
+            forbidden = tuple(boundaries["simulation_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: simulation primitive imports forbidden layer {module}"
                     )
 
         if relative in {

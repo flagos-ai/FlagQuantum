@@ -45,6 +45,7 @@ flagquantum/
 │   ├── audit/              # typed evidence, validation, and release gates
 │   ├── observability/      # execution and performance records
 │   └── *.py                # planning, training, configuration, and results
+├── simulation/             # internal local algorithms and numerical primitives
 ├── deployment/             # target compilation, packages, and providers
 ├── extensions/             # explicitly experimental extension surface
 └── testing/                # reusable correctness and contract helpers
@@ -79,6 +80,13 @@ API → application services → runtime/compiler → core IR
 The core IR does not import runtime backends. Backends consume the IR through
 registered lowering contracts. Optional JAX, provider, and hardware integrations
 must remain outside the mandatory local PyTorch path.
+
+`simulation` is an internal primitive layer, not a second public runtime.
+Runtime backends may reuse its local algorithms and narrow tensor/kernel
+primitives, while simulation code cannot depend on runtime orchestration or
+deployment except through the legacy façades explicitly registered in
+`architecture.toml`. Backend choice and distributed semantics remain owned by
+`flagquantum.runtime`.
 
 See the executable
 [dependency policy](docs/architecture/ARCHITECTURE_DEPENDENCIES.md) for enforced

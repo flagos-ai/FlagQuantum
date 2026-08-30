@@ -7,6 +7,7 @@ noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulatio
 compilation_noise_forbidden = ["circuit", "deployment", "runtime", "simulation"]
 density_backend_forbidden = ["circuit", "deployment", "simulation"]
 trajectory_runtime_forbidden = ["circuit", "simulation", "backends", "deployment"]
+simulation_forbidden = ["runtime", "deployment"]
 executor_policy_forbidden = ["audit", "release_policy"]
 default_module_line_ceiling = 1250
 root_init_line_ceiling = 140
@@ -25,6 +26,13 @@ qiskit_import_allowed_prefixes = [
 ]
 pennylane_import_allowed_prefixes = [
     "flagquantum/interop/pennylane/",
+]
+
+[simulation_boundaries]
+runtime_import_allowed = [
+    "flagquantum/simulation/mps_execution.py",
+    "flagquantum/simulation/mps_models.py",
+    "flagquantum/simulation/noise.py",
 ]
 
 [accelerator_boundaries.direct_cuda_call_ceiling]
@@ -68,7 +76,7 @@ owner = "FlagQuantum MPS maintainers"
 removal_version = "0.3.0"
 
 [legacy_exceptions."flagquantum/simulation/tensor_contraction.py"]
-line_ceiling = 2206
+line_ceiling = 2006
 owner = "FlagQuantum tensor-network maintainers"
 removal_version = "0.3.0"
 

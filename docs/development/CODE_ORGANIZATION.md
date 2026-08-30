@@ -10,6 +10,7 @@ code must not reach sideways into implementation modules.
 | Compilation | `flagquantum.compilation` | Lowering, planning, scheduling |
 | Runtime API | `flagquantum.runtime` | Execution, training, configuration |
 | Runtime backends | `flagquantum.runtime.backends` | Statevector, MPS, TN, JAX boundaries |
+| Simulation primitives | `flagquantum.simulation` | Internal local algorithms, tensor primitives, and compatibility façades |
 | Distribution | `flagquantum.runtime.distributed` | Topology, protocols, collectives |
 | Governance | `flagquantum.runtime.audit` | Evidence validation and release gates |
 | Adapters | `deployment`, `devices`, `extensions` | External systems and plugins |
@@ -51,6 +52,16 @@ compatibility guarantee.
 `flagquantum.runtime.backends` is a lazy namespace registry. Inspecting or
 importing it does not initialize any backend; requesting one backend package
 does not load the others.
+
+`flagquantum.simulation` is not a competing runtime namespace. It owns reusable
+local numerical algorithms and dependency-light tensor/kernel primitives.
+`flagquantum.runtime.backends` owns backend selection, execution orchestration,
+distributed semantics, training records, and evidence. Runtime backends may
+consume narrow simulation primitives; simulation modules may not import runtime
+or deployment code except for the explicitly registered legacy façades in
+`architecture.toml`. Historical `flagquantum.simulation.mps` and
+`flagquantum.simulation.tensor` access remains for v1 compatibility, but new
+user code stays on the root `flagquantum` API.
 
 The architecture checker rejects reintroduction of the removed compatibility
 package or imports from it.
@@ -178,6 +189,10 @@ plugins, benchmarks, or serialized artifacts.
 - The Tensor Network backend is a lazy package boundary under
   `flagquantum.runtime.backends.tensor_network`; local simulation and
   distributed execution remain unloaded until their entry point is requested.
+  Integer-labelled pair contraction and compiled stage execution live in the
+  dependency-light `simulation.tensor_stages` primitive module. Runtime TN
+  modules consume that narrow boundary instead of the compatibility-heavy local
+  contraction planner.
 - The optional JAX backend is a lazy package boundary under
   `flagquantum.runtime.backends.jax`; importing the namespace loads neither JAX
   nor its execution adapters.

@@ -12,7 +12,7 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_contraction import _einsum_pair_by_labels
+from ....simulation.tensor_stages import einsum_pair_by_labels
 from .distributed_dag import DistributedTNValueLayout
 
 TN_PARTIAL_MESH_VERSION = "flagquantum.distributed_tn_partial_mesh.v1"
@@ -476,14 +476,14 @@ def execute_partial_mesh_reverse_pair(
     for tensor, layout in zip((output_cotangent, left, right), layouts):
         if tuple(tensor.shape) != layout.local_shape:
             raise ValueError("partial mesh reverse local tensor shape mismatch")
-    left_cotangent = _einsum_pair_by_labels(
+    left_cotangent = einsum_pair_by_labels(
         output_cotangent,
         output_layout.labels,
         right.conj(),
         right_layout.labels,
         left_layout.labels,
     ).contiguous()
-    right_cotangent = _einsum_pair_by_labels(
+    right_cotangent = einsum_pair_by_labels(
         left.conj(),
         left_layout.labels,
         output_cotangent,
@@ -564,7 +564,7 @@ def execute_partial_mesh_forward_pair(
         or tuple(right.shape) != right_layout.local_shape
     ):
         raise ValueError("partial mesh forward operand shape mismatch")
-    value = _einsum_pair_by_labels(
+    value = einsum_pair_by_labels(
         left,
         left_layout.labels,
         right,

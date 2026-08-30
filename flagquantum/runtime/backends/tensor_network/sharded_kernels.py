@@ -8,7 +8,7 @@ from typing import Any, Literal, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_contraction import _einsum_pair_by_labels
+from ....simulation.tensor_stages import einsum_pair_by_labels
 from .distributed_dag import (
     DistributedTNContractionDAG,
     DistributedTNContractionRecord,
@@ -150,7 +150,7 @@ def execute_pre_sharded_pair_contraction(
         _validate_local_label_extent(
             right_local, right_labels, label=label, shard=shard
         )
-        value = _einsum_pair_by_labels(
+        value = einsum_pair_by_labels(
             left_local,
             tuple(int(item) for item in left_labels),
             right_local,
@@ -173,7 +173,7 @@ def execute_pre_sharded_pair_contraction(
         raise ValueError("contracted pre-sharded label cannot remain in the output")
     _validate_local_label_extent(left_local, left_labels, label=label, shard=shard)
     _validate_local_label_extent(right_local, right_labels, label=label, shard=shard)
-    value = _einsum_pair_by_labels(
+    value = einsum_pair_by_labels(
         left_local,
         tuple(int(item) for item in left_labels),
         right_local,
@@ -223,7 +223,7 @@ def contract_pair_for_output_shard(
     )
     if label not in sliced_left_labels and label not in sliced_right_labels:
         raise ValueError("output-shard label is absent from both contraction inputs")
-    result = _einsum_pair_by_labels(
+    result = einsum_pair_by_labels(
         sliced_left,
         sliced_left_labels,
         sliced_right,
@@ -264,7 +264,7 @@ def contract_pair_for_contracted_shard(
         raise ValueError("contracted-shard range exceeds the input extent")
     local_left = left.narrow(left_axis, shard.start, shard.stop - shard.start)
     local_right = right.narrow(right_axis, shard.start, shard.stop - shard.start)
-    return _einsum_pair_by_labels(
+    return einsum_pair_by_labels(
         local_left,
         normalized_left,
         local_right,
