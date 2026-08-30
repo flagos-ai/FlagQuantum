@@ -27,7 +27,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("artifacts/quafu_vqe_10240/correlated_readout.json"),
+        default=Path("artifacts/development/quafu_vqe_10240/correlated_readout.json"),
     )
     args = parser.parse_args()
     if not os.getenv("QPU_API_TOKEN"):

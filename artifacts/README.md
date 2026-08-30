@@ -5,11 +5,12 @@ records retained by existing capability work. Files here are not release-grade
 performance evidence unless a capability manifest explicitly binds and scopes
 them.
 
-Existing root-level JSON files and provider batch directories are legacy
-holdings. Do not add new dated or batch directories at this level. New work
-should keep only a compact, provenance-bearing summary in the source repository
-and place raw responses, repeated task payloads, and bulky intermediates in the
-team evidence archive.
+Root-level JSON files are reserved for current capability records referenced by
+the capability matrix or release documentation. Historical Quafu batches and
+task fragments live under [`legacy/`](legacy/README.md); new compact,
+non-release outputs use [`development/`](development/README.md). Place raw
+responses, repeated task payloads, and bulky intermediates in the team evidence
+archive.
 
 Release benchmark evidence belongs under
 `benchmarks/results/scalability/` and must pass the release audit. See

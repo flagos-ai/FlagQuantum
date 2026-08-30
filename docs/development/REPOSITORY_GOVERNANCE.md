@@ -37,11 +37,12 @@ external archive identifier without claiming a stronger maturity level.
 5. Superseded or bulky raw material is archived outside the source repository.
 
 Historical benchmark families are quarantined under
-`benchmarks/results/legacy/`; existing batch directories under `artifacts/`
-remain legacy holdings. They may be migrated out in reviewable batches, but new
-siblings must not be added. Migration must preserve links used by published
-documents and capability manifests, either by updating them atomically or by
-retaining a small redirect manifest.
+`benchmarks/results/legacy/`; historical provider batches and task fragments
+are quarantined under `artifacts/legacy/`. New compact, non-release artifact
+outputs use `artifacts/development/`. Legacy holdings may be migrated out in
+reviewable batches, but new siblings must not be added. Migration must preserve
+links used by published documents and capability manifests, either by updating
+them atomically or by retaining a small redirect manifest.
 
 ## Review budget
 

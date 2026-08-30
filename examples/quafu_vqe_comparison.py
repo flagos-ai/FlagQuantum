@@ -33,11 +33,13 @@ def statevector_energy(theta: torch.Tensor) -> torch.Tensor:
 
 def expectation(counts: dict[str, int], wires: tuple[int, ...]) -> float:
     shots = sum(counts.values())
-    return sum(
-        count
-        * math.prod(1 if bits[wire] == "0" else -1 for wire in wires)
-        for bits, count in counts.items()
-    ) / shots
+    return (
+        sum(
+            count * math.prod(1 if bits[wire] == "0" else -1 for wire in wires)
+            for bits, count in counts.items()
+        )
+        / shots
+    )
 
 
 def wait_for_result(
@@ -110,7 +112,9 @@ def main() -> None:
     parser.add_argument("--shots", type=int, default=1024)
     parser.add_argument("--target-qubits", type=int, nargs=2, default=None)
     parser.add_argument("--timeout", type=float, default=1800)
-    parser.add_argument("--output", type=Path, default=Path("artifacts/quafu_vqe"))
+    parser.add_argument(
+        "--output", type=Path, default=Path("artifacts/development/quafu_vqe")
+    )
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -139,9 +143,7 @@ def main() -> None:
 
     provider = fq.QuafuProvider(timeout=30)
     backend = next(
-        item
-        for item in provider.discover_backends(2)
-        if item.name == args.backend
+        item for item in provider.discover_backends(2) if item.name == args.backend
     )
     args.output.mkdir(parents=True, exist_ok=True)
     result_path = args.output / "comparison.json"
@@ -224,9 +226,7 @@ def main() -> None:
             "exact_ansatz_minimum": -2.0,
             "points": trajectory,
         }
-        result_path.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n"
-        )
+        result_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         print(
             f"iteration={iteration} theta={point['theta']:.6f} "
             f"sv={point['statevector_energy']:.6f} "

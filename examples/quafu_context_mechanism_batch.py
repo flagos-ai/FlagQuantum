@@ -180,7 +180,9 @@ def main() -> None:
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument(
-        "--output", type=Path, default=Path("artifacts/quafu_context_batch_01")
+        "--output",
+        type=Path,
+        default=Path("artifacts/development/quafu_context_batch"),
     )
     args = parser.parse_args()
     if not os.getenv("QPU_API_TOKEN"):

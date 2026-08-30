@@ -105,9 +105,7 @@ def _precompile(qasm: str, chip_info: dict[str, Any], mapping: tuple[int, ...]):
     }
 
 
-def _physical_circuit(
-    qlisp: list[Any], mapping: tuple[int, ...]
-) -> fq.Circuit:
+def _physical_circuit(qlisp: list[Any], mapping: tuple[int, ...]) -> fq.Circuit:
     physical_to_logical = {wire: index for index, wire in enumerate(mapping)}
     circuit = fq.Circuit(len(mapping))
     for item in qlisp:
@@ -139,10 +137,7 @@ def _physical_circuit(
 def _normalize_counts(raw_counts: dict[str, int], n_wires: int) -> dict[str, int]:
     states = ("".join(bits) for bits in product("01", repeat=n_wires))
     # Quafu serializes c[n-1]...c[0]; all archived analysis uses q0...q[n-1].
-    return {
-        state: int(raw_counts.get(state[::-1], 0))
-        for state in states
-    }
+    return {state: int(raw_counts.get(state[::-1], 0)) for state in states}
 
 
 def _probabilities(counts: dict[str, int]) -> list[float]:
@@ -313,7 +308,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("artifacts/quafu_predictive_batch_01"),
+        default=Path("artifacts/development/quafu_predictive_batch"),
     )
     parser.add_argument(
         "--physical-qasm",

@@ -90,20 +90,24 @@ def noisy_basis_probabilities(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--comparison", type=Path, default=Path("artifacts/quafu_vqe/comparison.json")
+        "--comparison",
+        type=Path,
+        default=Path("artifacts/legacy/quafu_vqe/comparison.json"),
     )
     parser.add_argument(
         "--calibration",
         type=Path,
-        default=Path("artifacts/quafu_vqe/baihua_q123_q124_calibration.json"),
+        default=Path("artifacts/legacy/quafu_vqe/baihua_q123_q124_calibration.json"),
     )
     parser.add_argument(
         "--spam",
         type=Path,
-        default=Path("artifacts/quafu_vqe/spam_calibration.json"),
+        default=Path("artifacts/legacy/quafu_vqe/spam_calibration.json"),
     )
     parser.add_argument(
-        "--output", type=Path, default=Path("artifacts/quafu_vqe/noise_replay.json")
+        "--output",
+        type=Path,
+        default=Path("artifacts/development/quafu_vqe/noise_replay.json"),
     )
     parser.add_argument(
         "--logical-gates",
@@ -127,11 +131,15 @@ def main() -> None:
     points = []
     for source in comparison["points"]:
         z_probabilities = noisy_basis_probabilities(
-            source["theta"], x_basis=False, model=model,
+            source["theta"],
+            x_basis=False,
+            model=model,
             physical_transpilation=not args.logical_gates,
         )
         x_probabilities = noisy_basis_probabilities(
-            source["theta"], x_basis=True, model=model,
+            source["theta"],
+            x_basis=True,
+            model=model,
             physical_transpilation=not args.logical_gates,
         )
         zz = basis_expectation(z_probabilities, (0, 1))
@@ -184,6 +192,7 @@ def main() -> None:
         },
         "points": points,
     }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
     import matplotlib.pyplot as plt
@@ -257,7 +266,9 @@ def main() -> None:
     axis.set_ylim(-2.025, -1.285)
     axis.set_xticks(range(0, 20, 2))
     axis.tick_params(axis="x", labelbottom=False)
-    axis.text(-0.12, 1.02, "(a)", transform=axis.transAxes, fontweight="bold", fontsize=8.5)
+    axis.text(
+        -0.12, 1.02, "(a)", transform=axis.transAxes, fontweight="bold", fontsize=8.5
+    )
     metrics = payload["metrics"]
     handles, labels = axis.get_legend_handles_labels()
     information.text(
@@ -360,14 +371,23 @@ def main() -> None:
     )
     residual.set_xlabel("VQE iteration")
     residual.set_ylabel("Residual")
-    residual.text(-0.12, 0.93, "(b)", transform=residual.transAxes, fontweight="bold", fontsize=8.5)
+    residual.text(
+        -0.12,
+        0.93,
+        "(b)",
+        transform=residual.transAxes,
+        fontweight="bold",
+        fontsize=8.5,
+    )
     residual.set_xlim(-0.35, 19.35)
     residual.set_xticks(range(0, 20, 2))
     residual.grid(axis="y", color="0.88", linewidth=0.45)
     residual.spines[["top", "right"]].set_visible(False)
     figure.subplots_adjust(left=0.085, right=0.99, bottom=0.12, top=0.98)
     curve = args.output.with_name("noise_replay_curve.png")
-    figure.savefig(curve, dpi=220, bbox_inches="tight", facecolor=figure.get_facecolor())
+    figure.savefig(
+        curve, dpi=220, bbox_inches="tight", facecolor=figure.get_facecolor()
+    )
     figure.savefig(curve.with_suffix(".svg"), bbox_inches="tight")
     figure.savefig(curve.with_suffix(".pdf"), bbox_inches="tight")
     print(json.dumps(payload["metrics"], sort_keys=True))

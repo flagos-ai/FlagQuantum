@@ -67,6 +67,7 @@ LEGACY_ARTIFACT_DIRECTORIES = {
     "quafu_vqe",
     "quafu_vqe_10240",
 }
+ARTIFACT_CONTAINER_DIRECTORIES = {"development", "legacy"}
 
 
 def tracked_files(root: Path) -> tuple[Path, ...]:
@@ -140,7 +141,13 @@ def layout_violations(root: Path) -> tuple[str, ...]:
     artifact_directories = {
         path.name for path in (root / "artifacts").iterdir() if path.is_dir()
     }
-    for name in sorted(artifact_directories - LEGACY_ARTIFACT_DIRECTORIES):
+    for name in sorted(artifact_directories - ARTIFACT_CONTAINER_DIRECTORIES):
+        errors.append(f"new top-level artifact family is forbidden: {name}")
+    legacy_artifact_root = root / "artifacts" / "legacy"
+    legacy_artifact_directories = {
+        path.name for path in legacy_artifact_root.iterdir() if path.is_dir()
+    }
+    for name in sorted(legacy_artifact_directories - LEGACY_ARTIFACT_DIRECTORIES):
         errors.append(f"new legacy artifact batch is forbidden: {name}")
     return tuple(errors)
 
