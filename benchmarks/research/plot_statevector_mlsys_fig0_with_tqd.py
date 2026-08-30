@@ -30,7 +30,9 @@ def load(path: Path) -> dict:
 def main() -> None:
     repo = Path(__file__).resolve().parents[2]
     comparison = repo / "benchmarks" / "results" / "comparison"
-    output = repo / "benchmarks" / "results" / "statevector_mlsys_current"
+    output = (
+        repo / "benchmarks" / "results" / "legacy" / "statevector_mlsys_current"
+    )
     tqd_root = output / "tqd_current"
     tqd2 = load(tqd_root / "tqd_31q_2gpu_2plus5.json")
     tqd4 = load(tqd_root / "tqd_31q_4gpu_2plus5.json")

@@ -53,10 +53,18 @@ benchmarks/
 ├── runners/                # reproducible workload and JSON contracts
 ├── research/               # exploratory analysis and plotting
 └── results/                # evidence separated by claim level
+
+contracts/                  # capability and interoperability contracts
+tests/                      # unit, integration, distributed, and release gates
+docs/                       # current product, architecture, and development truth
+tools/                      # repository automation; never a runtime dependency
+artifacts/                  # grandfathered development evidence pending migration
 ```
 
 Detailed subsystem documents live in the
 [architecture documentation](docs/architecture/README.md).
+Placement and retention rules live in
+[repository governance](docs/development/REPOSITORY_GOVERNANCE.md).
 
 ## Dependency direction
 

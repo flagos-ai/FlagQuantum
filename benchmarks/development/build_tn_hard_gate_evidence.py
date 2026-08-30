@@ -17,7 +17,7 @@ def _arguments() -> argparse.Namespace:
         "--single-node-dir",
         type=Path,
         default=Path(
-            "benchmarks/results/tn_gradient_capacity_scaling_20260730/raw"
+            "benchmarks/results/legacy/tn_gradient_capacity_scaling_20260730/raw"
         ),
     )
     parser.add_argument("--multinode-result", type=Path, required=True)

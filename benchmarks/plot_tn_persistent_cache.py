@@ -9,7 +9,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-ROOT = Path("benchmarks/results/tn_persistent_cache_20260730")
+ROOT = Path("benchmarks/results/legacy/tn_persistent_cache_20260730")
 
 
 def main() -> None:

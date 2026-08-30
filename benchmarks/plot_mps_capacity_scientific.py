@@ -17,7 +17,13 @@ from matplotlib.ticker import FuncFormatter, LogLocator
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS = REPO_ROOT / "benchmarks" / "results" / "local"
-OUTPUT = REPO_ROOT / "benchmarks" / "results" / "mps_capacity_16xa800_20260806"
+OUTPUT = (
+    REPO_ROOT
+    / "benchmarks"
+    / "results"
+    / "legacy"
+    / "mps_capacity_16xa800_20260806"
+)
 CAPACITY_FILES = (
     "mps_capacity_24576q_chi768_16xa800_complete_20260805.json",
     "mps_capacity_65536q_chi768_16xa800_complete_20260805.json",

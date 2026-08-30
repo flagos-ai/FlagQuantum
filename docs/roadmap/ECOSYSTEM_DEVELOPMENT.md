@@ -301,8 +301,8 @@ Recommended benchmark result groups:
 | --- | --- |
 | `benchmarks/results/local/` | Citable single-machine statevector/MPS/TN results |
 | `benchmarks/results/comparison/` | PennyLane/TensorCircuit/etc. comparisons |
-| `benchmarks/results/distributed/` | Sharded distributed evidence only |
-| `benchmarks/results/historical/` | Engineering logs not suitable for claims |
+| `benchmarks/results/smoke/` | Development, replicated, or non-release distributed evidence |
+| `benchmarks/results/scalability/` | Audited sharded scalability evidence only |
 
 ## Contribution Ecosystem
 

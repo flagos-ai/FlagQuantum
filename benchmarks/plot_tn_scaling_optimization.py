@@ -23,17 +23,17 @@ def main() -> None:
     parser.add_argument(
         "--baseline",
         type=Path,
-        default=Path("benchmarks/results/tn_cost_aware_scaling_20260730/raw"),
+        default=Path("benchmarks/results/legacy/tn_cost_aware_scaling_20260730/raw"),
     )
     parser.add_argument(
         "--optimized",
         type=Path,
-        default=Path("benchmarks/results/tn_shared_dag_scaling_20260730/raw"),
+        default=Path("benchmarks/results/legacy/tn_shared_dag_scaling_20260730/raw"),
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("benchmarks/results/tn_shared_dag_scaling_20260730/figures"),
+        default=Path("benchmarks/results/legacy/tn_shared_dag_scaling_20260730/figures"),
     )
     args = parser.parse_args()
 

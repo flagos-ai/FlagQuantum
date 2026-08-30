@@ -58,6 +58,12 @@ flagquantum-benchmark run statevector_training_scaling INPUT... \
 | `benchmarks/internal/data/` | Internal | Archived ad-hoc result payloads. |
 | `benchmarks/internal/scripts/` | Internal | Experiment-matrix shell scripts. |
 
+Only `local/`, `comparison/`, `smoke/`, and `scalability/` are evidence
+classes. Historical experiment families are quarantined under `legacy/` and
+must not be treated as a fifth evidence class or receive new siblings. Migrate
+them out in reviewable batches according to the
+[repository governance policy](../docs/development/REPOSITORY_GOVERNANCE.md).
+
 Top-level Python files are implementation modules retained while their
 maintained scenarios are adopted by the registry. Their filenames are not a
 public interface; user automation should call `flagquantum-benchmark`.

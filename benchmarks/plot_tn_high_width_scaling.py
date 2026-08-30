@@ -8,7 +8,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-ROOT = Path("benchmarks/results/tn_high_width_scaling_20260730")
+ROOT = Path("benchmarks/results/legacy/tn_high_width_scaling_20260730")
 
 
 def main() -> None:

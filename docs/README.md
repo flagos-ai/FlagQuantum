@@ -28,9 +28,14 @@ and maintainers can find the right level of detail quickly.
 | [Roadmap](roadmap/README.md) | Vision, maturity, ecosystem, and delivery plans |
 | [Generated](generated/) | Machine-generated capability and stable-API inventories |
 
-Machine-readable contracts and manifests remain in this directory. They are
-inputs to repository tooling and are not manually curated guides.
+Machine-readable capability contracts live in the repository-level
+[`contracts/`](../contracts/README.md) directory. Repository-wide architecture,
+capability-maturity, and dependency policies remain at the repository root.
+These files are inputs to repository tooling rather than manually curated
+guides.
 
 For runnable workflows, continue to the [examples index](../examples/README.md).
 For benchmark methodology and evidence, use the
 [benchmark index](../benchmarks/README.md).
+Repository retention and evidence-placement rules are defined in
+[repository governance](development/REPOSITORY_GOVERNANCE.md).

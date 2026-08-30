@@ -608,7 +608,7 @@ def plot_ring_optimization(output: Path) -> None:
 
 def main() -> None:
     repo = Path(__file__).resolve().parents[2]
-    output = repo / "benchmarks/results/statevector_mlsys_current"
+    output = repo / "benchmarks/results/legacy/statevector_mlsys_current"
     style()
     plot_generality(repo, output)
     plot_profiler(output)

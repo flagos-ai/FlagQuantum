@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1] / "results" / "comparison"
 OUTPUT = (
     Path(__file__).resolve().parents[1]
     / "results"
+    / "legacy"
     / "statevector_submission_figures"
     / "fig6_lightning_gpu_multinode_cliff"
 )

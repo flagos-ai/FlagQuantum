@@ -17,7 +17,7 @@ torchrun --nproc-per-node=${NPROC} \
   --warmup=2 --repetitions=5 \
   --enable-triton-vjp-adjoint --enable-fused-vjp-pipeline \
   --enable-cross-shard-cx-pack --enable-forward-cross-shard-cx-pack \
-  --json-output=benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_${NPROC}gpu_optimized.json
+  --json-output=benchmarks/results/legacy/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_${NPROC}gpu_optimized.json
 ```
 
 The optimized path keeps the logical-to-physical permutation persistent across

@@ -11,6 +11,12 @@ evidence.
 | `smoke/` | Development, rank-local, replicated, or environment smoke checks. | Non-release only; sharded intent may be recorded, but `scalability_claim_allowed=false`. |
 | `scalability/` | Release-gate scalability evidence only. | Only place for promoted payloads accepted by `--require-scalability`. |
 
+These four directories are the only evidence classes. Historical experiment
+families are quarantined under [`legacy/`](legacy/README.md), which is not a
+release classification and is frozen against new result families. Migrate
+legacy holdings without breaking published links or capability manifests; see
+[repository governance](../../docs/development/REPOSITORY_GOVERNANCE.md).
+
 Large raw profiler traces, exploratory MPS/Heisenberg result matrices, and
 superseded optimization artifacts are stored outside the source repository.
 The repository retains the distributed statevector strong/weak-scaling

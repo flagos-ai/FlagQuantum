@@ -100,8 +100,8 @@ Regenerate the hero figure with:
 ```bash
 MPLCONFIGDIR=/tmp/fq-mpl python \
   benchmarks/development/plot_tn_48q_hero.py \
-  --results benchmarks/results/adapt_vqe_tn_20260803/hero48 \
-  --output benchmarks/results/adapt_vqe_tn_20260803/hero48/tn_48q_hero.png
+  --results benchmarks/results/legacy/adapt_vqe_tn_20260803/hero48 \
+  --output benchmarks/results/legacy/adapt_vqe_tn_20260803/hero48/tn_48q_hero.png
 ```
 
 This directory contains a deterministic, complex128 qubit-ADAPT-VQE comparison
@@ -166,9 +166,9 @@ Reproduce the numerical audits with:
 
 ```bash
 python benchmarks/development/audit_adapt_vqe_tn.py \
-  benchmarks/results/adapt_vqe_tn_20260803/fq_6q_1gpu.json \
-  benchmarks/results/adapt_vqe_tn_20260803/tcng_6q_1gpu.json \
-  --output benchmarks/results/adapt_vqe_tn_20260803/audit_6q_append.json
+  benchmarks/results/legacy/adapt_vqe_tn_20260803/fq_6q_1gpu.json \
+  benchmarks/results/legacy/adapt_vqe_tn_20260803/tcng_6q_1gpu.json \
+  --output benchmarks/results/legacy/adapt_vqe_tn_20260803/audit_6q_append.json
 ```
 
 Regenerate the figure with:
@@ -176,6 +176,6 @@ Regenerate the figure with:
 ```bash
 MPLCONFIGDIR=/tmp/fq-mpl python \
   benchmarks/development/plot_adapt_vqe_tn_readme.py \
-  --results benchmarks/results/adapt_vqe_tn_20260803 \
-  --output benchmarks/results/adapt_vqe_tn_20260803/adapt_vqe_tn_readme.png
+  --results benchmarks/results/legacy/adapt_vqe_tn_20260803 \
+  --output benchmarks/results/legacy/adapt_vqe_tn_20260803/adapt_vqe_tn_readme.png
 ```

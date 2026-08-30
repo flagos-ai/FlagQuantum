@@ -77,7 +77,9 @@ def timing(payload: dict[str, Any]) -> tuple[float, float, float]:
 
 def fig0_final_scaling(root: Path) -> Any:
     gpu_counts = np.asarray([1, 2, 4, 8, 16])
-    comparison_root = root.parent / "statevector_mlsys_current" / "generality"
+    comparison_root = (
+        root.parent / "legacy" / "statevector_mlsys_current" / "generality"
+    )
     fq = []
     for count in gpu_counts:
         rerun = comparison_root / f"flagquantum_31q_d8_linear_{count}gpu_final_rerun.json"
@@ -767,7 +769,9 @@ def fig3_multinode_diagnosis(root: Path) -> Any:
 def main() -> None:
     repo = Path(__file__).resolve().parents[2]
     root = repo / "benchmarks" / "results" / "comparison"
-    output = repo / "benchmarks" / "results" / "statevector_mlsys_current"
+    output = (
+        repo / "benchmarks" / "results" / "legacy" / "statevector_mlsys_current"
+    )
     style()
     figures = {
         "fig0_final_scaling": fig0_final_scaling(root),

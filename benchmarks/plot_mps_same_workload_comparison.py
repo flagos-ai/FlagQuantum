@@ -14,7 +14,13 @@ import numpy as np
 from matplotlib.patches import FancyBboxPatch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = REPO_ROOT / "benchmarks" / "results" / "mps_capacity_16xa800_20260806"
+OUTPUT = (
+    REPO_ROOT
+    / "benchmarks"
+    / "results"
+    / "legacy"
+    / "mps_capacity_16xa800_20260806"
+)
 README_ASSET = REPO_ROOT / "assets" / "readme" / "mps-same-workload-comparison.png"
 
 BLUE = "#285F9E"

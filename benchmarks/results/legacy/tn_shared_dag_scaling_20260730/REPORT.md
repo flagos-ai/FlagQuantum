@@ -44,7 +44,7 @@ is not treated as a reason to distribute TN.
 The implementation borrows the right architectural ideas from cotengra:
 cost-aware multistart path search, explicit slicing, path reuse, and separating
 planning from execution.  It is not a cotengra wrapper.  Earlier controlled
-path-quality evidence is stored in `benchmarks/results/tn_cotengra_gap`.
+path-quality evidence is stored in `benchmarks/results/legacy/tn_cotengra_gap`.
 Those results show parity on trivial networks, but cotengra remains stronger on
 some non-trivial path-search cases.  Therefore path quality is still a
 production gap even though the executor regression measured here is fixed.

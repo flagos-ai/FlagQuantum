@@ -87,7 +87,12 @@ def main() -> None:
     repo = Path(__file__).resolve().parents[2]
     source = repo / "benchmarks" / "results" / "comparison"
     current = (
-        repo / "benchmarks" / "results" / "statevector_mlsys_current" / "generality"
+        repo
+        / "benchmarks"
+        / "results"
+        / "legacy"
+        / "statevector_mlsys_current"
+        / "generality"
     )
     output = repo / "assets" / "readme" / "statevector-scaling"
     output.parent.mkdir(parents=True, exist_ok=True)

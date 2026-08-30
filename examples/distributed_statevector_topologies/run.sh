@@ -3,7 +3,7 @@ set -euo pipefail
 
 NPROC="${NPROC:-${LOCAL_WORLD_SIZE:-1}}"
 ENTANGLEMENT="${ENTANGLEMENT:-ring}"
-OUT="${OUT:-benchmarks/results/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_${NPROC}gpu_example.json}"
+OUT="${OUT:-benchmarks/results/legacy/statevector_mlsys_current/generality/flagquantum_31q_d8_ring_${NPROC}gpu_example.json}"
 PYTHON="${PYTHON:-python}"
 
 if ! command -v nvidia-smi >/dev/null 2>&1; then

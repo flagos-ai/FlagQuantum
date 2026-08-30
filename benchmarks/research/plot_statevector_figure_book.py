@@ -564,7 +564,7 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("benchmarks/results/statevector_figure_book"),
+        default=Path("benchmarks/results/legacy/statevector_figure_book"),
     )
     args = parser.parse_args()
     _style()

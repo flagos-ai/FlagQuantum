@@ -74,7 +74,7 @@ def main() -> None:
                     **decision.summary(),
                 }
             )
-    root = Path("benchmarks/results/gradient_backend_phase_diagram_20260730")
+    root = Path("benchmarks/results/legacy/gradient_backend_phase_diagram_20260730")
     root.mkdir(parents=True, exist_ok=True)
     (root / "matrix.json").write_text(
         json.dumps(records, indent=2) + "\n",

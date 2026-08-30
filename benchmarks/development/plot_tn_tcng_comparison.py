@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "benchmarks/results/tn_compare_tcng_20260731"
+OUT = ROOT / "benchmarks/results/legacy/tn_compare_tcng_20260731"
 FIGURES = OUT / "figures"
 
 

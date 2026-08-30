@@ -99,10 +99,20 @@ def main() -> None:
     repo = Path(__file__).resolve().parents[2]
     comparison = repo / "benchmarks" / "results" / "comparison"
     current = (
-        repo / "benchmarks" / "results" / "statevector_mlsys_current" / "generality"
+        repo
+        / "benchmarks"
+        / "results"
+        / "legacy"
+        / "statevector_mlsys_current"
+        / "generality"
     )
     tqd_root = (
-        repo / "benchmarks" / "results" / "statevector_mlsys_current" / "tqd_current"
+        repo
+        / "benchmarks"
+        / "results"
+        / "legacy"
+        / "statevector_mlsys_current"
+        / "tqd_current"
     )
     output = repo / "assets" / "readme" / "external-comparison"
     output.parent.mkdir(parents=True, exist_ok=True)

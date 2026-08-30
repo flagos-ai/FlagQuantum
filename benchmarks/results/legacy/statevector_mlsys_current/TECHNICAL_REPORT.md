@@ -423,12 +423,12 @@ RY/CX 段碎片化为 58 个短段，使 kernel launch 总数上升。结果是 
 控制调度产生的 launch fragmentation，通信收益才转化为端到端收益。16 卡同版本
 结果尚未补测，Figure 8 与本文均明确标注 pending，不以旧版本 16 卡点替代。
 
-- 绘图代码：[`plot_statevector_mlsys_current.py`](../../research/plot_statevector_mlsys_current.py)
-- 新证据绘图代码：[`plot_statevector_mlsys_new_evidence.py`](../../research/plot_statevector_mlsys_new_evidence.py)
+- 绘图代码：[`plot_statevector_mlsys_current.py`](../../../research/plot_statevector_mlsys_current.py)
+- 新证据绘图代码：[`plot_statevector_mlsys_new_evidence.py`](../../../research/plot_statevector_mlsys_new_evidence.py)
 - 图注：[`CAPTIONS.md`](CAPTIONS.md)
 - 图集清单：[`manifest.json`](manifest.json)
-- 原始比较数据：[`../comparison`](../comparison)
-- TQD matched runner：[`../../torchquantum_dist_statevector_training.py`](../../torchquantum_dist_statevector_training.py)
+- 原始比较数据：[`comparison`](../../comparison)
+- TQD matched runner：[`torchquantum_dist_statevector_training.py`](../../../torchquantum_dist_statevector_training.py)
 
 后续更新图时，应先更新原始 JSON，再由绘图脚本重新生成 PDF/SVG/PNG，最后同步
 修订本报告中的数值和 evidence status，避免正文、图注和 artifact 三者漂移。
