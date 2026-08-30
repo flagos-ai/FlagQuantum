@@ -66,11 +66,6 @@ line_ceiling = 830
 owner = "FlagQuantum core maintainers"
 removal_version = "0.3.0"
 
-[legacy_exceptions."flagquantum/deployment/providers.py"]
-line_ceiling = 1443
-owner = "FlagQuantum deployment maintainers"
-removal_version = "0.3.0"
-
 [legacy_subsystems.v01_dtensor_device]
 classification = "internal_compatibility_adapter"
 public_api = false

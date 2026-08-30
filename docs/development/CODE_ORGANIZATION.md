@@ -201,6 +201,12 @@ plugins, benchmarks, or serialized artifacts.
   bounded-optimal path search live in `simulation.tensor_path_search`; the
   historical oversized `simulation.tensor_contraction` exception has been
   removed.
+- Provider-neutral deployment contracts remain in `deployment.cloud`.
+  Stateless counts/QASM parsing lives in `deployment.provider_utils`, and the
+  Amazon Braket discovery, dynamic-circuit preflight, submission, and result
+  adapter lives in `deployment.braket_provider`. The historical
+  `deployment.providers` import surface re-exports the same objects and is now
+  below the default module-size ceiling, so its size exception has been removed.
 - The optional JAX backend is a lazy package boundary under
   `flagquantum.runtime.backends.jax`; importing the namespace loads neither JAX
   nor its execution adapters.
