@@ -11,7 +11,6 @@ import torch
 
 from ....simulation.tensor_contraction import (
     _canonicalize_unit_extent_nodes,
-    _label_dims,
     _slice_nodes,
 )
 from ....simulation.tensor_models import (
@@ -20,6 +19,7 @@ from ....simulation.tensor_models import (
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
+from ....simulation.tensor_path_search import _label_dims
 from .distributed_dag import plan_distributed_tn_contraction_dag
 from .joint_planning import (
     _predict_rematerialization_peak,
@@ -132,9 +132,7 @@ def _sliced_tn_dag(
         subplan,
         world_size=1,
         objective=(
-            "external_cotengra"
-            if slicing.contraction_path
-            else "quality_multistart"
+            "external_cotengra" if slicing.contraction_path else "quality_multistart"
         ),
         small_tensor_replication_bytes=1 << 62,
         pair_steps=slicing.contraction_path or None,
@@ -299,9 +297,7 @@ def execute_sliced_tn_explicit_reverse(
     gradient_totals: list[torch.Tensor | None] = [None] * len(parameters)
     gradient_compensations: list[torch.Tensor | None] = [None] * len(parameters)
     deferred_node_totals: list[torch.Tensor | None] = [None] * len(source_nodes)
-    deferred_node_compensations: list[torch.Tensor | None] = [None] * len(
-        source_nodes
-    )
+    deferred_node_compensations: list[torch.Tensor | None] = [None] * len(source_nodes)
     forward_operations = 0
     reverse_operations = 0
     nonfinite_cotangents = 0
@@ -368,9 +364,7 @@ def execute_sliced_tn_explicit_reverse(
         template_plan,
         world_size=1,
         objective=(
-            "external_cotengra"
-            if slicing.contraction_path
-            else "quality_multistart"
+            "external_cotengra" if slicing.contraction_path else "quality_multistart"
         ),
         small_tensor_replication_bytes=1 << 62,
         pair_steps=pair_steps,
@@ -379,8 +373,7 @@ def execute_sliced_tn_explicit_reverse(
     full_tape_bytes = sum(value.nbytes for value in dag.values)
     checkpoints = (
         None
-        if checkpoint_budget_bytes is None
-        or full_tape_bytes <= checkpoint_budget_bytes
+        if checkpoint_budget_bytes is None or full_tape_bytes <= checkpoint_budget_bytes
         else plan_tn_checkpoints(
             dag,
             budget_bytes=checkpoint_budget_bytes,
@@ -455,8 +448,7 @@ def execute_sliced_tn_explicit_reverse(
                 source_node = source_nodes[node_index]
                 source_cotangent = torch.zeros_like(source_node.tensor)
                 source_index = tuple(
-                    assignments.get(label, slice(None))
-                    for label in source_node.labels
+                    assignments.get(label, slice(None)) for label in source_node.labels
                 )
                 source_cotangent[source_index] = node_cotangent
                 (

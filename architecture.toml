@@ -75,11 +75,6 @@ line_ceiling = 1753
 owner = "FlagQuantum MPS maintainers"
 removal_version = "0.3.0"
 
-[legacy_exceptions."flagquantum/simulation/tensor_contraction.py"]
-line_ceiling = 2006
-owner = "FlagQuantum tensor-network maintainers"
-removal_version = "0.3.0"
-
 [legacy_subsystems.v01_dtensor_device]
 classification = "internal_compatibility_adapter"
 public_api = false

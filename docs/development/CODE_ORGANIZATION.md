@@ -192,7 +192,10 @@ plugins, benchmarks, or serialized artifacts.
   Integer-labelled pair contraction and compiled stage execution live in the
   dependency-light `simulation.tensor_stages` primitive module. Runtime TN
   modules consume that narrow boundary instead of the compatibility-heavy local
-  contraction planner.
+  contraction planner. Greedy, multistart, tree-reconfiguration, beam, and
+  bounded-optimal path search live in `simulation.tensor_path_search`; the
+  historical oversized `simulation.tensor_contraction` exception has been
+  removed.
 - The optional JAX backend is a lazy package boundary under
   `flagquantum.runtime.backends.jax`; importing the namespace loads neither JAX
   nor its execution adapters.
