@@ -7,7 +7,7 @@ import json
 from dataclasses import asdict, dataclass
 from math import ceil
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, cast
 
 TN_WORKING_SET_CALIBRATION_VERSION = "flagquantum.tn_working_set_calibration.v1"
 
@@ -147,6 +147,14 @@ def build_tn_working_set_calibration(
         blockers.append("insufficient_hardware_calibration_samples")
     if distinct_predictions < minimum_distinct_predictions:
         blockers.append("insufficient_working_set_shape_diversity")
+    recommended_safety_factor = max(
+        1.0,
+        max(residual_reserved_ratios, default=0.0) * safety_margin,
+    )
+    calibration_blockers = tuple(blockers)
+    measurement_digest = hashlib.sha256(
+        json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     payload = {
         "version": TN_WORKING_SET_CALIBRATION_VERSION,
         "accelerator_name": accelerator_name.strip(),
@@ -158,21 +166,33 @@ def build_tn_working_set_calibration(
         "maximum_allocated_to_predicted_ratio": max_allocated,
         "maximum_reserved_to_predicted_ratio": max_reserved,
         "fixed_reserved_overhead_bytes": fixed_reserved_overhead,
-        "recommended_safety_factor": max(
-            1.0,
-            max(residual_reserved_ratios, default=0.0) * safety_margin,
-        ),
+        "recommended_safety_factor": recommended_safety_factor,
         "evidence_level": evidence_level,
         "passed": not blockers,
-        "blockers": tuple(blockers),
-        "measurement_digest": hashlib.sha256(
-            json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest(),
+        "blockers": calibration_blockers,
+        "measurement_digest": measurement_digest,
     }
     identity = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
-    return TNWorkingSetCalibration(**payload, identity=identity)
+    return TNWorkingSetCalibration(
+        version=TN_WORKING_SET_CALIBRATION_VERSION,
+        identity=identity,
+        measurement_digest=measurement_digest,
+        accelerator_name=accelerator_name.strip(),
+        complex_bytes=int(complex_bytes),
+        world_size=int(world_size),
+        topology_class=topology_class.strip(),
+        sample_count=len(normalized),
+        distinct_prediction_count=distinct_predictions,
+        maximum_allocated_to_predicted_ratio=max_allocated,
+        maximum_reserved_to_predicted_ratio=max_reserved,
+        fixed_reserved_overhead_bytes=fixed_reserved_overhead,
+        recommended_safety_factor=recommended_safety_factor,
+        evidence_level=evidence_level,
+        passed=not blockers,
+        blockers=calibration_blockers,
+    )
 
 
 def load_tn_working_set_calibration(
@@ -183,9 +203,34 @@ def load_tn_working_set_calibration(
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     fields = TNWorkingSetCalibration.__dataclass_fields__
     try:
-        selected = {name: payload[name] for name in fields}
+        selected: dict[str, Any] = {name: payload[name] for name in fields}
         selected["blockers"] = tuple(selected["blockers"])
-        calibration = TNWorkingSetCalibration(**selected)
+        calibration = TNWorkingSetCalibration(
+            version=cast(str, selected["version"]),
+            identity=cast(str, selected["identity"]),
+            measurement_digest=cast(str, selected["measurement_digest"]),
+            accelerator_name=cast(str, selected["accelerator_name"]),
+            complex_bytes=cast(int, selected["complex_bytes"]),
+            world_size=cast(int, selected["world_size"]),
+            topology_class=cast(str, selected["topology_class"]),
+            sample_count=cast(int, selected["sample_count"]),
+            distinct_prediction_count=cast(int, selected["distinct_prediction_count"]),
+            maximum_allocated_to_predicted_ratio=cast(
+                float, selected["maximum_allocated_to_predicted_ratio"]
+            ),
+            maximum_reserved_to_predicted_ratio=cast(
+                float, selected["maximum_reserved_to_predicted_ratio"]
+            ),
+            fixed_reserved_overhead_bytes=cast(
+                int, selected["fixed_reserved_overhead_bytes"]
+            ),
+            recommended_safety_factor=cast(
+                float, selected["recommended_safety_factor"]
+            ),
+            evidence_level=cast(str, selected["evidence_level"]),
+            passed=cast(bool, selected["passed"]),
+            blockers=cast(tuple[str, ...], selected["blockers"]),
+        )
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError("invalid TN working-set calibration record") from error
     expected_identity = calibration.identity

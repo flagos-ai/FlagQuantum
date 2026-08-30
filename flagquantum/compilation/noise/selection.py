@@ -140,6 +140,8 @@ def plan_noise_execution_selection(
         raise ValueError("pilot_observable_count must be positive")
     variance_estimate = 1.0 if pilot_variance is None else pilot_variance
     if pilot_confidence_level is not None:
+        assert pilot_variance is not None
+        assert pilot_trajectories is not None
         delta = (1.0 - pilot_confidence_level) / pilot_observable_count
         standard_deviation_radius = 2.0 * sqrt(
             2.0 * log(1.0 / delta) / (pilot_trajectories - 1)
@@ -172,9 +174,17 @@ def plan_noise_execution_selection(
         for instruction in lowered.instructions
         if instruction.metadata.get("is_channel")
     )
-    maximum_kraus_rank = max((len(item.matrix) for item in channels), default=1)
+
+    def kraus_rank(channel: Any) -> int:
+        if channel.matrix is None:
+            raise ValueError("lowered noise channel is missing Kraus operators")
+        return len(channel.matrix)
+
+    maximum_kraus_rank = max((kraus_rank(item) for item in channels), default=1)
     selected_calibration: NoiseSelectorCalibration | None = (
-        load_noise_selector_calibration(calibration) if calibration is not None else None
+        load_noise_selector_calibration(calibration)
+        if calibration is not None
+        else None
     )
 
     def calibration_metadata(mode: str) -> dict[str, Any]:
@@ -205,6 +215,7 @@ def plan_noise_execution_selection(
                 "executed_trajectories": record.executed_trajectories,
             },
         }
+
     density_bytes = estimate_density_bytes(
         ir.n_wires, bsz=bsz, complex_bytes=complex_bytes
     )
@@ -273,11 +284,15 @@ def plan_noise_execution_selection(
                 "pilot_variance_upper_confidence_bound"
                 if estimated_to_target is not None
                 and pilot_confidence_level is not None
-                else "pilot_variance"
-                if estimated_to_target is not None and pilot_variance is not None
-                else "bounded_pauli_variance_le_one"
-                if estimated_to_target is not None
-                else None
+                else (
+                    "pilot_variance"
+                    if estimated_to_target is not None and pilot_variance is not None
+                    else (
+                        "bounded_pauli_variance_le_one"
+                        if estimated_to_target is not None
+                        else None
+                    )
+                )
             ),
             "trajectory_variance_estimate": (
                 variance_estimate if estimated_to_target is not None else None
@@ -313,9 +328,11 @@ def plan_noise_execution_selection(
         sampling_error=True,
         truncation_error=True,
         reasons=(
-            "explicit_mps_controls"
-            if max_bond is not None or cutoff > 0
-            else "compressed_state_fallback",
+            (
+                "explicit_mps_controls"
+                if max_bond is not None or cutoff > 0
+                else "compressed_state_fallback"
+            ),
         ),
         rejection_reasons=tuple(mps_rejections),
         metadata={
@@ -329,11 +346,15 @@ def plan_noise_execution_selection(
                 "pilot_variance_upper_confidence_bound"
                 if estimated_to_target is not None
                 and pilot_confidence_level is not None
-                else "pilot_variance"
-                if estimated_to_target is not None and pilot_variance is not None
-                else "bounded_pauli_variance_le_one"
-                if estimated_to_target is not None
-                else None
+                else (
+                    "pilot_variance"
+                    if estimated_to_target is not None and pilot_variance is not None
+                    else (
+                        "bounded_pauli_variance_le_one"
+                        if estimated_to_target is not None
+                        else None
+                    )
+                )
             ),
             "trajectory_variance_estimate": (
                 variance_estimate if estimated_to_target is not None else None
@@ -400,7 +421,9 @@ def plan_noise_execution_selection(
         memory_limit_bytes=memory_limit_bytes,
         selection_basis=selection_basis,
         calibration_device=(
-            selected_calibration.device_name if selected_calibration is not None else None
+            selected_calibration.device_name
+            if selected_calibration is not None
+            else None
         ),
         target_standard_error=target_standard_error,
         estimated_trajectories_to_target=estimated_to_target,

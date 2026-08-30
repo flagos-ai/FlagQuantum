@@ -75,7 +75,7 @@ class BackendSelection:
 
 
 def _interaction_metrics(ir: CircuitIR) -> tuple[int, float, int]:
-    graph = {wire: set() for wire in range(ir.n_wires)}
+    graph: dict[int, set[int]] = {wire: set() for wire in range(ir.n_wires)}
     local_edges = 0
     edges = 0
     crossing_counts = [0] * max(0, ir.n_wires - 1)
@@ -242,22 +242,25 @@ def select_backend_by_cost(
             else 1
         ),
     )
-    calibration_matches = (
-        tn_memory_calibration is not None
+    matching_tn_calibration = (
+        tn_memory_calibration
+        if tn_memory_calibration is not None
         and tn_memory_calibration.applies_to(
             accelerator_name=accelerator_name,
             complex_bytes=complex_bytes,
             world_size=ranks,
         )
+        else None
     )
+    calibration_matches = matching_tn_calibration is not None
     tn_safety_factor = (
-        tn_memory_calibration.recommended_safety_factor
-        if calibration_matches and tn_memory_calibration is not None
+        matching_tn_calibration.recommended_safety_factor
+        if matching_tn_calibration is not None
         else 1.0
     )
     tn_memory = (
-        tn_memory_calibration.apply(tn_proxy_memory)
-        if calibration_matches and tn_memory_calibration is not None
+        matching_tn_calibration.apply(tn_proxy_memory)
+        if matching_tn_calibration is not None
         else ceil(tn_proxy_memory * tn_safety_factor)
     )
     tn_fits = limit is None or tn_memory <= limit
@@ -342,7 +345,9 @@ def select_backend_by_cost(
         nearest_neighbour_fraction=locality,
         estimated_mps_bond=estimated_mps_bond,
         tn_calibration_identity=(
-            tn_memory_calibration.identity if calibration_matches else None
+            matching_tn_calibration.identity
+            if matching_tn_calibration is not None
+            else None
         ),
         tn_working_set_safety_factor=tn_safety_factor,
         candidates=candidates,
