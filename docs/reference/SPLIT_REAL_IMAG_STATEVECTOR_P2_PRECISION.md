@@ -54,7 +54,7 @@ allocation. Passing the envelope does not certify an arbitrary scientific
 workload; it identifies the strongest checked-in P2 conformance boundary.
 
 The authoritative machine contract is
-[`split-real-imag-statevector-p2-precision-contract.toml`](../../split-real-imag-statevector-p2-precision-contract.toml),
+[`split-real-imag-statevector-p2-precision-contract.toml`](../../contracts/split-real-imag-statevector-p2-precision-contract.toml),
 and the packaged operator surface is
 [`split_real_imag_statevector_p2_precision.json`](../../flagquantum/runtime/profiles/split_real_imag_statevector_p2_precision.json).
 

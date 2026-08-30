@@ -40,7 +40,7 @@ result also records `shifted_evaluations` so the execution cost is explicit.
 ## Contract and numerical evidence
 
 The machine-readable boundary is
-[`split-real-imag-statevector-p1-contract.toml`](../../split-real-imag-statevector-p1-contract.toml).
+[`split-real-imag-statevector-p1-contract.toml`](../../contracts/split-real-imag-statevector-p1-contract.toml).
 The packaged
 [`split_real_imag_statevector_p1.json`](../../flagquantum/runtime/profiles/split_real_imag_statevector_p1.json)
 profile requires the FP32 forward and backward operator surface used by the

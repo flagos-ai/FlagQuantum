@@ -87,7 +87,7 @@ class DoubleSingleConformanceReport:
 
 def _thresholds() -> dict[str, dict[str, float]]:
     contract = tomllib.loads(
-        (ROOT / "double-single-contract.toml").read_text(encoding="utf-8")
+        (ROOT / "contracts" / "double-single-contract.toml").read_text(encoding="utf-8")
     )
     return {
         name: {key: float(value) for key, value in raw.items()}

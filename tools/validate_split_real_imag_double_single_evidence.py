@@ -17,7 +17,9 @@ from flagquantum.runtime.capabilities import load_operator_profile
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT = ROOT / "artifacts/split_real_imag_double_single_a800_20260824.json"
-CONTRACT = ROOT / "split-real-imag-statevector-p3-double-single-contract.toml"
+CONTRACT = (
+    ROOT / "contracts" / "split-real-imag-statevector-p3-double-single-contract.toml"
+)
 
 
 def _load_json(path: Path) -> dict[str, Any]:

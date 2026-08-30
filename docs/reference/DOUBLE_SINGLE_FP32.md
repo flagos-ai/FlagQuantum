@@ -35,7 +35,7 @@ print(report.to_json())
 ```
 
 The authoritative algorithm, threshold, and unsupported-scope declaration is
-`double-single-contract.toml`. The CPU conformance suite covers catastrophic
+`contracts/double-single-contract.toml`. The CPU conformance suite covers catastrophic
 cancellation in sums and dot products plus a 2048-step complex phase chain.
 Each candidate must meet its absolute error bound. It must also improve on the
 device's native FP32 baseline by the declared factor unless that baseline is

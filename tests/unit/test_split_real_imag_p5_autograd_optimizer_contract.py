@@ -11,7 +11,11 @@ from tools.check_split_real_imag_p5_autograd_optimizer_contract import (
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "split-real-imag-statevector-p5-autograd-optimizer-contract.toml"
+CONTRACT = (
+    ROOT
+    / "contracts"
+    / "split-real-imag-statevector-p5-autograd-optimizer-contract.toml"
+)
 
 
 def test_checked_in_split_p5_contract_passes() -> None:

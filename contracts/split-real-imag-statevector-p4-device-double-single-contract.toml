@@ -1,3 +1,4 @@
+# Repository contract; see contracts/README.md for ownership and stability.
 schema = "flagquantum_split_real_imag_statevector_p4_device_double_single_contract_v1"
 maturity = "experimental"
 implementation = "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single"

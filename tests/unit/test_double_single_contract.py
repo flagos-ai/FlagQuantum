@@ -12,11 +12,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_double_single_contract_is_current() -> None:
-    assert contract_errors(load_toml(ROOT / "double-single-contract.toml")) == ()
+    contract = load_toml(ROOT / "contracts" / "double-single-contract.toml")
+    assert contract_errors(contract) == ()
 
 
 def test_contract_rejects_runtime_and_default_selection_claims() -> None:
-    contract = load_toml(ROOT / "double-single-contract.toml")
+    contract = load_toml(ROOT / "contracts" / "double-single-contract.toml")
     contract["runtime_integration"] = "automatic_default_full_statevector"
     contract["default_selection_allowed"] = True
     errors = contract_errors(contract)

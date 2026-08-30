@@ -1,3 +1,4 @@
+# Repository contract; see contracts/README.md for ownership and stability.
 schema = "flagquantum_pennylane_interop_contract_v1"
 ir_version = "1.0"
 maturity = "experimental"

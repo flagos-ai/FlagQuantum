@@ -1,3 +1,4 @@
+# Repository contract; see contracts/README.md for ownership and stability.
 schema = "flagquantum_domestic_single_card_certification_contract_v1"
 maturity = "experimental"
 execution_semantics = "single_device_fast_path"

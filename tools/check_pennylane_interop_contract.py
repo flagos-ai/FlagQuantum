@@ -17,7 +17,7 @@ from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.interop.pennylane.conversion import _PENNYLANE_TO_FLAGQUANTUM
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "pennylane-interop-contract.toml"
+CONTRACT = ROOT / "contracts" / "pennylane-interop-contract.toml"
 POLICY = ROOT / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum/interop/pennylane/conversion.py"
 

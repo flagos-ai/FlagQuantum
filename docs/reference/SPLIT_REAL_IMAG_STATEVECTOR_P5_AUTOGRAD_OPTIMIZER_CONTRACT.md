@@ -111,4 +111,4 @@ evidence. CUDA and `flagos:0` are explicit optimizer routes, not automatic
 runtime selections or hardware certifications.
 
 The authoritative machine-readable declaration is
-[`split-real-imag-statevector-p5-autograd-optimizer-contract.toml`](../../split-real-imag-statevector-p5-autograd-optimizer-contract.toml).
+[`split-real-imag-statevector-p5-autograd-optimizer-contract.toml`](../../contracts/split-real-imag-statevector-p5-autograd-optimizer-contract.toml).

@@ -17,7 +17,7 @@ from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "qiskit-interop-contract.toml"
+CONTRACT = ROOT / "contracts" / "qiskit-interop-contract.toml"
 DEPENDENCY_POLICY = ROOT / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum" / "interop" / "qiskit" / "conversion.py"
 EXPECTED_SCHEMA = "flagquantum_qiskit_interop_contract_v1"

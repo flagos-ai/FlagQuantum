@@ -14,7 +14,9 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "split-real-imag-statevector-p3-double-single-contract.toml"
+CONTRACT = (
+    ROOT / "contracts" / "split-real-imag-statevector-p3-double-single-contract.toml"
+)
 IMPLEMENTATION = (
     ROOT / "flagquantum/runtime/backends/statevector/split_real_imag_double_single.py"
 )

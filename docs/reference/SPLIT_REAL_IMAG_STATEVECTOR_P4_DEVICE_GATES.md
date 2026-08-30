@@ -63,7 +63,7 @@ are transferred to CPU.
 The executable numerical plan is returned by
 `fq.experimental.split_real_imag_p4_precision_plan()`. The machine-readable
 scope is
-[`split-real-imag-statevector-p4-device-double-single-contract.toml`](../../split-real-imag-statevector-p4-device-double-single-contract.toml),
+[`split-real-imag-statevector-p4-device-double-single-contract.toml`](../../contracts/split-real-imag-statevector-p4-device-double-single-contract.toml),
 and the required operator surface is
 [`split_real_imag_statevector_p4_device_double_single.json`](../../flagquantum/runtime/profiles/split_real_imag_statevector_p4_device_double_single.json).
 

@@ -1,3 +1,4 @@
+# Repository contract; see contracts/README.md for ownership and stability.
 schema = "flagquantum_split_real_imag_statevector_p5_autograd_optimizer_contract_v1"
 maturity = "experimental"
 phase_status = "cpu_autograd_and_accelerator_double_single_sgd_reference"

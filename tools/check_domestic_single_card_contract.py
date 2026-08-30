@@ -13,7 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "domestic-single-card-certification-contract.toml"
+CONTRACT = ROOT / "contracts" / "domestic-single-card-certification-contract.toml"
 
 
 def contract_errors(

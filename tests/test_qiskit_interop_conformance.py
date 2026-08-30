@@ -29,7 +29,9 @@ def _contract() -> dict:
     except ModuleNotFoundError:  # pragma: no cover - Python 3.10
         import tomli as tomllib
     return tomllib.loads(
-        (ROOT / "qiskit-interop-contract.toml").read_text(encoding="utf-8")
+        (ROOT / "contracts" / "qiskit-interop-contract.toml").read_text(
+            encoding="utf-8"
+        )
     )
 
 

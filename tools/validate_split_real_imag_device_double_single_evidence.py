@@ -19,7 +19,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT = (
     ROOT / "artifacts/split_real_imag_device_double_single_a800_20260825.json"
 )
-CONTRACT = ROOT / "split-real-imag-statevector-p4-device-double-single-contract.toml"
+CONTRACT = (
+    ROOT
+    / "contracts"
+    / "split-real-imag-statevector-p4-device-double-single-contract.toml"
+)
 
 
 def _load_json(path: Path) -> dict[str, Any]:

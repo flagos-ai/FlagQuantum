@@ -304,7 +304,7 @@ round_trip = to_pennylane(ir)
 ```
 
 The v1 adapter is intentionally static and complex128-first. It supports the
-gate map recorded in `pennylane-interop-contract.toml`, bound real scalar
+gate map recorded in `contracts/pennylane-interop-contract.toml`, bound real scalar
 parameters, and contiguous integer wires. QNodes, devices, execution, shots,
 measurement processes, autograd bridges, and symbolic parameters remain out of
 scope and fail closed. Nonstandard wire labels can only be flattened with an
@@ -346,7 +346,7 @@ does not import Qiskit.
 
 The supported bidirectional gate set, parameter names, bit-index mapping,
 statevector endianness, loss policy, unsupported boundary, and certified
-Qiskit/Aer version lanes are pinned in `qiskit-interop-contract.toml`. Run the
+Qiskit/Aer version lanes are pinned in `contracts/qiskit-interop-contract.toml`. Run the
 same deterministic semantic certification used by CI when qualifying a new
 environment:
 

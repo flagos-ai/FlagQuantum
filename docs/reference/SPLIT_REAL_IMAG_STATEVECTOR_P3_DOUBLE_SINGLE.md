@@ -55,7 +55,7 @@ of an FP32 reciprocal-square-root seed. Set `renormalize_every=0` to disable
 periodic normalization or a positive interval to make the policy explicit.
 
 The machine-readable contract is
-[`split-real-imag-statevector-p3-double-single-contract.toml`](../../split-real-imag-statevector-p3-double-single-contract.toml),
+[`split-real-imag-statevector-p3-double-single-contract.toml`](../../contracts/split-real-imag-statevector-p3-double-single-contract.toml),
 and the operator surface is
 [`split_real_imag_statevector_p3_double_single.json`](../../flagquantum/runtime/profiles/split_real_imag_statevector_p3_double_single.json).
 

@@ -26,7 +26,7 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "domestic-single-card-certification-contract.toml"
+CONTRACT = ROOT / "contracts" / "domestic-single-card-certification-contract.toml"
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST = re.compile(r"^(?:sha256:)?[0-9a-f]{64}$")
 _PLACEHOLDER_TOKENS = ("replace-with", "unknown", "unverified")

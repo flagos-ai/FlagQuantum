@@ -100,9 +100,9 @@ def _evidence() -> dict[str, object]:
 
 def test_domestic_single_card_contract_and_template_fail_closed() -> None:
     contract = tomllib.loads(
-        (ROOT / "domestic-single-card-certification-contract.toml").read_text(
-            encoding="utf-8"
-        )
+        (
+            ROOT / "contracts" / "domestic-single-card-certification-contract.toml"
+        ).read_text(encoding="utf-8")
     )
     template = json.loads(
         (ROOT / "ci/domestic_single_card_attestation.template.json").read_text(

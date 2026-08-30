@@ -20,14 +20,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_checked_in_split_p2_precision_contract_passes() -> None:
     contract = load_toml(
-        ROOT / "split-real-imag-statevector-p2-precision-contract.toml"
+        ROOT / "contracts" / "split-real-imag-statevector-p2-precision-contract.toml"
     )
     assert contract_errors(contract) == ()
 
 
 def test_split_p2_precision_contract_rejects_claim_promotion() -> None:
     contract = copy.deepcopy(
-        load_toml(ROOT / "split-real-imag-statevector-p2-precision-contract.toml")
+        load_toml(
+            ROOT
+            / "contracts"
+            / "split-real-imag-statevector-p2-precision-contract.toml"
+        )
     )
     contract["runtime_default"] = True
     contract["full_state_double_single_claim_allowed"] = True
@@ -40,7 +44,7 @@ def test_split_p2_precision_contract_rejects_claim_promotion() -> None:
 
 def test_split_p2_executable_plan_and_accuracy_match_machine_contract() -> None:
     contract = load_toml(
-        ROOT / "split-real-imag-statevector-p2-precision-contract.toml"
+        ROOT / "contracts" / "split-real-imag-statevector-p2-precision-contract.toml"
     )
     plan = split_real_imag_p2_precision_plan().to_dict()
     plan.pop("kind")

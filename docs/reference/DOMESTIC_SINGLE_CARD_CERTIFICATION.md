@@ -24,7 +24,7 @@ rejected before PyTorch or FlagQuantum execution code is imported.
 ## Acceptance matrix
 
 The immutable contract is
-[`domestic-single-card-certification-contract.toml`](../../domestic-single-card-certification-contract.toml).
+[`domestic-single-card-certification-contract.toml`](../../contracts/domestic-single-card-certification-contract.toml).
 One run covers:
 
 - P0 split-FP32 forward state evolution;

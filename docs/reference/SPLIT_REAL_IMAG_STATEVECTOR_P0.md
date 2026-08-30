@@ -30,7 +30,7 @@ tensor. The execution path itself never needs a complex accelerator tensor.
 ## P0 contract
 
 The authoritative machine-readable boundary is
-[`split-real-imag-statevector-contract.toml`](../../split-real-imag-statevector-contract.toml).
+[`split-real-imag-statevector-contract.toml`](../../contracts/split-real-imag-statevector-contract.toml).
 P0 supports a fixed set of built-in one- and two-qubit gates, scalar bound
 parameters, a batch-one `|0...0>` local statevector, and CPU-reference conformance at
 depths 8, 32, and 128. Its operator requirements are packaged in

@@ -11,7 +11,11 @@ from tools.check_split_real_imag_p4_device_double_single_contract import (
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "split-real-imag-statevector-p4-device-double-single-contract.toml"
+CONTRACT = (
+    ROOT
+    / "contracts"
+    / "split-real-imag-statevector-p4-device-double-single-contract.toml"
+)
 
 
 def test_checked_in_split_p4_contract_passes() -> None:

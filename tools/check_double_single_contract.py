@@ -13,7 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "double-single-contract.toml"
+CONTRACT = ROOT / "contracts" / "double-single-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum/numerics/double_single.py"
 EXPECTED_SUPPORTED = {
     "real_add",

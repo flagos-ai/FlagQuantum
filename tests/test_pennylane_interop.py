@@ -27,7 +27,7 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 CONTRACT = tomllib.loads(
-    (ROOT / "pennylane-interop-contract.toml").read_text(encoding="utf-8")
+    (ROOT / "contracts" / "pennylane-interop-contract.toml").read_text(encoding="utf-8")
 )
 
 
