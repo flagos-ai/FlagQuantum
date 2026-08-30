@@ -137,7 +137,12 @@ plugins, benchmarks, or serialized artifacts.
   Training entry points, lifecycle errors, optimizer ownership, step metrics,
   and final summaries share the cohesive `mps.training` boundary.
   The multi-step lifecycle implementation lives in `mps.training_engine`;
-  historical training paths are explicit compatibility façades.
+  historical training paths are explicit compatibility façades. Durable
+  checkpoint manifests, checksums, writer leases, storage preflight,
+  generation retention, save, and restore live in `mps.checkpointing`.
+  `mps.training_engine` retains compatibility aliases and is now below the
+  default module-size ceiling, so its historical architecture exception has
+  been removed.
   Deterministic Reverse SVD validation, VJP segment fusion, gradient bucketing,
   and dirty-Bond planning live in the pure `mps.reverse_planning` module.
   Reverse contracts, records, collective checkpoint accounting, and optional
