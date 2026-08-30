@@ -20,6 +20,14 @@ FORBIDDEN_SUFFIXES = {
     ".npy",
     ".npz",
 }
+FORBIDDEN_PAPER_SUFFIXES = {
+    ".aux",
+    ".blg",
+    ".fdb_latexmk",
+    ".fls",
+    ".log",
+    ".out",
+}
 ALLOWED_LARGE_FILES: dict[Path, int] = {}
 DEFAULT_MAX_FILE_BYTES = 2_000_000
 # The integrated MPS/statevector evidence corpus is part of the reproducibility
@@ -110,6 +118,11 @@ def violations(
             errors.append(f"generated cache tracked: {relative}")
         if path.suffix.lower() in FORBIDDEN_SUFFIXES:
             errors.append(f"forbidden binary/data artifact tracked: {relative}")
+        if relative.parts[0] == "paper" and (
+            path.suffix.lower() in FORBIDDEN_PAPER_SUFFIXES
+            or path.name.endswith("Notes.bib")
+        ):
+            errors.append(f"generated paper build artifact tracked: {relative}")
         allowed_size = ALLOWED_LARGE_FILES.get(relative, max_file_bytes)
         if size > allowed_size:
             errors.append(f"tracked file exceeds {max_file_bytes} bytes: {relative}")

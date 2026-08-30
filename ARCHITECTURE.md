@@ -58,7 +58,8 @@ contracts/                  # capability and interoperability contracts
 tests/                      # unit, integration, distributed, and release gates
 docs/                       # current product, architecture, and development truth
 tools/                      # repository automation; never a runtime dependency
-artifacts/                  # grandfathered development evidence pending migration
+artifacts/                  # current capability records plus development/legacy classes
+paper/                      # isolated manuscript and paper-audit workspaces
 ```
 
 Detailed subsystem documents live in the
