@@ -61,11 +61,6 @@ runtime_import_allowed = [
 "flagquantum/runtime/operator_backends.py" = 2
 "flagquantum/runtime/training_state.py" = 8
 
-[legacy_exceptions."flagquantum/api.py"]
-line_ceiling = 830
-owner = "FlagQuantum core maintainers"
-removal_version = "0.3.0"
-
 [legacy_subsystems.v01_dtensor_device]
 classification = "internal_compatibility_adapter"
 public_api = false

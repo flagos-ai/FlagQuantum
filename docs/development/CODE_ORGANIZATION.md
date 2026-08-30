@@ -23,7 +23,10 @@ none of its symbols belongs to the v0.2 stable API.
 Canonical audit wildcard exports use capability vocabulary. Historical
 milestone-numbered names remain available only as lazy explicit-import aliases.
 The compatibility-heavy `flagquantum.api` wildcard surface follows the same
-rule while preserving explicit attribute access.
+rule while preserving explicit attribute access. Its symbol wiring remains in
+`flagquantum.api`, while the frozen wildcard manifest is isolated in
+`flagquantum._compat_api_exports`; this keeps compatibility behavior auditable
+without mixing the two responsibilities.
 The canonical audit schema and vocabulary submodules also exclude phase labels
 from wildcard exports.
 
@@ -100,7 +103,8 @@ plugins, benchmarks, or serialized artifacts.
   `flagquantum.runtime.planner_adapter` seam and cannot import execution
   implementations.
 - `flagquantum.api` remains the frozen v1 compatibility aggregator and resolves
-  runtime symbols from canonical modules.
+  runtime symbols from canonical modules. Its export manifest is isolated from
+  symbol wiring, and the former module-size exception has been removed.
 - Reintroducing the removed runtime compatibility package fails architecture
   checks.
 - Backend capability registration and runtime backend/dtype configuration have

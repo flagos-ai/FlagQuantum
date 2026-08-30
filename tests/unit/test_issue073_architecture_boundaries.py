@@ -46,6 +46,6 @@ def test_dependency_graph_and_compatibility_registry_are_checked_in():
 
     assert "flowchart TD" in graph
     assert "Executors emit backend-neutral" in graph
-    assert "legacy_exceptions" in policy
-    assert "owner =" in policy
-    assert "removal_version =" in policy
+    assert "legacy_exceptions" not in policy
+    assert "[legacy_subsystems.v01_dtensor_device]" in policy
+    assert 'classification = "internal_compatibility_adapter"' in policy
