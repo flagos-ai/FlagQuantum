@@ -44,8 +44,12 @@ def test_hamiltonian_mpo_compression_is_reused_for_static_observable(monkeypatch
     first = fq.Circuit(2).ry(0, 0.1)
     second = fq.Circuit(2).ry(0, 0.2)
 
-    first_value = fq.build_tensor_network_hamiltonian_expectation(first, target).contract()
-    second_value = fq.build_tensor_network_hamiltonian_expectation(second, target).contract()
+    first_value = fq.build_tensor_network_hamiltonian_expectation(
+        first, target
+    ).contract()
+    second_value = fq.build_tensor_network_hamiltonian_expectation(
+        second, target
+    ).contract()
 
     assert calls == 1
     assert torch.isfinite(first_value).all()
@@ -75,6 +79,11 @@ def test_persistent_distributed_plan_round_trip(tmp_path):
     restored = distributed_tn._load_persistent_plan(path, expected_key=key)
 
     assert restored == (slicing, steps)
+    assert isinstance(restored[0].contraction_path, tuple)
+    assert all(
+        isinstance(step, fq.PairContractionStep)
+        for step in restored[0].contraction_path
+    )
     assert distributed_tn._load_persistent_plan(path, expected_key="different") is None
     path.write_text("{truncated", encoding="utf-8")
     assert distributed_tn._load_persistent_plan(path, expected_key=key) is None
@@ -1292,7 +1301,12 @@ def test_tensor_network_hamiltonian_mpo_matches_termwise_value_and_gradient():
     )
 
     def circuit(values):
-        return fq.Circuit(2, dtype=torch.complex128).ry(0, values[0]).rx(1, values[1]).cx(0, 1)
+        return (
+            fq.Circuit(2, dtype=torch.complex128)
+            .ry(0, values[0])
+            .rx(1, values[1])
+            .cx(0, 1)
+        )
 
     plan = fq.build_tensor_network_hamiltonian_expectation(
         circuit(parameters), hamiltonian
@@ -1313,9 +1327,7 @@ def test_tensor_network_hamiltonian_block_mpo_matches_individual_expectations():
     circuit = fq.Circuit(2, dtype=torch.complex128).ry(0, parameter).cx(0, 1)
     observables = (
         fq.Hamiltonian((fq.pauli_term(0.5, "ZZ", (0, 1)),)),
-        fq.Hamiltonian(
-            (fq.pauli_term(-0.7, "X", (0,)), fq.pauli_term(0.2, "Z", (1,)))
-        ),
+        fq.Hamiltonian((fq.pauli_term(-0.7, "X", (0,)), fq.pauli_term(0.2, "Z", (1,)))),
     )
 
     plan = fq.build_tensor_network_hamiltonian_expectations(circuit, observables)

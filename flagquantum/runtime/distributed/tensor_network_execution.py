@@ -106,6 +106,22 @@ def _persistent_plan_key(
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _pair_contraction_step_from_payload(
+    payload: Mapping[str, Any],
+) -> PairContractionStep:
+    """Restore tuple-valued fields erased by JSON serialization."""
+
+    return PairContractionStep(
+        **{
+            **payload,
+            "left_labels": tuple(payload["left_labels"]),
+            "right_labels": tuple(payload["right_labels"]),
+            "output_labels": tuple(payload["output_labels"]),
+            "output_shape": tuple(payload["output_shape"]),
+        }
+    )
+
+
 def _load_persistent_plan(
     path: str | Path,
     *,
@@ -130,18 +146,13 @@ def _load_persistent_plan(
         slicing_payload = dict(payload["slicing"])
         for field in ("sliced_labels", "slice_shape"):
             slicing_payload[field] = tuple(slicing_payload[field])
+        slicing_payload["contraction_path"] = tuple(
+            _pair_contraction_step_from_payload(item)
+            for item in slicing_payload["contraction_path"]
+        )
         slicing = TensorNetworkSlicingPlan(**slicing_payload)
         steps = tuple(
-            PairContractionStep(
-                **{
-                    **item,
-                    "left_labels": tuple(item["left_labels"]),
-                    "right_labels": tuple(item["right_labels"]),
-                    "output_labels": tuple(item["output_labels"]),
-                    "output_shape": tuple(item["output_shape"]),
-                }
-            )
-            for item in payload["steps"]
+            _pair_contraction_step_from_payload(item) for item in payload["steps"]
         )
     except (TypeError, ValueError, KeyError):
         return None
