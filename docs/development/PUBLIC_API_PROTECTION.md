@@ -34,6 +34,12 @@ Until the full target state is active, `docs/public_api_v1.json` is useful chang
 detection but must not be treated as a complete security or compatibility
 boundary.
 
+Phase 0 also records the pre-open-source migration baseline in
+`contracts/public-api-v0.2-baseline.json`. The baseline checker is
+`tools/public_api_snapshot.py`; it protects the starting point while the final
+Stable Core is being selected. It is intentionally not the final frozen API
+contract.
+
 ## Protected contract
 
 For each Stable Core API, protection must cover more than its import name.

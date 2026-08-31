@@ -99,6 +99,8 @@ jobs:
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth
         run: python tools/docs_source_of_truth.py --check
+      - name: Verify pre-open-source public API migration baseline
+        run: python tools/public_api_snapshot.py
       - name: Verify correctness certification matrix
         run: python tools/correctness_certification.py --check
       - name: Verify capability maturity claims

@@ -20,9 +20,7 @@ PROJECT_HOME_PREFIX = re.compile(
     r"/(?:root|home/[^/\s\"]+|Users/[^/\s\"]+)/"
     r"(?:[^/\s\"]+/)*FlagQuantum/FlagQuantum/"
 )
-ABSOLUTE_HOME_TOKEN = re.compile(
-    r"/(?:root|home/[^/\s\"]+|Users/[^/\s\"]+)/[^\s\"]+"
-)
+ABSOLUTE_HOME_TOKEN = re.compile(r"/(?:root|home/[^/\s\"]+|Users/[^/\s\"]+)/[^\s\"]+")
 
 
 def sanitize_text(text: str) -> str:

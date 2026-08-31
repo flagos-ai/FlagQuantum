@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from tools.sanitize_public_evidence import sanitize_text, unsanitized_files

@@ -582,11 +582,22 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 ### Phase 0：冻结现状和用户旅程
 
 - 保存当前 `public_api_v1.json` 作为内部迁移基线；
+- 使用 `contracts/public-api-v0.2-baseline.json` 记录导出、签名、默认值和
+  dataclass 字段，并由 `tools/public_api_snapshot.py` fail closed；
 - 建立五条黄金路径测试；
 - 收集所有根级导出、函数签名和文档引用；
 - 禁止在收敛期间继续增加根级 API。
 
 完成标准：可以自动检测任何公开签名和示例变化。
+
+实施记录（2026-08-31）：
+
+- `contracts/public-api-v0.2-baseline.json` 已记录当前 60 个 stable exports；
+- `tools/public_api_snapshot.py` 已接入 pre-commit 和 `CI / quality`；
+- `tests/api_contract/test_open_source_golden_paths.py` 已覆盖 Bell circuit、
+  参数化目标训练、PyTorch 组合、自动规划、本地部署和 Qiskit round trip；
+- core CI 执行前五条路径，现有 Qiskit 2.0/2.5 可选依赖矩阵执行 Qiskit 路径；
+- 该记录是迁移起点，不代表当前 60 个 exports 已被批准为最终 Stable Core。
 
 ### Phase 1：收缩 stable surface
 
