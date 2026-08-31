@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
-  "status": "draft_pending_approval",
+  "status": "implemented_pending_root_approval",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md",
   "target": "first-public-alpha",
   "root_addition": "ExecutionPlan",
-  "implementation_authorized": false,
+  "implementation_authorized": true,
   "root_manifest_authorized": false,
   "proposed_signatures": {
     "plan": "(program: 'Any', *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",

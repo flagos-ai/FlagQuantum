@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
 
 import flagquantum as fq
+from flagquantum.compilation.models import ExecutionPlan
 
 pytestmark = pytest.mark.unit
 
@@ -19,11 +21,11 @@ def _load(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_execution_plan_candidate_is_draft_without_implementation_authority() -> None:
+def test_execution_plan_candidate_records_implementation_authority_only() -> None:
     candidate = _load(CANDIDATE)
 
-    assert candidate["status"] == "draft_pending_approval"
-    assert candidate["implementation_authorized"] is False
+    assert candidate["status"] == "implemented_pending_root_approval"
+    assert candidate["implementation_authorized"] is True
     assert candidate["root_manifest_authorized"] is False
     assert candidate["rules"]["candidate_is_frozen_contract"] is False
 
@@ -98,3 +100,14 @@ def test_execution_plan_is_local_executable_not_a_deployment_package() -> None:
     assert boundaries["deployment_package"] is False
     assert boundaries["provider_credentials_allowed"] is False
     assert boundaries["live_runtime_objects_allowed"] is False
+
+
+def test_implemented_plan_model_matches_candidate_properties_and_methods() -> None:
+    contract = _load(CANDIDATE)["contract"]
+    dataclass_fields = {field.name for field in fields(ExecutionPlan)}
+
+    for entry in contract["properties"]:
+        descriptor = getattr(ExecutionPlan, entry["name"], None)
+        assert entry["name"] in dataclass_fields or isinstance(descriptor, property)
+    for name in contract["methods"]:
+        assert callable(getattr(ExecutionPlan, name))

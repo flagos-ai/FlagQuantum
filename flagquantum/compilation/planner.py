@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
-from ..core.ir import CircuitIR
+from ..core.ir import CircuitIR, MeasurementNode
 from .backend_selection import OutputTarget, select_backend_by_cost
 from .candidates import (
     CandidateBuildContext,
@@ -474,12 +474,29 @@ def plan(
 
     if options is not None and not isinstance(options, ExecutionOptions):
         raise TypeError("options must be an ExecutionOptions or None")
+    source_ir = program.to_ir() if hasattr(program, "to_ir") else program
+    if not isinstance(source_ir, CircuitIR):
+        raise TypeError("program must be a Circuit or CircuitIR")
+    if any(
+        instruction.metadata.get("is_dynamic") or instruction.metadata.get("condition")
+        for instruction in source_ir.instructions
+    ):
+        raise NotImplementedError(
+            "fq.run does not execute dynamic trajectories; use "
+            "fq.experimental.run_dynamic(..., shots=...)"
+        )
     runtime_config = getattr(program, "runtime_config", None)
     resolved = resolve_execution_options(
         options,
         program_constraints=circuit_execution_constraints(program),
         runtime_config=runtime_config,
     )
+    if resolved.backend not in {"auto", "pytorch"}:
+        raise NotImplementedError(
+            f"stable fq.run backend {resolved.backend!r} is not available; "
+            "use fq.Module for JAX kernels or flagquantum.backends for "
+            "backend-native execution"
+        )
     from ..core.runtime_config import get_runtime_config
 
     selected_config = runtime_config or get_runtime_config()
@@ -495,9 +512,28 @@ def plan(
         "samples": "samples",
         "amplitudes": "few_amplitudes",
     }
+    measurements = tuple(source_ir.measurements)
+    if not measurements and (
+        resolved.target == "samples" or resolved.shots is not None
+    ):
+        if resolved.shots is None:
+            raise ValueError("target='samples' requires shots")
+        measurements = (
+            MeasurementNode(
+                "sample",
+                tuple(range(source_ir.n_wires)),
+                shots=resolved.shots,
+                metadata={} if resolved.seed is None else {"seed": resolved.seed},
+            ),
+        )
+        source_ir = replace(source_ir, measurements=measurements)
+    if not measurements and resolved.target in {"expectation", "amplitudes"}:
+        raise NotImplementedError(
+            f"target={resolved.target!r} requires a measurement embedded in the program"
+        )
     world_size = resolve_distributed_backend_policy().effective_world_size
-    return plan_advanced(
-        program,
+    internal_plan = plan_advanced(
+        source_ir,
         bsz=resolved.batch_size,
         world_size=world_size,
         complex_bytes=16 if resolved.precision == "complex128" else 8,
@@ -507,6 +543,14 @@ def plan(
         require_gradients=resolved.require_gradients,
         allow_approximate=resolved.allow_approximate,
         config=selected_config,
+    )
+    from .execution_plan_contract import attach_execution_contract
+
+    return attach_execution_contract(
+        internal_plan,
+        program=source_ir,
+        requested_options=options or ExecutionOptions(),
+        resolved_options=resolved,
     )
 
 

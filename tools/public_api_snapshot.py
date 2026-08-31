@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "public_api_v1.json"
 BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
 EXECUTION_OPTIONS_CONTRACT = ROOT / "contracts" / "execution-options-v1-candidate.json"
+EXECUTION_PLAN_CONTRACT = ROOT / "contracts" / "execution-plan-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -170,6 +171,7 @@ def validate() -> tuple[str, ...]:
     options_contract = json.loads(
         EXECUTION_OPTIONS_CONTRACT.read_text(encoding="utf-8")
     )
+    plan_contract = json.loads(EXECUTION_PLAN_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -188,6 +190,12 @@ def validate() -> tuple[str, ...]:
                 if "." not in name
             ),
         }
+    if plan_contract.get("implementation_authorized") is True:
+        authorized_changes.update(
+            name
+            for name in plan_contract.get("proposed_signatures", {})
+            if "." not in name
+        )
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -217,12 +225,24 @@ def validate() -> tuple[str, ...]:
             "public API baseline changed; do not regenerate it without an approved "
             "API change proposal\n" + difference
         )
-    errors.extend(_validate_authorized_execution_options(options_contract, names))
+    expected_signatures = dict(options_contract.get("public_signatures", {}))
+    if plan_contract.get("implementation_authorized") is True:
+        expected_signatures.update(plan_contract.get("proposed_signatures", {}))
+    errors.extend(
+        _validate_authorized_execution_options(
+            options_contract,
+            names,
+            expected_signatures=expected_signatures,
+        )
+    )
     return tuple(errors)
 
 
 def _validate_authorized_execution_options(
-    contract: dict[str, Any], names: list[str]
+    contract: dict[str, Any],
+    names: list[str],
+    *,
+    expected_signatures: dict[str, str],
 ) -> list[str]:
     import flagquantum as fq
 
@@ -245,7 +265,7 @@ def _validate_authorized_execution_options(
         "Circuit.run": fq.Circuit.run,
         "RuntimePolicy": fq.RuntimePolicy,
     }
-    for name, expected_signature in contract.get("public_signatures", {}).items():
+    for name, expected_signature in expected_signatures.items():
         actual_signature = str(inspect.signature(objects[name], eval_str=False))
         if actual_signature != expected_signature:
             errors.append(

@@ -29,10 +29,11 @@ import flagquantum as fq
 circuit = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
 options = fq.ExecutionOptions(mode="auto", precision="complex64")
 plan = fq.plan(circuit, options=options)
-result = fq.run(circuit, options=options)
+result = fq.run(plan)
 
+print(plan.identity)
 print(plan.summary()["recommended_mode"])
-print(result.plan.state_mode)
+print(result.plan.identity)
 print(result.state)
 ```
 
@@ -51,6 +52,26 @@ FlagQuantum IR continue to use `wires=`.
 point. `ExecutionOptions` is the only stable execution-configuration input;
 unknown keywords fail before planning. `Circuit.run(options=...)` and
 `fq.run(circuit, options=...)` are equivalent.
+
+For an inspectable and reproducible execution, pass the result of `fq.plan`
+directly to `fq.run`. The supplied plan is validated and executed without
+replanning or recompiling, and `result.plan is plan` holds in the same process.
+Plan identity covers the canonical IR, resolved execution semantics, compiler
+pipeline, required environment, and selected decision. JSON round trips verify
+all fingerprints and the final SHA-256 identity before execution:
+
+```python
+text = plan.to_json()
+restored = type(plan).from_json(text)
+result = fq.run(restored)
+assert result.plan.identity == plan.identity
+```
+
+An existing plan is closed to semantic overrides: passing `options`,
+`measurements`, or `noise_model` alongside it raises `TypeError`. Environment
+or world-size incompatibility fails before kernel launch rather than silently
+replanning or falling back. Provider submission and signed portability remain
+the responsibility of `DeploymentPackage`.
 `flagquantum.backends.run_native`, `flagquantum.backends.run_mps`, and
 `flagquantum.backends.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects or backend-specific controls.

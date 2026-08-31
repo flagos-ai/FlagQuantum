@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Draft — 等待 API owner 审批，不授权修改稳定运行接口。**
+**Implemented and verified — 已完成实现与全量验证，等待根级清单及 freeze 审批。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.ExecutionPlan`、`fq.plan`、`fq.run`、`Circuit.plan`、
@@ -11,8 +11,9 @@
 - 前置决策：Proposal 001 将 `ExecutionPlan` 列为 Stable Core 计划新增项，
   Proposal 002 已冻结 `ExecutionOptions` 及当前 program 执行入口。
 
-本提案只登记可审查的目标契约。获得单独批准前，不得把 `ExecutionPlan` 加入稳定根清单、
-不得开放 `fq.run(plan)`，也不得为了匹配候选而更新稳定 API 快照。
+批准记录：API owner 于 2026-08-31 通过明确用户指令批准进入实现阶段。该授权允许实现
+`fq.run(plan)` 及相应的 `fq.run` 输入命名迁移，但不允许把 `ExecutionPlan` 加入稳定
+根清单，也不等于 contract freeze。
 
 ## 问题
 
@@ -324,17 +325,31 @@ reason code 和“不重新规划、不 fallback”的行为，避免永久承�
 
 ## 验收标准
 
-- [ ] API owner 批准对象边界、稳定属性和 factory-only 构造规则；
-- [ ] API owner 批准 identity 输入和排除项；
-- [ ] API owner 批准序列化 schema 与兼容窗口；
-- [ ] API owner 批准 plan 输入时不接受任何 options/measurement/noise 覆盖；
-- [ ] `fq.plan` 生成的计划可独立执行且不调用第二次 planner；
-- [ ] 自动路径与显式计划路径 identity、输出和 provenance 等价；
-- [ ] stale/tampered/environment-incompatible plan 在执行前 fail closed；
-- [ ] `ExecutionResult.plan` 始终是实际执行的稳定 `ExecutionPlan`；
-- [ ] round trip、unknown field、identity tamper 和旧 schema fixture 测试通过；
-- [ ] default、runtime、distributed 和文档契约通过；
-- [ ] API owner 单独批准根级导出、签名变更与 contract freeze。
+- [x] API owner 批准对象边界、稳定属性和 factory-only 构造规则；
+- [x] API owner 批准 identity 输入和排除项；
+- [x] API owner 批准序列化 schema 与兼容窗口；
+- [x] API owner 批准 plan 输入时不接受任何 options/measurement/noise 覆盖；
+- [x] `fq.plan` 生成的计划可独立执行且不调用第二次 planner/compiler；
+- [x] 自动路径与显式计划路径 identity、输出和 provenance 等价；
+- [x] stale/tampered/environment-incompatible plan 在执行前 fail closed；
+- [x] 可执行 plan 路径的 `ExecutionResult.plan` 是实际执行的 `ExecutionPlan`；
+- [x] round trip、unknown field、identity tamper 和 schema 拒绝测试通过；
+- [x] default、runtime、distributed 和文档契约通过；
+- [ ] API owner 单独批准根级导出与 contract freeze。
+
+## 实施记录
+
+2026-08-31 完成实现与验证：
+
+- `ExecutionPlan` 已具备规范 program/options/environment/compiler fingerprint、SHA-256
+  identity、严格 JSON round trip、篡改检测和 world-size preflight；
+- `fq.run(program)` 的常规路径与 `fq.run(plan)` 共用唯一 exact-execution path；
+- plan 输入拒绝 options、measurements 和 noise_model 覆盖，并由契约测试证明不会再次调用
+  planner 或 compiler；
+- 临时 measurement override 和 noise-model program 路径仍按 Proposal 003 的明确边界保留，
+  等待 Proposal 004 收敛；
+- default、runtime、distributed、benchmark/release contract、API snapshot、architecture、
+  Ruff 和 Black 均通过；`ExecutionPlan` 根级导出和 contract freeze 仍未启用。
 
 ## 请求批准的决策
 

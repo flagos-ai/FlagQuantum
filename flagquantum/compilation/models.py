@@ -49,6 +49,81 @@ class ExecutionPlan:
     runtime_config: Mapping[str, Any] | None = None
     routing_plan: Mapping[str, Any] | None = None
     noisy_execution_plan: NoisyExecutionPlan | None = None
+    _contract_payload_json: str | None = None
+
+    @property
+    def identity(self) -> str:
+        return str(self.to_dict()["identity"])
+
+    @property
+    def schema_version(self) -> str:
+        return str(self.to_dict()["version"])
+
+    @property
+    def program_fingerprint(self) -> str:
+        return str(self.to_dict()["fingerprints"]["program"])
+
+    @property
+    def options_fingerprint(self) -> str:
+        return str(self.to_dict()["fingerprints"]["options"])
+
+    @property
+    def environment_fingerprint(self) -> str:
+        return str(self.to_dict()["fingerprints"]["environment"])
+
+    @property
+    def compiler_fingerprint(self) -> str:
+        return str(self.to_dict()["fingerprints"]["compiler"])
+
+    @property
+    def mode(self) -> str:
+        return str(self.to_dict()["decision"]["mode"])
+
+    @property
+    def backend(self) -> str:
+        return str(self.to_dict()["decision"]["backend"])
+
+    @property
+    def device(self) -> str:
+        return str(self.to_dict()["decision"]["device"])
+
+    @property
+    def target(self) -> str:
+        return str(self.to_dict()["decision"]["target"])
+
+    @property
+    def batch_size(self) -> int:
+        return int(self.to_dict()["decision"]["batch_size"])
+
+    @property
+    def precision(self) -> str:
+        return str(self.to_dict()["decision"]["precision"])
+
+    @property
+    def is_distributed(self) -> bool:
+        return self.world_size > 1
+
+    def to_dict(self) -> dict[str, object]:
+        from .execution_plan_contract import plan_to_dict
+
+        return plan_to_dict(self)
+
+    def to_json(self, *, indent: int | None = None) -> str:
+        from .execution_plan_contract import plan_to_json
+
+        return plan_to_json(self, indent=indent)
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "ExecutionPlan":
+        from .execution_plan_contract import plan_from_dict
+
+        return plan_from_dict(payload)
+
+    @classmethod
+    def from_json(cls, text: str) -> "ExecutionPlan":
+        from .execution_plan_contract import plan_from_json
+
+        return plan_from_json(text)
 
     def to_contract(self) -> RuntimePlanContract:
         from .contract_adapter import execution_plan_contract
@@ -75,7 +150,7 @@ class ExecutionPlan:
         blockers: tuple[str, ...] = ()
         if is_distributed and not sharding_available:
             blockers = ("runtime_summary_required_for_scalability_claim",)
-        return {
+        summary = {
             "state_mode": self.state_mode,
             "recommended_mode": self.recommended_mode,
             "claim_evidence_type": "plan_preflight",
@@ -102,6 +177,25 @@ class ExecutionPlan:
                 else self.noisy_execution_plan.summary()
             ),
         }
+        if self._contract_payload_json is not None:
+            summary.update(
+                {
+                    "identity": self.identity,
+                    "schema_version": self.schema_version,
+                    "program_fingerprint": self.program_fingerprint,
+                    "options_fingerprint": self.options_fingerprint,
+                    "environment_fingerprint": self.environment_fingerprint,
+                    "compiler_fingerprint": self.compiler_fingerprint,
+                    "mode": self.mode,
+                    "backend": self.backend,
+                    "device": self.device,
+                    "target": self.target,
+                    "batch_size": self.batch_size,
+                    "precision": self.precision,
+                    "is_distributed": self.is_distributed,
+                }
+            )
+        return summary
 
 
 @dataclass(frozen=True)

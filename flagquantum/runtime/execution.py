@@ -301,10 +301,15 @@ def run_distributed(
 ) -> Any:
     """Execute a FlagQuantum IR on a native distributed device."""
 
-    execution_ir = compile_for_backend(
-        ir,
-        coupling_map=coupling_map,
-        optimize=optimize,
+    provided_execution_plan = device_options.pop("_execution_plan", None)
+    execution_ir = (
+        ir
+        if provided_execution_plan is not None
+        else compile_for_backend(
+            ir,
+            coupling_map=coupling_map,
+            optimize=optimize,
+        )
     )
     if "world_size" in device_options and "world_sz" not in device_options:
         device_options["world_sz"] = device_options.pop("world_size")
@@ -323,11 +328,8 @@ def run_distributed(
         world_size=world_size,
         backend_policy=backend_policy,
     )
-    execution_plan = build_plan(
-        execution_ir,
-        bsz=batch_size,
-        world_size=world_size,
-        optimize=False,
+    execution_plan = provided_execution_plan or build_plan(
+        execution_ir, bsz=batch_size, world_size=world_size, optimize=False
     )
     statevector_plan = plan_distributed_statevector(
         execution_ir,
@@ -448,6 +450,7 @@ def run_native(
                 **wrapped_options,
             )
 
+    provided_execution_plan = options.pop("_execution_plan", None)
     if mode == "distributed":
         mode = "distributed_statevector"
     if mode == "tn":
@@ -514,10 +517,14 @@ def run_native(
             options["device"] = str(resolve_device(options.get("device")))
     optimize = bool(options.get("optimize", True))
     coupling_map = options.get("coupling_map")
-    execution_ir = compile_for_backend(
-        ir,
-        coupling_map=coupling_map,
-        optimize=optimize if coupling_map is not None else False,
+    execution_ir = (
+        ir
+        if provided_execution_plan is not None
+        else compile_for_backend(
+            ir,
+            coupling_map=coupling_map,
+            optimize=optimize if coupling_map is not None else False,
+        )
     )
     if mode == "auto":
         mode = select_execution_mode(
@@ -547,6 +554,7 @@ def run_native(
             execution_ir,
             optimize=False,
             return_plan=return_plan,
+            _execution_plan=provided_execution_plan,
             **distributed_options,
         )
 
@@ -586,7 +594,7 @@ def run_native(
             circuit_options.pop("world_size", None)
             circuit_options.pop("world_sz", None)
             result = Circuit.from_ir(execution_ir, **circuit_options).state()
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir, state_mode="statevector", **plan_options
         )
         if operator_preflight is not None:
@@ -603,7 +611,8 @@ def run_native(
             routing_plan["precision_plan"] = precision_plan.to_dict()
             routing_plan["precision_plan_hash"] = precision_plan.content_hash()
             routing_plan["numerical_validation"] = numerical_validation.to_dict()
-            execution_plan = replace(execution_plan, routing_plan=routing_plan)
+            if provided_execution_plan is None:
+                execution_plan = replace(execution_plan, routing_plan=routing_plan)
     elif mode == "density_matrix":
         from ..compilation.noise import (
             build_noisy_execution_plan,
@@ -612,7 +621,7 @@ def run_native(
         from .noise_registry import execute_noisy_plan
 
         lowered = lower_noise_model(execution_ir, noise_model)
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             lowered,
             state_mode="density_matrix",
             **plan_options,
@@ -624,10 +633,11 @@ def run_native(
             memory_limit_bytes=options.get("memory_limit_bytes"),
             noise_model_identity=getattr(noise_model, "identity", None),
         )
-        execution_plan = replace(
-            execution_plan,
-            noisy_execution_plan=noisy_plan,
-        )
+        if provided_execution_plan is None:
+            execution_plan = replace(
+                execution_plan,
+                noisy_execution_plan=noisy_plan,
+            )
         density_options = dict(options)
         density_options.pop("coupling_map", None)
         density_options.pop("optimize", None)
@@ -650,7 +660,7 @@ def run_native(
         result = run_mps(
             execution_ir if coupling_map is not None else circuit_or_ir, **mps_options
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="mps",
@@ -670,7 +680,7 @@ def run_native(
         result = run_mps_adaptive(
             execution_ir if coupling_map is not None else circuit_or_ir, **mps_options
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="mps",
@@ -696,7 +706,7 @@ def run_native(
             world_size=world_size,
             **mps_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="mps",
@@ -724,7 +734,7 @@ def run_native(
             world_size=world_size,
             **mps_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="mps",
@@ -747,7 +757,7 @@ def run_native(
         result = run_tensor_network(
             execution_ir if coupling_map is not None else circuit_or_ir, **tn_options
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="tensor_network",
@@ -773,7 +783,7 @@ def run_native(
             world_size=world_size,
             **tn_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="tensor_network",
@@ -801,7 +811,7 @@ def run_native(
             world_size=world_size,
             **tn_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="tensor_network",
@@ -827,7 +837,7 @@ def run_native(
             noise_model,
             **statevector_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="statevector",
@@ -879,7 +889,7 @@ def run_native(
             noise_model,
             **mps_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="mps",
@@ -923,7 +933,7 @@ def run_native(
             noise_model,
             **mps_options,
         )
-        execution_plan = build_plan(
+        execution_plan = provided_execution_plan or build_plan(
             execution_ir,
             noise_model=noise_model,
             state_mode="mps",
@@ -955,17 +965,47 @@ def run_native(
 
 
 def run(
+    program_or_plan: Any,
+    *,
+    options: ExecutionOptions | None = None,
+    measurements: Sequence[MeasurementNode] | None = None,
+    noise_model: Any | None = None,
+) -> ExecutionResult:
+    """Plan and execute a program, or execute one validated plan exactly."""
+
+    from .plan_execution import execute_plan
+
+    if isinstance(program_or_plan, ExecutionPlan):
+        if options is not None:
+            raise TypeError("options must be None when executing an ExecutionPlan")
+        if measurements is not None:
+            raise TypeError("measurements must be None when executing an ExecutionPlan")
+        if noise_model is not None:
+            raise TypeError("noise_model must be None when executing an ExecutionPlan")
+        return execute_plan(program_or_plan)
+
+    if measurements is None and noise_model is None:
+        from ..compilation.planner import plan
+
+        return execute_plan(plan(program_or_plan, options=options))
+    return _run_program_with_transient_requests(
+        program_or_plan,
+        options=options,
+        measurements=measurements,
+        noise_model=noise_model,
+    )
+
+
+def _run_program_with_transient_requests(
     program: Any,
     *,
     options: ExecutionOptions | None = None,
     measurements: Sequence[MeasurementNode] | None = None,
     noise_model: Any | None = None,
 ) -> ExecutionResult:
-    """Execute a circuit and always return the stable ``ExecutionResult``.
+    """Execute requests that Proposal 003 intentionally does not serialize.
 
-    This is the recommended public execution entry point. Backend-specific
-    runners remain available for advanced use cases that need their native
-    result objects.
+    Measurement override and noise-model identity remain Proposal 004 work.
     """
 
     from .options import ExecutionOptions

@@ -633,9 +633,10 @@ API 冻结前必须用真实、可执行代码验证以下路径：
   152 处旧根调用迁移。测试侧债务已归零，
   `contracts/legacy-root-api-test-debt.json` 现为零基线，CI 禁止任何旧根接口回流。
 - 正式稳定且可发现的根 API（`fq.__all__`、`dir(fq)` 和
-  `docs/public_api_v1.json`）已从 60 项收缩为当前已实现的 20 项 Stable Core；
-  `ExecutionOptions` 与 `ExecutionPlan` 必须等待后续语义提案批准和实现后才能加入，
-  不以占位导出的方式虚增为 22 项。历史惰性属性访问仅作为未承诺的仓库兼容层暂留，
+  `docs/public_api_v1.json`）已从 60 项收缩为当前已实现的 21 项 Stable Core；
+  `ExecutionOptions` 已经 Proposal 002 批准并加入，`ExecutionPlan` 已完成 Proposal 003
+  实现但仍等待根级清单与 freeze 审批，不以占位导出虚增。历史惰性属性访问仅作为
+  未承诺的仓库兼容层暂留，
   不属于 stable manifest，后续按独立清单继续移除。
 - Proposal 001 明确分类的 37 个迁移接口和 3 个开源前移除项已从根级
   `__getattr__` 关闭；错误信息直接给出规范命名空间。`flagquantum.api` 仍保存历史对象
@@ -667,8 +668,8 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 
 - `API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md` 与
   `contracts/execution-plan-v1-candidate.json` 已登记；
-- 当前状态为 draft pending approval，只定义 identity、序列化、stale-plan、环境约束和
-  `fq.run(plan)` 目标语义，尚未授权实现或加入稳定根清单；
+- Proposal 003 已完成 identity、序列化、stale-plan、环境约束和 `fq.run(plan)` 实现，
+  并通过 default/runtime/distributed 验证；根级类型导出与 freeze 仍待单独批准；
 - `ExecutionPlan` 定位为本地可检查、可缓存、可恢复和可执行的计划，
   `DeploymentPackage` 继续承担签名、provider 提交和远程生命周期。
 
@@ -762,9 +763,9 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 只有同时满足以下条件，才能宣布 API freeze：
 
 - [ ] Stable Core 已缩减并通过逐项审查；
-- [ ] `ExecutionOptions` 成为唯一推荐执行配置；
-- [ ] `fq.run(plan)` 已实现并通过等价性测试；
-- [ ] `plan/run/RuntimePolicy` 使用统一术语；
+- [x] `ExecutionOptions` 成为唯一推荐执行配置；
+- [x] `fq.run(plan)` 已实现并通过等价性测试；
+- [x] `plan/run/RuntimePolicy` 使用统一术语；
 - [ ] Measurement 来源和覆盖规则唯一明确；
 - [ ] `fq.run`、`fq.plan`、`fq.train` 返回类型不再是 `Any`；
 - [ ] native backend 对象不会隐式扩张稳定 Result；
