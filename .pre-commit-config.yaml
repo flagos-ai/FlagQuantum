@@ -51,6 +51,11 @@ repos:
         entry: python tools/public_api_snapshot.py
         language: system
         pass_filenames: false
+      - id: legacy-root-api-usage
+        name: legacy root API usage
+        entry: python tools/check_legacy_root_api_usage.py
+        language: system
+        pass_filenames: false
       - id: correctness-certification
         name: correctness certification matrix
         entry: python tools/correctness_certification.py --check

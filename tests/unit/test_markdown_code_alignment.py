@@ -99,5 +99,8 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
     assert "result = fq.run(program)" in result_contract
     assert "import flagquantum as fq" in hybrid
     assert "non-executable future API sketch" in vision
-    assert "advanced example intentionally uses ``fq.run_native``" in native_example
+    assert (
+        "advanced example intentionally uses "
+        "``flagquantum.backends.run_native``" in native_example
+    )
     assert "not a stable public-API" in mps_research

@@ -63,7 +63,7 @@ def main() -> None:
 
     # Stage 3: define only the quantum part. It receives angles produced by the
     # classical encoder; batch execution is handled by bsz=len(inputs).
-    # Unsure what a gate needs? Try: fq.gate_info("ry").
+    # Unsure what a gate needs? Try: flagquantum.operators.gate_info("ry").
     def quantum_circuit(parameters, encoded_inputs):
         q = fq.Circuit(args.n_qubits, bsz=len(encoded_inputs))
         for wire in range(args.n_qubits):

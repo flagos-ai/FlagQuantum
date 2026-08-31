@@ -24,6 +24,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.experimental.mps as fqxm  # noqa: E402
 
 execute_torch_distributed_mps_forward = (  # noqa: E402
     fq.experimental.execute_torch_distributed_mps_forward
@@ -284,7 +285,7 @@ def main() -> None:
                     device=device, max_bond=args.max_bond, cutoff=args.cutoff,
                     gradient_policy=args.gradient_policy,
                     gradient_tolerance=args.discarded_weight_tolerance,
-                    checkpoint_policy=fq.MPSReverseCheckpointPolicy(
+                    checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
                         max_saved_bytes=int(args.reverse_max_saved_gib * (1 << 30))
                     ),
                     compile_site_kernels=args.compile_site_kernels,

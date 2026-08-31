@@ -9,23 +9,30 @@ sampling statistics, and the MPS path additionally reports truncation data.
 
 ```python
 import flagquantum as fq
+import flagquantum.backends as fqb
+import flagquantum.noise as fqn
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
 noise = (
-    fq.NoiseModel()
-    .add("h", fq.thermal_relaxation_channel(
+    fqn.NoiseModel()
+    .add("h", fqn.thermal_relaxation_channel(
         t1=50_000,
         t2=70_000,
         duration=35,
     ))
-    .add("cx", fq.depolarizing_channel(0.01))
-    .add_readout(0, fq.ReadoutError(((0.98, 0.02), (0.07, 0.93))))
+    .add("cx", fqn.depolarizing_channel(0.01))
+    .add_readout(0, fqn.ReadoutError(((0.98, 0.02), (0.07, 0.93))))
 )
 
-rho = fq.noisy_density_matrix(circuit, noise)
-exact_z = noise.apply_readout_expectation_z(fq.expectation_z_density(rho))
+exact = fq.run(
+    circuit,
+    noise_model=noise,
+    mode="density_matrix",
+    measurements=(fq.MeasurementNode("expectation_z", (0, 1)),),
+)
+exact_z = exact.measurements[0].value
 
-sampled = fq.run_noisy_mps(
+sampled = fqb.run_noisy_mps(
     circuit,
     noise,
     trajectories=4096,
@@ -130,7 +137,8 @@ match. If both eligible trajectory backends match, the measured-time estimate de
 incomplete or mismatched calibration falls back to the analytic policy. The
 8-qubit single-A800 full-noise decision and all candidate evidence are preserved in
 `benchmarks/results/local/noise_selector_a800_calibrated_20260806.json`. Public
-`fq.run_native(..., noise_performance_calibration=...)` uses the same policy.
+`flagquantum.backends.run_native(..., noise_performance_calibration=...)` uses
+the same policy.
 
 For adaptive runs, the selector also reports a time-to-target trajectory
 estimate when both a standard-error target and a hard trajectory ceiling are
@@ -340,25 +348,25 @@ probability distribution.
 gate durations in one declared time unit:
 
 ```python
-profile = fq.DeviceNoiseProfile(
+profile = fqn.DeviceNoiseProfile(
     qubits=(
-        fq.QubitNoiseCalibration(
+        fqn.QubitNoiseCalibration(
             0,
             t1=50_000,
             t2=70_000,
-            readout_error=fq.ReadoutError(((0.98, 0.02), (0.07, 0.93))),
+            readout_error=fqn.ReadoutError(((0.98, 0.02), (0.07, 0.93))),
         ),
-        fq.QubitNoiseCalibration(1, t1=48_000, t2=65_000),
+        fqn.QubitNoiseCalibration(1, t1=48_000, t2=65_000),
     ),
     gate_durations=(
-        fq.GateDuration("h", 35),
-        fq.GateDuration("cx", 280),
+        fqn.GateDuration("h", 35),
+        fqn.GateDuration("cx", 280),
     ),
     source="device-calibration-export",
     captured_at="2026-08-06T12:00:00+08:00",
     time_unit="ns",
 )
-noise = fq.NoiseModel.from_device_profile(profile)
+noise = fqn.NoiseModel.from_device_profile(profile)
 ```
 
 Lowering uses an ASAP wire-clock schedule. It inserts per-wire thermal

@@ -1,21 +1,28 @@
 """Exact and MPS-trajectory noisy simulation with one NoiseModel."""
 
 import flagquantum as fq
+import flagquantum.backends as fqb
+import flagquantum.noise as fqn
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
 noise = (
-    fq.NoiseModel()
-    .add("h", fq.thermal_relaxation_channel(t1=50_000, t2=70_000, duration=35))
-    .add("cx", fq.depolarizing_channel(0.01))
-    .add_readout(0, fq.ReadoutError(((0.98, 0.02), (0.07, 0.93))))
+    fqn.NoiseModel()
+    .add("h", fqn.thermal_relaxation_channel(t1=50_000, t2=70_000, duration=35))
+    .add("cx", fqn.depolarizing_channel(0.01))
+    .add_readout(0, fqn.ReadoutError(((0.98, 0.02), (0.07, 0.93))))
 )
 
 # Small-system correctness oracle: exact channel evolution.
-rho = fq.noisy_density_matrix(circuit, noise)
-exact_z = noise.apply_readout_expectation_z(fq.expectation_z_density(rho))
+exact = fq.run(
+    circuit,
+    noise_model=noise,
+    mode="density_matrix",
+    measurements=(fq.MeasurementNode("expectation_z", (0, 1)),),
+)
+exact_z = exact.measurements[0].value
 
 # Low-entanglement scale-out path: sampled MPS quantum trajectories.
-sampled = fq.run_noisy_mps(
+sampled = fqb.run_noisy_mps(
     circuit,
     noise,
     trajectories=4096,

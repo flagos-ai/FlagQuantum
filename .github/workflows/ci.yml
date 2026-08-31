@@ -103,6 +103,8 @@ jobs:
         run: python tools/public_api_snapshot.py
       - name: Verify proposed Stable Core classification
         run: python -m pytest tests/unit/test_public_api_candidate.py -q
+      - name: Reject legacy root API in user-facing files
+        run: python tools/check_legacy_root_api_usage.py
       - name: Verify correctness certification matrix
         run: python tools/correctness_certification.py --check
       - name: Verify capability maturity claims

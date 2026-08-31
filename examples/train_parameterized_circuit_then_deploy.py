@@ -16,6 +16,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import flagquantum as fq
+import flagquantum.deployment as fqd
 
 
 PARAMETERS = (fq.Parameter("theta_0"), fq.Parameter("theta_1"), fq.Parameter("theta_2"))
@@ -64,15 +65,15 @@ def main() -> None:
         {parameter: value for parameter, value in zip(PARAMETERS, optimized_parameters)}
     )
 
-    provider = fq.LocalSimulatorProvider()
-    backend = fq.CloudBackendProfile(
+    provider = fqd.LocalSimulatorProvider()
+    backend = fqd.CloudBackendProfile(
         provider="local",
         name="line2",
         n_wires=2,
         coupling_map=fq.CouplingMap.line(2),
         is_simulator=True,
     )
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         trained_circuit,
         backend=backend,
         name="trained_parameterized_inference",

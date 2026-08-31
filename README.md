@@ -47,6 +47,7 @@ changing representations:
 
 ```python
 import flagquantum as fq
+import flagquantum.deployment as fqd
 import torch
 
 def build_program(parameters, inputs=None):
@@ -62,7 +63,7 @@ training = fq.train(
 )
 trained_program = build_program(next(model.parameters()).detach())
 result = fq.run(trained_program)
-package = fq.create_deployment_package(trained_program, shots=128)
+package = fqd.create_deployment_package(trained_program, shots=128)
 ```
 
 Start with the [annotated quick start](examples/quick_start.py), continue to
@@ -275,9 +276,10 @@ program without rebuilding the circuit in another framework:
 
 ```python
 import flagquantum as fq
+import flagquantum.deployment as fqd
 
 program = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
-package = fq.create_deployment_package(program, shots=1024)
+package = fqd.create_deployment_package(program, shots=1024)
 
 print(package.backend.provider)
 print(package.qasm[:80])
@@ -373,7 +375,6 @@ Verify the installation:
 import flagquantum as fq
 
 print(fq.__version__)
-print(fq.info())
 ```
 
 ## Explore FlagQuantum

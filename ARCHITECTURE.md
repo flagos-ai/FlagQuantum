@@ -28,7 +28,7 @@ but it must not change the meaning of the program or the result contract.
 | Planning | Select a representation and execution policy; explain blockers and fallbacks | `fq.plan`, `Circuit.runtime_plan` |
 | Runtime | Execute locally or across ranks and return typed evidence | `fq.run`, `fq.ExecutionResult` |
 | Training | Preserve PyTorch autograd and optimizer semantics across supported runtimes | `fq.Module`, `fq.train` |
-| Deployment | Bind trained parameters, compile for a target, and seal an auditable package | `fq.create_deployment_package` |
+| Deployment | Bind trained parameters, compile for a target, and seal an auditable package | `flagquantum.deployment.create_deployment_package` |
 
 Planning is not execution evidence. A plan describes intent and estimates;
 runtime records describe what actually ran.

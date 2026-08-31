@@ -34,7 +34,7 @@ FlagQuantum treats a trained circuit as a portable asset:
 1. Build and train with `fq.Circuit`, `fq.algorithms`, and the native runtime.
 2. Bind the optimized parameter tensor back into the parameterized quantum gates.
 3. Compile with `fq.compiler` and optional backend topology.
-4. Package with `fq.create_deployment_package`.
+4. Package with `flagquantum.deployment.create_deployment_package`.
 5. Submit through a `fq.QuantumProvider` implementation.
 6. Fetch counts or expectation values for quantum-computer inference.
 

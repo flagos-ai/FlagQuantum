@@ -620,6 +620,8 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - stable extension 的 `backends`、`compiler`、`deployment`、`noise`、`operators`
   路径与 experimental 的 `distributed`、`mps`、`planning` 路径已经可导入；
 - 公开黄金路径中的部署示例已停止依赖历史根级 deployment export。
+- README、架构说明、主动维护的 guides/reference 和 examples 已迁移到新命名空间；
+  `tools/check_legacy_root_api_usage.py` 已接入 pre-commit 与 CI，禁止回流旧根接口。
 
 ### Phase 2：统一命名和配置
 

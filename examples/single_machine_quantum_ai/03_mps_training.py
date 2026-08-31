@@ -19,6 +19,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 from common import (  # noqa: E402
     configure_jax_compilation_cache,
     exact_ground_energy,
@@ -208,7 +209,7 @@ def main() -> None:
         return build_ansatz(theta, n_wires=args.n_qubits, layers=args.layers, device=args.device)
 
     def native_mps_loss(theta: torch.Tensor) -> torch.Tensor:
-        mps = fq.run_mps(build(theta), max_bond=args.max_bond)
+        mps = fqb.run_mps(build(theta), max_bond=args.max_bond)
         return hamiltonian.expectation(mps).sum()
 
     has_jax, jax_error = jax_available()
@@ -244,7 +245,7 @@ def main() -> None:
         if step == 0 or step == args.steps - 1 or (step + 1) % max(1, args.steps // 5) == 0:
             print({"step": step + 1, "energy": float(loss.detach())})
 
-    trained_mps = fq.run_mps(build(parameters.detach()), max_bond=args.max_bond)
+    trained_mps = fqb.run_mps(build(parameters.detach()), max_bond=args.max_bond)
     native_speed = None
     if args.compare_torch:
         native_speed = time_value_and_grad(

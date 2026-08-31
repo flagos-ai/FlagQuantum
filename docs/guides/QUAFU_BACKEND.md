@@ -30,14 +30,15 @@ For explicit backend selection:
 
 ```python
 import flagquantum as fq
+import flagquantum.deployment as fqd
 
-provider = fq.QuafuProvider(result_timeout=1800)
+provider = fqd.QuafuProvider(result_timeout=1800)
 backend = next(item for item in provider.discover_backends(2)
                if item.name == "Dongling")
 
 circuit = fq.Circuit(2)
 circuit.h(0).cx(0, 1)
-package = fq.create_deployment_package(
+package = fqd.create_deployment_package(
     circuit,
     backend=backend,
     shots=1024,

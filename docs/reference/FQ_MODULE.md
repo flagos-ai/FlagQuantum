@@ -96,7 +96,9 @@ model = fq.Module(template, init={"theta": 0.2})
 Gate requirements are discoverable without reading implementation code:
 
 ```python
-info = fq.gate_info("u3")
+import flagquantum.operators as fqo
+
+info = fqo.gate_info("u3")
 print(info.n_wires)          # 1
 print(info.parameters)       # ("theta", "phi", "lbd")
 print(info.parameter_shapes) # each parameter is scalar: ()

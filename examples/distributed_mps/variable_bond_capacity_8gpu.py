@@ -20,6 +20,8 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
+import flagquantum.experimental.mps as fqxm
 
 
 PROFILES = {
@@ -129,7 +131,7 @@ def main() -> None:
     try:
         initial = rank_owned_initial_mps(n_sites, max_bond, device)
         theta = torch.tensor(0.07, device=device, requires_grad=True)
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             build_quench(n_sites, theta),
             steps=1,
             observable={n_sites // 2: "z"},
@@ -138,7 +140,7 @@ def main() -> None:
             device=device,
             initial_mps_tensors=initial,
             initial_mps_left_canonical=True,
-            reverse_checkpoint_policy=fq.MPSReverseCheckpointPolicy(
+            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
                 max_saved_bytes=max(256 << 20, 2 * logical_bytes // world)
             ),
             memory_leak_tolerance_bytes=64 << 20,

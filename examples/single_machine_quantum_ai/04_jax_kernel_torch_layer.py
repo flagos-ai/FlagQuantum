@@ -20,6 +20,7 @@ from common import (  # noqa: E402
 )
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 
 
 def circuit_builder(theta: torch.Tensor) -> fq.Circuit:
@@ -78,8 +79,8 @@ def main() -> None:
         if args.mode == "statevector":
             return hamiltonian.expectation(circuit).sum()
         if args.mode == "mps":
-            return hamiltonian.expectation(fq.run_mps(circuit, max_bond=16)).sum()
-        return hamiltonian.expectation(fq.run_tensor_network(circuit)).sum()
+            return hamiltonian.expectation(fqb.run_mps(circuit, max_bond=16)).sum()
+        return hamiltonian.expectation(fqb.run_tensor_network(circuit)).sum()
 
     for step in range(args.steps):
         optimizer.zero_grad()

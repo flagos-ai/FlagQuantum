@@ -9,13 +9,14 @@ from __future__ import annotations
 import os
 
 import flagquantum as fq
+import flagquantum.deployment as fqd
 
 
 def main() -> None:
     if not os.getenv("QPU_API_TOKEN"):
         raise RuntimeError("Set QPU_API_TOKEN before submitting to Quafu SQC")
 
-    provider = fq.QuafuProvider(result_timeout=1800)
+    provider = fqd.QuafuProvider(result_timeout=1800)
     available = provider.discover_backends(2)
     online = [
         backend
@@ -36,7 +37,7 @@ def main() -> None:
 
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         circuit,
         backend=backend,
         shots=1024,
