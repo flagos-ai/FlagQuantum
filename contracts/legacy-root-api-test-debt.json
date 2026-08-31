@@ -1,14 +1,7 @@
 {
   "schema_version": "1.0",
-  "status": "migration_debt",
-  "rule": "Counts must only change through reviewed migration commits and must converge to zero.",
-  "total_references": 152,
-  "files": {
-    "tests/test_hybrid_jax.py": 8,
-    "tests/test_mps.py": 44,
-    "tests/test_native_circuit.py": 28,
-    "tests/unit/test_backend_cost_selection.py": 17,
-    "tests/unit/test_issue053_mps_production.py": 19,
-    "tests/unit/test_trajectory_runtime.py": 36
-  }
+  "status": "migration_complete",
+  "rule": "Legacy root API references must remain at zero.",
+  "total_references": 0,
+  "files": {}
 }

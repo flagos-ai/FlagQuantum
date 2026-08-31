@@ -628,10 +628,10 @@ API 冻结前必须用真实、可执行代码验证以下路径：
   仅为测试与由旧 manifest 生成的审计文档。
 - 首批测试迁移已清除 16 个文件、21 处旧根调用；第二批进一步清除 deployment、
   distributed training、backend basic 与 algorithm 等 13 个文件、58 处旧根调用；
-  第三批清除 noise 与 tensor-network 2 个测试文件、113 处旧根调用；剩余 6 个
-  后端专项测试文件共 152 处调用记录于
-  `contracts/legacy-root-api-test-debt.json`，CI 要求逐文件计数与审核后的债务契约
-  完全一致，禁止新增或回升。
+  第三批清除 noise 与 tensor-network 2 个测试文件、113 处旧根调用；第四批完成
+  MPS、native runtime、trajectory、hybrid JAX 与专项 planner 等最后 6 个文件、
+  152 处旧根调用迁移。测试侧债务已归零，
+  `contracts/legacy-root-api-test-debt.json` 现为零基线，CI 禁止任何旧根接口回流。
 
 ### Phase 2：统一命名和配置
 

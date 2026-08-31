@@ -13,7 +13,7 @@ contracts consumed by FlagQuantum tests and repository tools.
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
-| `legacy-root-api-test-debt.json` | Exact, reviewable migration debt remaining in backend-specific tests. |
+| `legacy-root-api-test-debt.json` | Zero baseline preventing legacy root API references from returning to tests. |
 
 Validate the API migration baseline with
 `python tools/public_api_snapshot.py`. It is not the final Stable Core contract

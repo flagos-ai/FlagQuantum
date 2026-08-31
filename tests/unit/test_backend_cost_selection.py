@@ -3,6 +3,7 @@ import json
 import pytest
 
 import flagquantum as fq
+import flagquantum.experimental.planning as fqxp
 from flagquantum.compilation import (
     build_tn_working_set_calibration,
     load_tn_working_set_calibration,
@@ -30,7 +31,7 @@ def _grid(rows: int, columns: int, cycles: int) -> fq.Circuit:
 def test_30q_grid_expectation_gradient_prefers_statevector_when_it_fits() -> None:
     circuit = _grid(5, 6, 7)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="expectation",
         require_gradients=True,
@@ -48,7 +49,7 @@ def test_shallow_50q_chain_uses_mps_after_dense_capacity_failure() -> None:
     for wire in range(49):
         circuit.cx(wire, wire + 1)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="single_amplitude",
         complex_bytes=16,
@@ -65,7 +66,7 @@ def test_full_state_capacity_failure_does_not_hide_behind_mps() -> None:
     for wire in range(49):
         circuit.cx(wire, wire + 1)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="full_state",
         memory_limit_bytes=80 << 30,
@@ -83,7 +84,7 @@ def test_nonlocal_low_treewidth_single_amplitude_uses_tn() -> None:
     for child in range(1, 50):
         circuit.cx((child - 1) // 2, child)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="single_amplitude",
         complex_bytes=16,
@@ -124,12 +125,12 @@ def test_tn_reserved_memory_calibration_scopes_and_inflates_estimate() -> None:
         world_size=1,
         topology_class="single_gpu",
     )
-    baseline = fq.select_backend_by_cost(
+    baseline = fqxp.select_backend_by_cost(
         circuit,
         target="single_amplitude",
         memory_limit_bytes=80 << 30,
     )
-    calibrated = fq.select_backend_by_cost(
+    calibrated = fqxp.select_backend_by_cost(
         circuit,
         target="single_amplitude",
         memory_limit_bytes=80 << 30,
@@ -150,7 +151,7 @@ def test_tn_reserved_memory_calibration_scopes_and_inflates_estimate() -> None:
     assert calibrated_tn.estimated_memory_bytes > baseline_tn.estimated_memory_bytes
     assert "reserved_memory_calibration_applied" in calibrated_tn.reasons
 
-    mismatched = fq.select_backend_by_cost(
+    mismatched = fqxp.select_backend_by_cost(
         circuit,
         target="single_amplitude",
         memory_limit_bytes=80 << 30,
@@ -168,7 +169,7 @@ def test_tn_calibration_requirement_fails_closed_when_missing() -> None:
     for child in range(1, 50):
         circuit.cx((child - 1) // 2, child)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="single_amplitude",
         memory_limit_bytes=80 << 30,
@@ -208,7 +209,7 @@ def test_tn_calibration_round_trip_and_runtime_plan_integration(tmp_path) -> Non
     circuit = fq.Circuit(50)
     for child in range(1, 50):
         circuit.cx((child - 1) // 2, child)
-    plan = fq.plan_runtime_selection(
+    plan = fqxp.plan_runtime_selection(
         circuit,
         target="single_amplitude",
         require_gradients=False,
@@ -231,7 +232,7 @@ def test_bounded_local_chain_prefers_mps() -> None:
     for wire in range(39):
         circuit.cx(wire, wire + 1)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="samples",
         max_bond=32,
@@ -247,12 +248,12 @@ def test_mps_gradient_estimate_accounts_for_reverse_working_set() -> None:
     for wire in range(39):
         circuit.cx(wire, wire + 1)
 
-    forward = fq.select_backend_by_cost(
+    forward = fqxp.select_backend_by_cost(
         circuit,
         target="expectation",
         memory_limit_bytes=80 << 30,
     )
-    reverse = fq.select_backend_by_cost(
+    reverse = fqxp.select_backend_by_cost(
         circuit,
         target="expectation",
         require_gradients=True,
@@ -265,7 +266,7 @@ def test_mps_gradient_estimate_accounts_for_reverse_working_set() -> None:
 
 
 def test_forced_tn_is_preserved_but_reports_predicted_degradation() -> None:
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         _grid(5, 6, 2),
         target="expectation",
         require_gradients=True,
@@ -283,7 +284,7 @@ def test_forced_tn_is_preserved_but_reports_predicted_degradation() -> None:
 def test_runtime_plan_uses_and_exposes_the_same_cost_decision() -> None:
     circuit = _grid(5, 6, 2)
 
-    plan = fq.plan_runtime_selection(
+    plan = fqxp.plan_runtime_selection(
         circuit,
         target="expectation",
         require_gradients=True,
@@ -302,14 +303,14 @@ def test_few_amplitudes_select_tn_but_large_output_batch_does_not() -> None:
     for child in range(1, 50):
         circuit.cx((child - 1) // 2, child)
 
-    sparse = fq.select_backend_by_cost(
+    sparse = fqxp.select_backend_by_cost(
         circuit,
         target="few_amplitudes",
         target_count=16,
         complex_bytes=16,
         memory_limit_bytes=80 << 30,
     )
-    large = fq.select_backend_by_cost(
+    large = fqxp.select_backend_by_cost(
         circuit,
         target="few_amplitudes",
         target_count=4096,
@@ -327,7 +328,7 @@ def test_large_observable_batch_is_not_treated_as_sparse_output() -> None:
     for wire in range(49):
         circuit.cx(wire, wire + 1)
 
-    decision = fq.select_backend_by_cost(
+    decision = fqxp.select_backend_by_cost(
         circuit,
         target="local_observables",
         target_count=512,

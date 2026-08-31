@@ -8,6 +8,8 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
+import flagquantum.experimental.planning as fqxp
 
 pytestmark = pytest.mark.integration
 
@@ -456,7 +458,7 @@ def test_auto_mode_selects_statevector_by_default():
     circuit = fq.Circuit(1)
     circuit.h(0)
 
-    result, plan = fq.run_native(circuit, return_plan=True)
+    result, plan = fqb.run_native(circuit, return_plan=True)
 
     assert plan.state_mode == "statevector"
     assert plan.user_tier == "single_device"
@@ -472,8 +474,8 @@ def test_auto_mode_selects_mps_for_bond_control_and_preserves_full_state_contrac
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
 
-    result, plan = fq.run_native(circuit, max_bond=2, return_plan=True)
-    memory_result, memory_plan = fq.run_native(
+    result, plan = fqb.run_native(circuit, max_bond=2, return_plan=True)
+    memory_result, memory_plan = fqb.run_native(
         circuit,
         memory_limit_bytes=1,
         return_plan=True,
@@ -511,7 +513,9 @@ def test_runtime_selection_prefers_local_jax_mps_training_fast_path():
     assert "runtime_readiness_blockers" not in summary["recommended_candidate"]
     assert summary["usability_contract"] == "single_api_fast_path"
     assert (
-        fq.plan_runtime_selection(circuit, max_bond=4, prefer_jax=True).recommended_mode
+        fqxp.plan_runtime_selection(
+            circuit, max_bond=4, prefer_jax=True
+        ).recommended_mode
         == "jax_kernel_mps"
     )
 
@@ -918,7 +922,7 @@ def test_runtime_selection_projects_mps_evidence_status(
         "plan_jax_sharded_mps_training",
         lambda *args, **kwargs: _TrainingPlan(),
     )
-    selection = fq.plan_runtime_selection(
+    selection = fqxp.plan_runtime_selection(
         fq.Circuit(4),
         world_size=2,
         state_mode="mps",
@@ -967,7 +971,7 @@ def test_run_native_executes_routed_statevector():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).rz(1, theta=0.2)
 
-    result, plan = fq.run_native(
+    result, plan = fqb.run_native(
         circuit,
         coupling_map=fq.CouplingMap.line(3),
         return_plan=True,
@@ -983,7 +987,7 @@ def test_auto_mode_can_dispatch_to_distributed_cpu():
     circuit = fq.Circuit(1)
     circuit.x(0)
 
-    qdev, plan = fq.run_native(
+    qdev, plan = fqb.run_native(
         circuit,
         world_size=1,
         mode="distributed_statevector",
@@ -1001,14 +1005,14 @@ def test_distributed_mode_alias_and_plan_name_are_explicit_statevector():
     circuit = fq.Circuit(1)
     circuit.h(0)
 
-    qdev_alias, alias_plan = fq.run_native(
+    qdev_alias, alias_plan = fqb.run_native(
         circuit,
         mode="distributed",
         device="cpu",
         world_size=1,
         return_plan=True,
     )
-    qdev_explicit, explicit_plan = fq.run_native(
+    qdev_explicit, explicit_plan = fqb.run_native(
         circuit,
         mode="distributed_statevector",
         device="cpu",
@@ -1035,7 +1039,7 @@ def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2)
 
-    result, plan = fq.run_native(
+    result, plan = fqb.run_native(
         circuit, mode="distributed_mps", world_size=2, max_bond=4, return_plan=True
     )
 
@@ -1053,7 +1057,7 @@ def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
     assert tuple(shard.wires for shard in result.shards) == ((0, 1), (2, 3))
     assert torch.allclose(
         result.to_statevector(),
-        fq.run_native(circuit, mode="mps").to_statevector(),
+        fqb.run_native(circuit, mode="mps").to_statevector(),
         atol=1e-6,
     )
     assert (
@@ -1065,7 +1069,7 @@ def test_distributed_mps_accepts_adaptive_bond_policy():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)
 
-    result, plan = fq.run_native(
+    result, plan = fqb.run_native(
         circuit,
         mode="distributed_mps",
         world_size=2,
@@ -1089,7 +1093,7 @@ def test_distributed_mps_accepts_adaptive_bond_policy():
     assert summary["adaptive_refinement_plan"]["windows"]
     assert torch.allclose(
         result.to_statevector(),
-        fq.run_mps(circuit, max_bond=4).to_statevector(),
+        fqb.run_mps(circuit, max_bond=4).to_statevector(),
         atol=1e-6,
     )
 
@@ -1098,7 +1102,7 @@ def test_distributed_mps_local_tensor_strict_chain_shards_without_full_sync():
     circuit = fq.Circuit(4)
     circuit.h(0).ry(1, theta=0.2).cx(1, 2).rz(3, theta=-0.1)
 
-    result = fq.run_native(
+    result = fqb.run_native(
         circuit,
         mode="distributed_mps",
         world_size=2,
@@ -1144,7 +1148,7 @@ def test_distributed_mps_local_tensor_strict_chain_shards_without_full_sync():
     assert len(summary["local_memory_bytes_by_rank"]) == 2
     assert torch.allclose(
         result.to_statevector(),
-        fq.run_mps(circuit, max_bond=4).to_statevector(),
+        fqb.run_mps(circuit, max_bond=4).to_statevector(),
         atol=1e-6,
     )
 
@@ -1154,7 +1158,7 @@ def test_distributed_mps_strict_sharded_rejects_nonlocal_gate():
     circuit.h(0).cx(0, 3)
 
     with pytest.raises(RuntimeError, match="Strict distributed MPS only supports"):
-        fq.run_native(
+        fqb.run_native(
             circuit,
             mode="distributed_mps",
             world_size=2,
@@ -1177,7 +1181,7 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
         if count > 1 and label not in local_plan.output_labels
     )
 
-    result, plan = fq.run_native(
+    result, plan = fqb.run_native(
         circuit,
         mode="distributed_tensor_network",
         world_size=2,
@@ -1194,7 +1198,9 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
     assert result.summary()["slice_tasks"] == len(result.tasks)
     assert set(result.summary()["tasks_by_rank"]) == {0, 1}
     assert torch.allclose(
-        result.state(), fq.run_native(circuit, mode="tensor_network").state(), atol=1e-6
+        result.state(),
+        fqb.run_native(circuit, mode="tensor_network").state(),
+        atol=1e-6,
     )
 
 
@@ -1210,7 +1216,7 @@ def test_distributed_tensor_network_local_tensor_simulates_slice_parallel_state(
         if count > 1 and label not in local_plan.output_labels
     )
 
-    result = fq.run_native(
+    result = fqb.run_native(
         circuit,
         mode="distributed_tensor_network",
         world_size=2,
@@ -1231,7 +1237,9 @@ def test_distributed_tensor_network_local_tensor_simulates_slice_parallel_state(
     assert set(summary["rank_partial_bytes_by_rank"]) == {0, 1}
     assert len(summary["local_memory_bytes_by_rank"]) == 2
     assert torch.allclose(
-        result.state(), fq.run_native(circuit, mode="tensor_network").state(), atol=1e-6
+        result.state(),
+        fqb.run_native(circuit, mode="tensor_network").state(),
+        atol=1e-6,
     )
 
 
@@ -1239,7 +1247,7 @@ def test_distributed_tensor_network_alias_and_backend_capability():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    result = fq.run_native(
+    result = fqb.run_native(
         circuit, mode="distributed_tn", world_size=2, max_intermediate_size=4
     )
 
@@ -1255,7 +1263,7 @@ def test_distributed_tensor_network_torch_executor_single_rank():
     init_uri = _free_tcp_init_method()
 
     try:
-        result = fq.run_native(
+        result = fqb.run_native(
             circuit,
             mode="distributed_tensor_network",
             world_size=1,
@@ -1284,7 +1292,7 @@ def test_distributed_tensor_network_torch_executor_single_rank():
         )
         assert torch.allclose(
             result.state(),
-            fq.run_native(circuit, mode="tensor_network").state(),
+            fqb.run_native(circuit, mode="tensor_network").state(),
             atol=1e-6,
         )
     finally:
@@ -1299,7 +1307,7 @@ def test_distributed_mps_torch_executor_single_rank():
     init_uri = _free_tcp_init_method()
 
     try:
-        result = fq.run_native(
+        result = fqb.run_native(
             circuit,
             mode="distributed_mps",
             world_size=1,
@@ -1344,12 +1352,12 @@ def test_distributed_mps_torch_executor_single_rank():
         assert result.sharded_state.summary()["local_tensor_wires"] == (0, 1, 2)
         assert torch.allclose(
             result.to_statevector(),
-            fq.run_native(circuit, mode="mps").to_statevector(),
+            fqb.run_native(circuit, mode="mps").to_statevector(),
             atol=1e-6,
         )
         assert torch.allclose(
             result.sharded_state.to_statevector(),
-            fq.run_native(circuit, mode="mps").to_statevector(),
+            fqb.run_native(circuit, mode="mps").to_statevector(),
             atol=1e-6,
         )
         loss = result.expectation_z(1).sum()
@@ -1366,7 +1374,7 @@ def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
     init_uri = _free_tcp_init_method()
 
     try:
-        result = fq.run_native(
+        result = fqb.run_native(
             circuit,
             mode="distributed_mps",
             world_size=1,
@@ -1383,7 +1391,7 @@ def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
         assert result.summary()["full_sync_count"] == 0
         assert torch.allclose(
             result.to_statevector(),
-            fq.run_native(circuit, mode="mps").to_statevector(),
+            fqb.run_native(circuit, mode="mps").to_statevector(),
             atol=1e-6,
         )
     finally:

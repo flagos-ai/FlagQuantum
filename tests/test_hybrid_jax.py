@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("jax") is None, reason="jax is not installed"
@@ -259,7 +260,7 @@ def test_jax_mps_kernel_matches_native_mps_gradient():
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = fq.run_mps(build(ref_params), max_bond=8).expectation_z_sum().sum()
+    ref_loss = fqb.run_mps(build(ref_params), max_bond=8).expectation_z_sum().sum()
     ref_loss.backward()
 
     assert kernel.summary()["mode"] == "mps"
@@ -303,7 +304,7 @@ def test_jax_mps_z_sum_does_not_materialize_statevector(monkeypatch):
     loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = fq.run_mps(build(ref_params), max_bond=8).expectation_z_sum().sum()
+    ref_loss = fqb.run_mps(build(ref_params), max_bond=8).expectation_z_sum().sum()
     ref_loss.backward()
 
     assert jax_params.grad is not None
@@ -348,7 +349,9 @@ def test_jax_mps_local_pauli_zz_chain_hamiltonian_uses_fastpath_and_matches_nati
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = hamiltonian.expectation(fq.run_mps(build(ref_params), max_bond=16)).sum()
+    ref_loss = hamiltonian.expectation(
+        fqb.run_mps(build(ref_params), max_bond=16)
+    ).sum()
     ref_loss.backward()
 
     assert (
@@ -453,7 +456,7 @@ def test_jax_mps_kernel_supports_complex128_compute_dtype():
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = fq.run_mps(build(ref_params), max_bond=8).expectation_z_sum().sum()
+    ref_loss = fqb.run_mps(build(ref_params), max_bond=8).expectation_z_sum().sum()
     ref_loss.backward()
 
     assert kernel.summary()["compute_dtype"] == "complex128"
@@ -488,7 +491,7 @@ def test_jax_tensor_network_kernel_matches_native_tn_gradient():
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = fq.run_tensor_network(build(ref_params)).expectation_z().sum()
+    ref_loss = fqb.run_tensor_network(build(ref_params)).expectation_z().sum()
     ref_loss.backward()
 
     assert kernel.summary()["mode"] == "tensor_network"
@@ -533,7 +536,7 @@ def test_jax_tensor_network_z_sum_does_not_materialize_statevector(monkeypatch):
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = fq.run_tensor_network(build(ref_params)).expectation_z().sum()
+    ref_loss = fqb.run_tensor_network(build(ref_params)).expectation_z().sum()
     ref_loss.backward()
 
     assert jax_params.grad is not None
@@ -586,7 +589,7 @@ def test_jax_tensor_network_kernel_remote_hamiltonian_gradient_precision():
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_tn = fq.run_tensor_network(build(ref_params))
+    ref_tn = fqb.run_tensor_network(build(ref_params))
     ref_loss = (
         0.7 * ref_tn.expectation_ps(z=[0, 3])
         - 0.2 * ref_tn.expectation_ps(x=[1])
@@ -628,7 +631,7 @@ def test_jax_tensor_network_kernel_supports_complex128_compute_dtype():
     jax_loss.backward()
 
     ref_params = params.detach().clone().requires_grad_(True)
-    ref_loss = fq.run_tensor_network(build(ref_params)).expectation_z().sum()
+    ref_loss = fqb.run_tensor_network(build(ref_params)).expectation_z().sum()
     ref_loss.backward()
 
     assert kernel.summary()["compute_dtype"] == "complex128"

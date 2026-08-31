@@ -3,6 +3,7 @@
 import pytest
 
 import flagquantum as fq
+import flagquantum.experimental.mps as fqxm
 from flagquantum.runtime.backends.mps.forward import NonlocalMPSCompilationError
 
 pytestmark = pytest.mark.unit
@@ -27,11 +28,11 @@ def gates(**overrides):
         "capacity_artifact": "capacity.json",
     }
     values.update(overrides)
-    return fq.MPSAcceptanceGates(**values)
+    return fqxm.MPSAcceptanceGates(**values)
 
 
 def measurement(world_size, low, high, ci_low=1.1):
-    return fq.MPSCrossoverMeasurement(
+    return fqxm.MPSCrossoverMeasurement(
         world_size=world_size,
         workload_min_bytes=low,
         workload_max_bytes=high,
@@ -43,7 +44,7 @@ def measurement(world_size, low, high, ci_low=1.1):
 
 
 def test_incomplete_gates_keep_stable_planner_local_even_with_eight_gpus():
-    plan = fq.plan_production_mps(
+    plan = fqxm.plan_production_mps(
         circuit(),
         estimated_workload_bytes=100,
         single_gpu_capacity_bytes=1000,
@@ -59,7 +60,7 @@ def test_incomplete_gates_keep_stable_planner_local_even_with_eight_gpus():
 
 
 def test_confidence_interval_selects_speed_path_and_exposes_rationale():
-    plan = fq.plan_production_mps(
+    plan = fqxm.plan_production_mps(
         circuit(),
         estimated_workload_bytes=500,
         single_gpu_capacity_bytes=1000,
@@ -77,7 +78,7 @@ def test_confidence_interval_selects_speed_path_and_exposes_rationale():
 
 
 def test_planner_avoids_over_parallelizing_past_measured_crossover():
-    plan = fq.plan_production_mps(
+    plan = fqxm.plan_production_mps(
         circuit(n_wires=128),
         estimated_workload_bytes=500,
         single_gpu_capacity_bytes=1000,
@@ -103,7 +104,7 @@ def test_planner_selects_sixteen_only_in_the_larger_measured_interval():
         measurement(8, 1000, 2000, 2.53),
         measurement(16, 1000, 2000, 2.84),
     )
-    small = fq.plan_production_mps(
+    small = fqxm.plan_production_mps(
         circuit(n_wires=128),
         estimated_workload_bytes=500,
         single_gpu_capacity_bytes=3000,
@@ -111,7 +112,7 @@ def test_planner_selects_sixteen_only_in_the_larger_measured_interval():
         crossover=measurements,
         available_gpu_count=16,
     )
-    large = fq.plan_production_mps(
+    large = fqxm.plan_production_mps(
         circuit(n_wires=256),
         estimated_workload_bytes=1500,
         single_gpu_capacity_bytes=3000,
@@ -124,15 +125,15 @@ def test_planner_selects_sixteen_only_in_the_larger_measured_interval():
 
 
 def test_capacity_path_requires_matching_measured_artifact():
-    with pytest.raises(fq.MPSProductionAcceptanceError, match="no matching"):
-        fq.plan_production_mps(
+    with pytest.raises(fqxm.MPSProductionAcceptanceError, match="no matching"):
+        fqxm.plan_production_mps(
             circuit(),
             estimated_workload_bytes=2000,
             single_gpu_capacity_bytes=1000,
             gates=gates(),
             crossover=(measurement(2, 0, 1000),),
         )
-    plan = fq.plan_production_mps(
+    plan = fqxm.plan_production_mps(
         circuit(),
         estimated_workload_bytes=2000,
         single_gpu_capacity_bytes=1000,
@@ -154,7 +155,7 @@ def test_unsupported_topology_fails_during_planning_before_executor(monkeypatch)
         forbidden,
     )
     with pytest.raises(NonlocalMPSCompilationError, match="requires MPS routing"):
-        fq.plan_production_mps(
+        fqxm.plan_production_mps(
             invalid,
             estimated_workload_bytes=100,
             single_gpu_capacity_bytes=1000,
@@ -164,7 +165,7 @@ def test_unsupported_topology_fails_during_planning_before_executor(monkeypatch)
 
 
 def test_support_matrix_is_public_and_exact():
-    support = fq.MPSProductionSupport().to_dict()
+    support = fqxm.MPSProductionSupport().to_dict()
     assert support["two_site_topology"] == "adjacent_only"
     assert support["optimizers"] == ("sgd", "adam")
     assert support["precisions"] == ("complex64", "complex128")
@@ -174,7 +175,7 @@ def test_support_matrix_is_public_and_exact():
 
 
 def test_sixteen_rank_measurement_can_drive_only_a_measured_speed_path():
-    plan = fq.plan_production_mps(
+    plan = fqxm.plan_production_mps(
         circuit(n_wires=32),
         estimated_workload_bytes=500,
         single_gpu_capacity_bytes=1000,
@@ -188,7 +189,7 @@ def test_sixteen_rank_measurement_can_drive_only_a_measured_speed_path():
 
 
 def test_sixteen_rank_availability_without_evidence_stays_local():
-    plan = fq.plan_production_mps(
+    plan = fqxm.plan_production_mps(
         circuit(n_wires=32),
         estimated_workload_bytes=500,
         single_gpu_capacity_bytes=1000,
@@ -247,11 +248,11 @@ def test_release_artifact_requires_three_distinct_measured_gates():
             "full_mps_materialization": False,
         },
     )
-    artifact = fq.build_mps_release_artifact(gates=gates(), runtime_records=records)
+    artifact = fqxm.build_mps_release_artifact(gates=gates(), runtime_records=records)
     assert artifact["production_distributed_mps"] is True
     assert artifact["artifact_classification"] == "measured_production_release"
-    with pytest.raises(fq.MPSProductionAcceptanceError, match="include correctness"):
-        fq.build_mps_release_artifact(gates=gates(), runtime_records=records[:2])
+    with pytest.raises(fqxm.MPSProductionAcceptanceError, match="include correctness"):
+        fqxm.build_mps_release_artifact(gates=gates(), runtime_records=records[:2])
     estimated = ({**records[0], "evidence_source": "estimated"},) + records[1:]
-    with pytest.raises(fq.MPSProductionAcceptanceError, match="measured_runtime"):
-        fq.build_mps_release_artifact(gates=gates(), runtime_records=estimated)
+    with pytest.raises(fqxm.MPSProductionAcceptanceError, match="measured_runtime"):
+        fqxm.build_mps_release_artifact(gates=gates(), runtime_records=estimated)
