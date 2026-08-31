@@ -36,13 +36,20 @@ external archive identifier without claiming a stronger maturity level.
    are committed.
 5. Superseded or bulky raw material is archived outside the source repository.
 
-Historical benchmark families are quarantined under
-`benchmarks/results/legacy/`; historical provider batches and task fragments
-are quarantined under `artifacts/legacy/`. New compact, non-release artifact
-outputs use `artifacts/development/`. Legacy holdings may be migrated out in
-reviewable batches, but new siblings must not be added. Migration must preserve
-links used by published documents and capability manifests, either by updating
-them atomically or by retaining a small redirect manifest.
+Historical benchmark families, provider batches, paper workspaces, task
+fragments, and agent-specific authoring workflows are stored outside the source
+repository. New compact, non-release artifact outputs use
+`artifacts/development/`. An external migration must preserve any links used by
+published documents and capability manifests by updating them atomically and
+recording the source revision plus archive checksum.
+
+The source repository must not add `benchmarks/results/legacy/`,
+`benchmarks/development/`, `benchmarks/research/`, `artifacts/legacy/`, paper
+submission workspaces, historical PR-readiness records, or project-specific
+`.codex/skills/` directories. Reusable workloads belong under
+`benchmarks/runners/`; one-off analysis belongs in the external evidence
+archive. Git history is a
+recovery mechanism, not the long-term evidence store.
 
 ## Review budget
 

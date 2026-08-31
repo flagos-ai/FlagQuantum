@@ -223,7 +223,7 @@
   "environment": {
     "compile_cache_dir": "/tmp/torchinductor_root",
     "cuda": "13.0",
-    "hostname": "p-kt-lc-a800-04",
+    "hostname": "redacted",
     "local_world_size": 8,
     "node_count": 1,
     "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",

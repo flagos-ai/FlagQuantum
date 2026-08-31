@@ -1,15 +1,7 @@
-import json
-from pathlib import Path
-
 from benchmarks.statevector_exchange_overlap import (
     SCHEMA,
     _paired_improvement,
     validate_overlap_payload,
-)
-
-ARTIFACT = (
-    Path(__file__).resolve().parents[2]
-    / "benchmarks/results/local/statevector_overlap_20q_2xa800_development.json"
 )
 
 
@@ -66,25 +58,3 @@ def test_paired_improvement_requires_confidence_interval_above_zero():
     assert clear["benefit_demonstrated"] is True
     assert clear["confidence_interval_seconds"][0] > 0
     assert noisy["benefit_demonstrated"] is False
-
-
-def test_saved_two_a800_artifact_keeps_unproven_pipeline_disabled():
-    payload = json.loads(ARTIFACT.read_text(encoding="utf-8"))
-
-    assert validate_overlap_payload(payload) == ()
-    assert payload["backend"] == "nccl"
-    assert payload["world_size"] == 2
-    assert payload["correctness"]["passed"] is True
-    assert payload["correctness"]["max_abs_error"] == 0.0
-    assert payload["device_timing"]["pipeline"]["sample_count"] == 10
-    assert payload["device_timing"]["synchronous"]["sample_count"] == 10
-    assert payload["overlap_benefit_demonstrated"] is False
-    assert (
-        payload["pipeline_recommendation"] == "keep_disabled_pending_measured_benefit"
-    )
-    assert (
-        payload["device_timing"]["paired_improvement"]["confidence_interval_seconds"][0]
-        <= 0
-    )
-    assert payload["scalability_claim_allowed"] is False
-    assert payload["release_gate_allowed"] is False

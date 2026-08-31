@@ -18,7 +18,7 @@
         "total_memory_bytes": 85093777408
       },
       "elapsed_seconds": 34.18169147474691,
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "measured": true,
       "multi_node_claim": false,

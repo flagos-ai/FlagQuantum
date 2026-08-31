@@ -24,7 +24,7 @@
     "reason": "torch.linalg has no public caller-owned workspace contract; native cuSOLVER integration requires a compiled, stream-aware extension with explicit lifetime and numerical audits"
   },
   "environment": {
-    "hostname": "p-kt-lc-a800-04",
+    "hostname": "redacted",
     "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35"
   },
   "schema": "flagquantum.mps_solver_workspace_probe.v1",

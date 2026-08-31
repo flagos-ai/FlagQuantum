@@ -1,5 +1,5 @@
 import flagquantum as fq
-from benchmarks.development.tn_sliced_reverse_nccl import _audit_evidence_fields
+from benchmarks.runners.tn.tn_sliced_reverse_nccl import _audit_evidence_fields
 
 
 def _rank(rank: int) -> dict[str, object]:

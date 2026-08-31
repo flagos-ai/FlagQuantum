@@ -17,7 +17,7 @@
   "rank_placement": [
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "rank": 0
     }

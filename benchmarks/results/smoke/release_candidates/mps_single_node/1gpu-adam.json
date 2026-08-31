@@ -145,7 +145,7 @@
   "evidence_source": "measured_runtime",
   "family": "variable_bond_training",
   "full_mps_materialization": false,
-  "hostname": "p-kt-lc-a800-04",
+  "hostname": "redacted",
   "local_memory_bytes_by_rank": [
     24209920
   ],
@@ -205,7 +205,7 @@
   "rank_placement": [
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "node_rank": 0,
       "rank": 0

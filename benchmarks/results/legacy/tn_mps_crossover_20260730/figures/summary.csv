@@ -1,9 +1,0 @@
-topology,backend,qubits,depth,targets,cold_start_seconds,steady_state_seconds,peak_memory_mib,observed_max_bond,source
-binary_tree,mps,16,2,4,2.9556842050515115,0.4944789349101484,20.42333984375,256,binary_tree_16q_d2_k4_mps.json
-binary_tree,tensor_network,16,2,4,2.7331358357332647,0.010614767670631409,8.1591796875,0,binary_tree_16q_d2_k4_tensor_network.json
-binary_tree,mps,20,2,4,3.3549469439312816,1.163929350208491,96.80126953125,1024,binary_tree_20q_d2_k4_mps.json
-binary_tree,tensor_network,20,2,4,2.8304018042981625,0.012982749380171299,8.1669921875,0,binary_tree_20q_d2_k4_tensor_network.json
-binary_tree,mps,24,2,4,12.729501473717391,7.832522539887577,1238.82861328125,4096,binary_tree_24q_d2_k4_mps.json
-binary_tree,tensor_network,24,2,4,3.1462570470757782,0.014350862707942724,8.17626953125,0,binary_tree_24q_d2_k4_tensor_network.json
-chain,mps,40,4,4,2.7401216439902782,0.040853214683011174,14.353515625,16,chain_40q_d4_k4_mps.json
-chain,tensor_network,40,4,4,4.291797202080488,0.03143977699801326,8.263671875,0,chain_40q_d4_k4_tensor_network.json

@@ -1,5 +1,4 @@
 import hashlib
-import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -91,19 +90,6 @@ def test_manifest_freezes_workloads_thresholds_and_topologies():
         hashlib.sha256(workload_path.read_bytes()).hexdigest()
         == capacity["workload_sha256"]
     )
-
-
-def test_current_development_artifacts_cannot_pass_release_gate():
-    manifest = load_manifest()
-    artifacts = []
-    for path in Path("benchmarks/development").glob("issue044_*.json"):
-        payload = json.loads(path.read_text())
-        assert all(rank["release_evidence"] is False for rank in payload["ranks"])
-        artifacts.append(payload)
-    passed, blockers = evaluate_issue044_release(artifacts, manifest)
-    assert passed is False
-    assert "missing_multinode_correctness_artifact" in blockers
-    assert "missing_statistically_significant_speedup_artifact" in blockers
 
 
 def test_empty_release_directory_fails_closed():

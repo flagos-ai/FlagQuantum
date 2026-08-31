@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from benchmarks.development.tn_gap_common import make_workload, write_workload
+from benchmarks.runners.tn.tn_gap_common import make_workload, write_workload
 from flagquantum.simulation.tensor_execution import _amplitude_projection
 
 

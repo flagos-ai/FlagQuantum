@@ -48,7 +48,7 @@
   "evidence_source": "measured_runtime",
   "family": "circuit_training",
   "full_mps_materialization": false,
-  "hostname": "p-kt-lc-a800-06",
+  "hostname": "redacted",
   "local_memory_bytes_by_rank": [
     23358464,
     23361536,
@@ -88,112 +88,112 @@
   "rank_placement": [
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 0,
       "node_rank": 0,
       "rank": 0
     },
     {
       "device": "cuda:1",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 1,
       "node_rank": 0,
       "rank": 1
     },
     {
       "device": "cuda:2",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 2,
       "node_rank": 0,
       "rank": 2
     },
     {
       "device": "cuda:3",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 3,
       "node_rank": 0,
       "rank": 3
     },
     {
       "device": "cuda:4",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 4,
       "node_rank": 0,
       "rank": 4
     },
     {
       "device": "cuda:5",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 5,
       "node_rank": 0,
       "rank": 5
     },
     {
       "device": "cuda:6",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 6,
       "node_rank": 0,
       "rank": 6
     },
     {
       "device": "cuda:7",
-      "hostname": "p-kt-lc-a800-06",
+      "hostname": "redacted",
       "local_rank": 7,
       "node_rank": 0,
       "rank": 7
     },
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "node_rank": 1,
       "rank": 8
     },
     {
       "device": "cuda:1",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 1,
       "node_rank": 1,
       "rank": 9
     },
     {
       "device": "cuda:2",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 2,
       "node_rank": 1,
       "rank": 10
     },
     {
       "device": "cuda:3",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 3,
       "node_rank": 1,
       "rank": 11
     },
     {
       "device": "cuda:4",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 4,
       "node_rank": 1,
       "rank": 12
     },
     {
       "device": "cuda:5",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 5,
       "node_rank": 1,
       "rank": 13
     },
     {
       "device": "cuda:6",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 6,
       "node_rank": 1,
       "rank": 14
     },
     {
       "device": "cuda:7",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 7,
       "node_rank": 1,
       "rank": 15

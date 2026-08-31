@@ -10,10 +10,10 @@
   "runs": {
     "site_sharded": {
       "command": [
-        "/srv/quantum-demo/FlagQuantum/.conda-root/envs/flagquantum-dev/bin/torchrun",
+        "<redacted-path>",
         "--standalone",
         "--nproc-per-node=8",
-        "/srv/quantum-demo/FlagQuantum/FlagQuantum/examples/mps_hamiltonian_identification/train.py",
+        "examples/mps_hamiltonian_identification/train.py",
         "--n-wires",
         "1024",
         "--n-initial-states",
@@ -9644,9 +9644,5 @@
       20
     ]
   },
-  "workload_sha256": "b56467279ce8fec5f826833846f3cf66e6d21edb193e37a8b8719661baba24b1",
-  "_privacy_redaction": {
-    "kind": "publication_copy",
-    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
-  }
+  "workload_sha256": "b56467279ce8fec5f826833846f3cf66e6d21edb193e37a8b8719661baba24b1"
 }

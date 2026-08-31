@@ -11,8 +11,8 @@ def test_runner_namespace_has_no_research_dependency():
         assert not any(token in text for token in forbidden), path
 
 
-def test_research_boundary_is_documented():
-    assert (ROOT / "benchmarks" / "research" / "README.md").is_file()
+def test_one_off_research_is_externalized():
+    assert not (ROOT / "benchmarks" / "research").exists()
     assert (RUNNERS / "README.md").is_file()
 
 

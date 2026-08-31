@@ -41,11 +41,10 @@ CUDA_VISIBLE_DEVICES=0 python benchmarks/jax_jit_crossover.py \
   --cold-repetitions 3 --steady-repetitions 10 \
   --device cuda:0 \
   --output benchmarks/results/local/jax_jit_crossover_a800.json
-
-python benchmarks/research/plot_jax_jit_crossover.py \
-  --input benchmarks/results/local/jax_jit_crossover_a800.json \
-  --output-dir benchmarks/results/local/jax_jit_crossover_figures
 ```
+
+Plotting and publication-specific analysis are maintained outside the source
+repository; the JSON result is the reproducible interface.
 
 ## A800 实测结果
 

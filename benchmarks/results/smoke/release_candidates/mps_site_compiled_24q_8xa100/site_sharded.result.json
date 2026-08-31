@@ -289,7 +289,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -701,7 +701,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -1113,7 +1113,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -1525,7 +1525,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -1937,7 +1937,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -2349,7 +2349,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -2761,7 +2761,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -3173,7 +3173,7 @@
       "full_mps_reconstruction_count": 0,
       "full_state_materialization": false,
       "global_error_budget": null,
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "jax_imported": false,
       "jax_required": false,
       "local_gate_count": 8,
@@ -3517,9 +3517,5 @@
   "warm_step_seconds": [
     0.30143611412495375
   ],
-  "world_size": 8,
-  "_privacy_redaction": {
-    "kind": "publication_copy",
-    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
-  }
+  "world_size": 8
 }

@@ -184,7 +184,7 @@
       "environment": {
         "device_name": "NVIDIA A800-SXM4-80GB",
         "full_state_gather": false,
-        "hostname": "5c5bc9215be7",
+        "hostname": "redacted",
         "python": "3.12.13",
         "rank_consistency_reduction": "complex128_scalar_all_gather_then_cpu_compare",
         "reference_materialization": "bounded_per_rank_cpu_complex128_only",
@@ -379,7 +379,7 @@
       "environment": {
         "device_name": "NVIDIA A800-SXM4-80GB",
         "full_state_gather": false,
-        "hostname": "5c5bc9215be7",
+        "hostname": "redacted",
         "python": "3.12.13",
         "rank_consistency_reduction": "complex128_scalar_all_gather_then_cpu_compare",
         "reference_materialization": "bounded_per_rank_cpu_complex128_only",
@@ -592,7 +592,7 @@
       "environment": {
         "device_name": "NVIDIA A800-SXM4-80GB",
         "full_state_gather": false,
-        "hostname": "5c5bc9215be7",
+        "hostname": "redacted",
         "python": "3.12.13",
         "rank_consistency_reduction": "complex128_scalar_all_gather_then_cpu_compare",
         "reference_materialization": "bounded_per_rank_cpu_complex128_only",

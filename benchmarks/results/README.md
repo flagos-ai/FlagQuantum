@@ -12,18 +12,17 @@ evidence.
 | `scalability/` | Release-gate scalability evidence only. | Only place for promoted payloads accepted by `--require-scalability`. |
 
 These four directories are the only evidence classes. Historical experiment
-families are quarantined under [`legacy/`](legacy/README.md), which is not a
-release classification and is frozen against new result families. Migrate
-legacy holdings without breaking published links or capability manifests; see
+families are retained in the team evidence archive, not under a fifth source
+repository class. Published links and capability manifests must point only to
+the minimal curated evidence retained here; see
 [repository governance](../../docs/development/REPOSITORY_GOVERNANCE.md).
 
-Large raw profiler traces, exploratory MPS/Heisenberg result matrices, and
-superseded optimization artifacts are stored outside the source repository.
-The repository retains the distributed statevector strong/weak-scaling
-evidence and the PennyLane and TorchQuantum-Dist comparison evidence needed for
-the current study. External archives are development records and are not
-release evidence until they are restored, normalized, audited, and promoted
-through the release gate.
+Large raw profiler traces, exploratory result matrices, per-iteration hardware
+telemetry, and superseded optimization artifacts are stored outside the source
+repository. The repository retains only evidence required by a current public
+claim, regression, or release gate. External archives are development records
+and are not release evidence until they are restored, normalized, audited, and
+promoted through the release gate.
 
 Non-release JSON should make that obvious with fields such as
 `benchmark_evidence_class`, `non_release_evidence=true`,

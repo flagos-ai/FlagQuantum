@@ -112,19 +112,19 @@
     {
       "path": "artifacts/flagos_distributed_conformance_a800_f11_20260825.json",
       "schema": "flagquantum_flagos_distributed_conformance_v1",
-      "sha256": "b305852942c243a1febe817167169c619034b51c71101a73bd77d093acae82a2",
+      "sha256": "2d0b41e6042086da89b9c5c6b03807f3beefe6f9a1c2962f136440b552a4663a",
       "source_revision": "6d20e81daf67e7a9fbb946ddf067225aa9c6ddc5"
     },
     {
       "path": "artifacts/flagos_statevector_scale_f2_a800_20260826.json",
       "schema": "flagquantum_flagos_statevector_scale_profile_v1",
-      "sha256": "6e52215287bbbd15198bec9d8558935e19c9d21c07923e5306dbb7af9b93b899",
+      "sha256": "eb4112563edd2ec73f5f8aff187ab3bf34f598ae790c8f0f7d3e8076d325ef47",
       "source_revision": "21e220960e9756882ece2932614f3cc4d368a49a"
     },
     {
       "path": "artifacts/flagos_statevector_training_f3_a800_20260826.json",
       "schema": "flagquantum_flagos_statevector_training_profile_v1",
-      "sha256": "1aa945b2bc78dd5306e3234d5826028b3e7442fb91672c16c5b29ff16654460d",
+      "sha256": "13ff25cbe21fec697efccc359ed393da8b84c7f755cdc51516d3805a36d7351e",
       "source_revision": "fa38063534edaaa5044c4cdcc8ade58013f55d0b"
     }
   ],

@@ -30,12 +30,12 @@
     ],
     "rank_placement": [
       {
-        "hostname": "p-kt-lc-a800-04",
+        "hostname": "redacted",
         "local_rank": 0,
         "rank": 0
       },
       {
-        "hostname": "p-kt-lc-a800-06",
+        "hostname": "redacted",
         "local_rank": 0,
         "rank": 1
       }

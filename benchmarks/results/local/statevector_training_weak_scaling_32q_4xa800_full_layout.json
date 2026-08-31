@@ -88,7 +88,7 @@
         0.380182683467865,
         -0.5202473402023315
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "rank": 0
     },
@@ -97,7 +97,7 @@
         0.380182683467865,
         -0.5202473402023315
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 1,
       "rank": 1
     },
@@ -106,7 +106,7 @@
         0.380182683467865,
         -0.5202473402023315
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 2,
       "rank": 2
     },
@@ -115,7 +115,7 @@
         0.380182683467865,
         -0.5202473402023315
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 3,
       "rank": 3
     }

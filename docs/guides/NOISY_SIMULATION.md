@@ -197,7 +197,7 @@ script exports PNG, PDF, and SVG.
 
 The formal 512-trajectory scaling measurements are also packaged as strict
 world-size-specific selector calibrations under
-`benchmarks/results/legacy/distributed_selector_calibrations/`. Exact workload
+the external evidence workspace. Exact workload
 matching reports 11.07, 5.28, 2.87, and 1.52 s on 1, 2, 4, and 8 A800 GPUs,
 respectively, and every corresponding decision records
 `selection_basis="exact_device_calibration"`.
@@ -216,7 +216,7 @@ from the sealed raw benchmark JSON files with:
 ```bash
 python benchmarks/build_distributed_noise_selector_calibrations.py \
   --inputs benchmarks/results/local/noisy_statevector_a800_{1,2,4,8}gpu_20260806.json \
-  --output-dir benchmarks/results/legacy/distributed_selector_calibrations
+  --output-dir artifacts/development/distributed_selector_calibrations
 ```
 
 ## Reproducible throughput benchmark

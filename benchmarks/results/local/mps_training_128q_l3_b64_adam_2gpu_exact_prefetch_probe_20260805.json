@@ -52,7 +52,7 @@
   "evidence_source": "measured_runtime",
   "family": "circuit_training",
   "full_mps_materialization": false,
-  "hostname": "p-kt-lc-a800-04",
+  "hostname": "redacted",
   "local_memory_bytes_by_rank": [
     18064384,
     18005504
@@ -84,14 +84,14 @@
   "rank_placement": [
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "node_rank": 0,
       "rank": 0
     },
     {
       "device": "cuda:1",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 1,
       "node_rank": 0,
       "rank": 1

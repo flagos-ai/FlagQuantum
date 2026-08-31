@@ -29,7 +29,7 @@
   "isolation": {
     "ephemeral_container": true,
     "container_remove_on_exit": true,
-    "source_workspace": "/root/agent_tmp/flagquantum-flagos-validation-20260821",
+    "source_workspace": "<redacted-path>",
     "colleague_project_mounted": false,
     "container_image_modified": false
   },

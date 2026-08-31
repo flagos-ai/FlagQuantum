@@ -9,7 +9,7 @@
         "communication_peer": 1,
         "communication_sequence": 16,
         "compute_owner": 0,
-        "discarded_weight": 7.75289663579315e-07,
+        "discarded_weight": 7.75289663579315E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -63,7 +63,7 @@
         "communication_peer": 2,
         "communication_sequence": 17,
         "compute_owner": 1,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -117,7 +117,7 @@
         "communication_peer": 3,
         "communication_sequence": 18,
         "compute_owner": 2,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -171,7 +171,7 @@
         "communication_peer": 4,
         "communication_sequence": 19,
         "compute_owner": 3,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -225,7 +225,7 @@
         "communication_peer": 5,
         "communication_sequence": 20,
         "compute_owner": 4,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -279,7 +279,7 @@
         "communication_peer": 6,
         "communication_sequence": 21,
         "compute_owner": 5,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -333,7 +333,7 @@
         "communication_peer": 7,
         "communication_sequence": 22,
         "compute_owner": 6,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -387,7 +387,7 @@
         "communication_peer": 8,
         "communication_sequence": 23,
         "compute_owner": 7,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -441,7 +441,7 @@
         "communication_peer": 9,
         "communication_sequence": 24,
         "compute_owner": 8,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -495,7 +495,7 @@
         "communication_peer": 10,
         "communication_sequence": 25,
         "compute_owner": 9,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -549,7 +549,7 @@
         "communication_peer": 11,
         "communication_sequence": 26,
         "compute_owner": 10,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -603,7 +603,7 @@
         "communication_peer": 12,
         "communication_sequence": 27,
         "compute_owner": 11,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -657,7 +657,7 @@
         "communication_peer": 13,
         "communication_sequence": 28,
         "compute_owner": 12,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -711,7 +711,7 @@
         "communication_peer": 14,
         "communication_sequence": 29,
         "compute_owner": 13,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -765,7 +765,7 @@
         "communication_peer": 15,
         "communication_sequence": 30,
         "compute_owner": 14,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "forward_transport": "batched_isend_irecv",
         "input_shapes": [
           [
@@ -813,10 +813,10 @@
       "reverse": true
     }
   ],
-  "command": "/srv/quantum-demo/FlagQuantum/FlagQuantum/benchmarks/internal/evidence/general_mps_capacity_131072.py --output /tmp/mps_131072_repeat_16xa800.json --single-gpu-artifact /tmp/mps_capacity_131072q_chi768_1xa800_oom.json --raw-log /tmp/mps_131072_repeat_rank0.log --gpu-samples /tmp/mps_131072_repeat_gpu_rank0.csv",
+  "command": "benchmarks/internal/evidence/general_mps_capacity_131072.py --output /tmp/mps_131072_repeat_16xa800.json --single-gpu-artifact /tmp/mps_capacity_131072q_chi768_1xa800_oom.json --raw-log /tmp/mps_131072_repeat_rank0.log --gpu-samples /tmp/mps_131072_repeat_gpu_rank0.csv",
   "commit": "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708",
   "cuda_allocator_policy": "expandable_segments:True",
-  "discarded_weight": 8.38731941144033e-06,
+  "discarded_weight": 0.00000838731941144033,
   "distribution_semantics": "sharded_across_ranks",
   "full_mps_materialization": false,
   "gradient_policy": "approximate",
@@ -848,7 +848,7 @@
             "communication_peer": 1,
             "communication_sequence": 16,
             "compute_owner": 0,
-            "discarded_weight": 7.75289663579315e-07,
+            "discarded_weight": 7.75289663579315E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -895,7 +895,7 @@
         "boundary_reverse_exchanges": 1,
         "communication_buffer_bytes": 37748736,
         "diagnostics_seconds": 0.00046584010124206543,
-        "discarded_weight": 7.75289663579315e-07,
+        "discarded_weight": 7.75289663579315E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4522626660764,
         "forward_peak_memory_bytes": 77632382976,
@@ -903,7 +903,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -914,7 +914,7 @@
         "layer_halo_wait_seconds": 0.0003215530887246132,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -976,7 +976,7 @@
             "communication_peer": 1,
             "communication_sequence": 16,
             "compute_owner": 0,
-            "discarded_weight": 7.75289663579315e-07,
+            "discarded_weight": 7.75289663579315E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1021,7 +1021,7 @@
             "communication_peer": 2,
             "communication_sequence": 17,
             "compute_owner": 1,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1068,7 +1068,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.000476284883916378,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.45279132109135,
         "forward_peak_memory_bytes": 77708577792,
@@ -1076,7 +1076,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -1087,7 +1087,7 @@
         "layer_halo_wait_seconds": 0.0004152068868279457,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -1149,7 +1149,7 @@
             "communication_peer": 2,
             "communication_sequence": 17,
             "compute_owner": 1,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1194,7 +1194,7 @@
             "communication_peer": 3,
             "communication_sequence": 18,
             "compute_owner": 2,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1241,7 +1241,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0004929518327116966,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.45237062033266,
         "forward_peak_memory_bytes": 77708577792,
@@ -1249,7 +1249,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -1260,7 +1260,7 @@
         "layer_halo_wait_seconds": 0.00038615427911281586,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -1322,7 +1322,7 @@
             "communication_peer": 3,
             "communication_sequence": 18,
             "compute_owner": 2,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1367,7 +1367,7 @@
             "communication_peer": 4,
             "communication_sequence": 19,
             "compute_owner": 3,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1414,7 +1414,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005024904385209084,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.45231922436506,
         "forward_peak_memory_bytes": 77708577792,
@@ -1422,7 +1422,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -1433,7 +1433,7 @@
         "layer_halo_wait_seconds": 0.00040560122579336166,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -1495,7 +1495,7 @@
             "communication_peer": 4,
             "communication_sequence": 19,
             "compute_owner": 3,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1540,7 +1540,7 @@
             "communication_peer": 5,
             "communication_sequence": 20,
             "compute_owner": 4,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1587,7 +1587,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005072383210062981,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4529721727595,
         "forward_peak_memory_bytes": 77708577792,
@@ -1595,7 +1595,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -1606,7 +1606,7 @@
         "layer_halo_wait_seconds": 0.0003384081646800041,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -1668,7 +1668,7 @@
             "communication_peer": 5,
             "communication_sequence": 20,
             "compute_owner": 4,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1713,7 +1713,7 @@
             "communication_peer": 6,
             "communication_sequence": 21,
             "compute_owner": 5,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1760,7 +1760,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005236398428678513,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4494082489982,
         "forward_peak_memory_bytes": 77708577792,
@@ -1768,7 +1768,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -1779,7 +1779,7 @@
         "layer_halo_wait_seconds": 0.000353887677192688,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -1841,7 +1841,7 @@
             "communication_peer": 6,
             "communication_sequence": 21,
             "compute_owner": 5,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1886,7 +1886,7 @@
             "communication_peer": 7,
             "communication_sequence": 22,
             "compute_owner": 6,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -1933,7 +1933,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005291886627674103,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.47168061044067,
         "forward_peak_memory_bytes": 77708577792,
@@ -1941,7 +1941,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -1952,7 +1952,7 @@
         "layer_halo_wait_seconds": 0.0003323787823319435,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -2014,7 +2014,7 @@
             "communication_peer": 7,
             "communication_sequence": 22,
             "compute_owner": 6,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2059,7 +2059,7 @@
             "communication_peer": 8,
             "communication_sequence": 23,
             "compute_owner": 7,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2106,7 +2106,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005288226529955864,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.47087145783007,
         "forward_peak_memory_bytes": 77708577792,
@@ -2114,7 +2114,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -2125,7 +2125,7 @@
         "layer_halo_wait_seconds": 0.00035273656249046326,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -2187,7 +2187,7 @@
             "communication_peer": 8,
             "communication_sequence": 23,
             "compute_owner": 7,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2232,7 +2232,7 @@
             "communication_peer": 9,
             "communication_sequence": 24,
             "compute_owner": 8,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2279,7 +2279,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005563078448176384,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4838902708143,
         "forward_peak_memory_bytes": 77708577792,
@@ -2287,7 +2287,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -2298,7 +2298,7 @@
         "layer_halo_wait_seconds": 0.0002744104713201523,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -2360,7 +2360,7 @@
             "communication_peer": 9,
             "communication_sequence": 24,
             "compute_owner": 8,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2405,7 +2405,7 @@
             "communication_peer": 10,
             "communication_sequence": 25,
             "compute_owner": 9,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2452,7 +2452,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005563730373978615,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4884667303413,
         "forward_peak_memory_bytes": 77708577792,
@@ -2460,7 +2460,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -2471,7 +2471,7 @@
         "layer_halo_wait_seconds": 0.00029006972908973694,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -2533,7 +2533,7 @@
             "communication_peer": 10,
             "communication_sequence": 25,
             "compute_owner": 9,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2578,7 +2578,7 @@
             "communication_peer": 11,
             "communication_sequence": 26,
             "compute_owner": 10,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2625,7 +2625,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.000558006577193737,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.48879852425307,
         "forward_peak_memory_bytes": 77708577792,
@@ -2633,7 +2633,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -2644,7 +2644,7 @@
         "layer_halo_wait_seconds": 0.0002727927640080452,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -2706,7 +2706,7 @@
             "communication_peer": 11,
             "communication_sequence": 26,
             "compute_owner": 10,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2751,7 +2751,7 @@
             "communication_peer": 12,
             "communication_sequence": 27,
             "compute_owner": 11,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2798,7 +2798,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005564400926232338,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4896992370486,
         "forward_peak_memory_bytes": 77708577792,
@@ -2806,7 +2806,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -2817,7 +2817,7 @@
         "layer_halo_wait_seconds": 0.00028286874294281006,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -2879,7 +2879,7 @@
             "communication_peer": 12,
             "communication_sequence": 27,
             "compute_owner": 11,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2924,7 +2924,7 @@
             "communication_peer": 13,
             "communication_sequence": 28,
             "compute_owner": 12,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -2971,7 +2971,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005368730053305626,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.48991471808404,
         "forward_peak_memory_bytes": 77708577792,
@@ -2979,7 +2979,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -2990,7 +2990,7 @@
         "layer_halo_wait_seconds": 0.00024920981377363205,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -3052,7 +3052,7 @@
             "communication_peer": 13,
             "communication_sequence": 28,
             "compute_owner": 12,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -3097,7 +3097,7 @@
             "communication_peer": 14,
             "communication_sequence": 29,
             "compute_owner": 13,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -3144,7 +3144,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.000536767765879631,
-        "discarded_weight": 3.134693145057099e-07,
+        "discarded_weight": 3.134693145057099E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.490042780526,
         "forward_peak_memory_bytes": 77708577792,
@@ -3152,7 +3152,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -3163,7 +3163,7 @@
         "layer_halo_wait_seconds": 0.00019436050206422806,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -3225,7 +3225,7 @@
             "communication_peer": 14,
             "communication_sequence": 29,
             "compute_owner": 13,
-            "discarded_weight": 3.134693145057099e-07,
+            "discarded_weight": 3.134693145057099E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -3270,7 +3270,7 @@
             "communication_peer": 15,
             "communication_sequence": 30,
             "compute_owner": 14,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -3317,7 +3317,7 @@
         "boundary_reverse_exchanges": 2,
         "communication_buffer_bytes": 75497472,
         "diagnostics_seconds": 0.0005367975682020187,
-        "discarded_weight": 7.739635066172923e-07,
+        "discarded_weight": 7.739635066172923E-7,
         "dynamic_metadata_broadcasts": 1,
         "end_to_end_seconds": 361.4921179069206,
         "forward_peak_memory_bytes": 77708577792,
@@ -3325,7 +3325,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 768,
@@ -3336,7 +3336,7 @@
         "layer_halo_wait_seconds": 0.00019324012100696564,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -3398,7 +3398,7 @@
             "communication_peer": 15,
             "communication_sequence": 30,
             "compute_owner": 14,
-            "discarded_weight": 7.739635066172923e-07,
+            "discarded_weight": 7.739635066172923E-7,
             "forward_transport": "batched_isend_irecv",
             "input_shapes": [
               [
@@ -3453,7 +3453,7 @@
         "fused_reverse_segments": 0,
         "gradient_bucket_cache_hit": false,
         "gradient_bucket_count": 2,
-        "gradient_bucket_fill_ratio": 1.52587890625e-07,
+        "gradient_bucket_fill_ratio": 1.52587890625E-7,
         "gradient_collective_bytes": 8,
         "gradient_collective_count": 2,
         "largest_realized_bond": 1,
@@ -3464,7 +3464,7 @@
         "layer_halo_wait_seconds": 0.0003147730603814125,
         "lbfgs_history_length": 0,
         "learning_rate": 0.01,
-        "loss": -2.1159698007977568e-05,
+        "loss": -0.000021159698007977568,
         "objective_evaluations": 1,
         "objective_execution": "single_observable_scan",
         "objective_scan_forward_messages": 0,
@@ -3682,9 +3682,5 @@
       "local_memory_bytes": 77325757440
     }
   ],
-  "communication_bytes": 1132462080,
-  "_privacy_redaction": {
-    "kind": "publication_copy",
-    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
-  }
+  "communication_bytes": 1132462080
 }

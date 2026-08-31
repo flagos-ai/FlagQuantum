@@ -10,10 +10,10 @@
   "runs": {
     "site_sharded": {
       "command": [
-        "/srv/quantum-demo/FlagQuantum/.conda-root/envs/flagquantum-dev/bin/torchrun",
+        "<redacted-path>",
         "--standalone",
         "--nproc-per-node=8",
-        "/srv/quantum-demo/FlagQuantum/FlagQuantum/examples/mps_hamiltonian_identification/train.py",
+        "examples/mps_hamiltonian_identification/train.py",
         "--n-wires",
         "8",
         "--n-initial-states",
@@ -34297,7 +34297,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -34522,7 +34522,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -34747,7 +34747,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -34972,7 +34972,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -35197,7 +35197,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -35422,7 +35422,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -35647,7 +35647,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -35872,7 +35872,7 @@
             "full_mps_reconstruction_count": 0,
             "full_state_materialization": false,
             "global_error_budget": null,
-            "hostname": "gpu-node-0",
+            "hostname": "redacted",
             "jax_imported": false,
             "jax_required": false,
             "local_gate_count": 2,
@@ -36080,9 +36080,5 @@
       3
     ]
   },
-  "workload_sha256": "08a63f97065f7215bc170390deb4aefc73f13b136da43e0e33a08dd324ae2a66",
-  "_privacy_redaction": {
-    "kind": "publication_copy",
-    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
-  }
+  "workload_sha256": "08a63f97065f7215bc170390deb4aefc73f13b136da43e0e33a08dd324ae2a66"
 }

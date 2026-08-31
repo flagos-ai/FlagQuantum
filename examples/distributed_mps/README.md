@@ -1,7 +1,7 @@
 # Eight-GPU Variable-Bond MPS Capacity Example
 
-The maintained execution plan for advancing this backend is
-[`MPS_TOP_TIER_ROADMAP.md`](../../docs/roadmap/MPS_TOP_TIER_ROADMAP.md).
+Current support boundaries and evidence are published in the
+[capability catalog](../../docs/generated/CAPABILITIES.md).
 
 This example evolves and differentiates one open-boundary MPS. It does not use
 a large batch, data-parallel replicas, or full-MPS reconstruction.
@@ -83,8 +83,8 @@ timeout --signal=TERM --kill-after=30s 2h \
   --output /tmp/issue092-capacity-8gpu.json
 ```
 
-Its compact audited result is
-`benchmarks/development/issue092_general_mps_capacity.json`.
+Keep generated payloads outside the source tree or publish a curated result
+under `benchmarks/results/` only after review and sanitization.
 The current frozen capacity profile is not assumed to fail on four GPUs.
 If it completes, the emitted artifact correctly records no four-GPU capacity
 failure and the eight-GPU `capacity_gate` remains blocked. Select and freeze a

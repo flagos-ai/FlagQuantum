@@ -140,7 +140,7 @@
   },
   "environment": {
     "device_name": "unknown",
-    "hostname": "1799f474fd1d",
+    "hostname": "redacted",
     "object_collectives_forbidden": true,
     "payload_tensor_residency_verified": true,
     "python": "3.12.13",

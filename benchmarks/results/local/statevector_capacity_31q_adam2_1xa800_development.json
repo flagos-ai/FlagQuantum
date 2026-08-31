@@ -23,7 +23,7 @@
       "elapsed_seconds": 9.314158153254539,
       "expectation": "cuda_oom",
       "expectation_met": true,
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "measured": true,
       "multi_node_claim": false,

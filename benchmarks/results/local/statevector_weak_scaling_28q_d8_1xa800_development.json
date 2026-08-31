@@ -62,7 +62,7 @@
   "rank_placement": [
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "node_rank": 0,
       "rank": 0
@@ -102,7 +102,7 @@
         2.3435296840034425,
         2.3443356938660145
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {

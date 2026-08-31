@@ -4220,7 +4220,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:0",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 0,
       "owned_probe_indices": [
         0,
@@ -4262,7 +4262,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:1",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 1,
       "owned_probe_indices": [
         1,
@@ -4304,7 +4304,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:2",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 2,
       "owned_probe_indices": [
         2,
@@ -4346,7 +4346,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:3",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 3,
       "owned_probe_indices": [
         3,
@@ -4388,7 +4388,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:4",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 4,
       "owned_probe_indices": [
         4,
@@ -4430,7 +4430,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:5",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 5,
       "owned_probe_indices": [
         5,
@@ -4472,7 +4472,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:6",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 6,
       "owned_probe_indices": [
         6,
@@ -4514,7 +4514,7 @@
     {
       "allocated_memory_bytes": 17180160,
       "device": "cuda:7",
-      "hostname": "gpu-node-0",
+      "hostname": "redacted",
       "local_rank": 7,
       "owned_probe_indices": [
         7,
@@ -4569,9 +4569,5 @@
     3
   ],
   "training_steps": 2,
-  "world_size": 8,
-  "_privacy_redaction": {
-    "kind": "publication_copy",
-    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
-  }
+  "world_size": 8
 }

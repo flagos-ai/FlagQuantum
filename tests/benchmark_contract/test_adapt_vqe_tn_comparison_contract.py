@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-PATH = Path(__file__).parents[2] / "benchmarks/development/adapt_vqe_tn_contract.py"
+PATH = Path(__file__).parents[2] / "benchmarks/runners/tn/adapt_vqe_tn_contract.py"
 SPEC = importlib.util.spec_from_file_location("adapt_vqe_tn_contract", PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

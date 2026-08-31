@@ -52,16 +52,13 @@ flagquantum-benchmark run statevector_training_scaling INPUT... \
 | Directory | Stability | Purpose |
 | --- | --- | --- |
 | `flagquantum/benchmarking/` | Supported | Packaged CLI, registry, result contract, and maintained runners. |
+| `benchmarks/runners/` | Maintained | Reproducible hardware and workload entry points. |
 | `benchmarks/results/` | Evidence | Structured local, comparison, smoke, and certified scalability results. |
-| `benchmarks/research/` | Experimental | Plotting, analysis, and exploratory report generation. |
-| `benchmarks/internal/evidence/` | Internal | Historical development-evidence generators. |
-| `benchmarks/internal/data/` | Internal | Archived ad-hoc result payloads. |
-| `benchmarks/internal/scripts/` | Internal | Experiment-matrix shell scripts. |
+| `benchmarks/internal/evidence/` | Internal | Development-evidence generators required by current contracts. |
 
 Only `local/`, `comparison/`, `smoke/`, and `scalability/` are evidence
-classes. Historical experiment families are quarantined under `legacy/` and
-must not be treated as a fifth evidence class or receive new siblings. Migrate
-them out in reviewable batches according to the
+classes. Historical experiment families, plotting scripts, and ad-hoc analysis
+belong in the external evidence archive. Migrate them out in reviewable batches according to the
 [repository governance policy](../docs/development/REPOSITORY_GOVERNANCE.md).
 
 Top-level Python files are implementation modules retained while their

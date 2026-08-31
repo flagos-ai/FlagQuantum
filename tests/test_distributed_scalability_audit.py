@@ -1205,13 +1205,14 @@ def test_benchmark_results_layout_separates_non_release_evidence():
         if not path.name.endswith("audit_summary.json")
     ]
 
+    payload_count = 0
     for directory in (root / "local", root / "comparison", root / "smoke"):
         payload_paths = [
             path
             for path in directory.glob("*.json")
             if not path.name.endswith("audit_summary.json")
         ]
-        assert payload_paths, f"expected non-release payloads in {directory}"
+        payload_count += len(payload_paths)
         for path in payload_paths:
             payload = json.loads(path.read_text(encoding="utf-8"))
             audit = fq.audit_distributed_scalability(payload)
@@ -1226,6 +1227,7 @@ def test_benchmark_results_layout_separates_non_release_evidence():
             }
             assert payload.get("scalability_blockers"), path
             assert not audit.release_gate_allowed
+    assert payload_count, "expected at least one checked-in non-release payload"
 
 
 def test_legacy_smoke_payloads_are_not_release_claims():

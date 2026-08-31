@@ -1,4 +1,0 @@
-interface:
-  display_name: "PRX Quantum Paper"
-  short_description: "Build rigorous, submission-ready PRX Quantum manuscripts"
-  default_prompt: "Use $prx-quantum-paper to audit and strengthen this quantum-science manuscript for PRX Quantum submission."

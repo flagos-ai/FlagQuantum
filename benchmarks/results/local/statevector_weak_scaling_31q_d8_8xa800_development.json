@@ -77,56 +77,56 @@
   "rank_placement": [
     {
       "device": "cuda:0",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 0,
       "node_rank": 0,
       "rank": 0
     },
     {
       "device": "cuda:1",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 1,
       "node_rank": 0,
       "rank": 1
     },
     {
       "device": "cuda:2",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 2,
       "node_rank": 0,
       "rank": 2
     },
     {
       "device": "cuda:3",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 3,
       "node_rank": 0,
       "rank": 3
     },
     {
       "device": "cuda:4",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 4,
       "node_rank": 0,
       "rank": 4
     },
     {
       "device": "cuda:5",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 5,
       "node_rank": 0,
       "rank": 5
     },
     {
       "device": "cuda:6",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 6,
       "node_rank": 0,
       "rank": 6
     },
     {
       "device": "cuda:7",
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "local_rank": 7,
       "node_rank": 0,
       "rank": 7
@@ -166,7 +166,7 @@
         2.683497646357864,
         2.681677147746086
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -214,7 +214,7 @@
         2.68330620508641,
         2.6820153943262994
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -262,7 +262,7 @@
         2.683001612778753,
         2.681919079273939
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -310,7 +310,7 @@
         2.682900228071958,
         2.680820130277425
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -358,7 +358,7 @@
         2.68301932932809,
         2.681002536788583
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -406,7 +406,7 @@
         2.683691786136478,
         2.6823177239857614
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -454,7 +454,7 @@
         2.6832918250001967,
         2.6823859219439328
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {
@@ -502,7 +502,7 @@
         2.683033301960677,
         2.6810702518559992
       ],
-      "hostname": "p-kt-lc-a800-04",
+      "hostname": "redacted",
       "invariants": {
         "norm": 0.9999998211860657,
         "z_expectations": {

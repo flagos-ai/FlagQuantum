@@ -7,6 +7,11 @@ import argparse
 import subprocess
 from pathlib import Path
 
+try:
+    from tools.sanitize_public_evidence import unsanitized_files
+except ModuleNotFoundError:  # direct script execution
+    from sanitize_public_evidence import unsanitized_files
+
 FORBIDDEN_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 FORBIDDEN_SUFFIXES = {
     ".pyc",
@@ -36,46 +41,7 @@ DEFAULT_MAX_FILE_BYTES = 2_000_000
 # and forbidden-artifact checks above.
 DEFAULT_MAX_TOTAL_BYTES = 110_000_000
 CANONICAL_RESULT_DIRECTORIES = {"comparison", "local", "scalability", "smoke"}
-RESULT_CONTAINER_DIRECTORIES = {"legacy"}
-LEGACY_RESULT_DIRECTORIES = {
-    "adapt_vqe_tn_20260803",
-    "backend_phase_diagram_20260730",
-    "distributed_selector_calibrations",
-    "distributed_tn_patent",
-    "gradient_backend_phase_diagram_20260730",
-    "mps_capacity_16xa800_20260806",
-    "statevector_figure_book",
-    "statevector_mlsys_current",
-    "statevector_submission_figures",
-    "tn_compare_tcng_20260731",
-    "tn_complex_scaling_20260802",
-    "tn_cost_aware_scaling_20260730",
-    "tn_cotengra_gap",
-    "tn_gradient_capacity_scaling_20260730",
-    "tn_hard_gate_20260731",
-    "tn_high_width_scaling_20260730",
-    "tn_high_width_working_set_scaling_20260730",
-    "tn_kiloqubit_ladder_20260730",
-    "tn_mps_crossover_20260730",
-    "tn_persistent_cache_20260730",
-    "tn_persistent_cache_v2_20260730",
-    "tn_readme_scaling_20260731",
-    "tn_shared_dag_scaling_20260730",
-    "tn_sparse_capacity_20260730",
-    "tn_working_set_calibration_20260731",
-    "vqe_backend_switch",
-}
-LEGACY_ARTIFACT_DIRECTORIES = {
-    "quafu_context_batch_01",
-    "quafu_context_batch_02",
-    "quafu_context_batch_03",
-    "quafu_predictive_batch_01",
-    "quafu_predictive_batch_02",
-    "quafu_scale_batch_01",
-    "quafu_vqe",
-    "quafu_vqe_10240",
-}
-ARTIFACT_CONTAINER_DIRECTORIES = {"development", "legacy"}
+ARTIFACT_CONTAINER_DIRECTORIES = {"development"}
 
 
 def tracked_files(root: Path) -> tuple[Path, ...]:
@@ -143,25 +109,31 @@ def layout_violations(root: Path) -> tuple[str, ...]:
         for path in (root / "benchmarks" / "results").iterdir()
         if path.is_dir()
     }
-    for name in sorted(
-        result_directories - CANONICAL_RESULT_DIRECTORIES - RESULT_CONTAINER_DIRECTORIES
-    ):
+    for name in sorted(result_directories - CANONICAL_RESULT_DIRECTORIES):
         errors.append(f"new top-level benchmark result family is forbidden: {name}")
-    legacy_root = root / "benchmarks" / "results" / "legacy"
-    legacy_directories = {path.name for path in legacy_root.iterdir() if path.is_dir()}
-    for name in sorted(legacy_directories - LEGACY_RESULT_DIRECTORIES):
-        errors.append(f"new legacy benchmark result family is forbidden: {name}")
     artifact_directories = {
         path.name for path in (root / "artifacts").iterdir() if path.is_dir()
     }
     for name in sorted(artifact_directories - ARTIFACT_CONTAINER_DIRECTORIES):
         errors.append(f"new top-level artifact family is forbidden: {name}")
-    legacy_artifact_root = root / "artifacts" / "legacy"
-    legacy_artifact_directories = {
-        path.name for path in legacy_artifact_root.iterdir() if path.is_dir()
-    }
-    for name in sorted(legacy_artifact_directories - LEGACY_ARTIFACT_DIRECTORIES):
-        errors.append(f"new legacy artifact batch is forbidden: {name}")
+    forbidden_roots = (
+        root / ".codex" / "skills",
+        root / "docs" / "reviews",
+        root / "paper",
+        root / "artifacts" / "legacy",
+        root / "benchmarks" / "results" / "legacy",
+        root / "benchmarks" / "internal" / "data",
+        root / "benchmarks" / "internal" / "scripts",
+        root / "benchmarks" / "development",
+        root / "benchmarks" / "research",
+    )
+    tracked = tuple(path.relative_to(root) for path in tracked_files(root))
+    for path in forbidden_roots:
+        relative = path.relative_to(root)
+        if any(item == relative or relative in item.parents for item in tracked):
+            errors.append(
+                f"internal or archived asset must not be tracked here: {relative}"
+            )
     return tuple(errors)
 
 
@@ -171,11 +143,18 @@ def main() -> int:
     parser.add_argument("--max-total-bytes", type=int, default=DEFAULT_MAX_TOTAL_BYTES)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    errors = violations(
-        root,
-        max_file_bytes=args.max_file_bytes,
-        max_total_bytes=args.max_total_bytes,
-    ) + layout_violations(root)
+    errors = (
+        violations(
+            root,
+            max_file_bytes=args.max_file_bytes,
+            max_total_bytes=args.max_total_bytes,
+        )
+        + layout_violations(root)
+        + tuple(
+            f"unsanitized public evidence: {path.relative_to(root)}"
+            for path in unsanitized_files()
+        )
+    )
     if errors:
         print("\n".join(errors))
         return 1

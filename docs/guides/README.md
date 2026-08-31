@@ -9,5 +9,4 @@ studies.
 - [PyTorch operator requirements for FlagGems](PYTORCH_OPERATOR_REQUIREMENTS_FOR_FLAGGEMS.md)
 - [JAX JIT performance case](JAX_JIT_PERFORMANCE_CASE.md)
 - [JAX JIT VQE case](JAX_JIT_VQE_CASE.md)
-- [Static program optimization report](STATIC_PROGRAM_OPTIMIZATION_REPORT.md)
 - [Constrained MPS TEBD](TEBD.md)

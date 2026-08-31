@@ -39,7 +39,7 @@
           "device": "flagos:0",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -291,7 +291,7 @@
           "device": "flagos:1",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -564,7 +564,7 @@
           "device": "flagos:0",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -816,7 +816,7 @@
           "device": "flagos:1",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -1068,7 +1068,7 @@
           "device": "flagos:2",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -1320,7 +1320,7 @@
           "device": "flagos:3",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -1593,7 +1593,7 @@
           "device": "flagos:0",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -1845,7 +1845,7 @@
           "device": "flagos:1",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -2097,7 +2097,7 @@
           "device": "flagos:2",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -2349,7 +2349,7 @@
           "device": "flagos:3",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -2601,7 +2601,7 @@
           "device": "flagos:4",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -2853,7 +2853,7 @@
           "device": "flagos:5",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -3105,7 +3105,7 @@
           "device": "flagos:6",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",
@@ -3357,7 +3357,7 @@
           "device": "flagos:7",
           "device_type": "flagos",
           "environment": {
-            "hostname": "1bf214bacec4",
+            "hostname": "redacted",
             "python": "3.12.13",
             "torch": "2.11.0+cu130",
             "torch_cuda_runtime": "13.0",

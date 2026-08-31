@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from benchmarks.development.merge_tn_gap_results import merge
-from benchmarks.development.summarize_tn_gap_results import summarize
-from benchmarks.development.tn_gap_common import (
+from benchmarks.runners.tn.merge_tn_gap_results import merge
+from benchmarks.runners.tn.summarize_tn_gap_results import summarize
+from benchmarks.runners.tn.tn_gap_common import (
     RESULT_SCHEMA,
     load_workload,
     make_workload,
