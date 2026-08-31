@@ -9,6 +9,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR
 from flagquantum.ops import DEFAULT_LOWERING_REGISTRY, matrices
 from flagquantum.testing import (
@@ -60,8 +61,8 @@ def test_generated_ir_is_deterministic_normalized_and_round_trips(seed):
 def test_dense_mps_and_tensor_network_are_differentially_equal():
     ir = generate_circuit_ir(seed=811, depth=7)
     dense = fq.Circuit.from_ir(ir).state()
-    mps = fq.run_mps(ir, max_bond=None, cutoff=0.0).to_statevector()
-    tensor_network = fq.run_tensor_network(ir).state()
+    mps = fqb.run_mps(ir, max_bond=None, cutoff=0.0).to_statevector()
+    tensor_network = fqb.run_tensor_network(ir).state()
     assert torch.allclose(mps, dense, atol=1e-5, rtol=1e-5)
     assert torch.allclose(tensor_network, dense, atol=1e-5, rtol=1e-5)
 

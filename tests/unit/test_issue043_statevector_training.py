@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.statevector.training import (
     DistributedTrainingError,
     _validate_checkpoint_generations,
@@ -39,7 +40,7 @@ def test_multi_step_training_matches_ordinary_local_torch_optimizer(optimizer):
         reference_optimizer.step()
         expected_losses.append(float(loss.detach()))
 
-    result = fq.train_distributed_statevector(
+    result = fqxd.train_distributed_statevector(
         circuit, steps=4, optimizer=optimizer, lr=0.03
     )
     assert result.losses == pytest.approx(expected_losses, abs=3e-5)

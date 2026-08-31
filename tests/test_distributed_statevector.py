@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
@@ -547,7 +548,7 @@ def test_run_distributed_attaches_statevector_plan_summary():
 
     # Backend-native inspection remains available explicitly without weakening
     # the stable ExecutionResult contract of Circuit.run().
-    qdev = fq.run_native(
+    qdev = fqb.run_native(
         circuit,
         mode="distributed_statevector",
         device="cpu",

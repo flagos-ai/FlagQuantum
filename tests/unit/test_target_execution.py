@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 
 pytestmark = pytest.mark.unit
 
@@ -10,7 +11,7 @@ def test_run_target_uses_statevector_when_dense_path_fits() -> None:
     circuit = fq.Circuit(6)
     circuit.h(0).cx(0, 5).ry(2, theta=0.2)
 
-    result = fq.run_target(
+    result = fqb.run_target(
         circuit,
         target="local_observables",
         observables=({"z": (0, 5)}, {"x": (2,)}),
@@ -36,7 +37,7 @@ def test_run_target_forced_tn_executes_sparse_kernel_not_full_state() -> None:
     targets = ("000000", "100001", "010100")
     indices = torch.tensor([int(bits, 2) for bits in targets])
 
-    result = fq.run_target(
+    result = fqb.run_target(
         circuit,
         target="few_amplitudes",
         bitstrings=targets,
@@ -52,7 +53,7 @@ def test_run_target_distributed_tn_preserves_sparse_execution_evidence() -> None
     circuit = fq.Circuit(6)
     circuit.h(0).cx(0, 5).ry(2, theta=0.2)
 
-    result = fq.run_target(
+    result = fqb.run_target(
         circuit,
         target="local_observables",
         observables=({"z": (0, 5)}, {"x": (2,)}),
@@ -73,7 +74,7 @@ def test_run_target_routes_shallow_chain_to_sparse_mps_execution() -> None:
         circuit.cx(wire, wire + 1)
     targets = ("0" * 20, "1" * 20)
 
-    result = fq.run_target(
+    result = fqb.run_target(
         circuit,
         target="few_amplitudes",
         bitstrings=targets,

@@ -10,6 +10,7 @@ from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE = ROOT / "contracts" / "public-api-v1-candidate.json"
+TEST_DEBT = ROOT / "contracts" / "legacy-root-api-test-debt.json"
 PUBLIC_FILES = (
     ROOT / "README.md",
     ROOT / "ARCHITECTURE.md",
@@ -77,8 +78,37 @@ def validate() -> tuple[str, ...]:
     return tuple(errors)
 
 
+def validate_test_debt() -> tuple[str, ...]:
+    names = legacy_root_names()
+    contract = json.loads(TEST_DEBT.read_text(encoding="utf-8"))
+    expected = contract["files"]
+    actual: dict[str, int] = {}
+    for path in (ROOT / "tests").rglob("*.py"):
+        if path.name == "test_legacy_root_api_usage.py":
+            continue
+        count = len(violations_for_text(path.read_text(encoding="utf-8"), names=names))
+        if count:
+            actual[str(path.relative_to(ROOT))] = count
+    errors = []
+    if actual != expected:
+        all_paths = sorted(set(actual) | set(expected))
+        for path in all_paths:
+            if actual.get(path, 0) != expected.get(path, 0):
+                errors.append(
+                    f"{path}: legacy root API debt changed from "
+                    f"{expected.get(path, 0)} to {actual.get(path, 0)}"
+                )
+    actual_total = sum(actual.values())
+    if actual_total != contract["total_references"]:
+        errors.append(
+            "legacy root API test debt total changed from "
+            f"{contract['total_references']} to {actual_total}"
+        )
+    return tuple(errors)
+
+
 def main() -> int:
-    errors = validate()
+    errors = (*validate(), *validate_test_debt())
     if errors:
         print("user-facing files must use approved API namespaces:")
         print("\n".join(errors))

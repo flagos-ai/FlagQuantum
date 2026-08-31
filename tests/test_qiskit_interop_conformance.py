@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.operators as fqo
 from flagquantum.interop.qiskit import (
     from_qiskit,
     qiskit_statevector_to_flagquantum,
@@ -38,7 +39,7 @@ def _contract() -> dict:
 def test_every_contract_operation_converts_in_both_directions() -> None:
     values = (0.173, -0.291, 0.419)
     for operation in _contract()["operations"]:
-        schema = fq.gate_info(operation["flagquantum"])
+        schema = fqo.gate_info(operation["flagquantum"])
         n_wires = max(3, schema.n_wires)
         wires = tuple(range(schema.n_wires))
         parameters = values[: schema.n_parameters]

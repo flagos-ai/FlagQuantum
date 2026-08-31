@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.experimental.planning as fqxp
 import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
@@ -530,7 +531,7 @@ def test_runtime_selection_blocks_preflight_only_jax_statevector_training_recomm
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).rxx(2, 3, theta=0.1).cx(2, 3)
 
-    selection = fq.plan_runtime_selection(
+    selection = fqxp.plan_runtime_selection(
         circuit,
         world_size=4,
         local_world_size=2,

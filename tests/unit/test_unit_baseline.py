@@ -1,6 +1,7 @@
 import pytest
 
 import flagquantum as fq
+import flagquantum.experimental.planning as fqxp
 
 pytestmark = pytest.mark.unit
 
@@ -21,7 +22,7 @@ def test_runtime_planner_reports_local_fast_path_metadata():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    summary = fq.plan_runtime_selection(circuit, prefer_jax=False).summary()
+    summary = fqxp.plan_runtime_selection(circuit, prefer_jax=False).summary()
     candidate = summary["recommended_candidate"]
 
     assert summary["world_size"] == 1

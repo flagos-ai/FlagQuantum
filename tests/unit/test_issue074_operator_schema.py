@@ -3,7 +3,7 @@ from types import MappingProxyType
 import pytest
 import torch
 
-import flagquantum as fq
+import flagquantum.operators as fqo
 from flagquantum import Circuit
 from flagquantum.core import (
     OPERATOR_ALIASES,
@@ -26,16 +26,16 @@ pytestmark = pytest.mark.unit
 
 
 def test_gate_info_exposes_user_facing_parameter_contract():
-    info = fq.gate_info("u")
+    info = fqo.gate_info("u")
 
-    assert isinstance(info, fq.GateInfo)
+    assert isinstance(info, fqo.GateInfo)
     assert info.name == "u3"
     assert info.n_wires == 1
     assert info.parameters == ("theta", "phi", "lbd")
     assert info.n_parameters == 3
     assert dict(info.parameter_shapes) == {"theta": (), "phi": (), "lbd": ()}
     with pytest.raises(ValueError, match="unknown FlagQuantum gate"):
-        fq.gate_info("missing")
+        fqo.gate_info("missing")
 
 
 def test_schema_is_immutable_and_aliases_are_canonical():

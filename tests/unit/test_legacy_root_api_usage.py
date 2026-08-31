@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import pytest
 
-from tools.check_legacy_root_api_usage import validate, violations_for_text
+from tools.check_legacy_root_api_usage import (
+    validate,
+    validate_test_debt,
+    violations_for_text,
+)
 
 pytestmark = pytest.mark.unit
 
 
 def test_user_facing_files_do_not_use_approved_legacy_root_names() -> None:
     assert validate() == ()
+
+
+def test_test_suite_migration_debt_matches_reviewed_contract() -> None:
+    assert validate_test_debt() == ()
 
 
 def test_checker_reports_only_legacy_root_access() -> None:

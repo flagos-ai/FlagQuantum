@@ -5,6 +5,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 from flagquantum.core.ir import (
     IR_VERSION,
     CircuitIR,
@@ -99,7 +100,7 @@ def test_executor_boundary_rejects_non_ir_input_before_dispatch():
             return {"n_wires": 2}
 
     with pytest.raises(TypeError, match="executors require CircuitIR"):
-        fq.run_native(InvalidProgram())
+        fqb.run_native(InvalidProgram())
 
 
 def test_public_api_snapshot_and_experimental_deprecation_path():

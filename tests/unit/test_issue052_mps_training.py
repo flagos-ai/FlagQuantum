@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.mps.reverse import _qr_forward
 from flagquantum.runtime.backends.mps.training import (
     MPSStepMetrics,
@@ -313,7 +314,7 @@ def test_single_rank_sharded_mps_gather_avoids_object_collective(monkeypatch):
 def test_requires_explicit_distributed_lifecycle():
     circuit, _ = _circuit()
     with pytest.raises(MPSTrainingError, match="requires torch.distributed"):
-        fq.train_distributed_mps(circuit, steps=1)
+        fqxd.train_distributed_mps(circuit, steps=1)
 
 
 def test_result_never_promotes_execution_without_speedup_and_capacity_evidence():

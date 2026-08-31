@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+import flagquantum.experimental.planning as fqxp
 from benchmarks.audit_results import _json_files, audit_paths
 from flagquantum.runtime.audit.engine import evaluate_mps_backward_readiness
 
@@ -142,7 +143,7 @@ def test_runtime_planner_local_fast_path_does_not_emit_distributed_claim():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).ry(2, theta=0.2)
 
-    summary = fq.plan_runtime_selection(
+    summary = fqxp.plan_runtime_selection(
         circuit, prefer_jax=True, require_gradients=True
     ).summary()
     candidate = summary["recommended_candidate"]

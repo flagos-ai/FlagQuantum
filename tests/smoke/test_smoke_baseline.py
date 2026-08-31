@@ -2,13 +2,14 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 
 pytestmark = pytest.mark.smoke
 
 
 def test_import_flagquantum_top_level_api():
     assert fq.Circuit is not None
-    assert fq.run_native is not None
+    assert fqb.run_native is not None
     assert fq.get_backend() == "pytorch"
 
 
