@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
-  "status": "proposed",
+  "status": "approved_for_implementation",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md",
   "target": "first-public-alpha",
   "root_addition": "ExecutionOptions",
-  "implementation_authorized": false,
+  "implementation_authorized": true,
   "contract": {
     "kind": "dataclass",
     "frozen": true,

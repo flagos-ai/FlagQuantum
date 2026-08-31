@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
+
+from flagquantum.runtime.options import ExecutionOptions
 
 pytestmark = pytest.mark.unit
 
@@ -16,12 +19,12 @@ def _load(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_execution_options_candidate_is_proposed_not_implemented() -> None:
+def test_execution_options_candidate_is_authorized_but_not_frozen() -> None:
     candidate = _load(CANDIDATE)
 
-    assert candidate["status"] == "proposed"
+    assert candidate["status"] == "approved_for_implementation"
     assert candidate["root_addition"] == "ExecutionOptions"
-    assert candidate["implementation_authorized"] is False
+    assert candidate["implementation_authorized"] is True
     assert candidate["rules"]["candidate_is_frozen_contract"] is False
 
 
@@ -48,6 +51,20 @@ def test_execution_options_field_contract_is_exact_and_overlay_safe() -> None:
     assert all(field["default"] is None for field in fields)
     assert candidate["contract"]["frozen"] is True
     assert candidate["contract"]["slots"] is True
+
+
+def test_execution_options_implementation_matches_candidate_fields() -> None:
+    candidate = _load(CANDIDATE)
+    contracted = candidate["contract"]["fields"]
+
+    assert [field.name for field in fields(ExecutionOptions)] == [
+        field["name"] for field in contracted
+    ]
+    assert ExecutionOptions().to_dict() == {
+        "schema": candidate["contract"]["serialization_schema"],
+        "version": candidate["contract"]["serialization_version"],
+        **{field["name"]: field["default"] for field in contracted},
+    }
 
 
 def test_execution_mode_is_representation_not_distribution_topology() -> None:

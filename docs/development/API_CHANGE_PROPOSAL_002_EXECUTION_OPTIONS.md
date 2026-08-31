@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Proposed — 待 API owner 审批，禁止实现或加入 Stable Core。**
+**Approved for implementation — 已批准实现，尚未批准加入 Stable Core manifest。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.ExecutionOptions`、`fq.plan`、`fq.run`、`Circuit.run`、
@@ -10,6 +10,9 @@
 - 机器可读候选：`contracts/execution-options-v1-candidate.json`；
 - 前置决策：已批准的 API Change Proposal 001 将 `ExecutionOptions` 列为 Stable
   Core 计划新增项，但没有批准其字段和语义。
+
+批准记录：API owner 于 2026-08-31 授权按本提案进入实现阶段。该授权不包含根级导出、
+Stable Core manifest 冻结、`ExecutionPlan` 输入或 `ExecutionResult` 变更。
 
 ## 问题
 
@@ -253,7 +256,7 @@ version 和字段；不能静默忽略未来字段。
 
 ## 迁移计划
 
-1. 审批本提案及机器可读候选，不改运行时代码；
+1. 审批本提案及机器可读候选，不改运行时代码；（已完成）
 2. 实现 `ExecutionOptions`、严格验证、序列化和 options resolver；
 3. 让 `plan/run/Circuit/RuntimePolicy` 只调用同一个 resolver；
 4. 为 legacy keyword 建立仓库内迁移清单，未知键立即失败；
@@ -264,8 +267,8 @@ version 和字段；不能静默忽略未来字段。
 
 ## 验收标准
 
-- [ ] API owner 批准字段、顺序、类型、默认值和 fail-closed 策略；
-- [ ] `ExecutionOptions` 不包含 backend-specific 或 distributed orchestration 字段；
+- [x] API owner 批准字段、顺序、类型、默认值和 fail-closed 策略；
+- [x] `ExecutionOptions` 不包含 backend-specific 或 distributed orchestration 字段；
 - [ ] 所有配置来源由一个 resolver 按字段合并；
 - [ ] `plan` 与 `run` 对同一 program/options 得到同一 resolved options；
 - [ ] `Circuit.run` 与 `fq.run` 等价；
@@ -274,6 +277,17 @@ version 和字段；不能静默忽略未来字段。
 - [ ] 现有 legacy keyword 调用清单归零；
 - [ ] 完整 Stable Core、runtime、distributed 和文档契约通过；
 - [ ] API owner 单独批准加入 root manifest。
+
+## 实施记录
+
+2026-08-31 完成第一阶段内部实现：
+
+- `flagquantum.runtime.options.ExecutionOptions` 已实现不可变 slots dataclass、严格值验证
+  和 v1 序列化；
+- `flagquantum.runtime.options_resolver.resolve_execution_options` 已实现唯一字段级优先级、
+  RuntimeConfig adapter、程序 batch 冲突检查和字段来源记录；
+- 根级 `fq.ExecutionOptions`、`fq.plan/run` 新签名以及 `RuntimePolicy` 迁移尚未启用，避免
+  在最后一次接口验收前形成半公开 API。
 
 ## 请求批准的决策
 
