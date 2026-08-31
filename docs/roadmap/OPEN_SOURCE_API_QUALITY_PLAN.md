@@ -656,12 +656,21 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 
 - `API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md` 与
   `contracts/execution-options-v1-candidate.json` 已登记；
-- 当前状态为 approved for implementation；内部类型与统一 resolver 已实现，但尚未加入
-  Stable Core manifest，也尚未切换公开 `plan/run` 签名；
+- Proposal 002 已完成实现、根级清单授权和 default/runtime/distributed 验证；
+  `ExecutionOptions` 已成为 `plan/run/Circuit/RuntimePolicy` 的统一稳定输入；
 - 候选采用不可变字段级 overlay、严格优先级、无 `extras` 逃生口，以及 approximation
   和 backend fallback 默认关闭的 fail-closed 语义。
 
 ### Phase 3：建立可执行计划
+
+设计记录（2026-08-31）：
+
+- `API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md` 与
+  `contracts/execution-plan-v1-candidate.json` 已登记；
+- 当前状态为 draft pending approval，只定义 identity、序列化、stale-plan、环境约束和
+  `fq.run(plan)` 目标语义，尚未授权实现或加入稳定根清单；
+- `ExecutionPlan` 定位为本地可检查、可缓存、可恢复和可执行的计划，
+  `DeploymentPackage` 继续承担签名、provider 提交和远程生命周期。
 
 - `fq.plan` 返回稳定 `ExecutionPlan`；
 - `fq.run(plan)` 成为正式路径；

@@ -104,8 +104,8 @@ MPS 生产验收对象、部署工具和项目介绍函数。建议将最终 Sta
 - [x] API owner 逐项批准 22 个 Stable Core 候选；
 - [x] 每个迁移接口的目标命名空间已存在，并由 import contract 验证；
 - [x] 仓库内关键黄金用户路径不再依赖历史根级扩展接口；
-- [x] `ExecutionOptions` 后续提案已登记（Proposal 002，尚待批准）；
-- [ ] `ExecutionPlan` 后续提案已登记；
+- [x] `ExecutionOptions` 后续提案已实现并验证（Proposal 002）；
+- [x] `ExecutionPlan` 后续提案已登记（Proposal 003，draft pending approval）；
 - [x] CI 能证明 60 个当前导出全部且仅被分类一次；
 - [ ] 明确首次公开 alpha 之前是否已有需要兼容的外部用户。
 
