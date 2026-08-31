@@ -5,6 +5,7 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 - [Testing manual](TESTING.md)
 - [Code organization](CODE_ORGANIZATION.md)
 - [Repository governance](REPOSITORY_GOVERNANCE.md)
+- [Public API protection](PUBLIC_API_PROTECTION.md)
 - [Dependency policy](DEPENDENCY_POLICY.md)
 - [Version and release policy](RELEASE_POLICY.md)
 - [Git history recovery](GIT_HISTORY_RECOVERY.md)

@@ -13,6 +13,11 @@ Modules below `flagquantum.runtime`, implementation helpers prefixed with
 an underscore, and symbols absent from the stable/experimental snapshots are
 internal APIs.
 
+Maintainer and coding-agent enforcement is defined by
+[`PUBLIC_API_PROTECTION.md`](../development/PUBLIC_API_PROTECTION.md). Updating
+the API snapshot is not, by itself, authorization to change the stable
+contract.
+
 ## Version 0.1 boundary
 
 `DistributedQuantumDevice`, `GeneralEncoder`, `InvertibleUnitary`,

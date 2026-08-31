@@ -48,6 +48,13 @@ FlagQuantum must become a flagship quantum AI framework with:
 7. The repository remains FlagQuantum. Do not introduce public TensorCircuit-NG
    or `tc` branding in user-facing APIs, docs, examples, or benchmark claims.
 
+8. Treat the Stable Core public API as protected. Do not add, remove, rename,
+   reorder, or change stable exports, signatures, defaults, result fields,
+   enum/Literal values, documented exception behavior, or serialized public
+   schemas without explicit user authorization and an approved API change
+   proposal. Never update an API contract or snapshot merely to make tests
+   pass. Follow `docs/development/PUBLIC_API_PROTECTION.md`.
+
 ## Source Documents
 
 Before changing distributed runtime, planners, benchmark claims, or quantum AI
@@ -57,6 +64,7 @@ training paths, read:
 - `docs/concepts/DISTRIBUTED_SCALABILITY_PRINCIPLES.md`
 - `docs/roadmap/CAPABILITY_MATURITY.md`
 - `docs/reference/KNOWN_LIMITATIONS.md`
+- `docs/development/PUBLIC_API_PROTECTION.md`
 
 These documents are binding design standards.
 

@@ -15,6 +15,9 @@
 - 每个阶段的验收标准；
 - 首次公开版本的冻结条件。
 
+API 冻结后的强制保护、CODEOWNERS、required checks 和变更授权流程由
+[`PUBLIC_API_PROTECTION.md`](../development/PUBLIC_API_PROTECTION.md) 规定。
+
 ## 2. 结论
 
 FlagQuantum 当前 API 主干方向正确：
