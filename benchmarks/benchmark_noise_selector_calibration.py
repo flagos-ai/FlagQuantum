@@ -11,6 +11,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
+import flagquantum.noise as fqn
 
 
 def _circuit(n_wires: int, depth: int, *, device: str) -> fq.Circuit:
@@ -23,16 +25,16 @@ def _circuit(n_wires: int, depth: int, *, device: str) -> fq.Circuit:
     return circuit
 
 
-def _noise(kind: str) -> fq.NoiseModel:
-    model = fq.NoiseModel().add("ry", fq.amplitude_damping_channel(0.002))
+def _noise(kind: str) -> fqn.NoiseModel:
+    model = fqn.NoiseModel().add("ry", fqn.amplitude_damping_channel(0.002))
     if kind == "full":
-        model.add("cx", fq.depolarizing_channel(0.005))
+        model.add("cx", fqn.depolarizing_channel(0.005))
     return model
 
 
 def _run_once(
     circuit: fq.Circuit,
-    noise: fq.NoiseModel,
+    noise: fqn.NoiseModel,
     mode: str,
     *,
     trajectories: int,
@@ -40,7 +42,7 @@ def _run_once(
     mps_trajectories: int,
 ) -> object:
     if mode == "noisy_statevector":
-        return fq.run_native(
+        return fqb.run_native(
             circuit,
             noise_model=noise,
             mode=mode,
@@ -49,7 +51,7 @@ def _run_once(
             seed=20260806,
         )
     if mode == "noisy_mps":
-        return fq.run_native(
+        return fqb.run_native(
             circuit,
             noise_model=noise,
             mode=mode,
@@ -59,12 +61,12 @@ def _run_once(
             seed=20260806,
             retain_trajectories=False,
         )
-    return fq.run_native(circuit, noise_model=noise, mode="density_matrix")
+    return fqb.run_native(circuit, noise_model=noise, mode="density_matrix")
 
 
 def _measure(
     circuit: fq.Circuit,
-    noise: fq.NoiseModel,
+    noise: fqn.NoiseModel,
     mode: str,
     *,
     trajectories: int,

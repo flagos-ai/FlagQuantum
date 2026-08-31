@@ -19,7 +19,7 @@ class DistributedQuantumDevice:
     This class is not part of the v0.2 stable public API and must not be used as
     evidence for the v0.2 explicit shard-ownership, partner-exchange, or
     adjoint-training implementations. New applications use ``fq.Circuit``,
-    ``fq.run`` and ``fq.train_distributed_statevector``.
+    ``fq.run`` and ``flagquantum.experimental.distributed`` training APIs.
 
     The adapter remains reachable only because the native torch-distributed
     compatibility route still consumes it. New runtime, compiler, benchmark,

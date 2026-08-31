@@ -14,6 +14,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.distributed.engine import _recv_tensor_p2p, _send_tensor_p2p
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -136,7 +137,7 @@ def main():
     theta = torch.tensor(0.07, device=device, requires_grad=True)
     phi = torch.tensor(-0.11, device=device, requires_grad=True)
     n_wires = max(8, 2 * world)
-    result = fq.train_distributed_mps(
+    result = fqxd.train_distributed_mps(
         circuit(n_wires, theta, phi, world),
         steps=args.steps,
         observable={n_wires // 2: "z"},

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import flagquantum as fq
+import flagquantum.noise as fqn
 
 
 def main() -> None:
@@ -36,9 +37,9 @@ def main() -> None:
         for wire in range(layer % 2, args.n_wires - 1, 2):
             circuit.cx(wire, wire + 1)
     noise = (
-        fq.NoiseModel()
-        .add("ry", fq.amplitude_damping_channel(0.002))
-        .add("cx", fq.depolarizing_channel(0.005))
+        fqn.NoiseModel()
+        .add("ry", fqn.amplitude_damping_channel(0.002))
+        .add("cx", fqn.depolarizing_channel(0.005))
     )
     selection = fq.plan_noise_execution_selection(
         circuit,

@@ -18,6 +18,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 
 
 def source_identity() -> tuple[str, bool]:
@@ -74,7 +75,7 @@ def distributed_run(args, device):
         torch.tensor(0.31, device=device, requires_grad=True),
         torch.tensor(-0.17, device=device, requires_grad=True),
     )
-    result = fq.train_distributed_mps(
+    result = fqxd.train_distributed_mps(
         build_circuit(parameters, args.n_wires, args.layers, args.family),
         steps=args.warmup + args.repetitions,
         optimizer="adam",

@@ -12,6 +12,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 
 
 def main():
@@ -57,7 +58,7 @@ def main():
     error = None
     result = None
     try:
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             circuit,
             steps=1,
             optimizer="adam",

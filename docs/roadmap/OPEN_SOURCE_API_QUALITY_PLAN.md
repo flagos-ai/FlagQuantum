@@ -622,6 +622,10 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - 公开黄金路径中的部署示例已停止依赖历史根级 deployment export。
 - README、架构说明、主动维护的 guides/reference 和 examples 已迁移到新命名空间；
   `tools/check_legacy_root_api_usage.py` 已接入 pre-commit 与 CI，禁止回流旧根接口。
+- production package、tools 和 benchmarks 已完成同一批旧根入口迁移，并纳入上述
+  防回流门禁；`benchmarks/mps_stability.py` 因源码哈希绑定 A800 实测证据而保留为
+  精确的只读历史例外，不能在未重新测量时仅为改导入路径而更新证据哈希；剩余迁移面
+  仅为测试与由旧 manifest 生成的审计文档。
 
 ### Phase 2：统一命名和配置
 

@@ -199,6 +199,7 @@ def _run_case(
     lr: float,
     context: Any,
 ) -> Any:
+    from flagquantum.experimental.distributed import train_distributed_statevector
     from flagquantum.runtime.backends.statevector.reverse import (
         StatevectorCheckpointPolicy,
         execute_torch_distributed_statevector_reverse,
@@ -259,7 +260,7 @@ def _run_case(
         for parameter in parameters:
             parameter.grad = None
         optimizer = name.split("_", 1)[0]
-        result = fq.train_distributed_statevector(
+        result = train_distributed_statevector(
             circuit,
             steps=steps,
             observable_wire=n_wires - 1,

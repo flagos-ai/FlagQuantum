@@ -20,6 +20,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.testing import require_mps_portability
 
 
@@ -109,7 +110,7 @@ def main() -> None:
     dist.all_gather_object(placements, placement)
     try:
         model = circuit(device, args.sites, args.depth)
-        first = fq.train_distributed_mps(
+        first = fqxd.train_distributed_mps(
             model,
             steps=args.steps,
             optimizer="adam",
@@ -119,7 +120,7 @@ def main() -> None:
             checkpoint_interval=args.steps,
             memory_leak_tolerance_bytes=16 << 20,
         )
-        resumed = fq.train_distributed_mps(
+        resumed = fqxd.train_distributed_mps(
             model,
             steps=args.steps + 1,
             optimizer="adam",

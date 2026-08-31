@@ -11,6 +11,8 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
+import flagquantum.backends.tensor_network as fqbtn
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -58,11 +60,11 @@ def main() -> None:
     for _ in range(args.iterations):
         start = time.perf_counter()
         if args.backend == "mps":
-            state = fq.run_mps(circuit)
+            state = fqb.run_mps(circuit)
             values = state.amplitudes(targets)
             observed_bond = state.max_bond
         else:
-            values = fq.tensor_network_amplitudes(circuit, targets)
+            values = fqbtn.tensor_network_amplitudes(circuit, targets)
         torch.cuda.synchronize()
         times.append(time.perf_counter() - start)
     assert values is not None

@@ -168,7 +168,8 @@ class InvertibleUnitary(nn.Module):
         warnings.warn(
             "InvertibleUnitary belongs to the FlagQuantum v0.1 device API and "
             "is not the v0.2 sharded adjoint runtime. Use fq.Module or "
-            "fq.train_distributed_statevector instead.",
+            "flagquantum.experimental.distributed.train_distributed_statevector "
+            "instead.",
             DeprecationWarning,
             stacklevel=2,
         )

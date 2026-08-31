@@ -17,6 +17,8 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
+import flagquantum.experimental.mps as fqxm
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
@@ -236,7 +238,7 @@ def main():
         angle_scale = 1e-3 if capacity_profile else 1.0
         theta = torch.tensor(0.07 * angle_scale, device=device, requires_grad=True)
         phi = torch.tensor(-0.11 * angle_scale, device=device, requires_grad=True)
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             build_entangling_workload(n_sites, theta, phi),
             steps=args.steps,
             observable={n_sites // 2: "z"},
@@ -248,7 +250,7 @@ def main():
             gradient_tolerance=gradient_tolerance,
             initial_mps_tensors=initial,
             initial_mps_left_canonical=True,
-            reverse_checkpoint_policy=fq.MPSReverseCheckpointPolicy(
+            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
                 max_saved_bytes=reverse_checkpoint_capacity_bytes(
                     logical_bytes, world
                 )

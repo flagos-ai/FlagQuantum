@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import flagquantum as fq
+import flagquantum.noise as fqn
 
 
 def _circuit(n_wires: int, depth: int) -> fq.Circuit:
@@ -36,9 +37,9 @@ def main() -> None:
         depth = int(benchmark["depth"])
         circuit = _circuit(n_wires, depth)
         noise = (
-            fq.NoiseModel()
-            .add("ry", fq.amplitude_damping_channel(0.002))
-            .add("cx", fq.depolarizing_channel(0.005))
+            fqn.NoiseModel()
+            .add("ry", fqn.amplitude_damping_channel(0.002))
+            .add("cx", fqn.depolarizing_channel(0.005))
         )
         if noise.identity != benchmark["noise_model_identity"]:
             raise ValueError(f"noise identity mismatch in {source}")

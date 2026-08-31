@@ -46,6 +46,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 
 
 def _device(requested: str) -> str:
@@ -141,9 +142,9 @@ def _target_from_circuit(
     if mode == "statevector":
         return circuit
     if mode == "mps":
-        return fq.run_mps(circuit, max_bond=max_bond)
+        return fqb.run_mps(circuit, max_bond=max_bond)
     if mode == "tensor_network":
-        return fq.run_tensor_network(circuit)
+        return fqb.run_tensor_network(circuit)
     raise ValueError("mode must be statevector, mps, or tensor_network.")
 
 

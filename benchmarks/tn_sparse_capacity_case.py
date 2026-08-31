@@ -16,6 +16,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.compilation import load_tn_working_set_calibration
 from flagquantum.runtime.distributed.tensor_network_execution import (
     _persistent_plan_key,
@@ -239,7 +240,7 @@ def main() -> None:
     projection_and_slice_selection_seconds = time.perf_counter() - phase_start
 
     def execute():
-        return fq.distributed_tensor_network_amplitudes(
+        return fqxd.distributed_tensor_network_amplitudes(
             circuit,
             targets,
             world_size=world_size,

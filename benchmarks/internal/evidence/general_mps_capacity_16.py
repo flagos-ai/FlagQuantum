@@ -22,6 +22,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.experimental.distributed as fqxd  # noqa: E402
+import flagquantum.experimental.mps as fqxm  # noqa: E402
 
 from flagquantum.testing import require_general_mps_capacity  # noqa: E402
 
@@ -164,7 +166,7 @@ def main() -> None:
         initial = rank_owned_initial_mps(N_SITES, MAX_BOND, device)
         theta = torch.tensor(7e-5, device=device, requires_grad=True)
         phi = torch.tensor(-1.1e-4, device=device, requires_grad=True)
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             workload(theta, phi),
             steps=1,
             observable={N_SITES // 2: "z"},
@@ -179,7 +181,7 @@ def main() -> None:
             canonicalization_policy="none",
             compile_site_kernels=True,
             svd_driver="gesvda",
-            reverse_checkpoint_policy=fq.MPSReverseCheckpointPolicy(
+            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
                 max_saved_bytes=reverse_checkpoint_capacity_bytes(
                     logical_bytes, world
                 )

@@ -51,6 +51,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 
 
 def _env_int(name: str, default: int) -> int:
@@ -256,11 +257,11 @@ def _native_loss(
 ) -> tuple[torch.Tensor, dict[str, Any]]:
     circuit = _build_circuit(params, device=device, entangler=entangler)
     if mode == "mps":
-        state = fq.run_mps(circuit, max_bond=max_bond)
+        state = fqb.run_mps(circuit, max_bond=max_bond)
         loss = state.expectation_z_sum().sum()
         return loss, {"state_summary": state.summary()}
     if mode == "tensor_network":
-        state = fq.run_tensor_network(circuit)
+        state = fqb.run_tensor_network(circuit)
         loss = state.expectation_z().sum()
         return loss, {"state_summary": state.summary()}
     raise ValueError(f"Unsupported native capacity mode {mode!r}.")

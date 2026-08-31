@@ -14,6 +14,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.noise as fqn
 
 
 def _circuit(n_wires: int, depth: int, *, device: torch.device) -> fq.Circuit:
@@ -53,9 +54,9 @@ def main() -> None:
     world_size = dist.get_world_size()
     circuit = _circuit(args.n_wires, args.depth, device=device)
     noise = (
-        fq.NoiseModel()
-        .add("ry", fq.amplitude_damping_channel(0.002))
-        .add("cx", fq.depolarizing_channel(0.005))
+        fqn.NoiseModel()
+        .add("ry", fqn.amplitude_damping_channel(0.002))
+        .add("cx", fqn.depolarizing_channel(0.005))
     )
     if args.inject_failure_rank == rank:
         noisy_backend = importlib.import_module(

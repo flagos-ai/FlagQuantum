@@ -783,7 +783,8 @@ class Circuit:
             )
 
         warnings.warn(
-            "Circuit.run(result=False) is deprecated; use fq.run_native(circuit) "
+            "Circuit.run(result=False) is deprecated; use "
+            "flagquantum.backends.run_native(circuit) "
             "when a backend-native result is required.",
             DeprecationWarning,
             stacklevel=2,

@@ -166,6 +166,7 @@ def validate(
     # Import order is part of the Torch-FL CUDA backend contract.
     torch = importlib.import_module("torch")
     fq = importlib.import_module("flagquantum")
+    fqb = importlib.import_module("flagquantum.backends")
     platforms = importlib.import_module("flagquantum.runtime.platforms")
 
     if not hasattr(torch, "flagos"):
@@ -175,7 +176,7 @@ def validate(
             "torch.flagos is registered but no CUDA-backed device is available"
         )
 
-    device = fq.resolve_device(device_name)
+    device = fqb.resolve_device(device_name)
     if device.type != "flagos":
         raise AssertionError(f"expected flagos device, got {device}")
 
@@ -219,7 +220,7 @@ def validate(
             )
             expected_state = reference.state()
             candidate = _depth_circuit(fq, depth=depth, device=device, dtype=dtype)
-            actual_state, execution_plan = fq.run_native(
+            actual_state, execution_plan = fqb.run_native(
                 candidate,
                 mode="statevector",
                 device=device,

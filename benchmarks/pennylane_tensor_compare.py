@@ -58,6 +58,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 
 
 def _torch_to_jax(value: torch.Tensor) -> Any:
@@ -141,9 +142,13 @@ def _flagquantum_loss(
 ) -> torch.Tensor:
     circuit = _build_circuit(params, device=device)
     if mode == "mps":
-        return _loss_from_flagquantum_state(fq.run_mps(circuit, max_bond=max_bond), observable)
+        return _loss_from_flagquantum_state(
+            fqb.run_mps(circuit, max_bond=max_bond), observable
+        )
     if mode in {"tn", "tensor_network"}:
-        return _loss_from_flagquantum_state(fq.run_tensor_network(circuit), observable)
+        return _loss_from_flagquantum_state(
+            fqb.run_tensor_network(circuit), observable
+        )
     raise ValueError("mode must be 'mps' or 'tn'.")
 
 

@@ -93,6 +93,8 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
     import torch
 
     import flagquantum as fq
+    import flagquantum.backends as fqb
+    import flagquantum.deployment as fqd
 
     schema = OPERATOR_SCHEMAS[case.operator]
     params = {name: 0.23 for name in schema.parameters}
@@ -133,9 +135,9 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
         if case.backend == "pytorch":
             candidate = dense
         elif case.backend == "mps":
-            candidate = fq.run_mps(ir, max_bond=None, cutoff=0.0).to_statevector()
+            candidate = fqb.run_mps(ir, max_bond=None, cutoff=0.0).to_statevector()
         elif case.backend == "tensor_network":
-            candidate = fq.run_tensor_network(ir).state()
+            candidate = fqb.run_tensor_network(ir).state()
         elif case.backend == "jax":
             candidate = fq.run_jax_sharded_statevector(ir, world_size=1).state()
         elif case.backend == "qasm":
@@ -147,8 +149,8 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
             passed = bool(text.strip())
             return CertificationResult(case, True, passed, "qcis_serialization")
         elif case.backend == "provider":
-            package = fq.create_deployment_package(ir, optimize=False)
-            result = fq.LocalSimulatorProvider().run(package)
+            package = fqd.create_deployment_package(ir, optimize=False)
+            result = fqd.LocalSimulatorProvider().run(package)
             passed = (
                 bool(package.qasm.strip())
                 and sum(result.counts.values()) == package.shots

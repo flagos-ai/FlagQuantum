@@ -27,6 +27,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
+import flagquantum.experimental.mps as fqxm
 from benchmarks.sc27_metadata import (
     driver_version,
     gpu_identity,
@@ -411,7 +413,7 @@ def main() -> None:
         profiler = profile(activities=activities, record_shapes=False)
         profiler.start()
     try:
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             circuit,
             steps=args.steps,
             hamiltonian_terms=terms,
@@ -459,7 +461,7 @@ def main() -> None:
             ),
             initial_mps_left_canonical=args.initial_state == "random_isometric",
             site_ownership=site_ownership,
-            reverse_checkpoint_policy=fq.MPSReverseCheckpointPolicy(
+            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
                 max_saved_bytes=int(args.checkpoint_budget_gib * (1 << 30)),
                 max_saved_factorization_bytes=(
                     None

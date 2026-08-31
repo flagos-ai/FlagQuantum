@@ -174,7 +174,7 @@ def test_circuit_run_matches_uniform_execution_entry_point() -> None:
     assert result.plan is not None
     assert result.compatibility["legacy_return_normalized"] is True
 
-    with pytest.warns(DeprecationWarning, match="fq.run_native"):
+    with pytest.warns(DeprecationWarning, match="flagquantum.backends.run_native"):
         legacy = circuit.run(mode="statevector", result=False)
     assert isinstance(legacy, torch.Tensor)
     torch.testing.assert_close(result.state, legacy)

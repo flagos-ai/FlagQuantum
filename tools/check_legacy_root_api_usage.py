@@ -16,11 +16,17 @@ PUBLIC_FILES = (
     ROOT / "flagquantum" / "ARCHITECTURE.md",
 )
 PUBLIC_TREES = (
+    ROOT / "benchmarks",
     ROOT / "docs" / "guides",
     ROOT / "docs" / "reference",
     ROOT / "examples",
+    ROOT / "flagquantum",
+    ROOT / "tools",
 )
 EXCLUDED_NAMES = {"RELEASE_NOTES.md"}
+EXCLUDED_PATHS = {
+    ROOT / "benchmarks" / "mps_stability.py",
+}
 CHECKED_SUFFIXES = {".md", ".py", ".ipynb"}
 
 
@@ -49,6 +55,7 @@ def public_files() -> tuple[Path, ...]:
             if path.is_file()
             and path.suffix in CHECKED_SUFFIXES
             and path.name not in EXCLUDED_NAMES
+            and path not in EXCLUDED_PATHS
         )
     return tuple(sorted(set(files)))
 

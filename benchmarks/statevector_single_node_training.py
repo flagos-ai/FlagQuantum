@@ -20,6 +20,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 
 
 def _workload(n_wires: int, device: torch.device) -> tuple[fq.Circuit, list[torch.Tensor]]:
@@ -126,7 +127,7 @@ def main() -> None:
     pending_error: BaseException | None = None
     try:
         circuit, parameters = _workload(args.n_wires, device)
-        result = fq.train_distributed_statevector(
+        result = fqxd.train_distributed_statevector(
             circuit,
             steps=args.steps,
             observable_wire=args.n_wires - 2,

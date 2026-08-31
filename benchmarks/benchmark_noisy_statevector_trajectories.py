@@ -11,6 +11,7 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
+import flagquantum.noise as fqn
 
 
 def _circuit(n_wires: int, depth: int, *, device: str) -> fq.Circuit:
@@ -26,7 +27,7 @@ def _circuit(n_wires: int, depth: int, *, device: str) -> fq.Circuit:
 
 def _measure(
     circuit: fq.Circuit,
-    noise: fq.NoiseModel,
+    noise: fqn.NoiseModel,
     *,
     trajectories: int,
     trajectory_batch_size: int,
@@ -84,9 +85,9 @@ def main() -> None:
 
     circuit = _circuit(args.n_wires, args.depth, device=args.device)
     noise = (
-        fq.NoiseModel()
-        .add("ry", fq.amplitude_damping_channel(0.002))
-        .add("cx", fq.depolarizing_channel(0.005))
+        fqn.NoiseModel()
+        .add("ry", fqn.amplitude_damping_channel(0.002))
+        .add("cx", fqn.depolarizing_channel(0.005))
     )
     rows = []
     reference = None

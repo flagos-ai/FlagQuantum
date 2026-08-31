@@ -17,6 +17,7 @@ import torch.distributed as dist
 from torch.profiler import ProfilerActivity, profile
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.mps.profiling import build_mps_critical_path_report
 
 
@@ -113,7 +114,7 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     trace_path = args.output.with_suffix(f".rank-{rank}.trace.json")
     with profile(activities=activities, record_shapes=True) as profiler:
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             _circuit(n_wires, theta, world), steps=workload["steps"],
             observable={n_wires - 1: "z"}, optimizer="adam", lr=0.001,
             device=device, max_bond=int(case["max_bond"]),

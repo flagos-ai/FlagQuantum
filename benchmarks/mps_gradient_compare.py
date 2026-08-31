@@ -41,6 +41,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 
 
 def _rank() -> int:
@@ -136,7 +137,7 @@ def _flagquantum_local_mps_value_and_grad(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     params = params_seed.detach().clone().requires_grad_(True)
     circuit = _build_flagquantum_circuit(params, device=device)
-    result = fq.run_mps(
+    result = fqb.run_mps(
         circuit,
         max_bond=max_bond,
         fuse_single_qubit=fuse_single_qubit,
