@@ -652,6 +652,14 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 
 完成标准：`plan`、`run`、`Circuit` 和 `RuntimePolicy` 不再使用冲突术语。
 
+实施记录（2026-08-31）：
+
+- `API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md` 与
+  `contracts/execution-options-v1-candidate.json` 已登记；
+- 当前状态为 proposed，尚未批准实现，也未加入 Stable Core manifest；
+- 候选采用不可变字段级 overlay、严格优先级、无 `extras` 逃生口，以及 approximation
+  和 backend fallback 默认关闭的 fail-closed 语义。
+
 ### Phase 3：建立可执行计划
 
 - `fq.plan` 返回稳定 `ExecutionPlan`；

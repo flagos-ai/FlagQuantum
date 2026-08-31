@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "status": "proposed",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md",
+  "target": "first-public-alpha",
+  "root_addition": "ExecutionOptions",
+  "implementation_authorized": false,
+  "contract": {
+    "kind": "dataclass",
+    "frozen": true,
+    "slots": true,
+    "serialization_schema": "flagquantum.execution_options",
+    "serialization_version": "1.0",
+    "fields": [
+      {"name": "mode", "type": "str | None", "default": null},
+      {"name": "backend", "type": "str | None", "default": null},
+      {"name": "device", "type": "str | None", "default": null},
+      {"name": "target", "type": "str | None", "default": null},
+      {"name": "batch_size", "type": "int | None", "default": null},
+      {"name": "precision", "type": "str | None", "default": null},
+      {"name": "shots", "type": "int | None", "default": null},
+      {"name": "seed", "type": "int | None", "default": null},
+      {"name": "memory_limit_bytes", "type": "int | None", "default": null},
+      {"name": "require_gradients", "type": "bool | None", "default": null},
+      {"name": "allow_approximate", "type": "bool | None", "default": null},
+      {"name": "allow_backend_fallback", "type": "bool | None", "default": null}
+    ],
+    "allowed_values": {
+      "mode": ["auto", "statevector", "mps", "tensor_network", "density_matrix"],
+      "target": ["auto", "state", "expectation", "samples", "amplitudes"],
+      "precision": ["complex64", "complex128"]
+    },
+    "integer_minimums": {
+      "batch_size": 1,
+      "shots": 1,
+      "seed": 0,
+      "memory_limit_bytes": 1
+    }
+  },
+  "framework_defaults": {
+    "mode": "auto",
+    "backend": "auto",
+    "device": "auto",
+    "target": "auto",
+    "batch_size": "program_declared_or_1",
+    "precision": "complex64",
+    "shots": null,
+    "seed": null,
+    "memory_limit_bytes": null,
+    "require_gradients": false,
+    "allow_approximate": false,
+    "allow_backend_fallback": false
+  },
+  "precedence_high_to_low": [
+    "call_execution_options",
+    "module_runtime_policy_execution_options",
+    "circuit_program_constraints",
+    "task_or_process_runtime_config_adapter",
+    "framework_defaults"
+  ],
+  "excluded_fields": [
+    "world_size",
+    "rank",
+    "process_group",
+    "communication_backend",
+    "max_bond",
+    "cutoff",
+    "tensor_network_path",
+    "kernel_toggles",
+    "routing_strategy",
+    "coupling_map",
+    "noise_model",
+    "observable",
+    "measurements",
+    "checkpoint",
+    "optimizer",
+    "provider_credentials",
+    "extras"
+  ],
+  "rules": {
+    "merge_non_null_fields_only": true,
+    "unknown_fields_fail": true,
+    "duplicate_sources_fail": true,
+    "environment_cannot_override_explicit_semantics": true,
+    "explicit_unavailable_backend_fails_without_fallback": true,
+    "bool_is_not_an_integer": true,
+    "candidate_is_frozen_contract": false
+  }
+}
