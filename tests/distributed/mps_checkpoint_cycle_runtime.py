@@ -9,6 +9,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 
 
 def workload(device: torch.device, n_wires: int, value: float = 0.23):
@@ -47,7 +48,7 @@ def main() -> None:
     root = Path(os.environ["FQ_TEST_CHECKPOINT"])
     try:
         reference_circuit, reference_parameter = workload(device, args.n_wires)
-        reference = fq.train_distributed_mps(
+        reference = fqxd.train_distributed_mps(
             reference_circuit,
             steps=args.cycles,
             optimizer=args.optimizer,
@@ -60,7 +61,7 @@ def main() -> None:
         restarted_parameter = None
         for completed_steps in range(1, args.cycles + 1):
             restarted_circuit, restarted_parameter = workload(device, args.n_wires)
-            restarted = fq.train_distributed_mps(
+            restarted = fqxd.train_distributed_mps(
                 restarted_circuit,
                 steps=completed_steps,
                 optimizer=args.optimizer,
@@ -103,7 +104,7 @@ def main() -> None:
             stale.write_bytes(data)
         dist.barrier()
         latest_circuit, latest_parameter = workload(device, args.n_wires)
-        latest = fq.train_distributed_mps(
+        latest = fqxd.train_distributed_mps(
             latest_circuit,
             steps=args.cycles,
             optimizer=args.optimizer,

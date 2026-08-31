@@ -7,6 +7,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.mps as fqxm
 from flagquantum.runtime.backends.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
@@ -85,7 +86,7 @@ def main() -> None:
         max_bond=8,
         initial_mps_tensors=_initial(device),
         compile_site_kernels=device.type == "cuda",
-        checkpoint_policy=fq.MPSReverseCheckpointPolicy(
+        checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
             max_saved_bytes=1 << 30,
             save_two_site_factorizations=True,
         ),

@@ -9,6 +9,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.mps.training import MPSTrainingError
 
 
@@ -66,7 +67,7 @@ def main():
     root = Path(os.environ["FQ_TEST_CHECKPOINT"])
     try:
         workload, parameters = circuit(device, dist.get_world_size())
-        result = fq.train_distributed_mps(
+        result = fqxd.train_distributed_mps(
             workload,
             steps=3,
             optimizer="adam",
@@ -101,7 +102,7 @@ def main():
         assert len(result.checkpoint_files) == 2
         assert result.checkpoint_pruned_files
         topology_workload, _ = circuit(device, dist.get_world_size())
-        topology_result = fq.train_distributed_mps(
+        topology_result = fqxd.train_distributed_mps(
             topology_workload,
             steps=1,
             optimizer="sgd",
@@ -114,7 +115,7 @@ def main():
             wire for shard in topology_result.site_ownership for wire in shard
         ) == tuple(range(topology_workload.to_ir().n_wires))
         dirty_workload, dirty_parameters = circuit(device, dist.get_world_size())
-        dirty = fq.train_distributed_mps(
+        dirty = fqxd.train_distributed_mps(
             dirty_workload,
             steps=2,
             optimizer="sgd",
@@ -124,7 +125,7 @@ def main():
             record_parameter_gradients=True,
         )
         none_workload, none_parameters = circuit(device, dist.get_world_size())
-        none = fq.train_distributed_mps(
+        none = fqxd.train_distributed_mps(
             none_workload,
             steps=2,
             optimizer="sgd",
@@ -159,7 +160,7 @@ def main():
         )
         checkpoint_parameters = tuple(float(item.detach()) for item in parameters)
         resumed_workload, resumed_parameters = circuit(device, dist.get_world_size())
-        resumed = fq.train_distributed_mps(
+        resumed = fqxd.train_distributed_mps(
             resumed_workload,
             steps=4,
             optimizer="adam",
@@ -175,7 +176,7 @@ def main():
             != checkpoint_parameters
         )
         initial_workload, _ = circuit(device, dist.get_world_size())
-        initialized = fq.train_distributed_mps(
+        initialized = fqxd.train_distributed_mps(
             initial_workload,
             steps=1,
             optimizer="sgd",
@@ -186,7 +187,7 @@ def main():
         )
         assert initialized.completed_steps == 1
         mse_workload, _ = circuit(device, dist.get_world_size())
-        mse = fq.train_distributed_mps(
+        mse = fqxd.train_distributed_mps(
             mse_workload,
             steps=2,
             observable_terms=(
@@ -212,7 +213,7 @@ def main():
         initial_tensors = rank_owned_initial_mps(
             device, initial_workload.to_ir().n_wires
         )
-        fq.train_distributed_mps(
+        fqxd.train_distributed_mps(
             initial_workload,
             steps=1,
             optimizer="sgd",
@@ -227,7 +228,7 @@ def main():
         changed_tensors[first_wire].reshape(-1)[0] += 0.125
         changed_workload, _ = circuit(device, dist.get_world_size())
         try:
-            fq.train_distributed_mps(
+            fqxd.train_distributed_mps(
                 changed_workload,
                 steps=2,
                 optimizer="sgd",

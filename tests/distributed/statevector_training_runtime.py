@@ -14,6 +14,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.statevector.training import DistributedTrainingError
 
 
@@ -72,7 +73,7 @@ def main() -> None:
             raise AssertionError("elastic launcher did not terminate surviving rank")
         if args.mode == "crash_after_checkpoint":
             partial_circuit, _ = build(device)
-            partial = fq.train_distributed_statevector(
+            partial = fqxd.train_distributed_statevector(
                 partial_circuit,
                 steps=args.steps // 2,
                 optimizer="adam",
@@ -86,11 +87,11 @@ def main() -> None:
             raise AssertionError("watchdog did not terminate surviving rank")
         if args.mode == "resume":
             uninterrupted, uninterrupted_parameters = build(device)
-            full = fq.train_distributed_statevector(
+            full = fqxd.train_distributed_statevector(
                 uninterrupted, steps=args.steps, optimizer="adam", lr=0.02
             )
             resumed_circuit, resumed_parameters = build(device)
-            resumed = fq.train_distributed_statevector(
+            resumed = fqxd.train_distributed_statevector(
                 resumed_circuit,
                 steps=args.steps,
                 optimizer="adam",
@@ -121,7 +122,7 @@ def main() -> None:
         elif args.mode != "train":
             circuit, _ = build(device)
             try:
-                fq.train_distributed_statevector(
+                fqxd.train_distributed_statevector(
                     circuit,
                     steps=2,
                     fault_rank=1 if args.mode == "fault" else None,
@@ -134,11 +135,11 @@ def main() -> None:
                 raise AssertionError("injected failure did not fail closed")
         else:
             uninterrupted, uninterrupted_parameters = build(device)
-            full = fq.train_distributed_statevector(
+            full = fqxd.train_distributed_statevector(
                 uninterrupted, steps=args.steps, optimizer="adam", lr=0.02
             )
             partial_circuit, _ = build(device)
-            partial = fq.train_distributed_statevector(
+            partial = fqxd.train_distributed_statevector(
                 partial_circuit,
                 steps=args.steps // 2,
                 optimizer="adam",
@@ -146,7 +147,7 @@ def main() -> None:
                 checkpoint_dir=args.checkpoint_dir,
             )
             resumed_circuit, resumed_parameters = build(device)
-            resumed = fq.train_distributed_statevector(
+            resumed = fqxd.train_distributed_statevector(
                 resumed_circuit,
                 steps=args.steps,
                 optimizer="adam",

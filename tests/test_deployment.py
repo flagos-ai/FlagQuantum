@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.deployment as fqd
 from flagquantum.deployment import (
     DeploymentPackageIdentityError,
     validate_deployment_package,
@@ -18,7 +19,7 @@ def test_create_deployment_package_exports_qasm_and_metadata():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         circuit,
         backend=fq.CloudBackendProfile.simulator(2),
         name="bell_inference",
@@ -46,7 +47,7 @@ def test_deployment_package_uses_backend_topology():
         is_simulator=True,
     )
 
-    package = fq.create_deployment_package(circuit, backend=backend, shots=16)
+    package = fqd.create_deployment_package(circuit, backend=backend, shots=16)
 
     assert package.ir.instructions[1].name == "swap"
     for instruction in package.ir.instructions:
@@ -65,7 +66,7 @@ def test_deployment_package_preserves_auto_routing_selection_evidence():
         is_simulator=True,
     )
 
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         circuit,
         backend=backend,
         routing_strategy="auto",
@@ -102,7 +103,7 @@ def test_deployment_reuses_compatible_compiled_routing_plan():
         is_simulator=True,
     )
 
-    package = fq.create_deployment_package(compiled.to_ir(), backend=backend)
+    package = fqd.create_deployment_package(compiled.to_ir(), backend=backend)
 
     assert package.metadata["routing_reused"] is True
     assert package.metadata["routing_plan"]["strategy"] == "persistent_layout"
@@ -142,7 +143,7 @@ def test_qcis_backend_package_gets_qcis_metadata_automatically():
         supports_qcis=True,
     )
 
-    package = fq.create_deployment_package(circuit, backend=backend, shots=32)
+    package = fqd.create_deployment_package(circuit, backend=backend, shots=32)
 
     assert package.metadata["target_provider"] == "tianyan"
     assert package.metadata["qcis"].startswith("Y2M Q0")
@@ -156,7 +157,7 @@ def test_local_provider_runs_packaged_circuit():
     provider = fq.LocalSimulatorProvider()
     backend = provider.discover_backends(2)[0]
 
-    result = fq.deploy_circuit(circuit, provider, backend=backend, shots=32)
+    result = fqd.deploy_circuit(circuit, provider, backend=backend, shots=32)
 
     assert result.handle.provider == "local"
     assert (
@@ -199,7 +200,7 @@ def test_trained_circuit_can_be_packaged_for_inference():
     result = fq.run_vqe(builder, theta, hamiltonian, steps=5, lr=0.1)
     trained_circuit = builder(result.parameters)
     optimized = result.parameters.detach()
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         trained_circuit,
         backend=fq.CloudBackendProfile.simulator(2),
         name="trained_vqe_inference",
@@ -233,7 +234,7 @@ def test_symbolic_parameter_template_binds_optimized_values_for_deployment():
         supports_openqasm=False,
         supports_qcis=True,
     )
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         trained_circuit,
         backend=backend,
         metadata={"optimized_parameters": optimized.tolist()},
@@ -255,7 +256,7 @@ def test_deployment_subsystem_is_top_level_easy_to_use():
 def test_provider_rejects_tampered_deployment_package(field):
     provider = fq.LocalSimulatorProvider()
     backend = provider.discover_backends(2)[0]
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
         backend=backend,
         shots=8,
@@ -281,7 +282,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
         supports_openqasm=False,
         supports_qcis=True,
     )
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
         backend=backend,
     )
@@ -297,7 +298,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
 def test_deployment_result_rejects_broken_receipt_chain(field):
     provider = fq.LocalSimulatorProvider()
     backend = provider.discover_backends(2)[0]
-    result = fq.deploy_circuit(
+    result = fqd.deploy_circuit(
         fq.Circuit(2).x(0),
         provider,
         backend=backend,

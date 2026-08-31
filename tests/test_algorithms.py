@@ -3,6 +3,7 @@
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 
 
 def test_hamiltonian_expectation_on_bell_circuit_and_mps():
@@ -15,7 +16,7 @@ def test_hamiltonian_expectation_on_bell_circuit_and_mps():
         ]
     )
 
-    mps = fq.run_mps(circuit)
+    mps = fqb.run_mps(circuit)
 
     assert torch.allclose(hamiltonian.expectation(circuit), torch.tensor([0.75]))
     assert torch.allclose(hamiltonian.expectation(mps), torch.tensor([0.75]))
@@ -49,8 +50,8 @@ def test_mps_z_zz_chain_fastpath_matches_termwise_energy_and_gradient():
             circuit.ry(wire, values[wire])
         return circuit.cx(0, 1).cx(2, 3).cx(4, 5)
 
-    state = fq.run_mps(build(parameters), max_bond=4, dense_observable_wires=0)
-    reference_state = fq.run_mps(
+    state = fqb.run_mps(build(parameters), max_bond=4, dense_observable_wires=0)
+    reference_state = fqb.run_mps(
         build(reference_parameters), max_bond=4, dense_observable_wires=0
     )
     actual = hamiltonian.expectation(state).sum()
@@ -184,7 +185,7 @@ def test_run_adapt_vqe_accepts_tensor_network_energy_evaluator():
         return circuit
 
     def tn_energy(circuit):
-        state = fq.run_native(circuit, mode="tensor_network")
+        state = fqb.run_native(circuit, mode="tensor_network")
         return state.expectation_ps(z=(0,))
 
     result = fq.run_adapt_vqe(

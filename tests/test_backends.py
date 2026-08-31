@@ -4,6 +4,8 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
+import flagquantum.noise as fqn
 
 pytestmark = pytest.mark.integration
 
@@ -37,7 +39,7 @@ def test_runtime_backend_uses_registry():
 
 
 def test_resolve_device_auto_falls_back_to_available_device():
-    device = fq.resolve_device("auto")
+    device = fqb.resolve_device("auto")
 
     assert isinstance(device, torch.device)
     assert device.type in fq.get_backend_capabilities().devices
@@ -84,7 +86,7 @@ def test_run_native_accepts_auto_device_policy():
     circuit = fq.Circuit(1)
     circuit.h(0)
 
-    state = fq.run_native(circuit, device="auto")
+    state = fqb.run_native(circuit, device="auto")
 
     assert torch.allclose(state, circuit.state(), atol=1e-6)
 
@@ -106,6 +108,6 @@ def test_plan_for_backend_uses_dtype_and_topology_policy():
 def test_top_level_subsystems_remain_easy_to_use():
     assert fq.algorithms.Hamiltonian is fq.Hamiltonian
     assert fq.compiler.CouplingMap is fq.CouplingMap
-    assert fq.execution.run_native is fq.run_native
+    assert fq.execution.run_native is fqb.run_native
     assert fq.mps.MPSState is fq.MPSState
-    assert fq.noise.NoiseModel is fq.NoiseModel
+    assert fq.noise.NoiseModel is fqn.NoiseModel

@@ -4,6 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.deployment as fqd
 
 pytestmark = pytest.mark.integration
 
@@ -23,14 +24,14 @@ def test_pauli_measurement_plan_rotates_each_group_into_z_basis() -> None:
     circuit = fq.Circuit(2).ry(0, theta=0.37).rx(1, theta=-0.21)
     hamiltonian = _hamiltonian()
 
-    plan = fq.create_pauli_measurement_plan(
+    plan = fqd.create_pauli_measurement_plan(
         circuit,
         hamiltonian,
         shots=100,
         optimize=False,
     )
 
-    assert isinstance(plan, fq.PauliMeasurementPlan)
+    assert isinstance(plan, fqd.PauliMeasurementPlan)
     assert len(plan.groups) == len(plan.packages) == 2
     assert plan.groups[0].basis == ((0, "x"), (1, "z"))
     assert plan.groups[1].basis == ((0, "y"),)
@@ -52,7 +53,7 @@ def test_pauli_measurement_plan_rotates_each_group_into_z_basis() -> None:
 
 
 def test_grouped_counts_reconstruct_general_pauli_hamiltonian() -> None:
-    plan = fq.create_pauli_measurement_plan(
+    plan = fqd.create_pauli_measurement_plan(
         fq.Circuit(2),
         _hamiltonian(),
         shots=10,
@@ -63,7 +64,7 @@ def test_grouped_counts_reconstruct_general_pauli_hamiltonian() -> None:
         {"10": 10},
     )
 
-    value = fq.hamiltonian_expectation_from_grouped_counts(counts, plan)
+    value = fqd.hamiltonian_expectation_from_grouped_counts(counts, plan)
 
     torch.testing.assert_close(value, torch.tensor([-0.4]))
     torch.testing.assert_close(plan.expectation(counts), value)
@@ -73,7 +74,7 @@ def test_local_provider_executes_grouped_measurement_packages() -> None:
     torch.manual_seed(19)
     circuit = fq.Circuit(2).ry(0, theta=0.37).rx(1, theta=-0.21)
     hamiltonian = _hamiltonian()
-    plan = fq.create_pauli_measurement_plan(
+    plan = fqd.create_pauli_measurement_plan(
         circuit,
         hamiltonian,
         shots=8192,
@@ -90,7 +91,7 @@ def test_local_provider_executes_grouped_measurement_packages() -> None:
 
 
 def test_grouped_measurement_aggregation_fails_closed() -> None:
-    plan = fq.create_pauli_measurement_plan(
+    plan = fqd.create_pauli_measurement_plan(
         fq.Circuit(2),
         _hamiltonian(),
         shots=10,

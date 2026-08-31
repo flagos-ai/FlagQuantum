@@ -3,6 +3,7 @@
 import pytest
 
 import flagquantum as fq
+import flagquantum.deployment as fqd
 
 
 class FakeTransport:
@@ -58,7 +59,7 @@ def _package(provider, n_wires=2, *, metadata=None):
     circuit = fq.Circuit(n_wires)
     circuit.h(0).cx(0, 1)
     backend = fq.CloudBackendProfile(provider=provider, name="chip", n_wires=8)
-    return fq.create_deployment_package(
+    return fqd.create_deployment_package(
         circuit, backend=backend, shots=8, metadata=metadata
     )
 
@@ -89,7 +90,7 @@ def test_http_provider_submit_status_and_result():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
     backend = provider.discover_backends(2)[0]
-    package = fq.create_deployment_package(circuit, backend=backend, shots=8)
+    package = fqd.create_deployment_package(circuit, backend=backend, shots=8)
 
     result = provider.run(package)
 
@@ -347,7 +348,7 @@ def test_cqlib_provider_submits_qcis_and_extracts_matrix_counts():
     transport = CqlibTransport()
     provider = fq.GuodunProvider(token="open-id", transport=transport)
     backend = provider.discover_backends(2)[0]
-    package = fq.create_deployment_package(
+    package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
         backend=backend,
         shots=3,

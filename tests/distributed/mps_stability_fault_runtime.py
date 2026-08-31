@@ -13,6 +13,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.mps.training import MPSTrainingError
 
 
@@ -56,7 +57,7 @@ def main():
         root / f"rank-{rank}-local" if args.mode == "unshared_checkpoint_root" else root
     )
     try:
-        fq.train_distributed_mps(
+        fqxd.train_distributed_mps(
             circuit(theta),
             steps=1,
             checkpoint_dir=active_root,
@@ -72,7 +73,7 @@ def main():
     if args.mode == "accidental_overwrite":
         fresh_theta = torch.tensor(0.2, requires_grad=True)
         try:
-            fq.train_distributed_mps(
+            fqxd.train_distributed_mps(
                 circuit(fresh_theta),
                 steps=1,
                 checkpoint_dir=root,
@@ -141,7 +142,7 @@ def main():
     dist.barrier()
     resumed_theta = torch.tensor(0.2, requires_grad=True)
     try:
-        fq.train_distributed_mps(
+        fqxd.train_distributed_mps(
             circuit(resumed_theta),
             steps=2,
             checkpoint_dir=root,
