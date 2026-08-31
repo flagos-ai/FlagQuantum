@@ -99,7 +99,7 @@ jobs:
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth
         run: python tools/docs_source_of_truth.py --check
-      - name: Verify pre-open-source public API migration baseline
+      - name: Verify retained Stable Core against migration baseline
         run: python tools/public_api_snapshot.py
       - name: Verify proposed Stable Core classification
         run: python -m pytest tests/unit/test_public_api_candidate.py -q

@@ -298,10 +298,24 @@ def capability_api_is_available(
     name: str,
     maturity: str,
 ) -> bool:
-    """Accept stable APIs or importable APIs in the explicit experimental namespace."""
+    """Accept Stable Core names or importable canonical namespace paths."""
 
     if name in stable:
         return True
+    if name.startswith("flagquantum."):
+        parts = name.split(".")
+        for boundary in range(len(parts), 0, -1):
+            try:
+                target = importlib.import_module(".".join(parts[:boundary]))
+            except ModuleNotFoundError:
+                continue
+            try:
+                for part in parts[boundary:]:
+                    target = getattr(target, part)
+            except AttributeError:
+                return False
+            return True
+        return False
     if maturity != "experimental" or not name.startswith("experimental."):
         return False
     module_name = getattr(module, "__name__", None)
@@ -314,6 +328,12 @@ def capability_api_is_available(
     except (AttributeError, ModuleNotFoundError):
         return False
     return True
+
+
+def public_api_label(name: str) -> str:
+    if name.startswith("flagquantum."):
+        return name
+    return f"fq.{name}"
 
 
 def render_capabilities(data: dict[str, object]) -> str:
@@ -357,7 +377,9 @@ def render_capabilities(data: dict[str, object]) -> str:
             assert isinstance(capability, dict)
             if capability["category"] != category:
                 continue
-            apis = ", ".join(f"`fq.{api}`" for api in capability["public_apis"])
+            apis = ", ".join(
+                f"`{public_api_label(str(api))}`" for api in capability["public_apis"]
+            )
             runtime_modes = ", ".join(
                 f"`{mode}`" for mode in capability["runtime_modes"]
             )
@@ -503,8 +525,8 @@ def validate() -> list[str]:
                 capability["level"],
             ):
                 errors.append(
-                    f"{capability_name}: capability API is neither stable nor an "
-                    f"importable experimental API: fq.{name}"
+                    f"{capability_name}: capability API is neither Stable Core nor "
+                    f"an importable canonical namespace path: {public_api_label(name)}"
                 )
     for doc in config["stable_documents"]:
         path = ROOT / doc

@@ -58,7 +58,8 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   Exact gradient policy now automatically retains factorization graphs for
   statevector-parity gradients; the recomputation pullback remains restricted
   to explicitly approximate-gradient work.
-- `fq.train_distributed_statevector(...)` now provides multi-step native
+- `flagquantum.experimental.distributed.train_distributed_statevector(...)` now
+  provides multi-step native
   PyTorch training with owner-sharded SGD/Adam state, checkpoint/resume,
   cancellation, memory preflight/measurement and structured lifecycle progress.
 - Experimental statevector execution now preserves amplitude sharding through

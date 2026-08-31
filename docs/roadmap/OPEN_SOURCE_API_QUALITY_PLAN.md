@@ -632,6 +632,11 @@ API 冻结前必须用真实、可执行代码验证以下路径：
   MPS、native runtime、trajectory、hybrid JAX 与专项 planner 等最后 6 个文件、
   152 处旧根调用迁移。测试侧债务已归零，
   `contracts/legacy-root-api-test-debt.json` 现为零基线，CI 禁止任何旧根接口回流。
+- 正式稳定且可发现的根 API（`fq.__all__`、`dir(fq)` 和
+  `docs/public_api_v1.json`）已从 60 项收缩为当前已实现的 20 项 Stable Core；
+  `ExecutionOptions` 与 `ExecutionPlan` 必须等待后续语义提案批准和实现后才能加入，
+  不以占位导出的方式虚增为 22 项。历史惰性属性访问仅作为未承诺的仓库兼容层暂留，
+  不属于 stable manifest，后续按独立清单继续移除。
 
 ### Phase 2：统一命名和配置
 

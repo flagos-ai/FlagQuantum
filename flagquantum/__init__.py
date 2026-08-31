@@ -6,73 +6,34 @@ import warnings
 from importlib import import_module
 from typing import Any
 
-from .version import __version__, get_version
+from .version import __version__
 
 __author__ = "FlagQuantum Team"
 __license__ = "Apache-2.0"
 
-# Stable root surface. Advanced historical exports remain available lazily from
-# flagquantum.api until the compatibility removal version.
+# Stable root surface for the first public alpha. Historical attributes may
+# remain lazily importable during repository convergence, but names absent from
+# this tuple are not stable API and are intentionally excluded from discovery.
 __all__ = (
     "Circuit",
-    "ExecutionResult",
-    "MeasurementResult",
-    "NoiseModel",
     "CircuitIR",
-    "Instruction",
-    "IR_VERSION",
+    "ExecutionResult",
     "IRSerializationError",
     "IRValidationError",
-    "HybridParallelPlan",
+    "IR_VERSION",
+    "Instruction",
     "MeasurementNode",
+    "MeasurementResult",
     "Module",
-    "GateInfo",
     "ObservableNode",
     "Parameter",
     "ParameterExpression",
     "RuntimePolicy",
     "TrainingResult",
-    "compile_for_backend",
     "plan",
-    "plan_runtime_selection",
-    "select_backend_by_cost",
     "run",
-    "run_native",
-    "run_target",
-    "run_mps",
-    "run_noisy_mps",
-    "run_tensor_network",
-    "noisy_density_matrix",
-    "resolve_device",
-    "distributed_tensor_network_amplitude",
-    "distributed_tensor_network_amplitudes",
-    "distributed_tensor_network_expectation",
-    "distributed_tensor_network_expectations",
-    "tensor_network_amplitude",
-    "tensor_network_amplitudes",
-    "tensor_network_expectations",
     "train",
-    "train_distributed_statevector",
-    "train_distributed_mps",
-    "MPSReverseCheckpointPolicy",
-    "MPSAcceptanceGates",
-    "MPSCrossoverMeasurement",
-    "MPSProductionAcceptanceError",
-    "MPSProductionPlan",
-    "MPSProductionSupport",
-    "PauliMeasurementPlan",
-    "plan_production_mps",
-    "validate_production_mps_workload",
-    "build_mps_release_artifact",
-    "create_deployment_package",
-    "create_pauli_measurement_plan",
-    "deploy_circuit",
-    "hamiltonian_expectation_from_grouped_counts",
     "__version__",
-    "get_version",
-    "gate_info",
-    "info",
-    "hello",
     "experimental",
 )
 
@@ -124,17 +85,5 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> list[str]:
-    return sorted(set(globals()) | set(dir(_compat_api())))
-
-
-def info() -> dict[str, str]:
-    return {
-        "name": "flagquantum",
-        "version": __version__,
-        "author": __author__,
-        "license": __license__,
-    }
-
-
-def hello() -> None:
-    print(f"FlagQuantum v{__version__} - Distributed Quantum Computing Framework")
+    private_names = {name for name in globals() if name.startswith("_")}
+    return sorted(private_names | set(__all__))

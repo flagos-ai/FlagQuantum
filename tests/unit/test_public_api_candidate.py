@@ -5,11 +5,14 @@ from pathlib import Path
 
 import pytest
 
+import flagquantum as fq
+
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs" / "public_api_v1.json"
 CANDIDATE = ROOT / "contracts" / "public-api-v1-candidate.json"
+BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -32,16 +35,40 @@ def _classified_symbols(candidate: dict[str, object]) -> list[str]:
     return symbols
 
 
-def test_candidate_classifies_every_current_stable_export_exactly_once() -> None:
-    manifest = _load(MANIFEST)
+def test_candidate_classifies_every_historical_stable_export_exactly_once() -> None:
+    baseline = _load(BASELINE)
     candidate = _load(CANDIDATE)
-    expected = manifest["stable_exports"]
-    assert isinstance(expected, list)
+    exports = baseline["exports"]
+    assert isinstance(exports, dict)
 
     classified = _classified_symbols(candidate)
 
     assert len(classified) == len(set(classified))
-    assert set(classified) == set(expected)
+    assert set(classified) == set(exports)
+
+
+def test_current_manifest_is_the_implemented_stable_core() -> None:
+    manifest = _load(MANIFEST)
+    candidate = _load(CANDIDATE)
+    stable_core = candidate["stable_core"]
+    assert isinstance(stable_core, dict)
+
+    assert set(manifest["stable_exports"]) == set(stable_core["retain"])
+    assert not set(stable_core["planned_additions"]) & set(manifest["stable_exports"])
+    assert set(fq.__all__) == set(manifest["stable_exports"])
+
+
+def test_migrated_exports_are_not_discoverable_at_root() -> None:
+    candidate = _load(CANDIDATE)
+    migrated = {
+        symbol
+        for section_name in ("stable_extensions", "experimental")
+        for section in candidate[section_name]
+        for symbol in section["symbols"]
+    }
+    migrated.update(candidate["remove_before_public"])
+
+    assert migrated.isdisjoint(dir(fq))
 
 
 def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:

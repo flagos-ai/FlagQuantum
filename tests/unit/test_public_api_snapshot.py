@@ -11,24 +11,26 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_public_api_matches_pre_open_source_migration_baseline() -> None:
+def test_public_api_matches_reviewed_retained_baseline() -> None:
     assert public_api_snapshot.validate() == ()
 
 
-def test_baseline_covers_exact_stable_export_manifest() -> None:
+def test_baseline_covers_current_stable_export_manifest() -> None:
     manifest = json.loads((ROOT / "docs/public_api_v1.json").read_text())
     baseline = json.loads(
         (ROOT / "contracts/public-api-v0.2-baseline.json").read_text()
     )
 
-    assert set(baseline["exports"]) == set(manifest["stable_exports"])
+    assert set(manifest["stable_exports"]) <= set(baseline["exports"])
     assert baseline["status"] == "pre_open_source_migration_baseline"
 
 
 def test_snapshot_diagnostic_forbids_unreviewed_regeneration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(public_api_snapshot, "generate", lambda: {"changed": True})
+    changed = public_api_snapshot.generate()
+    changed["exports"]["Circuit"] = {"changed": True}
+    monkeypatch.setattr(public_api_snapshot, "generate", lambda: changed)
 
     errors = public_api_snapshot.validate()
 

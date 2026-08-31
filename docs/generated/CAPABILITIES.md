@@ -102,7 +102,7 @@ This catalog is generated from the machine-validated
 Build, validate, serialize, compile, and inspect quantum circuits through the stable FlagQuantum interface.
 
 - **Maturity:** Release certified
-- **Public API:** `fq.Circuit`, `fq.CircuitIR`, `fq.compile_for_backend`
+- **Public API:** `fq.Circuit`, `fq.CircuitIR`, `flagquantum.compiler.compile_for_backend`
 - **Runtime modes:** `not_applicable`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
@@ -133,7 +133,7 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 Exercise the local differentiable statevector path through Torch-FL's logical flagos device on a locked CUDA reference environment.
 
 - **Maturity:** Development evidence
-- **Public API:** `fq.resolve_device`, `fq.run`
+- **Public API:** `flagquantum.backends.resolve_device`, `fq.run`
 - **Runtime modes:** `statevector`
 - **Hardware:** `nvidia_a100_cuda_reference`
 - **Gradient support:** `development_evidence`
@@ -273,7 +273,7 @@ Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imagina
 Execute tensor-network circuit paths and evaluate experimental contraction and gradient workflows.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.run_tensor_network`, `fq.plan_runtime_selection`
+- **Public API:** `flagquantum.backends.run_tensor_network`, `flagquantum.experimental.planning.plan_runtime_selection`
 - **Runtime modes:** `tensor_network`
 - **Hardware:** `cpu`, `single_gpu`
 - **Gradient support:** `experimental`
@@ -287,7 +287,7 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 Lower validated Kraus noise models into FlagQuantum IR and execute exact density-matrix or MPS quantum-trajectory paths.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.NoiseModel`, `fq.noisy_density_matrix`, `fq.run_noisy_mps`
+- **Public API:** `flagquantum.noise.NoiseModel`, `flagquantum.noise.noisy_density_matrix`, `flagquantum.backends.run_noisy_mps`
 - **Runtime modes:** `density_matrix`, `noisy_mps`
 - **Hardware:** `cpu`, `single_gpu`
 - **Gradient support:** `unsupported`
@@ -304,7 +304,7 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 Partition one logical statevector workload across ranks while preserving differentiable training semantics.
 
 - **Maturity:** Production supported
-- **Public API:** `fq.plan`, `fq.train_distributed_statevector`
+- **Public API:** `fq.plan`, `flagquantum.experimental.distributed.train_distributed_statevector`
 - **Runtime modes:** `distributed_statevector`
 - **Hardware:** `multi_gpu`, `multi_node`
 - **Gradient support:** `exact`
@@ -318,7 +318,7 @@ Partition one logical statevector workload across ranks while preserving differe
 Run sharded statevector forward and bounded training workloads through the public FlagOS boundary on the locked CUDA development reference.
 
 - **Maturity:** Development evidence
-- **Public API:** `fq.train_distributed_statevector`
+- **Public API:** `flagquantum.experimental.distributed.train_distributed_statevector`
 - **Runtime modes:** `distributed_statevector`
 - **Hardware:** `nvidia_a800_cuda_reference`, `single_node_2_4_8_gpu`
 - **Gradient support:** `development_evidence_exact_autograd`
@@ -332,7 +332,7 @@ Run sharded statevector forward and bounded training workloads through the publi
 Demonstrate one matched complex128 statevector that fails on a single device and completes when sharded across eight devices through the public FlagOS boundary.
 
 - **Maturity:** Development evidence
-- **Public API:** `fq.train_distributed_statevector`
+- **Public API:** `flagquantum.experimental.distributed.train_distributed_statevector`
 - **Runtime modes:** `distributed_statevector`
 - **Hardware:** `nvidia_a800_cuda_reference`, `single_node_8_gpu`
 - **Gradient support:** `forward_only_development_evidence`
@@ -346,7 +346,7 @@ Demonstrate one matched complex128 statevector that fails on a single device and
 Observe a fixed multi-rank complex collective matrix through the public FlagOS boundary while keeping inner-route and host-staging claims fail-closed.
 
 - **Maturity:** Development evidence
-- **Public API:** `fq.train_distributed_statevector`
+- **Public API:** `flagquantum.experimental.distributed.train_distributed_statevector`
 - **Runtime modes:** `distributed_transport_observation`
 - **Hardware:** `nvidia_a800_cuda_reference`, `single_node_2_4_8_gpu`
 - **Gradient support:** `not_applicable`
@@ -360,7 +360,7 @@ Observe a fixed multi-rank complex collective matrix through the public FlagOS b
 Train low-entanglement quantum systems with local or rank-owned matrix product states.
 
 - **Maturity:** Development evidence
-- **Public API:** `fq.run_mps`, `fq.train_distributed_mps`, `fq.plan_production_mps`
+- **Public API:** `flagquantum.backends.run_mps`, `flagquantum.experimental.distributed.train_distributed_mps`, `flagquantum.experimental.mps.plan_production_mps`
 - **Runtime modes:** `mps`, `distributed_mps`
 - **Hardware:** `cpu`, `single_gpu`, `multi_gpu`, `multi_node`
 - **Gradient support:** `exact`
@@ -377,7 +377,7 @@ Train low-entanglement quantum systems with local or rank-owned matrix product s
 Package trained circuits, export provider formats, and route them through deployment provider abstractions.
 
 - **Maturity:** Development evidence
-- **Public API:** `fq.create_deployment_package`, `fq.deploy_circuit`
+- **Public API:** `flagquantum.deployment.create_deployment_package`, `flagquantum.deployment.deploy_circuit`
 - **Runtime modes:** `provider`
 - **Hardware:** `provider_dependent`
 - **Gradient support:** `not_applicable`

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Capture and validate the pre-open-source FlagQuantum public API baseline.
+"""Validate the implemented Stable Core against the migration baseline.
 
-This baseline is a migration aid, not the final Stable Core contract. Updating
-it requires an explicitly authorized API review; it must never be regenerated
-merely to make CI pass.
+The v0.2 baseline remains an immutable audit record of the historical surface.
+The current manifest selects the retained subset while the final frozen
+contract is still being built. Updating either artifact requires an explicitly
+authorized API review; neither may be regenerated merely to make CI pass.
 """
 
 from __future__ import annotations
@@ -11,7 +12,6 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import difflib
-import hashlib
 import inspect
 import json
 import re
@@ -152,15 +152,10 @@ def describe(value: Any) -> dict[str, object]:
 def generate() -> dict[str, object]:
     import flagquantum as fq
 
-    manifest_bytes = MANIFEST.read_bytes()
-    manifest = json.loads(manifest_bytes)
+    manifest = json.loads(MANIFEST.read_bytes())
     names = manifest["stable_exports"]
     return {
-        "schema": "flagquantum_public_api_baseline_v1",
-        "status": "pre_open_source_migration_baseline",
-        "source_manifest": str(MANIFEST.relative_to(ROOT)),
-        "source_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
-        "package_version": fq.__version__,
+        "stable_exports": list(names),
         "exports": {name: describe(getattr(fq, name)) for name in names},
     }
 
@@ -170,15 +165,29 @@ def render(payload: dict[str, object]) -> str:
 
 
 def validate() -> tuple[str, ...]:
-    expected = BASELINE.read_text(encoding="utf-8") if BASELINE.is_file() else ""
-    actual = render(generate())
+    baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
+    actual = generate()
+    names = actual["stable_exports"]
+    assert isinstance(names, list)
+    historical_exports = baseline["exports"]
+    assert isinstance(historical_exports, dict)
+    missing = sorted(set(names) - set(historical_exports))
+    if missing:
+        return (
+            "current stable exports are absent from the reviewed baseline and "
+            f"require an approved additive API contract: {', '.join(missing)}",
+        )
+    expected = {
+        "stable_exports": names,
+        "exports": {name: historical_exports[name] for name in names},
+    }
     if expected == actual:
         return ()
     difference = "".join(
         difflib.unified_diff(
-            expected.splitlines(keepends=True),
-            actual.splitlines(keepends=True),
-            fromfile=str(BASELINE.relative_to(ROOT)),
+            render(expected).splitlines(keepends=True),
+            render(actual).splitlines(keepends=True),
+            fromfile="reviewed retained API",
             tofile="actual public API",
         )
     )
@@ -193,13 +202,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--write",
         action="store_true",
-        help="write an explicitly authorized migration baseline",
+        help="unsupported: retained API contracts must be reviewed manually",
     )
     args = parser.parse_args(argv)
     if args.write:
-        BASELINE.write_text(render(generate()), encoding="utf-8")
-        print(f"wrote {BASELINE.relative_to(ROOT)}")
-        return 0
+        parser.error("automatic API contract regeneration is disabled")
     errors = validate()
     if errors:
         print("\n".join(errors))
