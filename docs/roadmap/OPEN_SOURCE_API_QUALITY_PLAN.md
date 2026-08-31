@@ -608,6 +608,15 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 
 完成标准：根级 stable exports 控制在约 15–25 个，且每一个都有明确用户场景。
 
+实施记录（2026-08-31）：
+
+- `contracts/public-api-v1-candidate.json` 已将当前 60 个根级导出逐项且唯一分类；
+- 候选 Stable Core 为 22 项，其中保留 20 项、新增 `ExecutionOptions` 与
+  `ExecutionPlan`；
+- 其余接口按 stable extension、experimental 和开源前移除三类给出目标位置；
+- `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` 已形成可审查迁移提案；
+- 当前状态仍为 proposal，本阶段尚未执行破坏性根 API 变更。
+
 ### Phase 2：统一命名和配置
 
 - 引入 `ExecutionOptions`；

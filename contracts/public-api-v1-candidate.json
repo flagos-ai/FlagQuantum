@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0",
+  "status": "proposal",
+  "target": "first-public-alpha",
+  "source_manifest": "docs/public_api_v1.json",
+  "stable_core": {
+    "retain": [
+      "Circuit",
+      "CircuitIR",
+      "ExecutionResult",
+      "IRSerializationError",
+      "IRValidationError",
+      "IR_VERSION",
+      "Instruction",
+      "MeasurementNode",
+      "MeasurementResult",
+      "Module",
+      "ObservableNode",
+      "Parameter",
+      "ParameterExpression",
+      "RuntimePolicy",
+      "TrainingResult",
+      "__version__",
+      "experimental",
+      "plan",
+      "run",
+      "train"
+    ],
+    "planned_additions": [
+      "ExecutionOptions",
+      "ExecutionPlan"
+    ]
+  },
+  "stable_extensions": [
+    {
+      "namespace": "flagquantum.backends",
+      "symbols": [
+        "resolve_device",
+        "run_mps",
+        "run_native",
+        "run_noisy_mps",
+        "run_target",
+        "run_tensor_network"
+      ]
+    },
+    {
+      "namespace": "flagquantum.compiler",
+      "symbols": [
+        "compile_for_backend"
+      ]
+    },
+    {
+      "namespace": "flagquantum.deployment",
+      "symbols": [
+        "PauliMeasurementPlan",
+        "create_deployment_package",
+        "create_pauli_measurement_plan",
+        "deploy_circuit",
+        "hamiltonian_expectation_from_grouped_counts"
+      ]
+    },
+    {
+      "namespace": "flagquantum.noise",
+      "symbols": [
+        "NoiseModel",
+        "noisy_density_matrix"
+      ]
+    },
+    {
+      "namespace": "flagquantum.operators",
+      "symbols": [
+        "GateInfo",
+        "gate_info"
+      ]
+    },
+    {
+      "namespace": "flagquantum.backends.tensor_network",
+      "symbols": [
+        "tensor_network_amplitude",
+        "tensor_network_amplitudes",
+        "tensor_network_expectations"
+      ]
+    }
+  ],
+  "experimental": [
+    {
+      "namespace": "flagquantum.experimental.distributed",
+      "symbols": [
+        "HybridParallelPlan",
+        "distributed_tensor_network_amplitude",
+        "distributed_tensor_network_amplitudes",
+        "distributed_tensor_network_expectation",
+        "distributed_tensor_network_expectations",
+        "train_distributed_mps",
+        "train_distributed_statevector"
+      ]
+    },
+    {
+      "namespace": "flagquantum.experimental.mps",
+      "symbols": [
+        "MPSAcceptanceGates",
+        "MPSCrossoverMeasurement",
+        "MPSProductionAcceptanceError",
+        "MPSProductionPlan",
+        "MPSProductionSupport",
+        "MPSReverseCheckpointPolicy",
+        "build_mps_release_artifact",
+        "plan_production_mps",
+        "validate_production_mps_workload"
+      ]
+    },
+    {
+      "namespace": "flagquantum.experimental.planning",
+      "symbols": [
+        "plan_runtime_selection",
+        "select_backend_by_cost"
+      ]
+    }
+  ],
+  "remove_before_public": [
+    "get_version",
+    "hello",
+    "info"
+  ],
+  "rules": {
+    "root_export_budget": 25,
+    "root_backend_specific_exports": 0,
+    "root_evidence_exports": 0,
+    "breaking_changes_require_approved_proposal": true,
+    "candidate_is_frozen_contract": false
+  }
+}

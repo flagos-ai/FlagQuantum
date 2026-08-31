@@ -12,10 +12,14 @@ contracts consumed by FlagQuantum tests and repository tools.
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
+| `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
 
 Validate the API migration baseline with
 `python tools/public_api_snapshot.py`. It is not the final Stable Core contract
 and must not be regenerated merely to make a check pass.
+
+The v1 candidate remains a proposal until API Change Proposal 001 is approved.
+Candidate validation does not authorize changing the current public API.
 
 Repository-wide policy files remain at the repository root because they are
 entry points for CI and maintainers:
