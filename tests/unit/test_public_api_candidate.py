@@ -71,6 +71,26 @@ def test_migrated_exports_are_not_discoverable_at_root() -> None:
     assert migrated.isdisjoint(dir(fq))
 
 
+def test_migrated_and_removed_exports_are_not_accessible_at_root() -> None:
+    candidate = _load(CANDIDATE)
+    replacements = {
+        symbol
+        for section_name in ("stable_extensions", "experimental")
+        for section in candidate[section_name]
+        for symbol in section["symbols"]
+    }
+    removals = set(candidate["remove_before_public"])
+
+    for name in sorted(replacements):
+        with pytest.raises(AttributeError, match="moved before the first public alpha"):
+            getattr(fq, name)
+    for name in sorted(removals):
+        with pytest.raises(
+            AttributeError, match="removed before the first public alpha"
+        ):
+            getattr(fq, name)
+
+
 def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     candidate = _load(CANDIDATE)
     stable_core = candidate["stable_core"]

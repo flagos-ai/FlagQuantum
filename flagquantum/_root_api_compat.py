@@ -1,0 +1,58 @@
+"""Internal policy tables for root API convergence."""
+
+DEPRECATED_INTERNAL_ROOT_EXPORTS = {
+    "DistributedEvidenceContract",
+    "DistributedTransportEvidence",
+    "JAXDistributedQuantumPlan",
+    "JAXMPSRankShardState",
+    "JAXStatevectorShardState",
+    "JAXTNSliceRankState",
+    "StatevectorShard",
+    "StatevectorShardState",
+}
+
+MIGRATED_ROOT_EXPORTS = {
+    "GateInfo": "flagquantum.operators.GateInfo",
+    "HybridParallelPlan": "flagquantum.experimental.distributed.HybridParallelPlan",
+    "MPSAcceptanceGates": "flagquantum.experimental.mps.MPSAcceptanceGates",
+    "MPSCrossoverMeasurement": "flagquantum.experimental.mps.MPSCrossoverMeasurement",
+    "MPSProductionAcceptanceError": "flagquantum.experimental.mps.MPSProductionAcceptanceError",
+    "MPSProductionPlan": "flagquantum.experimental.mps.MPSProductionPlan",
+    "MPSProductionSupport": "flagquantum.experimental.mps.MPSProductionSupport",
+    "MPSReverseCheckpointPolicy": "flagquantum.experimental.mps.MPSReverseCheckpointPolicy",
+    "NoiseModel": "flagquantum.noise.NoiseModel",
+    "PauliMeasurementPlan": "flagquantum.deployment.PauliMeasurementPlan",
+    "build_mps_release_artifact": "flagquantum.experimental.mps.build_mps_release_artifact",
+    "compile_for_backend": "flagquantum.compiler.compile_for_backend",
+    "create_deployment_package": "flagquantum.deployment.create_deployment_package",
+    "create_pauli_measurement_plan": "flagquantum.deployment.create_pauli_measurement_plan",
+    "deploy_circuit": "flagquantum.deployment.deploy_circuit",
+    "distributed_tensor_network_amplitude": "flagquantum.experimental.distributed.distributed_tensor_network_amplitude",
+    "distributed_tensor_network_amplitudes": "flagquantum.experimental.distributed.distributed_tensor_network_amplitudes",
+    "distributed_tensor_network_expectation": "flagquantum.experimental.distributed.distributed_tensor_network_expectation",
+    "distributed_tensor_network_expectations": "flagquantum.experimental.distributed.distributed_tensor_network_expectations",
+    "gate_info": "flagquantum.operators.gate_info",
+    "hamiltonian_expectation_from_grouped_counts": "flagquantum.deployment.hamiltonian_expectation_from_grouped_counts",
+    "noisy_density_matrix": "flagquantum.noise.noisy_density_matrix",
+    "plan_production_mps": "flagquantum.experimental.mps.plan_production_mps",
+    "plan_runtime_selection": "flagquantum.experimental.planning.plan_runtime_selection",
+    "resolve_device": "flagquantum.backends.resolve_device",
+    "run_mps": "flagquantum.backends.run_mps",
+    "run_native": "flagquantum.backends.run_native",
+    "run_noisy_mps": "flagquantum.backends.run_noisy_mps",
+    "run_target": "flagquantum.backends.run_target",
+    "run_tensor_network": "flagquantum.backends.run_tensor_network",
+    "select_backend_by_cost": "flagquantum.experimental.planning.select_backend_by_cost",
+    "tensor_network_amplitude": "flagquantum.backends.tensor_network.tensor_network_amplitude",
+    "tensor_network_amplitudes": "flagquantum.backends.tensor_network.tensor_network_amplitudes",
+    "tensor_network_expectations": "flagquantum.backends.tensor_network.tensor_network_expectations",
+    "train_distributed_mps": "flagquantum.experimental.distributed.train_distributed_mps",
+    "train_distributed_statevector": "flagquantum.experimental.distributed.train_distributed_statevector",
+    "validate_production_mps_workload": "flagquantum.experimental.mps.validate_production_mps_workload",
+}
+
+REMOVED_ROOT_EXPORTS = {
+    "get_version": "flagquantum.__version__",
+    "hello": None,
+    "info": None,
+}

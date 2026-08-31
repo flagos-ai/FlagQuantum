@@ -6,6 +6,11 @@ import warnings
 from importlib import import_module
 from typing import Any
 
+from ._root_api_compat import (
+    DEPRECATED_INTERNAL_ROOT_EXPORTS,
+    MIGRATED_ROOT_EXPORTS,
+    REMOVED_ROOT_EXPORTS,
+)
 from .version import __version__
 
 __author__ = "FlagQuantum Team"
@@ -40,23 +45,24 @@ __all__ = (
 COMPATIBILITY_EXPORT_OWNER = "FlagQuantum core maintainers"
 COMPATIBILITY_EXPORT_REMOVAL_VERSION = "0.3.0"
 
-_DEPRECATED_INTERNAL_ROOT_EXPORTS = {
-    "DistributedEvidenceContract",
-    "DistributedTransportEvidence",
-    "JAXDistributedQuantumPlan",
-    "JAXMPSRankShardState",
-    "JAXStatevectorShardState",
-    "JAXTNSliceRankState",
-    "StatevectorShard",
-    "StatevectorShardState",
-}
-
 
 def _compat_api() -> Any:
     return import_module(".api", __name__)
 
 
 def __getattr__(name: str) -> Any:
+    if name in MIGRATED_ROOT_EXPORTS:
+        replacement = MIGRATED_ROOT_EXPORTS[name]
+        raise AttributeError(
+            f"flagquantum.{name} moved before the first public alpha; "
+            f"use {replacement}"
+        )
+    if name in REMOVED_ROOT_EXPORTS:
+        replacement = REMOVED_ROOT_EXPORTS[name]
+        guidance = f"; use {replacement}" if replacement is not None else ""
+        raise AttributeError(
+            f"flagquantum.{name} was removed before the first public alpha{guidance}"
+        )
     if name == "experimental":
         return import_module(".experimental", __name__)
     if name == "Circuit":
@@ -67,9 +73,7 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module(".runtime.execution", __name__), name)
     if name in {"TrainingResult", "train"}:
         return getattr(import_module(".runtime.training", __name__), name)
-    if name == "HybridParallelPlan":
-        return getattr(import_module(".runtime.planning", __name__), name)
-    if name in _DEPRECATED_INTERNAL_ROOT_EXPORTS:
+    if name in DEPRECATED_INTERNAL_ROOT_EXPORTS:
         warnings.warn(
             f"flagquantum.{name} is an internal compatibility export; use "
             f"flagquantum.experimental.{name}. Root access will be removed in "
