@@ -48,11 +48,12 @@ circuit builder and skips `ExecutionResult`, IR snapshot, topology hash,
 provenance, and runtime-summary construction. Call `execute()` whenever those
 audit fields are required.
 
-Use `mode="distributed_statevector"` under an initialized process group to
-retain the same module and result surface while forward and backward use the
-native sharded statevector runtime. PyTorch is always the stable default. A
-non-PyTorch backend request either fails explicitly or records the selected
-PyTorch compatibility fallback in the result.
+Under an initialized multi-rank process group, the same statevector module and
+result surface automatically use the native sharded statevector runtime.
+Distribution topology comes from the execution environment, not from a second
+mode vocabulary. PyTorch is always the stable default. A non-PyTorch backend
+request either fails explicitly or records an explicitly authorized PyTorch
+compatibility fallback in the result.
 
 Construct `fq.Module` directly. Legacy layer adapters are intentionally not
 part of the stable API; integrations must provide a circuit builder and an

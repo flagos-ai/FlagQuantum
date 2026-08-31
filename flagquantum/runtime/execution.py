@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
 from ..compilation.compiler import compile_for_backend
 from ..compilation.planner import ExecutionPlan, select_execution_mode
-from ..compilation.planner import plan as build_plan
+from ..compilation.planner import plan_advanced as build_plan
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
 from ..core.parameters import value_to_tensor
@@ -36,6 +36,10 @@ from .backends.statevector import (
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
+
+if TYPE_CHECKING:
+    from .options import ExecutionOptions
+    from .result import ExecutionResult
 
 _GATE_ALIASES = {
     "cnot": "cx",
@@ -455,6 +459,7 @@ def run_native(
     output_target = options.pop("output_target", "full_state")
     target_count = int(options.pop("target_count", 1))
     require_gradients = bool(options.pop("require_gradients", False))
+    allow_approximate = bool(options.pop("allow_approximate", True))
     noise_performance_calibration = options.pop("noise_performance_calibration", None)
     selector_min_trajectories = int(options.get("min_trajectories", 1))
     selector_target_standard_error = options.get("target_standard_error")
@@ -490,6 +495,7 @@ def run_native(
         "target": output_target,
         "target_count": target_count,
         "require_gradients": require_gradients,
+        "allow_approximate": allow_approximate,
     }
     if "max_bond" in options:
         plan_options["max_bond"] = options["max_bond"]
@@ -949,13 +955,12 @@ def run_native(
 
 
 def run(
-    circuit_or_ir: Any,
+    program: Any,
     *,
-    mode: str = "auto",
-    noise_model: Any | None = None,
+    options: ExecutionOptions | None = None,
     measurements: Sequence[MeasurementNode] | None = None,
-    **options: Any,
-) -> Any:
+    noise_model: Any | None = None,
+) -> ExecutionResult:
     """Execute a circuit and always return the stable ``ExecutionResult``.
 
     This is the recommended public execution entry point. Backend-specific
@@ -963,17 +968,32 @@ def run(
     result objects.
     """
 
-    if "return_plan" in options:
-        raise TypeError(
-            "fq.run() always includes the execution plan in result.plan; "
-            "remove the return_plan option"
-        )
-    if "result" in options:
-        raise TypeError(
-            "fq.run() always returns ExecutionResult; remove the result option"
-        )
+    from .options import ExecutionOptions
+    from .options_resolver import (
+        circuit_execution_constraints,
+        resolve_execution_options,
+    )
 
-    source_ir = ensure_circuit_ir(circuit_or_ir)
+    if options is not None and not isinstance(options, ExecutionOptions):
+        raise TypeError("options must be an ExecutionOptions or None")
+    source_ir = ensure_circuit_ir(program)
+    selected_config = getattr(program, "runtime_config", None) or get_runtime_config()
+    resolved = resolve_execution_options(
+        options,
+        program_constraints=circuit_execution_constraints(program),
+        runtime_config=selected_config,
+    )
+    if resolved.backend not in {"auto", "pytorch"}:
+        raise NotImplementedError(
+            f"stable fq.run backend {resolved.backend!r} is not available; "
+            "use fq.Module for JAX kernels or flagquantum.backends for "
+            "backend-native execution"
+        )
+    selected_config = selected_config.with_overrides(
+        backend=resolved.backend,
+        device=resolved.device,
+        complex_dtype=resolved.precision,
+    )
     if any(
         instruction.metadata.get("is_dynamic") or instruction.metadata.get("condition")
         for instruction in source_ir.instructions
@@ -985,29 +1005,66 @@ def run(
     requests = (
         tuple(source_ir.measurements) if measurements is None else tuple(measurements)
     )
+    if not requests and (resolved.target == "samples" or resolved.shots is not None):
+        if resolved.shots is None:
+            raise ValueError("target='samples' requires shots")
+        requests = (
+            MeasurementNode(
+                "sample",
+                tuple(range(source_ir.n_wires)),
+                shots=resolved.shots,
+                metadata={} if resolved.seed is None else {"seed": resolved.seed},
+            ),
+        )
+    if not requests and resolved.target in {"expectation", "amplitudes"}:
+        raise NotImplementedError(
+            f"target={resolved.target!r} requires an explicit measurement request"
+        )
     if any(not isinstance(request, MeasurementNode) for request in requests):
         raise TypeError("measurements must contain MeasurementNode instances")
     from .measurements import validate_measurements
 
     validate_measurements(requests, n_wires=source_ir.n_wires)
 
-    output, execution_plan = run_native(
-        circuit_or_ir,
-        noise_model=noise_model,
-        mode=mode,
-        return_plan=True,
-        **options,
-    )
-    from .measurements import execute_measurements
-    from .result import normalize_execution_result
-
-    aliases = {
-        "distributed": "distributed_statevector",
-        "tn": "tensor_network",
-        "distributed_tn": "distributed_tensor_network",
-        "jax_sharded_tn": "jax_sharded_tensor_network",
+    backend_policy = resolve_distributed_backend_policy()
+    world_size = backend_policy.effective_world_size
+    native_mode = resolved.mode
+    if world_size > 1:
+        native_mode = {
+            "statevector": "distributed_statevector",
+            "mps": "distributed_mps",
+            "tensor_network": "distributed_tensor_network",
+        }.get(native_mode, native_mode)
+    targets = {
+        "auto": "full_state",
+        "state": "full_state",
+        "expectation": "expectation",
+        "samples": "samples",
+        "amplitudes": "few_amplitudes",
     }
-    selected_mode = aliases.get(mode, mode)
+    execute_program = program
+    constraints = circuit_execution_constraints(program)
+    if constraints.device not in {
+        None,
+        resolved.device,
+    } or constraints.precision not in {None, resolved.precision}:
+        execute_program = source_ir
+    output, execution_plan = run_native(
+        execute_program,
+        noise_model=noise_model,
+        mode=native_mode,
+        return_plan=True,
+        bsz=resolved.batch_size,
+        world_size=world_size,
+        device=resolved.device,
+        dtype=getattr(torch, resolved.precision),
+        config=selected_config,
+        memory_limit_bytes=resolved.memory_limit_bytes,
+        output_target=targets[resolved.target],
+        require_gradients=resolved.require_gradients,
+        allow_approximate=resolved.allow_approximate,
+    )
+    selected_mode = native_mode
     if selected_mode == "auto":
         noisy_plan = execution_plan.noisy_execution_plan
         if (
@@ -1018,15 +1075,80 @@ def run(
             selected_mode = "noisy_statevector"
         else:
             selected_mode = execution_plan.state_mode
-    result = normalize_execution_result(
+    return _normalize_execution_output(
         output,
+        execution_plan,
+        source_ir=source_ir,
+        requests=requests,
         mode=selected_mode,
-        plan=execution_plan,
     )
-    measurement_results = execute_measurements(
+
+
+def run_advanced(
+    program: Any,
+    *,
+    mode: str = "auto",
+    noise_model: Any | None = None,
+    measurements: Sequence[MeasurementNode] | None = None,
+    **options: Any,
+) -> ExecutionResult:
+    """Experimental normalized execution with backend-specific controls."""
+
+    source_ir = ensure_circuit_ir(program)
+    requests = (
+        tuple(source_ir.measurements) if measurements is None else tuple(measurements)
+    )
+    if any(not isinstance(request, MeasurementNode) for request in requests):
+        raise TypeError("measurements must contain MeasurementNode instances")
+    from .measurements import validate_measurements
+
+    validate_measurements(requests, n_wires=source_ir.n_wires)
+    output, execution_plan = run_native(
+        program,
+        noise_model=noise_model,
+        mode=mode,
+        return_plan=True,
+        **options,
+    )
+    aliases = {
+        "distributed": "distributed_statevector",
+        "tn": "tensor_network",
+        "distributed_tn": "distributed_tensor_network",
+        "jax_sharded_tn": "jax_sharded_tensor_network",
+    }
+    selected_mode = aliases.get(mode, mode)
+    if selected_mode == "auto":
+        noisy_plan = execution_plan.noisy_execution_plan
+        selected_mode = (
+            "noisy_statevector"
+            if noisy_plan is not None
+            and noisy_plan.representation == "statevector"
+            and noisy_plan.evolution == "quantum_trajectory"
+            else execution_plan.state_mode
+        )
+    return _normalize_execution_output(
         output,
-        requests,
-        n_wires=source_ir.n_wires,
+        execution_plan,
+        source_ir=source_ir,
+        requests=requests,
+        mode=selected_mode,
+    )
+
+
+def _normalize_execution_output(
+    output: Any,
+    execution_plan: ExecutionPlan,
+    *,
+    source_ir: CircuitIR,
+    requests: Sequence[MeasurementNode],
+    mode: str,
+) -> ExecutionResult:
+    from .measurements import execute_measurements
+    from .result import normalize_execution_result
+
+    result = normalize_execution_result(output, mode=mode, plan=execution_plan)
+    measurement_results = execute_measurements(
+        output, requests, n_wires=source_ir.n_wires
     )
     first_samples = next(
         (
@@ -1051,6 +1173,7 @@ __all__ = [
     "DistributedExecutor",
     "ExecutionPlan",
     "run",
+    "run_advanced",
     "run_distributed",
     "run_native",
 ]

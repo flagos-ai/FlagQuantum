@@ -803,7 +803,7 @@ def test_plan_accepts_tensor_network_state_mode():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3)
 
-    plan = circuit.plan(state_mode="tensor_network")
+    plan = fq.experimental.planning.plan_advanced(circuit, state_mode="tensor_network")
 
     assert plan.state_mode == "tensor_network"
     assert plan.recommended_mode == "tensor_network"

@@ -4,6 +4,7 @@
   "stable_exports": [
     "Circuit",
     "CircuitIR",
+    "ExecutionOptions",
     "ExecutionResult",
     "IRSerializationError",
     "IRValidationError",
@@ -26,6 +27,7 @@
   "verification": {
     "Circuit": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_experimental_deprecation_path",
     "CircuitIR": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_experimental_deprecation_path",
+    "ExecutionOptions": "tests/unit/test_execution_options.py::test_execution_options_exact_shape_and_immutability",
     "ExecutionResult": "tests/unit/test_issue045_module.py::test_execution_result_fields_and_backend_selection_are_stable",
     "IRSerializationError": "tests/unit/test_issue040_ir_public_api.py::test_serialized_ir_rejects_wrong_kind_version_and_invalid_json",
     "IRValidationError": "tests/unit/test_issue040_ir_public_api.py::test_circuit_rejects_out_of_bounds_gate_at_construction",

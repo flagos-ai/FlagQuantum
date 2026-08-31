@@ -663,6 +663,8 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         self._last_ir = detached_ir_snapshot(ir)
         program_runtime = self._observe_topology(ir)
         requested_backend = self.policy.backend
+        if requested_backend not in {"pytorch", "jax"}:
+            raise ValueError(f"unsupported fq.Module backend {requested_backend!r}")
         selected_backend = requested_backend
         compatibility: dict[str, Any] = {"fallback_used": False}
         wires = self.policy.observable_wires or (0,)
@@ -754,7 +756,12 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                     "selected_backend": selected_backend,
                     "reason": f"jax_kernel_unavailable:{type(error).__name__}",
                 }
-        distributed = self.policy.mode == "distributed_statevector"
+        from .distributed.backend_policy import resolve_distributed_backend_policy
+
+        distributed = (
+            self.policy.mode == "statevector"
+            and resolve_distributed_backend_policy().effective_world_size > 1
+        )
         if distributed:
             import torch.distributed as dist
 
@@ -799,8 +806,8 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 state = None
                 backend_state = run_mps(
                     circuit,
-                    max_bond=self.policy.mps_max_bond,
-                    cutoff=self.policy.mps_cutoff,
+                    max_bond=None,
+                    cutoff=0.0,
                 )
                 values = backend_state.expectation_z(wires)
                 program_runtime = {**program_runtime, **backend_state.summary()}
@@ -941,8 +948,8 @@ class Module(torch.nn.Module):  # type: ignore[misc]
 
                 backend_state = run_mps(
                     circuit,
-                    max_bond=self.policy.mps_max_bond,
-                    cutoff=self.policy.mps_cutoff,
+                    max_bond=None,
+                    cutoff=0.0,
                 )
                 values = backend_state.expectation_z(wires)
             else:
@@ -977,12 +984,12 @@ class Module(torch.nn.Module):  # type: ignore[misc]
 
     def get_extra_state(self) -> dict[str, Any]:
         return {
-            "policy": self.policy.__dict__,
+            "policy": self.policy.to_dict(),
             "deployment_binding": self.deployment_binding,
         }
 
     def set_extra_state(self, state: Mapping[str, Any]) -> None:
-        self.set_runtime_policy(RuntimePolicy(**dict(state.get("policy", {}))))
+        self.set_runtime_policy(RuntimePolicy.from_dict(state.get("policy", {})))
         self.deployment_binding = dict(state.get("deployment_binding", {}))
 
     def save_checkpoint(

@@ -1,10 +1,18 @@
 {
   "schema_version": "1.0",
-  "status": "approved_for_implementation",
+  "status": "implemented_and_verified",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md",
   "target": "first-public-alpha",
   "root_addition": "ExecutionOptions",
   "implementation_authorized": true,
+  "root_manifest_authorized": true,
+  "public_signatures": {
+    "plan": "(program: 'Any', *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
+    "run": "(program: 'Any', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'",
+    "Circuit.plan": "(self, *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
+    "Circuit.run": "(self, *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'",
+    "RuntimePolicy": "(execution_options: 'ExecutionOptions' = <factory>, observable: 'ObservableKind' = 'z', observable_wires: 'tuple[int, ...]' = (0,), correctness_debug: 'bool' = False) -> None"
+  },
   "contract": {
     "kind": "dataclass",
     "frozen": true,
@@ -84,6 +92,6 @@
     "environment_cannot_override_explicit_semantics": true,
     "explicit_unavailable_backend_fails_without_fallback": true,
     "bool_is_not_an_integer": true,
-    "candidate_is_frozen_contract": false
+    "candidate_is_frozen_contract": true
   }
 }

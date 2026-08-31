@@ -72,7 +72,8 @@ def test_auto_strategy_selects_persistent_when_it_reduces_swaps() -> None:
         coupling_map=coupling,
         routing_strategy="auto",
     )
-    plan = circuit.plan(
+    plan = fq.experimental.planning.plan_advanced(
+        circuit,
         coupling_map=coupling,
         routing_strategy="auto",
     )

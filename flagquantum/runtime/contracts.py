@@ -6,6 +6,7 @@ from .distributed.protocols import (
     DistributedExecutor,
 )
 from .module import Module
+from .options import ExecutionOptions
 from .policy import RuntimePolicy
 from .result import ExecutionResult, MeasurementResult, normalize_execution_result
 
@@ -13,6 +14,7 @@ __all__ = (
     "DistributedExecutionRecord",
     "DistributedExecutionRequest",
     "DistributedExecutor",
+    "ExecutionOptions",
     "ExecutionResult",
     "MeasurementResult",
     "Module",

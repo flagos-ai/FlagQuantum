@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..core.ir import CircuitIR
 from .backend_selection import OutputTarget, select_backend_by_cost
@@ -40,6 +40,9 @@ from .selection_context import build_runtime_selection_context
 from .selection_result import finalize_runtime_selection
 from .tn_calibration import TNWorkingSetCalibration
 from .training_preflight import collect_distributed_training_preflight
+
+if TYPE_CHECKING:
+    from ..runtime.options import ExecutionOptions
 
 
 def analyze(ir: CircuitIR) -> CircuitAnalysis:
@@ -363,7 +366,7 @@ def select_execution_mode(
     return selected
 
 
-def plan(
+def plan_advanced(
     circuit_or_ir: Any,
     *,
     bsz: int = 1,
@@ -384,7 +387,11 @@ def plan(
     optimize: bool = True,
     config: Any | None = None,
 ) -> ExecutionPlan:
-    """Build a simple backend-neutral execution plan."""
+    """Build an expert execution plan with backend-specific controls.
+
+    This function is intentionally outside the Stable Core. Normal callers
+    should use :func:`plan` with an ``ExecutionOptions`` object.
+    """
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     from ..core.runtime_config import get_runtime_config
@@ -449,6 +456,60 @@ def plan(
     )
 
 
+def plan(
+    program: Any,
+    *,
+    options: ExecutionOptions | None = None,
+) -> ExecutionPlan:
+    """Build an execution plan from the stable, backend-neutral options."""
+
+    from ..runtime.distributed.backend_policy import (
+        resolve_distributed_backend_policy,
+    )
+    from ..runtime.options import ExecutionOptions
+    from ..runtime.options_resolver import (
+        circuit_execution_constraints,
+        resolve_execution_options,
+    )
+
+    if options is not None and not isinstance(options, ExecutionOptions):
+        raise TypeError("options must be an ExecutionOptions or None")
+    runtime_config = getattr(program, "runtime_config", None)
+    resolved = resolve_execution_options(
+        options,
+        program_constraints=circuit_execution_constraints(program),
+        runtime_config=runtime_config,
+    )
+    from ..core.runtime_config import get_runtime_config
+
+    selected_config = runtime_config or get_runtime_config()
+    selected_config = selected_config.with_overrides(
+        backend=resolved.backend,
+        device=resolved.device,
+        complex_dtype=resolved.precision,
+    )
+    targets: dict[str, OutputTarget] = {
+        "auto": "full_state",
+        "state": "full_state",
+        "expectation": "expectation",
+        "samples": "samples",
+        "amplitudes": "few_amplitudes",
+    }
+    world_size = resolve_distributed_backend_policy().effective_world_size
+    return plan_advanced(
+        program,
+        bsz=resolved.batch_size,
+        world_size=world_size,
+        complex_bytes=16 if resolved.precision == "complex128" else 8,
+        memory_limit_bytes=resolved.memory_limit_bytes,
+        state_mode=resolved.mode,
+        target=targets[resolved.target],
+        require_gradients=resolved.require_gradients,
+        allow_approximate=resolved.allow_approximate,
+        config=selected_config,
+    )
+
+
 def plan_for_backend(
     circuit_or_ir: Any,
     *,
@@ -488,7 +549,7 @@ def plan_for_backend(
     complex_bytes = (
         16 if str(backend_options["complex_dtype"]).endswith("complex128") else 8
     )
-    return plan(
+    return plan_advanced(
         circuit_or_ir,
         state_mode=state_mode,
         complex_bytes=complex_bytes,
@@ -509,6 +570,7 @@ __all__ = [
     "estimate_tensor_network_bytes",
     "estimate_state_bytes",
     "plan",
+    "plan_advanced",
     "plan_for_backend",
     "plan_runtime_selection",
     "select_backend_by_cost",

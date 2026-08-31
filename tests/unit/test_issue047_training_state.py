@@ -72,9 +72,7 @@ def test_checkpoint_rejects_non_equivalent_topology(tmp_path, monkeypatch) -> No
 def test_default_world_is_recorded_as_distributed_state_group(monkeypatch) -> None:
     import flagquantum.runtime.training_state as training_state
 
-    module = fq.Module(
-        build, 2, policy=fq.RuntimePolicy(mode="distributed_statevector")
-    )
+    module = fq.Module(build, 2)
     monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)
     monkeypatch.setattr(torch.distributed, "get_world_size", lambda group=None: 4)
     monkeypatch.setattr(torch.distributed, "get_rank", lambda group=None: 2)

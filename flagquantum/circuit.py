@@ -8,9 +8,8 @@ AI accelerators that already support mainstream deep-learning frameworks.
 
 from __future__ import annotations
 
-import warnings
 from numbers import Number
-from typing import Any, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 import torch
 
@@ -40,7 +39,7 @@ from .circuit_statevector import (
     _triton_single_qubit_loop_enabled,
     _triton_single_qubit_matrix_enabled,
 )
-from .core.ir import CircuitIR, Instruction
+from .core.ir import CircuitIR, Instruction, MeasurementNode
 from .core.operator_schema import (
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
@@ -53,6 +52,11 @@ from .core.parameters import (
 from .core.runtime_config import RuntimeConfig, get_runtime_config, runtime_config
 from .ops.complex_ops import complex_conj, complex_mul
 from .ops.matrices import GATE_MAT_DICT
+
+if TYPE_CHECKING:
+    from .compilation.planner import ExecutionPlan
+    from .runtime.options import ExecutionOptions
+    from .runtime.result import ExecutionResult
 
 
 class Circuit:
@@ -742,66 +746,24 @@ class Circuit:
     def run(
         self,
         *,
-        noise_model=None,
-        mode: str = "auto",
-        return_plan: bool = False,
-        result: bool = True,
-        **options: Any,
-    ):
+        options: ExecutionOptions | None = None,
+        measurements: Sequence[MeasurementNode] | None = None,
+        noise_model: Any | None = None,
+    ) -> ExecutionResult:
         """Execute the circuit and return an :class:`ExecutionResult`.
 
-        This is the object-oriented spelling of ``flagquantum.run(circuit)``.
-        Passing ``result=False`` temporarily preserves the legacy backend-native
-        return value, but is deprecated; advanced callers should use
-        :func:`flagquantum.run_native` explicitly.
-
-        Supported modes include ``statevector``, ``distributed_statevector``,
-        ``mps``, ``adaptive_mps``, ``tensor_network``, ``density_matrix``,
-        ``noisy_mps``, ``mps_trajectory``, and ``auto``. The legacy mode name ``distributed``
-        is accepted as an alias for ``distributed_statevector``; ``tn`` is an
-        alias for ``tensor_network``.
+        This is exactly the object-oriented spelling of
+        ``flagquantum.run(circuit, ...)``. Backend-native controls belong to
+        :mod:`flagquantum.backends`.
         """
 
         from .runtime.execution import run as run_circuit
 
-        if result and return_plan:
-            raise TypeError(
-                "Circuit.run() always includes the execution plan in result.plan; "
-                "remove the return_plan option"
-            )
-
-        if result:
-            options.setdefault("bsz", self.bsz)
-            options.setdefault("device", self.device)
-            options.setdefault("dtype", self.dtype)
-            options.setdefault("config", self.runtime_config)
-            return run_circuit(
-                self,
-                noise_model=noise_model,
-                mode=mode,
-                **options,
-            )
-
-        warnings.warn(
-            "Circuit.run(result=False) is deprecated; use "
-            "flagquantum.backends.run_native(circuit) "
-            "when a backend-native result is required.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        from .runtime.execution import run_native
-
-        options.setdefault("bsz", self.bsz)
-        options.setdefault("device", self.device)
-        options.setdefault("dtype", self.dtype)
-        options.setdefault("config", self.runtime_config)
-        return run_native(
+        return run_circuit(
             self,
+            options=options,
+            measurements=measurements,
             noise_model=noise_model,
-            mode=mode,
-            return_plan=return_plan,
-            **options,
         )
 
     def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
@@ -938,12 +900,12 @@ class Circuit:
 
         return analyze(self.to_ir())
 
-    def plan(self, **options: Any):
+    def plan(self, *, options: ExecutionOptions | None = None) -> ExecutionPlan:
+        """Plan this circuit using stable backend-neutral execution options."""
+
         from .compilation.planner import plan
 
-        options.setdefault("bsz", self.bsz)
-        options.setdefault("config", self.runtime_config)
-        return plan(self.to_ir(), **options)
+        return plan(self, options=options)
 
     def runtime_plan(self, **options: Any):
         """Explain the best local, JAX, or distributed runtime for this circuit."""

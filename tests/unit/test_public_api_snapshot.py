@@ -20,8 +20,19 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
     baseline = json.loads(
         (ROOT / "contracts/public-api-v0.2-baseline.json").read_text()
     )
+    options = json.loads(
+        (ROOT / "contracts/execution-options-v1-candidate.json").read_text()
+    )
+    authorized_additions = (
+        {options["root_addition"]}
+        if options["root_manifest_authorized"] is True
+        else set()
+    )
 
-    assert set(manifest["stable_exports"]) <= set(baseline["exports"])
+    assert (
+        set(manifest["stable_exports"])
+        <= set(baseline["exports"]) | authorized_additions
+    )
     assert baseline["status"] == "pre_open_source_migration_baseline"
 
 

@@ -40,10 +40,11 @@ def main() -> None:
         n_parameters=5,
         init=torch.linspace(-0.2, 0.2, steps=5),
         policy=fq.RuntimePolicy(
-            backend="jax",
+            execution_options=fq.ExecutionOptions(
+                backend="jax", allow_backend_fallback=False
+            ),
             observable="hamiltonian",
             observable_wires=(0, 1, 2),
-            allow_backend_fallback=False,
         ),
         hamiltonian=hamiltonian,
     )

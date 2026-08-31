@@ -7,6 +7,7 @@ from typing import Any
 
 __all__ = (
     "distributed",
+    "execution",
     "mps",
     "planning",
     "DistributedEvidenceContract",
@@ -110,7 +111,7 @@ __all__ = (
 def __getattr__(name: str) -> Any:
     if name not in __all__:
         raise AttributeError(name)
-    if name in {"distributed", "mps", "planning"}:
+    if name in {"distributed", "execution", "mps", "planning"}:
         return import_module(f"flagquantum.experimental.{name}")
     if name in {
         "TEBDResult",

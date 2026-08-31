@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs" / "public_api_v1.json"
 CANDIDATE = ROOT / "contracts" / "public-api-v1-candidate.json"
 BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
+EXECUTION_OPTIONS = ROOT / "contracts" / "execution-options-v1-candidate.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -44,7 +45,13 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
     classified = _classified_symbols(candidate)
 
     assert len(classified) == len(set(classified))
-    assert set(classified) == set(exports)
+    options_contract = _load(EXECUTION_OPTIONS)
+    authorized_additions = (
+        {options_contract["root_addition"]}
+        if options_contract["root_manifest_authorized"] is True
+        else set()
+    )
+    assert set(classified) == set(exports) | authorized_additions
 
 
 def test_current_manifest_is_the_implemented_stable_core() -> None:

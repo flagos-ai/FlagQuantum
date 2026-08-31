@@ -22,10 +22,11 @@ def _load(path: Path) -> dict[str, object]:
 def test_execution_options_candidate_is_authorized_but_not_frozen() -> None:
     candidate = _load(CANDIDATE)
 
-    assert candidate["status"] == "approved_for_implementation"
+    assert candidate["status"] == "implemented_and_verified"
     assert candidate["root_addition"] == "ExecutionOptions"
     assert candidate["implementation_authorized"] is True
-    assert candidate["rules"]["candidate_is_frozen_contract"] is False
+    assert candidate["root_manifest_authorized"] is True
+    assert candidate["rules"]["candidate_is_frozen_contract"] is True
 
 
 def test_execution_options_field_contract_is_exact_and_overlay_safe() -> None:
@@ -94,9 +95,10 @@ def test_execution_options_excludes_backend_and_orchestration_escape_hatches() -
     assert candidate["rules"]["unknown_fields_fail"] is True
 
 
-def test_execution_options_is_registered_but_not_in_current_manifest() -> None:
+def test_execution_options_is_registered_in_current_manifest() -> None:
     stable_core = _load(STABLE_CORE)
     current = _load(ROOT / "docs" / "public_api_v1.json")
 
-    assert "ExecutionOptions" in stable_core["stable_core"]["planned_additions"]
-    assert "ExecutionOptions" not in current["stable_exports"]
+    assert "ExecutionOptions" in stable_core["stable_core"]["retain"]
+    assert "ExecutionOptions" not in stable_core["stable_core"]["planned_additions"]
+    assert "ExecutionOptions" in current["stable_exports"]

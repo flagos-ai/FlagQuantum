@@ -23,7 +23,7 @@ def module_and_optimizer(
         build,
         2,
         init=torch.tensor([0.23, -0.37]),
-        policy=fq.RuntimePolicy(mode="distributed_statevector", observable_wires=(1,)),
+        policy=fq.RuntimePolicy(observable_wires=(1,)),
     )
     module.set_parallel_context(state_process_group=dist.group.WORLD, plan=plan)
     return module, torch.optim.Adam(module.parameters(), lr=0.03)

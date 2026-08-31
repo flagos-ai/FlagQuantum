@@ -10,6 +10,7 @@ from importlib import import_module
 from typing import Any
 
 __all__ = (
+    "ExecutionOptions",
     "ExecutionResult",
     "MeasurementResult",
     "Module",
@@ -33,6 +34,7 @@ __all__ = (
 )
 
 _EXPORTS = {
+    "ExecutionOptions": (".contracts", "ExecutionOptions"),
     "ExecutionResult": (".contracts", "ExecutionResult"),
     "MeasurementResult": (".contracts", "MeasurementResult"),
     "Module": (".contracts", "Module"),

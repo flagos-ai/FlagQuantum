@@ -34,7 +34,6 @@ if str(ROOT) not in sys.path:
 
 import flagquantum as fq  # noqa: E402, I001
 
-
 MODES = {
     "sv": "statevector",
     "mps": "mps",
@@ -96,11 +95,12 @@ def main() -> None:
         init=initial,
         device=device,
         policy=fq.RuntimePolicy(
-            mode=MODES[args.mode],
+            execution_options=fq.ExecutionOptions(mode=MODES[args.mode]),
             observable="z_sum",
             observable_wires=wires,
         ),
     )
+
     class RebuildModule(fq.Module):
         """Reference path that deliberately bypasses builder compilation."""
 
@@ -113,7 +113,7 @@ def main() -> None:
         init=initial,
         device=device,
         policy=fq.RuntimePolicy(
-            mode=MODES[args.mode],
+            execution_options=fq.ExecutionOptions(mode=MODES[args.mode]),
             observable="z_sum",
             observable_wires=wires,
         ),

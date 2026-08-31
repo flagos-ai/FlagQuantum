@@ -7,6 +7,7 @@ import pytest
 from flagquantum.core.runtime_config import RuntimeConfig
 from flagquantum.runtime.options import ExecutionOptions
 from flagquantum.runtime.options_resolver import resolve_execution_options
+from flagquantum.runtime.policy import RuntimePolicy
 
 pytestmark = pytest.mark.unit
 
@@ -99,3 +100,23 @@ def test_resolver_rejects_program_batch_conflict() -> None:
 def test_resolver_requires_typed_options_instead_of_kwargs_escape_hatch() -> None:
     with pytest.raises(TypeError, match="ExecutionOptions"):
         resolve_execution_options({"mode": "mps"})  # type: ignore[arg-type]
+
+
+def test_runtime_policy_has_one_execution_source_and_round_trips() -> None:
+    policy = RuntimePolicy(
+        execution_options=ExecutionOptions(mode="mps", require_gradients=True),
+        observable="z_sum",
+        observable_wires=(0, 1),
+        correctness_debug=True,
+    )
+
+    assert [field.name for field in fields(policy)] == [
+        "execution_options",
+        "observable",
+        "observable_wires",
+        "correctness_debug",
+    ]
+    assert policy.mode == "mps"
+    assert policy.backend == "pytorch"
+    assert policy.allow_backend_fallback is False
+    assert RuntimePolicy.from_dict(policy.to_dict()) == policy

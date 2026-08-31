@@ -53,7 +53,7 @@ def classifier_run(steps: int) -> dict[str, object]:
     accuracy = float((torch.sign(model(inputs).detach()) == targets).float().mean())
     return acceptance_summary(
         model="HybridQuantumClassifier",
-        policy=model.quantum.policy.__dict__,
+        policy=model.quantum.policy.to_dict(),
         correctness={"finite": bool(torch.isfinite(torch.tensor(losses)).all())},
         accuracy={"classification_accuracy": accuracy, "losses": losses},
         performance={"elapsed_seconds": elapsed, "steps": steps},
@@ -64,10 +64,11 @@ def classifier_run(steps: int) -> dict[str, object]:
 def energy_run(steps: int, backend: str) -> dict[str, object]:
     fq.seed_everything(481)
     policy = fq.RuntimePolicy(
-        backend=backend,
+        execution_options=fq.ExecutionOptions(
+            backend=backend, allow_backend_fallback=False
+        ),
         observable="hamiltonian",
         observable_wires=(0, 1),
-        allow_backend_fallback=False,
     )
     model = fq.VariationalEnergyModel(policy=policy)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
@@ -83,7 +84,7 @@ def energy_run(steps: int, backend: str) -> dict[str, object]:
     runtime = model.quantum.execute().runtime
     return acceptance_summary(
         model="VariationalEnergyModel",
-        policy=policy.__dict__,
+        policy=policy.to_dict(),
         correctness={"finite": bool(torch.isfinite(torch.tensor(energies)).all())},
         accuracy={"energies": energies},
         performance={"elapsed_seconds": elapsed, "steps": steps},

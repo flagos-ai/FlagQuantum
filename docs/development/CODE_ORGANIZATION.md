@@ -37,7 +37,9 @@ User applications use:
 ```python
 import flagquantum as fq
 
-policy = fq.RuntimePolicy(mode="mps", mps_max_bond=32)
+policy = fq.RuntimePolicy(
+    execution_options=fq.ExecutionOptions(mode="mps")
+)
 ```
 
 Framework implementation code may use typed internal boundaries:

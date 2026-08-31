@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.backends as fqb
 
 pytestmark = pytest.mark.unit
 
@@ -77,10 +78,8 @@ def test_quantum_module_mps_hamiltonian_uses_policy_and_reports_bonds() -> None:
         init=torch.linspace(0.1, 0.4, 4),
         hamiltonian=hamiltonian,
         policy=fq.RuntimePolicy(
-            mode="mps",
+            execution_options=fq.ExecutionOptions(mode="mps"),
             observable="hamiltonian",
-            mps_max_bond=4,
-            mps_cutoff=1e-6,
         ),
     )
     result = module.execute()
@@ -147,7 +146,12 @@ def test_execution_result_fields_and_backend_selection_are_stable() -> None:
     module = fq.Module(
         build_circuit,
         2,
-        policy=fq.RuntimePolicy(backend="jax", observable_wires=(1,)),
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                backend="jax", allow_backend_fallback=True
+            ),
+            observable_wires=(1,),
+        ),
     )
     result = module.execute()
     assert isinstance(result, fq.ExecutionResult)
@@ -163,23 +167,25 @@ def test_execution_result_fields_and_backend_selection_are_stable() -> None:
         fq.Module(
             build_circuit,
             2,
-            policy=fq.RuntimePolicy(backend="unknown"),
+            policy=fq.RuntimePolicy(
+                execution_options=fq.ExecutionOptions(backend="unknown")
+            ),
         ).execute()
 
 
 def test_circuit_run_matches_uniform_execution_entry_point() -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
-    result = circuit.run(mode="statevector")
+    options = fq.ExecutionOptions(mode="statevector")
+    result = circuit.run(options=options)
     assert isinstance(result, fq.ExecutionResult)
     assert result.plan is not None
     assert result.compatibility["legacy_return_normalized"] is True
 
-    with pytest.warns(DeprecationWarning, match="flagquantum.backends.run_native"):
-        legacy = circuit.run(mode="statevector", result=False)
-    assert isinstance(legacy, torch.Tensor)
-    torch.testing.assert_close(result.state, legacy)
+    native = fqb.run_native(circuit, mode="statevector")
+    assert isinstance(native, torch.Tensor)
+    torch.testing.assert_close(result.state, native)
 
-    with pytest.raises(TypeError, match="always includes the execution plan"):
+    with pytest.raises(TypeError, match="unexpected keyword"):
         circuit.run(return_plan=True)
 
 
@@ -187,7 +193,7 @@ def test_fq_run_executes_ordered_measurement_requests() -> None:
     circuit = fq.Circuit(2).x(0)
     result = fq.run(
         circuit,
-        mode="statevector",
+        options=fq.ExecutionOptions(mode="statevector"),
         measurements=(
             fq.MeasurementNode("expectation_z", (0, 1)),
             fq.MeasurementNode("sample", (1,), shots=4, metadata={"seed": 7}),
@@ -227,9 +233,9 @@ def test_fq_run_is_the_uniform_execution_entry_point() -> None:
     assert result.runtime["mode"] == "statevector"
     torch.testing.assert_close(result.state, circuit.state())
 
-    with pytest.raises(TypeError, match="always includes the execution plan"):
+    with pytest.raises(TypeError, match="unexpected keyword"):
         fq.run(circuit, return_plan=True)
-    with pytest.raises(TypeError, match="always returns ExecutionResult"):
+    with pytest.raises(TypeError, match="unexpected keyword"):
         fq.run(circuit, result=False)
 
 
@@ -262,7 +268,7 @@ def test_compiled_builder_runs_once_and_rebinds_dynamic_tensor_slots(
         counted_builder,
         parameters={"angle": ()},
         init={"angle": 0.2},
-        policy=fq.RuntimePolicy(mode=mode),
+        policy=fq.RuntimePolicy(execution_options=fq.ExecutionOptions(mode=mode)),
     )
     first_inputs = torch.tensor([0.1, 0.3], requires_grad=True)
     first = module.execute(first_inputs)
@@ -305,7 +311,10 @@ def test_compiled_builder_rejects_tensor_dependent_topology() -> None:
 
 @pytest.mark.parametrize("mode", ("statevector", "mps", "tensor_network"))
 def test_fq_run_normalizes_local_backend_result_types(mode: str) -> None:
-    result = fq.run(fq.Circuit(2).h(0).cx(0, 1), mode=mode)
+    result = fq.run(
+        fq.Circuit(2).h(0).cx(0, 1),
+        options=fq.ExecutionOptions(mode=mode),
+    )
 
     assert isinstance(result, fq.ExecutionResult)
     assert result.plan is not None
@@ -436,7 +445,11 @@ def test_module_to_rejects_invalid_dtype_before_mutating_parameters() -> None:
     ],
 )
 def test_structured_modes_execute_the_selected_backend(mode, executor) -> None:
-    module = fq.Module(build_circuit, 2, policy=fq.RuntimePolicy(mode=mode))
+    module = fq.Module(
+        build_circuit,
+        2,
+        policy=fq.RuntimePolicy(execution_options=fq.ExecutionOptions(mode=mode)),
+    )
     result = module.execute()
     reference = build_circuit(module.parameters_tensor).expectation_z((0,))[..., 0]
     torch.testing.assert_close(result.value, reference, atol=1e-5, rtol=1e-5)
@@ -445,8 +458,8 @@ def test_structured_modes_execute_the_selected_backend(mode, executor) -> None:
 
 
 def test_policy_rejects_unknown_modes() -> None:
-    with pytest.raises(ValueError, match="unsupported fq.Module mode"):
-        fq.RuntimePolicy(mode="bogus")
+    with pytest.raises(ValueError, match="mode must be one of"):
+        fq.RuntimePolicy(execution_options=fq.ExecutionOptions(mode="bogus"))
 
 
 @pytest.mark.parametrize("mode", ("statevector", "mps", "tensor_network"))
@@ -457,7 +470,7 @@ def test_module_returns_multiple_z_observables_in_one_execution(mode) -> None:
         2,
         init=parameters,
         policy=fq.RuntimePolicy(
-            mode=mode,
+            execution_options=fq.ExecutionOptions(mode=mode),
             observable="z",
             observable_wires=(0, 1),
         ),
@@ -519,14 +532,16 @@ def test_local_forward_uses_tensor_only_fast_path(monkeypatch) -> None:
     assert module.parameters_tensor.grad is not None
 
 
-def test_single_rank_distributed_policy_reports_local_parallel_semantics() -> None:
+def test_single_rank_policy_reports_local_parallel_semantics() -> None:
     module = fq.Module(
         build_circuit,
         2,
-        policy=fq.RuntimePolicy(mode="distributed_statevector"),
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(mode="statevector")
+        ),
     )
     result = module.execute()
-    assert result.runtime["forward_distribution_semantics"] == "single_device_fast_path"
+    assert result.runtime["distribution_semantics"] == "single_device_fast_path"
     assert (
         result.metrics["parallelism"]["distribution_semantics"]
         == "single_device_fast_path"
@@ -540,7 +555,11 @@ def test_jax_module_supports_input_values_and_gradients() -> None:
         build_circuit,
         2,
         init=parameters,
-        policy=fq.RuntimePolicy(backend="jax", allow_backend_fallback=False),
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                backend="jax", allow_backend_fallback=False
+            )
+        ),
     )
     inputs = torch.tensor(0.17, requires_grad=True)
     value = module(inputs)

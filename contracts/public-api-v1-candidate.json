@@ -12,6 +12,7 @@
     "retain": [
       "Circuit",
       "CircuitIR",
+      "ExecutionOptions",
       "ExecutionResult",
       "IRSerializationError",
       "IRValidationError",
@@ -32,7 +33,6 @@
       "train"
     ],
     "planned_additions": [
-      "ExecutionOptions",
       "ExecutionPlan"
     ]
   },

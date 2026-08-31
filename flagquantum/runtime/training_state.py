@@ -155,8 +155,8 @@ def _topology(module: torch.nn.Module) -> dict[str, Any]:
     backend = str(dist.get_backend()) if initialized else "single_process"
     state_group = getattr(owner, "_state_process_group", None)
     distributed_state = (
-        getattr(getattr(owner, "policy", None), "mode", None)
-        == "distributed_statevector"
+        getattr(getattr(owner, "policy", None), "mode", None) == "statevector"
+        and actual_world_size > 1
     )
     if initialized and (state_group is not None or distributed_state):
         state_world_size = dist.get_world_size(state_group)
@@ -279,7 +279,7 @@ def save_training_checkpoint(
         "module_state": module.state_dict(),
         "optimizer_state": optimizer.state_dict() if optimizer is not None else None,
         "optimizer_contract": _optimizer_contract(optimizer),
-        "runtime_policy": getattr(getattr(owner, "policy", None), "__dict__", {}),
+        "runtime_policy": getattr(owner, "policy").to_dict(),
         "runtime_plan": plan_payload,
         "ir_version": getattr(ir, "version", IR_VERSION),
         "ir_hash": getattr(ir, "content_hash", ""),

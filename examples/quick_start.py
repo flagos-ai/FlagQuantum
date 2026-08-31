@@ -85,7 +85,9 @@ def main() -> None:
                 init="uniform",
                 seed=42,
                 policy=fq.RuntimePolicy(
-                    mode=SIMULATION_MODES[args.mode],
+                    execution_options=fq.ExecutionOptions(
+                        mode=SIMULATION_MODES[args.mode]
+                    ),
                     observable="z_sum",
                     observable_wires=tuple(range(args.n_qubits)),
                 ),

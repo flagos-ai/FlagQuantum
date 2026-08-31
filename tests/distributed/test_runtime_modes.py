@@ -104,7 +104,9 @@ def _loss_and_grad(
         run_options["distributed_executor"] = distributed_executor
     if mode.startswith("distributed"):
         run_options["world_size"] = world_size
-    result = circuit.run(mode=mode, device=device, **run_options)
+    result = fq.experimental.execution.run_advanced(
+        circuit, mode=mode, device=device, **run_options
+    )
     if mode == "distributed_statevector":
         loss = fq.measure_allZ(result)[:, (0, 2)].sum()
     elif mode == "distributed_tensor_network":
@@ -142,14 +144,16 @@ def test_distributed_tensor_network_torchrun_precision_alignment():
     world_size = _world_size()
     device = _device()
 
-    distributed = circuit.run(
+    distributed = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_tensor_network",
         world_size=world_size,
         distributed_executor="torch",
         device=device,
         max_intermediate_size=8,
     )
-    local = circuit.run(
+    local = fq.experimental.execution.run_advanced(
+        circuit,
         mode="tensor_network",
         device=device,
         max_intermediate_size=8,
@@ -224,7 +228,8 @@ def test_distributed_mps_torchrun_precision_alignment():
     world_size = _world_size()
     device = _device()
 
-    distributed = circuit.run(
+    distributed = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_mps",
         world_size=world_size,
         distributed_executor="torch",
@@ -232,7 +237,9 @@ def test_distributed_mps_torchrun_precision_alignment():
         max_bond=8,
         boundary_transport="auto",
     )
-    local = circuit.run(mode="mps", device=device, max_bond=8)
+    local = fq.experimental.execution.run_advanced(
+        circuit, mode="mps", device=device, max_bond=8
+    )
 
     max_error = _precision_assert(
         distributed.to_statevector(), local.to_statevector(), atol=1e-6

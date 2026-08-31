@@ -38,7 +38,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--lr", type=float, default=0.05)
-    parser.add_argument("--mode", choices=("statevector", "mps", "tensor_network"), default="statevector")
+    parser.add_argument(
+        "--mode",
+        choices=("statevector", "mps", "tensor_network"),
+        default="statevector",
+    )
     parser.add_argument("--bench-iters", type=int, default=5)
     parser.add_argument("--compare-torch", action="store_true")
     args = parser.parse_args()
@@ -46,7 +50,13 @@ def main() -> None:
     try:
         import jax  # noqa: F401
     except Exception as exc:  # pragma: no cover - depends on optional local install
-        print({"example": "jax_kernel_torch_layer", "status": "skipped", "reason": str(exc)})
+        print(
+            {
+                "example": "jax_kernel_torch_layer",
+                "status": "skipped",
+                "reason": str(exc),
+            }
+        )
         return
 
     hamiltonian = fq.Hamiltonian(
@@ -62,12 +72,13 @@ def main() -> None:
         n_parameters=5,
         init=torch.linspace(-0.2, 0.2, steps=5),
         policy=fq.RuntimePolicy(
-            backend="jax",
-            mode=args.mode,
+            execution_options=fq.ExecutionOptions(
+                backend="jax",
+                mode=args.mode,
+                allow_backend_fallback=False,
+            ),
             observable="hamiltonian",
             observable_wires=(0, 1, 2),
-            allow_backend_fallback=False,
-            mps_max_bond=16 if args.mode == "mps" else None,
         ),
         hamiltonian=hamiltonian,
     )
@@ -88,11 +99,25 @@ def main() -> None:
         loss = (prediction - target) ** 2
         loss.backward()
         optimizer.step()
-        if step == 0 or step == args.steps - 1 or (step + 1) % max(1, args.steps // 5) == 0:
-            print({"step": step + 1, "prediction": float(prediction.detach()), "loss": float(loss.detach())})
+        if (
+            step == 0
+            or step == args.steps - 1
+            or (step + 1) % max(1, args.steps // 5) == 0
+        ):
+            print(
+                {
+                    "step": step + 1,
+                    "prediction": float(prediction.detach()),
+                    "loss": float(loss.detach()),
+                }
+            )
 
     trained = layer.parameters_tensor.detach()
-    native_speed = time_value_and_grad(native_loss, trained, iters=args.bench_iters) if args.compare_torch else None
+    native_speed = (
+        time_value_and_grad(native_loss, trained, iters=args.bench_iters)
+        if args.compare_torch
+        else None
+    )
     jax_speed = time_value_and_grad(
         lambda theta: layer.execute(parameters=theta).value.sum(),
         trained,
@@ -111,7 +136,11 @@ def main() -> None:
             "trained_parameter_norm": float(layer.parameters_tensor.detach().norm()),
         },
         speed_compare={
-            "pytorch_native": native_speed if native_speed is not None else {"status": "unavailable", "reason": "run with --compare-torch"},
+            "pytorch_native": (
+                native_speed
+                if native_speed is not None
+                else {"status": "unavailable", "reason": "run with --compare-torch"}
+            ),
             "jax_kernel": jax_speed,
             "speedup_jax_over_pytorch": speedup(
                 native_speed["avg_seconds"] if native_speed else None,

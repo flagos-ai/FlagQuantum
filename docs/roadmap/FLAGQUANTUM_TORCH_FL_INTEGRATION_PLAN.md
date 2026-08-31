@@ -727,7 +727,8 @@ L1 通过是 L2/L3 的前置条件，但不会自动提升 L2/L3 成熟度。
 ```python
 import flagquantum as fq
 
-result = fq.run(circuit, device="flagos:0")
+options = fq.ExecutionOptions(device="flagos:0")
+result = fq.run(circuit, options=options)
 ```
 
 用户不需要显式 import Torch-FL；provider 根据 profile 延迟激活。
@@ -737,13 +738,11 @@ result = fq.run(circuit, device="flagos:0")
 ```python
 result = fq.run(
     circuit,
-    device="flagos:0",
-    accuracy=fq.AccuracyPolicy(
-        mode="strict",
-        expectation_abs_error=1e-9,
-        gradient_relative_error=1e-6,
+    options=fq.ExecutionOptions(
+        device="flagos:0",
+        allow_approximate=False,
+        allow_backend_fallback=False,
     ),
-    fallback="forbid",
 )
 ```
 

@@ -538,7 +538,9 @@ def test_run_distributed_attaches_statevector_plan_summary():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    result = circuit.run(mode="distributed_statevector", device="cpu", world_size=1)
+    result = fq.experimental.execution.run_advanced(
+        circuit, mode="distributed_statevector", device="cpu", world_size=1
+    )
 
     assert isinstance(result, fq.ExecutionResult)
     assert result.plan.state_mode == "statevector"

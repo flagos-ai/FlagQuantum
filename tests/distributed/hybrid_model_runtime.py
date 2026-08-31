@@ -31,15 +31,11 @@ def main() -> None:
         )
         initial = local.state_dict()
         sharded = fq.HybridQuantumClassifier(
-            policy=fq.RuntimePolicy(
-                mode="distributed_statevector", observable_wires=(1,)
-            ),
+            policy=fq.RuntimePolicy(observable_wires=(1,)),
             deployment_binding={"provider": "local", "target": "simulator"},
         )
         sharded.load_state_dict(initial)
-        sharded.set_runtime_policy(
-            fq.RuntimePolicy(mode="distributed_statevector", observable_wires=(1,))
-        )
+        sharded.set_runtime_policy(fq.RuntimePolicy(observable_wires=(1,)))
         plan = fq.plan_hybrid_parallel(world_size=2, state_parallel_size=2)
         sharded.quantum.set_parallel_context(
             state_process_group=dist.group.WORLD, plan=plan

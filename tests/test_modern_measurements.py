@@ -21,7 +21,11 @@ def test_measurement_nodes_are_consistent_across_local_backends(mode: str) -> No
         fq.MeasurementNode("counts", (0, 1), shots=8, metadata={"seed": 11}),
     )
 
-    result = fq.run(circuit, mode=mode, measurements=requests)
+    result = fq.run(
+        circuit,
+        options=fq.ExecutionOptions(mode=mode),
+        measurements=requests,
+    )
 
     torch.testing.assert_close(
         result.measurements[0].value,
@@ -55,7 +59,7 @@ def test_ir_measurements_execute_without_a_parallel_user_api() -> None:
         metadata=source.metadata,
     )
 
-    result = fq.run(ir, mode="statevector")
+    result = fq.run(ir, options=fq.ExecutionOptions(mode="statevector"))
 
     torch.testing.assert_close(
         result.measurements[0].value,
@@ -69,7 +73,7 @@ def test_joint_marginal_probabilities_do_not_require_full_state(mode: str) -> No
     circuit = fq.Circuit(3).x(0).h(1)
     result = fq.run(
         circuit,
-        mode=mode,
+        options=fq.ExecutionOptions(mode=mode),
         measurements=(fq.MeasurementNode("probabilities", (0, 1)),),
     )
 
@@ -88,7 +92,7 @@ def test_modern_postselection_returns_conditioned_samples_and_statistics(
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     result = fq.run(
         circuit,
-        mode=mode,
+        options=fq.ExecutionOptions(mode=mode),
         measurements=(
             fq.MeasurementNode(
                 "counts",
@@ -114,13 +118,13 @@ def test_measurement_preflight_rejects_exponential_or_invalid_postselection() ->
     with pytest.raises(ValueError, match="increase max_marginal_wires"):
         fq.run(
             circuit,
-            mode="mps",
+            options=fq.ExecutionOptions(mode="mps"),
             measurements=(fq.MeasurementNode("probabilities", tuple(range(9))),),
         )
     with pytest.raises(ValueError, match="only for sample/counts"):
         fq.run(
             circuit,
-            mode="statevector",
+            options=fq.ExecutionOptions(mode="statevector"),
             measurements=(
                 fq.MeasurementNode(
                     "expectation_z",
@@ -132,7 +136,7 @@ def test_measurement_preflight_rejects_exponential_or_invalid_postselection() ->
     with pytest.raises(ValueError, match="bits must be 0 or 1"):
         fq.run(
             circuit,
-            mode="statevector",
+            options=fq.ExecutionOptions(mode="statevector"),
             measurements=(
                 fq.MeasurementNode(
                     "sample",
@@ -150,19 +154,19 @@ def test_measurement_requests_fail_closed_on_unsupported_or_ambiguous_inputs() -
     with pytest.raises(ValueError, match="unsupported measurement kind"):
         fq.run(
             circuit,
-            mode="statevector",
+            options=fq.ExecutionOptions(mode="statevector"),
             measurements=(fq.MeasurementNode("povm", (0,)),),
         )
     with pytest.raises(ValueError, match="requires a positive shots"):
         fq.run(
             circuit,
-            mode="statevector",
+            options=fq.ExecutionOptions(mode="statevector"),
             measurements=(fq.MeasurementNode("sample", (0,)),),
         )
     with pytest.raises(ValueError, match="must match metadata"):
         fq.run(
             circuit,
-            mode="statevector",
+            options=fq.ExecutionOptions(mode="statevector"),
             measurements=(
                 fq.MeasurementNode(
                     "expectation_ps",

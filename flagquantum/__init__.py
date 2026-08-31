@@ -22,6 +22,7 @@ __license__ = "Apache-2.0"
 __all__ = (
     "Circuit",
     "CircuitIR",
+    "ExecutionOptions",
     "ExecutionResult",
     "IRSerializationError",
     "IRValidationError",
@@ -67,7 +68,13 @@ def __getattr__(name: str) -> Any:
         return import_module(".experimental", __name__)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
-    if name in {"ExecutionResult", "MeasurementResult", "Module", "RuntimePolicy"}:
+    if name in {
+        "ExecutionOptions",
+        "ExecutionResult",
+        "MeasurementResult",
+        "Module",
+        "RuntimePolicy",
+    }:
         return getattr(import_module(".runtime.contracts", __name__), name)
     if name == "run":
         return getattr(import_module(".runtime.execution", __name__), name)

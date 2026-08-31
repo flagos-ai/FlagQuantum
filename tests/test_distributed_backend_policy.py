@@ -92,7 +92,8 @@ def test_circuit_run_development_distributed_statevector_is_transparent(monkeypa
     circuit = fq.Circuit(3)
     circuit.h(0).x(2).cx(0, 2)
 
-    result = circuit.run(
+    result = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_statevector",
         world_size=2,
         device="cpu",
@@ -115,7 +116,8 @@ def test_distributed_statevector_uses_env_local_world_size_without_code_change(
     circuit = fq.Circuit(3)
     circuit.h(0).x(2)
 
-    result = circuit.run(
+    result = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_statevector",
         device="cpu",
     )
@@ -153,7 +155,8 @@ def test_circuit_run_single_rank_keeps_native_device_path(monkeypatch):
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    qdev = circuit.run(
+    qdev = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_statevector",
         world_size=1,
         device="cpu",
@@ -176,7 +179,8 @@ def test_distributed_statevector_backend_override_is_consumed_before_device(
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    qdev = circuit.run(
+    qdev = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_statevector",
         world_size=1,
         device="cpu",
@@ -196,7 +200,8 @@ def test_distributed_mps_run_uses_backend_policy_transparently(monkeypatch):
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).rx(2, theta=0.2)
 
-    result = circuit.run(
+    result = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_mps",
         world_size=2,
         max_bond=4,
@@ -218,7 +223,8 @@ def test_distributed_mps_uses_env_local_world_size_without_code_change(monkeypat
     circuit = fq.Circuit(6)
     circuit.h(0).cx(0, 1).rx(2, theta=0.2).cx(3, 4).rz(5, theta=-0.1)
 
-    result = circuit.run(
+    result = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_mps",
         max_bond=4,
     )
@@ -241,7 +247,8 @@ def test_distributed_tensor_network_run_uses_backend_policy_transparently(monkey
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).rz(2, theta=0.4)
 
-    result = circuit.run(
+    result = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_tensor_network",
         world_size=2,
         max_intermediate_size=8,
@@ -265,7 +272,8 @@ def test_distributed_tensor_network_uses_env_local_world_size_without_code_chang
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).rz(2, theta=0.4)
 
-    result = circuit.run(
+    result = fq.experimental.execution.run_advanced(
+        circuit,
         mode="distributed_tensor_network",
         max_intermediate_size=8,
     )
@@ -278,7 +286,9 @@ def test_distributed_tensor_network_uses_env_local_world_size_without_code_chang
     assert summary["executor"] == "local_tensor_development_simulator"
     assert torch.allclose(
         result.to_statevector(),
-        circuit.run(mode="tensor_network").to_statevector(),
+        fq.experimental.execution.run_advanced(
+            circuit, mode="tensor_network"
+        ).to_statevector(),
         atol=1e-6,
     )
 
@@ -289,9 +299,15 @@ def test_explicit_local_modes_ignore_distributed_env_world_size(monkeypatch):
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).rz(2, theta=0.4)
 
-    state_plan = circuit.run(mode="statevector").plan
-    mps_plan = circuit.run(mode="mps", max_bond=4).plan
-    tn_plan = circuit.run(mode="tensor_network").plan
+    state_plan = fq.experimental.execution.run_advanced(
+        circuit, mode="statevector"
+    ).plan
+    mps_plan = fq.experimental.execution.run_advanced(
+        circuit, mode="mps", max_bond=4
+    ).plan
+    tn_plan = fq.experimental.execution.run_advanced(
+        circuit, mode="tensor_network"
+    ).plan
 
     assert state_plan.world_size == 1
     assert mps_plan.world_size == 1

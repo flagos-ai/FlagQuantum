@@ -35,6 +35,16 @@ class DistributedBackendPolicy:
     requires_gpu: bool
     source: Mapping[str, str | None]
 
+    @property
+    def effective_world_size(self) -> int:
+        """Rank count selected by the active development/production profile."""
+
+        if self.profile == "production":
+            if dist.is_available() and dist.is_initialized():
+                return max(1, int(dist.get_world_size()))
+            return max(1, int(self.source.get("WORLD_SIZE") or "1"))
+        return max(1, int(self.local_world_size))
+
     def summary(self) -> dict[str, Any]:
         return {
             "profile": self.profile,

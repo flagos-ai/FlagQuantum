@@ -32,9 +32,11 @@ layer = fq.Module(
     circuit_builder,
     n_parameters=2,
     policy=fq.RuntimePolicy(
-        backend="jax",
+        execution_options=fq.ExecutionOptions(
+            backend="jax",
+            allow_backend_fallback=True,
+        ),
         observable_wires=(1,),
-        allow_backend_fallback=True,
     ),
 )
 optimizer = torch.optim.Adam(layer.parameters(), lr=0.01)

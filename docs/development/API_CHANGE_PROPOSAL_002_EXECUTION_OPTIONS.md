@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Approved for implementation — 已批准实现，尚未批准加入 Stable Core manifest。**
+**Implemented and verified — 已完成实现、根级清单授权与全量验证。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.ExecutionOptions`、`fq.plan`、`fq.run`、`Circuit.run`、
@@ -11,8 +11,9 @@
 - 前置决策：已批准的 API Change Proposal 001 将 `ExecutionOptions` 列为 Stable
   Core 计划新增项，但没有批准其字段和语义。
 
-批准记录：API owner 于 2026-08-31 授权按本提案进入实现阶段。该授权不包含根级导出、
-Stable Core manifest 冻结、`ExecutionPlan` 输入或 `ExecutionResult` 变更。
+批准记录：API owner 于 2026-08-31 授权按本提案进入实现阶段，随后授权根级导出与
+Stable Core manifest 迁移。该授权不包含 `ExecutionPlan` 输入或 `ExecutionResult` 变更；
+契约冻结仍以完整验证通过为前提。
 
 ## 问题
 
@@ -262,34 +263,36 @@ version 和字段；不能静默忽略未来字段。
 4. 为 legacy keyword 建立仓库内迁移清单，未知键立即失败；
 5. 迁移 production、tests、examples 和 docs；
 6. 运行自动/显式路径、Module、noise、distributed 和 backend conformance；
-7. 单独批准后，将 `ExecutionOptions` 加入 root manifest；
+7. 单独批准后，将 `ExecutionOptions` 加入 root manifest；（已完成）
 8. Proposal 003 完成后再增加 `ExecutionPlan` 输入语义。
 
 ## 验收标准
 
 - [x] API owner 批准字段、顺序、类型、默认值和 fail-closed 策略；
 - [x] `ExecutionOptions` 不包含 backend-specific 或 distributed orchestration 字段；
-- [ ] 所有配置来源由一个 resolver 按字段合并；
-- [ ] `plan` 与 `run` 对同一 program/options 得到同一 resolved options；
-- [ ] `Circuit.run` 与 `fq.run` 等价；
-- [ ] 未知字段、冲突字段和非法值在 planning 前失败；
-- [ ] 序列化 round trip 与未知字段拒绝测试通过；
-- [ ] 现有 legacy keyword 调用清单归零；
-- [ ] 完整 Stable Core、runtime、distributed 和文档契约通过；
-- [ ] API owner 单独批准加入 root manifest。
+- [x] 所有稳定配置来源由一个 resolver 按字段合并；
+- [x] `plan` 与 `run` 对同一 program/options 得到同一 resolved options；
+- [x] `Circuit.run` 与 `fq.run` 等价；
+- [x] 未知字段、冲突字段和非法值在 planning 前失败；
+- [x] 序列化 round trip 与未知字段拒绝测试通过；
+- [x] production、tests、examples 与当前文档中的 legacy keyword 调用清单归零；
+- [x] 完整 Stable Core、runtime、distributed 和文档契约通过；
+- [x] API owner 单独批准加入 root manifest。
 
 ## 实施记录
 
-2026-08-31 完成第一阶段内部实现：
+2026-08-31 完成公开接口集成：
 
 - `flagquantum.runtime.options.ExecutionOptions` 已实现不可变 slots dataclass、严格值验证
   和 v1 序列化；
 - `flagquantum.runtime.options_resolver.resolve_execution_options` 已实现唯一字段级优先级、
   RuntimeConfig adapter、程序 batch 冲突检查和字段来源记录；
-- 根级 `fq.ExecutionOptions`、`fq.plan/run` 新签名以及 `RuntimePolicy` 迁移尚未启用，避免
-  在最后一次接口验收前形成半公开 API。
+- 根级 `fq.ExecutionOptions`、`fq.plan/run`、`Circuit.plan/run` 与 `RuntimePolicy`
+  已统一到该契约；backend 专用控制迁入 `fq.experimental`；
+- 语义契约覆盖 plan/run 一致性、Circuit 等价性、采样可复现、旧关键字拒绝和显式后端
+  fail-closed；default、runtime 与 distributed 三档验证通过后，候选契约已冻结。
 
 ## 请求批准的决策
 
-批准本提案意味着批准上述字段与语义进入实现阶段，但**不等于 API freeze**，也不授权
-顺带实现 `fq.run(ExecutionPlan)`、改变 `ExecutionResult` 或新增其他 Stable Core 名称。
+本提案已经获得实现和根级清单授权，但**尚不等于 API freeze**，也不授权顺带实现
+`fq.run(ExecutionPlan)`、改变 `ExecutionResult` 或新增其他 Stable Core 名称。

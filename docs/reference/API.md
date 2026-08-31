@@ -27,8 +27,9 @@ tests, and rendered in the
 import flagquantum as fq
 
 circuit = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
-plan = circuit.runtime_plan()
-result = fq.run(circuit)
+options = fq.ExecutionOptions(mode="auto", precision="complex64")
+plan = fq.plan(circuit, options=options)
+result = fq.run(circuit, options=options)
 
 print(plan.summary()["recommended_mode"])
 print(result.plan.state_mode)
@@ -47,12 +48,12 @@ gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
 FlagQuantum IR continue to use `wires=`.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
-point. It provides the same stable result contract for local, MPS,
-tensor-network, and distributed modes. `Circuit.run(...)` is a compatibility
-shortcut whose default return remains backend-native.
+point. `ExecutionOptions` is the only stable execution-configuration input;
+unknown keywords fail before planning. `Circuit.run(options=...)` and
+`fq.run(circuit, options=...)` are equivalent.
 `flagquantum.backends.run_native`, `flagquantum.backends.run_mps`, and
 `flagquantum.backends.run_tensor_network` are advanced interfaces for callers
-that explicitly need native backend result objects.
+that explicitly need native backend result objects or backend-specific controls.
 
 ## Train with PyTorch
 
@@ -145,7 +146,11 @@ request = fq.MeasurementNode(
         "max_postselection_draw_multiplier": 1024,
     },
 )
-result = fq.run(circuit, mode="mps", measurements=(request,))
+result = fq.run(
+    circuit,
+    options=fq.ExecutionOptions(mode="mps"),
+    measurements=(request,),
+)
 print(result.measurements[0].statistics["acceptance_rate"])
 ```
 
