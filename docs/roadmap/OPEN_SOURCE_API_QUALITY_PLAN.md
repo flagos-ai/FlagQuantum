@@ -615,7 +615,11 @@ API 冻结前必须用真实、可执行代码验证以下路径：
   `ExecutionPlan`；
 - 其余接口按 stable extension、experimental 和开源前移除三类给出目标位置；
 - `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` 已形成可审查迁移提案；
-- 当前状态仍为 proposal，本阶段尚未执行破坏性根 API 变更。
+- Stable Core 分类与命名空间迁移已于 2026-08-31 获得 API owner 批准；最终 API
+  freeze 仍需单独批准。
+- stable extension 的 `backends`、`compiler`、`deployment`、`noise`、`operators`
+  路径与 experimental 的 `distributed`、`mps`、`planning` 路径已经可导入；
+- 公开黄金路径中的部署示例已停止依赖历史根级 deployment export。
 
 ### Phase 2：统一命名和配置
 

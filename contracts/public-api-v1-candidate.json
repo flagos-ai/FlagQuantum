@@ -1,8 +1,13 @@
 {
   "schema_version": "1.0",
-  "status": "proposal",
+  "status": "approved",
   "target": "first-public-alpha",
   "source_manifest": "docs/public_api_v1.json",
+  "approval": {
+    "approved_at": "2026-08-31",
+    "approved_by": "API owner via explicit user directive",
+    "scope": "Stable Core disposition and namespace migration"
+  },
   "stable_core": {
     "retain": [
       "Circuit",

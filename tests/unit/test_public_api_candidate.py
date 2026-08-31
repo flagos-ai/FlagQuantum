@@ -59,11 +59,14 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core
 
 
-def test_candidate_is_explicitly_non_frozen_until_approved() -> None:
+def test_candidate_records_approval_but_is_not_yet_frozen() -> None:
     candidate = _load(CANDIDATE)
     rules = candidate["rules"]
+    approval = candidate["approval"]
     assert isinstance(rules, dict)
+    assert isinstance(approval, dict)
 
-    assert candidate["status"] == "proposal"
+    assert candidate["status"] == "approved"
+    assert approval["scope"] == "Stable Core disposition and namespace migration"
     assert rules["breaking_changes_require_approved_proposal"] is True
     assert rules["candidate_is_frozen_contract"] is False

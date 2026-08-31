@@ -1,5 +1,10 @@
 """Backend-neutral noise channels and model semantics."""
 
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
+
 from .channels import (
     KrausChannel,
     amplitude_damping_channel,
@@ -40,4 +45,14 @@ __all__ = (
     "reset_error_channel",
     "thermal_relaxation_channel",
     "two_qubit_depolarizing_channel",
+    "noisy_density_matrix",
 )
+
+
+def __getattr__(name: str) -> Any:
+    if name == "noisy_density_matrix":
+        return getattr(
+            import_module("flagquantum.runtime.backends.density_matrix.execution"),
+            name,
+        )
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

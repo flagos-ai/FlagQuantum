@@ -6,6 +6,9 @@ from importlib import import_module
 from typing import Any
 
 __all__ = (
+    "distributed",
+    "mps",
+    "planning",
     "DistributedEvidenceContract",
     "DistributedTransportEvidence",
     "JAXDistributedQuantumPlan",
@@ -107,6 +110,8 @@ __all__ = (
 def __getattr__(name: str) -> Any:
     if name not in __all__:
         raise AttributeError(name)
+    if name in {"distributed", "mps", "planning"}:
+        return import_module(f"flagquantum.experimental.{name}")
     if name in {
         "TEBDResult",
         "run_tebd",

@@ -19,7 +19,7 @@ tests, and rendered in the
 | Execute | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
-| Package for a target | `fq.create_deployment_package` | Sealed deployment package |
+| Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
 
@@ -49,8 +49,9 @@ FlagQuantum IR continue to use `wires=`.
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. It provides the same stable result contract for local, MPS,
 tensor-network, and distributed modes. `Circuit.run(...)` is a compatibility
-shortcut whose default return remains backend-native. `fq.run_native`,
-`fq.run_mps`, and `fq.run_tensor_network` are advanced interfaces for callers
+shortcut whose default return remains backend-native.
+`flagquantum.backends.run_native`, `flagquantum.backends.run_mps`, and
+`flagquantum.backends.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects.
 
 ## Train with PyTorch
@@ -162,7 +163,9 @@ terms, appends the required basis rotations, and creates one sealed deployment
 package per group:
 
 ```python
-plan = fq.create_pauli_measurement_plan(
+import flagquantum.deployment as fqd
+
+plan = fqd.create_pauli_measurement_plan(
     circuit,
     hamiltonian,
     backend=backend,
