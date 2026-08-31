@@ -41,8 +41,7 @@ def test_builds_deterministic_hierarchical_bootstrap_report() -> None:
         16.0,
     ]
     assert all(
-        point["baseline_normalized_efficiency"] == 1.0
-        for point in first["points"]
+        point["baseline_normalized_efficiency"] == 1.0 for point in first["points"]
     )
 
 

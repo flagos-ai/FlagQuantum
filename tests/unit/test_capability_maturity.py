@@ -100,7 +100,5 @@ def test_performance_claim_fails_closed_when_artifact_or_environment_is_missing(
 
 
 def test_claim_selector_aggregates_artifact_values():
-    values = claim_values(
-        {"ranks": [{"value": 2}, {"value": 3}]}, "ranks[].value"
-    )
+    values = claim_values({"ranks": [{"value": 2}, {"value": 3}]}, "ranks[].value")
     assert aggregate_claim_value(values, "max") == 3

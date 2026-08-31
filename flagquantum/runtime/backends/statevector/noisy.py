@@ -149,8 +149,12 @@ def _apply_kraus_batched(
         2,
         choices[..., None, None].expand(-1, -1, 1, branches.shape[-1]),
     ).squeeze(2)
-    selected_probability = torch.gather(probabilities, 2, choices[..., None]).squeeze(-1)
-    return selected / torch.sqrt(torch.clamp(selected_probability, min=1e-30))[..., None]
+    selected_probability = torch.gather(probabilities, 2, choices[..., None]).squeeze(
+        -1
+    )
+    return (
+        selected / torch.sqrt(torch.clamp(selected_probability, min=1e-30))[..., None]
+    )
 
 
 def _apply_amplitude_damping_batched(
@@ -183,10 +187,13 @@ def _apply_amplitude_damping_batched(
     jump = choices.bool()[..., None]
     out_zero = torch.where(jump, torch.sqrt(gamma) * one, zero)
     out_one = torch.where(jump, torch.zeros_like(one), torch.sqrt(1 - gamma) * one)
-    selected_probability = torch.where(jump[..., 0], jump_probability, 1 - jump_probability)
-    packed_out = torch.stack((out_zero, out_one), dim=2) / torch.sqrt(
-        torch.clamp(selected_probability, min=1e-30)
-    )[..., None, None]
+    selected_probability = torch.where(
+        jump[..., 0], jump_probability, 1 - jump_probability
+    )
+    packed_out = (
+        torch.stack((out_zero, out_one), dim=2)
+        / torch.sqrt(torch.clamp(selected_probability, min=1e-30))[..., None, None]
+    )
     return (
         packed_out.reshape(trajectories, circuit_batch, *((2,) * n_wires))
         .permute(tuple(inverse))
@@ -215,7 +222,9 @@ def _collective_statistics(statistics: TrajectoryStatistics) -> TrajectoryStatis
     if int(count.item()) == 0:
         raise RuntimeError("no statevector trajectories completed successfully")
     global_mean = total / count
-    global_variance = torch.clamp(total_square / count - global_mean * global_mean, min=0)
+    global_variance = torch.clamp(
+        total_square / count - global_mean * global_mean, min=0
+    )
     return TrajectoryStatistics(
         count=int(count.item()),
         mean=global_mean.to(dtype=statistics.mean.dtype),
@@ -389,7 +398,9 @@ def run_noisy_statevector(
         distributed and selected_world_size > 1 if collective is None else collective
     )
     if collective and not distributed:
-        raise RuntimeError("collective execution requires initialized torch.distributed")
+        raise RuntimeError(
+            "collective execution requires initialized torch.distributed"
+        )
     if collective and (
         selected_rank != distributed_rank
         or selected_world_size != distributed_world_size
@@ -515,6 +526,7 @@ def run_noisy_statevector(
             ),
             checkpoint_path,
         )
+
     pauli_matrices = {
         name: torch.as_tensor(matrix, device=selected_device, dtype=selected_dtype)
         for name, matrix in GATE_MAT_DICT.items()
@@ -564,9 +576,7 @@ def run_noisy_statevector(
                     )
                 except Exception as error:
                     failures = [
-                        item
-                        for item in failures
-                        if item.trajectory_id != trajectory_id
+                        item for item in failures if item.trajectory_id != trajectory_id
                     ]
                     failures.append(
                         TrajectoryFailure(
@@ -585,7 +595,9 @@ def run_noisy_statevector(
         for value in successful_expectations:
             accumulator.update(value)
         completed_ids.extend(successful_ids)
-        failures = [item for item in failures if item.trajectory_id not in successful_ids]
+        failures = [
+            item for item in failures if item.trajectory_id not in successful_ids
+        ]
         batches_executed += 1
         batches_since_checkpoint += 1
         if batches_since_checkpoint >= checkpoint_interval:
@@ -721,9 +733,11 @@ def merge_noisy_statevector_results(
     if not items:
         raise ValueError("at least one statevector trajectory result is required")
     requested = {
-        item.statistics.count
-        if item.requested_trajectories is None
-        else item.requested_trajectories
+        (
+            item.statistics.count
+            if item.requested_trajectories is None
+            else item.requested_trajectories
+        )
         for item in items
     }
     world_sizes = {item.world_size for item in items}
@@ -741,7 +755,9 @@ def merge_noisy_statevector_results(
         raise ValueError("rank-local statevector results contain duplicate ranks")
     trajectory_ids = tuple(sorted(i for item in items for i in item.trajectory_ids))
     if len(trajectory_ids) != len(set(trajectory_ids)):
-        raise ValueError("rank-local statevector results contain duplicate trajectories")
+        raise ValueError(
+            "rank-local statevector results contain duplicate trajectories"
+        )
     requested_count = requested.pop()
     if require_complete and trajectory_ids != tuple(range(requested_count)):
         raise ValueError("distributed statevector trajectory result is incomplete")

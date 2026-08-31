@@ -24,18 +24,23 @@ def _payload() -> dict:
     spec.loader.exec_module(fixture)
     value = copy.deepcopy(fixture.valid_payload())
     assert payload.audit(value)["paper_ready_independent_run"]
-    value.update({
-        "artifact_class": "measured_profile_preflight",
-        "benchmark_evidence_class": "profile_preflight",
-        "non_release_evidence": True,
-        "release_gate_allowed": False,
-        "scalability_blockers": ["profile_preflight_not_release_evidence"],
-        "workload": {
-            "n_wires": 28, "layers": 8, "seed": 41,
-            "optimizer": "adam", "learning_rate": 0.01,
-        },
-        "ablation": {"id": "full"},
-    })
+    value.update(
+        {
+            "artifact_class": "measured_profile_preflight",
+            "benchmark_evidence_class": "profile_preflight",
+            "non_release_evidence": True,
+            "release_gate_allowed": False,
+            "scalability_blockers": ["profile_preflight_not_release_evidence"],
+            "workload": {
+                "n_wires": 28,
+                "layers": 8,
+                "seed": 41,
+                "optimizer": "adam",
+                "learning_rate": 0.01,
+            },
+            "ablation": {"id": "full"},
+        }
+    )
     return value
 
 

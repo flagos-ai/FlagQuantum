@@ -34,6 +34,14 @@ from .ir import (
     ensure_circuit_ir,
     from_engine_qir,
 )
+from .numerics import (
+    NUMERICAL_CONTRACT_VERSION,
+    AccuracyMode,
+    AccuracyRequirementContract,
+    ComplexRepresentation,
+    PrecisionPlanContract,
+    RefinementStrategy,
+)
 from .operator_schema import (
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
@@ -43,14 +51,6 @@ from .operator_schema import (
     gate_info,
     get_operator_schema,
     operator_manifest,
-)
-from .numerics import (
-    NUMERICAL_CONTRACT_VERSION,
-    AccuracyMode,
-    AccuracyRequirementContract,
-    ComplexRepresentation,
-    PrecisionPlanContract,
-    RefinementStrategy,
 )
 from .parameters import (
     Parameter,

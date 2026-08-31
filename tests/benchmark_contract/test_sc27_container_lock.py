@@ -44,4 +44,4 @@ def test_pennylane_image_requires_cuda_aware_openmpi() -> None:
     assert "/tmp/sc27-openmpi-cuda-tcp/install/lib/libmpi.so.40" in dockerfile
     assert "rm -f /opt/python/lib/libmpi.so /opt/python/lib/libmpi.so.40" in dockerfile
     assert "OMPI_MCA_plm=isolated python -c" in dockerfile
-    assert 'mpi_prefix=/tmp/sc27-openmpi-cuda-tcp/install' in launcher
+    assert "mpi_prefix=/tmp/sc27-openmpi-cuda-tcp/install" in launcher

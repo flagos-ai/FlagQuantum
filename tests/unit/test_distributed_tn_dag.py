@@ -241,9 +241,7 @@ def test_compiled_forward_schedule_matches_exact_tape_and_reduces_launches():
     compiled_reverse = execute_compiled_tn_reverse_dag(
         dag, reverse, compiled, schedule=reverse_schedule
     )
-    assert set(compiled_reverse.input_cotangents) == set(
-        eager_reverse.input_cotangents
-    )
+    assert set(compiled_reverse.input_cotangents) == set(eager_reverse.input_cotangents)
     for value_id in eager_reverse.input_cotangents:
         torch.testing.assert_close(
             compiled_reverse.input_cotangents[value_id],

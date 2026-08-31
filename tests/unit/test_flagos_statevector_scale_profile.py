@@ -120,9 +120,11 @@ def test_scale_run_rejects_duplicate_or_noncommunicating_cases():
 def test_persistent_layout_accepts_layout_exchange_without_distributed_gate_count():
     run = _run(2)
     cases = tuple(
-        replace(case, distributed_gate_count=0)
-        if case.name == "persistent_layout_reference"
-        else case
+        (
+            replace(case, distributed_gate_count=0)
+            if case.name == "persistent_layout_reference"
+            else case
+        )
         for case in run.cases
     )
 

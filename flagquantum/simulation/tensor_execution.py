@@ -93,8 +93,9 @@ def _compress_pauli_sum_mpo(
         for wire in range(n_wires)
     )
     cores = [
-        (coefficients[:, None, None] * local_by_wire[0])
-        .reshape(1, term_count, physical_dim)
+        (coefficients[:, None, None] * local_by_wire[0]).reshape(
+            1, term_count, physical_dim
+        )
     ]
     diagonal = torch.eye(
         term_count, dtype=coefficients.dtype, device=coefficients.device
@@ -106,8 +107,8 @@ def _compress_pauli_sum_mpo(
 
     for wire in range(n_wires - 1):
         left_rank, right_rank, _ = cores[wire].shape
-        matrix = cores[wire].permute(0, 2, 1).reshape(
-            left_rank * physical_dim, right_rank
+        matrix = (
+            cores[wire].permute(0, 2, 1).reshape(left_rank * physical_dim, right_rank)
         )
         left, singular, right = torch.linalg.svd(matrix, full_matrices=False)
         threshold = relative_tolerance * singular[0]
@@ -119,9 +120,7 @@ def _compress_pauli_sum_mpo(
         cores[wire + 1] = torch.matmul(
             transfer, cores[wire + 1].reshape(right_rank, -1)
         ).reshape(rank, next_right, physical_dim)
-    return tuple(
-        core.reshape(core.shape[0], core.shape[1], 2, 2) for core in cores
-    )
+    return tuple(core.reshape(core.shape[0], core.shape[1], 2, 2) for core in cores)
 
 
 def _cached_pauli_sum_mpo(
@@ -442,15 +441,23 @@ def build_tensor_network_hamiltonian_expectation(
         by_wire = {int(wire): str(name).lower() for wire, name in term.ops}
         observable_wires.update(by_wire)
         local_products.append(
-            tuple(pauli_matrices.get(by_wire.get(wire), identity) for wire in range(ket_plan.n_wires))
+            tuple(
+                pauli_matrices.get(by_wire.get(wire), identity)
+                for wire in range(ket_plan.n_wires)
+            )
         )
     coefficients = tuple(
-        torch.as_tensor(term.coefficient, dtype=reference.dtype, device=reference.device)
+        torch.as_tensor(
+            term.coefficient, dtype=reference.dtype, device=reference.device
+        )
         for term in terms
     )
     if ket_plan.n_wires == 1:
         matrix = torch.stack(
-            tuple(coefficient * product[0] for coefficient, product in zip(coefficients, local_products))
+            tuple(
+                coefficient * product[0]
+                for coefficient, product in zip(coefficients, local_products)
+            )
         ).sum(dim=0)
         nodes.append(
             TensorNetworkNode(
@@ -470,7 +477,9 @@ def build_tensor_network_hamiltonian_expectation(
                 tuple(
                     (
                         complex(term.coefficient),
-                        tuple((int(wire), str(name).lower()) for wire, name in term.ops),
+                        tuple(
+                            (int(wire), str(name).lower()) for wire, name in term.ops
+                        ),
                     )
                     for term in terms
                 ),
@@ -578,9 +587,7 @@ def build_tensor_network_hamiltonian_expectations(
             )
 
     identity = _identity_matrix_like(reference)
-    matrices = {
-        name: GATE_MAT_DICT[name].to(reference) for name in ("x", "y", "z")
-    }
+    matrices = {name: GATE_MAT_DICT[name].to(reference) for name in ("x", "y", "z")}
     local_products = tuple(
         tuple(
             matrices.get(dict(key).get(wire), identity)
@@ -588,9 +595,7 @@ def build_tensor_network_hamiltonian_expectations(
         )
         for key in term_keys
     )
-    observable_wires = tuple(
-        sorted({wire for key in term_keys for wire, _ in key})
-    )
+    observable_wires = tuple(sorted({wire for key in term_keys for wire, _ in key}))
     observable_label = max((*bra_outputs, *ket_outputs)) + 1
     if ket_plan.n_wires == 1:
         local = torch.stack(tuple(product[0] for product in local_products))

@@ -50,7 +50,8 @@ class DistributedSlicedTNReverseResult:
             "world_size": self.world_size,
             "local_task_count": self.local_task_count,
             "local_slice_batch_size": self.local_slice_batch_size,
-            "local_slice_batch_count": self.local_task_count // self.local_slice_batch_size,
+            "local_slice_batch_count": self.local_task_count
+            // self.local_slice_batch_size,
             "local_forward_operation_count": self.local_forward_operation_count,
             "local_reverse_operation_count": self.local_reverse_operation_count,
             "local_execution_seconds": self.local_execution_seconds,
@@ -72,8 +73,7 @@ class DistributedSlicedTNReverseResult:
             "backward_distribution_semantics": "sharded_across_ranks",
             "gradient_distribution_semantics": (
                 "sharded_across_ranks"
-                if self.gradient_aggregation_semantics
-                == "reduce_to_parameter_owner"
+                if self.gradient_aggregation_semantics == "reduce_to_parameter_owner"
                 else "replicated_after_all_reduce"
             ),
             "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
@@ -111,9 +111,7 @@ def execute_distributed_sliced_tn_explicit_reverse(
     world_size = int(dist.get_world_size(group=process_group))
     rank = int(dist.get_rank(group=process_group))
     if gradient_reduction not in {"all_reduce", "owner_reduce"}:
-        raise ValueError(
-            "gradient_reduction must be 'all_reduce' or 'owner_reduce'"
-        )
+        raise ValueError("gradient_reduction must be 'all_reduce' or 'owner_reduce'")
     if tasks.world_size != world_size:
         raise RuntimeError("TN slice task plan world size does not match process group")
     if (

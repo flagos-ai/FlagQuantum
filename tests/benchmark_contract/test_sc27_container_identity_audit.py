@@ -31,11 +31,13 @@ def test_accepts_complete_frozen_identity() -> None:
 
 def test_probe_identity_cannot_be_promoted() -> None:
     value = identity()
-    value.update({
-        "source_dirty": True,
-        "stage": "compatibility_probe",
-        "base_provenance": "legacy_environment_snapshot",
-    })
+    value.update(
+        {
+            "source_dirty": True,
+            "stage": "compatibility_probe",
+            "base_provenance": "legacy_environment_snapshot",
+        }
+    )
     frozen = MODULE.audit(value)
     assert frozen["container_identity_ready"] is False
     assert "promotion:stage_not_frozen" in frozen["blockers"]

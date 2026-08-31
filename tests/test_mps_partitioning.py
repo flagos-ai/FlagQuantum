@@ -70,9 +70,7 @@ def test_topology_aware_ownership_moves_hot_cut_off_node_boundary():
     assert tuple(wire for shard in ownership for wire in shard) == tuple(range(12))
 
 
-@pytest.mark.parametrize(
-    ("local_world_size", "multiplier"), ((0, 8), (3, 8), (2, 0))
-)
+@pytest.mark.parametrize(("local_world_size", "multiplier"), ((0, 8), (3, 8), (2, 0)))
 def test_topology_aware_ownership_rejects_invalid_topology(
     local_world_size, multiplier
 ):

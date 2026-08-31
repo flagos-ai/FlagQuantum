@@ -14,9 +14,9 @@ from .records import (
 )
 
 _REVERSE_SEGMENT_CACHE_MAX_ENTRIES = 128
-_REVERSE_SEGMENT_CACHE: OrderedDict[
-    tuple[str, bool], tuple[tuple[int, ...], ...]
-] = OrderedDict()
+_REVERSE_SEGMENT_CACHE: OrderedDict[tuple[str, bool], tuple[tuple[int, ...], ...]] = (
+    OrderedDict()
+)
 _REVERSE_SEGMENT_CACHE_HITS = 0
 _REVERSE_SEGMENT_CACHE_MISSES = 0
 _GRADIENT_BUCKET_CACHE_MAX_ENTRIES = 128
@@ -97,13 +97,10 @@ def cached_mps_reverse_segments(
         _REVERSE_SEGMENT_CACHE.move_to_end(key)
     else:
         _REVERSE_SEGMENT_CACHE_MISSES += 1
-        planned = plan_mps_reverse_segments(
-            tape, fuse_owner_local=fuse_owner_local
-        )
+        planned = plan_mps_reverse_segments(tape, fuse_owner_local=fuse_owner_local)
         by_identity = {id(record): index for index, record in enumerate(tape.records)}
         indices = tuple(
-            tuple(by_identity[id(record)] for record in segment)
-            for segment in planned
+            tuple(by_identity[id(record)] for record in segment) for segment in planned
         )
         _REVERSE_SEGMENT_CACHE[key] = indices
         while len(_REVERSE_SEGMENT_CACHE) > _REVERSE_SEGMENT_CACHE_MAX_ENTRIES:

@@ -536,8 +536,8 @@ def execute_torch_distributed_mps_reverse(
                         else None
                     )
                     for position, (candidate_index, _, left_wire) in enumerate(chunk):
-                        pair_leaf = pair_matrices[position].detach().requires_grad_(
-                            True
+                        pair_leaf = (
+                            pair_matrices[position].detach().requires_grad_(True)
                         )
                         if use_batched_truncated_split:
                             assert batched_splits is not None
@@ -863,8 +863,7 @@ def execute_torch_distributed_mps_reverse(
             static_qr_metadata_records += 1
             if rank == left_owner and (
                 tuple(metadata["input_shapes"]) != static_metadata["input_shapes"]
-                or tuple(metadata["output_shapes"])
-                != static_metadata["output_shapes"]
+                or tuple(metadata["output_shapes"]) != static_metadata["output_shapes"]
             ):
                 raise MPSReverseContractError(
                     "owner-local exact QR shapes differ from the static MPS plan"

@@ -49,6 +49,7 @@ class ReverseCheckpointBudget:
     device: torch.device
     saved_bytes: int = 0
     saved_factorization_bytes: int = 0
+
     def _collective_max(self, candidate: int) -> int:
         maximum = torch.tensor([candidate], dtype=torch.int64, device=self.device)
         dist.all_reduce(maximum, op=dist.ReduceOp.MAX)

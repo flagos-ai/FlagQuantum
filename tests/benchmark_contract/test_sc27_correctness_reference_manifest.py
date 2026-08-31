@@ -3,7 +3,12 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).parents[2] / "paper" / "sc27" / "build_correctness_reference_manifest.py"
+MODULE_PATH = (
+    Path(__file__).parents[2]
+    / "paper"
+    / "sc27"
+    / "build_correctness_reference_manifest.py"
+)
 SPEC = importlib.util.spec_from_file_location("sc27_reference_manifest", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

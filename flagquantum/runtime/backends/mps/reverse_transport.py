@@ -90,25 +90,26 @@ def begin_reverse_layer_halo_prefetch(
             requests = tuple(dist.batch_isend_irecv(operations))
     else:
         requests = tuple(dist.batch_isend_irecv(operations))
-    local_world_size = max(
-        1, int(os.environ.get("LOCAL_WORLD_SIZE", state.world_size))
-    )
+    local_world_size = max(1, int(os.environ.get("LOCAL_WORLD_SIZE", state.world_size)))
     payload_bytes = sum(value.numel() * value.element_size() for value in buffers)
     intra_node_payload_bytes = sum(
         value.numel() * value.element_size()
         for value, peer in zip(buffers, peers)
         if state.rank // local_world_size == peer // local_world_size
     )
-    return ReverseLayerHaloPrefetch(
-        requests=requests,
-        buffers=tuple(buffers),
-        received=received,
-        stream=stream,
-        message_count=len(operations),
-        payload_bytes=payload_bytes,
-        intra_node_payload_bytes=intra_node_payload_bytes,
-        inter_node_payload_bytes=payload_bytes - intra_node_payload_bytes,
-    ), indices
+    return (
+        ReverseLayerHaloPrefetch(
+            requests=requests,
+            buffers=tuple(buffers),
+            received=received,
+            stream=stream,
+            message_count=len(operations),
+            payload_bytes=payload_bytes,
+            intra_node_payload_bytes=intra_node_payload_bytes,
+            inter_node_payload_bytes=payload_bytes - intra_node_payload_bytes,
+        ),
+        indices,
+    )
 
 
 def finish_reverse_layer_halo_prefetch(

@@ -12,9 +12,7 @@ import flagquantum as fq
 
 
 def workload(device: torch.device, n_wires: int, value: float = 0.23):
-    theta = torch.tensor(
-        value, dtype=torch.float64, device=device, requires_grad=True
-    )
+    theta = torch.tensor(value, dtype=torch.float64, device=device, requires_grad=True)
     circuit = fq.Circuit(n_wires, dtype="complex128", device=device)
     for wire in range(n_wires):
         circuit.ry(wire, theta)
@@ -127,46 +125,41 @@ def main() -> None:
         dist.all_gather_object(rank_summaries, restarted.summary())
         if rank == 0:
             payload = {
-                        "schema": "flagquantum.mps_checkpoint_restart_cycles.v1",
-                        "optimizer": args.optimizer,
-                        "cycles": args.cycles,
-                        "n_wires": args.n_wires,
-                        "backend": args.backend,
-                        "device_type": device.type,
-                        "device_name": (
-                            torch.cuda.get_device_name(device)
-                            if device.type == "cuda"
-                            else "cpu"
-                        ),
-                        "world_size": dist.get_world_size(),
-                        "distribution_semantics": "sharded_across_ranks",
-                        "checkpoint_commit_protocol": (
-                            "immutable_rank_shards_atomic_manifest_v1"
-                        ),
-                        "loss_max_abs_error": max(
-                            abs(actual - expected)
-                            for actual, expected in zip(
-                                restarted_losses, reference.losses
-                            )
-                        ),
-                        "parameter_max_abs_error": float(
-                            (latest_parameter - reference_parameter)
-                            .detach()
-                            .abs()
-                            .max()
-                        ),
-                        "stale_generation_isolation": True,
-                        "rank_summaries": rank_summaries,
-                        "release_gate_allowed": False,
-                        "blockers": (
-                            ["accelerator_restart_development_evidence_only"]
-                            if device.type == "cuda"
-                            else [
-                                "cpu_semantic_evidence_only",
-                                "accelerator_restart_evidence_not_attached",
-                            ]
-                        ),
-                    }
+                "schema": "flagquantum.mps_checkpoint_restart_cycles.v1",
+                "optimizer": args.optimizer,
+                "cycles": args.cycles,
+                "n_wires": args.n_wires,
+                "backend": args.backend,
+                "device_type": device.type,
+                "device_name": (
+                    torch.cuda.get_device_name(device)
+                    if device.type == "cuda"
+                    else "cpu"
+                ),
+                "world_size": dist.get_world_size(),
+                "distribution_semantics": "sharded_across_ranks",
+                "checkpoint_commit_protocol": (
+                    "immutable_rank_shards_atomic_manifest_v1"
+                ),
+                "loss_max_abs_error": max(
+                    abs(actual - expected)
+                    for actual, expected in zip(restarted_losses, reference.losses)
+                ),
+                "parameter_max_abs_error": float(
+                    (latest_parameter - reference_parameter).detach().abs().max()
+                ),
+                "stale_generation_isolation": True,
+                "rank_summaries": rank_summaries,
+                "release_gate_allowed": False,
+                "blockers": (
+                    ["accelerator_restart_development_evidence_only"]
+                    if device.type == "cuda"
+                    else [
+                        "cpu_semantic_evidence_only",
+                        "accelerator_restart_evidence_not_attached",
+                    ]
+                ),
+            }
             text = json.dumps(payload, sort_keys=True)
             print(text, flush=True)
             if args.output is not None:

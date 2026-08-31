@@ -337,9 +337,7 @@ class TensorNetworkContractionPlan:
             target_slices=target_slices,
         )
 
-    def contract_slicing_plan(
-        self, slicing: TensorNetworkSlicingPlan
-    ) -> torch.Tensor:
+    def contract_slicing_plan(self, slicing: TensorNetworkSlicingPlan) -> torch.Tensor:
         """Execute a precomputed native or external slicing plan."""
 
         return _contract_nodes_with_slicing_plan(
@@ -726,9 +724,7 @@ class TensorNetworkExpectationPlan:
             target_slices=target_slices,
         )
 
-    def contract_slicing_plan(
-        self, slicing: TensorNetworkSlicingPlan
-    ) -> torch.Tensor:
+    def contract_slicing_plan(self, slicing: TensorNetworkSlicingPlan) -> torch.Tensor:
         """Execute a precomputed native or external slicing plan."""
 
         return _contract_nodes_with_slicing_plan(

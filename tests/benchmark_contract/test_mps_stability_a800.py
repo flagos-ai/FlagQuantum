@@ -25,9 +25,9 @@ def test_mps_100_step_a800_soak_is_stable_and_restart_exact(optimizer):
     assert payload["memory_stable"] is True
     assert payload["restart_equivalent"] is True
     assert payload["all_ranks_useful"] is True
-    assert payload["workload_sha256"] == hashlib.sha256(
-        WORKLOAD.read_bytes()
-    ).hexdigest()
+    assert (
+        payload["workload_sha256"] == hashlib.sha256(WORKLOAD.read_bytes()).hexdigest()
+    )
     records = payload["rank_records"]
     assert {record["rank"] for record in records} == set(range(8))
     assert all(len(record["memory_timeline"]) == 100 for record in records)

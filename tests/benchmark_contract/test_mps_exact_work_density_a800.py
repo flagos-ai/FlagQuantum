@@ -5,7 +5,9 @@ import pytest
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 ROOT = Path("benchmarks/results/local")
-NAME = "mps_training_128q_l3_b64_adam_{world_size}gpu_exact_prefetch_probe_20260805.json"
+NAME = (
+    "mps_training_128q_l3_b64_adam_{world_size}gpu_exact_prefetch_probe_20260805.json"
+)
 
 
 def _artifact(world_size: int) -> dict:
@@ -23,10 +25,13 @@ def test_exact_work_density_matrix_proves_speedup_without_release_promotion():
     conservative_floor = {2: 1.5, 4: 2.1, 8: 2.5, 16: 2.3}
     for world_size, sharded in artifacts.items():
         assert sharded["world_size"] == world_size
-        assert max(
-            abs(actual - expected)
-            for actual, expected in zip(sharded["losses"], single["losses"])
-        ) <= 2e-6
+        assert (
+            max(
+                abs(actual - expected)
+                for actual, expected in zip(sharded["losses"], single["losses"])
+            )
+            <= 2e-6
+        )
         assert sharded["work_density"]["latency_stress_workload"] is False
         assert sharded["scalability_claim_allowed"] is False
         assert sharded["release_gate_allowed"] is False

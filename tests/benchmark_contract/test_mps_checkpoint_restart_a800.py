@@ -28,16 +28,13 @@ def test_8xa800_checkpoint_restart_development_evidence_is_complete(optimizer):
         for item in payload["rank_summaries"]
     )
     assert payload["release_gate_allowed"] is False
-    assert payload["blockers"] == [
-        "accelerator_restart_development_evidence_only"
-    ]
+    assert payload["blockers"] == ["accelerator_restart_development_evidence_only"]
 
 
 @pytest.mark.parametrize("optimizer", ("sgd", "adam"))
 def test_2node_16xa800_checkpoint_restart_evidence_is_complete(optimizer):
     path = (
-        ROOT
-        / f"mps_checkpoint_restart_16xa800_2node_{optimizer}_10cycle_20260805.json"
+        ROOT / f"mps_checkpoint_restart_16xa800_2node_{optimizer}_10cycle_20260805.json"
     )
     payload = json.loads(path.read_text())
     assert payload["schema"] == "flagquantum.mps_checkpoint_restart_cycles.v1"
@@ -60,6 +57,4 @@ def test_2node_16xa800_checkpoint_restart_evidence_is_complete(optimizer):
         for item in payload["rank_summaries"]
     )
     assert payload["release_gate_allowed"] is False
-    assert payload["blockers"] == [
-        "accelerator_restart_development_evidence_only"
-    ]
+    assert payload["blockers"] == ["accelerator_restart_development_evidence_only"]

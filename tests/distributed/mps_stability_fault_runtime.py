@@ -53,9 +53,7 @@ def main():
     root = Path(os.environ.get("FQ_TEST_CHECKPOINT", tempfile.mkdtemp()))
     theta = torch.tensor(0.2, requires_grad=True)
     active_root = (
-        root / f"rank-{rank}-local"
-        if args.mode == "unshared_checkpoint_root"
-        else root
+        root / f"rank-{rank}-local" if args.mode == "unshared_checkpoint_root" else root
     )
     try:
         fq.train_distributed_mps(

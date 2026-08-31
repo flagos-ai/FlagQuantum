@@ -11,18 +11,29 @@ SPEC.loader.exec_module(MODULE)
 
 
 def hardware(world: int) -> list[dict]:
-    return [{
-        "rank": rank, "hostname": "node0" if rank < 8 else "node1",
-        "gpu_uuid": f"GPU-{rank}", "pci_bus_id": f"0000:{rank:02x}:00.0",
-        "device_name": "NVIDIA A800", "total_memory_bytes": 80 << 30,
-        "compute_capability": "8.0", "multiprocessor_count": 108,
-        "power_limit_watts": "400", "persistence_mode": "Enabled",
-        "compute_mode": "Default", "max_sm_clock_mhz": "1410",
-        "max_memory_clock_mhz": "1593", "cpu_affinity": [rank],
-        "torch_cpu_thread_count": 1, "identity_complete": True,
-        "communication_environment": {},
-        "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
-    } for rank in range(world)]
+    return [
+        {
+            "rank": rank,
+            "hostname": "node0" if rank < 8 else "node1",
+            "gpu_uuid": f"GPU-{rank}",
+            "pci_bus_id": f"0000:{rank:02x}:00.0",
+            "device_name": "NVIDIA A800",
+            "total_memory_bytes": 80 << 30,
+            "compute_capability": "8.0",
+            "multiprocessor_count": 108,
+            "power_limit_watts": "400",
+            "persistence_mode": "Enabled",
+            "compute_mode": "Default",
+            "max_sm_clock_mhz": "1410",
+            "max_memory_clock_mhz": "1593",
+            "cpu_affinity": [rank],
+            "torch_cpu_thread_count": 1,
+            "identity_complete": True,
+            "communication_environment": {},
+            "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
+        }
+        for rank in range(world)
+    ]
 
 
 def point(world: int, run: int, *, mode: str) -> dict:
@@ -95,14 +106,17 @@ def point(world: int, run: int, *, mode: str) -> dict:
         "memory": {"peak_bytes_by_rank": [1000] * world},
         "communication": {
             "bytes_by_rank": [0 if world == 1 else 100] * world,
-            "profile_by_rank": [{
-                "included_in_timing_samples": False,
-                "communication_kernels_observed": world > 1,
-                "communication_device_seconds_union": 0.0 if world == 1 else 0.1,
-                "overlap_fraction_of_communication": 0.0 if world == 1 else 0.5,
-                "gradient_all_reduce_kernel_count": 0 if world == 1 else 1,
-                "gradient_all_reduce_overlap_fraction": 0.0 if world == 1 else 0.5,
-            }] * world,
+            "profile_by_rank": [
+                {
+                    "included_in_timing_samples": False,
+                    "communication_kernels_observed": world > 1,
+                    "communication_device_seconds_union": 0.0 if world == 1 else 0.1,
+                    "overlap_fraction_of_communication": 0.0 if world == 1 else 0.5,
+                    "gradient_all_reduce_kernel_count": 0 if world == 1 else 1,
+                    "gradient_all_reduce_overlap_fraction": 0.0 if world == 1 else 0.5,
+                }
+            ]
+            * world,
             "profiling_step_excluded_from_timing_samples": True,
         },
         "correctness": {

@@ -11,17 +11,28 @@ SPEC.loader.exec_module(MODULE)
 
 
 def hardware() -> list[dict]:
-    return [{
-        "rank": 0, "hostname": "node0", "gpu_uuid": "GPU-0",
-        "pci_bus_id": "0000:00:00.0", "device_name": "NVIDIA A800",
-        "total_memory_bytes": 80 << 30, "compute_capability": "8.0",
-        "multiprocessor_count": 108, "power_limit_watts": "400",
-        "persistence_mode": "Enabled", "compute_mode": "Default",
-        "max_sm_clock_mhz": "1410", "max_memory_clock_mhz": "1593",
-        "cpu_affinity": [0], "torch_cpu_thread_count": 1,
-        "identity_complete": True, "communication_environment": {},
-        "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
-    }]
+    return [
+        {
+            "rank": 0,
+            "hostname": "node0",
+            "gpu_uuid": "GPU-0",
+            "pci_bus_id": "0000:00:00.0",
+            "device_name": "NVIDIA A800",
+            "total_memory_bytes": 80 << 30,
+            "compute_capability": "8.0",
+            "multiprocessor_count": 108,
+            "power_limit_watts": "400",
+            "persistence_mode": "Enabled",
+            "compute_mode": "Default",
+            "max_sm_clock_mhz": "1410",
+            "max_memory_clock_mhz": "1593",
+            "cpu_affinity": [0],
+            "torch_cpu_thread_count": 1,
+            "identity_complete": True,
+            "communication_environment": {},
+            "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
+        }
+    ]
 
 
 def valid_payload() -> dict:

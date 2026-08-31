@@ -28,10 +28,12 @@ def test_reports_missing_campaign_artifacts(tmp_path) -> None:
             "source_commit": "a" * 40,
             "container_digest": None,
         },
-        "correctness_references": {"n31-seed41": {
-            "path": str(reference),
-            "sha256": digest(reference.read_bytes()),
-        }},
+        "correctness_references": {
+            "n31-seed41": {
+                "path": str(reference),
+                "sha256": digest(reference.read_bytes()),
+            }
+        },
         "ready_run_count": 1,
         "runs": [
             {
@@ -74,10 +76,12 @@ def test_checks_actual_raw_log_bytes_not_only_payload_shape(tmp_path) -> None:
             "source_commit": "a" * 40,
             "container_digest": None,
         },
-        "correctness_references": {"n31-seed41": {
-            "path": str(reference),
-            "sha256": digest(reference.read_bytes()),
-        }},
+        "correctness_references": {
+            "n31-seed41": {
+                "path": str(reference),
+                "sha256": digest(reference.read_bytes()),
+            }
+        },
         "ready_run_count": 1,
         "runs": [
             {
@@ -105,18 +109,23 @@ def test_rejects_reference_sha_and_command_path_disagreement(tmp_path) -> None:
     log = tmp_path / "run.log"
     log.write_text("sealed\n")
     output = tmp_path / "run.json"
-    output.write_text(json.dumps({
-        "source_identity": {
-            "commit": "a" * 40,
-            "container_digest": "sha256:" + "b" * 64,
-            "source_dirty": False,
-            "raw_log_sha256": digest(log.read_bytes()),
-        },
-        "correctness": {"reference_artifact_sha256": reference_sha},
-    }))
+    output.write_text(
+        json.dumps(
+            {
+                "source_identity": {
+                    "commit": "a" * 40,
+                    "container_digest": "sha256:" + "b" * 64,
+                    "source_dirty": False,
+                    "raw_log_sha256": digest(log.read_bytes()),
+                },
+                "correctness": {"reference_artifact_sha256": reference_sha},
+            }
+        )
+    )
     references = {
         f"n{n_wires}-seed{seed}": {
-            "path": str(reference), "sha256": reference_sha,
+            "path": str(reference),
+            "sha256": reference_sha,
         }
         for n_wires in range(28, 33)
         for seed in (41, 42, 43)
@@ -134,15 +143,22 @@ def test_rejects_reference_sha_and_command_path_disagreement(tmp_path) -> None:
         },
         "correctness_references": references,
         "ready_run_count": 2,
-        "runs": [{
-            "id": "mismatch",
-            "campaign": "external_pennylane",
-            "structured_output": str(output),
-            "raw_log": str(log),
-            "container_digest": "sha256:" + "b" * 64,
-            "command": ["python", "runner.py", "--correctness-reference", str(wrong)],
-            "dependencies": [f"correctness-reference:{reference_sha}"],
-        }],
+        "runs": [
+            {
+                "id": "mismatch",
+                "campaign": "external_pennylane",
+                "structured_output": str(output),
+                "raw_log": str(log),
+                "container_digest": "sha256:" + "b" * 64,
+                "command": [
+                    "python",
+                    "runner.py",
+                    "--correctness-reference",
+                    str(wrong),
+                ],
+                "dependencies": [f"correctness-reference:{reference_sha}"],
+            }
+        ],
         "blocked_campaigns": [],
     }
     result = MODULE.audit(manifest)

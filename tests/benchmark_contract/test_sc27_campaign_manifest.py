@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-MODULE_PATH = Path(__file__).parents[2] / "paper" / "sc27" / "build_campaign_manifest.py"
+MODULE_PATH = (
+    Path(__file__).parents[2] / "paper" / "sc27" / "build_campaign_manifest.py"
+)
 SPEC = importlib.util.spec_from_file_location("sc27_campaign", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -77,12 +79,12 @@ def test_compiles_all_execution_ready_runs_without_duplicates() -> None:
     by_id = {run["id"]: run for run in result["runs"]}
     weak_28 = by_id["statevector-weak-w1-run1"]
     weak_32 = by_id["statevector-weak-w16-run1"]
-    assert weak_28["command"][weak_28["command"].index("--reference-json") + 1].endswith(
-        "n28-seed41.json"
-    )
-    assert weak_32["command"][weak_32["command"].index("--reference-json") + 1].endswith(
-        "n32-seed41.json"
-    )
+    assert weak_28["command"][
+        weak_28["command"].index("--reference-json") + 1
+    ].endswith("n28-seed41.json")
+    assert weak_32["command"][
+        weak_32["command"].index("--reference-json") + 1
+    ].endswith("n32-seed41.json")
 
 
 def test_multinode_and_ablation_commands_are_explicit() -> None:

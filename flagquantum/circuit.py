@@ -51,8 +51,8 @@ from .core.parameters import (
     parameter_names_in_value,
 )
 from .core.runtime_config import RuntimeConfig, get_runtime_config, runtime_config
-from .ops.matrices import GATE_MAT_DICT
 from .ops.complex_ops import complex_conj, complex_mul
+from .ops.matrices import GATE_MAT_DICT
 
 
 class Circuit:

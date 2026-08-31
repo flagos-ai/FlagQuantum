@@ -262,7 +262,7 @@ def test_quafu_provider_submits_sealed_physical_qasm_without_compile():
     provider = fq.QuafuProvider(
         base_url="https://quafu.test", token="secret", transport=transport
     )
-    qasm = "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\n"
+    qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\n'
 
     handle = provider.submit_physical_qasm(
         qasm, chip="Baihua", name="physical", shots=1024

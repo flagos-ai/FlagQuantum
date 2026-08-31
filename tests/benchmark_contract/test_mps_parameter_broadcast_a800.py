@@ -32,14 +32,9 @@ def test_a800_parameter_broadcast_bucket_evidence_is_complete(
     assert payload["exact_parameter_parity"] is True
     assert payload["distribution_semantics"] == "requires_runtime_summary"
     assert payload["intended_distribution_semantics"] == "sharded_across_ranks"
-    assert "per-rank memory evidence is not attached" in payload[
-        "scalability_blockers"
-    ]
+    assert "per-rank memory evidence is not attached" in payload["scalability_blockers"]
     assert payload["parameter_owner_policy"] == "round_robin_unique_owner"
-    assert (
-        payload["communication_protocol"]
-        == "bounded_dtype_padded_all_gather_single"
-    )
+    assert payload["communication_protocol"] == "bounded_dtype_padded_all_gather_single"
     assert payload["scalability_claim_allowed"] is False
     assert payload["scalability_blockers"]
     assert payload["release_gate_allowed"] is False

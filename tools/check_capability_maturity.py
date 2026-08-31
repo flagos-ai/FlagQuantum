@@ -204,9 +204,7 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
                     errors.append(f"{name}: {field} path does not exist: {value}")
         for claim in capability.get("performance_claims", ()):
             claim_id = (
-                claim.get("id", "<missing>")
-                if isinstance(claim, dict)
-                else "<missing>"
+                claim.get("id", "<missing>") if isinstance(claim, dict) else "<missing>"
             )
             if not isinstance(claim, dict):
                 errors.append(f"{name}: performance claim must be a table")

@@ -28,18 +28,29 @@ WORKLOAD = {
 
 
 def hardware(world: int) -> list[dict]:
-    return [{
-        "rank": rank, "hostname": "node0" if rank < 8 else "node1",
-        "gpu_uuid": f"GPU-{rank}", "pci_bus_id": f"0000:{rank:02x}:00.0",
-        "device_name": "NVIDIA A800", "total_memory_bytes": 80 << 30,
-        "compute_capability": "8.0", "multiprocessor_count": 108,
-        "power_limit_watts": "400", "persistence_mode": "Enabled",
-        "compute_mode": "Default", "max_sm_clock_mhz": "1410",
-        "max_memory_clock_mhz": "1593", "cpu_affinity": [rank],
-        "torch_cpu_thread_count": 1, "identity_complete": True,
-        "communication_environment": {},
-        "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
-    } for rank in range(world)]
+    return [
+        {
+            "rank": rank,
+            "hostname": "node0" if rank < 8 else "node1",
+            "gpu_uuid": f"GPU-{rank}",
+            "pci_bus_id": f"0000:{rank:02x}:00.0",
+            "device_name": "NVIDIA A800",
+            "total_memory_bytes": 80 << 30,
+            "compute_capability": "8.0",
+            "multiprocessor_count": 108,
+            "power_limit_watts": "400",
+            "persistence_mode": "Enabled",
+            "compute_mode": "Default",
+            "max_sm_clock_mhz": "1410",
+            "max_memory_clock_mhz": "1593",
+            "cpu_affinity": [rank],
+            "torch_cpu_thread_count": 1,
+            "identity_complete": True,
+            "communication_environment": {},
+            "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
+        }
+        for rank in range(world)
+    ]
 
 
 def identity(run: int) -> dict:
@@ -115,4 +126,6 @@ def test_rejects_workload_drift_or_unsealed_oom() -> None:
     result = MODULE.audit(ooms, completions)
     assert result["paper_ready_capacity_expansion"] is False
     assert any("raw_log_not_sealed" in item for item in result["blockers"])
-    assert any("parameter_count_not_frozen_value" in item for item in result["blockers"])
+    assert any(
+        "parameter_count_not_frozen_value" in item for item in result["blockers"]
+    )

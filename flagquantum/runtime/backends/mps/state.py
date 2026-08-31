@@ -306,9 +306,7 @@ def topology_aware_mps_ownership(
     n_wires = len(bonds) - 1
     penalties = tuple(int(value) for value in boundary_penalties)
     if not 1 <= world_size <= n_wires:
-        raise ValueError(
-            "topology-aware ownership requires 1 <= world_size <= n_wires"
-        )
+        raise ValueError("topology-aware ownership requires 1 <= world_size <= n_wires")
     if not 1 <= local_world_size <= world_size:
         raise ValueError("local_world_size must be between one and world_size")
     if world_size % local_world_size != 0:

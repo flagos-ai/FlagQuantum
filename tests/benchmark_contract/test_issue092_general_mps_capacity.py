@@ -145,8 +145,6 @@ def test_issue092_compiled_layer_has_measured_multi_owner_power_activity():
     # reward extra power draw after sparse-adjoint elimination removes useless
     # per-site autograd work; end-to-end latency is the efficiency gate.
     assert max(sum(power > 180 for power in values) for values in samples.values()) >= 2
-    assert max(
-        record["elapsed_seconds"] for record in payload["rank_records"]
-    ) < 75.0
+    assert max(record["elapsed_seconds"] for record in payload["rank_records"]) < 75.0
     assert set(per_gpu_peak) == set(range(8))
     assert min(per_gpu_peak.values()) > 200

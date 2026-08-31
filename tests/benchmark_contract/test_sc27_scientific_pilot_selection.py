@@ -3,7 +3,9 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).parents[2] / "paper" / "sc27" / "select_scientific_pilot.py"
+MODULE_PATH = (
+    Path(__file__).parents[2] / "paper" / "sc27" / "select_scientific_pilot.py"
+)
 SPEC = importlib.util.spec_from_file_location("sc27_pilot_selection", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

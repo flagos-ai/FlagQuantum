@@ -229,9 +229,7 @@ def render_readme_summary(data: dict[str, object]) -> str:
     for capability in capabilities.values():
         assert isinstance(capability, dict)
         boundary = str(capability["limitations"]).replace("|", "\\|")
-        rows.append(
-            f"| {capability['title']} | `{capability['level']}` | {boundary} |"
-        )
+        rows.append(f"| {capability['title']} | `{capability['level']}` | {boundary} |")
     rows.extend(
         [
             "",
@@ -280,12 +278,20 @@ def replace_generated_region(
     path: Path, name: str, body: str, source: str | None = None
 ) -> str:
     text = path.read_text(encoding="utf-8") if source is None else source
-    matches = [match for match in GENERATED_REGION.finditer(text) if match.group("name") == name]
+    matches = [
+        match
+        for match in GENERATED_REGION.finditer(text)
+        if match.group("name") == name
+    ]
     if len(matches) != 1:
-        raise ValueError(f"{path.relative_to(ROOT)}: expected one generated region {name}")
+        raise ValueError(
+            f"{path.relative_to(ROOT)}: expected one generated region {name}"
+        )
     match = matches[0]
     replacement = f"{match.group('begin')}\n{body.rstrip()}\n{match.group('end')}"
     return text[: match.start()] + replacement + text[match.end() :]
+
+
 def capability_api_is_available(
     module: object,
     stable: set[str],
@@ -308,6 +314,8 @@ def capability_api_is_available(
     except (AttributeError, ModuleNotFoundError):
         return False
     return True
+
+
 def render_capabilities(data: dict[str, object]) -> str:
     capabilities = data["capabilities"]
     assert isinstance(capabilities, dict)
@@ -399,7 +407,9 @@ def generated() -> dict[Path, str]:
     maturity = tomllib.loads(maturity_path.read_text(encoding="utf-8"))
     errors = maturity_errors(maturity, ROOT)
     if errors:
-        raise ValueError("invalid capability maturity matrix:\n- " + "\n- ".join(errors))
+        raise ValueError(
+            "invalid capability maturity matrix:\n- " + "\n- ".join(errors)
+        )
     readme = replace_generated_region(
         ROOT / "README.md", "CAPABILITY_SUMMARY", render_readme_summary(maturity)
     )
@@ -416,7 +426,8 @@ def generated() -> dict[Path, str]:
         ROOT / "docs/generated/OPERATOR_CAPABILITIES.md": render_operators(ops),
         ROOT / "docs/generated/CAPABILITIES.md": render_capabilities(maturity),
         ROOT / "README.md": readme,
-        ROOT / "docs/reference/KNOWN_LIMITATIONS.md": replace_generated_region(
+        ROOT
+        / "docs/reference/KNOWN_LIMITATIONS.md": replace_generated_region(
             ROOT / "docs/reference/KNOWN_LIMITATIONS.md",
             "KNOWN_LIMITATIONS",
             render_known_limitations(maturity),

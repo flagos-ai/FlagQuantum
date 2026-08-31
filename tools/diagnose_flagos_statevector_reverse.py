@@ -253,9 +253,9 @@ def main() -> int:
     ]
     payload = {
         "schema": "flagquantum_flagos_statevector_reverse_differential_v1",
-        "status": "passed"
-        if not primitive_failures and not reverse_failures
-        else "failed",
+        "status": (
+            "passed" if not primitive_failures and not reverse_failures else "failed"
+        ),
         "source_revision": _source_revision(),
         "torch_fl_source_revision": os.environ.get(
             "TORCH_FL_SOURCE_REVISION", "unavailable"

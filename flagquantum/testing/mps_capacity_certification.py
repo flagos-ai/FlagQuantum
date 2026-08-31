@@ -69,12 +69,8 @@ def require_general_mps_capacity(payload: Mapping[str, Any]) -> None:
     boundaries = payload.get("boundary_evidence", ())
     if len(boundaries) != world_size - 1 or {
         tuple(item["ranks"]) for item in boundaries
-    } != {
-        (rank, rank + 1) for rank in range(world_size - 1)
-    }:
-        raise MPSCapacityCertificationError(
-            "every adjacent rank boundary is required"
-        )
+    } != {(rank, rank + 1) for rank in range(world_size - 1)}:
+        raise MPSCapacityCertificationError("every adjacent rank boundary is required")
     if not all(item["forward"] and item["reverse"] for item in boundaries):
         raise MPSCapacityCertificationError(
             "boundary forward/reverse evidence is incomplete"
@@ -99,14 +95,13 @@ def require_general_mps_capacity(payload: Mapping[str, Any]) -> None:
     gradient_policy = payload.get("gradient_policy", "approximate")
     exact_capacity = gradient_policy == "exact"
     if not exact_capacity and not payload.get("bond_dimension_changed"):
-        raise MPSCapacityCertificationError("approximate capacity workload did not change a bond")
+        raise MPSCapacityCertificationError(
+            "approximate capacity workload did not change a bond"
+        )
     expected_budget = 0.0 if exact_capacity else ISSUE091_TRUNCATION_BUDGET
     if float(payload.get("truncation_error_budget", float("inf"))) != expected_budget:
         raise MPSCapacityCertificationError("capacity truncation budget is not pinned")
-    if (
-        float(payload.get("discarded_weight", float("inf")))
-        > expected_budget
-    ):
+    if float(payload.get("discarded_weight", float("inf"))) > expected_budget:
         raise MPSCapacityCertificationError("truncation error budget exceeded")
     records = payload.get("rank_records", ())
     if len(records) != world_size or {
@@ -160,11 +155,13 @@ def require_general_mps_capacity(payload: Mapping[str, Any]) -> None:
     sources = payload.get("source_artifacts", ())
     required_kinds = {"single_gpu_failure", "workload", "raw_log", "gpu_samples"}
     source_kinds = [item.get("kind") for item in sources]
-    if not required_kinds.issubset(source_kinds) or len(source_kinds) != len(
-        set(source_kinds)
-    ) or any(
-        not item.get("path") or len(str(item.get("sha256", ""))) != 64
-        for item in sources
+    if (
+        not required_kinds.issubset(source_kinds)
+        or len(source_kinds) != len(set(source_kinds))
+        or any(
+            not item.get("path") or len(str(item.get("sha256", ""))) != 64
+            for item in sources
+        )
     ):
         raise MPSCapacityCertificationError("capacity source provenance is incomplete")
     if not payload.get("topology_fingerprint") or not payload.get("command"):

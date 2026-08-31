@@ -9,6 +9,15 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
+from .conformance import (
+    InteropConformanceCaseResult,
+    InteropConformanceResult,
+    InteropConformanceViolation,
+    InteropRejectionCase,
+    InteropRoundTripCase,
+    run_adapter_conformance,
+    semantic_fingerprint,
+)
 from .contracts import (
     INTEROP_API_VERSION,
     InteropAdapter,
@@ -19,15 +28,6 @@ from .contracts import (
     InteropError,
     InteropExportResult,
     InteropImportResult,
-)
-from .conformance import (
-    InteropConformanceCaseResult,
-    InteropConformanceResult,
-    InteropConformanceViolation,
-    InteropRejectionCase,
-    InteropRoundTripCase,
-    run_adapter_conformance,
-    semantic_fingerprint,
 )
 from .registry import (
     DEFAULT_INTEROP_REGISTRY,

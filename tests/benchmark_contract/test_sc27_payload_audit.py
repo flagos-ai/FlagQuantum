@@ -11,17 +11,29 @@ SPEC.loader.exec_module(MODULE)
 
 
 def hardware(world: int) -> list[dict]:
-    return [{
-        "rank": rank, "hostname": "node0", "gpu_uuid": f"GPU-{rank}",
-        "pci_bus_id": f"0000:{rank:02x}:00.0", "device_name": "NVIDIA A800",
-        "total_memory_bytes": 80 << 30, "compute_capability": "8.0",
-        "multiprocessor_count": 108, "power_limit_watts": "400.00",
-        "persistence_mode": "Enabled", "compute_mode": "Default",
-        "max_sm_clock_mhz": "1410", "max_memory_clock_mhz": "1593",
-        "cpu_affinity": [rank], "torch_cpu_thread_count": 1,
-        "identity_complete": True, "communication_environment": {},
-        "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
-    } for rank in range(world)]
+    return [
+        {
+            "rank": rank,
+            "hostname": "node0",
+            "gpu_uuid": f"GPU-{rank}",
+            "pci_bus_id": f"0000:{rank:02x}:00.0",
+            "device_name": "NVIDIA A800",
+            "total_memory_bytes": 80 << 30,
+            "compute_capability": "8.0",
+            "multiprocessor_count": 108,
+            "power_limit_watts": "400.00",
+            "persistence_mode": "Enabled",
+            "compute_mode": "Default",
+            "max_sm_clock_mhz": "1410",
+            "max_memory_clock_mhz": "1593",
+            "cpu_affinity": [rank],
+            "torch_cpu_thread_count": 1,
+            "identity_complete": True,
+            "communication_environment": {},
+            "topology": {"captured": True, "nvidia_smi_topology_sha256": "e" * 64},
+        }
+        for rank in range(world)
+    ]
 
 
 def valid_payload() -> dict:
@@ -78,14 +90,17 @@ def valid_payload() -> dict:
         "memory": {"peak_bytes_by_rank": [10, 10]},
         "communication": {
             "bytes_by_rank": [20, 20],
-            "profile_by_rank": [{
-                "included_in_timing_samples": False,
-                "communication_kernels_observed": True,
-                "communication_device_seconds_union": 0.1,
-                "overlap_fraction_of_communication": 0.5,
-                "gradient_all_reduce_kernel_count": 1,
-                "gradient_all_reduce_overlap_fraction": 0.5,
-            }] * world,
+            "profile_by_rank": [
+                {
+                    "included_in_timing_samples": False,
+                    "communication_kernels_observed": True,
+                    "communication_device_seconds_union": 0.1,
+                    "overlap_fraction_of_communication": 0.5,
+                    "gradient_all_reduce_kernel_count": 1,
+                    "gradient_all_reduce_overlap_fraction": 0.5,
+                }
+            ]
+            * world,
             "profiling_step_excluded_from_timing_samples": True,
         },
         "rank_placement": hardware(world),
@@ -122,9 +137,7 @@ def test_rejects_short_protocol_and_rank_shape_mismatch() -> None:
     assert result["paper_ready_independent_run"] is False
     assert "protocol:warmup_below_5" in result["blockers"]
     assert "protocol:repetitions_below_20" in result["blockers"]
-    assert "shape:memory.peak_bytes_by_rank_length_not_world_size" in result[
-        "blockers"
-    ]
+    assert "shape:memory.peak_bytes_by_rank_length_not_world_size" in result["blockers"]
 
 
 def test_accepts_required_single_gpu_scaling_baseline() -> None:
@@ -133,14 +146,16 @@ def test_accepts_required_single_gpu_scaling_baseline() -> None:
     payload["rank_placement"] = hardware(1)
     payload["memory"]["peak_bytes_by_rank"] = [10]
     payload["communication"]["bytes_by_rank"] = [0]
-    payload["communication"]["profile_by_rank"] = [{
-        "included_in_timing_samples": False,
-        "communication_kernels_observed": False,
-        "communication_device_seconds_union": 0.0,
-        "overlap_fraction_of_communication": 0.0,
-        "gradient_all_reduce_kernel_count": 0,
-        "gradient_all_reduce_overlap_fraction": 0.0,
-    }]
+    payload["communication"]["profile_by_rank"] = [
+        {
+            "included_in_timing_samples": False,
+            "communication_kernels_observed": False,
+            "communication_device_seconds_union": 0.0,
+            "overlap_fraction_of_communication": 0.0,
+            "gradient_all_reduce_kernel_count": 0,
+            "gradient_all_reduce_overlap_fraction": 0.0,
+        }
+    ]
     payload["ownership"].update(
         {
             "primal_state": "single_device_fast_path",

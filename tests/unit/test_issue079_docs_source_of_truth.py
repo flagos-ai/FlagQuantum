@@ -77,9 +77,10 @@ def test_readme_and_known_limitations_are_generated_from_capability_matrix():
         assert path in expected
         assert path.read_text(encoding="utf-8") == expected[path]
     assert "mps-capacity-131072-chi768-20260806" in expected[ROOT / "README.md"]
-    assert "code `9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708`" in expected[
-        ROOT / "docs/reference/KNOWN_LIMITATIONS.md"
-    ]
+    assert (
+        "code `9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708`"
+        in expected[ROOT / "docs/reference/KNOWN_LIMITATIONS.md"]
+    )
 
 
 def test_generated_region_replacement_exposes_manual_edits(tmp_path):

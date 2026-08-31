@@ -78,9 +78,10 @@ def test_issue092_capacity_sources_are_finalized_and_verified(tmp_path):
     finalized = finalize_capacity_source_integrity(value, base_dir=tmp_path)
     require_capacity_source_integrity(finalized, base_dir=tmp_path)
     assert finalized["source_integrity_finalized"] is True
-    assert finalized["source_artifacts"][0]["sha256"] == hashlib.sha256(
-        (tmp_path / "source-0.bin").read_bytes()
-    ).hexdigest()
+    assert (
+        finalized["source_artifacts"][0]["sha256"]
+        == hashlib.sha256((tmp_path / "source-0.bin").read_bytes()).hexdigest()
+    )
     (tmp_path / "source-0.bin").write_bytes(b"tampered")
     with pytest.raises(MPSCapacityCertificationError, match="integrity mismatch"):
         require_capacity_source_integrity(finalized, base_dir=tmp_path)
@@ -93,9 +94,7 @@ def test_issue092_capacity_contract_accepts_exact_untruncated_capacity():
     value["discarded_weight"] = 0.0
     value["truncation_error_budget"] = 0.0
     for boundary in value["boundary_evidence"]:
-        boundary["bond_update"]["kept_rank"] = boundary["bond_update"][
-            "original_rank"
-        ]
+        boundary["bond_update"]["kept_rank"] = boundary["bond_update"]["original_rank"]
     require_general_mps_capacity(value)
 
 

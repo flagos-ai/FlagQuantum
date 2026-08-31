@@ -57,9 +57,7 @@ def test_batched_statevector_generic_kraus_matches_density_matrix():
 def test_batched_statevector_applies_readout_and_preserves_circuit_batch():
     inputs = torch.tensor([[1, 0], [0, 1]], dtype=torch.complex64)
     circuit = fq.Circuit(1, bsz=2, inputs=inputs)
-    model = fq.NoiseModel().add_readout(
-        0, fq.ReadoutError(((0.75, 0.25), (0.1, 0.9)))
-    )
+    model = fq.NoiseModel().add_readout(0, fq.ReadoutError(((0.75, 0.25), (0.1, 0.9))))
 
     result = fq.run_noisy_statevector(
         circuit, model, trajectories=3, trajectory_batch_size=2, seed=5
@@ -880,13 +878,12 @@ def test_distributed_selector_rejects_public_noisy_mps_candidate():
 
     assert selection.selected_mode == "noisy_statevector"
     assert candidates["noisy_mps"].eligible is False
-    assert "distributed_collective_not_implemented" in candidates[
-        "noisy_mps"
-    ].rejection_reasons
     assert (
-        candidates["noisy_mps"].metadata[
-            "distributed_public_execution_supported"
-        ]
+        "distributed_collective_not_implemented"
+        in candidates["noisy_mps"].rejection_reasons
+    )
+    assert (
+        candidates["noisy_mps"].metadata["distributed_public_execution_supported"]
         is False
     )
 

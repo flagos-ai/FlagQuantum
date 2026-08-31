@@ -47,9 +47,7 @@ class NoiseSelectorCalibrationRecord:
             mode=str(payload["mode"]),
             median_seconds=float(payload["median_seconds"]),
             executed_trajectories=None if executed is None else int(executed),
-            max_cuda_peak_allocated_bytes=int(
-                payload["max_cuda_peak_allocated_bytes"]
-            ),
+            max_cuda_peak_allocated_bytes=int(payload["max_cuda_peak_allocated_bytes"]),
             circuit_digest=str(payload["circuit_digest"]),
             noise_model_identity=str(payload["noise_model_identity"]),
             noise_kind=str(payload.get("noise_kind", "unspecified")),

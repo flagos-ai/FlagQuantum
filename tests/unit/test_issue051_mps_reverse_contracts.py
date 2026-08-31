@@ -56,9 +56,7 @@ def test_disjoint_layer_metadata_uses_one_fixed_tensor_collective(monkeypatch):
         }
         for index in (7, 8)
     }
-    decoded = all_reduce_reverse_layer_records(
-        payloads, ((7, 0), (8, 0)), reference
-    )
+    decoded = all_reduce_reverse_layer_records(payloads, ((7, 0), (8, 0)), reference)
     assert calls == 1
     assert set(decoded) == {7, 8}
     assert all(item["split_info"]["rank"] == 3 for item in decoded.values())
@@ -167,12 +165,8 @@ def test_static_exact_qr_record_derives_shapes_without_owner_metadata():
     }
 
 
-@pytest.mark.parametrize(
-    ("max_bond", "cutoff"), ((5, 0.0), (None, 1e-8), (5, 1e-8))
-)
-def test_static_exact_qr_record_preserves_dynamic_truncation_metadata(
-    max_bond, cutoff
-):
+@pytest.mark.parametrize(("max_bond", "cutoff"), ((5, 0.0), (None, 1e-8), (5, 1e-8)))
+def test_static_exact_qr_record_preserves_dynamic_truncation_metadata(max_bond, cutoff):
     assert (
         _static_exact_qr_record(
             (16, 3, 2, 5),
@@ -288,12 +282,8 @@ def test_reverse_segment_cache_is_bounded_and_maps_current_tape_records():
         saved_tensor_bytes=128,
         checkpoint_policy=MPSReverseCheckpointPolicy(),
     )
-    first, first_hit = cached_mps_reverse_segments(
-        first_tape, fuse_owner_local=True
-    )
-    second, second_hit = cached_mps_reverse_segments(
-        second_tape, fuse_owner_local=True
-    )
+    first, first_hit = cached_mps_reverse_segments(first_tape, fuse_owner_local=True)
+    second, second_hit = cached_mps_reverse_segments(second_tape, fuse_owner_local=True)
     assert first_hit is False
     assert second_hit is True
     assert first == second

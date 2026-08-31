@@ -47,30 +47,39 @@ def test_catalog_accepts_exact_trajectory_matrix(tmp_path: Path) -> None:
                 ):
                     for optimizer in ("sgd", "adam"):
                         count = n_wires * depth
-                        trajectory = [{
-                            "step": step,
-                            "parameters_before": [0.1] * count,
-                            "value": 0.2,
-                            "gradients": [0.0] * count,
-                            "parameters_after": [0.1] * count,
-                        } for step in range(10)]
+                        trajectory = [
+                            {
+                                "step": step,
+                                "parameters_before": [0.1] * count,
+                                "value": 0.2,
+                                "gradients": [0.0] * count,
+                                "parameters_after": [0.1] * count,
+                            }
+                            for step in range(10)
+                        ]
                         payload = {
                             "world_size": 1,
                             "node_count": 1,
-                            "rank_placement": [{
-                                "rank": 0,
-                                "gpu_uuid": "GPU-test",
-                                "pci_bus_id": "0000:00:00.0",
-                                "identity_complete": True,
-                                "topology": {
-                                    "captured": True,
-                                    "nvidia_smi_topology_sha256": "d" * 64,
-                                },
-                            }],
+                            "rank_placement": [
+                                {
+                                    "rank": 0,
+                                    "gpu_uuid": "GPU-test",
+                                    "pci_bus_id": "0000:00:00.0",
+                                    "identity_complete": True,
+                                    "topology": {
+                                        "captured": True,
+                                        "nvidia_smi_topology_sha256": "d" * 64,
+                                    },
+                                }
+                            ],
                             "workload": {
-                                "name": name, "n_wires": n_wires,
-                                "layers": depth, "dtype": dtype, "seed": 41,
-                                "optimizer": optimizer, "learning_rate": 0.01,
+                                "name": name,
+                                "n_wires": n_wires,
+                                "layers": depth,
+                                "dtype": dtype,
+                                "seed": 41,
+                                "optimizer": optimizer,
+                                "learning_rate": 0.01,
                             },
                             "protocol": {"warmup": 0, "repetitions": 10},
                             "correctness": {"passed": True, "trajectory": trajectory},

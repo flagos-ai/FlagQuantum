@@ -17,9 +17,7 @@ def test_seal_binds_payload_to_log(tmp_path: Path) -> None:
     raw_log.write_text("rank0 complete\n", encoding="utf-8")
     payload = {"source_identity": {"raw_log_sha256": None}}
     sealed = MODULE.seal(payload, raw_log=raw_log)
-    assert sealed["source_identity"]["raw_log_sha256"] == MODULE.file_sha256(
-        raw_log
-    )
+    assert sealed["source_identity"]["raw_log_sha256"] == MODULE.file_sha256(raw_log)
     assert sealed["source_identity"]["raw_log_path_hint"] == "run.log"
 
 

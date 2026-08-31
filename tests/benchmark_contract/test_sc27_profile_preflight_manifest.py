@@ -7,7 +7,10 @@ import pytest
 
 
 def _module():
-    path = Path(__file__).resolve().parents[2] / "paper/sc27/build_profile_preflight_manifest.py"
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "paper/sc27/build_profile_preflight_manifest.py"
+    )
     spec = importlib.util.spec_from_file_location("sc27_profile_preflight", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

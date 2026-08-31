@@ -35,7 +35,9 @@ def merge_trajectory_checkpoints(
             or checkpoint.circuit_digest != circuit_digest
             or checkpoint.execution_metadata != execution_metadata
         ):
-            raise ValueError("trajectory checkpoints have incompatible execution identity")
+            raise ValueError(
+                "trajectory checkpoints have incompatible execution identity"
+            )
         completed.extend(checkpoint.completed_ids)
         failures.extend(checkpoint.failures)
         accumulator.merge(checkpoint.accumulator())

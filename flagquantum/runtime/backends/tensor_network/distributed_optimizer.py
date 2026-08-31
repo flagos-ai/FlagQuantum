@@ -108,7 +108,8 @@ def execute_rank_owned_tn_sgd_step(
         {
             "rank": owner,
             "parameter_indices": tuple(
-                index for index, assigned_owner in enumerate(owners)
+                index
+                for index, assigned_owner in enumerate(owners)
                 if assigned_owner == owner
             ),
             "ownership": "rank_owned_optimizer_update",
@@ -124,7 +125,9 @@ def execute_rank_owned_tn_sgd_step(
             raise ValueError(f"gradient device mismatch for parameter {index}")
         if parameter.dtype != gradient.dtype:
             raise ValueError(f"gradient dtype mismatch for parameter {index}")
-    if not bool(torch.stack(tuple(torch.isfinite(item).all() for item in gradients)).all()):
+    if not bool(
+        torch.stack(tuple(torch.isfinite(item).all() for item in gradients)).all()
+    ):
         raise ValueError("optimizer gradients contain a nonfinite value")
 
     reference = parameters[0]
@@ -132,7 +135,9 @@ def execute_rank_owned_tn_sgd_step(
         parameter.device != reference.device or parameter.dtype != reference.dtype
         for parameter in parameters
     ):
-        raise ValueError("packed rank-owned SGD requires one parameter dtype and device")
+        raise ValueError(
+            "packed rank-owned SGD requires one parameter dtype and device"
+        )
     chunk_size, offsets = _packed_owner_layout(parameters, owners, world_size)
 
     if any(parameter.is_cuda for parameter in parameters):
@@ -157,7 +162,9 @@ def execute_rank_owned_tn_sgd_step(
         dist.all_gather_single(gathered, local_chunk, group=process_group)
         for index, (parameter, owner) in enumerate(zip(parameters, owners)):
             start = owner * chunk_size + offsets[index]
-            parameter.copy_(gathered[start : start + parameter.numel()].view_as(parameter))
+            parameter.copy_(
+                gathered[start : start + parameter.numel()].view_as(parameter)
+            )
         if not bool(
             torch.stack(tuple(torch.isfinite(item).all() for item in parameters)).all()
         ):

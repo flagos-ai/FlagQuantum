@@ -131,7 +131,10 @@ def validate(
                 ValidationIssue(
                     code="BACKEND_CAPACITY_EXCEEDED",
                     message=f"program needs {ir.n_wires} wires but backend exposes {backend.n_wires}",
-                    context={"required_wires": ir.n_wires, "available_wires": backend.n_wires},
+                    context={
+                        "required_wires": ir.n_wires,
+                        "available_wires": backend.n_wires,
+                    },
                     suggestions=({"action": "select_larger_backend"},),
                 )
             )
@@ -153,7 +156,10 @@ def validate(
                 ValidationIssue(
                     code="BACKEND_GATE_UNSUPPORTED",
                     message="backend does not support one or more program gates",
-                    context={"unsupported_gates": unsupported, "basis_gates": sorted(basis_gates)},
+                    context={
+                        "unsupported_gates": unsupported,
+                        "basis_gates": sorted(basis_gates),
+                    },
                     suggestions=({"action": "compile_to_backend_basis"},),
                 )
             )

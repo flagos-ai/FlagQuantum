@@ -137,13 +137,15 @@ def test_flagos_conformance_serializes_collective_runtime_failure():
 
 def test_flagos_conformance_distinguishes_reduce_scatter_from_workload_route():
     checks = tuple(
-        replace(
-            item,
-            passed=False,
-            error="TypeError: complex dtype unsupported",
+        (
+            replace(
+                item,
+                passed=False,
+                error="TypeError: complex dtype unsupported",
+            )
+            if item.primitive == "reduce_scatter_tensor"
+            else item
         )
-        if item.primitive == "reduce_scatter_tensor"
-        else item
         for item in _collective_checks()
     )
     report = replace(_report(), collective_checks=checks)

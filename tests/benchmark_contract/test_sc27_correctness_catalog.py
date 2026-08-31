@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pytest
 
-MODULE_PATH = Path(__file__).parents[2] / "paper" / "sc27" / "build_correctness_catalog.py"
+MODULE_PATH = (
+    Path(__file__).parents[2] / "paper" / "sc27" / "build_correctness_catalog.py"
+)
 SPEC = importlib.util.spec_from_file_location("sc27_correctness_catalog", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -35,9 +37,7 @@ def payload(n_wires: int, seed: int) -> dict:
         "node_count": 2 if n_wires == 32 else 1,
         "rank_placement": placement,
         "distribution_semantics": (
-            "single_device_fast_path"
-            if n_wires == 28
-            else "sharded_across_mpi_ranks"
+            "single_device_fast_path" if n_wires == 28 else "sharded_across_mpi_ranks"
         ),
         "workload": {
             "n_wires": n_wires,

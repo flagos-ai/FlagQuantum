@@ -101,7 +101,9 @@ def test_topology_snapshot_is_content_addressed(monkeypatch) -> None:
     assert len(result["nvidia_smi_topology_sha256"]) == 64
 
 
-def test_source_identity_uses_validated_container_environment(monkeypatch, tmp_path) -> None:
+def test_source_identity_uses_validated_container_environment(
+    monkeypatch, tmp_path
+) -> None:
     monkeypatch.setattr(metadata, "_command_output", lambda command, cwd=None: None)
     monkeypatch.setenv("FQ_SC27_SOURCE_COMMIT", "a" * 40)
     monkeypatch.setenv("FQ_SC27_SOURCE_DIRTY", "false")
@@ -109,7 +111,9 @@ def test_source_identity_uses_validated_container_environment(monkeypatch, tmp_p
     assert metadata.source_dirty(tmp_path) is False
 
 
-def test_source_identity_rejects_invalid_container_commit(monkeypatch, tmp_path) -> None:
+def test_source_identity_rejects_invalid_container_commit(
+    monkeypatch, tmp_path
+) -> None:
     monkeypatch.setattr(metadata, "_command_output", lambda command, cwd=None: None)
     monkeypatch.setenv("FQ_SC27_SOURCE_COMMIT", "not-a-commit")
     assert metadata.source_commit(tmp_path) is None

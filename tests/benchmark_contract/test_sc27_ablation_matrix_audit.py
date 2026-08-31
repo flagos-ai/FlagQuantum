@@ -62,9 +62,7 @@ def valid_matrix() -> list[dict]:
             item["ablation"]["async_gradient_collective_count_max"] = 0
             item["ablation"]["overlapped_gradient_collective_count_max"] = 0
             item["ablation"]["profile_overlap_fraction_max"] = 0.0
-            item["ablation"][
-                "profile_gradient_all_reduce_overlap_fraction_max"
-            ] = 0.0
+            item["ablation"]["profile_gradient_all_reduce_overlap_fraction_max"] = 0.0
         elif identifier == "gradient_bucketing_off":
             item["ablation"]["gradient_collective_count_max"] = 248
         elif identifier == "unique_optimizer_ownership_off":
@@ -87,11 +85,14 @@ def test_accepts_complete_single_factor_matrix() -> None:
 def test_rejects_label_only_overlap_ablation() -> None:
     payloads = valid_matrix()
     overlap = next(
-        item for item in payloads if item["ablation"]["id"] == "communication_overlap_off"
+        item
+        for item in payloads
+        if item["ablation"]["id"] == "communication_overlap_off"
     )
     overlap["ablation"]["async_gradient_collective_count_max"] = 8
     result = MODULE.audit(payloads)
     assert result["paper_ready_ablation_matrix"] is False
-    assert "mechanism:communication_overlap_off:async_collectives_present" in result[
-        "blockers"
-    ]
+    assert (
+        "mechanism:communication_overlap_off:async_collectives_present"
+        in result["blockers"]
+    )

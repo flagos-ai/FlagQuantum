@@ -602,10 +602,12 @@ def run_adapt_vqe(
     hamiltonian: Hamiltonian | None = None,
     *,
     energy_function: Callable[[Circuit], torch.Tensor] | None = None,
-    screening_function: Callable[
-        [tuple[object, ...], torch.Tensor, tuple[object, ...]], Sequence[float]
-    ]
-    | None = None,
+    screening_function: (
+        Callable[
+            [tuple[object, ...], torch.Tensor, tuple[object, ...]], Sequence[float]
+        ]
+        | None
+    ) = None,
     max_adapt_iterations: int = 8,
     optimization_steps: int = 50,
     lr: float = 0.05,
@@ -638,9 +640,7 @@ def run_adapt_vqe(
     if tolerance < 0.0:
         raise ValueError("gradient_tolerance must be non-negative")
     if (hamiltonian is None) == (energy_function is None):
-        raise ValueError(
-            "provide exactly one of hamiltonian or energy_function"
-        )
+        raise ValueError("provide exactly one of hamiltonian or energy_function")
 
     selected_indices: list[int] = []
     selected_operators: list[object] = []
@@ -720,9 +720,7 @@ def run_adapt_vqe(
             optimizer.step()
             history.append(float(loss.detach()))
         optimization_seconds = perf_counter() - optimization_started
-        energy_after = float(
-            energy(tuple(selected_operators), parameters).detach()
-        )
+        energy_after = float(energy(tuple(selected_operators), parameters).detach())
         full_gradients = [0.0] * len(pool)
         for pool_index, gradient in zip(available, gradients):
             full_gradients[pool_index] = gradient

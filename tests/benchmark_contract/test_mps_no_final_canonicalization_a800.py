@@ -42,10 +42,13 @@ def test_no_final_canonicalization_a800_evidence_is_complete(
     assert none["workload"]["canonicalization_policy"] == "none"
     assert dirty["workload_sha256"] != none["workload_sha256"]
     assert dirty["p50_seconds"] / none["p50_seconds"] >= 1.05
-    assert max(
-        abs(actual - expected)
-        for actual, expected in zip(none["losses"], dirty["losses"])
-    ) <= 2e-5
+    assert (
+        max(
+            abs(actual - expected)
+            for actual, expected in zip(none["losses"], dirty["losses"])
+        )
+        <= 2e-5
+    )
     dirty_step = dirty["training"]["step_metrics"][-1]
     none_step = none["training"]["step_metrics"][-1]
     assert none_step["qr_factorization_count"] < dirty_step["qr_factorization_count"]

@@ -19,10 +19,7 @@ MODULE = load(
     "sc27_science_matrix",
 )
 FIXTURE = load(
-    ROOT
-    / "tests"
-    / "benchmark_contract"
-    / "test_sc27_scientific_payload_audit.py",
+    ROOT / "tests" / "benchmark_contract" / "test_sc27_scientific_payload_audit.py",
     "sc27_science_fixture",
 )
 
@@ -69,9 +66,7 @@ def point(world: int, run: int, *, success: bool = True) -> dict:
 
 def matrix() -> list[dict]:
     return [
-        point(world, run)
-        for world in MODULE.WORLD_SIZES
-        for run in MODULE.RUN_TO_SEED
+        point(world, run) for world in MODULE.WORLD_SIZES for run in MODULE.RUN_TO_SEED
     ]
 
 
