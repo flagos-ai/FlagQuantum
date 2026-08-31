@@ -28,6 +28,15 @@ FORBIDDEN_SUFFIXES = {
     ".pth",
 }
 MAX_DISTRIBUTION_BYTES = 5_000_000
+REQUIRED_MEMBER_SUFFIXES = (
+    "flagquantum/numerics/double-single-contract.toml",
+    "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json",
+    "flagquantum/runtime/profiles/split_real_imag_statevector_p1.json",
+    "flagquantum/runtime/profiles/split_real_imag_statevector_p2_precision.json",
+    "flagquantum/runtime/profiles/split_real_imag_statevector_p3_double_single.json",
+    "flagquantum/runtime/profiles/split_real_imag_statevector_p4_device_double_single.json",
+    "flagquantum/runtime/profiles/statevector_local_p0.json",
+)
 
 
 def _members(path: Path) -> tuple[str, ...]:
@@ -48,6 +57,14 @@ def _forbidden(member: str) -> bool:
     )
 
 
+def _missing_required_members(members: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        suffix
+        for suffix in REQUIRED_MEMBER_SUFFIXES
+        if not any(member.endswith(suffix) for member in members)
+    )
+
+
 def _wheel_metadata(path: Path) -> tuple[str, ...]:
     with zipfile.ZipFile(path) as archive:
         metadata_name = next(
@@ -60,6 +77,10 @@ def _wheel_metadata(path: Path) -> tuple[str, ...]:
 def artifact_errors(path: Path) -> tuple[str, ...]:
     members = _members(path)
     errors = [f"forbidden member: {name}" for name in members if _forbidden(name)]
+    errors.extend(
+        f"required package resource is missing: {name}"
+        for name in _missing_required_members(members)
+    )
     if path.stat().st_size > MAX_DISTRIBUTION_BYTES:
         errors.append(f"artifact exceeds {MAX_DISTRIBUTION_BYTES} bytes")
     if not any(Path(name).name.startswith("LICENSE") for name in members):

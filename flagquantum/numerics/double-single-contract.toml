@@ -1,0 +1,49 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+schema = "flagquantum_double_single_contract_v1"
+maturity = "experimental"
+implementation = "flagquantum.numerics.double_single"
+storage_dtype = "float32"
+compute_dtype = "float32"
+reference_dtype = "float64_and_complex128_cpu_only"
+runtime_integration = "selective_p2_full_state_p3_and_device_gates_p4"
+default_selection_allowed = false
+torch_fl_dependency_allowed = false
+external_dependency_allowed = false
+
+[arithmetic]
+representation = "unevaluated_normalized_high_plus_low"
+splitter = 4097.0
+sum_algorithm = "knuth_two_sum"
+renormalization_algorithm = "knuth_two_sum_general"
+product_algorithm = "dekker_split_product"
+reduction_order = "deterministic_input_order"
+autograd = "pytorch_composed_operations"
+
+[scope]
+supported = ["real_add", "real_subtract", "real_multiply", "real_reciprocal", "real_reciprocal_sqrt", "real_sqrt", "real_sin_cos_bounded", "real_sum", "real_dot", "complex_add", "complex_multiply", "complex_abs_squared", "split_statevector_pauli_inner_product", "split_statevector_hamiltonian_sum", "split_statevector_parameter_shift_accumulation", "split_statevector_full_storage", "split_statevector_gate_application", "split_statevector_periodic_normalization", "split_statevector_device_gate_generation"]
+unsupported = ["unbounded_device_trigonometry", "optimized_gate_kernel_dispatch", "distributed_collectives", "optimizer_master_state", "compiled_execution", "torch_fl_provider_ownership", "vendor_certification"]
+
+[thresholds.device_trigonometry]
+max_absolute_error = 1e-11
+min_improvement_factor = 10000.0
+
+[thresholds.cancellation_sum]
+max_absolute_error = 0.0
+min_improvement_factor = 1000000.0
+
+[thresholds.cancellation_dot]
+max_absolute_error = 0.0
+min_improvement_factor = 1000000.0
+
+[thresholds.complex_phase_chain]
+max_absolute_error = 1e-10
+min_improvement_factor = 100.0
+
+[verification]
+contract = "tests/unit/test_double_single_contract.py"
+primitives = "tests/unit/test_double_single.py"
+conformance = "tests/test_double_single_conformance.py"
+policy = "tools/check_double_single_contract.py"
+p2_runtime_contract = "contracts/split-real-imag-statevector-p2-precision-contract.toml"
+p3_runtime_contract = "contracts/split-real-imag-statevector-p3-double-single-contract.toml"
+p4_runtime_contract = "contracts/split-real-imag-statevector-p4-device-double-single-contract.toml"

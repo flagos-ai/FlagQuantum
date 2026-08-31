@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib import resources
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,17 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_double_single_contract_is_current() -> None:
     contract = load_toml(ROOT / "contracts" / "double-single-contract.toml")
     assert contract_errors(contract) == ()
+
+
+def test_packaged_double_single_contract_matches_repository_source() -> None:
+    packaged = (
+        resources.files("flagquantum.numerics")
+        .joinpath("double-single-contract.toml")
+        .read_bytes()
+    )
+    repository = (ROOT / "contracts" / "double-single-contract.toml").read_bytes()
+
+    assert packaged == repository
 
 
 def test_contract_rejects_runtime_and_default_selection_claims() -> None:

@@ -3,7 +3,11 @@ from pathlib import Path
 import pytest
 
 from tools.artifact_manifest import main as manifest_main
-from tools.verify_distribution_artifacts import _forbidden
+from tools.verify_distribution_artifacts import (
+    REQUIRED_MEMBER_SUFFIXES,
+    _forbidden,
+    _missing_required_members,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -50,6 +54,13 @@ def test_distribution_quarantine_rejects_repo_only_members():
     assert _forbidden("source/tests/test_api.py")
     assert _forbidden("source/examples/data.parquet")
     assert not _forbidden("flagquantum/core/ir.py")
+
+
+def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None:
+    assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES) == ()
+    assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES[1:]) == (
+        "flagquantum/numerics/double-single-contract.toml",
+    )
 
 
 def test_artifact_manifest_records_checksum(tmp_path):

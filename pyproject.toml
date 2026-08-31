@@ -109,7 +109,10 @@ include = ["flagquantum*"]
 exclude = ["tests*", "docs*", "scripts*", "examples*"]
 
 [tool.setuptools.package-data]
-flagquantum = ["runtime/profiles/*.json"]
+flagquantum = [
+    "numerics/double-single-contract.toml",
+    "runtime/profiles/*.json",
+]
 
 [tool.setuptools.dynamic]
 version = {attr = "flagquantum.version.__version__"}

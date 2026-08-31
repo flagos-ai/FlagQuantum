@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from importlib import resources
 from typing import Any
 
 import torch
@@ -23,7 +23,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10
     import tomli as tomllib
 
 CONFORMANCE_VERSION = "1.0"
-ROOT = Path(__file__).resolve().parents[2]
+_CONTRACT_RESOURCE = "double-single-contract.toml"
 
 
 @dataclass(frozen=True)
@@ -87,7 +87,9 @@ class DoubleSingleConformanceReport:
 
 def _thresholds() -> dict[str, dict[str, float]]:
     contract = tomllib.loads(
-        (ROOT / "contracts" / "double-single-contract.toml").read_text(encoding="utf-8")
+        resources.files("flagquantum.numerics")
+        .joinpath(_CONTRACT_RESOURCE)
+        .read_text(encoding="utf-8")
     )
     return {
         name: {key: float(value) for key, value in raw.items()}
