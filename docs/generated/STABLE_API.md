@@ -7,6 +7,7 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.Circuit` | Stable | executable contract |
 | `fq.CircuitIR` | Stable | executable contract |
 | `fq.ExecutionOptions` | Stable | executable contract |
+| `fq.ExecutionPlan` | Stable | executable contract |
 | `fq.ExecutionResult` | Stable | executable contract |
 | `fq.IRSerializationError` | Stable | executable contract |
 | `fq.IRValidationError` | Stable | executable contract |

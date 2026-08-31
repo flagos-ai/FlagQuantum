@@ -23,6 +23,7 @@ __all__ = (
     "Circuit",
     "CircuitIR",
     "ExecutionOptions",
+    "ExecutionPlan",
     "ExecutionResult",
     "IRSerializationError",
     "IRValidationError",
@@ -68,6 +69,8 @@ def __getattr__(name: str) -> Any:
         return import_module(".experimental", __name__)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
+    if name == "ExecutionPlan":
+        return getattr(import_module(".compilation.models", __name__), name)
     if name in {
         "ExecutionOptions",
         "ExecutionResult",

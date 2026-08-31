@@ -196,6 +196,8 @@ def validate() -> tuple[str, ...]:
             for name in plan_contract.get("proposed_signatures", {})
             if "." not in name
         )
+    if plan_contract.get("root_manifest_authorized") is True:
+        authorized_changes.add(str(plan_contract["root_addition"]))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -235,6 +237,8 @@ def validate() -> tuple[str, ...]:
             expected_signatures=expected_signatures,
         )
     )
+    if plan_contract.get("root_manifest_authorized") is True:
+        errors.extend(_validate_authorized_execution_plan(plan_contract, names))
     return tuple(errors)
 
 
@@ -272,6 +276,31 @@ def _validate_authorized_execution_options(
                 f"authorized API signature changed: {name}: "
                 f"{actual_signature} != {expected_signature}"
             )
+    return errors
+
+
+def _validate_authorized_execution_plan(
+    contract: dict[str, Any], names: list[str]
+) -> list[str]:
+    import flagquantum as fq
+    from flagquantum.compilation.models import ExecutionPlan
+
+    errors: list[str] = []
+    root_name = str(contract["root_addition"])
+    if root_name not in names or root_name not in fq.__all__:
+        errors.append(f"authorized root API {root_name} is missing")
+        return errors
+    if fq.ExecutionPlan is not ExecutionPlan:
+        errors.append("fq.ExecutionPlan must be the canonical compilation model")
+    dataclass_fields = {field.name for field in dataclasses.fields(ExecutionPlan)}
+    for entry in contract["contract"]["properties"]:
+        name = str(entry["name"])
+        descriptor = getattr(ExecutionPlan, name, None)
+        if name not in dataclass_fields and not isinstance(descriptor, property):
+            errors.append(f"ExecutionPlan stable property is missing: {name}")
+    for name in contract["contract"]["methods"]:
+        if not callable(getattr(ExecutionPlan, str(name), None)):
+            errors.append(f"ExecutionPlan stable method is missing: {name}")
     return errors
 
 

@@ -14,6 +14,7 @@ MANIFEST = ROOT / "docs" / "public_api_v1.json"
 CANDIDATE = ROOT / "contracts" / "public-api-v1-candidate.json"
 BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
 EXECUTION_OPTIONS = ROOT / "contracts" / "execution-options-v1-candidate.json"
+EXECUTION_PLAN = ROOT / "contracts" / "execution-plan-v1-candidate.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -51,6 +52,9 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
         if options_contract["root_manifest_authorized"] is True
         else set()
     )
+    plan_contract = _load(EXECUTION_PLAN)
+    if plan_contract["root_manifest_authorized"] is True:
+        authorized_additions.add(plan_contract["root_addition"])
     assert set(classified) == set(exports) | authorized_additions
 
 

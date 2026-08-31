@@ -21,24 +21,26 @@ def _load(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_execution_plan_candidate_records_implementation_authority_only() -> None:
+def test_execution_plan_candidate_records_root_authority_without_freeze() -> None:
     candidate = _load(CANDIDATE)
 
-    assert candidate["status"] == "implemented_pending_root_approval"
+    assert candidate["status"] == "root_approved_pending_freeze"
     assert candidate["implementation_authorized"] is True
-    assert candidate["root_manifest_authorized"] is False
+    assert candidate["root_manifest_authorized"] is True
     assert candidate["rules"]["candidate_is_frozen_contract"] is False
 
 
-def test_execution_plan_remains_a_planned_root_addition() -> None:
+def test_execution_plan_is_the_approved_root_addition() -> None:
     candidate = _load(CANDIDATE)
     public_candidate = _load(PUBLIC_CANDIDATE)
     manifest = _load(MANIFEST)
 
     assert candidate["root_addition"] == "ExecutionPlan"
-    assert "ExecutionPlan" in public_candidate["stable_core"]["planned_additions"]
-    assert "ExecutionPlan" not in manifest["stable_exports"]
-    assert "ExecutionPlan" not in fq.__all__
+    assert "ExecutionPlan" in public_candidate["stable_core"]["retain"]
+    assert "ExecutionPlan" not in public_candidate["stable_core"]["planned_additions"]
+    assert "ExecutionPlan" in manifest["stable_exports"]
+    assert "ExecutionPlan" in fq.__all__
+    assert fq.ExecutionPlan is ExecutionPlan
 
 
 def test_identity_contract_includes_semantics_but_excludes_volatile_state() -> None:

@@ -62,7 +62,7 @@ all fingerprints and the final SHA-256 identity before execution:
 
 ```python
 text = plan.to_json()
-restored = type(plan).from_json(text)
+restored = fq.ExecutionPlan.from_json(text)
 result = fq.run(restored)
 assert result.plan.identity == plan.identity
 ```

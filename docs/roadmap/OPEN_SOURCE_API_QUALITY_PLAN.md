@@ -633,9 +633,9 @@ API 冻结前必须用真实、可执行代码验证以下路径：
   152 处旧根调用迁移。测试侧债务已归零，
   `contracts/legacy-root-api-test-debt.json` 现为零基线，CI 禁止任何旧根接口回流。
 - 正式稳定且可发现的根 API（`fq.__all__`、`dir(fq)` 和
-  `docs/public_api_v1.json`）已从 60 项收缩为当前已实现的 21 项 Stable Core；
+  `docs/public_api_v1.json`）已从 60 项收缩为当前已实现的 22 项 Stable Core；
   `ExecutionOptions` 已经 Proposal 002 批准并加入，`ExecutionPlan` 已完成 Proposal 003
-  实现但仍等待根级清单与 freeze 审批，不以占位导出虚增。历史惰性属性访问仅作为
+  实现与根级清单审批；整体 API freeze 仍需等待后续语义提案。历史惰性属性访问仅作为
   未承诺的仓库兼容层暂留，
   不属于 stable manifest，后续按独立清单继续移除。
 - Proposal 001 明确分类的 37 个迁移接口和 3 个开源前移除项已从根级
@@ -669,7 +669,7 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - `API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md` 与
   `contracts/execution-plan-v1-candidate.json` 已登记；
 - Proposal 003 已完成 identity、序列化、stale-plan、环境约束和 `fq.run(plan)` 实现，
-  并通过 default/runtime/distributed 验证；根级类型导出与 freeze 仍待单独批准；
+  并通过 default/runtime/distributed 验证；根级类型导出已批准，freeze 仍待后续审批；
 - `ExecutionPlan` 定位为本地可检查、可缓存、可恢复和可执行的计划，
   `DeploymentPackage` 继续承担签名、provider 提交和远程生命周期。
 

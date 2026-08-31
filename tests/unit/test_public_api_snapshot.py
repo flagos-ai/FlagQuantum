@@ -23,11 +23,14 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
     options = json.loads(
         (ROOT / "contracts/execution-options-v1-candidate.json").read_text()
     )
+    plan = json.loads((ROOT / "contracts/execution-plan-v1-candidate.json").read_text())
     authorized_additions = (
         {options["root_addition"]}
         if options["root_manifest_authorized"] is True
         else set()
     )
+    if plan["root_manifest_authorized"] is True:
+        authorized_additions.add(plan["root_addition"])
 
     assert (
         set(manifest["stable_exports"])

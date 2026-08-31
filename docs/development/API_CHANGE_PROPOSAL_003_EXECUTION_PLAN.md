@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Implemented and verified — 已完成实现与全量验证，等待根级清单及 freeze 审批。**
+**Root approved — 已完成实现、全量验证和根级清单迁移，等待 contract freeze。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.ExecutionPlan`、`fq.plan`、`fq.run`、`Circuit.plan`、
@@ -14,6 +14,10 @@
 批准记录：API owner 于 2026-08-31 通过明确用户指令批准进入实现阶段。该授权允许实现
 `fq.run(plan)` 及相应的 `fq.run` 输入命名迁移，但不允许把 `ExecutionPlan` 加入稳定
 根清单，也不等于 contract freeze。
+
+根级批准记录：API owner 于 2026-09-01 通过明确用户指令批准将 `ExecutionPlan`
+加入 Stable Core 根清单。该批准不等于整个 FlagQuantum API 或 Proposal 003
+序列化契约的最终 freeze。
 
 ## 问题
 
@@ -335,7 +339,8 @@ reason code 和“不重新规划、不 fallback”的行为，避免永久承�
 - [x] 可执行 plan 路径的 `ExecutionResult.plan` 是实际执行的 `ExecutionPlan`；
 - [x] round trip、unknown field、identity tamper 和 schema 拒绝测试通过；
 - [x] default、runtime、distributed 和文档契约通过；
-- [ ] API owner 单独批准根级导出与 contract freeze。
+- [x] API owner 单独批准根级导出；
+- [ ] API owner 单独批准 contract freeze。
 
 ## 实施记录
 
@@ -349,11 +354,11 @@ reason code 和“不重新规划、不 fallback”的行为，避免永久承�
 - 临时 measurement override 和 noise-model program 路径仍按 Proposal 003 的明确边界保留，
   等待 Proposal 004 收敛；
 - default、runtime、distributed、benchmark/release contract、API snapshot、architecture、
-  Ruff 和 Black 均通过；`ExecutionPlan` 根级导出和 contract freeze 仍未启用。
+  Ruff 和 Black 均通过；`ExecutionPlan` 根级导出已于 2026-09-01 获批，contract
+  freeze 仍未启用。
 
 ## 请求批准的决策
 
-批准本提案意味着允许按上述边界实现 `ExecutionPlan` 和 `fq.run(plan)`，但**不等于
-contract freeze**，也不授权改变 measurement/noise/result 的其他稳定语义。实现完成、
-完整验证通过并获得第二次根清单批准后，才能把 `ExecutionPlan` 从 planned addition
-移入 Stable Core。
+本提案已经获得实现授权和第二次根清单批准，`ExecutionPlan` 已从 planned addition
+移入 Stable Core。该批准**不等于 contract freeze**，也不授权改变
+measurement/noise/result 的其他稳定语义；冻结仍需 API owner 独立审批。

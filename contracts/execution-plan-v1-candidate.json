@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0",
-  "status": "implemented_pending_root_approval",
+  "status": "root_approved_pending_freeze",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md",
   "target": "first-public-alpha",
   "root_addition": "ExecutionPlan",
   "implementation_authorized": true,
-  "root_manifest_authorized": false,
+  "root_manifest_authorized": true,
   "proposed_signatures": {
     "plan": "(program: 'Any', *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
     "run": "(program_or_plan: 'Any', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'"

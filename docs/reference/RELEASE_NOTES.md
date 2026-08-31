@@ -22,8 +22,8 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 - Added executable plans with deterministic program/options/environment/compiler
   fingerprints, SHA-256 identity, strict JSON round trips, tamper and stale
   environment detection, and exact `fq.run(plan)` execution without replanning,
-  recompilation, or silent fallback. Root-level `ExecutionPlan` type promotion
-  remains pending final API-owner approval.
+  recompilation, or silent fallback. `fq.ExecutionPlan` is now available from
+  the curated root API; the overall first-alpha API freeze remains pending.
 - Added fail-closed single-node MPS development evidence on 8×A800:
   2/4/8-GPU rank-owned forward, 2/8-GPU packed boundary transport and fault
   cleanup, 2-GPU accelerator backward, and a 100-step 8-GPU SGD soak with
