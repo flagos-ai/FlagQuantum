@@ -734,7 +734,7 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 
 - [x] 固定 backend/provider Protocol 候选契约；
 - [x] 建立第三方 conformance suite；
-- [ ] 在真实依赖 CI 中验证 Qiskit/PennyLane conformance；
+- [x] 在真实依赖 Docker 环境验证 Qiskit/PennyLane 支持窗口上下界，并配置同等 CI matrix；
 - [x] 验证外部插件不需要导入 runtime internal；
 - [ ] API owner 单独批准 Proposal 007 extension contract freeze。
 
@@ -814,7 +814,7 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 - [x] distributed/noise/backend 专属入口已完成分层；
 - [x] 根命名空间不存在无意暴露的 compatibility exports；
 - [x] 五条黄金路径全部通过；
-- [ ] Qiskit 和 PennyLane conformance 通过；
+- [x] Qiskit 和 PennyLane conformance 通过；
 - [x] 一个第三方 backend 示例只使用公开扩展协议；
 - [x] 文档、typing、API snapshot 和 release notes 一致；
 - [ ] alpha/beta 试用没有发现必须破坏 API 才能解决的问题。

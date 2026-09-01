@@ -19,6 +19,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Validated the declared Qiskit 2.0.x/2.5.x, Aer 0.17.x, and PennyLane
+  0.44.1/0.45.1 interoperability window with real dependencies. Corrected the
+  Qiskit golden path to use the diagnostic `export_qiskit()` /
+  `import_qiskit()` pair rather than treating the concise conversion return as
+  a report wrapper.
 - Promoted the isolated `flagquantum.extensions` protocol to a first-alpha
   candidate with a machine-readable contract and root-surface guard. Public
   conformance entry points and a third-party-style backend example now prove

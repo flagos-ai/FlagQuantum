@@ -90,12 +90,12 @@ def test_local_deployment_package_executes() -> None:
 @pytest.mark.qiskit
 def test_qiskit_round_trip_preserves_bell_program() -> None:
     pytest.importorskip("qiskit")
-    from flagquantum.interop.qiskit import from_qiskit, to_qiskit
+    from flagquantum.interop.qiskit import export_qiskit, import_qiskit
 
     original = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
-    exported = to_qiskit(original)
-    restored = from_qiskit(exported.circuit)
+    exported = export_qiskit(original)
+    restored = import_qiskit(exported.circuit)
 
     assert exported.report.lossless
     assert restored.report.lossless
-    assert restored.circuit.to_ir().instructions == original.to_ir().instructions
+    assert restored.ir.instructions == original.to_ir().instructions

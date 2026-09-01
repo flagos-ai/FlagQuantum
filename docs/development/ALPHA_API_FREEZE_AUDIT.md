@@ -15,6 +15,7 @@
 | 异常与 Module 所有权 | Proposal 006，统一异常类别，部署 binding 移出 Module | 就绪 |
 | 扩展协议 | Proposal 007，版本协商、隔离、conformance、外部示例 | 候选就绪 |
 | 黄金路径 | `tests/api_contract/test_open_source_golden_paths.py` | 本地 CPU 路径就绪 |
+| Qiskit/PennyLane | 支持窗口上下界真实依赖矩阵，各 51 passed | 就绪 |
 | 根级防漂移 | manifest、snapshot、API proposal contract、CI gate | 就绪 |
 
 ## 本轮明确决策
@@ -29,13 +30,12 @@
 ## 冻结前仍需完成
 
 1. API owner 分别审批 Proposal 002–007 的 contract freeze，并记录版本与日期；
-2. 在安装真实 Qiskit、PennyLane 的受控 CI matrix 中通过 conformance；本地无依赖的
-   adapter contract 通过不能代替真实依赖证据；
-3. 完成至少一轮目标用户 alpha/beta 试用，确认没有只能通过破坏 API 解决的问题；
-4. 核对发布平台上的 required checks、CODEOWNERS 和 branch protection 已实际启用；
-5. 冻结当日重新运行 default、runtime、distributed、benchmark/release、typing、格式、
+2. 完成至少一轮目标用户 alpha/beta 试用，确认没有只能通过破坏 API 解决的问题；
+3. 核对发布平台上的 required checks、CODEOWNERS 和 branch protection 已实际启用，
+   并让当前提交通过托管 CI 的 Qiskit/PennyLane matrix；
+4. 冻结当日重新运行 default、runtime、distributed、benchmark/release、typing、格式、
    文档和 API snapshot 全部门禁；
-6. 冻结批准后才将各 contract 的 `candidate_is_frozen_contract` 改为 `true`，不得由生成
+5. 冻结批准后才将各 contract 的 `candidate_is_frozen_contract` 改为 `true`，不得由生成
    工具自动改写。
 
 ## 冻结判定
@@ -56,5 +56,14 @@
 - 五条核心黄金路径通过；Qiskit 可选路径因该镜像未安装 Qiskit 而跳过；
 - Ruff、Black、两组 mypy、documentation source-of-truth 与 API snapshot 通过。
 
-这些数字是本地候选回归证据，不替代多 Python 版本 CI、真实第三方 SDK matrix、硬件
-认证或 API owner 冻结审批。
+随后在安装真实依赖的 Python 3.12 Docker 环境完成互操作窗口验证：
+
+- Qiskit 2.5.2 + Aer 0.17.2 + PennyLane 0.45.1：51 passed；
+- Qiskit 2.0.3 + Aer 0.17.2 + PennyLane 0.44.1：51 passed；
+- 两轮均通过 Qiskit/PennyLane 机器契约检查、完整互操作测试、conformance 和含
+  Qiskit 的第六条黄金路径；
+- 第一次真实运行发现并修复了黄金路径误用 `to_qiskit()` 简写返回值的问题，改为使用
+  带显式报告的 `export_qiskit()` / `import_qiskit()`。
+
+这些数字是本地候选回归证据，不替代托管 CI、多 Python 版本组合、硬件认证或 API
+owner 冻结审批。
