@@ -30,7 +30,7 @@ Do not edit this generated region. Capability boundaries come from
 | PennyLane QuantumScript interoperability | `experimental` | Certified with PennyLane 0.44.1 and 0.45.1 on Python 3.11 or newer for static QuantumScript conversion and complex128 numerical semantics. QNode, device execution, shots, measurements, trainable parameters, arbitrary wire labels without explicit lossy flattening, and idle wire extents are outside v1. PennyLane objects never enter FlagQuantum runtime, Torch-FL, CUDA, vendor accelerator, or QPU layers. |
 | Qiskit IR interoperability | `experimental` | Certified against Qiskit 2.0.x and 2.5.x with Aer 0.17.x through an executable operation, wire-order, statevector, classical-bit, and round-trip contract. Qiskit control flow and arbitrary ParameterExpression import are rejected; named or multiple registers require explicit lossy flattening; custom multi-qubit unitary matrices remain blocked until basis ordering is specified. Conversion does not make Qiskit a runtime dependency or certify any provider hardware. |
 | Dynamic circuits and IQM Braket preflight | `experimental` | Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified. |
-| Extension SDK | `experimental` | Extension compatibility is not guaranteed before stabilization. |
+| Extension SDK | `experimental` | The SDK protocol contract is frozen; individual extensions remain experimental until separately qualified. |
 
 ## Validated public performance claims
 

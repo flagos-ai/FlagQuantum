@@ -310,9 +310,9 @@ the same deterministic active-reset, conditional-flip, and qubit-reuse vectors
 against multiple implementations:
 
 ```python
-local = fq.experimental.run_dynamic_conformance()
-aer = fq.experimental.run_dynamic_conformance(
-    fq.experimental.run_qiskit_aer_dynamic,
+local = fq.experimental.dynamic.run_dynamic_conformance()
+aer = fq.experimental.dynamic.run_dynamic_conformance(
+    fq.experimental.dynamic.run_qiskit_aer_dynamic,
     implementation="qiskit_aer",
 )
 assert local.passed and aer.passed

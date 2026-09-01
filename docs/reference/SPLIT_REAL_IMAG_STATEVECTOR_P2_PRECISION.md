@@ -23,7 +23,7 @@ observable = Hamiltonian(
     )
 )
 
-result = fq.experimental.parameter_shift_split_real_imag_precision_gradient(
+result = fq.experimental.numerics.parameter_shift_split_real_imag_precision_gradient(
     circuit,
     observable,
     parameter_bindings={"theta": 0.23},
@@ -41,13 +41,13 @@ accelerator execution.
 ## Explicit contracts
 
 The implemented plan is available from
-`fq.experimental.split_real_imag_p2_precision_plan()`. Callers may pass its
+`fq.experimental.numerics.split_real_imag_p2_precision_plan()`. Callers may pass its
 machine-readable form back through `precision_plan=`. Any different plan fails
 closed: P2 never silently upgrades the whole state, demotes a requested dtype,
 or moves computation to CPU.
 
 The bounded certified envelope is returned by
-`fq.experimental.split_real_imag_p2_accuracy_envelope()`. A tighter requested
+`fq.experimental.numerics.split_real_imag_p2_accuracy_envelope()`. A tighter requested
 bound, state-infidelity or decomposition requirement, deterministic-execution
 claim, or convergence-evidence requirement is rejected before state
 allocation. Passing the envelope does not certify an arbitrary scientific
@@ -69,7 +69,7 @@ with a CPU complex128 reference. Both the absolute P2 error and its improvement
 over FP32 must pass:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.run_split_real_imag_precision_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_precision_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
 ```
 
 In a Torch-FL CUDA-reference environment:

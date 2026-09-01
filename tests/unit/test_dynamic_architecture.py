@@ -9,7 +9,7 @@ from flagquantum.runtime.dynamic.dialects import braket_iqm, openqasm3
 
 def test_layered_dynamic_imports_preserve_experimental_api_identity() -> None:
     assert dynamic.DynamicCircuit is circuit.DynamicCircuit
-    assert dynamic.DynamicCircuit is fq.experimental.DynamicCircuit
+    assert dynamic.DynamicCircuit is fq.experimental.dynamic.DynamicCircuit
     assert dynamic.DynamicExecutionResult is result.DynamicExecutionResult
     assert dynamic.run_dynamic is execution.run_dynamic
     assert dynamic.route_dynamic_circuit is routing.route_dynamic_circuit

@@ -9,7 +9,7 @@ pytestmark = pytest.mark.integration
 
 
 def test_split_real_imag_cpu_conformance() -> None:
-    report = fq.experimental.run_split_real_imag_conformance("cpu")
+    report = fq.experimental.numerics.run_split_real_imag_conformance("cpu")
 
     report.require_accepted()
     assert report.passed
@@ -25,7 +25,7 @@ def test_split_real_imag_cuda_conformance() -> None:
     if not torch.cuda.is_available():
         pytest.skip("CUDA is not available")
 
-    report = fq.experimental.run_split_real_imag_conformance("cuda:0")
+    report = fq.experimental.numerics.run_split_real_imag_conformance("cuda:0")
 
     report.require_accepted()
     assert report.passed

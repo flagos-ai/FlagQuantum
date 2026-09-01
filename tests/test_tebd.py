@@ -25,13 +25,14 @@ def _ising(n_wires: int = 2, coupling: float = 1.0, field: float = 0.7):
 def test_tebd_is_explicitly_experimental_not_stable_root_api() -> None:
     assert "run_tebd" not in fq.__all__
     assert "TEBDResult" not in fq.__all__
-    assert "run_tebd" in fq.experimental.__all__
-    assert "TEBDResult" in fq.experimental.__all__
-    assert callable(fq.experimental.run_tebd)
+    assert "simulation" in fq.experimental.__all__
+    assert "run_tebd" in fq.experimental.simulation.__all__
+    assert "TEBDResult" in fq.experimental.simulation.__all__
+    assert callable(fq.experimental.simulation.run_tebd)
 
 
 def test_tebd_plus_x_initial_energy_and_auditable_metadata() -> None:
-    result = fq.experimental.run_tebd(
+    result = fq.experimental.simulation.run_tebd(
         _ising(n_wires=4, field=0.7),
         n_wires=4,
         total_time=0.02,
@@ -58,7 +59,7 @@ def test_tebd_plus_x_initial_energy_and_auditable_metadata() -> None:
 def test_two_site_tebd_converges_to_exact_ground_energy() -> None:
     coupling = 1.0
     field = 0.7
-    result = fq.experimental.run_tebd(
+    result = fq.experimental.simulation.run_tebd(
         _ising(coupling=coupling, field=field),
         n_wires=2,
         total_time=4.0,
@@ -109,7 +110,7 @@ def test_tebd_rejects_unsupported_or_ambiguous_contracts(
     }
     inputs.update(kwargs)
     with pytest.raises(ValueError, match=match):
-        fq.experimental.run_tebd(hamiltonian, **inputs)
+        fq.experimental.simulation.run_tebd(hamiltonian, **inputs)
 
 
 def test_tebd_does_not_materialize_a_dense_state(monkeypatch) -> None:
@@ -119,7 +120,7 @@ def test_tebd_does_not_materialize_a_dense_state(monkeypatch) -> None:
         raise AssertionError("TEBD must not materialize a statevector")
 
     monkeypatch.setattr(MPSState, "to_statevector", reject_dense_materialization)
-    result = fq.experimental.run_tebd(
+    result = fq.experimental.simulation.run_tebd(
         _ising(n_wires=4),
         n_wires=4,
         total_time=0.04,
@@ -138,8 +139,8 @@ def test_tebd_program_hash_binds_execution_configuration() -> None:
         "time_step": 0.02,
         "max_bond": 4,
     }
-    first = fq.experimental.run_tebd(_ising(), **common)
-    second = fq.experimental.run_tebd(_ising(), **{**common, "max_bond": 2})
+    first = fq.experimental.simulation.run_tebd(_ising(), **common)
+    second = fq.experimental.simulation.run_tebd(_ising(), **{**common, "max_bond": 2})
 
     assert first.program_sha256 != second.program_sha256
     assert first.to_dict()["time_step"] == 0.02

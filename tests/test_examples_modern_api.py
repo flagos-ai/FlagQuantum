@@ -128,8 +128,8 @@ def test_quantum_transformer_feature_layer_is_differentiable() -> None:
 
 @pytest.mark.unit
 def test_experimental_mps_example_boundary_is_importable() -> None:
-    assert callable(fq.experimental.execute_torch_distributed_mps_forward)
-    assert callable(fq.experimental.execute_torch_distributed_mps_reverse)
-    assert callable(fq.experimental.site_sharded_z_zz_observations)
-    assert callable(fq.experimental.reset_mps_site_kernel_stats)
-    assert callable(fq.experimental.mps_site_kernel_stats)
+    assert callable(fq.experimental.distributed.execute_torch_distributed_mps_forward)
+    assert callable(fq.experimental.distributed.execute_torch_distributed_mps_reverse)
+    assert callable(fq.experimental.distributed.site_sharded_z_zz_observations)
+    assert callable(fq.experimental.distributed.reset_mps_site_kernel_stats)
+    assert callable(fq.experimental.distributed.mps_site_kernel_stats)

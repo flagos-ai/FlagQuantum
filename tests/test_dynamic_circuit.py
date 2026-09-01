@@ -11,12 +11,12 @@ pytestmark = pytest.mark.integration
 
 
 def test_mid_circuit_measurement_collapses_and_controls_a_later_gate() -> None:
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0, equals=1)
 
-    result = fq.experimental.run_dynamic(circuit, shots=64, seed=7)
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=7)
 
     assert result.samples.shape == (64, 2)
     assert result.classical_bits.shape == (64, 1)
@@ -27,45 +27,45 @@ def test_mid_circuit_measurement_collapses_and_controls_a_later_gate() -> None:
 
 
 def test_reset_returns_measured_qubit_to_zero() -> None:
-    circuit = fq.experimental.DynamicCircuit(1)
+    circuit = fq.experimental.dynamic.DynamicCircuit(1)
     circuit.h(0)
     circuit.reset(0)
 
-    result = fq.experimental.run_dynamic(circuit, shots=32, seed=11)
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=32, seed=11)
 
     assert torch.count_nonzero(result.samples) == 0
     assert result.classical_bits.shape == (32, 0)
 
 
 def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() -> None:
-    unread = fq.experimental.DynamicCircuit(1)
+    unread = fq.experimental.dynamic.DynamicCircuit(1)
     unread.conditional("x", 0, classical_bit=0)
     with pytest.raises(RuntimeError, match="read before measurement"):
-        fq.experimental.run_dynamic(unread, shots=1, seed=1)
+        fq.experimental.dynamic.run_dynamic(unread, shots=1, seed=1)
 
     theta = torch.tensor(0.2, requires_grad=True)
-    differentiable = fq.experimental.DynamicCircuit(1).rx(0, theta=theta)
+    differentiable = fq.experimental.dynamic.DynamicCircuit(1).rx(0, theta=theta)
     differentiable.measure(0, classical_bit=0)
     with pytest.raises(RuntimeError, match="not differentiable"):
-        fq.experimental.run_dynamic(differentiable, shots=1, seed=1)
+        fq.experimental.dynamic.run_dynamic(differentiable, shots=1, seed=1)
 
     with pytest.raises(RuntimeError, match="run_dynamic"):
         differentiable.state()
-    with pytest.raises(NotImplementedError, match="experimental.run_dynamic"):
+    with pytest.raises(NotImplementedError, match="experimental.dynamic.run_dynamic"):
         fq.run(differentiable)
     with pytest.raises(ValueError, match="outside the circuit"):
-        fq.experimental.DynamicCircuit(1).measure(1)
+        fq.experimental.dynamic.DynamicCircuit(1).measure(1)
 
 
 def test_dynamic_ir_round_trip_and_qasm3_export() -> None:
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.h(0)
     circuit.measure(0, classical_bit=1)
     circuit.reset(0)
     circuit.conditional("x", 1, classical_bit=1)
 
     restored = fq.CircuitIR.from_json(circuit.to_ir().to_json())
-    qasm = fq.experimental.export_dynamic_qasm3(circuit)
+    qasm = fq.experimental.dynamic.export_dynamic_qasm3(circuit)
 
     assert tuple(item.name for item in restored.instructions) == (
         "h",
@@ -85,10 +85,10 @@ def test_dynamic_execution_supports_batched_initial_states() -> None:
         [[1.0, 0.0], [0.0, 1.0]],
         dtype=torch.complex64,
     )
-    circuit = fq.experimental.DynamicCircuit(1, bsz=2, inputs=inputs)
+    circuit = fq.experimental.dynamic.DynamicCircuit(1, bsz=2, inputs=inputs)
     circuit.measure(0, classical_bit=0)
 
-    result = fq.experimental.run_dynamic(circuit, shots=5, seed=3)
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=5, seed=3)
 
     assert result.samples.shape == (2, 5, 1)
     assert result.classical_bits.shape == (2, 5, 1)
@@ -99,25 +99,25 @@ def test_dynamic_execution_supports_batched_initial_states() -> None:
 
 
 def test_multiple_classical_conditions_are_conjoined() -> None:
-    circuit = fq.experimental.DynamicCircuit(3)
+    circuit = fq.experimental.dynamic.DynamicCircuit(3)
     circuit.x(0).x(1)
     circuit.measure(0, classical_bit=0)
     circuit.measure(1, classical_bit=1)
     circuit.conditional("x", 2, conditions={0: 1, 1: 1})
 
-    result = fq.experimental.run_dynamic(circuit, shots=4, seed=5)
-    qasm = fq.experimental.export_dynamic_qasm3(circuit)
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=4, seed=5)
+    qasm = fq.experimental.dynamic.export_dynamic_qasm3(circuit)
 
     assert torch.all(result.samples == 1)
     assert "if (c[0] == true && c[1] == true) { x q[2]; }" in qasm
 
 
 def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.measure(0, classical_bit=2)
 
     unsupported = fq.CloudBackendProfile.simulator(2)
-    rejected = fq.experimental.assess_dynamic_backend(circuit, unsupported)
+    rejected = fq.experimental.dynamic.assess_dynamic_backend(circuit, unsupported)
     assert not rejected.compatible
     assert rejected.required_classical_bits == 3
     assert "backend_does_not_declare_dynamic_circuit_support" in rejected.blockers
@@ -130,7 +130,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
         supports_dynamic_circuits=True,
         max_classical_bits=4,
     )
-    accepted = fq.experimental.assess_dynamic_backend(circuit, supported)
+    accepted = fq.experimental.dynamic.assess_dynamic_backend(circuit, supported)
     assert accepted.compatible
     assert accepted.blockers == ()
 
@@ -142,7 +142,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
         supports_dynamic_circuits=True,
         max_classical_bits=2,
     )
-    rejected = fq.experimental.assess_dynamic_backend(circuit, too_small)
+    rejected = fq.experimental.dynamic.assess_dynamic_backend(circuit, too_small)
     assert rejected.blockers == ("required_classical_bits_exceed_backend_limit",)
 
 
@@ -160,13 +160,13 @@ def _dynamic_backend(**overrides) -> fq.CloudBackendProfile:
 
 
 def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None:
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
     backend = _dynamic_backend()
 
-    package = fq.experimental.create_dynamic_deployment_package(
+    package = fq.experimental.dynamic.create_dynamic_deployment_package(
         circuit,
         backend=backend,
         name="feedback",
@@ -199,7 +199,7 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
             return {"task_id": "dynamic-1", "shots": submitted.shots}
 
     provider = RecordingProvider()
-    result = fq.experimental.deploy_dynamic_circuit(
+    result = fq.experimental.dynamic.deploy_dynamic_circuit(
         circuit,
         provider,
         backend=backend,
@@ -210,34 +210,34 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
 
 
 def test_dynamic_deployment_rejects_unsupported_capacity_and_batching() -> None:
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
 
     with pytest.raises(RuntimeError, match="qubit_capacity"):
-        fq.experimental.create_dynamic_deployment_package(
+        fq.experimental.dynamic.create_dynamic_deployment_package(
             circuit,
             backend=_dynamic_backend(n_wires=1),
         )
-    batched = fq.experimental.DynamicCircuit(1, bsz=2)
+    batched = fq.experimental.dynamic.DynamicCircuit(1, bsz=2)
     batched.measure(0, classical_bit=0)
     with pytest.raises(ValueError, match="one circuit"):
-        fq.experimental.create_dynamic_deployment_package(
+        fq.experimental.dynamic.create_dynamic_deployment_package(
             batched,
             backend=_dynamic_backend(),
         )
 
 
 def test_dynamic_routing_preserves_measurement_and_conditional_semantics() -> None:
-    circuit = fq.experimental.DynamicCircuit(3)
+    circuit = fq.experimental.dynamic.DynamicCircuit(3)
     circuit.x(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
     circuit.reset(0)
     coupling = fq.CouplingMap.line(3)
 
-    routed = fq.experimental.route_dynamic_circuit(circuit, coupling)
-    original_result = fq.experimental.run_dynamic(circuit, shots=8, seed=17)
-    routed_result = fq.experimental.run_dynamic(routed, shots=8, seed=17)
+    routed = fq.experimental.dynamic.route_dynamic_circuit(circuit, coupling)
+    original_result = fq.experimental.dynamic.run_dynamic(circuit, shots=8, seed=17)
+    routed_result = fq.experimental.dynamic.run_dynamic(routed, shots=8, seed=17)
 
     assert torch.equal(original_result.samples, routed_result.samples)
     assert torch.equal(original_result.classical_bits, routed_result.classical_bits)
@@ -258,7 +258,7 @@ def test_dynamic_routing_preserves_measurement_and_conditional_semantics() -> No
 
 
 def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> None:
-    circuit = fq.experimental.DynamicCircuit(3)
+    circuit = fq.experimental.dynamic.DynamicCircuit(3)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
@@ -267,8 +267,8 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
         coupling_map=fq.CouplingMap.line(3),
     )
 
-    report = fq.experimental.assess_dynamic_backend(circuit, backend)
-    package = fq.experimental.create_dynamic_deployment_package(
+    report = fq.experimental.dynamic.assess_dynamic_backend(circuit, backend)
+    package = fq.experimental.dynamic.create_dynamic_deployment_package(
         circuit,
         backend=backend,
         shots=32,

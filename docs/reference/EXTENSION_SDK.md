@@ -1,11 +1,12 @@
 # FlagQuantum Extension SDK
 
-The candidate-stable SDK lives under `flagquantum.extensions`; it does not add
-root exports. Extensions declare a versioned manifest, negotiate capabilities
-before activation, and are installed into a task-local immutable registry.
-The protocol is a first-public-alpha candidate; its final freeze still requires
-separate API-owner approval. Individual extensions remain experimental by
-default.
+The frozen first-public-alpha SDK contract lives under
+`flagquantum.extensions`; it does not add root exports. Extensions declare a
+versioned manifest, negotiate capabilities before activation, and are installed
+into a task-local immutable registry.
+The protocol contract was separately frozen by the API owner on 2026-09-01.
+Individual extensions remain experimental by default and require independent
+qualification.
 
 Supported extension kinds are execution backends, kernels, operators, compiler
 passes, devices, providers, measurement collectors, and planners. Protocols

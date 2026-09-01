@@ -109,9 +109,9 @@ def test_public_api_snapshot_and_experimental_deprecation_path():
     )
     assert sorted(fq.__all__) == snapshot["stable_exports"]
     assert "JAXStatevectorShardState" not in fq.__all__
-    assert fq.experimental.JAXStatevectorShardState is not None
+    assert fq.experimental.distributed.JAXStatevectorShardState is not None
     with pytest.warns(DeprecationWarning, match="flagquantum.experimental"):
-        assert fq.JAXStatevectorShardState is fq.experimental.JAXStatevectorShardState
+        assert fq.JAXStatevectorShardState is fq.experimental.distributed.JAXStatevectorShardState
 
 
 def test_large_mps_circuit_ir_uses_symbolic_amplitude_shape():

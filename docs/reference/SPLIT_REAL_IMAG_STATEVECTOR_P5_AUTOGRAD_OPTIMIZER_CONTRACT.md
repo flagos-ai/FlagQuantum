@@ -18,7 +18,7 @@ import flagquantum as fq
 from flagquantum.algorithms import pauli_term
 
 theta = torch.tensor(0.23, dtype=torch.float32, requires_grad=True)
-loss = fq.experimental.split_real_imag_device_double_single_autograd_expectation(
+loss = fq.experimental.numerics.split_real_imag_device_double_single_autograd_expectation(
     fq.Circuit(1).ry(0, theta=fq.Parameter("theta")),
     pauli_term(1.0, "Z", (0,)),
     parameter_bindings={"theta": theta},
@@ -39,10 +39,10 @@ high/low parameter-shift result and maintains a functional high/low master
 parameter state:
 
 ```python
-state = fq.experimental.initialize_split_real_imag_double_single_sgd(
+state = fq.experimental.numerics.initialize_split_real_imag_double_single_sgd(
     {"theta": torch.tensor(0.23, dtype=torch.float32)}
 )
-result = fq.experimental.split_real_imag_double_single_sgd_step(
+result = fq.experimental.numerics.split_real_imag_double_single_sgd_step(
     fq.Circuit(1).ry(0, theta=fq.Parameter("theta")),
     pauli_term(1.0, "Z", (0,)),
     state,

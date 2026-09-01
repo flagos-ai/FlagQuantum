@@ -9,7 +9,7 @@ import flagquantum as fq
 
 @pytest.mark.integration
 def test_split_real_imag_double_single_cpu_conformance() -> None:
-    report = fq.experimental.run_split_real_imag_double_single_conformance(
+    report = fq.experimental.numerics.run_split_real_imag_double_single_conformance(
         "cpu", depths=(8, 32), seeds=(0, 7)
     )
     report.require_accepted()
@@ -24,5 +24,5 @@ def test_split_real_imag_double_single_cpu_conformance() -> None:
 def test_split_real_imag_double_single_cuda_conformance() -> None:
     if os.environ.get("FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_CUDA") != "1":
         pytest.skip("set FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_CUDA=1 on a CUDA runner")
-    report = fq.experimental.run_split_real_imag_double_single_conformance("cuda:0")
+    report = fq.experimental.numerics.run_split_real_imag_double_single_conformance("cuda:0")
     report.require_accepted()

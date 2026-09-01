@@ -56,7 +56,7 @@ def validate(
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():
         raise RuntimeError("Torch-FL did not expose an available flagos device")
     device = platforms.resolve_platform_device(device_name)
-    report = fq.experimental.run_split_real_imag_training_conformance(
+    report = fq.experimental.numerics.run_split_real_imag_training_conformance(
         device, depths=depths, seeds=seeds
     )
     report.require_accepted()

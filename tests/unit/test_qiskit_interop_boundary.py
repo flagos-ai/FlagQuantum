@@ -38,8 +38,8 @@ def test_experimental_convenience_exports_delegate_to_interop() -> None:
     import flagquantum as fq
     from flagquantum.interop.qiskit import from_qiskit, to_qiskit
 
-    assert fq.experimental.from_qiskit is from_qiskit
-    assert fq.experimental.to_qiskit is to_qiskit
+    assert fq.experimental.interop.from_qiskit is from_qiskit
+    assert fq.experimental.interop.to_qiskit is to_qiskit
 
 
 def test_missing_qiskit_fails_only_when_conversion_is_requested(monkeypatch) -> None:

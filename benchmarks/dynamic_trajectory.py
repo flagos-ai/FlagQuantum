@@ -11,10 +11,10 @@ from typing import Any, Callable
 import flagquantum as fq
 
 
-def _workload(mid_circuit_measurements: int) -> fq.experimental.DynamicCircuit:
+def _workload(mid_circuit_measurements: int) -> fq.experimental.dynamic.DynamicCircuit:
     if mid_circuit_measurements <= 0:
         raise ValueError("mid_circuit_measurements must be positive")
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.h(0)
     for classical_bit in range(mid_circuit_measurements):
         circuit.measure(0, classical_bit=classical_bit)
@@ -22,11 +22,13 @@ def _workload(mid_circuit_measurements: int) -> fq.experimental.DynamicCircuit:
     return circuit
 
 
-def _executor(name: str) -> Callable[..., fq.experimental.DynamicExecutionResult]:
+def _executor(
+    name: str,
+) -> Callable[..., fq.experimental.dynamic.DynamicExecutionResult]:
     if name == "flagquantum":
-        return fq.experimental.run_dynamic
+        return fq.experimental.dynamic.run_dynamic
     if name == "qiskit_aer":
-        return fq.experimental.run_qiskit_aer_dynamic
+        return fq.experimental.dynamic.run_qiskit_aer_dynamic
     raise ValueError(f"unknown backend: {name}")
 
 

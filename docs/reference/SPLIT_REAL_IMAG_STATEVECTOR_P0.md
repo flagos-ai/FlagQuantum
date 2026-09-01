@@ -14,7 +14,7 @@ automatically.
 import flagquantum as fq
 
 circuit = fq.Circuit(3).h(0).ry(1, theta=0.27).cx(0, 2)
-result = fq.experimental.execute_split_real_imag_statevector(
+result = fq.experimental.numerics.execute_split_real_imag_statevector(
     circuit.to_ir(), device="cpu"
 )
 
@@ -44,7 +44,7 @@ compute dtype, and the `single_device_fast_path` classification.
 Run CPU conformance with:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.run_split_real_imag_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
 ```
 
 In a Torch-FL CUDA-reference environment, run:

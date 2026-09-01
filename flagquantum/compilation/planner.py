@@ -504,7 +504,7 @@ def plan(
     ):
         raise CapabilityError(
             "fq.run does not execute dynamic trajectories; use "
-            "fq.experimental.run_dynamic(..., shots=...)"
+            "fq.experimental.dynamic.run_dynamic(..., shots=...)"
         )
     runtime_config = getattr(program, "runtime_config", None)
     resolved = resolve_execution_options(

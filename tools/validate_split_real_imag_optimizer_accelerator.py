@@ -58,11 +58,11 @@ def validate(*, device_name: str, checkpoints: tuple[int, ...]) -> dict[str, Any
     if device_name.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("native CUDA is unavailable")
     device = platforms.resolve_platform_device(device_name)
-    report = fq.experimental.run_split_real_imag_optimizer_conformance(
+    report = fq.experimental.numerics.run_split_real_imag_optimizer_conformance(
         device, checkpoints=checkpoints
     )
     report.require_accepted()
-    probe_state = fq.experimental.initialize_split_real_imag_double_single_sgd(
+    probe_state = fq.experimental.numerics.initialize_split_real_imag_double_single_sgd(
         {"theta": torch.tensor(0.23, dtype=torch.float32, device=device)}
     )
     if probe_state.parameters.high.device != device:

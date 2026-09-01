@@ -21,10 +21,10 @@ observable = Hamiltonian(
 )
 bindings = {"theta": 0.23, "phi": -0.31}
 
-value = fq.experimental.execute_split_real_imag_expectation(
+value = fq.experimental.numerics.execute_split_real_imag_expectation(
     circuit, observable, parameter_bindings=bindings, device="cpu"
 )
-gradient = fq.experimental.parameter_shift_split_real_imag_gradient(
+gradient = fq.experimental.numerics.parameter_shift_split_real_imag_gradient(
     circuit, observable, parameter_bindings=bindings, device="cpu"
 )
 
@@ -52,7 +52,7 @@ seeds. It compares expectation values and parameter-shift gradients with an
 independent CPU complex128 calculation and checks state norm drift:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.run_split_real_imag_training_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_training_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
 ```
 
 In a Torch-FL CUDA-reference environment:

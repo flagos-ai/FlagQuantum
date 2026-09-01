@@ -10,10 +10,10 @@ def test_experimental_capability_api_must_be_importable_and_scoped() -> None:
     stable = set(fq.__all__)
 
     assert capability_api_is_available(
-        fq, stable, "experimental.run_tebd", "experimental"
+        fq, stable, "experimental.simulation.run_tebd", "experimental"
     )
     assert not capability_api_is_available(
-        fq, stable, "experimental.run_tebd", "development_evidence"
+        fq, stable, "experimental.simulation.run_tebd", "development_evidence"
     )
     assert not capability_api_is_available(
         fq, stable, "experimental.does_not_exist", "experimental"
@@ -28,5 +28,5 @@ def test_experimental_capability_resolution_does_not_depend_on_root_attribute(
     monkeypatch.delattr(fq, "experimental", raising=False)
 
     assert capability_api_is_available(
-        fq, stable, "experimental.run_tebd", "experimental"
+        fq, stable, "experimental.simulation.run_tebd", "experimental"
     )

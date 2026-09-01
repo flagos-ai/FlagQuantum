@@ -1,13 +1,13 @@
 # Constrained MPS TEBD
 
-FlagQuantum exposes `flagquantum.experimental.run_tebd` as an experimental, fail-closed
+FlagQuantum exposes `flagquantum.experimental.simulation.run_tebd` as an experimental, fail-closed
 single-device MPS path for second-order imaginary-time evolution.
 
 ```python
 import flagquantum as fq
 
 hamiltonian = fq.transverse_field_ising(8, coupling=1.0, field=0.7)
-result = fq.experimental.run_tebd(
+result = fq.experimental.simulation.run_tebd(
     hamiltonian,
     n_wires=8,
     total_time=2.0,

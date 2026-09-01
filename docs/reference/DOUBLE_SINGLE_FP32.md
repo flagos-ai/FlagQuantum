@@ -29,7 +29,7 @@ Run the machine-readable certification through the explicitly unstable API:
 ```python
 import flagquantum as fq
 
-report = fq.experimental.run_double_single_conformance("cpu")
+report = fq.experimental.numerics.run_double_single_conformance("cpu")
 report.require_accepted()
 print(report.to_json())
 ```

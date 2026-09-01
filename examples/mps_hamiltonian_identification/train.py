@@ -27,16 +27,16 @@ import flagquantum as fq  # noqa: E402
 import flagquantum.experimental.mps as fqxm  # noqa: E402
 
 execute_torch_distributed_mps_forward = (  # noqa: E402
-    fq.experimental.execute_torch_distributed_mps_forward
+    fq.experimental.distributed.execute_torch_distributed_mps_forward
 )
 execute_torch_distributed_mps_reverse = (  # noqa: E402
-    fq.experimental.execute_torch_distributed_mps_reverse
+    fq.experimental.distributed.execute_torch_distributed_mps_reverse
 )
 site_sharded_z_zz_observations = (  # noqa: E402
-    fq.experimental.site_sharded_z_zz_observations
+    fq.experimental.distributed.site_sharded_z_zz_observations
 )
-reset_site_kernel_stats = fq.experimental.reset_mps_site_kernel_stats  # noqa: E402
-site_kernel_stats = fq.experimental.mps_site_kernel_stats  # noqa: E402
+reset_site_kernel_stats = fq.experimental.distributed.reset_mps_site_kernel_stats  # noqa: E402
+site_kernel_stats = fq.experimental.distributed.mps_site_kernel_stats  # noqa: E402
 
 from core import (  # noqa: E402
     build_variable_time_batched_trotter_circuit,

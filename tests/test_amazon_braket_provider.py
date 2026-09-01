@@ -45,10 +45,10 @@ class FakeAwsDevice:
 
 
 def _dynamic_package(provider):
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
-    return fq.experimental.create_dynamic_deployment_package(
+    return fq.experimental.dynamic.create_dynamic_deployment_package(
         circuit,
         backend=provider.backend,
         shots=5,
@@ -119,16 +119,16 @@ def test_braket_iqm_missing_groups_fails_before_hardware_submission() -> None:
         device,
         program_factory=lambda *, source: {"source": source},
     )
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
-    report = fq.experimental.assess_dynamic_backend(circuit, provider.backend)
+    report = fq.experimental.dynamic.assess_dynamic_backend(circuit, provider.backend)
 
     assert not report.compatible
     assert "braket_iqm_dynamic_qubit_groups_are_required" in report.blockers
     with pytest.raises(RuntimeError, match="dynamic_qubit_groups"):
-        fq.experimental.create_dynamic_deployment_package(
+        fq.experimental.dynamic.create_dynamic_deployment_package(
             circuit,
             backend=provider.backend,
             shots=5,

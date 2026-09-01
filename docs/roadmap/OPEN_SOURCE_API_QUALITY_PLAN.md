@@ -578,7 +578,10 @@ native = fq.backends.mps.run(circuit, options=options)
 实验能力：
 
 ```python
-plan = fq.experimental.distributed.plan(circuit, cluster=cluster)
+result = fq.experimental.execution.run_advanced(
+    circuit,
+    mode="distributed_statevector",
+)
 ```
 
 ## 7. 五条开源前黄金用户路径

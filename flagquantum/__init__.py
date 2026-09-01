@@ -84,9 +84,10 @@ def __getattr__(name: str) -> Any:
     if name in {"TrainingResult", "train"}:
         return getattr(import_module(".runtime.training", __name__), name)
     if name in DEPRECATED_INTERNAL_ROOT_EXPORTS:
+        replacement = f"flagquantum.experimental.distributed.{name}"
         warnings.warn(
             f"flagquantum.{name} is an internal compatibility export; use "
-            f"flagquantum.experimental.{name}. Root access will be removed in "
+            f"{replacement}. Root access will be removed in "
             f"version {COMPATIBILITY_EXPORT_REMOVAL_VERSION}.",
             DeprecationWarning,
             stacklevel=2,

@@ -82,7 +82,7 @@ class DynamicCircuit(Circuit):
             for instruction in self._instructions
         ):
             raise RuntimeError(
-                "dynamic circuits require fq.experimental.run_dynamic(..., shots=...)"
+                "dynamic circuits require fq.experimental.dynamic.run_dynamic(..., shots=...)"
             )
         return super().state(parameter_bindings)
 

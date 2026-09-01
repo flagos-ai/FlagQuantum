@@ -18,10 +18,10 @@ def main() -> None:
         device_arn,
         dynamic_qubit_groups=dynamic_qubit_groups,
     )
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
-    package = fq.experimental.create_dynamic_deployment_package(
+    package = fq.experimental.dynamic.create_dynamic_deployment_package(
         circuit,
         backend=provider.backend,
         name="iqm_feedback",

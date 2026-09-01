@@ -7,8 +7,8 @@ import flagquantum as fq
 from benchmarks.dynamic_trajectory import run_benchmark
 
 
-def _feedback_circuit(*, bsz: int = 1) -> fq.experimental.DynamicCircuit:
-    circuit = fq.experimental.DynamicCircuit(2, bsz=bsz)
+def _feedback_circuit(*, bsz: int = 1) -> fq.experimental.dynamic.DynamicCircuit:
+    circuit = fq.experimental.dynamic.DynamicCircuit(2, bsz=bsz)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0, equals=1)
@@ -17,7 +17,7 @@ def _feedback_circuit(*, bsz: int = 1) -> fq.experimental.DynamicCircuit:
 
 
 def test_dynamic_statistics_count_trajectories_operations_and_branches() -> None:
-    result = fq.experimental.run_dynamic(_feedback_circuit(), shots=64, seed=19)
+    result = fq.experimental.dynamic.run_dynamic(_feedback_circuit(), shots=64, seed=19)
     statistics = result.statistics
 
     assert statistics["trajectory_count"] == 64
@@ -39,8 +39,12 @@ def test_dynamic_statistics_count_trajectories_operations_and_branches() -> None
 
 
 def test_dynamic_statistics_are_seed_reproducible_and_cover_batches() -> None:
-    first = fq.experimental.run_dynamic(_feedback_circuit(bsz=2), shots=16, seed=5)
-    second = fq.experimental.run_dynamic(_feedback_circuit(bsz=2), shots=16, seed=5)
+    first = fq.experimental.dynamic.run_dynamic(
+        _feedback_circuit(bsz=2), shots=16, seed=5
+    )
+    second = fq.experimental.dynamic.run_dynamic(
+        _feedback_circuit(bsz=2), shots=16, seed=5
+    )
 
     assert torch.equal(first.samples, second.samples)
     assert torch.equal(first.classical_bits, second.classical_bits)
@@ -70,10 +74,10 @@ def test_dynamic_development_benchmark_contract_and_smoke_budget() -> None:
 
 
 def test_direct_dynamic_gate_path_matches_static_statevector_gates() -> None:
-    dynamic = fq.experimental.DynamicCircuit(3)
+    dynamic = fq.experimental.dynamic.DynamicCircuit(3)
     dynamic.x(0).rx(1, theta=0.31).cx(0, 2).rzz(1, 2, theta=-0.27)
     dynamic.measure(0, classical_bit=0)
-    result = fq.experimental.run_dynamic(dynamic, shots=8, seed=13)
+    result = fq.experimental.dynamic.run_dynamic(dynamic, shots=8, seed=13)
 
     static = fq.Circuit(3)
     static.x(0).rx(1, theta=0.31).cx(0, 2).rzz(1, 2, theta=-0.27)
@@ -83,14 +87,14 @@ def test_direct_dynamic_gate_path_matches_static_statevector_gates() -> None:
 
 
 def test_batched_and_reference_dynamic_strategies_are_semantically_equivalent() -> None:
-    circuit = fq.experimental.DynamicCircuit(2)
+    circuit = fq.experimental.dynamic.DynamicCircuit(2)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
-    reference = fq.experimental.run_dynamic(
+    reference = fq.experimental.dynamic.run_dynamic(
         circuit, shots=2048, seed=23, strategy="trajectory"
     )
-    batched = fq.experimental.run_dynamic(
+    batched = fq.experimental.dynamic.run_dynamic(
         circuit, shots=2048, seed=23, strategy="batched"
     )
 
@@ -108,7 +112,7 @@ def test_batched_and_reference_dynamic_strategies_are_semantically_equivalent() 
 
 def test_auto_dynamic_strategy_falls_back_when_memory_budget_is_too_small() -> None:
     circuit = _feedback_circuit()
-    result = fq.experimental.run_dynamic(
+    result = fq.experimental.dynamic.run_dynamic(
         circuit,
         shots=64,
         seed=3,
@@ -120,7 +124,7 @@ def test_auto_dynamic_strategy_falls_back_when_memory_budget_is_too_small() -> N
         == "trajectory_direct_statevector_kernel"
     )
     with pytest.raises(ValueError, match="memory budget exceeded"):
-        fq.experimental.run_dynamic(
+        fq.experimental.dynamic.run_dynamic(
             circuit,
             shots=64,
             seed=3,

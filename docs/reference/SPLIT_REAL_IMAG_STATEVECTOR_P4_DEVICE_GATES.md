@@ -43,7 +43,7 @@ circuit = fq.Circuit(2).h(0).ry(1, theta=theta).cx(0, 1)
 observable = fq.algorithms.pauli_term(1.0, "ZZ", (0, 1))
 
 result = (
-    fq.experimental.parameter_shift_split_real_imag_device_double_single_gradient(
+    fq.experimental.numerics.parameter_shift_split_real_imag_device_double_single_gradient(
         circuit,
         observable,
         parameter_bindings={
@@ -61,7 +61,7 @@ are transferred to CPU.
 ## Contract and conformance
 
 The executable numerical plan is returned by
-`fq.experimental.split_real_imag_p4_precision_plan()`. The machine-readable
+`fq.experimental.numerics.split_real_imag_p4_precision_plan()`. The machine-readable
 scope is
 [`split-real-imag-statevector-p4-device-double-single-contract.toml`](../../contracts/split-real-imag-statevector-p4-device-double-single-contract.toml),
 and the required operator surface is
@@ -70,7 +70,7 @@ and the required operator surface is
 Run CPU conformance with:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.run_split_real_imag_device_double_single_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_device_double_single_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
 ```
 
 Run Torch-FL logical-device conformance with:

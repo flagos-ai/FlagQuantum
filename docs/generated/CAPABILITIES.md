@@ -147,7 +147,7 @@ Exercise the local differentiable statevector path through Torch-FL's logical fl
 Use residual-preserving pairs of float32 tensors for bounded real and split-complex arithmetic experiments on PyTorch devices.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.run_double_single_conformance`
+- **Public API:** `fq.experimental.numerics.run_double_single_conformance`
 - **Runtime modes:** `numerical_primitive_conformance`
 - **Hardware:** `cpu`, `device_generic_pytorch`
 - **Gradient support:** `experimental_composed_primitives`
@@ -161,7 +161,7 @@ Use residual-preserving pairs of float32 tensors for bounded real and split-comp
 Execute a bounded forward-only statevector using two device-resident float32 tensors without requiring accelerator complex dtypes.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.execute_split_real_imag_statevector`, `fq.experimental.run_split_real_imag_conformance`
+- **Public API:** `fq.experimental.numerics.execute_split_real_imag_statevector`, `fq.experimental.numerics.run_split_real_imag_conformance`
 - **Runtime modes:** `split_real_imag_statevector_p0`
 - **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
 - **Gradient support:** `unsupported`
@@ -175,7 +175,7 @@ Execute a bounded forward-only statevector using two device-resident float32 ten
 Evaluate bounded Pauli Hamiltonians and explicit parameter-shift gradients using two device-resident float32 state tensors without accelerator complex dtypes.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.execute_split_real_imag_expectation`, `fq.experimental.parameter_shift_split_real_imag_gradient`, `fq.experimental.run_split_real_imag_training_conformance`
+- **Public API:** `fq.experimental.numerics.execute_split_real_imag_expectation`, `fq.experimental.numerics.parameter_shift_split_real_imag_gradient`, `fq.experimental.numerics.run_split_real_imag_training_conformance`
 - **Runtime modes:** `split_real_imag_statevector_p1`
 - **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
 - **Gradient support:** `parameter_shift_experimental`
@@ -189,7 +189,7 @@ Evaluate bounded Pauli Hamiltonians and explicit parameter-shift gradients using
 Retain FP32 state and gates while upgrading Pauli inner products, Hamiltonian sums, and parameter-shift accumulation to explicit Double-Single high/low reductions.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.execute_split_real_imag_precision_expectation`, `fq.experimental.parameter_shift_split_real_imag_precision_gradient`, `fq.experimental.run_split_real_imag_precision_conformance`, `fq.experimental.split_real_imag_p2_precision_plan`, `fq.experimental.split_real_imag_p2_accuracy_envelope`
+- **Public API:** `fq.experimental.numerics.execute_split_real_imag_precision_expectation`, `fq.experimental.numerics.parameter_shift_split_real_imag_precision_gradient`, `fq.experimental.numerics.run_split_real_imag_precision_conformance`, `fq.experimental.numerics.split_real_imag_p2_precision_plan`, `fq.experimental.numerics.split_real_imag_p2_accuracy_envelope`
 - **Runtime modes:** `split_real_imag_statevector_p2_precision`
 - **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
 - **Gradient support:** `parameter_shift_selective_double_single_experimental`
@@ -203,7 +203,7 @@ Retain FP32 state and gates while upgrading Pauli inner products, Hamiltonian su
 Store every complex amplitude as four FP32 high/low words and retain residuals through gate application, periodic normalization, observables, and parameter-shift gradients.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.execute_split_real_imag_double_single_statevector`, `fq.experimental.execute_split_real_imag_double_single_expectation`, `fq.experimental.parameter_shift_split_real_imag_double_single_gradient`, `fq.experimental.run_split_real_imag_double_single_conformance`, `fq.experimental.split_real_imag_p3_precision_plan`, `fq.experimental.split_real_imag_p3_accuracy_envelope`
+- **Public API:** `fq.experimental.numerics.execute_split_real_imag_double_single_statevector`, `fq.experimental.numerics.execute_split_real_imag_double_single_expectation`, `fq.experimental.numerics.parameter_shift_split_real_imag_double_single_gradient`, `fq.experimental.numerics.run_split_real_imag_double_single_conformance`, `fq.experimental.numerics.split_real_imag_p3_precision_plan`, `fq.experimental.numerics.split_real_imag_p3_accuracy_envelope`
 - **Runtime modes:** `split_real_imag_statevector_p3_double_single`
 - **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
 - **Gradient support:** `parameter_shift_full_double_single_experimental`
@@ -217,7 +217,7 @@ Store every complex amplitude as four FP32 high/low words and retain residuals t
 Generate bounded fixed and rotation gates with device-resident FP32 Double-Single arithmetic, then retain four FP32 words through state evolution, observables, and parameter-shift gradients.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.execute_split_real_imag_device_double_single_statevector`, `fq.experimental.execute_split_real_imag_device_double_single_expectation`, `fq.experimental.parameter_shift_split_real_imag_device_double_single_gradient`, `fq.experimental.run_split_real_imag_device_double_single_conformance`, `fq.experimental.split_real_imag_p4_precision_plan`, `fq.experimental.split_real_imag_p4_accuracy_envelope`
+- **Public API:** `fq.experimental.numerics.execute_split_real_imag_device_double_single_statevector`, `fq.experimental.numerics.execute_split_real_imag_device_double_single_expectation`, `fq.experimental.numerics.parameter_shift_split_real_imag_device_double_single_gradient`, `fq.experimental.numerics.run_split_real_imag_device_double_single_conformance`, `fq.experimental.numerics.split_real_imag_p4_precision_plan`, `fq.experimental.numerics.split_real_imag_p4_accuracy_envelope`
 - **Runtime modes:** `split_real_imag_statevector_p4_device_double_single`
 - **Hardware:** `cpu`, `single_cuda_reference`, `device_generic_pytorch`
 - **Gradient support:** `parameter_shift_device_double_single_experimental`
@@ -231,7 +231,7 @@ Generate bounded fixed and rotation gates with device-resident FP32 Double-Singl
 Expose a bounded first-order PyTorch autograd path whose forward and parameter-shift backward use P4 Double-Single arithmetic before an explicit FP32 tensor delivery boundary.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.split_real_imag_device_double_single_autograd_expectation`, `fq.experimental.split_real_imag_p5_autograd_bridge_summary`, `fq.experimental.run_split_real_imag_autograd_conformance`
+- **Public API:** `fq.experimental.numerics.split_real_imag_device_double_single_autograd_expectation`, `fq.experimental.numerics.split_real_imag_p5_autograd_bridge_summary`, `fq.experimental.numerics.run_split_real_imag_autograd_conformance`
 - **Runtime modes:** `split_real_imag_statevector_p5_autograd_bridge`
 - **Hardware:** `cpu`
 - **Gradient support:** `first_order_parameter_shift_internal_double_single_float32_delivery_experimental`
@@ -245,7 +245,7 @@ Expose a bounded first-order PyTorch autograd path whose forward and parameter-s
 Consume explicit P4 high/low parameter-shift gradients and return updated high/low master parameters without crossing the one-word PyTorch Tensor.grad boundary.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.SplitRealImagDoubleSingleSGDState`, `fq.experimental.SplitRealImagDoubleSingleSGDStepResult`, `fq.experimental.initialize_split_real_imag_double_single_sgd`, `fq.experimental.double_single_sgd_step`, `fq.experimental.split_real_imag_double_single_sgd_step`, `fq.experimental.run_split_real_imag_optimizer_conformance`
+- **Public API:** `fq.experimental.numerics.SplitRealImagDoubleSingleSGDState`, `fq.experimental.numerics.SplitRealImagDoubleSingleSGDStepResult`, `fq.experimental.numerics.initialize_split_real_imag_double_single_sgd`, `fq.experimental.numerics.double_single_sgd_step`, `fq.experimental.numerics.split_real_imag_double_single_sgd_step`, `fq.experimental.numerics.run_split_real_imag_optimizer_conformance`
 - **Runtime modes:** `split_real_imag_statevector_p5_double_single_sgd`
 - **Hardware:** `cpu`, `single_cuda_reference`, `torch_fl_flagos_cuda_reference`
 - **Gradient support:** `explicit_parameter_shift_double_single_optimizer_experimental`
@@ -259,7 +259,7 @@ Consume explicit P4 high/low parameter-shift gradients and return updated high/l
 Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imaginary-time TEBD.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.run_tebd`, `fq.experimental.TEBDResult`
+- **Public API:** `fq.experimental.simulation.run_tebd`, `fq.experimental.simulation.TEBDResult`
 - **Runtime modes:** `mps_tebd`
 - **Hardware:** `cpu`, `single_gpu`
 - **Gradient support:** `unsupported`
@@ -419,7 +419,7 @@ Translate supported immutable PennyLane QuantumScript programs to versioned Flag
 Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.from_qiskit`, `fq.experimental.to_qiskit`
+- **Public API:** `fq.experimental.interop.from_qiskit`, `fq.experimental.interop.to_qiskit`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `symbolic_parameters_only`
@@ -444,17 +444,17 @@ Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with
 
 ### Extension SDK
 
-Add gates, transformations, runtime hooks, and providers through the experimental extension surface.
+Build against the frozen extension protocol while qualifying each extension independently.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental`
+- **Public API:** `flagquantum.extensions`
 - **Runtime modes:** `extension_defined`
 - **Hardware:** `extension_defined`
 - **Gradient support:** `extension_defined`
 - **Distribution semantics:** `extension_defined`
 - **Start:** [quick example](../../examples/extensions/reference_extensions.py)
 - **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
-- **Known boundary:** Extension compatibility is not guaranteed before stabilization.
+- **Known boundary:** The SDK protocol contract is frozen; individual extensions remain experimental until separately qualified.
 
 
 ## Validated public performance claims
