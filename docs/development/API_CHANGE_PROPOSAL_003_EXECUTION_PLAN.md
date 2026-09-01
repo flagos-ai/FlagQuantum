@@ -263,13 +263,9 @@ fq.run(
 
 ### measurement 与 noise 边界
 
-Proposal 003 不顺带冻结 measurement 合并规则或 noise model 序列化：
-
-- 可执行计划首版只执行已经进入规范 `CircuitIR` 和 resolved options 的请求；
-- 使用 `measurements=` 或 `noise_model=` 的 program 路径保持 Proposal 002 的当前行为；
-- 这两类临时调用参数不得附加到已有 plan；
-- measurement/noise 如何进入未来 plan identity，由 Proposal 004 单独决定；
-- 在 Proposal 004 完成前，不得声称所有 program 调用都可转换成可序列化 plan。
+本节原先延后给 Proposal 004，现已由该提案取代：measurement 在 planning 前进入规范
+`CircuitIR`，noise model 进入经过 identity 校验的 versioned plan extension；两者均不再
+通过 transient execution 绕过 plan。已有 plan 仍禁止附加任何临时调用参数。
 
 ## stale plan 与失败阶段
 
@@ -351,8 +347,7 @@ reason code 和“不重新规划、不 fallback”的行为，避免永久承�
 - `fq.run(program)` 的常规路径与 `fq.run(plan)` 共用唯一 exact-execution path；
 - plan 输入拒绝 options、measurements 和 noise_model 覆盖，并由契约测试证明不会再次调用
   planner 或 compiler；
-- 临时 measurement override 和 noise-model program 路径仍按 Proposal 003 的明确边界保留，
-  等待 Proposal 004 收敛；
+- measurement 与 noise program 路径已由 Proposal 004 收敛到同一 exact-execution path；
 - default、runtime、distributed、benchmark/release contract、API snapshot、architecture、
   Ruff 和 Black 均通过；`ExecutionPlan` 根级导出已于 2026-09-01 获批，contract
   freeze 仍未启用。

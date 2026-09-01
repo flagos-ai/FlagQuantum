@@ -55,6 +55,7 @@ from .ops.matrices import GATE_MAT_DICT
 
 if TYPE_CHECKING:
     from .compilation.planner import ExecutionPlan
+    from .noise import NoiseModel
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
 
@@ -748,7 +749,7 @@ class Circuit:
         *,
         options: ExecutionOptions | None = None,
         measurements: Sequence[MeasurementNode] | None = None,
-        noise_model: Any | None = None,
+        noise_model: NoiseModel | None = None,
     ) -> ExecutionResult:
         """Execute the circuit and return an :class:`ExecutionResult`.
 
@@ -900,12 +901,23 @@ class Circuit:
 
         return analyze(self.to_ir())
 
-    def plan(self, *, options: ExecutionOptions | None = None) -> ExecutionPlan:
+    def plan(
+        self,
+        *,
+        options: ExecutionOptions | None = None,
+        measurements: Sequence[MeasurementNode] | None = None,
+        noise_model: NoiseModel | None = None,
+    ) -> ExecutionPlan:
         """Plan this circuit using stable backend-neutral execution options."""
 
         from .compilation.planner import plan
 
-        return plan(self, options=options)
+        return plan(
+            self,
+            options=options,
+            measurements=measurements,
+            noise_model=noise_model,
+        )
 
     def runtime_plan(self, **options: Any):
         """Explain the best local, JAX, or distributed runtime for this circuit."""

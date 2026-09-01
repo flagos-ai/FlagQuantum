@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 from ..core.ir import CircuitIR, MeasurementNode
 from .backend_selection import OutputTarget, select_backend_by_cost
@@ -42,6 +42,8 @@ from .tn_calibration import TNWorkingSetCalibration
 from .training_preflight import collect_distributed_training_preflight
 
 if TYPE_CHECKING:
+    from ..circuit import Circuit
+    from ..noise import NoiseModel
     from ..runtime.options import ExecutionOptions
 
 
@@ -457,9 +459,11 @@ def plan_advanced(
 
 
 def plan(
-    program: Any,
+    program: Circuit | CircuitIR,
     *,
     options: ExecutionOptions | None = None,
+    measurements: Sequence[MeasurementNode] | None = None,
+    noise_model: NoiseModel | None = None,
 ) -> ExecutionPlan:
     """Build an execution plan from the stable, backend-neutral options."""
 
@@ -477,6 +481,22 @@ def plan(
     source_ir = program.to_ir() if hasattr(program, "to_ir") else program
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("program must be a Circuit or CircuitIR")
+    if measurements is not None:
+        if source_ir.measurements:
+            raise ValueError(
+                "measurements cannot be supplied when the program already contains "
+                "measurement requests"
+            )
+        if any(not isinstance(request, MeasurementNode) for request in measurements):
+            raise TypeError("measurements must contain MeasurementNode instances")
+        source_ir = replace(source_ir, measurements=tuple(measurements))
+    if noise_model is not None:
+        from ..noise import NoiseModel
+
+        if not isinstance(noise_model, NoiseModel):
+            raise TypeError(
+                "noise_model must be a flagquantum.noise.NoiseModel or None"
+            )
     if any(
         instruction.metadata.get("is_dynamic") or instruction.metadata.get("condition")
         for instruction in source_ir.instructions
@@ -496,6 +516,10 @@ def plan(
             f"stable fq.run backend {resolved.backend!r} is not available; "
             "use fq.Module for JAX kernels or flagquantum.backends for "
             "backend-native execution"
+        )
+    if noise_model is not None and resolved.mode not in {"auto", "density_matrix"}:
+        raise ValueError(
+            "stable noisy execution supports mode='auto' or mode='density_matrix'"
         )
     from ..core.runtime_config import get_runtime_config
 
@@ -539,11 +563,25 @@ def plan(
         complex_bytes=16 if resolved.precision == "complex128" else 8,
         memory_limit_bytes=resolved.memory_limit_bytes,
         state_mode=resolved.mode,
+        noise_model=noise_model,
         target=targets[resolved.target],
         require_gradients=resolved.require_gradients,
         allow_approximate=resolved.allow_approximate,
         config=selected_config,
     )
+    if noise_model is not None:
+        from .noise import build_noisy_execution_plan
+
+        internal_plan = replace(
+            internal_plan,
+            noisy_execution_plan=build_noisy_execution_plan(
+                internal_plan,
+                representation="density_matrix",
+                evolution="exact_channel",
+                memory_limit_bytes=resolved.memory_limit_bytes,
+                noise_model_identity=noise_model.identity,
+            ),
+        )
     from .execution_plan_contract import attach_execution_contract
 
     return attach_execution_contract(
@@ -551,6 +589,8 @@ def plan(
         program=source_ir,
         requested_options=options or ExecutionOptions(),
         resolved_options=resolved,
+        noise_model=noise_model,
+        preserve_program_instructions=noise_model is not None,
     )
 
 

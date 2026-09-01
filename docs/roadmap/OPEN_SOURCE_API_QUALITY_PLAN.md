@@ -233,14 +233,15 @@ options = fq.ExecutionOptions(
 
 **优先级：P0**
 
-测量请求既可以保存在 `CircuitIR.measurements`，也可以通过
-`fq.run(..., measurements=...)` 传入。当前显式参数可能覆盖 IR 中的请求，但该行为
-不够显眼。
+Proposal 004 已选择单一规范模型：测量请求最终写入
+`ExecutionPlan` 携带的 `CircuitIR.measurements`。`measurements=` 仅是 planning
+便捷输入；若 IR 已含请求则明确报错，不允许隐式覆盖或追加。
 
-必须选择并文档化一种模型：
+已落地规则：
 
-1. 默认只使用 IR measurements，显式 measurements 与其冲突时报错；或
-2. 显式提供 `measurement_policy="replace" | "append"`。
+1. 默认使用 IR measurements；
+2. 显式 measurements 在 planning 前写入空的 IR measurement 列表；
+3. 两个来源同时存在时报错。
 
 不允许存在隐式覆盖。
 
@@ -248,14 +249,13 @@ options = fq.ExecutionOptions(
 
 **优先级：P0**
 
-当前问题包括：
+Proposal 004 已解决：
 
-- `fq.run` 的类型标注仍为 `Any`；
-- `ExecutionResult.plan` 允许 `Any`；
-- `MeasurementResult.value` 为 `Any`；
-- 多个结果字段为 optional，用户不知道哪个一定存在；
-- `ExecutionResult.__getattr__` 会向 native result 透传属性；
-- `metrics/runtime/provenance` 主要是自由格式 Mapping。
+- `fq.run` 和 `fq.plan` 的 program 类型已收窄；
+- `ExecutionResult.plan` 和 `MeasurementResult.value` 已移除 `Any`；
+- optional 字段保留用于张量组合，但已提供失败闭合的 required accessors；
+- `ExecutionResult.__getattr__` 的 native 透传已移除；
+- `metrics/runtime/provenance` 的完整 key schema 留给 Proposal 005。
 
 目标：
 
@@ -270,7 +270,7 @@ fq.train(...) -> fq.TrainingResult
 ```python
 result.expectation()
 result.statevector()
-result.samples()
+result.require_samples()
 result.measurement("energy")
 result.native()  # 明确标记为非稳定后端对象
 ```
@@ -683,11 +683,12 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 
 ### Phase 4：收紧 Result 和 Measurement
 
-- 去除 stable API 返回值中的 `Any`；
-- 定义 measurement 来源和组合规则；
-- 增加稳定结果访问器；
-- 隔离 backend-native 对象；
-- 版本化 metadata schema。
+- [x] 去除 stable execution program、plan 和 measurement value 中的 `Any`；
+- [x] 定义 measurement 来源和冲突规则；
+- [x] 增加稳定结果访问器；
+- [x] 隔离 backend-native 对象；
+- [x] 版本化 result summary schema；
+- [ ] 在 Proposal 005 中收敛 Module diagnostics mappings 与统一异常层级。
 
 完成标准：用户无需检查多个不明确的 optional 字段即可读取所请求结果。
 
@@ -766,9 +767,9 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - [x] `ExecutionOptions` 成为唯一推荐执行配置；
 - [x] `fq.run(plan)` 已实现并通过等价性测试；
 - [x] `plan/run/RuntimePolicy` 使用统一术语；
-- [ ] Measurement 来源和覆盖规则唯一明确；
-- [ ] `fq.run`、`fq.plan`、`fq.train` 返回类型不再是 `Any`；
-- [ ] native backend 对象不会隐式扩张稳定 Result；
+- [x] Measurement 来源和覆盖规则唯一明确；
+- [x] `fq.run`、`fq.plan`、`fq.train` 返回类型不再是 `Any`；
+- [x] native backend 对象不会隐式扩张稳定 Result；
 - [ ] Module 的 forward/execute/train 语义已固定；
 - [ ] checkpoint/resume 的责任边界已明确；
 - [ ] distributed/noise/backend 专属入口已完成分层；

@@ -6,6 +6,7 @@
   "root_addition": "ExecutionOptions",
   "implementation_authorized": true,
   "root_manifest_authorized": true,
+  "public_signature_superseded_by": "contracts/execution-result-v1-candidate.json",
   "public_signatures": {
     "plan": "(program: 'Any', *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
     "run": "(program: 'Any', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'",

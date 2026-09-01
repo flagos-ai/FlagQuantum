@@ -49,9 +49,10 @@ gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
 FlagQuantum IR continue to use `wires=`.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
-point. `ExecutionOptions` is the only stable execution-configuration input;
-unknown keywords fail before planning. `Circuit.run(options=...)` and
-`fq.run(circuit, options=...)` are equivalent.
+point. `ExecutionOptions` owns backend-neutral execution configuration;
+measurement requests and an optional `flagquantum.noise.NoiseModel` are semantic
+program inputs. Unknown keywords fail before planning. `Circuit.run(...)` and
+`fq.run(circuit, ...)` are equivalent.
 
 For an inspectable and reproducible execution, pass the result of `fq.plan`
 directly to `fq.run`. The supplied plan is validated and executed without
@@ -121,9 +122,10 @@ MPS, JAX, distributed, and deployment workflows.
 
 ## Measurements
 
-Pass ordered `MeasurementNode` requests to `fq.run`. The same requests can be
-stored in `CircuitIR.measurements`; executors consume them without a separate
-measurement API:
+Pass ordered `MeasurementNode` requests to `fq.plan` or `fq.run`. They are
+embedded in the executable plan before identity is computed. Requests may
+instead already exist in `CircuitIR.measurements`, but supplying both forms is
+an error: FlagQuantum never silently replaces or appends measurements.
 
 ```python
 requests = (
@@ -135,11 +137,12 @@ requests = (
     ),
     fq.MeasurementNode("sample", (0, 1), shots=1024, metadata={"seed": 7}),
 )
-result = fq.run(circuit, measurements=requests)
+plan = fq.plan(circuit, measurements=requests)
+result = fq.run(plan)
 
-z_values = result.measurements[0].value
-xz_value = result.measurements[1].value
-bit_samples = result.measurements[2].value
+z_values = result.expectation(0)
+xz_value = result.expectation(1)
+bit_samples = result.require_samples()
 ```
 
 Supported measurement kinds are `expectation_z`, `expectation_ps`,
@@ -147,6 +150,29 @@ Supported measurement kinds are `expectation_z`, `expectation_ps`,
 computational basis. A `sample` request is also projected to
 `ExecutionResult.samples` for consumers of the original result contract.
 Unsupported measurement kinds and missing shot counts fail explicitly.
+
+Use `result.measurement(index_or_name)` for a specific request,
+`result.statevector()` for a required statevector, and `result.native()` only
+when intentionally depending on an unstable backend-native object. Backend
+attributes are not implicitly forwarded through `ExecutionResult`.
+
+## Noise
+
+Stable noisy execution accepts a `flagquantum.noise.NoiseModel` during planning:
+
+```python
+import flagquantum.noise as fqn
+
+noise = fqn.NoiseModel().add("x", fqn.bit_flip_channel(0.01))
+plan = fq.plan(circuit, noise_model=noise)
+restored = fq.ExecutionPlan.from_json(plan.to_json())
+result = fq.run(restored)
+```
+
+The versioned model payload and its SHA-256 identity are verified as part of
+the plan. The first public alpha candidate supports stable noisy planning for
+`mode="auto"` and `mode="density_matrix"`; unsupported mode combinations fail
+during planning.
 
 `probabilities` computes an exact joint marginal over the requested wires from
 Pauli-Z contractions. The default limit is eight wires because the cost is

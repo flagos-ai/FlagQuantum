@@ -222,7 +222,7 @@ def test_public_batched_statevector_plan_records_adaptive_policy():
     assert trajectory_plan.count == 20
     assert trajectory_plan.min_count == 8
     assert trajectory_plan.target_standard_error == 1e-5
-    assert result.statistics.count == 8
+    assert result.native().statistics.count == 8
 
 
 def test_batched_statevector_checkpoint_resume_matches_continuous(tmp_path):

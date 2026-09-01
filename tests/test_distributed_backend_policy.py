@@ -155,13 +155,14 @@ def test_circuit_run_single_rank_keeps_native_device_path(monkeypatch):
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    qdev = fq.experimental.execution.run_advanced(
+    result = fq.experimental.execution.run_advanced(
         circuit,
         mode="distributed_statevector",
         world_size=1,
         device="cpu",
     )
-    plan = qdev.plan
+    qdev = result.native()
+    plan = result.plan
 
     assert not isinstance(qdev, fq.LocalDistributedStatevectorResult)
     assert qdev.distributed_backend_policy.profile == "development"
@@ -179,7 +180,7 @@ def test_distributed_statevector_backend_override_is_consumed_before_device(
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    qdev = fq.experimental.execution.run_advanced(
+    result = fq.experimental.execution.run_advanced(
         circuit,
         mode="distributed_statevector",
         world_size=1,
@@ -187,7 +188,8 @@ def test_distributed_statevector_backend_override_is_consumed_before_device(
         torch_backend="local_tensor",
         jax_backend="pmap_local_cpu",
     )
-    plan = qdev.plan
+    qdev = result.native()
+    plan = result.plan
 
     assert qdev.distributed_backend_policy.torch_backend == "local_tensor"
     assert qdev.distributed_backend_policy.jax_backend == "pmap_local_cpu"

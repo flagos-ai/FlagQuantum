@@ -25,6 +25,7 @@ MANIFEST = ROOT / "docs" / "public_api_v1.json"
 BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
 EXECUTION_OPTIONS_CONTRACT = ROOT / "contracts" / "execution-options-v1-candidate.json"
 EXECUTION_PLAN_CONTRACT = ROOT / "contracts" / "execution-plan-v1-candidate.json"
+EXECUTION_RESULT_CONTRACT = ROOT / "contracts" / "execution-result-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -172,6 +173,7 @@ def validate() -> tuple[str, ...]:
         EXECUTION_OPTIONS_CONTRACT.read_text(encoding="utf-8")
     )
     plan_contract = json.loads(EXECUTION_PLAN_CONTRACT.read_text(encoding="utf-8"))
+    result_contract = json.loads(EXECUTION_RESULT_CONTRACT.read_text(encoding="utf-8"))
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -198,6 +200,8 @@ def validate() -> tuple[str, ...]:
         )
     if plan_contract.get("root_manifest_authorized") is True:
         authorized_changes.add(str(plan_contract["root_addition"]))
+    if result_contract.get("implementation_authorized") is True:
+        authorized_changes.update(result_contract.get("protected_root_changes", ()))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -230,6 +234,8 @@ def validate() -> tuple[str, ...]:
     expected_signatures = dict(options_contract.get("public_signatures", {}))
     if plan_contract.get("implementation_authorized") is True:
         expected_signatures.update(plan_contract.get("proposed_signatures", {}))
+    if result_contract.get("implementation_authorized") is True:
+        expected_signatures.update(result_contract.get("public_signatures", {}))
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -239,6 +245,8 @@ def validate() -> tuple[str, ...]:
     )
     if plan_contract.get("root_manifest_authorized") is True:
         errors.extend(_validate_authorized_execution_plan(plan_contract, names))
+    if result_contract.get("implementation_authorized") is True:
+        errors.extend(_validate_authorized_execution_result(result_contract))
     return tuple(errors)
 
 
@@ -301,6 +309,36 @@ def _validate_authorized_execution_plan(
     for name in contract["contract"]["methods"]:
         if not callable(getattr(ExecutionPlan, str(name), None)):
             errors.append(f"ExecutionPlan stable method is missing: {name}")
+    return errors
+
+
+def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]:
+    import flagquantum as fq
+
+    errors: list[str] = []
+    result_contract = contract["result_contract"]
+    annotations = result_contract["field_annotations"]
+    result_fields = {
+        field.name: str(field.type) for field in dataclasses.fields(fq.ExecutionResult)
+    }
+    measurement_fields = {
+        field.name: str(field.type)
+        for field in dataclasses.fields(fq.MeasurementResult)
+    }
+    if result_fields["plan"] != annotations["ExecutionResult.plan"]:
+        errors.append("ExecutionResult.plan annotation changed")
+    if measurement_fields["value"] != annotations["MeasurementResult.value"]:
+        errors.append("MeasurementResult.value annotation changed")
+    for name in result_contract["accessors"]:
+        if not callable(getattr(fq.ExecutionResult, str(name), None)):
+            errors.append(f"ExecutionResult stable accessor is missing: {name}")
+    if "__getattr__" in fq.ExecutionResult.__dict__:
+        errors.append("ExecutionResult must not delegate backend-native attributes")
+    summary = fq.ExecutionResult().summary()
+    if summary.get("schema") != result_contract["summary_schema"]:
+        errors.append("ExecutionResult summary schema changed")
+    if summary.get("version") != result_contract["summary_version"]:
+        errors.append("ExecutionResult summary version changed")
     return errors
 
 

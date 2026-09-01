@@ -7,8 +7,8 @@
   "implementation_authorized": true,
   "root_manifest_authorized": true,
   "proposed_signatures": {
-    "plan": "(program: 'Any', *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
-    "run": "(program_or_plan: 'Any', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'"
+    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'"
   },
   "contract": {
     "kind": "immutable_factory_value",
@@ -127,6 +127,7 @@
     "candidate_is_frozen_contract": false,
     "implementation_requires_api_owner_approval": true,
     "root_manifest_requires_separate_approval": true,
-    "measurement_noise_result_semantics_deferred": true
+    "measurement_noise_result_semantics_deferred": false,
+    "measurement_noise_result_contract": "contracts/execution-result-v1-candidate.json"
   }
 }

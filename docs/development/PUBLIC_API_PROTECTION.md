@@ -130,10 +130,10 @@ Illustrative contract entries:
 
 ```toml
 [functions.run]
-signature = "(program_or_plan, *, options=None) -> ExecutionResult"
+signature = "(program_or_plan, *, options=None, measurements=None, noise_model=None) -> ExecutionResult"
 
 [functions.plan]
-signature = "(program, *, options=None) -> ExecutionPlan"
+signature = "(program, *, options=None, measurements=None, noise_model=None) -> ExecutionPlan"
 
 [classes.ExecutionOptions]
 frozen = true

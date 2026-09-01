@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping, TypeAlias
 
 import torch
 
 from ..core.contracts import AccuracyContract, RuntimePlanContract
 from .result_adapters import LiveRuntimeSummary
+
+if TYPE_CHECKING:
+    from ..compilation.models import ExecutionPlan
+
+EXECUTION_RESULT_SUMMARY_SCHEMA = "flagquantum.execution_result.summary"
+EXECUTION_RESULT_SUMMARY_VERSION = "1.0"
+MeasurementValue: TypeAlias = torch.Tensor | list[dict[str | int, int]]
 
 
 @dataclass(frozen=True)
@@ -17,10 +24,14 @@ class MeasurementResult:
 
     kind: str
     wires: tuple[int, ...]
-    value: Any
+    value: MeasurementValue
     shots: int | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
     statistics: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def schema_version(self) -> str:
+        return "1.0"
 
 
 @dataclass(frozen=True)
@@ -31,7 +42,7 @@ class ExecutionResult:
     state: torch.Tensor | None = None
     samples: torch.Tensor | None = None
     measurements: tuple[MeasurementResult, ...] = ()
-    plan: RuntimePlanContract | Any | None = None
+    plan: ExecutionPlan | RuntimePlanContract | None = None
     accuracy: AccuracyContract = AccuracyContract()
     metrics: Mapping[str, Any] = field(default_factory=dict)
     provenance: Mapping[str, Any] = field(default_factory=dict)
@@ -127,17 +138,87 @@ class ExecutionResult:
             "measurements or request a state-producing execution mode"
         )
 
-    def __getattr__(self, name: str) -> Any:
-        """Delegate backend-specific compatibility attributes to native output."""
+    def statevector(self) -> torch.Tensor:
+        """Return the statevector or fail clearly when it was not produced."""
+
+        return self.to_statevector()
+
+    def require_samples(self) -> torch.Tensor:
+        """Return samples or fail clearly when no sample request was executed."""
+
+        if isinstance(self.samples, torch.Tensor):
+            return self.samples
+        raise RuntimeError("execution result does not contain samples")
+
+    def measurement(self, selector: int | str) -> MeasurementResult:
+        """Return one requested measurement by position, name, or unique kind."""
+
+        if type(selector) is int:
+            try:
+                return self.measurements[selector]
+            except IndexError as exc:
+                raise RuntimeError(
+                    f"measurement index {selector} is outside the result"
+                ) from exc
+        if not isinstance(selector, str) or not selector:
+            raise TypeError(
+                "measurement selector must be an integer or non-empty string"
+            )
+        named = tuple(
+            item for item in self.measurements if item.metadata.get("name") == selector
+        )
+        matches = named or tuple(
+            item for item in self.measurements if item.kind == selector
+        )
+        if not matches:
+            raise RuntimeError(f"execution result has no measurement {selector!r}")
+        if len(matches) > 1:
+            raise RuntimeError(
+                f"measurement selector {selector!r} is ambiguous; use an index or "
+                "unique metadata name"
+            )
+        return matches[0]
+
+    def expectation(self, selector: int | str | None = None) -> torch.Tensor:
+        """Return one expectation tensor from the requested measurements."""
+
+        if selector is None:
+            matches = tuple(
+                item
+                for item in self.measurements
+                if item.kind.startswith("expectation")
+            )
+            if not matches:
+                raise RuntimeError("execution result does not contain an expectation")
+            if len(matches) > 1:
+                raise RuntimeError(
+                    "execution result contains multiple expectations; select one by "
+                    "index or metadata name"
+                )
+            result = matches[0]
+        else:
+            result = self.measurement(selector)
+        if not result.kind.startswith("expectation") or not isinstance(
+            result.value, torch.Tensor
+        ):
+            raise RuntimeError("selected measurement is not a tensor expectation")
+        return result.value
+
+    def native(self) -> object:
+        """Return the explicitly unstable backend-native output when available."""
 
         native = self.__dict__.get("_native_output")
-        if native is not None and hasattr(native, name):
-            return getattr(native, name)
-        raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}")
+        if native is None:
+            raise RuntimeError(
+                "execution result does not retain a backend-native output"
+            )
+        return native
 
     def summary(self) -> dict[str, Any]:
         runtime = dict(self.runtime)
         summary = {
+            "schema": EXECUTION_RESULT_SUMMARY_SCHEMA,
+            "version": EXECUTION_RESULT_SUMMARY_VERSION,
             "has_value": self.value is not None,
             "has_state": self.state is not None,
             "has_samples": self.samples is not None,
@@ -198,4 +279,10 @@ def normalize_execution_result(
     return result
 
 
-__all__ = ("ExecutionResult", "MeasurementResult", "normalize_execution_result")
+__all__ = (
+    "EXECUTION_RESULT_SUMMARY_SCHEMA",
+    "EXECUTION_RESULT_SUMMARY_VERSION",
+    "ExecutionResult",
+    "MeasurementResult",
+    "normalize_execution_result",
+)

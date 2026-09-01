@@ -17,6 +17,9 @@ if TYPE_CHECKING:
 
 EXECUTION_PLAN_SCHEMA = "flagquantum.execution_plan"
 EXECUTION_PLAN_VERSION = "1.0"
+NOISE_EXTENSION_NAMESPACE = "flagquantum.noise"
+NOISE_EXTENSION_KIND = "noise_model"
+NOISE_EXTENSION_VERSION = "1.0"
 _COMPILER_PIPELINE = "flagquantum.compiler.stable.v1"
 _FINGERPRINT_NAMES = ("program", "options", "environment", "compiler")
 _DECISION_FIELDS = {
@@ -78,10 +81,14 @@ def attach_execution_contract(
     program: CircuitIR,
     requested_options: ExecutionOptions,
     resolved_options: ResolvedExecutionOptions,
+    noise_model: Any | None = None,
+    preserve_program_instructions: bool = False,
 ) -> ExecutionPlan:
     """Attach one immutable canonical payload to an internally built plan."""
 
-    executable_program = _canonical_program(program, plan)
+    executable_program = (
+        program if preserve_program_instructions else _canonical_program(program, plan)
+    )
     resolved = _resolved_mapping(resolved_options)
     backend = (
         "pytorch" if resolved_options.backend == "auto" else resolved_options.backend
@@ -110,6 +117,7 @@ def attach_execution_contract(
         "environment": canonical_hash(environment),
         "compiler": canonical_hash(compiler),
     }
+    extensions = [] if noise_model is None else [_noise_extension(noise_model)]
     payload: dict[str, object] = {
         "schema": EXECUTION_PLAN_SCHEMA,
         "version": EXECUTION_PLAN_VERSION,
@@ -120,7 +128,7 @@ def attach_execution_contract(
         "fingerprints": fingerprints,
         "environment_requirements": environment,
         "decision": decision,
-        "extensions": [],
+        "extensions": extensions,
     }
     payload["identity"] = _identity(payload, compiler=compiler)
     return replace(plan, _contract_payload_json=canonical_json(payload))
@@ -147,10 +155,17 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     from .models import ExecutionPlan
     from .planner import analyze
 
-    analysis = analyze(program)
+    planned_program = program
+    if normalized["extensions"]:
+        from ..noise import NoiseModel
+        from .noise import lower_noise_model
+
+        noise_model = NoiseModel.from_dict(normalized["extensions"][0]["payload"])
+        planned_program = lower_noise_model(program, noise_model)
+    analysis = analyze(planned_program)
     plan = ExecutionPlan(
         analysis=analysis,
-        layers=build_layer_plans(program),
+        layers=build_layer_plans(planned_program),
         state_bytes=int(decision["state_bytes"]),
         recommended_mode=str(decision["recommended_mode"]),
         world_size=int(decision["world_size"]),
@@ -169,6 +184,20 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         runtime_config=_runtime_config_manifest(decision),
         _contract_payload_json=canonical_json(normalized),
     )
+    if normalized["extensions"]:
+        from .noise import build_noisy_execution_plan
+
+        extension = normalized["extensions"][0]
+        plan = replace(
+            plan,
+            noisy_execution_plan=build_noisy_execution_plan(
+                plan,
+                representation="density_matrix",
+                evolution="exact_channel",
+                memory_limit_bytes=decision["memory_limit_bytes"],
+                noise_model_identity=str(extension["identity"]),
+            ),
+        )
     return plan
 
 
@@ -261,11 +290,7 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         raise ExecutionPlanContractError(
             "extension_incompatible", "extensions must be a JSON array"
         )
-    if extensions:
-        raise ExecutionPlanContractError(
-            "extension_incompatible",
-            "ExecutionPlan v1 has no enabled executable extensions",
-        )
+    _validate_extensions(extensions)
 
     expected_fingerprints = {
         "program": program.content_hash,
@@ -342,6 +367,17 @@ def plan_decision(plan: ExecutionPlan) -> dict[str, object]:
     return dict(plan_to_dict(plan)["decision"])
 
 
+def plan_noise_model(plan: ExecutionPlan) -> Any | None:
+    """Restore the optional stable noise extension carried by a plan."""
+
+    extensions = plan_to_dict(plan)["extensions"]
+    if not extensions:
+        return None
+    from ..noise import NoiseModel
+
+    return NoiseModel.from_dict(extensions[0]["payload"])
+
+
 def _payload(plan: ExecutionPlan) -> dict[str, Any]:
     text = getattr(plan, "_contract_payload_json", None)
     if text is None:
@@ -375,6 +411,55 @@ def _canonical_program(program: CircuitIR, plan: ExecutionPlan) -> CircuitIR:
         measurements=program.measurements,
         metadata=metadata,
     )
+
+
+def _noise_extension(noise_model: Any) -> dict[str, object]:
+    from ..noise import NoiseModel
+
+    if not isinstance(noise_model, NoiseModel):
+        raise TypeError("noise_model must be a flagquantum.noise.NoiseModel or None")
+    return {
+        "namespace": NOISE_EXTENSION_NAMESPACE,
+        "kind": NOISE_EXTENSION_KIND,
+        "version": NOISE_EXTENSION_VERSION,
+        "identity": noise_model.identity,
+        "payload": noise_model.to_dict(),
+    }
+
+
+def _validate_extensions(extensions: Sequence[object]) -> None:
+    if len(extensions) > 1:
+        raise ExecutionPlanContractError(
+            "extension_incompatible", "ExecutionPlan v1 accepts at most one extension"
+        )
+    if not extensions:
+        return
+    extension = _require_mapping("noise extension", extensions[0])
+    expected = {"namespace", "kind", "version", "identity", "payload"}
+    if set(extension) != expected:
+        raise ExecutionPlanContractError(
+            "extension_incompatible", "noise extension fields do not match schema v1"
+        )
+    if (
+        extension["namespace"] != NOISE_EXTENSION_NAMESPACE
+        or extension["kind"] != NOISE_EXTENSION_KIND
+        or extension["version"] != NOISE_EXTENSION_VERSION
+    ):
+        raise ExecutionPlanContractError(
+            "extension_incompatible", "unsupported executable plan extension"
+        )
+    from ..noise import NoiseModel
+
+    try:
+        noise_model = NoiseModel.from_dict(
+            _require_mapping("noise extension payload", extension["payload"])
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ExecutionPlanContractError("extension_incompatible", str(exc)) from exc
+    if extension["identity"] != noise_model.identity:
+        raise ExecutionPlanContractError(
+            "extension_incompatible", "noise model identity mismatch"
+        )
 
 
 def _resolved_mapping(resolved: ResolvedExecutionOptions) -> dict[str, object]:

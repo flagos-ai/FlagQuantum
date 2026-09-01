@@ -108,7 +108,7 @@ def _loss_and_grad(
         circuit, mode=mode, device=device, **run_options
     )
     if mode == "distributed_statevector":
-        loss = fq.measure_allZ(result)[:, (0, 2)].sum()
+        loss = fq.measure_allZ(result.native())[:, (0, 2)].sum()
     elif mode == "distributed_tensor_network":
         loss = _z_loss_from_state(result.to_statevector())
     else:
@@ -159,7 +159,9 @@ def test_distributed_tensor_network_torchrun_precision_alignment():
         max_intermediate_size=8,
     )
 
-    max_error = _precision_assert(distributed.state(), local.state(), atol=1e-6)
+    max_error = _precision_assert(
+        distributed.native().state(), local.native().state(), atol=1e-6
+    )
     summary = distributed.summary()
     assert summary["executor"] == "torch_distributed"
     assert summary["state_mode"] == "distributed_tensor_network"

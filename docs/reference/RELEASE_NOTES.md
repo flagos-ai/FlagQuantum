@@ -19,6 +19,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Unified stable measurement and noise execution through `ExecutionPlan`.
+  Explicit measurements are embedded before planning and can no longer silently
+  replace IR requests; versioned noise models survive verified plan JSON round
+  trips. Added explicit result accessors and removed implicit backend-native
+  attribute forwarding. Result summaries now carry schema and version fields.
 - Added executable plans with deterministic program/options/environment/compiler
   fingerprints, SHA-256 identity, strict JSON round trips, tamper and stale
   environment detection, and exact `fq.run(plan)` execution without replanning,
