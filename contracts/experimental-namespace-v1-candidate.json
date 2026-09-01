@@ -47,7 +47,6 @@
     "dynamic": [
       "BRAKET_IQM_DYNAMIC_FEATURES",
       "DynamicBackendCompatibility",
-      "DynamicCircuit",
       "DynamicConformanceCase",
       "DynamicConformanceResult",
       "DynamicExecutionResult",

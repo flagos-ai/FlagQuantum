@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
 
 def test_local_dynamic_conformance_vectors_pass() -> None:
@@ -15,7 +16,7 @@ def test_local_dynamic_conformance_vectors_pass() -> None:
 
 
 def test_feature_assessment_is_provider_neutral_and_fail_closed() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("h", 1, classical_bit=0, equals=0)
 
@@ -37,7 +38,7 @@ def test_feature_assessment_is_provider_neutral_and_fail_closed() -> None:
 
 
 def test_feature_assessment_rejects_classical_read_before_measurement() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(1)
+    circuit = DynamicCircuit(1)
     circuit.conditional("x", 0, classical_bit=0)
     report = fq.experimental.dynamic.assess_dynamic_features(
         circuit, fq.experimental.dynamic.QISKIT_AER_DYNAMIC_FEATURES
@@ -58,7 +59,7 @@ def test_qiskit_aer_matches_deterministic_conformance_vectors() -> None:
 @pytest.mark.qiskit
 def test_qiskit_aer_returns_final_and_mid_circuit_shots() -> None:
     pytest.importorskip("qiskit_aer")
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.x(0).measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
@@ -72,7 +73,7 @@ def test_qiskit_aer_returns_final_and_mid_circuit_shots() -> None:
 @pytest.mark.qiskit
 def test_qiskit_qasm3_round_trip_preserves_dynamic_feedback() -> None:
     pytest.importorskip("qiskit_aer")
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.x(0).measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
@@ -91,7 +92,7 @@ def test_qiskit_qasm3_round_trip_preserves_dynamic_feedback() -> None:
 @pytest.mark.qiskit
 def test_random_branch_statistics_match_local_aer_and_qasm_round_trip() -> None:
     pytest.importorskip("qiskit_aer")
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.h(0).measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
@@ -114,7 +115,7 @@ def test_random_branch_statistics_match_local_aer_and_qasm_round_trip() -> None:
 
 
 def test_dynamic_result_projects_to_canonical_execution_result() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(1).x(0).measure(0, classical_bit=0)
+    circuit = DynamicCircuit(1).x(0).measure(0, classical_bit=0)
     dynamic = fq.experimental.dynamic.run_dynamic(circuit, shots=4, seed=3)
     result = dynamic.to_execution_result()
 

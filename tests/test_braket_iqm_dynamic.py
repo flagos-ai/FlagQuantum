@@ -4,6 +4,7 @@ from math import pi
 import pytest
 
 import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.braket
 
@@ -24,7 +25,7 @@ def _iqm_backend(**overrides) -> fq.CloudBackendProfile:
 
 
 def test_braket_iqm_export_lowers_feedback_and_active_reset() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.x(0)
     circuit.measure(0, classical_bit=3)
     circuit.conditional("x", 1, classical_bit=3)
@@ -46,7 +47,7 @@ def test_braket_iqm_export_lowers_feedback_and_active_reset() -> None:
 
 
 def test_braket_iqm_reuses_latest_unique_feedback_key() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(3)
+    circuit = DynamicCircuit(3)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 2, classical_bit=0)
     circuit.measure(1, classical_bit=0)
@@ -67,21 +68,23 @@ def test_braket_iqm_reuses_latest_unique_feedback_key() -> None:
     ("build", "blocker"),
     (
         (
-            lambda: fq.experimental.dynamic.DynamicCircuit(2).conditional(
-                "x", 1, classical_bit=0
-            ),
+            lambda: DynamicCircuit(2).conditional("x", 1, classical_bit=0),
             "feedback_bit_was_read_before_measurement",
         ),
         (
-            lambda: fq.experimental.dynamic.DynamicCircuit(2)
-            .measure(0, classical_bit=0)
-            .conditional("x", 1, classical_bit=0, equals=0),
+            lambda: (
+                DynamicCircuit(2)
+                .measure(0, classical_bit=0)
+                .conditional("x", 1, classical_bit=0, equals=0)
+            ),
             "conditions_require_one_bit_equal_to_one",
         ),
         (
-            lambda: fq.experimental.dynamic.DynamicCircuit(2)
-            .measure(0, classical_bit=0)
-            .conditional("h", 1, classical_bit=0),
+            lambda: (
+                DynamicCircuit(2)
+                .measure(0, classical_bit=0)
+                .conditional("h", 1, classical_bit=0)
+            ),
             "conditional_gate_cannot_lower_to_cc_prx",
         ),
     ),
@@ -93,13 +96,13 @@ def test_braket_iqm_assessment_rejects_unsupported_feedback(build, blocker) -> N
 
 
 def test_braket_iqm_rejects_cross_group_and_multiple_controllers() -> None:
-    cross_group = fq.experimental.dynamic.DynamicCircuit(3)
+    cross_group = DynamicCircuit(3)
     cross_group.measure(0, classical_bit=0)
     cross_group.conditional("x", 2, classical_bit=0)
     report = fq.experimental.dynamic.assess_dynamic_backend(cross_group, _iqm_backend())
     assert "braket_iqm_feedback_pair_outside_dynamic_qubit_group" in report.blockers
 
-    multiple = fq.experimental.dynamic.DynamicCircuit(3)
+    multiple = DynamicCircuit(3)
     multiple.measure(0, classical_bit=0)
     multiple.conditional("x", 2, classical_bit=0)
     multiple.measure(1, classical_bit=1)
@@ -110,7 +113,7 @@ def test_braket_iqm_rejects_cross_group_and_multiple_controllers() -> None:
 
 
 def test_braket_iqm_rejects_mid_circuit_measurement_without_feed_forward() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(1).measure(0, classical_bit=0)
+    circuit = DynamicCircuit(1).measure(0, classical_bit=0)
     report = fq.experimental.dynamic.assess_dynamic_backend(
         circuit,
         _iqm_backend(
@@ -122,7 +125,7 @@ def test_braket_iqm_rejects_mid_circuit_measurement_without_feed_forward() -> No
 
 
 def test_braket_iqm_deployment_is_dialect_sealed() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
     package = fq.experimental.dynamic.create_dynamic_deployment_package(

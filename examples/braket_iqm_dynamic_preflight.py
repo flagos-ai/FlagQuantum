@@ -6,6 +6,7 @@ import json
 import os
 
 import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
 
 def main() -> None:
@@ -18,7 +19,7 @@ def main() -> None:
         device_arn,
         dynamic_qubit_groups=dynamic_qubit_groups,
     )
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
     package = fq.experimental.dynamic.create_dynamic_deployment_package(

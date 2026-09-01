@@ -5,10 +5,11 @@ import torch
 
 import flagquantum as fq
 from benchmarks.dynamic_trajectory import run_benchmark
+from flagquantum.dynamic import DynamicCircuit
 
 
-def _feedback_circuit(*, bsz: int = 1) -> fq.experimental.dynamic.DynamicCircuit:
-    circuit = fq.experimental.dynamic.DynamicCircuit(2, bsz=bsz)
+def _feedback_circuit(*, bsz: int = 1) -> DynamicCircuit:
+    circuit = DynamicCircuit(2, bsz=bsz)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0, equals=1)
@@ -74,7 +75,7 @@ def test_dynamic_development_benchmark_contract_and_smoke_budget() -> None:
 
 
 def test_direct_dynamic_gate_path_matches_static_statevector_gates() -> None:
-    dynamic = fq.experimental.dynamic.DynamicCircuit(3)
+    dynamic = DynamicCircuit(3)
     dynamic.x(0).rx(1, theta=0.31).cx(0, 2).rzz(1, 2, theta=-0.27)
     dynamic.measure(0, classical_bit=0)
     result = fq.experimental.dynamic.run_dynamic(dynamic, shots=8, seed=13)
@@ -87,7 +88,7 @@ def test_direct_dynamic_gate_path_matches_static_statevector_gates() -> None:
 
 
 def test_batched_and_reference_dynamic_strategies_are_semantically_equivalent() -> None:
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)

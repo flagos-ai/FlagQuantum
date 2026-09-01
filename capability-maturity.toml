@@ -467,7 +467,7 @@ title = "PennyLane QuantumScript interoperability"
 summary = "Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter."
 category = "deployment_and_extension"
 user_goals = ["Import a supported PennyLane QuantumScript", "Export static FlagQuantum IR to PennyLane", "Audit semantic loss at the boundary"]
-public_apis = ["experimental"]
+public_apis = ["flagquantum.dynamic.DynamicCircuit", "experimental.dynamic.run_dynamic", "experimental.dynamic.create_dynamic_deployment_package"]
 runtime_modes = ["control_plane_conversion"]
 hardware = ["cpu_control_plane"]
 gradient_support = "bound_parameters_only"
@@ -510,7 +510,7 @@ quick_start = "examples/braket_iqm_dynamic_preflight.py"
 documentation = "docs/reference/API.md"
 level = "experimental"
 owner = "deployment maintainers"
-limitations = "Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified."
+limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; execution, native result, routing, deployment, dialects and providers remain experimental. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
 focused_tests = "tests/test_dynamic_conformance.py"
 
 [capabilities.extension_sdk]

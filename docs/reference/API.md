@@ -361,6 +361,29 @@ pytest -m pennylane
 pytest -m braket
 ```
 
+### Dynamic circuit construction
+
+The candidate-stable builder is isolated from experimental execution and
+provider integrations:
+
+```python
+from flagquantum.dynamic import DynamicCircuit
+
+circuit = DynamicCircuit(2)
+circuit.h(0)
+circuit.measure(0, classical_bit=0)
+circuit.conditional("x", 1, classical_bit=0)
+
+result = fq.experimental.dynamic.run_dynamic(circuit, shots=128, seed=7)
+stable_result = result.to_execution_result()
+```
+
+`DynamicCircuit` and its CircuitIR encoding are candidate-stable pending API
+owner approval. `run_dynamic`, `DynamicExecutionResult`, routing, dialects,
+deployment and provider adapters remain experimental. Stable dynamic execution
+will return the canonical `fq.ExecutionResult`; provider-native state and
+diagnostic fields will not be frozen into that contract.
+
 ### Interoperability adapter contract
 
 External framework adapters implement one candidate-stable, framework-neutral

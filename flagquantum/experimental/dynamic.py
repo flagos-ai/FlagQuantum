@@ -7,7 +7,6 @@ from typing import Any
 
 _RUNTIME_EXPORTS = {
     "DynamicBackendCompatibility",
-    "DynamicCircuit",
     "DynamicExecutionResult",
     "assess_dynamic_backend",
     "create_dynamic_deployment_package",

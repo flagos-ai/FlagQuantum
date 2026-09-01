@@ -405,7 +405,7 @@ Implement and certify optional external-framework conversion behind one immutabl
 Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental`
+- **Public API:** `flagquantum.dynamic.DynamicCircuit`, `fq.experimental.dynamic.run_dynamic`, `fq.experimental.dynamic.create_dynamic_deployment_package`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `bound_parameters_only`
@@ -440,7 +440,7 @@ Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../examples/braket_iqm_dynamic_preflight.py)
 - **Documentation:** [guide](../../docs/reference/API.md)
-- **Known boundary:** Provider-neutral conformance vectors pass on the FlagQuantum trajectory runtime and Qiskit Aer. IQM dialect serialization, SDK Program construction, sealed packaging, and mocked provider submission are tested. No AWS account or real IQM QPU task was used, so device availability, published qubit groups, billing, credentials, and hardware results remain unverified.
+- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; execution, native result, routing, deployment, dialects and providers remain experimental. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
 
 ### Extension SDK
 

@@ -1,30 +1,35 @@
 """Dynamic circuit construction implementation."""
 
+from __future__ import annotations
+
 from typing import Any, Iterable, Mapping
 
 import torch
 
 from ...circuit import Circuit
 from ...core.ir import Instruction
+from ...errors import CapabilityError, ValidationError
 
 
 class DynamicCircuit(Circuit):
-    """Circuit builder for experimental mid-circuit measurement workflows."""
+    """Circuit builder for mid-circuit measurement and classical feedback."""
 
-    def _append_dynamic(self, instruction: Instruction) -> "DynamicCircuit":
-        if any(wire >= self.n_wires for wire in instruction.wires):
-            raise ValueError("dynamic instruction wire is outside the circuit")
+    def _append_dynamic(self, instruction: Instruction) -> DynamicCircuit:
+        if any(wire < 0 or wire >= self.n_wires for wire in instruction.wires):
+            raise ValidationError("dynamic instruction wire is outside the circuit")
         self._instructions.append(instruction)
         self._state_cache = None
         self._ir_cache = None
+        self._backend_programs.clear()
+        self._statevector_constant_parameters.clear()
+        self._statevector_cx_masks.clear()
+        self._statevector_fused_matrices.clear()
         return self
 
-    def measure(
-        self, wire: int, *, classical_bit: int | None = None
-    ) -> "DynamicCircuit":
+    def measure(self, wire: int, *, classical_bit: int | None = None) -> DynamicCircuit:
         bit = int(wire if classical_bit is None else classical_bit)
         if bit < 0:
-            raise ValueError("classical_bit must be non-negative")
+            raise ValidationError("classical_bit must be non-negative")
         return self._append_dynamic(
             Instruction(
                 "measure",
@@ -33,7 +38,7 @@ class DynamicCircuit(Circuit):
             )
         )
 
-    def reset(self, wire: int) -> "DynamicCircuit":
+    def reset(self, wire: int) -> DynamicCircuit:
         return self._append_dynamic(
             Instruction("reset", (int(wire),), metadata={"is_dynamic": True})
         )
@@ -48,21 +53,27 @@ class DynamicCircuit(Circuit):
         conditions: Mapping[int, int] | None = None,
         params: Mapping[str, Any] | None = None,
         matrix: Any | None = None,
-    ) -> "DynamicCircuit":
+    ) -> DynamicCircuit:
         if conditions is not None and classical_bit is not None:
-            raise ValueError("use either classical_bit or conditions, not both")
+            raise ValidationError("use either classical_bit or conditions, not both")
         raw_conditions = (
             {int(classical_bit): int(equals)}
             if classical_bit is not None
             else {int(bit): int(value) for bit, value in (conditions or {}).items()}
         )
         if not raw_conditions:
-            raise ValueError(
+            raise ValidationError(
                 "conditional gate requires at least one classical condition"
             )
         if any(bit < 0 or value not in {0, 1} for bit, value in raw_conditions.items()):
-            raise ValueError("conditions require non-negative bits and values 0 or 1")
-        wire_tuple = (int(wires),) if isinstance(wires, int) else tuple(wires)
+            raise ValidationError(
+                "conditions require non-negative bits and values 0 or 1"
+            )
+        wire_tuple = (
+            (int(wires),)
+            if isinstance(wires, int)
+            else tuple(int(wire) for wire in wires)
+        )
         return self._append_dynamic(
             Instruction(
                 name,
@@ -73,18 +84,16 @@ class DynamicCircuit(Circuit):
             )
         )
 
-    def state(
-        self, parameter_bindings: Mapping[Any, Any] | None = None
-    ) -> torch.Tensor:
+    def state(self, *, refresh: bool = False) -> torch.Tensor:
         if any(
             instruction.metadata.get("is_dynamic")
             or instruction.metadata.get("condition")
             for instruction in self._instructions
         ):
-            raise RuntimeError(
+            raise CapabilityError(
                 "dynamic circuits require fq.experimental.dynamic.run_dynamic(..., shots=...)"
             )
-        return super().state(parameter_bindings)
+        return super().state(refresh=refresh)
 
 
 __all__ = ("DynamicCircuit",)

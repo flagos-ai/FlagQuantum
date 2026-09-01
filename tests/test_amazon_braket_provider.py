@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.braket
 
@@ -45,7 +46,7 @@ class FakeAwsDevice:
 
 
 def _dynamic_package(provider):
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
     return fq.experimental.dynamic.create_dynamic_deployment_package(
@@ -119,7 +120,7 @@ def test_braket_iqm_missing_groups_fails_before_hardware_submission() -> None:
         device,
         program_factory=lambda *, source: {"source": source},
     )
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 

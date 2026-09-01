@@ -9,12 +9,13 @@ from time import perf_counter
 from typing import Any, Callable
 
 import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
 
-def _workload(mid_circuit_measurements: int) -> fq.experimental.dynamic.DynamicCircuit:
+def _workload(mid_circuit_measurements: int) -> DynamicCircuit:
     if mid_circuit_measurements <= 0:
         raise ValueError("mid_circuit_measurements must be positive")
-    circuit = fq.experimental.dynamic.DynamicCircuit(2)
+    circuit = DynamicCircuit(2)
     circuit.h(0)
     for classical_bit in range(mid_circuit_measurements):
         circuit.measure(0, classical_bit=classical_bit)
