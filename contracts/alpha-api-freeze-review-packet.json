@@ -1,0 +1,98 @@
+{
+  "schema": "flagquantum.alpha_api_freeze_review_packet",
+  "version": "1.0",
+  "status": "ready_for_owner_review",
+  "prepared_at": "2026-09-01",
+  "target": "first-public-alpha",
+  "review_baseline_commit": "32e93de8",
+  "stable_core": {
+    "manifest": "docs/public_api_v1.json",
+    "sha256": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "root_export_count": 22,
+    "root_export_budget": 25
+  },
+  "public_api_candidate": {
+    "path": "contracts/public-api-v1-candidate.json",
+    "sha256": "72124b6557b09ffee1ecbcc682e958d50aa6a1895e77f96d6e3bb63581ddc256"
+  },
+  "contracts": [
+    {
+      "proposal": "002",
+      "path": "contracts/execution-options-v1-candidate.json",
+      "sha256": "262c1177002fadca3e106deba4cc1de2fedf84077f651f18596105d11df89960",
+      "decision": "already_frozen",
+      "owner_action": "confirm_no_reopen"
+    },
+    {
+      "proposal": "003",
+      "path": "contracts/execution-plan-v1-candidate.json",
+      "sha256": "e35786b930a0e5a1d0305195936fd4f0d998381d479becc83b09f03034dbd22a",
+      "decision": "pending",
+      "owner_action": "approve_or_hold"
+    },
+    {
+      "proposal": "004",
+      "path": "contracts/execution-result-v1-candidate.json",
+      "sha256": "7ceb877a81b415b778766356da0317f54123c83b4c9a18ab6ff362d83af050d9",
+      "decision": "pending",
+      "owner_action": "approve_or_hold"
+    },
+    {
+      "proposal": "005",
+      "path": "contracts/module-training-v1-candidate.json",
+      "sha256": "fa9e584b8007b4031d37bcdd07adc8af8a41660b7977e192623297c11086aad5",
+      "decision": "pending",
+      "owner_action": "approve_or_hold"
+    },
+    {
+      "proposal": "006",
+      "path": "contracts/errors-module-boundary-v1-candidate.json",
+      "sha256": "89b1b803abbec70c5679be37a6af35b89a8d20577f66ce69adf69302615a7283",
+      "decision": "pending",
+      "owner_action": "approve_or_hold"
+    },
+    {
+      "proposal": "007",
+      "path": "contracts/extension-protocol-v1-candidate.json",
+      "sha256": "c57214ffdd45d39e81df225d8993fbdf3976e29e3011971241a39486c8b60fb3",
+      "decision": "pending",
+      "owner_action": "approve_or_hold"
+    }
+  ],
+  "verified_evidence": {
+    "pr_default": "941 passed",
+    "pr_runtime": "168 passed",
+    "distributed_cpu": "376 passed",
+    "benchmark_release": "113 passed",
+    "qiskit_2_0_pennylane_0_44": "51 passed",
+    "qiskit_2_5_pennylane_0_45": "51 passed",
+    "static_gates": ["ruff", "black", "mypy", "docs", "api_snapshot"]
+  },
+  "explicit_non_approvals": [
+    "overall_first_public_alpha_freeze",
+    "experimental_namespaces",
+    "third_party_extension_implementations",
+    "provider_hardware_certification",
+    "distributed_scalability_certification",
+    "native_result_object_stability"
+  ],
+  "remaining_release_gates": [
+    "hosted_ci_on_review_commit",
+    "required_checks_codeowners_branch_protection_verified",
+    "external_alpha_user_trial",
+    "explicit_overall_freeze_approval"
+  ],
+  "approval_record": {
+    "approved_by": null,
+    "approved_at": null,
+    "approved_proposals": [],
+    "held_proposals": [],
+    "overall_freeze_approved": false
+  },
+  "rules": {
+    "silence_is_not_approval": true,
+    "implementation_authorization_is_not_freeze_approval": true,
+    "contract_approval_is_not_overall_freeze": true,
+    "hash_mismatch_requires_new_review": true
+  }
+}

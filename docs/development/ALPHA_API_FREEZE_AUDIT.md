@@ -3,6 +3,9 @@
 审计日期：2026-09-01  
 结论：**代码与候选契约已接近冻结就绪，但尚不能宣布正式 freeze。**
 
+逐项签审入口见 `docs/development/ALPHA_API_FREEZE_APPROVAL_PACKET.md`，机器可读的
+契约 hash 与空白审批记录见 `contracts/alpha-api-freeze-review-packet.json`。
+
 ## 已具备
 
 | 项目 | 证据 | 结论 |
