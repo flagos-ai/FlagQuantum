@@ -2,14 +2,16 @@
 
 ## 状态
 
-**Implemented, freeze pending — 已实现候选契约，等待单独冻结审批。**
+**Contract frozen — 候选契约已获单独冻结批准。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`flagquantum.errors`、现有领域异常、`fq.Module` 构造器；
 - 根级名称变化：无；
 - 根级签名变化：从 `fq.Module` 删除 `deployment_binding`；
 - 授权记录：API owner 于 2026-09-01 通过明确用户指令授权推进 Proposal 006；
-- 本授权不等于整个 FlagQuantum API 的最终 freeze。
+- 前述实现授权本身不等于整个 FlagQuantum API 的最终 freeze。
+- 冻结记录：API owner 于 2026-09-01 明确批准 review packet 所绑定的 Proposal 006
+  精确契约；本冻结不等于整体首次公开 Alpha freeze。
 
 ## 问题
 
@@ -71,4 +73,4 @@ PyTorch extra-state 保存，因此高层模型 checkpoint 不丢失部署信息
 - [x] Module 构造签名不再包含 deployment_binding；
 - [x] Module 仍接受并忽略旧 checkpoint extra-state 中的 binding；
 - [x] 高层应用模型 checkpoint 保留 binding；
-- [ ] API owner 单独批准 contract freeze。
+- [x] API owner 单独批准 contract freeze。

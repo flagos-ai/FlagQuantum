@@ -21,13 +21,13 @@ def _load(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_execution_plan_candidate_records_root_authority_without_freeze() -> None:
+def test_execution_plan_contract_records_root_authority_and_freeze() -> None:
     candidate = _load(CANDIDATE)
 
-    assert candidate["status"] == "root_approved_pending_freeze"
+    assert candidate["status"] == "frozen"
     assert candidate["implementation_authorized"] is True
     assert candidate["root_manifest_authorized"] is True
-    assert candidate["rules"]["candidate_is_frozen_contract"] is False
+    assert candidate["rules"]["candidate_is_frozen_contract"] is True
 
 
 def test_execution_plan_is_the_approved_root_addition() -> None:

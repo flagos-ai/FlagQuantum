@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "root_approved_pending_freeze",
+  "status": "frozen",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md",
   "target": "first-public-alpha",
   "root_addition": "ExecutionPlan",
@@ -124,7 +124,7 @@
     "stable_binary_artifacts": false
   },
   "rules": {
-    "candidate_is_frozen_contract": false,
+    "candidate_is_frozen_contract": true,
     "implementation_requires_api_owner_approval": true,
     "root_manifest_requires_separate_approval": true,
     "measurement_noise_result_semantics_deferred": false,

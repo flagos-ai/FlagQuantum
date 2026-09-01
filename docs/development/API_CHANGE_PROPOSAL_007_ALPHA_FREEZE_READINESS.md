@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Implemented, freeze pending — 候选实现与审计证据已完成，等待单独冻结审批。**
+**Extension contract frozen — 扩展协议契约已获单独冻结批准。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`flagquantum.extensions`；
@@ -10,6 +10,8 @@
 - 机器可读候选：`contracts/extension-protocol-v1-candidate.json`；
 - 授权记录：API owner 于 2026-09-01 通过明确用户指令授权推进本轮实现；
 - 本授权不等于 Proposal 001–007 或整个公开 API 已正式冻结。
+- 冻结记录：API owner 于 2026-09-01 明确批准 review packet 所绑定的 Proposal 007
+  精确契约；具体插件实现和整体首次公开 Alpha freeze 仍未获批准。
 
 ## 决策
 
@@ -74,7 +76,7 @@ conformance。
 - [x] capability、dtype/device、gradient、异常和 cleanup conformance 通过；
 - [x] `noise_model` 命名决策记录为候选稳定决策；
 - [x] ExecutionPlan/DeploymentPackage 所有权由测试和文档保护；
-- [ ] API owner 单独批准 extension contract freeze；
+- [x] API owner 单独批准 extension contract freeze；
 - [ ] API owner 单独批准首次公开 alpha 的整体 freeze。
 
 ## 兼容策略

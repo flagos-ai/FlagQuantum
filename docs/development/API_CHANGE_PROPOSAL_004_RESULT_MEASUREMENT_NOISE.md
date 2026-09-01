@@ -2,14 +2,16 @@
 
 ## 状态
 
-**Implemented, freeze pending — 已实现核心语义与机器契约，等待最终冻结审批。**
+**Contract frozen — 核心语义与机器契约已获单独冻结批准。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.plan`、`fq.run`、`Circuit.plan`、`Circuit.run`、
   `ExecutionResult`、`MeasurementResult` 和 `ExecutionPlan` noise extension；
 - 根级名称变化：无；
 - 授权记录：API owner 于 2026-09-01 通过明确用户指令授权推进 Proposal 004；
-- 本授权不等于整个 FlagQuantum API 或 Result schema 的最终冻结。
+- 前述实现授权本身不等于整个 FlagQuantum API 或 Result schema 的最终冻结。
+- 冻结记录：API owner 于 2026-09-01 明确批准 review packet 所绑定的 Proposal 004
+  精确契约；本冻结不等于整体首次公开 Alpha freeze。
 
 ## 要解决的问题
 
@@ -117,7 +119,7 @@ tensor 或 autograd graph 隐式序列化。
 - [x] result accessor 对缺失和歧义数据明确失败；
 - [x] backend-native 属性不再隐式泄漏；
 - [x] summary 带 schema/version；
-- [ ] API owner 单独批准 contract freeze。
+- [x] API owner 单独批准 contract freeze。
 
 ## 后续决策
 

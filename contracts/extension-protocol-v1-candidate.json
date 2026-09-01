@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "implemented_pending_freeze",
+  "status": "frozen",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_007_ALPHA_FREEZE_READINESS.md",
   "target": "first-public-alpha",
   "implementation_authorized": true,
@@ -90,7 +90,7 @@
     "freeze_audit": "docs/development/ALPHA_API_FREEZE_AUDIT.md"
   },
   "rules": {
-    "candidate_is_frozen_contract": false,
+    "candidate_is_frozen_contract": true,
     "whole_api_freeze_implied": false,
     "future_breaking_changes_require_api_owner_approval": true
   }

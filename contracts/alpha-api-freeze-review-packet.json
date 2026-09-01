@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.alpha_api_freeze_review_packet",
   "version": "1.0",
-  "status": "ready_for_owner_review",
+  "status": "contract_freeze_approved",
   "prepared_at": "2026-09-01",
   "target": "first-public-alpha",
   "review_baseline_commit": "32e93de8",
@@ -26,37 +26,42 @@
     {
       "proposal": "003",
       "path": "contracts/execution-plan-v1-candidate.json",
-      "sha256": "e35786b930a0e5a1d0305195936fd4f0d998381d479becc83b09f03034dbd22a",
-      "decision": "pending",
-      "owner_action": "approve_or_hold"
+      "reviewed_sha256": "e35786b930a0e5a1d0305195936fd4f0d998381d479becc83b09f03034dbd22a",
+      "sha256": "4de3b3972c7b8b91069eae1b08e66605366ca3f352af5d234e4f731533b1a354",
+      "decision": "approved",
+      "owner_action": "none"
     },
     {
       "proposal": "004",
       "path": "contracts/execution-result-v1-candidate.json",
-      "sha256": "7ceb877a81b415b778766356da0317f54123c83b4c9a18ab6ff362d83af050d9",
-      "decision": "pending",
-      "owner_action": "approve_or_hold"
+      "reviewed_sha256": "7ceb877a81b415b778766356da0317f54123c83b4c9a18ab6ff362d83af050d9",
+      "sha256": "82e7fd780ae174e562a8d523b9b9949a4196a1e2317b4cdb50cdf70194594351",
+      "decision": "approved",
+      "owner_action": "none"
     },
     {
       "proposal": "005",
       "path": "contracts/module-training-v1-candidate.json",
-      "sha256": "fa9e584b8007b4031d37bcdd07adc8af8a41660b7977e192623297c11086aad5",
-      "decision": "pending",
-      "owner_action": "approve_or_hold"
+      "reviewed_sha256": "fa9e584b8007b4031d37bcdd07adc8af8a41660b7977e192623297c11086aad5",
+      "sha256": "ef15f4468f08bab08b59749dab0a4f59a3e6872d90b1d432c7963208856ced22",
+      "decision": "approved",
+      "owner_action": "none"
     },
     {
       "proposal": "006",
       "path": "contracts/errors-module-boundary-v1-candidate.json",
-      "sha256": "89b1b803abbec70c5679be37a6af35b89a8d20577f66ce69adf69302615a7283",
-      "decision": "pending",
-      "owner_action": "approve_or_hold"
+      "reviewed_sha256": "89b1b803abbec70c5679be37a6af35b89a8d20577f66ce69adf69302615a7283",
+      "sha256": "7f3faaf7be0bcaf66ca7762aaaa8a32d5c14166acd13eec425b6ef51cabd2c9f",
+      "decision": "approved",
+      "owner_action": "none"
     },
     {
       "proposal": "007",
       "path": "contracts/extension-protocol-v1-candidate.json",
-      "sha256": "c57214ffdd45d39e81df225d8993fbdf3976e29e3011971241a39486c8b60fb3",
-      "decision": "pending",
-      "owner_action": "approve_or_hold"
+      "reviewed_sha256": "c57214ffdd45d39e81df225d8993fbdf3976e29e3011971241a39486c8b60fb3",
+      "sha256": "171684573c68ace0711bf47c3f500733b9306f335e19353aa9c41931aff0f573",
+      "decision": "approved",
+      "owner_action": "none"
     }
   ],
   "verified_evidence": {
@@ -83,9 +88,9 @@
     "explicit_overall_freeze_approval"
   ],
   "approval_record": {
-    "approved_by": null,
-    "approved_at": null,
-    "approved_proposals": [],
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-09-01",
+    "approved_proposals": ["003", "004", "005", "006", "007"],
     "held_proposals": [],
     "overall_freeze_approved": false
   },

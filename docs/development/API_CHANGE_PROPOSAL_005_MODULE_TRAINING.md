@@ -2,14 +2,16 @@
 
 ## 状态
 
-**Implemented, freeze pending — 已实现核心语义与机器契约，等待最终冻结审批。**
+**Contract frozen — 核心语义与机器契约已获单独冻结批准。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.Module`、`fq.train`、`fq.TrainingResult`、
   `fq.ExecutionResult` 和 `flagquantum.training`；
 - 根级名称变化：无；
 - 授权记录：API owner 于 2026-09-01 通过明确用户指令授权推进 Proposal 005；
-- 本授权不等于整个 FlagQuantum API 的最终 freeze。
+- 前述实现授权本身不等于整个 FlagQuantum API 的最终 freeze。
+- 冻结记录：API owner 于 2026-09-01 明确批准 review packet 所绑定的 Proposal 005
+  精确契约；本冻结不等于整体首次公开 Alpha freeze。
 
 ## 核心定位
 
@@ -117,4 +119,4 @@ Module 构造器中的 deployment/provider 状态由 Proposal 006 继续收敛�
 - [x] checkpoint restore 带 schema/version，并继续执行 mismatch preflight；
 - [x] training lifecycle 类型迁入 `flagquantum.training`；
 - [x] 分布式 training 保持 experimental；
-- [ ] API owner 单独批准 contract freeze。
+- [x] API owner 单独批准 contract freeze。

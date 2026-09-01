@@ -28,7 +28,8 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   candidate with a machine-readable contract and root-surface guard. Public
   conformance entry points and a third-party-style backend example now prove
   that extensions need no runtime or core internals. Individual extensions are
-  still experimental by default, and final protocol freeze remains pending.
+  still experimental by default. The extension protocol contract is now
+  frozen; the overall first-alpha API freeze remains pending.
   The audit also retains `noise_model` and keeps local `ExecutionPlan` separate
   from provider-facing `DeploymentPackage`.
 - Added the stable `flagquantum.errors` lifecycle categories while preserving
@@ -44,8 +45,8 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   a minimal caller-owned PyTorch optimizer loop; checkpoint/resume stays on
   Module, while distributed training remains experimental. Added the stable
   `flagquantum.training` lifecycle namespace plus versioned result diagnostics,
-  training summaries, and checkpoint-restore metadata. The candidate still
-  requires a separate API-freeze approval.
+  training summaries, and checkpoint-restore metadata. The Module/training
+  contract is now frozen; the overall first-alpha API freeze remains pending.
 - Unified stable measurement and noise execution through `ExecutionPlan`.
   Explicit measurements are embedded before planning and can no longer silently
   replace IR requests; versioned noise models survive verified plan JSON round

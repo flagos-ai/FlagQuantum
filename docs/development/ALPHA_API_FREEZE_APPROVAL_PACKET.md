@@ -1,26 +1,27 @@
 # FlagQuantum 首次公开 Alpha API 冻结审批包
 
-## 审批结论建议
+## 审批结果
 
-当前建议为：**批准 Proposal 003–007 的候选契约冻结，但暂不批准整体首次公开 Alpha
-freeze。**
+API owner 已于 2026-09-01 明确批准 Proposal 003–007 的候选契约冻结，并确认
+Proposal 002 保持冻结。**本批准不等于整体首次公开 Alpha freeze。**
 
 Proposal 002（`ExecutionOptions`）已经冻结，本轮只确认不重新打开。整体 freeze 仍需
 当前提交通过托管 CI、核验仓库保护设置，并完成至少一轮外部 alpha 用户试用。
 
-机器可读审批包为 `contracts/alpha-api-freeze-review-packet.json`。其中 SHA-256 将审批
-绑定到精确契约内容；任何 hash 变化都必须重新审查，不能沿用本次批准。
+机器可读审批记录为 `contracts/alpha-api-freeze-review-packet.json`。其中
+`reviewed_sha256` 保存获批前的精确内容，`sha256` 绑定只改变冻结状态后的现行契约；
+任何后续 hash 变化都必须重新审查，不能沿用本次批准。
 
 ## 逐项签审
 
-| Proposal | 冻结内容 | 本轮建议 | 不包含 |
+| Proposal | 冻结内容 | 审批结果 | 不包含 |
 | --- | --- | --- | --- |
-| 002 | `ExecutionOptions` 字段、默认值、优先级与序列化 | 确认既有冻结 | Plan、Result |
-| 003 | `ExecutionPlan` 身份、序列化、恢复与精确执行 | 批准 | 云提交资产、凭证、二进制 artifact |
-| 004 | Result accessor、measurement 唯一来源、`noise_model` | 批准 | native result 稳定性、tensor JSON |
-| 005 | Module forward/execute、train、checkpoint 责任边界 | 批准 | 分布式训练稳定承诺、自动 resume |
-| 006 | 统一异常类别、Module 构造和 deployment binding 所有权 | 批准 | backend 偶然异常类型 |
-| 007 | 扩展 manifest、协商、生命周期、隔离与 conformance | 批准 | 具体第三方插件稳定性或认证 |
+| 002 | `ExecutionOptions` 字段、默认值、优先级与序列化 | 已确认 | Plan、Result |
+| 003 | `ExecutionPlan` 身份、序列化、恢复与精确执行 | 已批准 | 云提交资产、凭证、二进制 artifact |
+| 004 | Result accessor、measurement 唯一来源、`noise_model` | 已批准 | native result 稳定性、tensor JSON |
+| 005 | Module forward/execute、train、checkpoint 责任边界 | 已批准 | 分布式训练稳定承诺、自动 resume |
+| 006 | 统一异常类别、Module 构造和 deployment binding 所有权 | 已批准 | backend 偶然异常类型 |
+| 007 | 扩展 manifest、协商、生命周期、隔离与 conformance | 已批准 | 具体第三方插件稳定性或认证 |
 
 ## 批准前必须理解的边界
 
@@ -46,17 +47,16 @@ Proposal 002（`ExecutionOptions`）已经冻结，本轮只确认不重新打�
 
 详细证据见 `docs/development/ALPHA_API_FREEZE_AUDIT.md`。
 
-## 可复制的审批语句
+## 本次审批语义
 
-若同意逐项契约冻结，请明确回复：
+本次明确回复“approve”承接此前唯一待决动作，采用以下审批语义：
 
 > 我批准 review packet 所绑定 SHA-256 的 Proposal 003、004、005、006、007 候选契约
 > 作为 FlagQuantum 首次公开 Alpha 的兼容性基线；确认 Proposal 002 保持冻结。本批准
 > 不等于整体 Alpha freeze，不覆盖 experimental、第三方插件实现、provider hardware、
 > 分布式规模或性能认证。
 
-若有任何一项仍需调整，应明确写出 `hold Proposal NNN` 和原因。部分批准不得自动扩展到
-其他 Proposal。
+本审批没有扩展到其他 Proposal 或整体 freeze。
 
 ## 整体 freeze 的后续批准
 

@@ -19,13 +19,13 @@ def _load() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_module_training_candidate_is_implemented_but_not_frozen() -> None:
+def test_module_training_contract_is_frozen_without_whole_api_freeze() -> None:
     candidate = _load()
 
-    assert candidate["status"] == "implemented_pending_freeze"
+    assert candidate["status"] == "frozen"
     assert candidate["implementation_authorized"] is True
     assert candidate["root_manifest_change"] is False
-    assert candidate["rules"]["candidate_is_frozen_contract"] is False
+    assert candidate["rules"]["candidate_is_frozen_contract"] is True
     assert candidate["rules"]["whole_api_freeze_implied"] is False
 
 

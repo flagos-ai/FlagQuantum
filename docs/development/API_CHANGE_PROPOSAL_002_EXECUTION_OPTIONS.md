@@ -13,7 +13,7 @@
 
 批准记录：API owner 于 2026-08-31 授权按本提案进入实现阶段，随后授权根级导出与
 Stable Core manifest 迁移。该授权不包含 `ExecutionPlan` 输入或 `ExecutionResult` 变更；
-契约冻结仍以完整验证通过为前提。
+该契约随后已在完整验证通过后冻结。
 
 ## 问题
 

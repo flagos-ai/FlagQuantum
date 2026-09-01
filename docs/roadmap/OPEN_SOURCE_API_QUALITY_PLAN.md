@@ -723,7 +723,7 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - [x] 决定 checkpoint/resume 由 Module 或应用循环所有；
 - [x] 决定 distributed training 暂留 experimental；
 - [x] 固定 PyTorch 为主接口、JAX 为可选 compiled backend 的边界；
-- [ ] API owner 单独批准 Proposal 005 contract freeze。
+- [x] API owner 单独批准 Proposal 005 contract freeze。
 
 Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固定三种公开构造
 路径；Module 只拥有参数、RuntimePolicy、precision 与训练状态。
@@ -736,7 +736,7 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 - [x] 建立第三方 conformance suite；
 - [x] 在真实依赖 Docker 环境验证 Qiskit/PennyLane 支持窗口上下界，并配置同等 CI matrix；
 - [x] 验证外部插件不需要导入 runtime internal；
-- [ ] API owner 单独批准 Proposal 007 extension contract freeze。
+- [x] API owner 单独批准 Proposal 007 extension contract freeze。
 
 完成标准：能够在不修改 core 的情况下增加一个最小第三方 backend。
 
@@ -746,7 +746,7 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 - [x] 保留 ValueError/RuntimeError/NotImplementedError 捕获兼容性；
 - [x] 将 IR、Plan、Result、Module 与 training-state 领域错误映射到统一类别；
 - [x] 隔离 stable boundary 与 backend-native 偶然异常类型；
-- [ ] API owner 单独批准 Proposal 006 contract freeze。
+- [x] API owner 单独批准 Proposal 006 contract freeze。
 
 ### Phase 7：公开候选与冻结
 

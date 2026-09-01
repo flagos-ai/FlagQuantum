@@ -1,7 +1,7 @@
 # FlagQuantum 首次公开 Alpha API 冻结审计
 
 审计日期：2026-09-01  
-结论：**代码与候选契约已接近冻结就绪，但尚不能宣布正式 freeze。**
+结论：**Proposal 002–007 契约已冻结，但尚不能宣布整体首次公开 Alpha freeze。**
 
 逐项签审入口见 `docs/development/ALPHA_API_FREEZE_APPROVAL_PACKET.md`，机器可读的
 契约 hash 与空白审批记录见 `contracts/alpha-api-freeze-review-packet.json`。
@@ -32,14 +32,13 @@
 
 ## 冻结前仍需完成
 
-1. API owner 分别审批 Proposal 002–007 的 contract freeze，并记录版本与日期；
-2. 完成至少一轮目标用户 alpha/beta 试用，确认没有只能通过破坏 API 解决的问题；
-3. 核对发布平台上的 required checks、CODEOWNERS 和 branch protection 已实际启用，
+1. 完成至少一轮目标用户 alpha/beta 试用，确认没有只能通过破坏 API 解决的问题；
+2. 核对发布平台上的 required checks、CODEOWNERS 和 branch protection 已实际启用，
    并让当前提交通过托管 CI 的 Qiskit/PennyLane matrix；
-4. 冻结当日重新运行 default、runtime、distributed、benchmark/release、typing、格式、
+3. 整体冻结当日重新运行 default、runtime、distributed、benchmark/release、typing、格式、
    文档和 API snapshot 全部门禁；
-5. 冻结批准后才将各 contract 的 `candidate_is_frozen_contract` 改为 `true`，不得由生成
-   工具自动改写。
+4. 只有整体 freeze 获得独立批准后，才把 public API candidate 的整体冻结字段改为
+   `true`；单项契约现已按本次批准分别冻结。
 
 ## 冻结判定
 

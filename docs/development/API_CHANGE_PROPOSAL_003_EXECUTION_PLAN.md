@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Root approved — 已完成实现、全量验证和根级清单迁移，等待 contract freeze。**
+**Contract frozen — 已完成实现、全量验证、根级清单迁移与契约冻结。**
 
 - 目标版本：首次公开 alpha；
 - 影响接口：`fq.ExecutionPlan`、`fq.plan`、`fq.run`、`Circuit.plan`、
@@ -18,6 +18,9 @@
 根级批准记录：API owner 于 2026-09-01 通过明确用户指令批准将 `ExecutionPlan`
 加入 Stable Core 根清单。该批准不等于整个 FlagQuantum API 或 Proposal 003
 序列化契约的最终 freeze。
+
+冻结记录：API owner 于 2026-09-01 明确批准冻结 review packet 所绑定的 Proposal
+003 精确契约。本冻结不等于整体首次公开 Alpha freeze。
 
 ## 问题
 
@@ -336,7 +339,7 @@ reason code 和“不重新规划、不 fallback”的行为，避免永久承�
 - [x] round trip、unknown field、identity tamper 和 schema 拒绝测试通过；
 - [x] default、runtime、distributed 和文档契约通过；
 - [x] API owner 单独批准根级导出；
-- [ ] API owner 单独批准 contract freeze。
+- [x] API owner 单独批准 contract freeze。
 
 ## 实施记录
 
