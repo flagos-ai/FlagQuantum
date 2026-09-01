@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Iterator, Mapping, Protocol, Sequence, runtime_checkable
 
+from ..errors import CapabilityError, ExecutionError, FlagQuantumError
+
 SDK_API_VERSION = "1.0"
 EXTENSION_KINDS = frozenset(
     {
@@ -24,15 +26,15 @@ EXTENSION_KINDS = frozenset(
 SECRET_PARTS = ("token", "secret", "password", "credential", "api_key", "apikey")
 
 
-class ExtensionError(RuntimeError):
+class ExtensionError(RuntimeError, FlagQuantumError):
     """Base class for extension boundary failures."""
 
 
-class ExtensionCompatibilityError(ExtensionError):
+class ExtensionCompatibilityError(ExtensionError, CapabilityError):
     """Raised before activation for an incompatible extension."""
 
 
-class ExtensionLifecycleError(ExtensionError):
+class ExtensionLifecycleError(ExtensionError, ExecutionError):
     """Raised when activation, use, or cleanup fails safely."""
 
 

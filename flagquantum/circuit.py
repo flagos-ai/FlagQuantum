@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 import torch
 
-from .errors import ValidationError
 from .circuit_statevector import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
@@ -51,6 +50,7 @@ from .core.parameters import (
     parameter_names_in_value,
 )
 from .core.runtime_config import RuntimeConfig, get_runtime_config, runtime_config
+from .errors import ValidationError
 from .ops.complex_ops import complex_conj, complex_mul
 from .ops.matrices import GATE_MAT_DICT
 

@@ -361,22 +361,30 @@ def validate_plan_environment(plan: ExecutionPlan) -> None:
 
 
 def plan_program(plan: ExecutionPlan) -> CircuitIR:
-    return CircuitIR.from_dict(plan_to_dict(plan)["program"])
+    return CircuitIR.from_dict(
+        _require_mapping("ExecutionPlan.program", plan_to_dict(plan)["program"])
+    )
 
 
 def plan_decision(plan: ExecutionPlan) -> dict[str, object]:
-    return dict(plan_to_dict(plan)["decision"])
+    return _require_mapping("ExecutionPlan.decision", plan_to_dict(plan)["decision"])
 
 
 def plan_noise_model(plan: ExecutionPlan) -> Any | None:
     """Restore the optional stable noise extension carried by a plan."""
 
     extensions = plan_to_dict(plan)["extensions"]
+    if not isinstance(extensions, list):  # pragma: no cover - validated invariant
+        raise ExecutionPlanContractError(
+            "unsupported_schema", "ExecutionPlan.extensions must be a JSON array"
+        )
     if not extensions:
         return None
     from ..noise import NoiseModel
 
-    return NoiseModel.from_dict(extensions[0]["payload"])
+    extension = _require_mapping("ExecutionPlan.extension", extensions[0])
+    payload = _require_mapping("ExecutionPlan.extension.payload", extension["payload"])
+    return NoiseModel.from_dict(payload)
 
 
 def _payload(plan: ExecutionPlan) -> dict[str, Any]:
@@ -484,7 +492,12 @@ def _resolve_planned_device(device: str, *, backend: str) -> str:
 
 
 def _environment_requirements(decision: Mapping[str, object]) -> dict[str, object]:
-    world_size = int(decision["world_size"])
+    world_size_value = decision["world_size"]
+    if not isinstance(world_size_value, int) or isinstance(world_size_value, bool):
+        raise ExecutionPlanContractError(
+            "identity_mismatch", "decision world_size must be an integer"
+        )
+    world_size = world_size_value
     return {
         "protocol": "flagquantum.execution_environment",
         "version": "1.0",
@@ -547,11 +560,17 @@ def _validate_decision(decision: Mapping[str, object]) -> None:
                 "identity_mismatch", f"decision {name} must be a non-empty string"
             )
     for name in ("batch_size", "world_size"):
-        if type(decision[name]) is not int or int(decision[name]) < 1:
+        value = decision[name]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
             raise ExecutionPlanContractError(
                 "identity_mismatch", f"decision {name} must be a positive integer"
             )
-    if type(decision["state_bytes"]) is not int or int(decision["state_bytes"]) < 0:
+    state_bytes = decision["state_bytes"]
+    if (
+        not isinstance(state_bytes, int)
+        or isinstance(state_bytes, bool)
+        or state_bytes < 0
+    ):
         raise ExecutionPlanContractError(
             "identity_mismatch", "decision state_bytes must be a non-negative integer"
         )

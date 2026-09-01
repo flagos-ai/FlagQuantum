@@ -83,6 +83,34 @@
       ]
     },
     {
+      "namespace": "flagquantum.extensions",
+      "symbols": [
+        "SDK_API_VERSION",
+        "CapabilityRequest",
+        "CapabilityResponse",
+        "CompilerPassExtension",
+        "ConformanceReport",
+        "DeviceExtension",
+        "ExecutionBackendExtension",
+        "ExtensionCompatibilityError",
+        "ExtensionConfig",
+        "ExtensionError",
+        "ExtensionHandle",
+        "ExtensionLifecycleError",
+        "ExtensionManifest",
+        "ExtensionRegistry",
+        "KernelExtension",
+        "MeasurementCollectorExtension",
+        "OperatorExtension",
+        "PlannerExtension",
+        "ProviderExtension",
+        "check_manifest_serialization",
+        "extension_scope",
+        "run_backend_conformance",
+        "run_provider_conformance"
+      ]
+    },
+    {
       "namespace": "flagquantum.training",
       "symbols": [
         "NonFiniteTrainingError",

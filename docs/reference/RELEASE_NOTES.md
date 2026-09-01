@@ -19,6 +19,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Promoted the isolated `flagquantum.extensions` protocol to a first-alpha
+  candidate with a machine-readable contract and root-surface guard. Public
+  conformance entry points and a third-party-style backend example now prove
+  that extensions need no runtime or core internals. Individual extensions are
+  still experimental by default, and final protocol freeze remains pending.
+  The audit also retains `noise_model` and keeps local `ExecutionPlan` separate
+  from provider-facing `DeploymentPackage`.
 - Added the stable `flagquantum.errors` lifecycle categories while preserving
   compatibility with Python's `ValueError`, `RuntimeError`, and
   `NotImplementedError`. Existing IR, plan, result, capability, compilation,

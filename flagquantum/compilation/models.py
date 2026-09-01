@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping, cast
 
 from ..core.contracts import RuntimePlanContract
 from ..core.ir import Instruction
@@ -55,49 +55,52 @@ class ExecutionPlan:
     def identity(self) -> str:
         return str(self.to_dict()["identity"])
 
+    def _contract_section(self, name: str) -> Mapping[str, object]:
+        return cast(Mapping[str, object], self.to_dict()[name])
+
     @property
     def schema_version(self) -> str:
         return str(self.to_dict()["version"])
 
     @property
     def program_fingerprint(self) -> str:
-        return str(self.to_dict()["fingerprints"]["program"])
+        return str(self._contract_section("fingerprints")["program"])
 
     @property
     def options_fingerprint(self) -> str:
-        return str(self.to_dict()["fingerprints"]["options"])
+        return str(self._contract_section("fingerprints")["options"])
 
     @property
     def environment_fingerprint(self) -> str:
-        return str(self.to_dict()["fingerprints"]["environment"])
+        return str(self._contract_section("fingerprints")["environment"])
 
     @property
     def compiler_fingerprint(self) -> str:
-        return str(self.to_dict()["fingerprints"]["compiler"])
+        return str(self._contract_section("fingerprints")["compiler"])
 
     @property
     def mode(self) -> str:
-        return str(self.to_dict()["decision"]["mode"])
+        return str(self._contract_section("decision")["mode"])
 
     @property
     def backend(self) -> str:
-        return str(self.to_dict()["decision"]["backend"])
+        return str(self._contract_section("decision")["backend"])
 
     @property
     def device(self) -> str:
-        return str(self.to_dict()["decision"]["device"])
+        return str(self._contract_section("decision")["device"])
 
     @property
     def target(self) -> str:
-        return str(self.to_dict()["decision"]["target"])
+        return str(self._contract_section("decision")["target"])
 
     @property
     def batch_size(self) -> int:
-        return int(self.to_dict()["decision"]["batch_size"])
+        return cast(int, self._contract_section("decision")["batch_size"])
 
     @property
     def precision(self) -> str:
-        return str(self.to_dict()["decision"]["precision"])
+        return str(self._contract_section("decision")["precision"])
 
     @property
     def is_distributed(self) -> bool:

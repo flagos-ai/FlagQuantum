@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_freeze",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_007_ALPHA_FREEZE_READINESS.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "root_manifest_change": false,
+  "stable_extensions": [
+    {
+      "namespace": "flagquantum.extensions",
+      "additions": [
+        "SDK_API_VERSION",
+        "CapabilityRequest",
+        "CapabilityResponse",
+        "CompilerPassExtension",
+        "ConformanceReport",
+        "DeviceExtension",
+        "ExecutionBackendExtension",
+        "ExtensionCompatibilityError",
+        "ExtensionConfig",
+        "ExtensionError",
+        "ExtensionHandle",
+        "ExtensionLifecycleError",
+        "ExtensionManifest",
+        "ExtensionRegistry",
+        "KernelExtension",
+        "MeasurementCollectorExtension",
+        "OperatorExtension",
+        "PlannerExtension",
+        "ProviderExtension",
+        "check_manifest_serialization",
+        "extension_scope",
+        "run_backend_conformance",
+        "run_provider_conformance"
+      ],
+      "new_namespace_only": [
+        "SDK_API_VERSION",
+        "CapabilityRequest",
+        "CapabilityResponse",
+        "CompilerPassExtension",
+        "ConformanceReport",
+        "DeviceExtension",
+        "ExecutionBackendExtension",
+        "ExtensionCompatibilityError",
+        "ExtensionConfig",
+        "ExtensionError",
+        "ExtensionHandle",
+        "ExtensionLifecycleError",
+        "ExtensionManifest",
+        "ExtensionRegistry",
+        "KernelExtension",
+        "MeasurementCollectorExtension",
+        "OperatorExtension",
+        "PlannerExtension",
+        "ProviderExtension",
+        "check_manifest_serialization",
+        "extension_scope",
+        "run_backend_conformance",
+        "run_provider_conformance"
+      ]
+    }
+  ],
+  "protocol_semantics": {
+    "sdk_api_version": "1.0",
+    "registration": "immutable_and_task_local",
+    "capability_negotiation": "required_before_activation",
+    "capability_mismatch": "fail_closed_before_execution",
+    "lifecycle": ["negotiate", "start", "invoke", "close"],
+    "extension_exceptions_cross_boundary": false,
+    "error_categories": {
+      "ExtensionError": "FlagQuantumError",
+      "ExtensionCompatibilityError": "CapabilityError",
+      "ExtensionLifecycleError": "ExecutionError"
+    },
+    "cleanup_attempted_after_failed_start": true,
+    "credential_values_in_serializable_config": false,
+    "root_exports_added": false,
+    "individual_extension_default_stability": "experimental"
+  },
+  "decisions": {
+    "noise_parameter_name": "noise_model",
+    "execution_plan_owner": "local_planning_identity_and_exact_execution",
+    "deployment_package_owner": "provider_facing_portable_submission_asset",
+    "execution_plan_is_deployment_package": false
+  },
+  "evidence": {
+    "third_party_example": "examples/extensions/reference_extensions.py",
+    "public_imports_only_test": "tests/api_contract/test_extension_protocol_semantics.py",
+    "golden_paths": "tests/api_contract/test_open_source_golden_paths.py",
+    "freeze_audit": "docs/development/ALPHA_API_FREEZE_AUDIT.md"
+  },
+  "rules": {
+    "candidate_is_frozen_contract": false,
+    "whole_api_freeze_implied": false,
+    "future_breaking_changes_require_api_owner_approval": true
+  }
+}

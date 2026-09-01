@@ -732,10 +732,11 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 
 ### Phase 6：扩展协议与互操作
 
-- 固定 backend/provider Protocol；
-- 建立第三方 conformance suite；
-- Qiskit/PennyLane 只依赖 stable core 和 extension protocol；
-- 验证外部插件不需要导入 runtime internal。
+- [x] 固定 backend/provider Protocol 候选契约；
+- [x] 建立第三方 conformance suite；
+- [ ] 在真实依赖 CI 中验证 Qiskit/PennyLane conformance；
+- [x] 验证外部插件不需要导入 runtime internal；
+- [ ] API owner 单独批准 Proposal 007 extension contract freeze。
 
 完成标准：能够在不修改 core 的情况下增加一个最小第三方 backend。
 
@@ -799,7 +800,7 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 
 只有同时满足以下条件，才能宣布 API freeze：
 
-- [ ] Stable Core 已缩减并通过逐项审查；
+- [x] Stable Core 已缩减并通过逐项审查；
 - [x] `ExecutionOptions` 成为唯一推荐执行配置；
 - [x] `fq.run(plan)` 已实现并通过等价性测试；
 - [x] `plan/run/RuntimePolicy` 使用统一术语；
@@ -810,12 +811,12 @@ Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固�
 - [x] checkpoint/resume 的责任边界已明确；
 - [x] Module 构造路径和 deployment binding 所有权已明确；
 - [x] 公开异常候选层级已实现并受契约测试保护；
-- [ ] distributed/noise/backend 专属入口已完成分层；
-- [ ] 根命名空间不存在无意暴露的 compatibility exports；
-- [ ] 五条黄金路径全部通过；
+- [x] distributed/noise/backend 专属入口已完成分层；
+- [x] 根命名空间不存在无意暴露的 compatibility exports；
+- [x] 五条黄金路径全部通过；
 - [ ] Qiskit 和 PennyLane conformance 通过；
-- [ ] 一个第三方 backend 示例只使用公开扩展协议；
-- [ ] 文档、typing、API snapshot 和 release notes 一致；
+- [x] 一个第三方 backend 示例只使用公开扩展协议；
+- [x] 文档、typing、API snapshot 和 release notes 一致；
 - [ ] alpha/beta 试用没有发现必须破坏 API 才能解决的问题。
 
 ## 11. 建议的版本策略

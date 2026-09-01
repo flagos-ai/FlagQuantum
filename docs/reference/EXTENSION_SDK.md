@@ -1,8 +1,11 @@
 # FlagQuantum Extension SDK
 
-The experimental SDK lives under `flagquantum.extensions`; it does not add root
-exports. Extensions declare a versioned manifest, negotiate capabilities before
-activation, and are installed into a task-local immutable registry.
+The candidate-stable SDK lives under `flagquantum.extensions`; it does not add
+root exports. Extensions declare a versioned manifest, negotiate capabilities
+before activation, and are installed into a task-local immutable registry.
+The protocol is a first-public-alpha candidate; its final freeze still requires
+separate API-owner approval. Individual extensions remain experimental by
+default.
 
 Supported extension kinds are execution backends, kernels, operators, compiler
 passes, devices, providers, measurement collectors, and planners. Protocols
@@ -11,12 +14,16 @@ define the minimum lifecycle and operation surface for each kind.
 ## Compatibility lifecycle
 
 - SDK API mismatches fail during registration with upgrade guidance.
-- Extensions are experimental by default. Stabilization requires conformance,
+- Individual extensions are experimental by default. Stabilization requires conformance,
   security review, documentation, and a declared compatibility window.
 - Deprecations declare a removal version in the manifest and must retain the
   previous contract for that window.
 - Capability negotiation is fail-closed: missing dtype, device, gradient, or
   semantic capabilities produce blockers before activation.
+
+Compatibility failures are also `flagquantum.errors.CapabilityError`; lifecycle
+failures are `flagquantum.errors.ExecutionError`, so applications can use the
+same stable error categories as core execution.
 
 ## Isolation and security
 
@@ -33,8 +40,9 @@ only trusted packages should be installed.
 
 ## Conformance
 
-`flagquantum.extensions.conformance` supplies reusable backend and provider
-checks covering manifest/payload serialization, capability honesty, PyTorch
-gradients, dtype/device preservation, isolated errors, and cleanup. Reference
-extensions are in `examples/extensions/reference_extensions.py` and import only
-the public SDK plus PyTorch.
+`flagquantum.extensions` supplies reusable backend and provider checks covering
+manifest/payload serialization, capability honesty, PyTorch gradients,
+dtype/device preservation, isolated errors, and cleanup. The conformance
+submodule remains an equivalent explicit import path. Reference extensions are
+in `examples/extensions/reference_extensions.py` and import only the public SDK
+plus PyTorch.

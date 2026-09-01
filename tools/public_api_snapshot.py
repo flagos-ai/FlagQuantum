@@ -28,6 +28,9 @@ EXECUTION_PLAN_CONTRACT = ROOT / "contracts" / "execution-plan-v1-candidate.json
 EXECUTION_RESULT_CONTRACT = ROOT / "contracts" / "execution-result-v1-candidate.json"
 MODULE_TRAINING_CONTRACT = ROOT / "contracts" / "module-training-v1-candidate.json"
 ERRORS_MODULE_CONTRACT = ROOT / "contracts" / "errors-module-boundary-v1-candidate.json"
+EXTENSION_PROTOCOL_CONTRACT = (
+    ROOT / "contracts" / "extension-protocol-v1-candidate.json"
+)
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -182,6 +185,9 @@ def validate() -> tuple[str, ...]:
     errors_module_contract = json.loads(
         ERRORS_MODULE_CONTRACT.read_text(encoding="utf-8")
     )
+    extension_protocol_contract = json.loads(
+        EXTENSION_PROTOCOL_CONTRACT.read_text(encoding="utf-8")
+    )
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -269,6 +275,10 @@ def validate() -> tuple[str, ...]:
         errors.extend(_validate_authorized_module_training(module_training_contract))
     if errors_module_contract.get("implementation_authorized") is True:
         errors.extend(_validate_authorized_errors_module(errors_module_contract))
+    if extension_protocol_contract.get("implementation_authorized") is True:
+        errors.extend(
+            _validate_authorized_extension_protocol(extension_protocol_contract)
+        )
     return tuple(errors)
 
 
@@ -426,6 +436,42 @@ def _validate_authorized_errors_module(contract: dict[str, Any]) -> list[str]:
         in fq.Module(lambda p: fq.Circuit(1).ry(0, p[0]), 1).get_extra_state()
     ):
         errors.append("Module extra state must not own deployment_binding")
+    return errors
+
+
+def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[str]:
+    import flagquantum as fq
+    import flagquantum.extensions as extensions
+    from flagquantum.errors import CapabilityError, ExecutionError, FlagQuantumError
+
+    errors: list[str] = []
+    declared = contract["stable_extensions"]
+    expected = {
+        str(name)
+        for section in declared
+        if section["namespace"] == "flagquantum.extensions"
+        for name in section["additions"]
+    }
+    if set(extensions.__all__) != expected:
+        errors.append("flagquantum.extensions exports differ from Proposal 007")
+    leaked = sorted(expected & set(fq.__all__))
+    if leaked:
+        errors.append(
+            "extension protocol names must not enter the stable root: "
+            + ", ".join(leaked)
+        )
+    if extensions.SDK_API_VERSION != contract["protocol_semantics"]["sdk_api_version"]:
+        errors.append("extension SDK API version differs from Proposal 007")
+    mappings = {
+        extensions.ExtensionError: FlagQuantumError,
+        extensions.ExtensionCompatibilityError: CapabilityError,
+        extensions.ExtensionLifecycleError: ExecutionError,
+    }
+    for specific, category in mappings.items():
+        if not issubclass(specific, category):
+            errors.append(
+                f"{specific.__name__} is outside its Proposal 007 error category"
+            )
     return errors
 
 

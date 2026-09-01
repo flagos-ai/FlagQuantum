@@ -1,5 +1,11 @@
-"""Versioned, isolated extension SDK (not part of the stable root API)."""
+"""Versioned, isolated extension SDK outside the stable root API."""
 
+from .conformance import (
+    ConformanceReport,
+    check_manifest_serialization,
+    run_backend_conformance,
+    run_provider_conformance,
+)
 from .sdk import (
     SDK_API_VERSION,
     CapabilityRequest,
@@ -26,6 +32,7 @@ __all__ = (
     "SDK_API_VERSION",
     "CapabilityRequest",
     "CapabilityResponse",
+    "ConformanceReport",
     "CompilerPassExtension",
     "DeviceExtension",
     "ExecutionBackendExtension",
@@ -42,4 +49,7 @@ __all__ = (
     "PlannerExtension",
     "ProviderExtension",
     "extension_scope",
+    "check_manifest_serialization",
+    "run_backend_conformance",
+    "run_provider_conformance",
 )
