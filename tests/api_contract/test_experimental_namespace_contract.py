@@ -56,6 +56,26 @@ def test_internal_records_and_evidence_are_not_discoverable() -> None:
         module = getattr(fq.experimental, namespace)
         assert names.isdisjoint(module.__all__)
         assert names.isdisjoint(dir(module))
+        for name in names:
+            with pytest.raises(AttributeError):
+                getattr(module, name)
+
+
+def test_every_removed_v1_route_fails_closed() -> None:
+    current = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    previous = json.loads(
+        (ROOT / "contracts" / "experimental-namespace-v1-candidate.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    for namespace, previous_names in previous["exports"].items():
+        removed = set(previous_names) - set(current["discoverable_exports"][namespace])
+        module = getattr(fq.experimental, namespace)
+        for name in removed:
+            assert name not in dir(module)
+            with pytest.raises(AttributeError):
+                getattr(module, name)
 
 
 def test_flat_experimental_feature_routes_are_absent() -> None:

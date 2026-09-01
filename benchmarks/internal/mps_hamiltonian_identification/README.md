@@ -19,7 +19,7 @@ Run this before scheduling GPUs:
 
 ```bash
 conda activate flagquantum-dev
-python examples/mps_hamiltonian_identification/train.py \
+python benchmarks/internal/mps_hamiltonian_identification/train.py \
   --n-qubits 8 --n-initial-states 2 --time-steps 1,2 \
   --observation-stride 2 --max-bond 8 --steps 3 \
   --device cpu --output /tmp/fq-mps-system-id-smoke.json
@@ -34,7 +34,7 @@ probes over eight GPUs:
 conda activate flagquantum-dev
 timeout --signal=TERM --kill-after=30s 12h \
   torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --n-qubits 512 --n-initial-states 16 --time-steps 1,2,3,4 \
   --observation-stride 8 --max-bond 64 --steps 50 --probe-batch-size 8 \
   --output benchmarks/results/mps_system_id_512q_8xa100.json
@@ -45,7 +45,7 @@ increase them after measuring memory and step time:
 
 ```bash
 torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --n-qubits 1024 --n-initial-states 8 --time-steps 1,2,3 \
   --observation-stride 16 --max-bond 64 --steps 50 \
   --output benchmarks/results/mps_system_id_1024q_8xa100.json
@@ -59,7 +59,7 @@ one batch of 32 probes:
 ```bash
 export TORCHINDUCTOR_CACHE_DIR="$PWD/.inductor-cache/mps-system-id-1024q"
 torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --n-qubits 1024 --n-initial-states 256 --time-steps 3 \
   --observation-stride 16 --max-bond 128 --cutoff 0 \
   --probe-batch-size 32 --compile-brickwork --steps 50 --lr 0.01 \
@@ -107,7 +107,7 @@ reconstructing the learned MPS:
 
 ```bash
 torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --site-sharded --n-qubits 1024 --n-initial-states 8 \
   --time-steps 1,2,3 --observation-stride 16 \
   --max-bond 128 --cutoff 0 --steps 50 --lr 0.01 \
@@ -160,7 +160,7 @@ Inductor cache is configured.
 export TORCHINDUCTOR_CACHE_DIR="$PWD/.inductor-cache/mps-hamiltonian-identification-acceptance"
 timeout --signal=TERM --kill-after=30s 20m \
   torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --site-sharded --compile-site-kernels --compile-observables \
   --single-step-acceptance --steps 1 \
   --n-qubits 24 --n-initial-states 1 --time-steps 1 \
@@ -179,7 +179,7 @@ an active `max_bond` truncation then fails closed.
 
 ```bash
 torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --site-sharded --compile-site-kernels --compile-observables \
   --n-qubits 1024 --n-initial-states 8 --time-steps 1,2,3 \
   --probe-batch-size 1 --max-bond 128 --cutoff 0 \
@@ -232,7 +232,7 @@ Example with a persistent compilation cache:
 ```bash
 export TORCHINDUCTOR_CACHE_DIR="$PWD/.inductor-cache/mps-system-id"
 torchrun --standalone --nproc-per-node=8 \
-  examples/mps_hamiltonian_identification/train.py \
+  benchmarks/internal/mps_hamiltonian_identification/train.py \
   --n-qubits 512 --n-initial-states 256 --time-steps 3 \
   --observation-stride 16 --max-bond 128 --cutoff 0 \
   --probe-batch-size 32 --compile-brickwork --steps 50 \

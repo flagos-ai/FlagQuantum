@@ -10,7 +10,7 @@ __all__ = _PUBLIC_NAMES
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"TEBDResult", "run_tebd"}:
+    if name in __all__:
         return getattr(import_module("flagquantum.simulation.tebd"), name)
     raise AttributeError(name)
 

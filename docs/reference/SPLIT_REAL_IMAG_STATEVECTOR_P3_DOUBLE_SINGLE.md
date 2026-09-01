@@ -1,5 +1,8 @@
 # Full Double-Single split statevector P3
 
+> Internal development reference. P3 is not an SDK API or an automatic runtime
+> provider.
+
 P3 is an explicit accuracy experiment for devices whose PyTorch backend offers
 reliable FP32 operators but no usable FP64 or complex128 kernels. Each complex
 amplitude is stored as four device-resident FP32 words: real high/low and
@@ -29,12 +32,15 @@ not invent discarded parameter bits.
 
 ```python
 import flagquantum as fq
+from flagquantum.runtime.backends.statevector.split_real_imag_double_single import (
+    parameter_shift_split_real_imag_double_single_gradient,
+)
 
 theta = fq.Parameter("theta")
 circuit = fq.Circuit(2).h(0).ry(1, theta=theta).cx(0, 1)
 observable = fq.algorithms.pauli_term(1.0, "ZZ", (0, 1))
 
-result = fq.experimental.numerics.parameter_shift_split_real_imag_double_single_gradient(
+result = parameter_shift_split_real_imag_double_single_gradient(
     circuit,
     observable,
     parameter_bindings={"theta": 0.23},
@@ -48,8 +54,8 @@ occurs only after all words are transferred to CPU.
 
 ## Precision and normalization
 
-The executable plan is returned by
-`fq.experimental.numerics.split_real_imag_p3_precision_plan()`. P3 normalizes the state
+The internal executable plan is returned by
+`split_real_imag_p3_precision_plan()`. P3 normalizes the state
 every 16 gates by default using a Double-Single norm and two Newton refinements
 of an FP32 reciprocal-square-root seed. Set `renormalize_every=0` to disable
 periodic normalization or a positive interval to make the policy explicit.
@@ -67,7 +73,7 @@ CPU complex128 reference and compares end-to-end expectation/gradient error
 with P2:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_double_single_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+pytest tests/test_split_real_imag_double_single_conformance.py
 ```
 
 In a Torch-FL CUDA-reference environment:

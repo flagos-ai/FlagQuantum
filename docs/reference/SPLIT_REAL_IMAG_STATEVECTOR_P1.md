@@ -52,7 +52,7 @@ seeds. It compares expectation values and parameter-shift gradients with an
 independent CPU complex128 calculation and checks state norm drift:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_training_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+pytest tests/test_split_real_imag_training_conformance.py
 ```
 
 In a Torch-FL CUDA-reference environment:

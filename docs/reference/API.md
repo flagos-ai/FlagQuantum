@@ -305,22 +305,11 @@ contract only; no real IQM QPU execution is claimed.
 
 ### Provider-neutral dynamic conformance
 
-The experimental conformance API makes backend differences explicit and runs
-the same deterministic active-reset, conditional-flip, and qubit-reuse vectors
-against multiple implementations:
-
-```python
-local = fq.experimental.dynamic.run_dynamic_conformance()
-aer = fq.experimental.dynamic.run_dynamic_conformance(
-    fq.experimental.dynamic.run_qiskit_aer_dynamic,
-    implementation="qiskit_aer",
-)
-assert local.passed and aer.passed
-```
-
-Install the second local backend with `pip install -e '.[qiskit]'`.
-`assess_dynamic_features()` can compare a circuit against the declared local,
-Qiskit Aer, or Braket IQM feature set before transport-specific validation.
+Backend conformance vectors are repository verification assets rather than SDK
+API. Maintainers can run the local suite with
+`pytest tests/test_dynamic_conformance.py`; the Qiskit lane additionally
+requires `pip install -e '.[qiskit]'`. User code should call
+`fq.experimental.dynamic.assess_dynamic_backend(...)` for preflight checks.
 `DynamicExecutionResult` exposes `final_samples`, `classical_register`,
 `mid_circuit_measurements`, availability metadata, and
 `to_execution_result()` for projection into the canonical result contract.

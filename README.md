@@ -152,7 +152,6 @@ contract.
 | Scientific goal | Maintained path |
 | --- | --- |
 | Ground-state discovery and VQE | [Statevector VQE](examples/single_machine_quantum_ai/01_vqe_statevector.py) and [Heisenberg hybrid VQE](examples/single_machine_quantum_ai/06_heisenberg_hybrid_vqe.py) |
-| Hamiltonian identification | [Differentiable MPS workflow](examples/mps_hamiltonian_identification/README.md) |
 | Large low-entanglement systems | [1,000-qubit MPS training](examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py) |
 | Representation-aware experiments | [Switch one VQE program across SV, MPS, and TN](examples/vqe_switch_sv_mps_tn.py) |
 | Hybrid classical-quantum learning | [Quantum classifier and hybrid examples](examples/single_machine_quantum_ai/README.md) |
@@ -383,7 +382,7 @@ print(fq.__version__)
 | --- | --- |
 | Build, compile, or export a program | [`fq.Circuit` quick start](examples/quick_start.py) |
 | Train a quantum or hybrid AI model | [Single-machine quantum AI](examples/single_machine_quantum_ai/README.md) |
-| Train a large low-entanglement system | [Differentiable MPS](examples/mps_hamiltonian_identification/README.md) |
+| Train a large low-entanglement system | [1,000-qubit MPS training](examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py) |
 | Partition one workload across devices | [Distributed statevector](examples/distributed_statevector_topologies/README.md) and [distributed MPS](examples/distributed_mps/README.md) |
 | Package a trained program for hardware | [Training-to-deployment example](examples/train_parameterized_circuit_then_deploy.py) |
 | Understand runtime architecture | [Architecture](ARCHITECTURE.md) |

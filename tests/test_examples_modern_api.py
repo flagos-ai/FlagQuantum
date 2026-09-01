@@ -128,8 +128,14 @@ def test_quantum_transformer_feature_layer_is_differentiable() -> None:
 
 @pytest.mark.unit
 def test_experimental_mps_example_boundary_is_importable() -> None:
-    assert callable(fq.experimental.distributed.execute_torch_distributed_mps_forward)
-    assert callable(fq.experimental.distributed.execute_torch_distributed_mps_reverse)
-    assert callable(fq.experimental.distributed.site_sharded_z_zz_observations)
-    assert callable(fq.experimental.distributed.reset_mps_site_kernel_stats)
-    assert callable(fq.experimental.distributed.mps_site_kernel_stats)
+    removed = {
+        "execute_torch_distributed_mps_forward",
+        "execute_torch_distributed_mps_reverse",
+        "site_sharded_z_zz_observations",
+        "reset_mps_site_kernel_stats",
+        "mps_site_kernel_stats",
+    }
+    assert removed.isdisjoint(fq.experimental.distributed.__all__)
+    for name in removed:
+        with pytest.raises(AttributeError):
+            getattr(fq.experimental.distributed, name)

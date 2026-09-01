@@ -24,15 +24,8 @@ The foundation implements:
 - PyTorch-composed autograd and device preservation;
 - deterministic CPU complex128/float64 conformance probes.
 
-Run the machine-readable certification through the explicitly unstable API:
-
-```python
-import flagquantum as fq
-
-report = fq.experimental.numerics.run_double_single_conformance("cpu")
-report.require_accepted()
-print(report.to_json())
-```
+The conformance runner is internal development evidence, not SDK API. Validate
+the checked implementation with `pytest tests/test_double_single_conformance.py`.
 
 The authoritative algorithm, threshold, and unsupported-scope declaration is
 `contracts/double-single-contract.toml`. The CPU conformance suite covers catastrophic

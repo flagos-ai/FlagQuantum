@@ -8,8 +8,9 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Callable
 
-import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic import DynamicExecutionResult, run_dynamic
+from flagquantum.runtime.dynamic_conformance import run_qiskit_aer_dynamic
 
 
 def _workload(mid_circuit_measurements: int) -> DynamicCircuit:
@@ -25,11 +26,11 @@ def _workload(mid_circuit_measurements: int) -> DynamicCircuit:
 
 def _executor(
     name: str,
-) -> Callable[..., fq.experimental.dynamic.DynamicExecutionResult]:
+) -> Callable[..., DynamicExecutionResult]:
     if name == "flagquantum":
-        return fq.experimental.dynamic.run_dynamic
+        return run_dynamic
     if name == "qiskit_aer":
-        return fq.experimental.dynamic.run_qiskit_aer_dynamic
+        return run_qiskit_aer_dynamic
     raise ValueError(f"unknown backend: {name}")
 
 

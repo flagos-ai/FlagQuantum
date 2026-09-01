@@ -17,21 +17,6 @@ _RUNTIME_EXPORTS = {
     "route_dynamic_circuit",
     "run_dynamic",
 }
-_CONFORMANCE_EXPORTS = {
-    "BRAKET_IQM_DYNAMIC_FEATURES",
-    "DynamicConformanceCase",
-    "DynamicConformanceResult",
-    "DynamicFeatureReport",
-    "DynamicFeatureSet",
-    "LOCAL_TRAJECTORY_FEATURES",
-    "QISKIT_AER_DYNAMIC_FEATURES",
-    "assess_dynamic_features",
-    "dynamic_conformance_cases",
-    "run_dynamic_conformance",
-    "run_qiskit_aer_dynamic",
-    "run_qiskit_aer_qasm3_round_trip",
-}
-
 _PUBLIC_NAMES = (
     "assess_dynamic_backend",
     "create_dynamic_deployment_package",
@@ -44,10 +29,8 @@ __all__ = _PUBLIC_NAMES
 
 
 def __getattr__(name: str) -> Any:
-    if name in _RUNTIME_EXPORTS:
+    if name in __all__:
         return getattr(import_module("flagquantum.runtime.dynamic"), name)
-    if name in _CONFORMANCE_EXPORTS:
-        return getattr(import_module("flagquantum.runtime.dynamic_conformance"), name)
     raise AttributeError(name)
 
 

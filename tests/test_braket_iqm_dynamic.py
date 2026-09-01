@@ -5,6 +5,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic import export_dynamic_qasm3_for_backend
 
 pytestmark = pytest.mark.braket
 
@@ -31,9 +32,7 @@ def test_braket_iqm_export_lowers_feedback_and_active_reset() -> None:
     circuit.conditional("x", 1, classical_bit=3)
     circuit.reset(1)
 
-    qasm = fq.experimental.dynamic.export_dynamic_qasm3_for_backend(
-        circuit, _iqm_backend(n_wires=2)
-    )
+    qasm = export_dynamic_qasm3_for_backend(circuit, _iqm_backend(n_wires=2))
 
     assert "#pragma braket verbatim" in qasm
     assert f"prx({pi!r}, 0.0) $0;" in qasm
@@ -53,7 +52,7 @@ def test_braket_iqm_reuses_latest_unique_feedback_key() -> None:
     circuit.measure(1, classical_bit=0)
     circuit.conditional("rx", 1, classical_bit=0, params={"theta": 0.25})
 
-    qasm = fq.experimental.dynamic.export_dynamic_qasm3_for_backend(
+    qasm = export_dynamic_qasm3_for_backend(
         circuit,
         _iqm_backend(n_wires=3, metadata={"dynamic_qubit_groups": ((0, 1, 2),)}),
     )

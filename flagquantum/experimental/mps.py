@@ -8,23 +8,10 @@ from typing import Any
 _PUBLIC_NAMES = ("plan_production_mps", "validate_production_mps_workload")
 __all__ = _PUBLIC_NAMES
 
-_MPS_NAMES = {
-    "MPSAcceptanceGates",
-    "MPSCrossoverMeasurement",
-    "MPSProductionAcceptanceError",
-    "MPSProductionPlan",
-    "MPSProductionSupport",
-    "build_mps_release_artifact",
-    "plan_production_mps",
-    "validate_production_mps_workload",
-}
-
 
 def __getattr__(name: str) -> Any:
-    if name in _MPS_NAMES:
+    if name in __all__:
         return getattr(import_module("flagquantum.runtime.backends.mps"), name)
-    if name == "MPSReverseCheckpointPolicy":
-        return getattr(import_module("flagquantum.runtime.backends.mps.records"), name)
     raise AttributeError(name)
 
 

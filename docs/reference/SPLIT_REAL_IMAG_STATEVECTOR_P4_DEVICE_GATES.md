@@ -1,5 +1,8 @@
 # Device-generated Double-Single split statevector P4
 
+> Internal development reference. P4 remains implementation evidence and is
+> not exposed through the SDK API.
+
 P4 is an explicit accuracy experiment for PyTorch devices with reliable FP32
 operators but no usable FP64 or complex128 kernels. It preserves P3's four-word
 complex state representation and additionally generates supported gates using
@@ -37,13 +40,16 @@ Every result records these boundaries:
 ```python
 import torch
 import flagquantum as fq
+from flagquantum.runtime.backends.statevector.split_real_imag_device_double_single import (
+    parameter_shift_split_real_imag_device_double_single_gradient,
+)
 
 theta = fq.Parameter("theta")
 circuit = fq.Circuit(2).h(0).ry(1, theta=theta).cx(0, 1)
 observable = fq.algorithms.pauli_term(1.0, "ZZ", (0, 1))
 
 result = (
-    fq.experimental.numerics.parameter_shift_split_real_imag_device_double_single_gradient(
+    parameter_shift_split_real_imag_device_double_single_gradient(
         circuit,
         observable,
         parameter_bindings={
@@ -60,8 +66,8 @@ are transferred to CPU.
 
 ## Contract and conformance
 
-The executable numerical plan is returned by
-`fq.experimental.numerics.split_real_imag_p4_precision_plan()`. The machine-readable
+The internal numerical plan is returned by
+`split_real_imag_p4_precision_plan()`. The machine-readable
 scope is
 [`split-real-imag-statevector-p4-device-double-single-contract.toml`](../../contracts/split-real-imag-statevector-p4-device-double-single-contract.toml),
 and the required operator surface is
@@ -70,7 +76,7 @@ and the required operator surface is
 Run CPU conformance with:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_device_double_single_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+pytest tests/test_split_real_imag_device_double_single_conformance.py
 ```
 
 Run Torch-FL logical-device conformance with:

@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
-import flagquantum.experimental.planning as fqxp
+import flagquantum.compilation.planner as fqxp
 
 pytestmark = pytest.mark.integration
 

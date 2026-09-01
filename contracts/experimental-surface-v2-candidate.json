@@ -64,16 +64,17 @@
     "release artifact builders"
   ],
   "transition": {
-    "non_discoverable_internal_routes_temporarily_resolvable": true,
+    "non_discoverable_internal_routes_temporarily_resolvable": false,
     "internal_routes_are_public_api": false,
-    "repository_callers_must_migrate_to_implementation_modules": true,
-    "remove_internal_routes_before_first_public_alpha": true
+    "repository_callers_migrated_to_implementation_modules": true,
+    "internal_routes_removed": true
   },
   "rules": {
     "top_level_governance_changed": false,
     "stable_core_changed": false,
     "experimental_compatibility_guarantee": false,
     "discoverable_names_are_limited_to_user_workflows_or_adapter_namespaces": true,
+    "non_contract_names_fail_with_attribute_error": true,
     "candidate_is_frozen_contract": false
   }
 }

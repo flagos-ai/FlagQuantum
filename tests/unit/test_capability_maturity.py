@@ -49,6 +49,24 @@ def test_every_capability_has_user_discovery_metadata():
         assert set(REQUIRED_USER_FIELDS) <= set(capability)
 
 
+def test_internal_experiments_may_have_no_public_api() -> None:
+    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    capability = data["capabilities"]["split_real_imag_statevector_p5_autograd_bridge"]
+    assert capability["level"] == "experimental"
+    assert capability["public_apis"] == []
+    assert maturity_errors(data, ROOT) == ()
+
+
+def test_supported_capability_requires_a_public_api() -> None:
+    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data["capabilities"]["local_statevector"]["public_apis"] = []
+    assert any(
+        "local_statevector: supported or certified capability requires a public API"
+        in error
+        for error in maturity_errors(data, ROOT)
+    )
+
+
 def test_user_discovery_links_fail_closed_when_missing():
     data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
     data["capabilities"]["ir"]["quick_start"] = "examples/does_not_exist.py"

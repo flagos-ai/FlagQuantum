@@ -1,5 +1,8 @@
 # Selective Double-Single split statevector precision P2
 
+> Internal development reference. P2 is verified implementation evidence and
+> is not exposed through the FlagQuantum SDK API.
+
 P2 is an explicit precision experiment for cancellation-sensitive observable
 and gradient reductions on FP32-only PyTorch devices. It deliberately keeps
 state amplitudes, gate generation, and gate application as separate real and
@@ -13,6 +16,9 @@ high/low words:
 ```python
 import flagquantum as fq
 from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.runtime.backends.statevector.split_real_imag_precision import (
+    parameter_shift_split_real_imag_precision_gradient,
+)
 
 theta = fq.Parameter("theta")
 circuit = fq.Circuit(1).ry(0, theta=theta)
@@ -23,7 +29,7 @@ observable = Hamiltonian(
     )
 )
 
-result = fq.experimental.numerics.parameter_shift_split_real_imag_precision_gradient(
+result = parameter_shift_split_real_imag_precision_gradient(
     circuit,
     observable,
     parameter_bindings={"theta": 0.23},
@@ -40,14 +46,14 @@ accelerator execution.
 
 ## Explicit contracts
 
-The implemented plan is available from
-`fq.experimental.numerics.split_real_imag_p2_precision_plan()`. Callers may pass its
+The internal implementation plan is available from
+`split_real_imag_p2_precision_plan()`. Maintainer tests may pass its
 machine-readable form back through `precision_plan=`. Any different plan fails
 closed: P2 never silently upgrades the whole state, demotes a requested dtype,
 or moves computation to CPU.
 
-The bounded certified envelope is returned by
-`fq.experimental.numerics.split_real_imag_p2_accuracy_envelope()`. A tighter requested
+The bounded certified envelope is returned internally by
+`split_real_imag_p2_accuracy_envelope()`. A tighter requested
 bound, state-infidelity or decomposition requirement, deterministic-execution
 claim, or convergence-evidence requirement is rejected before state
 allocation. Passing the envelope does not certify an arbitrary scientific
@@ -69,7 +75,7 @@ with a CPU complex128 reference. Both the absolute P2 error and its improvement
 over FP32 must pass:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_precision_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+pytest tests/test_split_real_imag_precision_conformance.py
 ```
 
 In a Torch-FL CUDA-reference environment:

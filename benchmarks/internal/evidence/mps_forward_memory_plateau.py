@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from examples.mps_hamiltonian_identification.core import (
+from benchmarks.internal.mps_hamiltonian_identification.core import (
     build_variable_time_batched_trotter_circuit,
     make_probes,
     smooth_couplings,

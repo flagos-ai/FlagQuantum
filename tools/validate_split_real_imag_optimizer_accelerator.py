@@ -49,8 +49,14 @@ def validate(*, device_name: str, checkpoints: tuple[int, ...]) -> dict[str, Any
         except ImportError as exc:
             raise RuntimeError("Torch-FL is required for flagos validation") from exc
     torch = importlib.import_module("torch")
-    fq = importlib.import_module("flagquantum")
     platforms = importlib.import_module("flagquantum.runtime.platforms")
+    optimizer = importlib.import_module(
+        "flagquantum.runtime.backends.statevector." "split_real_imag_autograd_optimizer"
+    )
+    conformance = importlib.import_module(
+        "flagquantum.runtime.backends.statevector."
+        "split_real_imag_optimizer_conformance"
+    )
     if device_name.startswith("flagos") and (
         not hasattr(torch, "flagos") or not torch.flagos.is_available()
     ):
@@ -58,11 +64,11 @@ def validate(*, device_name: str, checkpoints: tuple[int, ...]) -> dict[str, Any
     if device_name.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("native CUDA is unavailable")
     device = platforms.resolve_platform_device(device_name)
-    report = fq.experimental.numerics.run_split_real_imag_optimizer_conformance(
+    report = conformance.run_split_real_imag_optimizer_conformance(
         device, checkpoints=checkpoints
     )
     report.require_accepted()
-    probe_state = fq.experimental.numerics.initialize_split_real_imag_double_single_sgd(
+    probe_state = optimizer.initialize_split_real_imag_double_single_sgd(
         {"theta": torch.tensor(0.23, dtype=torch.float32, device=device)}
     )
     if probe_state.parameters.high.device != device:

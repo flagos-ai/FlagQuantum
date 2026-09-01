@@ -3,13 +3,15 @@ from __future__ import annotations
 import pytest
 import torch
 
-import flagquantum as fq
+from flagquantum.runtime.backends.statevector.split_real_imag import (
+    run_split_real_imag_conformance,
+)
 
 pytestmark = pytest.mark.integration
 
 
 def test_split_real_imag_cpu_conformance() -> None:
-    report = fq.experimental.numerics.run_split_real_imag_conformance("cpu")
+    report = run_split_real_imag_conformance("cpu")
 
     report.require_accepted()
     assert report.passed
@@ -25,7 +27,7 @@ def test_split_real_imag_cuda_conformance() -> None:
     if not torch.cuda.is_available():
         pytest.skip("CUDA is not available")
 
-    report = fq.experimental.numerics.run_split_real_imag_conformance("cuda:0")
+    report = run_split_real_imag_conformance("cuda:0")
 
     report.require_accepted()
     assert report.passed

@@ -164,13 +164,20 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
             if isinstance(value, str):
                 valid = bool(value.strip())
             elif isinstance(value, list):
-                valid = bool(value) and all(
-                    isinstance(item, str) and item.strip() for item in value
-                )
+                valid = all(isinstance(item, str) and item.strip() for item in value)
+                if field != "public_apis":
+                    valid = bool(value) and valid
             else:
                 valid = False
             if not valid:
                 errors.append(f"{name}: missing or invalid user field {field}")
+        if not capability.get("public_apis") and capability.get("level") not in {
+            "experimental",
+            "development_evidence",
+        }:
+            errors.append(
+                f"{name}: supported or certified capability requires a public API"
+            )
         if capability.get("category") not in EXPECTED_CATEGORIES:
             errors.append(
                 f"{name}: unknown capability category {capability.get('category')!r}"

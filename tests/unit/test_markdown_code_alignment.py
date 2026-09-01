@@ -15,7 +15,6 @@ USER_DOCUMENTS = (
     ROOT / "docs" / "reference" / "RUNTIME_RESULT_CONTRACT.md",
     ROOT / "examples" / "README.md",
     ROOT / "examples" / "single_machine_quantum_ai" / "README.md",
-    ROOT / "examples" / "mps_hamiltonian_identification" / "README.md",
     ROOT / "examples" / "tutorials" / "README.md",
 )
 LEGACY_CODE_PATTERNS = {
@@ -88,7 +87,7 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
         encoding="utf-8"
     )
     mps_research = (
-        ROOT / "examples" / "mps_hamiltonian_identification" / "core.py"
+        ROOT / "benchmarks" / "internal" / "mps_hamiltonian_identification" / "core.py"
     ).read_text(encoding="utf-8")
 
     assert "training = fq.train(" in readme

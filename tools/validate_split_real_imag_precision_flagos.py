@@ -50,12 +50,14 @@ def validate(
     except ImportError as exc:
         raise RuntimeError("Torch-FL is required for flagos validation") from exc
     torch = importlib.import_module("torch")
-    fq = importlib.import_module("flagquantum")
     platforms = importlib.import_module("flagquantum.runtime.platforms")
+    precision = importlib.import_module(
+        "flagquantum.runtime.backends.statevector.split_real_imag_precision"
+    )
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():
         raise RuntimeError("Torch-FL did not expose an available flagos device")
     device = platforms.resolve_platform_device(device_name)
-    report = fq.experimental.numerics.run_split_real_imag_precision_conformance(
+    report = precision.run_split_real_imag_precision_conformance(
         device, depths=depths, seeds=seeds
     )
     report.require_accepted()

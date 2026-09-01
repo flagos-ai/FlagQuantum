@@ -5,7 +5,10 @@ from pathlib import Path
 
 import torch
 
-MODULE = Path(__file__).parents[2] / "examples/mps_hamiltonian_identification/core.py"
+MODULE = (
+    Path(__file__).parents[2]
+    / "benchmarks/internal/mps_hamiltonian_identification/core.py"
+)
 SPEC = importlib.util.spec_from_file_location(
     "mps_hamiltonian_identification_core", MODULE
 )

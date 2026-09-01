@@ -1,5 +1,8 @@
 # P5 autograd and Double-Single SGD
 
+> Internal development reference. These lanes are evidence implementations,
+> not public FlagQuantum SDK APIs.
+
 P5 provides two experimental training lanes over the P4 device-generated
 Double-Single executor. The autograd bridge remains CPU-only. The explicit SGD
 lane has single-device CPU, native CUDA, and CUDA-backed Torch-FL `flagos:0`
@@ -16,9 +19,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms import pauli_term
+from flagquantum.runtime.backends.statevector.split_real_imag_autograd import (
+    split_real_imag_device_double_single_autograd_expectation,
+)
 
 theta = torch.tensor(0.23, dtype=torch.float32, requires_grad=True)
-loss = fq.experimental.numerics.split_real_imag_device_double_single_autograd_expectation(
+loss = split_real_imag_device_double_single_autograd_expectation(
     fq.Circuit(1).ry(0, theta=fq.Parameter("theta")),
     pauli_term(1.0, "Z", (0,)),
     parameter_bindings={"theta": theta},
@@ -39,10 +45,15 @@ high/low parameter-shift result and maintains a functional high/low master
 parameter state:
 
 ```python
-state = fq.experimental.numerics.initialize_split_real_imag_double_single_sgd(
+from flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer import (
+    initialize_split_real_imag_double_single_sgd,
+    split_real_imag_double_single_sgd_step,
+)
+
+state = initialize_split_real_imag_double_single_sgd(
     {"theta": torch.tensor(0.23, dtype=torch.float32)}
 )
-result = fq.experimental.numerics.split_real_imag_double_single_sgd_step(
+result = split_real_imag_double_single_sgd_step(
     fq.Circuit(1).ry(0, theta=fq.Parameter("theta")),
     pauli_term(1.0, "Z", (0,)),
     state,

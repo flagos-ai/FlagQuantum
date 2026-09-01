@@ -44,7 +44,7 @@ compute dtype, and the `single_device_fast_path` classification.
 Run CPU conformance with:
 
 ```bash
-python -c 'import flagquantum as fq; r = fq.experimental.numerics.run_split_real_imag_conformance("cpu"); r.require_accepted(); print(r.to_dict())'
+pytest tests/test_split_real_imag_conformance.py
 ```
 
 In a Torch-FL CUDA-reference environment, run:

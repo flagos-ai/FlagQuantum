@@ -7,7 +7,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-import flagquantum.experimental.mps as fqxm
+import flagquantum.runtime.backends.mps.records as fqxm
 from flagquantum.runtime.backends.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )

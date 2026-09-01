@@ -3,7 +3,7 @@
 import pytest
 
 import flagquantum as fq
-import flagquantum.experimental.mps as fqxm
+import flagquantum.runtime.backends.mps as fqxm
 from flagquantum.runtime.backends.mps.forward import NonlocalMPSCompilationError
 
 pytestmark = pytest.mark.unit

@@ -19,24 +19,22 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import flagquantum as fq  # noqa: E402
-import flagquantum.experimental.mps as fqxm  # noqa: E402
-
-execute_torch_distributed_mps_forward = (  # noqa: E402
-    fq.experimental.distributed.execute_torch_distributed_mps_forward
+import flagquantum.runtime.backends.mps.records as fqxm  # noqa: E402
+from flagquantum.runtime.backends.mps.forward import (  # noqa: E402
+    execute_torch_distributed_mps_forward,
 )
-execute_torch_distributed_mps_reverse = (  # noqa: E402
-    fq.experimental.distributed.execute_torch_distributed_mps_reverse
+from flagquantum.runtime.backends.mps.reverse import (  # noqa: E402
+    execute_torch_distributed_mps_reverse,
+    site_sharded_z_zz_observations,
 )
-site_sharded_z_zz_observations = (  # noqa: E402
-    fq.experimental.distributed.site_sharded_z_zz_observations
+from flagquantum.runtime.backends.mps.site_kernels import (  # noqa: E402
+    reset_site_kernel_stats,
+    site_kernel_stats,
 )
-reset_site_kernel_stats = fq.experimental.distributed.reset_mps_site_kernel_stats  # noqa: E402
-site_kernel_stats = fq.experimental.distributed.mps_site_kernel_stats  # noqa: E402
 
 from core import (  # noqa: E402
     build_variable_time_batched_trotter_circuit,

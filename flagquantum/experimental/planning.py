@@ -10,7 +10,7 @@ __all__ = _PUBLIC_NAMES
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"plan_advanced", "plan_runtime_selection", "select_backend_by_cost"}:
+    if name in __all__:
         return getattr(import_module("flagquantum.compilation.planner"), name)
     raise AttributeError(name)
 

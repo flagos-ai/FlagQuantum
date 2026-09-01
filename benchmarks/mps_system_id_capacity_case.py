@@ -16,7 +16,7 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TRAIN = REPO_ROOT / "examples/mps_hamiltonian_identification/train.py"
+TRAIN = REPO_ROOT / "benchmarks/internal/mps_hamiltonian_identification/train.py"
 
 
 def _workload(args: argparse.Namespace) -> dict[str, Any]:

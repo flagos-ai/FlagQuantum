@@ -51,18 +51,19 @@ def validate(*, device_name: str, depths: tuple[int, ...]) -> dict[str, Any]:
     torch = importlib.import_module("torch")
     fq = importlib.import_module("flagquantum")
     platforms = importlib.import_module("flagquantum.runtime.platforms")
+    split = importlib.import_module(
+        "flagquantum.runtime.backends.statevector.split_real_imag"
+    )
 
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():
         raise RuntimeError("Torch-FL did not expose an available flagos device")
     device = platforms.resolve_platform_device(device_name)
     platform = platforms.get_platform_runtime(device.type)
-    report = fq.experimental.numerics.run_split_real_imag_conformance(device, depths=depths)
+    report = split.run_split_real_imag_conformance(device, depths=depths)
     report.require_accepted()
 
     circuit = fq.Circuit(3).h(0).ry(1, theta=0.27).cx(0, 2).rzz(1, 2, theta=-0.19)
-    result = fq.experimental.numerics.execute_split_real_imag_statevector(
-        circuit.to_ir(), device=device
-    )
+    result = split.execute_split_real_imag_statevector(circuit.to_ir(), device=device)
     if result.real.device.type != "flagos" or result.imag.device.type != "flagos":
         raise AssertionError("split state escaped the logical flagos device")
     summary = result.summary()

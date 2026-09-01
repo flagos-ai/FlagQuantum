@@ -2,11 +2,12 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.runtime.dynamic_conformance as fqdc
 from flagquantum.dynamic import DynamicCircuit
 
 
 def test_local_dynamic_conformance_vectors_pass() -> None:
-    result = fq.experimental.dynamic.run_dynamic_conformance()
+    result = fqdc.run_dynamic_conformance()
     assert result.passed
     assert result.cases == (
         ("active_reset", True),
@@ -20,37 +21,28 @@ def test_feature_assessment_is_provider_neutral_and_fail_closed() -> None:
     circuit.measure(0, classical_bit=0)
     circuit.conditional("h", 1, classical_bit=0, equals=0)
 
-    local = fq.experimental.dynamic.assess_dynamic_features(
-        circuit, fq.experimental.dynamic.LOCAL_TRAJECTORY_FEATURES
-    )
-    iqm = fq.experimental.dynamic.assess_dynamic_features(
-        circuit, fq.experimental.dynamic.BRAKET_IQM_DYNAMIC_FEATURES
-    )
+    local = fqdc.assess_dynamic_features(circuit, fqdc.LOCAL_TRAJECTORY_FEATURES)
+    iqm = fqdc.assess_dynamic_features(circuit, fqdc.BRAKET_IQM_DYNAMIC_FEATURES)
 
     assert local.compatible
     assert not iqm.compatible
     assert "condition_value_unsupported" in iqm.blockers
     assert "conditional_gate_unsupported:h" in iqm.blockers
-    assert (
-        fq.experimental.dynamic.BRAKET_IQM_DYNAMIC_FEATURES.returns_mid_circuit_measurements
-        is False
-    )
+    assert fqdc.BRAKET_IQM_DYNAMIC_FEATURES.returns_mid_circuit_measurements is False
 
 
 def test_feature_assessment_rejects_classical_read_before_measurement() -> None:
     circuit = DynamicCircuit(1)
     circuit.conditional("x", 0, classical_bit=0)
-    report = fq.experimental.dynamic.assess_dynamic_features(
-        circuit, fq.experimental.dynamic.QISKIT_AER_DYNAMIC_FEATURES
-    )
+    report = fqdc.assess_dynamic_features(circuit, fqdc.QISKIT_AER_DYNAMIC_FEATURES)
     assert report.blockers == ("classical_bit_read_before_measurement",)
 
 
 @pytest.mark.qiskit
 def test_qiskit_aer_matches_deterministic_conformance_vectors() -> None:
     pytest.importorskip("qiskit_aer")
-    result = fq.experimental.dynamic.run_dynamic_conformance(
-        fq.experimental.dynamic.run_qiskit_aer_dynamic,
+    result = fqdc.run_dynamic_conformance(
+        fqdc.run_qiskit_aer_dynamic,
         implementation="qiskit_aer",
     )
     assert result.passed
@@ -63,7 +55,7 @@ def test_qiskit_aer_returns_final_and_mid_circuit_shots() -> None:
     circuit.x(0).measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
-    result = fq.experimental.dynamic.run_qiskit_aer_dynamic(circuit, shots=5, seed=7)
+    result = fqdc.run_qiskit_aer_dynamic(circuit, shots=5, seed=7)
 
     assert result.execution_semantics == "qiskit_aer_dynamic_shots"
     assert torch.equal(result.samples, torch.ones((5, 2), dtype=torch.int64))
@@ -77,9 +69,7 @@ def test_qiskit_qasm3_round_trip_preserves_dynamic_feedback() -> None:
     circuit.x(0).measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
 
-    result = fq.experimental.dynamic.run_qiskit_aer_qasm3_round_trip(
-        circuit, shots=8, seed=9
-    )
+    result = fqdc.run_qiskit_aer_qasm3_round_trip(circuit, shots=8, seed=9)
 
     assert torch.equal(result.final_samples, torch.ones((8, 2), dtype=torch.int64))
     assert torch.equal(
@@ -97,10 +87,8 @@ def test_random_branch_statistics_match_local_aer_and_qasm_round_trip() -> None:
     circuit.conditional("x", 1, classical_bit=0)
 
     local = fq.experimental.dynamic.run_dynamic(circuit, shots=4096, seed=41)
-    aer = fq.experimental.dynamic.run_qiskit_aer_dynamic(circuit, shots=4096, seed=41)
-    qasm = fq.experimental.dynamic.run_qiskit_aer_qasm3_round_trip(
-        circuit, shots=4096, seed=41
-    )
+    aer = fqdc.run_qiskit_aer_dynamic(circuit, shots=4096, seed=41)
+    qasm = fqdc.run_qiskit_aer_qasm3_round_trip(circuit, shots=4096, seed=41)
     probabilities = [
         float(result.final_samples[:, 0].float().mean())
         for result in (local, aer, qasm)

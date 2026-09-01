@@ -380,6 +380,8 @@ def render_capabilities(data: dict[str, object]) -> str:
             apis = ", ".join(
                 f"`{public_api_label(str(api))}`" for api in capability["public_apis"]
             )
+            if not apis:
+                apis = "Not exposed; internal development evidence only"
             runtime_modes = ", ".join(
                 f"`{mode}`" for mode in capability["runtime_modes"]
             )

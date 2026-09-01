@@ -9,8 +9,8 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-import flagquantum.experimental.distributed as fqxd
 import flagquantum.training as fqt
+from flagquantum.runtime.parallel import HybridParallelPlan
 
 
 def build(parameters: torch.Tensor) -> fq.Circuit:
@@ -18,7 +18,7 @@ def build(parameters: torch.Tensor) -> fq.Circuit:
 
 
 def module_and_optimizer(
-    plan: fqxd.HybridParallelPlan,
+    plan: HybridParallelPlan,
 ) -> tuple[fq.Module, torch.optim.Optimizer]:
     module = fq.Module(
         build,

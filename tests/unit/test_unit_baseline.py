@@ -1,7 +1,7 @@
 import pytest
 
 import flagquantum as fq
-import flagquantum.experimental.planning as fqxp
+import flagquantum.compilation.planner as fqxp
 
 pytestmark = pytest.mark.unit
 

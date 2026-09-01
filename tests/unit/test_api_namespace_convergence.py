@@ -16,10 +16,9 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("section_name", ("stable_extensions", "experimental"))
-def test_every_migration_destination_is_importable(section_name: str) -> None:
+def test_every_stable_migration_destination_is_importable() -> None:
     candidate = _candidate()
-    sections = candidate[section_name]
+    sections = candidate["stable_extensions"]
     assert isinstance(sections, list)
 
     for section in sections:
@@ -31,6 +30,22 @@ def test_every_migration_destination_is_importable(section_name: str) -> None:
         module = importlib.import_module(namespace)
         missing = [symbol for symbol in symbols if not hasattr(module, symbol)]
         assert not missing, f"{namespace} is missing candidate exports: {missing}"
+
+
+def test_historical_experimental_inventory_is_superseded_without_rewriting_it() -> None:
+    candidate = _candidate()
+    surface = json.loads(
+        (ROOT / "contracts" / "experimental-surface-v2-candidate.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert candidate["experimental"]
+    assert surface["proposal"].endswith(
+        "API_CHANGE_PROPOSAL_011_EXPERIMENTAL_SURFACE.md"
+    )
+    assert surface["rules"]["stable_core_changed"] is False
+    assert surface["transition"]["internal_routes_removed"] is True
 
 
 def test_backend_facade_preserves_implementation_identity() -> None:

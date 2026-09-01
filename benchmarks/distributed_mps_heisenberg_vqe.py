@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-import flagquantum.experimental.mps as fqxm
+import flagquantum.runtime.backends.mps.records as fqxm
 from benchmarks.sc27_metadata import (
     driver_version,
     gpu_identity,

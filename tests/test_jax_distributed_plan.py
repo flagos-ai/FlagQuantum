@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.experimental.planning as fqxp
+import flagquantum.compilation.planner as fqxp
 import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
