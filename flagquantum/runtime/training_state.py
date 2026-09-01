@@ -15,13 +15,14 @@ from typing import Any, Mapping, TypedDict
 import torch
 
 from ..core.ir import IR_VERSION, ensure_circuit_ir
+from ..errors import ExecutionError
 
 TRAINING_STATE_VERSION = "flagquantum.training_state.v1"
 TRAINING_RESTORE_SCHEMA = "flagquantum.training_checkpoint_restore"
 TRAINING_RESTORE_VERSION = "1.0"
 
 
-class TrainingStateError(RuntimeError):
+class TrainingStateError(ExecutionError):
     """A checkpoint or numerical correctness contract was violated."""
 
 

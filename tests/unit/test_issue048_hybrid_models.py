@@ -57,7 +57,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
         step=20,
     )
     restored = fq.HybridQuantumClassifier(
-        deployment_binding={"provider": "local", "target": "simulator"}
+        deployment_binding={"provider": "different", "target": "discarded"}
     )
     restored_optimizer = torch.optim.Adam(restored.parameters(), lr=0.08)
     metadata = load_training_checkpoint(
@@ -69,6 +69,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
     torch.testing.assert_close(restored(INPUTS), model(INPUTS))
     assert metadata["step"] == 20
     assert restored.deployment_parameters()["binding"]["provider"] == "local"
+    assert not hasattr(restored.quantum, "deployment_binding")
     for candidate, candidate_optimizer in (
         (model, optimizer),
         (restored, restored_optimizer),

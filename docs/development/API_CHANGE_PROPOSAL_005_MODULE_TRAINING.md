@@ -102,6 +102,9 @@ Checkpoint 由 `Module.save_checkpoint/load_checkpoint` 负责，而不是 `fq.t
 - 授权 fallback 必须记录 requested backend、selected backend 和 reason；
 - callback、TrainingResult 和 checkpoint ownership 不随 backend 改变。
 
+Module 构造器中的 deployment/provider 状态由 Proposal 006 继续收敛；Proposal 006
+删除 `deployment_binding`，并将其所有权提升到应用模型或 deployment 层。
+
 ## 可执行验收标准
 
 - [x] forward 返回 Tensor，execute 返回 ExecutionResult；

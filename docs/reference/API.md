@@ -135,6 +135,32 @@ sections may grow compatibly. `TrainingResult.final_loss` and its versioned
 The [examples index](../../examples/README.md) provides runnable statevector,
 MPS, JAX, distributed, and deployment workflows.
 
+## Errors
+
+Catch stable lifecycle categories from `flagquantum.errors`:
+
+```python
+import flagquantum.errors as fqe
+
+try:
+    result = fq.run(fq.plan(circuit, options=options))
+except fqe.ValidationError:
+    ...  # invalid semantic input
+except fqe.PlanningError:
+    ...  # stale, tampered, or incompatible plan
+except fqe.CapabilityError:
+    ...  # requested capability is unavailable
+except fqe.ExecutionError:
+    ...  # execution or training failure
+```
+
+All categories inherit `FlagQuantumError` and their compatible Python built-in
+exception (`ValueError`, `RuntimeError`, or `NotImplementedError`). Wrong Python
+types and unknown keyword arguments continue to raise `TypeError`. Existing
+specific errors such as `IRValidationError`, `IRSerializationError`, and
+`flagquantum.training.TrainingStateError` remain available and now belong to
+the corresponding stable category.
+
 ## Measurements
 
 Pass ordered `MeasurementNode` requests to `fq.plan` or `fq.run`. They are

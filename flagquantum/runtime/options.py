@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, fields
 from typing import Any, Mapping
 
+from ..errors import ValidationError
+
 EXECUTION_OPTIONS_SCHEMA = "flagquantum.execution_options"
 EXECUTION_OPTIONS_VERSION = "1.0"
 
@@ -67,18 +69,18 @@ class ExecutionOptions:
             raise TypeError("execution options payload must be a mapping")
         values = dict(payload)
         if values.pop("schema", None) != EXECUTION_OPTIONS_SCHEMA:
-            raise ValueError("invalid execution options schema")
+            raise ValidationError("invalid execution options schema")
         if values.pop("version", None) != EXECUTION_OPTIONS_VERSION:
-            raise ValueError("unsupported execution options version")
+            raise ValidationError("unsupported execution options version")
         expected = {field.name for field in fields(cls)}
         unknown = set(values) - expected
         missing = expected - set(values)
         if unknown:
-            raise ValueError(
+            raise ValidationError(
                 "unknown execution options field(s): " + ", ".join(sorted(unknown))
             )
         if missing:
-            raise ValueError(
+            raise ValidationError(
                 "missing execution options field(s): " + ", ".join(sorted(missing))
             )
         return cls(**values)
@@ -90,7 +92,7 @@ def _validate_optional_string(name: str, value: object) -> None:
     if not isinstance(value, str):
         raise TypeError(f"{name} must be a string or None")
     if not value:
-        raise ValueError(f"{name} must not be empty")
+        raise ValidationError(f"{name} must not be empty")
 
 
 def _validate_optional_choice(
@@ -99,7 +101,7 @@ def _validate_optional_choice(
     _validate_optional_string(name, value)
     if value is not None and value not in choices:
         rendered = ", ".join(sorted(choices))
-        raise ValueError(f"{name} must be one of: {rendered}")
+        raise ValidationError(f"{name} must be one of: {rendered}")
 
 
 def _validate_optional_integer(name: str, value: object, *, minimum: int) -> None:
@@ -108,7 +110,7 @@ def _validate_optional_integer(name: str, value: object, *, minimum: int) -> Non
     if type(value) is not int:
         raise TypeError(f"{name} must be an integer or None")
     if value < minimum:
-        raise ValueError(f"{name} must be >= {minimum}")
+        raise ValidationError(f"{name} must be >= {minimum}")
 
 
 def _validate_optional_bool(name: str, value: object) -> None:

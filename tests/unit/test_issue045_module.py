@@ -397,13 +397,12 @@ def test_fq_train_rejects_ambiguous_or_invalid_training_inputs() -> None:
         fq.train(module, optimizer=optimizer, objective=lambda value: value, steps=1)
 
 
-def test_module_state_dict_round_trip_includes_policy_and_deployment() -> None:
+def test_module_state_dict_round_trip_includes_runtime_policy() -> None:
     source = fq.Module(
         build_circuit,
         2,
         init=torch.tensor([0.4, -0.6]),
         policy=fq.RuntimePolicy(observable="z_sum", observable_wires=(0, 1)),
-        deployment_binding={"provider": "local", "target": "simulator"},
     )
     buffer = io.BytesIO()
     torch.save(source.state_dict(), buffer)
@@ -412,8 +411,22 @@ def test_module_state_dict_round_trip_includes_policy_and_deployment() -> None:
     target.load_state_dict(torch.load(buffer, weights_only=True))
     torch.testing.assert_close(target.parameters_tensor, source.parameters_tensor)
     assert target.policy == source.policy
-    assert target.deployment_binding == source.deployment_binding
     torch.testing.assert_close(target(), source())
+
+
+def test_module_accepts_legacy_extra_state_without_owning_deployment() -> None:
+    source = fq.Module(build_circuit, 2)
+    state = source.state_dict()
+    state["_extra_state"] = {
+        "policy": source.policy.to_dict(),
+        "deployment_binding": {"provider": "legacy"},
+    }
+    module = fq.Module(build_circuit, 2)
+
+    module.load_state_dict(state)
+
+    assert not hasattr(module, "deployment_binding")
+    assert module.get_extra_state() == {"policy": module.policy.to_dict()}
 
 
 def test_module_has_no_legacy_layer_adapter() -> None:

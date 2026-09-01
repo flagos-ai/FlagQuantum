@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Sequence
 
 from ..core.ir import CircuitIR, MeasurementNode
+from ..errors import CapabilityError, ValidationError
 from .backend_selection import OutputTarget, select_backend_by_cost
 from .candidates import (
     CandidateBuildContext,
@@ -483,7 +484,7 @@ def plan(
         raise TypeError("program must be a Circuit or CircuitIR")
     if measurements is not None:
         if source_ir.measurements:
-            raise ValueError(
+            raise ValidationError(
                 "measurements cannot be supplied when the program already contains "
                 "measurement requests"
             )
@@ -501,7 +502,7 @@ def plan(
         instruction.metadata.get("is_dynamic") or instruction.metadata.get("condition")
         for instruction in source_ir.instructions
     ):
-        raise NotImplementedError(
+        raise CapabilityError(
             "fq.run does not execute dynamic trajectories; use "
             "fq.experimental.run_dynamic(..., shots=...)"
         )
@@ -512,13 +513,13 @@ def plan(
         runtime_config=runtime_config,
     )
     if resolved.backend not in {"auto", "pytorch"}:
-        raise NotImplementedError(
+        raise CapabilityError(
             f"stable fq.run backend {resolved.backend!r} is not available; "
             "use fq.Module for JAX kernels or flagquantum.backends for "
             "backend-native execution"
         )
     if noise_model is not None and resolved.mode not in {"auto", "density_matrix"}:
-        raise ValueError(
+        raise ValidationError(
             "stable noisy execution supports mode='auto' or mode='density_matrix'"
         )
     from ..core.runtime_config import get_runtime_config
@@ -541,7 +542,7 @@ def plan(
         resolved.target == "samples" or resolved.shots is not None
     ):
         if resolved.shots is None:
-            raise ValueError("target='samples' requires shots")
+            raise ValidationError("target='samples' requires shots")
         measurements = (
             MeasurementNode(
                 "sample",
@@ -552,7 +553,7 @@ def plan(
         )
         source_ir = replace(source_ir, measurements=measurements)
     if not measurements and resolved.target in {"expectation", "amplitudes"}:
-        raise NotImplementedError(
+        raise CapabilityError(
             f"target={resolved.target!r} requires a measurement embedded in the program"
         )
     world_size = resolve_distributed_backend_policy().effective_world_size

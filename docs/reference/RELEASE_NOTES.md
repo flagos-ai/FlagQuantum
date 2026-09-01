@@ -19,6 +19,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added the stable `flagquantum.errors` lifecycle categories while preserving
+  compatibility with Python's `ValueError`, `RuntimeError`, and
+  `NotImplementedError`. Existing IR, plan, result, capability, compilation,
+  and training-state failures now map to backend-neutral categories. Removed
+  the unused `deployment_binding` dictionary from `fq.Module`; application and
+  deployment models own this state and preserve it through checkpoints. Old
+  Module extra-state containing the field remains readable and is ignored.
 - Fixed the first-alpha candidate boundary for Module and training:
   `Module.forward()` returns an autograd Tensor, `Module.execute()` returns
   `ExecutionResult`, and `fq.run()` does not accept Module. `fq.train()` remains

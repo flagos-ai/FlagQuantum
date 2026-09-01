@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
+from ..errors import SerializationError, ValidationError
 from .operator_schema import (
     OPERATOR_SCHEMAS,
     OperatorSchema,
@@ -18,11 +19,11 @@ from .parameters import Parameter, ParameterExpression
 IR_VERSION = "1.0"
 
 
-class IRValidationError(ValueError):
+class IRValidationError(ValidationError):
     """Raised when an IR object violates the versioned schema."""
 
 
-class IRSerializationError(ValueError):
+class IRSerializationError(SerializationError):
     """Raised when an IR value cannot be represented deterministically."""
 
 

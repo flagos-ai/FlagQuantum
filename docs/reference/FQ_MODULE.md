@@ -1,7 +1,9 @@
 # `fq.Module` And `ExecutionResult`
 
 `fq.Module` is the stable PyTorch-native owner of quantum parameters, circuit
-construction, observable selection, runtime policy, and deployment binding.
+construction, observable selection, runtime policy, and precision. Provider or
+deployment binding belongs to an application model or `flagquantum.deployment`,
+not to the quantum layer.
 Its `forward()` method returns a tensor, so optimizers and ordinary PyTorch
 training loops work without adapters. `execute()` returns `fq.ExecutionResult`
 with stable value, state, samples, plan, accuracy, metrics, provenance, runtime,
@@ -59,10 +61,11 @@ Construct `fq.Module` directly. Legacy layer adapters are intentionally not
 part of the stable API; integrations must provide a circuit builder and an
 explicit runtime policy.
 
-Module parameters, policy, and deployment binding participate in
-`state_dict()` save/load. The circuit builder remains application code and must
-be supplied when reconstructing the module, matching normal PyTorch module
-class construction.
+Module parameters and policy participate in `state_dict()` save/load. The
+circuit builder remains application code and must be supplied when
+reconstructing the module, matching normal PyTorch module class construction.
+Application models that own deployment binding must include it in their own
+extra-state contract.
 
 Named parameter groups remove positional-index bookkeeping for larger circuits:
 

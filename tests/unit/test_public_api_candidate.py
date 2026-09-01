@@ -16,6 +16,7 @@ BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
 EXECUTION_OPTIONS = ROOT / "contracts" / "execution-options-v1-candidate.json"
 EXECUTION_PLAN = ROOT / "contracts" / "execution-plan-v1-candidate.json"
 MODULE_TRAINING = ROOT / "contracts" / "module-training-v1-candidate.json"
+ERRORS_MODULE = ROOT / "contracts" / "errors-module-boundary-v1-candidate.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -61,6 +62,11 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
     assert isinstance(stable_extension, dict)
     if module_training_contract["implementation_authorized"] is True:
         authorized_additions.update(stable_extension["additions"])
+    errors_module_contract = _load(ERRORS_MODULE)
+    errors_extension = errors_module_contract["stable_extension"]
+    assert isinstance(errors_extension, dict)
+    if errors_module_contract["implementation_authorized"] is True:
+        authorized_additions.update(errors_extension["additions"])
     assert set(classified) == set(exports) | authorized_additions
 
 
@@ -101,6 +107,10 @@ def test_migrated_and_removed_exports_are_not_accessible_at_root() -> None:
     stable_extension = module_training_contract["stable_extension"]
     assert isinstance(stable_extension, dict)
     new_namespace_only = set(stable_extension["new_namespace_only"])
+    errors_module_contract = _load(ERRORS_MODULE)
+    errors_extension = errors_module_contract["stable_extension"]
+    assert isinstance(errors_extension, dict)
+    new_namespace_only.update(errors_extension["new_namespace_only"])
 
     for name in sorted(replacements - new_namespace_only):
         with pytest.raises(AttributeError, match="moved before the first public alpha"):

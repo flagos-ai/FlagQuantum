@@ -8,6 +8,7 @@ from typing import Any, Iterable
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
+from ..errors import CompilationError
 from .routing import (
     CouplingMap,
     record_post_routing_optimization,
@@ -179,7 +180,7 @@ def simple_compile(circuit_or_ir: Any) -> CircuitIR:
         ir = remove_identity_gates(ir)
         if len(ir) == previous_count:
             return ir
-    raise RuntimeError("compiler optimization passes did not reach a fixed point")
+    raise CompilationError("compiler optimization passes did not reach a fixed point")
 
 
 def compile_for_backend(

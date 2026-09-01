@@ -8,6 +8,7 @@ from dataclasses import fields, replace
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from ..core.ir import IR_VERSION, CircuitIR, IRSerializationError
+from ..errors import PlanningError
 from ..version import __version__
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ _TOP_LEVEL_FIELDS = {
 }
 
 
-class ExecutionPlanContractError(ValueError):
+class ExecutionPlanContractError(PlanningError):
     """Internal typed failure carrying the Proposal 003 reason code."""
 
     def __init__(self, reason_code: str, message: str):

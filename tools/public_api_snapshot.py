@@ -27,6 +27,7 @@ EXECUTION_OPTIONS_CONTRACT = ROOT / "contracts" / "execution-options-v1-candidat
 EXECUTION_PLAN_CONTRACT = ROOT / "contracts" / "execution-plan-v1-candidate.json"
 EXECUTION_RESULT_CONTRACT = ROOT / "contracts" / "execution-result-v1-candidate.json"
 MODULE_TRAINING_CONTRACT = ROOT / "contracts" / "module-training-v1-candidate.json"
+ERRORS_MODULE_CONTRACT = ROOT / "contracts" / "errors-module-boundary-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -178,6 +179,9 @@ def validate() -> tuple[str, ...]:
     module_training_contract = json.loads(
         MODULE_TRAINING_CONTRACT.read_text(encoding="utf-8")
     )
+    errors_module_contract = json.loads(
+        ERRORS_MODULE_CONTRACT.read_text(encoding="utf-8")
+    )
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -206,6 +210,10 @@ def validate() -> tuple[str, ...]:
         authorized_changes.add(str(plan_contract["root_addition"]))
     if result_contract.get("implementation_authorized") is True:
         authorized_changes.update(result_contract.get("protected_root_changes", ()))
+    if errors_module_contract.get("implementation_authorized") is True:
+        authorized_changes.update(
+            errors_module_contract.get("protected_root_changes", ())
+        )
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -244,6 +252,8 @@ def validate() -> tuple[str, ...]:
         expected_signatures.update(
             module_training_contract.get("public_signatures", {})
         )
+    if errors_module_contract.get("implementation_authorized") is True:
+        expected_signatures.update(errors_module_contract.get("public_signatures", {}))
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -257,6 +267,8 @@ def validate() -> tuple[str, ...]:
         errors.extend(_validate_authorized_execution_result(result_contract))
     if module_training_contract.get("implementation_authorized") is True:
         errors.extend(_validate_authorized_module_training(module_training_contract))
+    if errors_module_contract.get("implementation_authorized") is True:
+        errors.extend(_validate_authorized_errors_module(errors_module_contract))
     return tuple(errors)
 
 
@@ -286,6 +298,7 @@ def _validate_authorized_execution_options(
         "Circuit.plan": fq.Circuit.plan,
         "Circuit.run": fq.Circuit.run,
         "RuntimePolicy": fq.RuntimePolicy,
+        "Module": fq.Module,
         "Module.forward": fq.Module.forward,
         "Module.execute": fq.Module.execute,
         "Module.save_checkpoint": fq.Module.save_checkpoint,
@@ -382,6 +395,37 @@ def _validate_authorized_module_training(contract: dict[str, Any]) -> list[str]:
         errors.append("TrainingResult fields differ from Proposal 005")
     if not isinstance(getattr(fq.TrainingResult, "final_loss", None), property):
         errors.append("TrainingResult.final_loss property is missing")
+    return errors
+
+
+def _validate_authorized_errors_module(contract: dict[str, Any]) -> list[str]:
+    import flagquantum as fq
+    import flagquantum.errors as errors_module
+    import flagquantum.training as training
+    from flagquantum.compilation.execution_plan_contract import (
+        ExecutionPlanContractError,
+    )
+
+    errors: list[str] = []
+    extension = contract["stable_extension"]
+    if set(errors_module.__all__) != set(extension["additions"]):
+        errors.append("flagquantum.errors exports differ from Proposal 006")
+    mappings = {
+        fq.IRValidationError: errors_module.ValidationError,
+        fq.IRSerializationError: errors_module.SerializationError,
+        ExecutionPlanContractError: errors_module.PlanningError,
+        training.TrainingStateError: errors_module.ExecutionError,
+    }
+    for specific, category in mappings.items():
+        if not issubclass(specific, category):
+            errors.append(f"{specific.__name__} is outside its approved error category")
+    if "deployment_binding" in inspect.signature(fq.Module).parameters:
+        errors.append("Module must not own deployment_binding")
+    if (
+        "deployment_binding"
+        in fq.Module(lambda p: fq.Circuit(1).ry(0, p[0]), 1).get_extra_state()
+    ):
+        errors.append("Module extra state must not own deployment_binding")
     return errors
 
 

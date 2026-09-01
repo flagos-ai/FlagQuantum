@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_freeze",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_006_ERRORS_MODULE_BOUNDARY.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "root_manifest_change": false,
+  "protected_root_changes": ["Module"],
+  "stable_extension": {
+    "namespace": "flagquantum.errors",
+    "additions": [
+      "CapabilityError",
+      "CompilationError",
+      "ExecutionError",
+      "FlagQuantumError",
+      "PlanningError",
+      "SerializationError",
+      "ValidationError"
+    ],
+    "new_namespace_only": [
+      "CapabilityError",
+      "CompilationError",
+      "ExecutionError",
+      "FlagQuantumError",
+      "PlanningError",
+      "SerializationError",
+      "ValidationError"
+    ]
+  },
+  "public_signatures": {
+    "Module": "(circuit: 'CircuitBuilder | Circuit', n_parameters: 'int | tuple[int, ...] | None' = None, *, parameters: 'Mapping[str, int | tuple[int, ...] | torch.Tensor] | None' = None, policy: 'RuntimePolicy | None' = None, init: 'torch.Tensor | Mapping[str, Any] | str | None' = None, seed: 'int | None' = None, dtype: 'torch.dtype' = torch.float32, device: 'torch.device | str | None' = None, hamiltonian: 'Hamiltonian | None' = None, precision: 'PrecisionPolicy | None' = None) -> 'None'"
+  },
+  "error_contract": {
+    "base": "FlagQuantumError",
+    "categories": {
+      "ValidationError": "validation",
+      "PlanningError": "planning",
+      "CompilationError": "compilation",
+      "ExecutionError": "execution",
+      "CapabilityError": "capability",
+      "SerializationError": "serialization"
+    },
+    "builtin_compatibility": {
+      "ValidationError": "ValueError",
+      "PlanningError": "ValueError",
+      "SerializationError": "ValueError",
+      "CompilationError": "RuntimeError",
+      "ExecutionError": "RuntimeError",
+      "CapabilityError": "NotImplementedError"
+    },
+    "wrong_python_type_remains": "TypeError",
+    "backend_native_errors_cross_stable_boundary": false
+  },
+  "existing_error_mappings": {
+    "IRValidationError": "ValidationError",
+    "IRSerializationError": "SerializationError",
+    "ExecutionPlanContractError": "PlanningError",
+    "TrainingStateError": "ExecutionError",
+    "ExecutionResult.missing_data": "ExecutionError"
+  },
+  "module_boundary": {
+    "supported_construction_forms": [
+      "callable_builder_with_flat_parameters",
+      "callable_builder_with_named_parameters",
+      "parameterized_circuit_template"
+    ],
+    "deployment_binding_parameter": false,
+    "deployment_binding_owner": "application_or_deployment_model",
+    "module_extra_state": ["policy"],
+    "legacy_extra_state_with_deployment_binding": "accepted_and_ignored",
+    "application_model_checkpoint_preserves_binding": true,
+    "implicit_input_parameter_cartesian_broadcast": false
+  },
+  "rules": {
+    "candidate_is_frozen_contract": false,
+    "whole_api_freeze_implied": false,
+    "future_breaking_changes_require_api_owner_approval": true
+  }
+}

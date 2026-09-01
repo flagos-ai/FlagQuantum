@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
+from ..errors import ValidationError
 from .options import ExecutionOptions
 
 ObservableKind = Literal["z", "z_sum", "hamiltonian"]
@@ -29,9 +30,13 @@ class RuntimePolicy:
         if not isinstance(self.execution_options, ExecutionOptions):
             raise TypeError("execution_options must be an ExecutionOptions")
         if self.observable not in {"z", "z_sum", "hamiltonian"}:
-            raise ValueError(f"unsupported fq.Module observable {self.observable!r}")
+            raise ValidationError(
+                f"unsupported fq.Module observable {self.observable!r}"
+            )
         if not self.observable_wires or any(wire < 0 for wire in self.observable_wires):
-            raise ValueError("observable_wires must contain non-negative wire indices")
+            raise ValidationError(
+                "observable_wires must contain non-negative wire indices"
+            )
         if type(self.correctness_debug) is not bool:
             raise TypeError("correctness_debug must be a bool")
 
@@ -68,7 +73,7 @@ class RuntimePolicy:
         }
         unknown = set(values) - expected
         if unknown:
-            raise ValueError(
+            raise ValidationError(
                 "unknown runtime policy field(s): " + ", ".join(sorted(unknown))
             )
         return cls(

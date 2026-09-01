@@ -7,6 +7,7 @@ from typing import Callable, TypeAlias
 
 import torch
 
+from ..errors import ValidationError
 from .module import ExecutionResult, Module
 
 TRAINING_RESULT_SUMMARY_SCHEMA = "flagquantum.training_result.summary"
@@ -28,11 +29,11 @@ class TrainingResult:
 
     def __post_init__(self) -> None:
         if self.completed_steps <= 0:
-            raise ValueError("completed_steps must be positive")
+            raise ValidationError("completed_steps must be positive")
         if len(self.losses) != self.completed_steps:
-            raise ValueError("loss count must equal completed_steps")
+            raise ValidationError("loss count must equal completed_steps")
         if not self.optimizer:
-            raise ValueError("optimizer must be non-empty")
+            raise ValidationError("optimizer must be non-empty")
 
     @property
     def final_loss(self) -> float:
@@ -75,13 +76,15 @@ def train(
     if not callable(objective):
         raise TypeError("fq.train() objective must be callable")
     if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
-        raise ValueError("fq.train() steps must be a positive integer")
+        raise ValidationError("fq.train() steps must be a positive integer")
     if log_interval is not None and (
         not isinstance(log_interval, int)
         or isinstance(log_interval, bool)
         or log_interval <= 0
     ):
-        raise ValueError("fq.train() log_interval must be a positive integer or None")
+        raise ValidationError(
+            "fq.train() log_interval must be a positive integer or None"
+        )
     if callback is not None and not callable(callback):
         raise TypeError("fq.train() callback must be callable or None")
 
@@ -94,7 +97,7 @@ def train(
         execution = module.execute(step_inputs)
         loss = objective(execution.require_value())
         if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
-            raise ValueError("fq.train() objective must return a scalar tensor")
+            raise ValidationError("fq.train() objective must return a scalar tensor")
         loss.backward()
         optimizer.step()
         loss_value = float(loss.detach())

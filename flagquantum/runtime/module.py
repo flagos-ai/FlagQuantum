@@ -14,6 +14,12 @@ import torch
 from ..circuit import Circuit
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from ..core.operator_schema import get_operator_schema
+from ..errors import (
+    CapabilityError,
+    ExecutionError,
+    FlagQuantumError,
+    ValidationError,
+)
 from .builder_compilation import (
     BuilderBindings,
     CompiledInstruction,
@@ -55,7 +61,6 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         seed: int | None = None,
         dtype: torch.dtype = torch.float32,
         device: torch.device | str | None = None,
-        deployment_binding: Mapping[str, Any] | None = None,
         hamiltonian: Hamiltonian | None = None,
         precision: PrecisionPolicy | None = None,
     ) -> None:
@@ -63,11 +68,11 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         if not callable(circuit) and not isinstance(circuit, Circuit):
             raise TypeError("fq.Module circuit must be a callable builder or Circuit")
         if parameters is not None and n_parameters is not None:
-            raise ValueError("pass either n_parameters or parameters, not both")
+            raise ValidationError("pass either n_parameters or parameters, not both")
         if isinstance(circuit, Circuit) and parameters is None:
             parameters = {name: () for name in circuit.parameter_names}
         if parameters is None and n_parameters is None:
-            raise ValueError(
+            raise ValidationError(
                 "Module requires n_parameters, named parameters, or a "
                 "parameterized Circuit"
             )
@@ -87,7 +92,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                     return target.uniform_(0.0, 2.0 * torch.pi, generator=generator)
                 if strategy == "normal":
                     return target.normal_(0.0, 0.01, generator=generator)
-                raise ValueError(
+                raise ValidationError(
                     "init strategy must be 'zeros', 'uniform', or 'normal', "
                     f"got {value!r}"
                 )
@@ -96,7 +101,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         self.named_parameter_groups: torch.nn.ParameterDict | None = None
         if parameters is not None:
             if not parameters:
-                raise ValueError("named parameters cannot be empty")
+                raise ValidationError("named parameters cannot be empty")
             if init is not None and not isinstance(init, (Mapping, str)):
                 raise TypeError(
                     "named parameters require a mapping or initialization strategy"
@@ -110,7 +115,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             groups: dict[str, torch.nn.Parameter] = {}
             for name, specification in parameters.items():
                 if not str(name):
-                    raise ValueError("named parameter group names cannot be empty")
+                    raise ValidationError("named parameter group names cannot be empty")
                 if isinstance(specification, torch.Tensor):
                     default = specification.detach().to(device=device, dtype=dtype)
                     shape = tuple(default.shape)
@@ -139,7 +144,6 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             self.parameters_tensor = torch.nn.Parameter(values)
         self.circuit_builder = circuit
         self.policy = policy or RuntimePolicy()
-        self.deployment_binding = dict(deployment_binding or {})
         self.hamiltonian = hamiltonian
         self._state_process_group: Any | None = None
         self._parallel_plan: HybridParallelPlan | None = None
@@ -292,7 +296,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         else:
             dynamic_values = tuple(dynamic_values)
         if len(dynamic_values) != len(self._builder_slots):
-            raise RuntimeError("compiled builder parameter slot count changed")
+            raise ExecutionError("compiled builder parameter slot count changed")
         self._builder_bindings.bind(dynamic_values)
         # ``Circuit.state`` is the only value-dependent cache on this reusable
         # container. Instructions and their parameter maps stay immutable.
@@ -340,14 +344,14 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         try:
             program = make_fx(extract)(*tensor_inputs)
         except Exception as error:
-            raise RuntimeError(
+            raise ExecutionError(
                 "Module builder compilation requires static circuit topology; "
                 "do not branch on Tensor values when choosing gates or wires"
             ) from error
         program.graph.eliminate_dead_code()
         program.recompile()
         if not captured:
-            raise RuntimeError("compiled builder did not capture a Circuit")
+            raise ExecutionError("compiled builder did not capture a Circuit")
         template = captured[-1]
         if template._inputs is not None:
             raise TypeError(
@@ -401,7 +405,9 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 )
             )
         if slot_index != len(slots):
-            raise RuntimeError("compiled builder parameter slot table is inconsistent")
+            raise ExecutionError(
+                "compiled builder parameter slot table is inconsistent"
+            )
         bound._instructions.extend(compiled_instructions)
         # Runtime compilation artifacts must not become checkpointed child
         # modules; they are rebuilt after dtype/device/signature changes.
@@ -493,19 +499,19 @@ class Module(torch.nn.Module):  # type: ignore[misc]
 
         if not dist.is_initialized():
             if plan.world_size != 1:
-                raise RuntimeError(
+                raise ExecutionError(
                     "multi-rank parallel plan requires an initialized process group"
                 )
         else:
             global_world_size = dist.get_world_size()
             if global_world_size != plan.world_size:
-                raise ValueError(
+                raise ValidationError(
                     "global process-group size does not match plan.world_size: "
                     f"{global_world_size} != {plan.world_size}"
                 )
             group_size = dist.get_world_size(state_process_group)
             if group_size != plan.state_parallel_size:
-                raise ValueError(
+                raise ValidationError(
                     "state process-group size does not match "
                     f"plan.state_parallel_size: {group_size} != "
                     f"{plan.state_parallel_size}"
@@ -516,7 +522,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             else:
                 get_ranks = getattr(dist, "get_process_group_ranks", None)
                 if get_ranks is None:
-                    raise RuntimeError(
+                    raise ExecutionError(
                         "PyTorch must expose get_process_group_ranks to validate "
                         "hybrid parallel topology"
                     )
@@ -527,7 +533,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 (group for group in plan.state_groups if global_rank in group), None
             )
             if expected is None or tuple(group_ranks) != tuple(expected):
-                raise ValueError(
+                raise ValidationError(
                     "state process-group ranks do not match the plan topology: "
                     f"actual={group_ranks}, expected={expected}"
                 )
@@ -586,7 +592,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         ir = ensure_circuit_ir(circuit)
         wires = self.policy.observable_wires
         if self.policy.observable != "z" or len(wires) != 1:
-            raise NotImplementedError(
+            raise CapabilityError(
                 "production MPS integration currently supports one Z observable"
             )
         if plan.world_size == 1:
@@ -611,11 +617,11 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             from .backends.mps.reverse import execute_torch_distributed_mps_reverse
 
             if not dist.is_initialized():
-                raise RuntimeError(
+                raise ExecutionError(
                     "measured distributed MPS plan requires an initialized process group"
                 )
             if dist.get_world_size(self._state_process_group) != plan.world_size:
-                raise RuntimeError(
+                raise ExecutionError(
                     "active MPS process-group size does not match measured plan"
                 )
             reverse = execute_torch_distributed_mps_reverse(
@@ -650,7 +656,12 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
     ) -> ExecutionResult:
         try:
-            return self._execute_impl(inputs, parameters)
+            try:
+                return self._execute_impl(inputs, parameters)
+            except (FlagQuantumError, TypeError):
+                raise
+            except Exception as error:
+                raise ExecutionError("module execution failed") from error
         finally:
             # Do not retain the current autograd graph between training steps.
             self._builder_bindings.clear()
@@ -669,19 +680,21 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         program_runtime = self._observe_topology(ir)
         requested_backend = self.policy.backend
         if requested_backend not in {"pytorch", "jax"}:
-            raise ValueError(f"unsupported fq.Module backend {requested_backend!r}")
+            raise ValidationError(
+                f"unsupported fq.Module backend {requested_backend!r}"
+            )
         selected_backend = requested_backend
         compatibility: dict[str, Any] = {"fallback_used": False}
         wires = self.policy.observable_wires or (0,)
         if requested_backend == "jax":
             try:
                 if self.policy.observable == "z" and len(wires) > 1:
-                    raise NotImplementedError(
+                    raise CapabilityError(
                         "JAX fq.Module does not yet support vector-valued Z "
                         "observables; use the PyTorch local fast path"
                     )
                 if isinstance(selected_parameters, Mapping):
-                    raise NotImplementedError(
+                    raise CapabilityError(
                         "JAX execution of named parameter groups requires an "
                         "explicit flattening policy"
                     )
@@ -753,7 +766,9 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 )
             except Exception as error:
                 if not self.policy.allow_backend_fallback:
-                    raise
+                    if isinstance(error, FlagQuantumError):
+                        raise
+                    raise ExecutionError("JAX module execution failed") from error
                 selected_backend = "pytorch"
                 compatibility = {
                     "fallback_used": True,
@@ -775,12 +790,12 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             )
 
             if self.policy.observable != "z" or len(wires) != 1:
-                raise NotImplementedError(
+                raise CapabilityError(
                     "distributed_statevector currently supports one Z observable; "
                     "observable batching must use explicit term groups"
                 )
             if not dist.is_initialized() and int(os.getenv("WORLD_SIZE", "1")) > 1:
-                raise RuntimeError(
+                raise ExecutionError(
                     "distributed_statevector requires an initialized process group"
                 )
             reverse = execute_torch_distributed_statevector_reverse(
@@ -825,15 +840,17 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 values = backend_state.expectation_z(wires)
                 executor = "pytorch_native_tensor_network"
             else:
-                raise RuntimeError(f"unhandled fq.Module mode {self.policy.mode!r}")
+                raise ExecutionError(f"unhandled fq.Module mode {self.policy.mode!r}")
             if self.policy.observable == "hamiltonian":
                 if self.policy.mode not in {"statevector", "mps"}:
-                    raise NotImplementedError(
+                    raise CapabilityError(
                         f"{self.policy.mode} Module does not yet support Hamiltonian "
                         "observables without explicit term execution"
                     )
                 if self.hamiltonian is None:
-                    raise ValueError("hamiltonian observable requires a Hamiltonian")
+                    raise ValidationError(
+                        "hamiltonian observable requires a Hamiltonian"
+                    )
                 value = self.hamiltonian.expectation(
                     circuit if self.policy.mode == "statevector" else backend_state
                 )
@@ -916,14 +933,19 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         inputs: torch.Tensor | None = None,
         parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
     ) -> torch.Tensor:
-        if self.policy.backend == "pytorch" and self.policy.mode in {
-            "statevector",
-            "mps",
-            "tensor_network",
-        }:
-            return self._forward_local_tensor(inputs, parameters)
-        result = self.execute(inputs, parameters)
-        return result.require_value()
+        try:
+            if self.policy.backend == "pytorch" and self.policy.mode in {
+                "statevector",
+                "mps",
+                "tensor_network",
+            }:
+                return self._forward_local_tensor(inputs, parameters)
+            result = self.execute(inputs, parameters)
+            return result.require_value()
+        except (FlagQuantumError, TypeError):
+            raise
+        except Exception as error:
+            raise ExecutionError("module forward execution failed") from error
 
     def _forward_local_tensor(
         self,
@@ -964,12 +986,14 @@ class Module(torch.nn.Module):  # type: ignore[misc]
 
             if self.policy.observable == "hamiltonian":
                 if self.policy.mode == "tensor_network":
-                    raise NotImplementedError(
+                    raise CapabilityError(
                         "tensor_network Module does not yet support Hamiltonian "
                         "observables without explicit term execution"
                     )
                 if self.hamiltonian is None:
-                    raise ValueError("hamiltonian observable requires a Hamiltonian")
+                    raise ValidationError(
+                        "hamiltonian observable requires a Hamiltonian"
+                    )
                 value = self.hamiltonian.expectation(
                     circuit if self.policy.mode == "statevector" else backend_state
                 )
@@ -987,14 +1011,10 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             self._builder_bindings.clear()
 
     def get_extra_state(self) -> dict[str, Any]:
-        return {
-            "policy": self.policy.to_dict(),
-            "deployment_binding": self.deployment_binding,
-        }
+        return {"policy": self.policy.to_dict()}
 
     def set_extra_state(self, state: Mapping[str, Any]) -> None:
         self.set_runtime_policy(RuntimePolicy.from_dict(state.get("policy", {})))
-        self.deployment_binding = dict(state.get("deployment_binding", {}))
 
     def save_checkpoint(
         self,
@@ -1008,7 +1028,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         from .training_state import SeedContract, save_training_checkpoint
 
         if type(seed) is not int or seed < 0:
-            raise ValueError("checkpoint seed must be a non-negative integer")
+            raise ValidationError("checkpoint seed must be a non-negative integer")
         seed_contract = SeedContract(
             seed=seed,
             sampling_seed=(seed ^ 0x5A17) & 0x7FFF_FFFF,

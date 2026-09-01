@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Mapping, TypeAlias
 import torch
 
 from ..core.contracts import AccuracyContract, RuntimePlanContract
+from ..errors import ExecutionError
 from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
@@ -135,7 +136,7 @@ class ExecutionResult:
             value = state_getter()
             if isinstance(value, torch.Tensor):
                 return value
-        raise RuntimeError(
+        raise ExecutionError(
             "execution result does not expose a statevector; use backend-native "
             "measurements or request a state-producing execution mode"
         )
@@ -150,14 +151,14 @@ class ExecutionResult:
 
         if isinstance(self.samples, torch.Tensor):
             return self.samples
-        raise RuntimeError("execution result does not contain samples")
+        raise ExecutionError("execution result does not contain samples")
 
     def require_value(self) -> torch.Tensor:
         """Return the differentiable module value or fail when it is absent."""
 
         if isinstance(self.value, torch.Tensor):
             return self.value
-        raise RuntimeError("execution result does not contain a module value")
+        raise ExecutionError("execution result does not contain a module value")
 
     def measurement(self, selector: int | str) -> MeasurementResult:
         """Return one requested measurement by position, name, or unique kind."""
@@ -166,7 +167,7 @@ class ExecutionResult:
             try:
                 return self.measurements[selector]
             except IndexError as exc:
-                raise RuntimeError(
+                raise ExecutionError(
                     f"measurement index {selector} is outside the result"
                 ) from exc
         if not isinstance(selector, str) or not selector:
@@ -180,9 +181,9 @@ class ExecutionResult:
             item for item in self.measurements if item.kind == selector
         )
         if not matches:
-            raise RuntimeError(f"execution result has no measurement {selector!r}")
+            raise ExecutionError(f"execution result has no measurement {selector!r}")
         if len(matches) > 1:
-            raise RuntimeError(
+            raise ExecutionError(
                 f"measurement selector {selector!r} is ambiguous; use an index or "
                 "unique metadata name"
             )
@@ -198,9 +199,9 @@ class ExecutionResult:
                 if item.kind.startswith("expectation")
             )
             if not matches:
-                raise RuntimeError("execution result does not contain an expectation")
+                raise ExecutionError("execution result does not contain an expectation")
             if len(matches) > 1:
-                raise RuntimeError(
+                raise ExecutionError(
                     "execution result contains multiple expectations; select one by "
                     "index or metadata name"
                 )
@@ -210,7 +211,7 @@ class ExecutionResult:
         if not result.kind.startswith("expectation") or not isinstance(
             result.value, torch.Tensor
         ):
-            raise RuntimeError("selected measurement is not a tensor expectation")
+            raise ExecutionError("selected measurement is not a tensor expectation")
         return result.value
 
     def native(self) -> object:
@@ -218,7 +219,7 @@ class ExecutionResult:
 
         native = self.__dict__.get("_native_output")
         if native is None:
-            raise RuntimeError(
+            raise ExecutionError(
                 "execution result does not retain a backend-native output"
             )
         return native

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 import torch
 
+from .errors import ValidationError
 from .circuit_statevector import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
@@ -85,13 +86,19 @@ class Circuit:
             if value is not None
         }
         if not counts:
-            raise ValueError("Circuit requires n_qubits (or legacy n_wires/nqubits).")
+            raise ValidationError(
+                "Circuit requires n_qubits (or legacy n_wires/nqubits)."
+            )
         if len(set(counts.values())) != 1:
             rendered = ", ".join(f"{name}={value}" for name, value in counts.items())
-            raise ValueError(f"Circuit received conflicting qubit counts: {rendered}.")
+            raise ValidationError(
+                f"Circuit received conflicting qubit counts: {rendered}."
+            )
         self.n_wires = next(iter(counts.values()))
         if self.n_wires <= 0:
-            raise ValueError(f"Circuit n_qubits must be positive, got {self.n_wires}.")
+            raise ValidationError(
+                f"Circuit n_qubits must be positive, got {self.n_wires}."
+            )
         self._nqubits = self.n_wires
         self.bsz = int(bsz)
         self.runtime_config = config or get_runtime_config()
@@ -155,7 +162,7 @@ class Circuit:
         normalized_wires = _normalize_wires(wires)
         outside = tuple(wire for wire in normalized_wires if wire >= self.n_wires)
         if outside:
-            raise ValueError(
+            raise ValidationError(
                 f"Gate {name!r} references wire(s) {outside} outside circuit "
                 f"range [0, {self.n_wires - 1}]."
             )
@@ -798,7 +805,7 @@ class Circuit:
         y_set = set(y or ())
         z_set = set(z or ())
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
-            raise ValueError("A wire can appear in only one of x, y, or z.")
+            raise ValidationError("A wire can appear in only one of x, y, or z.")
 
         state = self.state()
         transformed = state
@@ -842,7 +849,7 @@ class Circuit:
         if format == "index":
             return samples
         if format != "bits":
-            raise ValueError("sample format must be 'bits' or 'index'.")
+            raise ValidationError("sample format must be 'bits' or 'index'.")
         return _bits_from_indices(samples, self.n_wires)
 
     def counts(
@@ -865,7 +872,7 @@ class Circuit:
                 elif format == "bin":
                     out_key = f"{int(key):0{self.n_wires}b}"
                 else:
-                    raise ValueError("counts format must be 'bin' or 'int'.")
+                    raise ValidationError("counts format must be 'bin' or 'int'.")
                 batch_counts[out_key] = int(count)
             outputs.append(batch_counts)
         return outputs

@@ -9,6 +9,7 @@ from typing import Any, Sequence
 import torch
 
 from ..core.ir import MeasurementNode
+from ..errors import CapabilityError
 from .result import MeasurementResult
 
 _SUPPORTED_KINDS = {
@@ -45,7 +46,7 @@ def _statevector_target(output: Any, n_wires: int) -> Any:
             dtype=output.dtype,
             inputs=output,
         )
-    raise NotImplementedError(
+    raise CapabilityError(
         "measurements for this tensor result are not implemented; "
         "request a statevector, MPS, or tensor-network execution mode"
     )
@@ -133,7 +134,7 @@ def _sample(
 ) -> tuple[torch.Tensor, dict[str, Any]]:
     sampler = getattr(target, "sample", None)
     if not callable(sampler):
-        raise NotImplementedError(
+        raise CapabilityError(
             f"{type(target).__name__} does not support computational-basis sampling"
         )
     generator = _generator(target, metadata)
@@ -240,7 +241,7 @@ def _marginal_probabilities(
 ) -> torch.Tensor:
     expectation = getattr(target, "expectation_ps", None)
     if not callable(expectation):
-        raise NotImplementedError(
+        raise CapabilityError(
             f"{type(target).__name__} does not support marginal probabilities"
         )
     subset_expectations: list[torch.Tensor | None] = [None]
@@ -289,14 +290,14 @@ def execute_measurements(
         if kind == "expectation_z":
             method = getattr(target, "expectation_z", None)
             if not callable(method):
-                raise NotImplementedError(
+                raise CapabilityError(
                     f"{type(target).__name__} does not support Z expectations"
                 )
             value = method(wires)
         elif kind == "expectation_ps":
             method = getattr(target, "expectation_ps", None)
             if not callable(method):
-                raise NotImplementedError(
+                raise CapabilityError(
                     f"{type(target).__name__} does not support Pauli expectations"
                 )
             axes = {

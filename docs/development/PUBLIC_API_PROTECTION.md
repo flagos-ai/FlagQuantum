@@ -45,6 +45,10 @@ particular, `contracts/module-training-v1-candidate.json` protects Module
 forward/execute/checkpoint signatures, the minimal `fq.train` loop, versioned
 training/result metadata, and the `flagquantum.training` namespace. Its
 `implemented_pending_freeze` status does not itself declare the whole API frozen.
+`contracts/errors-module-boundary-v1-candidate.json` separately protects the
+stable error categories and the reviewed removal of provider state from the
+Module constructor. It preserves built-in exception compatibility and legacy
+checkpoint reading without retaining the removed constructor parameter.
 
 ## Protected contract
 

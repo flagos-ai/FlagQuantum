@@ -39,12 +39,12 @@ class HybridQuantumClassifier(torch.nn.Module):
         deployment_binding: Mapping[str, Any] | None = None,
     ) -> None:
         super().__init__()
+        self.deployment_binding = dict(deployment_binding or {})
         self.encoder = torch.nn.Linear(2, 2)
         self.quantum = Module(
             _classifier_circuit,
             2,
             policy=policy or RuntimePolicy(observable_wires=(1,)),
-            deployment_binding=deployment_binding,
         )
         self.bias = torch.nn.Parameter(torch.zeros(()))
 
@@ -54,7 +54,7 @@ class HybridQuantumClassifier(torch.nn.Module):
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         angles = self.encoder(inputs) + self.quantum.parameters_tensor
         values = [
-            self.quantum.execute(parameters=sample).value.reshape(())
+            self.quantum.execute(parameters=sample).require_value().reshape(())
             for sample in angles
         ]
         return torch.stack(values) + self.bias
@@ -65,7 +65,7 @@ class HybridQuantumClassifier(torch.nn.Module):
         """Return the classical binding contract and, when given inputs, bound IRs."""
 
         payload: dict[str, Any] = {
-            "binding": dict(self.quantum.deployment_binding),
+            "binding": dict(self.deployment_binding),
             "quantum_parameters": self.quantum.parameters_tensor.detach().clone(),
             "classical_state": {
                 name: value.detach().clone()
@@ -89,6 +89,12 @@ class HybridQuantumClassifier(torch.nn.Module):
         )
         return payload
 
+    def get_extra_state(self) -> dict[str, Any]:
+        return {"deployment_binding": dict(self.deployment_binding)}
+
+    def set_extra_state(self, state: Mapping[str, Any]) -> None:
+        self.deployment_binding = dict(state.get("deployment_binding", {}))
+
 
 class VariationalEnergyModel(torch.nn.Module):
     """Small variational energy model sharing the same runtime policy surface."""
@@ -100,6 +106,7 @@ class VariationalEnergyModel(torch.nn.Module):
         deployment_binding: Mapping[str, Any] | None = None,
     ) -> None:
         super().__init__()
+        self.deployment_binding = dict(deployment_binding or {})
         hamiltonian = Hamiltonian(
             (
                 pauli_term(-0.7, "Z", (0,)),
@@ -115,7 +122,6 @@ class VariationalEnergyModel(torch.nn.Module):
             2,
             policy=selected,
             hamiltonian=hamiltonian,
-            deployment_binding=deployment_binding,
         )
 
     def set_runtime_policy(self, policy: RuntimePolicy) -> None:
@@ -126,9 +132,15 @@ class VariationalEnergyModel(torch.nn.Module):
 
     def deployment_parameters(self) -> dict[str, Any]:
         return {
-            "binding": dict(self.quantum.deployment_binding),
+            "binding": dict(self.deployment_binding),
             "quantum_parameters": self.quantum.parameters_tensor.detach().clone(),
         }
+
+    def get_extra_state(self) -> dict[str, Any]:
+        return {"deployment_binding": dict(self.deployment_binding)}
+
+    def set_extra_state(self, state: Mapping[str, Any]) -> None:
+        self.deployment_binding = dict(state.get("deployment_binding", {}))
 
 
 __all__ = ["HybridQuantumClassifier", "VariationalEnergyModel"]

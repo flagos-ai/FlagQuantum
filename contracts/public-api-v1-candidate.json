@@ -71,6 +71,18 @@
       ]
     },
     {
+      "namespace": "flagquantum.errors",
+      "symbols": [
+        "CapabilityError",
+        "CompilationError",
+        "ExecutionError",
+        "FlagQuantumError",
+        "PlanningError",
+        "SerializationError",
+        "ValidationError"
+      ]
+    },
+    {
       "namespace": "flagquantum.training",
       "symbols": [
         "NonFiniteTrainingError",

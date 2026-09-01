@@ -13,6 +13,7 @@ from ..compilation.execution_plan_contract import (
 )
 from ..compilation.models import ExecutionPlan
 from ..core.runtime_config import RuntimeConfig
+from ..errors import ExecutionError, FlagQuantumError
 from .measurements import validate_measurements
 from .result import ExecutionResult
 
@@ -50,22 +51,27 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         real_dtype="float64" if precision == "complex128" else "float32",
         jax_enable_x64=precision == "complex128",
     )
-    output, returned_plan = run_native(
-        source_ir,
-        noise_model=noise_model,
-        mode=mode,
-        return_plan=True,
-        _execution_plan=execution_plan,
-        bsz=int(decision["batch_size"]),
-        world_size=int(decision["world_size"]),
-        device=str(decision["device"]),
-        dtype=getattr(torch, precision),
-        config=selected_config,
-        memory_limit_bytes=decision["memory_limit_bytes"],
-        output_target=targets[str(decision["target"])],
-        require_gradients=bool(decision["require_gradients"]),
-        allow_approximate=bool(decision["allow_approximate"]),
-    )
+    try:
+        output, returned_plan = run_native(
+            source_ir,
+            noise_model=noise_model,
+            mode=mode,
+            return_plan=True,
+            _execution_plan=execution_plan,
+            bsz=int(decision["batch_size"]),
+            world_size=int(decision["world_size"]),
+            device=str(decision["device"]),
+            dtype=getattr(torch, precision),
+            config=selected_config,
+            memory_limit_bytes=decision["memory_limit_bytes"],
+            output_target=targets[str(decision["target"])],
+            require_gradients=bool(decision["require_gradients"]),
+            allow_approximate=bool(decision["allow_approximate"]),
+        )
+    except FlagQuantumError:
+        raise
+    except Exception as error:
+        raise ExecutionError("planned execution failed") from error
     if returned_plan is not execution_plan:
         raise ExecutionPlanContractError(
             "identity_mismatch",

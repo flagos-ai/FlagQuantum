@@ -412,7 +412,8 @@ batch × 参数 batch 笛卡尔广播。
 - 为每个公开构造模式提供独立 contract test。
 
 Proposal 005 保护现有 builder、参数化 Circuit、扁平参数和命名参数构造形态，但不再
-增加新的顶层构造模式。复杂 deployment binding 仍是公开前需继续复核的 P1 项。
+增加新的顶层构造模式。Proposal 006 已从 Module 删除未校验的 deployment binding，
+由应用模型或 deployment 层持有；旧 checkpoint extra-state 仍可读取并忽略该字段。
 
 ### API-014：训练入口没有完全覆盖已宣传的生命周期
 
@@ -484,6 +485,11 @@ FlagQuantumError
 
 底层异常可以作为 `__cause__` 保留，但用户不应依赖 PyTorch、JAX、NCCL 或 provider
 的偶然异常文本。
+
+**Proposal 006 决策：已实现，待单独冻结批准。** 七个异常类别进入稳定
+`flagquantum.errors` 命名空间，并通过双重继承保留 Python 内置异常兼容性。错误类型
+继续使用 `TypeError`；语义取值、planning、serialization、capability、compilation 和
+execution/training 分别进入明确类别。现有 IR、Plan 和 TrainingState 领域异常保留名称。
 
 ### API-018：ExecutionPlan 的可移植和可序列化边界需要定义
 
@@ -719,6 +725,9 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - [x] 固定 PyTorch 为主接口、JAX 为可选 compiled backend 的边界；
 - [ ] API owner 单独批准 Proposal 005 contract freeze。
 
+Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固定三种公开构造
+路径；Module 只拥有参数、RuntimePolicy、precision 与训练状态。
+
 完成标准：同一 Module 在 eager、train 和显式 execute 路径中没有默认语义漂移。
 
 ### Phase 6：扩展协议与互操作
@@ -729,6 +738,14 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - 验证外部插件不需要导入 runtime internal。
 
 完成标准：能够在不修改 core 的情况下增加一个最小第三方 backend。
+
+### Phase 6A：统一公开异常
+
+- [x] 建立 `flagquantum.errors` 稳定命名空间；
+- [x] 保留 ValueError/RuntimeError/NotImplementedError 捕获兼容性；
+- [x] 将 IR、Plan、Result、Module 与 training-state 领域错误映射到统一类别；
+- [x] 隔离 stable boundary 与 backend-native 偶然异常类型；
+- [ ] API owner 单独批准 Proposal 006 contract freeze。
 
 ### Phase 7：公开候选与冻结
 
@@ -791,6 +808,8 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - [x] native backend 对象不会隐式扩张稳定 Result；
 - [x] Module 的 forward/execute/train 候选语义已实现并受契约测试保护；
 - [x] checkpoint/resume 的责任边界已明确；
+- [x] Module 构造路径和 deployment binding 所有权已明确；
+- [x] 公开异常候选层级已实现并受契约测试保护；
 - [ ] distributed/noise/backend 专属入口已完成分层；
 - [ ] 根命名空间不存在无意暴露的 compatibility exports；
 - [ ] 五条黄金路径全部通过；
