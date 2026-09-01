@@ -10,7 +10,7 @@ import flagquantum as fq
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "contracts" / "experimental-namespace-v1-candidate.json"
+CONTRACT = ROOT / "contracts" / "experimental-surface-v2-candidate.json"
 
 
 def test_experimental_root_contains_only_domain_namespaces() -> None:
@@ -18,17 +18,44 @@ def test_experimental_root_contains_only_domain_namespaces() -> None:
 
     assert list(fq.experimental.__all__) == contract["top_level_namespaces"]
     assert set(dir(fq.experimental)) >= set(contract["top_level_namespaces"])
-    assert contract["rules"]["flat_feature_exports_at_experimental_root"] == 0
+    assert contract["rules"]["top_level_governance_changed"] is False
 
 
 def test_each_experimental_namespace_matches_machine_contract() -> None:
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
 
-    for namespace, expected in contract["exports"].items():
+    for namespace, expected in contract["discoverable_exports"].items():
         module = getattr(fq.experimental, namespace)
         assert list(module.__all__) == expected
         for name in expected:
             assert getattr(module, name) is not None
+
+
+def test_internal_records_and_evidence_are_not_discoverable() -> None:
+    hidden = {
+        "distributed": {
+            "DistributedEvidenceContract",
+            "JAXStatevectorShardState",
+            "execute_torch_distributed_statevector",
+            "mps_site_kernel_stats",
+        },
+        "dynamic": {
+            "DynamicConformanceCase",
+            "DynamicExecutionResult",
+            "run_dynamic_conformance",
+        },
+        "mps": {"MPSProductionPlan", "build_mps_release_artifact"},
+        "numerics": {
+            "SplitRealImagConformanceReport",
+            "run_split_real_imag_conformance",
+        },
+        "simulation": {"TEBDResult"},
+    }
+
+    for namespace, names in hidden.items():
+        module = getattr(fq.experimental, namespace)
+        assert names.isdisjoint(module.__all__)
+        assert names.isdisjoint(dir(module))
 
 
 def test_flat_experimental_feature_routes_are_absent() -> None:

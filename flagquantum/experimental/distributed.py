@@ -1,30 +1,15 @@
-"""Unstable distributed planning, execution, training, and evidence APIs."""
+"""Unstable task-level distributed workflows.
+
+Only user-invokable workflows are discoverable. Low-level shard records,
+executors, kernel counters, and evidence objects remain implementation details.
+"""
 
 from __future__ import annotations
 
 from importlib import import_module
 from typing import Any
 
-from ..runtime.backends.mps import train_distributed_mps
-from ..runtime.backends.statevector import train_distributed_statevector
-from ..runtime.distributed.tensor_network_execution import (
-    distributed_tensor_network_amplitude,
-    distributed_tensor_network_amplitudes,
-    distributed_tensor_network_expectation,
-    distributed_tensor_network_expectations,
-)
-from ..runtime.parallel import HybridParallelPlan
-
-_EAGER_EXPORTS = (
-    HybridParallelPlan,
-    distributed_tensor_network_amplitude,
-    distributed_tensor_network_amplitudes,
-    distributed_tensor_network_expectation,
-    distributed_tensor_network_expectations,
-    train_distributed_mps,
-    train_distributed_statevector,
-)
-_PUBLIC_NAMES = (
+_LEGACY_NAMES = (
     "DistributedEvidenceContract",
     "DistributedTransportEvidence",
     "HybridParallelPlan",
@@ -51,6 +36,14 @@ _PUBLIC_NAMES = (
     "train_distributed_mps",
     "train_distributed_statevector",
 )
+_PUBLIC_NAMES = (
+    "distributed_tensor_network_amplitude",
+    "distributed_tensor_network_amplitudes",
+    "distributed_tensor_network_expectation",
+    "distributed_tensor_network_expectations",
+    "train_distributed_mps",
+    "train_distributed_statevector",
+)
 __all__ = _PUBLIC_NAMES
 
 _API_EXPORTS = {
@@ -73,6 +66,24 @@ _STATEVECTOR_EXPORTS = {
 
 
 def __getattr__(name: str) -> Any:
+    if name == "HybridParallelPlan":
+        return getattr(import_module("flagquantum.runtime.parallel"), name)
+    if name in {
+        "distributed_tensor_network_amplitude",
+        "distributed_tensor_network_amplitudes",
+        "distributed_tensor_network_expectation",
+        "distributed_tensor_network_expectations",
+    }:
+        return getattr(
+            import_module("flagquantum.runtime.distributed.tensor_network_execution"),
+            name,
+        )
+    if name in {"train_distributed_mps", "train_distributed_statevector"}:
+        module = {
+            "train_distributed_mps": "flagquantum.runtime.backends.mps",
+            "train_distributed_statevector": "flagquantum.runtime.backends.statevector",
+        }[name]
+        return getattr(import_module(module), name)
     if name in _API_EXPORTS:
         return getattr(import_module("flagquantum.api"), name)
     if name in _STATEVECTOR_EXPORTS:

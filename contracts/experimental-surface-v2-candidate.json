@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_review",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_011_EXPERIMENTAL_SURFACE.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "frozen_governance_baseline": {
+    "path": "contracts/experimental-namespace-v1-candidate.json",
+    "sha256": "852c74c6441b89764836615ad4aca93eff6b20919e897f1166a1c26635177ba4",
+    "modified": false
+  },
+  "top_level_namespaces": [
+    "distributed",
+    "dynamic",
+    "execution",
+    "interop",
+    "mps",
+    "numerics",
+    "planning",
+    "simulation"
+  ],
+  "discoverable_exports": {
+    "distributed": [
+      "distributed_tensor_network_amplitude",
+      "distributed_tensor_network_amplitudes",
+      "distributed_tensor_network_expectation",
+      "distributed_tensor_network_expectations",
+      "train_distributed_mps",
+      "train_distributed_statevector"
+    ],
+    "dynamic": [
+      "assess_dynamic_backend",
+      "create_dynamic_deployment_package",
+      "deploy_dynamic_circuit",
+      "export_dynamic_qasm3",
+      "route_dynamic_circuit",
+      "run_dynamic"
+    ],
+    "execution": ["run_advanced"],
+    "interop": ["pennylane", "qiskit"],
+    "mps": ["plan_production_mps", "validate_production_mps_workload"],
+    "numerics": [
+      "execute_split_real_imag_expectation",
+      "execute_split_real_imag_statevector",
+      "parameter_shift_split_real_imag_gradient"
+    ],
+    "planning": ["plan_advanced"],
+    "simulation": ["run_tebd"]
+  },
+  "surface_metrics": {
+    "previous_discoverable_feature_exports": 114,
+    "current_discoverable_feature_exports": 22,
+    "removed_from_discovery": 92,
+    "reduction_percent": 80.7
+  },
+  "excluded_categories": [
+    "evidence and audit records",
+    "rank, shard and checkpoint implementation records",
+    "backend-specific executors",
+    "kernel counters and reset hooks",
+    "conformance cases, reports and runners",
+    "result record classes",
+    "precision-stage planning and diagnostic helpers",
+    "release artifact builders"
+  ],
+  "transition": {
+    "non_discoverable_internal_routes_temporarily_resolvable": true,
+    "internal_routes_are_public_api": false,
+    "repository_callers_must_migrate_to_implementation_modules": true,
+    "remove_internal_routes_before_first_public_alpha": true
+  },
+  "rules": {
+    "top_level_governance_changed": false,
+    "stable_core_changed": false,
+    "experimental_compatibility_guarantee": false,
+    "discoverable_names_are_limited_to_user_workflows_or_adapter_namespaces": true,
+    "candidate_is_frozen_contract": false
+  }
+}

@@ -27,7 +27,7 @@ def test_tebd_is_explicitly_experimental_not_stable_root_api() -> None:
     assert "TEBDResult" not in fq.__all__
     assert "simulation" in fq.experimental.__all__
     assert "run_tebd" in fq.experimental.simulation.__all__
-    assert "TEBDResult" in fq.experimental.simulation.__all__
+    assert "TEBDResult" not in fq.experimental.simulation.__all__
     assert callable(fq.experimental.simulation.run_tebd)
 
 

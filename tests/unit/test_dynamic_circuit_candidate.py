@@ -84,6 +84,8 @@ def test_dynamic_builder_uses_stable_error_categories() -> None:
 
 
 def test_native_dynamic_result_remains_experimental() -> None:
-    assert "DynamicExecutionResult" in fq.experimental.dynamic.__all__
+    assert "DynamicExecutionResult" not in fq.experimental.dynamic.__all__
+    assert "DynamicExecutionResult" not in dir(fq.experimental.dynamic)
+    assert fq.experimental.dynamic.DynamicExecutionResult is not None
     assert "DynamicExecutionResult" not in fqd.__all__
     assert "run_dynamic" not in fqd.__all__

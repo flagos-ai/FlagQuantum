@@ -81,7 +81,12 @@ _EXPORT_MODULES = {
 _NAME_TO_MODULE = {
     name: module for module, names in _EXPORT_MODULES.items() for name in names
 }
-__all__ = tuple(sorted(_NAME_TO_MODULE))
+_PUBLIC_NAMES = (
+    "execute_split_real_imag_expectation",
+    "execute_split_real_imag_statevector",
+    "parameter_shift_split_real_imag_gradient",
+)
+__all__ = _PUBLIC_NAMES
 
 
 def __getattr__(name: str) -> Any:

@@ -32,7 +32,15 @@ _CONFORMANCE_EXPORTS = {
     "run_qiskit_aer_qasm3_round_trip",
 }
 
-__all__ = tuple(sorted(_RUNTIME_EXPORTS | _CONFORMANCE_EXPORTS))
+_PUBLIC_NAMES = (
+    "assess_dynamic_backend",
+    "create_dynamic_deployment_package",
+    "deploy_dynamic_circuit",
+    "export_dynamic_qasm3",
+    "route_dynamic_circuit",
+    "run_dynamic",
+)
+__all__ = _PUBLIC_NAMES
 
 
 def __getattr__(name: str) -> Any:
