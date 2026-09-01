@@ -111,11 +111,26 @@ training = fq.train(
 print(training.losses[-1])
 ```
 
-`fq.run` performs one forward execution and never updates parameters.
-`fq.train` owns the PyTorch optimizer loop (`zero_grad`, `backward`, and
-`step`) and returns `fq.TrainingResult`. The specialized
-`train_distributed_statevector` and `train_distributed_mps` functions remain
-advanced interfaces for explicit distributed lifecycle and evidence control.
+`module(inputs)` and `module.forward(inputs)` always return an autograd-compatible
+Tensor. Use `module.execute(inputs)` when the caller needs an
+`ExecutionResult`, provenance, runtime diagnostics, or explicit backend
+compatibility information. `fq.run` accepts Circuit, IR, or ExecutionPlan—not
+Module—and never updates parameters.
+
+`fq.train` is intentionally a minimal, caller-owned PyTorch optimizer loop. It
+performs `zero_grad`, `backward`, and `step`, then returns `fq.TrainingResult`.
+Checkpoint and resume belong to `Module.save_checkpoint()` and
+`Module.load_checkpoint()` or to an application-owned training loop; they are
+not hidden options of `fq.train`. Training lifecycle types such as
+`PrecisionPolicy`, `SeedContract`, and checkpoint errors live in the stable
+`flagquantum.training` namespace. Distributed training remains explicitly
+experimental under `flagquantum.experimental.distributed`.
+
+`ExecutionResult.require_value()` returns the Module value or fails clearly.
+`ExecutionResult.diagnostics()` returns a versioned envelope containing
+`metrics`, `provenance`, `runtime`, and `compatibility`; keys inside those four
+sections may grow compatibly. `TrainingResult.final_loss` and its versioned
+`summary()` provide stable training output access.
 
 The [examples index](../../examples/README.md) provides runnable statevector,
 MPS, JAX, distributed, and deployment workflows.

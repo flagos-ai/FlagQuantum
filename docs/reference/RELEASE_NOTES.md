@@ -19,6 +19,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Fixed the first-alpha candidate boundary for Module and training:
+  `Module.forward()` returns an autograd Tensor, `Module.execute()` returns
+  `ExecutionResult`, and `fq.run()` does not accept Module. `fq.train()` remains
+  a minimal caller-owned PyTorch optimizer loop; checkpoint/resume stays on
+  Module, while distributed training remains experimental. Added the stable
+  `flagquantum.training` lifecycle namespace plus versioned result diagnostics,
+  training summaries, and checkpoint-restore metadata. The candidate still
+  requires a separate API-freeze approval.
 - Unified stable measurement and noise execution through `ExecutionPlan`.
   Explicit measurements are embedded before planning and can no longer silently
   replace IR requests; versioned noise models survive verified plan JSON round

@@ -26,6 +26,7 @@ BASELINE = ROOT / "contracts" / "public-api-v0.2-baseline.json"
 EXECUTION_OPTIONS_CONTRACT = ROOT / "contracts" / "execution-options-v1-candidate.json"
 EXECUTION_PLAN_CONTRACT = ROOT / "contracts" / "execution-plan-v1-candidate.json"
 EXECUTION_RESULT_CONTRACT = ROOT / "contracts" / "execution-result-v1-candidate.json"
+MODULE_TRAINING_CONTRACT = ROOT / "contracts" / "module-training-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -174,6 +175,9 @@ def validate() -> tuple[str, ...]:
     )
     plan_contract = json.loads(EXECUTION_PLAN_CONTRACT.read_text(encoding="utf-8"))
     result_contract = json.loads(EXECUTION_RESULT_CONTRACT.read_text(encoding="utf-8"))
+    module_training_contract = json.loads(
+        MODULE_TRAINING_CONTRACT.read_text(encoding="utf-8")
+    )
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -236,6 +240,10 @@ def validate() -> tuple[str, ...]:
         expected_signatures.update(plan_contract.get("proposed_signatures", {}))
     if result_contract.get("implementation_authorized") is True:
         expected_signatures.update(result_contract.get("public_signatures", {}))
+    if module_training_contract.get("implementation_authorized") is True:
+        expected_signatures.update(
+            module_training_contract.get("public_signatures", {})
+        )
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -247,6 +255,8 @@ def validate() -> tuple[str, ...]:
         errors.extend(_validate_authorized_execution_plan(plan_contract, names))
     if result_contract.get("implementation_authorized") is True:
         errors.extend(_validate_authorized_execution_result(result_contract))
+    if module_training_contract.get("implementation_authorized") is True:
+        errors.extend(_validate_authorized_module_training(module_training_contract))
     return tuple(errors)
 
 
@@ -276,6 +286,11 @@ def _validate_authorized_execution_options(
         "Circuit.plan": fq.Circuit.plan,
         "Circuit.run": fq.Circuit.run,
         "RuntimePolicy": fq.RuntimePolicy,
+        "Module.forward": fq.Module.forward,
+        "Module.execute": fq.Module.execute,
+        "Module.save_checkpoint": fq.Module.save_checkpoint,
+        "Module.load_checkpoint": fq.Module.load_checkpoint,
+        "train": fq.train,
     }
     for name, expected_signature in expected_signatures.items():
         actual_signature = str(inspect.signature(objects[name], eval_str=False))
@@ -339,6 +354,34 @@ def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]
         errors.append("ExecutionResult summary schema changed")
     if summary.get("version") != result_contract["summary_version"]:
         errors.append("ExecutionResult summary version changed")
+    return errors
+
+
+def _validate_authorized_module_training(contract: dict[str, Any]) -> list[str]:
+    import flagquantum as fq
+    import flagquantum.training as training
+
+    errors: list[str] = []
+    extension = contract["stable_extension"]
+    additions = set(extension["additions"])
+    if set(training.__all__) != additions:
+        errors.append("flagquantum.training exports differ from Proposal 005")
+    if hasattr(fq.Module, "run"):
+        errors.append("Module must not expose a run method")
+    for name in ("require_value", "diagnostics"):
+        if not callable(getattr(fq.ExecutionResult, name, None)):
+            errors.append(f"ExecutionResult stable accessor is missing: {name}")
+    diagnostics = fq.ExecutionResult().diagnostics()
+    result_contract = contract["result_semantics"]
+    if diagnostics.get("schema") != result_contract["diagnostics_schema"]:
+        errors.append("ExecutionResult diagnostics schema changed")
+    if diagnostics.get("version") != result_contract["diagnostics_version"]:
+        errors.append("ExecutionResult diagnostics version changed")
+    fields = [field.name for field in dataclasses.fields(fq.TrainingResult)]
+    if fields != contract["training_result"]["fields"]:
+        errors.append("TrainingResult fields differ from Proposal 005")
+    if not isinstance(getattr(fq.TrainingResult, "final_loss", None), property):
+        errors.append("TrainingResult.final_loss property is missing")
     return errors
 
 

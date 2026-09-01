@@ -4,6 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.training as fqt
 
 
 @pytest.mark.gpu
@@ -11,7 +12,7 @@ import flagquantum as fq
 def test_same_classifier_runs_single_gpu_training() -> None:
     if not torch.cuda.is_available():
         pytest.skip("CUDA is unavailable")
-    fq.seed_everything(481)
+    fqt.seed_everything(481)
     model = fq.HybridQuantumClassifier().to("cuda")
     inputs = torch.tensor([[-0.8, -0.2], [0.7, 0.4]], device="cuda")
     targets = torch.tensor([-1.0, 1.0], device="cuda")

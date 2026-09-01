@@ -121,10 +121,12 @@ tensor 或 autograd graph 隐式序列化。
 
 ## 后续决策
 
-Proposal 005 应收敛 `Module`、`TrainingResult` 与 execution result 的关系，并决定：
+Proposal 005 已收敛 `Module`、`TrainingResult` 与 execution result 的关系：
 
-1. `ExecutionResult.value` 是否仅属于训练/observable 路径；
-2. diagnostics mappings 是否升级为独立 TypedDict/dataclass schema；
-3. `noise_model` 是否在公开前改名为更简洁的 `noise`；
-4. `to_statevector()` 的兼容移除窗口；
-5. 是否为结果缺失引入统一的 `FlagQuantumError` 子类。
+1. `ExecutionResult.require_value()` 成为 Module/training 的失败闭合访问器；
+2. diagnostics 使用带 schema/version 的 envelope，section key 允许兼容性增加；
+3. `Module.forward` 返回 Tensor，`Module.execute` 返回 ExecutionResult；
+4. `fq.train` 保持最小 optimizer loop，checkpoint 由 Module 所有。
+
+`noise_model` 命名、`to_statevector()` 兼容窗口和统一异常基类仍留给后续提案，
+Proposal 005 不借机扩大变更范围。

@@ -6,7 +6,8 @@ import hashlib
 import inspect
 import os
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, Callable, Mapping, cast
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable, Mapping
 
 import torch
 
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
         MPSProductionPlan,
     )
     from .parallel import HybridParallelPlan
-    from .training_state import PrecisionPolicy, SeedContract
+    from .training_state import PrecisionPolicy, TrainingCheckpointRestore
 
 CircuitBuilder = Callable[..., Circuit | CircuitIR]
 
@@ -165,8 +166,12 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 complex_dtype=("complex128" if dtype == torch.float64 else "complex64"),
                 accumulator_dtype=str(dtype).removeprefix("torch."),
             )
+        # Apply the requested parameter dtype before installing the policy.
+        # ``Module._apply`` synchronizes an already-installed policy during a
+        # later user-driven ``module.to(...)`` call; doing that here would
+        # overwrite an explicit accumulator dtype during construction.
+        precision.apply(self)
         self.precision = precision
-        self.precision.apply(self)
         self._sync_correctness_debug_hook()
 
     def _sync_correctness_debug_hook(self) -> None:
@@ -918,8 +923,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         }:
             return self._forward_local_tensor(inputs, parameters)
         result = self.execute(inputs, parameters)
-        assert result.value is not None
-        return result.value
+        return result.require_value()
 
     def _forward_local_tensor(
         self,
@@ -997,17 +1001,26 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         path: str | os.PathLike[str],
         *,
         optimizer: torch.optim.Optimizer | None,
-        seed: SeedContract,
-        runtime_plan: Any | None = None,
+        seed: int,
+        runtime_plan: object | None = None,
         step: int = 0,
-    ) -> Any:
-        from .training_state import save_training_checkpoint
+    ) -> Path:
+        from .training_state import SeedContract, save_training_checkpoint
+
+        if type(seed) is not int or seed < 0:
+            raise ValueError("checkpoint seed must be a non-negative integer")
+        seed_contract = SeedContract(
+            seed=seed,
+            sampling_seed=(seed ^ 0x5A17) & 0x7FFF_FFFF,
+            trajectory_seed=(seed ^ 0x71EC70) & 0x7FFF_FFFF,
+            jax_key_words=(0, seed & 0xFFFF_FFFF),
+        )
 
         return save_training_checkpoint(
             path,
             module=self,
             optimizer=optimizer,
-            seed=seed,
+            seed=seed_contract,
             precision=self.precision,
             runtime_plan=runtime_plan,
             step=step,
@@ -1018,17 +1031,14 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         path: str | os.PathLike[str],
         *,
         optimizer: torch.optim.Optimizer | None,
-    ) -> dict[str, Any]:
+    ) -> TrainingCheckpointRestore:
         from .training_state import load_training_checkpoint
 
-        return cast(
-            dict[str, Any],
-            load_training_checkpoint(
-                path,
-                module=self,
-                optimizer=optimizer,
-                precision=self.precision,
-            ),
+        return load_training_checkpoint(
+            path,
+            module=self,
+            optimizer=optimizer,
+            precision=self.precision,
         )
 
 

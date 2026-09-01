@@ -255,7 +255,8 @@ Proposal 004 已解决：
 - `ExecutionResult.plan` 和 `MeasurementResult.value` 已移除 `Any`；
 - optional 字段保留用于张量组合，但已提供失败闭合的 required accessors；
 - `ExecutionResult.__getattr__` 的 native 透传已移除；
-- `metrics/runtime/provenance` 的完整 key schema 留给 Proposal 005。
+- Proposal 005 为 `metrics/runtime/provenance/compatibility` 增加了带版本的
+  diagnostics envelope；四个 section 内部 key 允许兼容性增加。
 
 目标：
 
@@ -390,6 +391,11 @@ Circuit/IR → compile → plan → run
 - `fq.run(module, ...)` 是否支持必须在开源前做唯一决定；
 - 不允许不同入口对梯度、batch 或 observable 产生不同默认语义。
 
+**Proposal 005 决策：已实现，待单独冻结批准。** `forward` 返回 Tensor，`execute`
+返回 `ExecutionResult`；`fq.run` 不接受 Module，Module 也不增加 `run`。两条 Module
+路径使用相同 owned/override 参数、observable 与 backend policy。框架不定义隐式输入
+batch × 参数 batch 笛卡尔广播。
+
 ### API-013：`fq.Module` 构造方式较多
 
 **优先级：P1**
@@ -404,6 +410,9 @@ Circuit/IR → compile → plan → run
 - 明确输入 batch 与参数 batch 的广播规则；
 - 把复杂 compilation/deployment binding 放入配置对象或 classmethod；
 - 为每个公开构造模式提供独立 contract test。
+
+Proposal 005 保护现有 builder、参数化 Circuit、扁平参数和命名参数构造形态，但不再
+增加新的顶层构造模式。复杂 deployment binding 仍是公开前需继续复核的 P1 项。
 
 ### API-014：训练入口没有完全覆盖已宣传的生命周期
 
@@ -420,6 +429,10 @@ steps、inputs、logging 和 callback。Checkpoint、Resume、早停、验证集
 
 文档和宣传必须与最终选择一致。
 
+**Proposal 005 已选择方案 2。** `fq.train` 永久定位为最小 PyTorch optimizer loop；
+checkpoint/resume 由 `Module.save_checkpoint/load_checkpoint` 或应用训练循环负责，
+不把早停、验证集或隐式恢复塞入稳定顶层签名。
+
 ### API-015：普通训练与分布式训练入口分裂
 
 **优先级：P1**
@@ -432,6 +445,10 @@ fq.train(module, options=fq.TrainingOptions(execution=...))
 
 如果分布式训练尚不能满足统一语义，应保留在 `fq.experimental.distributed`，而不是
 提前进入 stable root。
+
+**Proposal 005 决策：** 当前分布式训练继续位于
+`flagquantum.experimental.distributed`；达到与本地 Module 相同的结果、checkpoint、
+梯度和 optimizer 语义前，不进入稳定根 API。
 
 ### API-016：Noise 存在多套平行入口
 
@@ -688,17 +705,19 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - [x] 增加稳定结果访问器；
 - [x] 隔离 backend-native 对象；
 - [x] 版本化 result summary schema；
-- [ ] 在 Proposal 005 中收敛 Module diagnostics mappings 与统一异常层级。
+- [x] 在 Proposal 005 中增加 Module diagnostics 的版本化 envelope；
+- [ ] 在后续提案中统一所有公开缺失数据与训练错误的异常层级。
 
 完成标准：用户无需检查多个不明确的 optional 字段即可读取所请求结果。
 
 ### Phase 5：统一 Module 和 Training
 
-- 固定 `forward`、`execute`、`run` 的关系；
-- 固定输入 batch、参数 batch 和 observable 语义；
-- 决定 checkpoint/resume 的顶层边界；
-- 决定 distributed training 是统一能力还是 experimental；
-- 更新 PyTorch/JAX 边界说明。
+- [x] 固定 `forward`、`execute`、`run` 的关系；
+- [x] 固定 owned/override 参数、输入和 observable 默认语义，禁止隐式笛卡尔广播；
+- [x] 决定 checkpoint/resume 由 Module 或应用循环所有；
+- [x] 决定 distributed training 暂留 experimental；
+- [x] 固定 PyTorch 为主接口、JAX 为可选 compiled backend 的边界；
+- [ ] API owner 单独批准 Proposal 005 contract freeze。
 
 完成标准：同一 Module 在 eager、train 和显式 execute 路径中没有默认语义漂移。
 
@@ -770,8 +789,8 @@ API 冻结前必须用真实、可执行代码验证以下路径：
 - [x] Measurement 来源和覆盖规则唯一明确；
 - [x] `fq.run`、`fq.plan`、`fq.train` 返回类型不再是 `Any`；
 - [x] native backend 对象不会隐式扩张稳定 Result；
-- [ ] Module 的 forward/execute/train 语义已固定；
-- [ ] checkpoint/resume 的责任边界已明确；
+- [x] Module 的 forward/execute/train 候选语义已实现并受契约测试保护；
+- [x] checkpoint/resume 的责任边界已明确；
 - [ ] distributed/noise/backend 专属入口已完成分层；
 - [ ] 根命名空间不存在无意暴露的 compatibility exports；
 - [ ] 五条黄金路径全部通过；

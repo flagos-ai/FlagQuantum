@@ -6,7 +6,12 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.training as fqt
 from flagquantum.runtime.observability.acceptance import HybridAcceptanceReport
+from flagquantum.runtime.training_state import (
+    load_training_checkpoint,
+    save_training_checkpoint,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -31,7 +36,7 @@ def train_classifier(
 def test_classifier_local_training_evaluation_checkpoint_and_deployment(
     tmp_path,
 ) -> None:
-    seed = fq.seed_everything(48)
+    seed = fqt.seed_everything(48)
     model = fq.HybridQuantumClassifier(
         deployment_binding={"provider": "local", "target": "simulator"}
     )
@@ -43,7 +48,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
     accuracy = float((predictions == TARGETS).float().mean())
     assert final < first and accuracy >= 0.75
 
-    path = fq.save_training_checkpoint(
+    path = save_training_checkpoint(
         tmp_path / "classifier.pt",
         module=model,
         optimizer=optimizer,
@@ -55,7 +60,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
         deployment_binding={"provider": "local", "target": "simulator"}
     )
     restored_optimizer = torch.optim.Adam(restored.parameters(), lr=0.08)
-    metadata = fq.load_training_checkpoint(
+    metadata = load_training_checkpoint(
         path,
         module=restored,
         optimizer=restored_optimizer,

@@ -40,6 +40,12 @@ Phase 0 also records the pre-open-source migration baseline in
 Stable Core is being selected. It is intentionally not the final frozen API
 contract.
 
+Authorized pre-freeze deltas are recorded as narrow candidate contracts. In
+particular, `contracts/module-training-v1-candidate.json` protects Module
+forward/execute/checkpoint signatures, the minimal `fq.train` loop, versioned
+training/result metadata, and the `flagquantum.training` namespace. Its
+`implemented_pending_freeze` status does not itself declare the whole API frozen.
+
 ## Protected contract
 
 For each Stable Core API, protection must cover more than its import name.

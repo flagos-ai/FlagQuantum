@@ -9,6 +9,9 @@ import torch
 
 from .module import ExecutionResult, Module
 
+TRAINING_RESULT_SUMMARY_SCHEMA = "flagquantum.training_result.summary"
+TRAINING_RESULT_SUMMARY_VERSION = "1.0"
+
 TrainingObjective: TypeAlias = Callable[[torch.Tensor], torch.Tensor]
 TrainingInputs: TypeAlias = torch.Tensor | Callable[[int], torch.Tensor | None] | None
 TrainingCallback: TypeAlias = Callable[[int, float, ExecutionResult], None]
@@ -23,8 +26,22 @@ class TrainingResult:
     last_execution: ExecutionResult
     optimizer: str
 
+    def __post_init__(self) -> None:
+        if self.completed_steps <= 0:
+            raise ValueError("completed_steps must be positive")
+        if len(self.losses) != self.completed_steps:
+            raise ValueError("loss count must equal completed_steps")
+        if not self.optimizer:
+            raise ValueError("optimizer must be non-empty")
+
+    @property
+    def final_loss(self) -> float:
+        return self.losses[-1]
+
     def summary(self) -> dict[str, object]:
         return {
+            "schema": TRAINING_RESULT_SUMMARY_SCHEMA,
+            "version": TRAINING_RESULT_SUMMARY_VERSION,
             "losses": self.losses,
             "completed_steps": self.completed_steps,
             "optimizer": self.optimizer,
@@ -75,9 +92,7 @@ def train(
         step_inputs = inputs(step_index) if callable(inputs) else inputs
         optimizer.zero_grad(set_to_none=True)
         execution = module.execute(step_inputs)
-        if execution.value is None:
-            raise RuntimeError("fq.train() requires ExecutionResult.value")
-        loss = objective(execution.value)
+        loss = objective(execution.require_value())
         if not isinstance(loss, torch.Tensor) or loss.ndim != 0:
             raise ValueError("fq.train() objective must return a scalar tensor")
         loss.backward()
@@ -102,4 +117,10 @@ def train(
     )
 
 
-__all__ = ["TrainingCallback", "TrainingResult", "train"]
+__all__ = [
+    "TRAINING_RESULT_SUMMARY_SCHEMA",
+    "TRAINING_RESULT_SUMMARY_VERSION",
+    "TrainingCallback",
+    "TrainingResult",
+    "train",
+]

@@ -6,6 +6,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+import flagquantum.training as fqt
 
 INPUTS = torch.tensor([[-0.8, -0.2], [0.7, 0.4]])
 TARGETS = torch.tensor([-1.0, 1.0])
@@ -25,7 +26,7 @@ def main() -> None:
     dist.init_process_group("gloo")
     rank = dist.get_rank()
     try:
-        fq.seed_everything(480)
+        fqt.seed_everything(480)
         local = fq.HybridQuantumClassifier(
             deployment_binding={"provider": "local", "target": "simulator"}
         )

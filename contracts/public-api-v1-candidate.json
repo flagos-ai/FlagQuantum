@@ -71,6 +71,19 @@
       ]
     },
     {
+      "namespace": "flagquantum.training",
+      "symbols": [
+        "NonFiniteTrainingError",
+        "PrecisionPolicy",
+        "PrecisionPolicyError",
+        "SeedContract",
+        "TopologyMismatchError",
+        "TrainingCheckpointRestore",
+        "TrainingStateError",
+        "seed_everything"
+      ]
+    },
+    {
       "namespace": "flagquantum.operators",
       "symbols": [
         "GateInfo",

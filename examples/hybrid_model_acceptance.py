@@ -9,6 +9,7 @@ import time
 import torch
 
 import flagquantum as fq
+import flagquantum.training as fqt
 
 
 def acceptance_summary(
@@ -34,7 +35,7 @@ def acceptance_summary(
 
 
 def classifier_run(steps: int) -> dict[str, object]:
-    fq.seed_everything(480)
+    fqt.seed_everything(480)
     model = fq.HybridQuantumClassifier(
         deployment_binding={"provider": "local", "target": "simulator"}
     )
@@ -62,7 +63,7 @@ def classifier_run(steps: int) -> dict[str, object]:
 
 
 def energy_run(steps: int, backend: str) -> dict[str, object]:
-    fq.seed_everything(481)
+    fqt.seed_everything(481)
     policy = fq.RuntimePolicy(
         execution_options=fq.ExecutionOptions(
             backend=backend, allow_backend_fallback=False

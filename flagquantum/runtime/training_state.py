@@ -10,13 +10,15 @@ import random
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, TypedDict
 
 import torch
 
 from ..core.ir import IR_VERSION, ensure_circuit_ir
 
 TRAINING_STATE_VERSION = "flagquantum.training_state.v1"
+TRAINING_RESTORE_SCHEMA = "flagquantum.training_checkpoint_restore"
+TRAINING_RESTORE_VERSION = "1.0"
 
 
 class TrainingStateError(RuntimeError):
@@ -95,6 +97,19 @@ class SeedContract:
         generator = torch.Generator(device=device)
         generator.manual_seed(self.sampling_seed)
         return generator
+
+
+class TrainingCheckpointRestore(TypedDict):
+    """Versioned metadata returned after a successful checkpoint restore."""
+
+    schema: str
+    version: str
+    step: int
+    seed: SeedContract
+    precision: PrecisionPolicy
+    runtime_plan: object | None
+    topology: Mapping[str, object]
+    ir_hash: str
 
 
 def seed_everything(
@@ -261,7 +276,7 @@ def save_training_checkpoint(
     optimizer: torch.optim.Optimizer | None,
     seed: SeedContract,
     precision: PrecisionPolicy,
-    runtime_plan: Any | None = None,
+    runtime_plan: object | None = None,
     step: int = 0,
 ) -> Path:
     target = Path(path)
@@ -304,7 +319,7 @@ def load_training_checkpoint(
     module: torch.nn.Module,
     optimizer: torch.optim.Optimizer | None,
     precision: PrecisionPolicy | None = None,
-) -> dict[str, Any]:
+) -> TrainingCheckpointRestore:
     payload = torch.load(Path(path), map_location="cpu", weights_only=True)
     if payload.get("version") != TRAINING_STATE_VERSION:
         raise TrainingStateError(
@@ -357,6 +372,8 @@ def load_training_checkpoint(
         _restore_rng(original_rng)
         raise
     return {
+        "schema": TRAINING_RESTORE_SCHEMA,
+        "version": TRAINING_RESTORE_VERSION,
         "step": int(payload["step"]),
         "seed": seed,
         "precision": saved_precision,
@@ -397,6 +414,7 @@ __all__ = [
     "SeedContract",
     "TopologyMismatchError",
     "TrainingStateError",
+    "TrainingCheckpointRestore",
     "assert_finite_training",
     "load_training_checkpoint",
     "save_training_checkpoint",

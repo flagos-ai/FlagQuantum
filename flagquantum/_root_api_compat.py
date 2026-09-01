@@ -22,6 +22,9 @@ MIGRATED_ROOT_EXPORTS = {
     "MPSReverseCheckpointPolicy": "flagquantum.experimental.mps.MPSReverseCheckpointPolicy",
     "NoiseModel": "flagquantum.noise.NoiseModel",
     "PauliMeasurementPlan": "flagquantum.deployment.PauliMeasurementPlan",
+    "PrecisionPolicy": "flagquantum.training.PrecisionPolicy",
+    "PrecisionPolicyError": "flagquantum.training.PrecisionPolicyError",
+    "SeedContract": "flagquantum.training.SeedContract",
     "build_mps_release_artifact": "flagquantum.experimental.mps.build_mps_release_artifact",
     "compile_for_backend": "flagquantum.compiler.compile_for_backend",
     "create_deployment_package": "flagquantum.deployment.create_deployment_package",
@@ -46,13 +49,20 @@ MIGRATED_ROOT_EXPORTS = {
     "tensor_network_amplitude": "flagquantum.backends.tensor_network.tensor_network_amplitude",
     "tensor_network_amplitudes": "flagquantum.backends.tensor_network.tensor_network_amplitudes",
     "tensor_network_expectations": "flagquantum.backends.tensor_network.tensor_network_expectations",
+    "TopologyMismatchError": "flagquantum.training.TopologyMismatchError",
+    "TrainingStateError": "flagquantum.training.TrainingStateError",
     "train_distributed_mps": "flagquantum.experimental.distributed.train_distributed_mps",
     "train_distributed_statevector": "flagquantum.experimental.distributed.train_distributed_statevector",
     "validate_production_mps_workload": "flagquantum.experimental.mps.validate_production_mps_workload",
+    "NonFiniteTrainingError": "flagquantum.training.NonFiniteTrainingError",
+    "seed_everything": "flagquantum.training.seed_everything",
 }
 
 REMOVED_ROOT_EXPORTS = {
     "get_version": "flagquantum.__version__",
     "hello": None,
     "info": None,
+    "assert_finite_training": "Module.execute(..., correctness_debug=True)",
+    "load_training_checkpoint": "Module.load_checkpoint(...) or an application-owned checkpoint loop",
+    "save_training_checkpoint": "Module.save_checkpoint(...) or an application-owned checkpoint loop",
 }

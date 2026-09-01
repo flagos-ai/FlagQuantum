@@ -10,6 +10,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
+import flagquantum.training as fqt
 
 
 def build(parameters: torch.Tensor) -> fq.Circuit:
@@ -38,13 +39,13 @@ def main() -> None:
     try:
         plan = fq.plan_hybrid_parallel(world_size=2, state_parallel_size=2)
         module, optimizer = module_and_optimizer(plan)
-        seed = fq.seed_everything(314)
+        seed = fqt.seed_everything(314)
         value = module().sum()
         value.backward()
         optimizer.step()
         saved_parameters = module.parameters_tensor.detach().clone()
         path = args.checkpoint_dir / f"rank-{rank}.pt"
-        module.save_checkpoint(path, optimizer=optimizer, seed=seed, step=1)
+        module.save_checkpoint(path, optimizer=optimizer, seed=seed.seed, step=1)
         expected_random = torch.rand(3)
 
         restored, restored_optimizer = module_and_optimizer(plan)

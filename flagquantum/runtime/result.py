@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 EXECUTION_RESULT_SUMMARY_SCHEMA = "flagquantum.execution_result.summary"
 EXECUTION_RESULT_SUMMARY_VERSION = "1.0"
+EXECUTION_DIAGNOSTICS_SCHEMA = "flagquantum.execution_diagnostics"
+EXECUTION_DIAGNOSTICS_VERSION = "1.0"
 MeasurementValue: TypeAlias = torch.Tensor | list[dict[str | int, int]]
 
 
@@ -150,6 +152,13 @@ class ExecutionResult:
             return self.samples
         raise RuntimeError("execution result does not contain samples")
 
+    def require_value(self) -> torch.Tensor:
+        """Return the differentiable module value or fail when it is absent."""
+
+        if isinstance(self.value, torch.Tensor):
+            return self.value
+        raise RuntimeError("execution result does not contain a module value")
+
     def measurement(self, selector: int | str) -> MeasurementResult:
         """Return one requested measurement by position, name, or unique kind."""
 
@@ -213,6 +222,22 @@ class ExecutionResult:
                 "execution result does not retain a backend-native output"
             )
         return native
+
+    def diagnostics(self) -> dict[str, object]:
+        """Return the versioned diagnostics envelope.
+
+        Keys inside each diagnostic section remain additive and are not a
+        substitute for stable result accessors.
+        """
+
+        return {
+            "schema": EXECUTION_DIAGNOSTICS_SCHEMA,
+            "version": EXECUTION_DIAGNOSTICS_VERSION,
+            "metrics": dict(self.metrics),
+            "provenance": dict(self.provenance),
+            "runtime": dict(self.runtime),
+            "compatibility": dict(self.compatibility),
+        }
 
     def summary(self) -> dict[str, Any]:
         runtime = dict(self.runtime)
@@ -280,6 +305,8 @@ def normalize_execution_result(
 
 
 __all__ = (
+    "EXECUTION_DIAGNOSTICS_SCHEMA",
+    "EXECUTION_DIAGNOSTICS_VERSION",
     "EXECUTION_RESULT_SUMMARY_SCHEMA",
     "EXECUTION_RESULT_SUMMARY_VERSION",
     "ExecutionResult",
