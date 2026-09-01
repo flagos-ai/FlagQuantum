@@ -391,14 +391,14 @@ Package trained circuits, export provider formats, and route them through deploy
 Implement and certify optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental`
+- **Public API:** `flagquantum.interop`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `adapter_defined`
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/development/INTEROP_ADAPTERS.md)
-- **Known boundary:** The adapter API and conformance schema are experimental and currently have two registered implementations, PennyLane and Qiskit. Common conformance proves contract shape, IR round trips, and declared loss handling; it does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers.
+- **Known boundary:** The framework-neutral protocol is candidate-stable pending API-owner approval; PennyLane and Qiskit implementations remain experimental. Common conformance does not install dependencies, sandbox third-party Python, certify provider hardware or numerical equivalence, or permit external objects to enter runtime and accelerator layers.
 
 ### PennyLane QuantumScript interoperability
 
@@ -419,7 +419,7 @@ Translate supported immutable PennyLane QuantumScript programs to versioned Flag
 Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental.interop.from_qiskit`, `fq.experimental.interop.to_qiskit`
+- **Public API:** `flagquantum.interop.qiskit.from_qiskit`, `flagquantum.interop.qiskit.to_qiskit`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `symbolic_parameters_only`

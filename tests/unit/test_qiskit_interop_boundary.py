@@ -36,10 +36,11 @@ assert 'flagquantum.runtime.dynamic' not in sys.modules
 
 def test_experimental_convenience_exports_delegate_to_interop() -> None:
     import flagquantum as fq
-    from flagquantum.interop.qiskit import from_qiskit, to_qiskit
+    import flagquantum.interop.pennylane as pennylane
+    import flagquantum.interop.qiskit as qiskit
 
-    assert fq.experimental.interop.from_qiskit is from_qiskit
-    assert fq.experimental.interop.to_qiskit is to_qiskit
+    assert fq.experimental.interop.qiskit is qiskit
+    assert fq.experimental.interop.pennylane is pennylane
 
 
 def test_missing_qiskit_fails_only_when_conversion_is_requested(monkeypatch) -> None:

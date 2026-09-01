@@ -29,8 +29,8 @@ from .contracts import (
     InteropExportResult,
     InteropImportResult,
 )
+from .registry import DEFAULT_INTEROP_REGISTRY as DEFAULT_INTEROP_REGISTRY
 from .registry import (
-    DEFAULT_INTEROP_REGISTRY,
     InteropAdapterSpec,
     InteropRegistry,
     InteropRegistryError,
@@ -39,7 +39,6 @@ from .registry import (
 )
 
 __all__ = (
-    "DEFAULT_INTEROP_REGISTRY",
     "INTEROP_API_VERSION",
     "InteropAdapter",
     "InteropAdapterSpec",
@@ -59,8 +58,6 @@ __all__ = (
     "InteropRoundTripCase",
     "available_adapters",
     "get_adapter",
-    "pennylane",
-    "qiskit",
     "run_adapter_conformance",
     "semantic_fingerprint",
 )

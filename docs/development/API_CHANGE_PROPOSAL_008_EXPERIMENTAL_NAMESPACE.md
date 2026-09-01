@@ -42,7 +42,7 @@ fq.experimental
 ```python
 fq.experimental.dynamic.run_dynamic(...)
 fq.experimental.distributed.train_distributed_statevector(...)
-fq.experimental.interop.from_qiskit(...)
+fq.experimental.interop.qiskit.from_qiskit(...)
 fq.experimental.numerics.run_double_single_conformance(...)
 fq.experimental.simulation.run_tebd(...)
 ```

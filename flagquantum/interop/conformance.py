@@ -330,10 +330,11 @@ def run_adapter_conformance(
     round_trip_cases: Sequence[InteropRoundTripCase],
     *,
     rejection_cases: Sequence[InteropRejectionCase] = (),
-    fingerprint: SemanticFingerprint = semantic_fingerprint,
+    fingerprint: SemanticFingerprint | None = None,
 ) -> InteropConformanceResult:
     """Run the common identity, round-trip, and fail-closed adapter contract."""
 
+    fingerprint = semantic_fingerprint if fingerprint is None else fingerprint
     names = [case.name for case in round_trip_cases] + [
         case.name for case in rejection_cases
     ]

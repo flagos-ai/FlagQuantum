@@ -70,7 +70,7 @@
       "run_qiskit_aer_qasm3_round_trip"
     ],
     "execution": ["run_advanced"],
-    "interop": ["from_qiskit", "to_qiskit"],
+    "interop": ["pennylane", "qiskit"],
     "mps": [
       "MPSAcceptanceGates",
       "MPSCrossoverMeasurement",

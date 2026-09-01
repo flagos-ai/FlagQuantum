@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_review",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_009_INTEROP_PROTOCOL.md",
+  "target": "first-public-alpha",
+  "implementation_authorized": true,
+  "root_manifest_change": false,
+  "stable_extension": {
+    "namespace": "flagquantum.interop",
+    "additions": [
+      "INTEROP_API_VERSION",
+      "InteropAdapter",
+      "InteropAdapterSpec",
+      "InteropConformanceCaseResult",
+      "InteropConformanceResult",
+      "InteropConformanceViolation",
+      "InteropConversionError",
+      "InteropConversionIssue",
+      "InteropConversionReport",
+      "InteropDependencyError",
+      "InteropError",
+      "InteropExportResult",
+      "InteropImportResult",
+      "InteropRejectionCase",
+      "InteropRegistry",
+      "InteropRegistryError",
+      "InteropRoundTripCase",
+      "available_adapters",
+      "get_adapter",
+      "run_adapter_conformance",
+      "semantic_fingerprint"
+    ],
+    "new_namespace_only": [
+      "INTEROP_API_VERSION",
+      "InteropAdapter",
+      "InteropAdapterSpec",
+      "InteropConformanceCaseResult",
+      "InteropConformanceResult",
+      "InteropConformanceViolation",
+      "InteropConversionError",
+      "InteropConversionIssue",
+      "InteropConversionReport",
+      "InteropDependencyError",
+      "InteropError",
+      "InteropExportResult",
+      "InteropImportResult",
+      "InteropRejectionCase",
+      "InteropRegistry",
+      "InteropRegistryError",
+      "InteropRoundTripCase",
+      "available_adapters",
+      "get_adapter",
+      "run_adapter_conformance",
+      "semantic_fingerprint"
+    ]
+  },
+  "public_signatures": {
+    "available_adapters": "() -> 'tuple[str, ...]'",
+    "get_adapter": "(name: 'str') -> 'InteropAdapter'",
+    "run_adapter_conformance": "(adapter: 'Any', round_trip_cases: 'Sequence[InteropRoundTripCase]', *, rejection_cases: 'Sequence[InteropRejectionCase]' = (), fingerprint: 'SemanticFingerprint | None' = None) -> 'InteropConformanceResult'",
+    "semantic_fingerprint": "(program: 'Any', *, semantic_metadata: 'Mapping[str, Any] | None' = None) -> 'str'"
+  },
+  "record_fields": {
+    "InteropAdapterSpec": ["name", "module", "attribute", "dependency_extra", "api_version", "experimental"],
+    "InteropConversionIssue": ["code", "message", "severity", "operation_index", "operation_name"],
+    "InteropConversionReport": ["adapter", "direction", "framework_version", "issues"],
+    "InteropImportResult": ["ir", "report"],
+    "InteropExportResult": ["artifact", "report"],
+    "InteropRoundTripCase": ["name", "program"],
+    "InteropRejectionCase": ["name", "direction", "value", "expected_issue_code", "lossy_supported"]
+  },
+  "protocol_semantics": {
+    "api_version": "1.0",
+    "boundary": "CircuitIR control plane only",
+    "external_objects_enter_runtime": false,
+    "external_dependencies_are_optional": true,
+    "registry_is_immutable": true,
+    "dependency_import_is_lazy": true,
+    "strict_conversion_is_fail_closed": true,
+    "lossy_conversion_requires_explicit_opt_in": true,
+    "adapter_implementations_stable": false,
+    "qiskit_adapter_maturity": "experimental",
+    "pennylane_adapter_maturity": "experimental"
+  },
+  "error_contract": {
+    "InteropError": "FlagQuantumError",
+    "InteropDependencyError": ["InteropError", "ImportError"],
+    "InteropConversionError": ["InteropError", "ValueError"],
+    "InteropRegistryError": ["InteropError", "RuntimeError"]
+  },
+  "excluded_from_stable_extension": [
+    "DEFAULT_INTEROP_REGISTRY",
+    "pennylane",
+    "qiskit",
+    "all adapter-specific symbols"
+  ],
+  "rules": {
+    "candidate_is_frozen_contract": false,
+    "whole_api_freeze_implied": false,
+    "adapter_stabilization_requires_separate_proposal": true
+  }
+}

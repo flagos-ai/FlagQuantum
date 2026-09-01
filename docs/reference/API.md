@@ -363,8 +363,8 @@ pytest -m braket
 
 ### Interoperability adapter contract
 
-External framework adapters implement one experimental, framework-neutral
-contract under `flagquantum.interop`. The default registry stores import-safe
+External framework adapters implement one candidate-stable, framework-neutral
+protocol under `flagquantum.interop`. The default registry stores import-safe
 descriptors and loads an adapter implementation only when requested:
 
 ```python
@@ -382,8 +382,10 @@ are immutable: adding a descriptor returns a new registry and cannot alter the
 process-wide default. Resolving the Qiskit descriptor imports no Qiskit module;
 the external dependency is loaded only when conversion is requested. Adapter
 API mismatches and registered/loaded identity mismatches fail before use.
-`DEFAULT_INTEROP_REGISTRY.to_dict()` provides a stable machine-readable
-inventory for tooling and review without probing or importing dependencies.
+`InteropRegistry.to_dict()` provides a machine-readable inventory for tooling
+and review without probing or importing dependencies. The default registry
+instance and each Qiskit/PennyLane adapter remain experimental implementation
+details; they are not part of the candidate-stable export list.
 
 ### PennyLane QuantumScript interoperability
 
@@ -428,9 +430,9 @@ ir = from_qiskit(qiskit_circuit)
 round_trip = to_qiskit(ir)
 ```
 
-These existing Qiskit-specific functions and result types remain compatible;
-they now implement the common adapter contract rather than defining a parallel
-framework architecture.
+These Qiskit-specific functions and result types implement the common adapter
+protocol rather than defining a parallel framework architecture. They remain
+experimental and have their own tested dependency-version window.
 
 Both directions fail closed when an operation, control-flow construct, or
 parameter expression cannot be represented losslessly. Use `import_qiskit()`

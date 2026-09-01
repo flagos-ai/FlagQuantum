@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from ..core.ir import CircuitIR
+from ..errors import FlagQuantumError
 
 INTEROP_API_VERSION = "1.0"
 IssueSeverity = Literal["info", "warning", "error"]
@@ -87,8 +88,10 @@ class InteropExportResult:
     report: InteropConversionReport
 
 
-class InteropError(Exception):
+class InteropError(FlagQuantumError):
     """Base error for optional interoperability boundaries."""
+
+    category = "interop"
 
 
 class InteropDependencyError(InteropError, ImportError):

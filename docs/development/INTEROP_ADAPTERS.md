@@ -1,6 +1,7 @@
 # Interoperability Adapter Development
 
-FlagQuantum framework adapters are optional control-plane translators. They
+FlagQuantum framework adapters implement the candidate-stable v1 protocol as
+optional control-plane translators. They
 convert external objects at the versioned `CircuitIR` boundary and must not
 enter simulation, training, accelerator, or distributed runtime layers.
 
@@ -9,6 +10,9 @@ enter simulation, training, accelerator, or distributed runtime layers.
 Each adapter lives under `flagquantum.interop.<name>` and implements
 `InteropAdapter`. Its descriptor belongs in the immutable lazy registry; the
 descriptor may be imported without importing the external framework.
+
+Protocol stability does not stabilize an adapter implementation. Each adapter
+retains its own dependency window, operation mapping, issue codes and maturity.
 
 The adapter dependency must have its own optional extra and be classified as
 `interop` in `dependency-policy.toml`. Importing `flagquantum`,

@@ -7,10 +7,10 @@ from importlib import import_module
 from types import MappingProxyType
 from typing import Any, Mapping
 
-from .contracts import INTEROP_API_VERSION, InteropAdapter
+from .contracts import INTEROP_API_VERSION, InteropAdapter, InteropError
 
 
-class InteropRegistryError(RuntimeError):
+class InteropRegistryError(InteropError, RuntimeError):
     """Raised before use when an adapter registration is invalid."""
 
 
