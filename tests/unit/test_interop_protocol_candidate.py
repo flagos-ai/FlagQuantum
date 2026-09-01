@@ -21,13 +21,15 @@ def _load() -> dict[str, object]:
     return json.loads(CONTRACT.read_text(encoding="utf-8"))
 
 
-def test_interop_protocol_is_candidate_stable_not_frozen() -> None:
+def test_interop_protocol_is_frozen_without_freezing_adapters() -> None:
     candidate = _load()
 
-    assert candidate["status"] == "implemented_pending_review"
+    assert candidate["status"] == "frozen"
     assert candidate["implementation_authorized"] is True
     assert candidate["root_manifest_change"] is False
-    assert candidate["rules"]["candidate_is_frozen_contract"] is False
+    assert candidate["rules"]["candidate_is_frozen_contract"] is True
+    assert candidate["rules"]["whole_api_freeze_implied"] is False
+    assert candidate["approval"]["approved_at"] == "2026-09-01"
     assert candidate["protocol_semantics"]["adapter_implementations_stable"] is False
 
 

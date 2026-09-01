@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Implemented, pending API-owner review — 已实现，尚未冻结。**
+**Governance baseline frozen — 治理基线已批准并冻结。**
 
 - 目标版本：首次公开 alpha；
 - 影响范围：仅 `flagquantum.experimental` 的公开路由；
@@ -10,7 +10,8 @@
 - 功能实现删除：无；
 - 机器可读契约：`contracts/experimental-namespace-v1-candidate.json`；
 - 实施授权：API owner 于 2026-09-01 通过明确指令要求执行 experimental 瘦身；
-- 本提案不冻结任何 experimental 功能，也不改变 Proposal 002–007 的冻结状态。
+- API owner 于 2026-09-01 通过 `approve 008-010` 明确批准本治理基线；
+- 本批准不冻结任何二级 experimental 功能，也不改变 Proposal 002–007 的冻结状态。
 
 ## 问题
 
@@ -64,7 +65,7 @@ Experimental 不提供兼容性保证，但不能无限期停留：
 - [x] 仓库测试、示例、工具和文档不再使用扁平实验入口；
 - [x] 稳定根 `fq.__all__` 不变；
 - [x] 机器契约逐项锁定当前分类并声明不兼容承诺；
-- [ ] API owner 决定是否批准该分类作为首次公开 alpha 的 experimental 结构。
+- [x] API owner 批准该分类作为首次公开 alpha 的 experimental 治理基线。
 
 ## 下一阶段：稳定化漏斗
 

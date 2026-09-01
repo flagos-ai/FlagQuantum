@@ -2,13 +2,14 @@
 
 ## 状态
 
-**Implemented, pending API-owner review — 已实现，尚未冻结。**
+**Frozen by API owner — 候选稳定契约已批准并冻结。**
 
 - 候选稳定命名空间：`flagquantum.dynamic`；
 - 候选稳定名称：仅 `DynamicCircuit`；
 - 根 API 变化：无；
 - 机器可读契约：`contracts/dynamic-circuit-v1-candidate.json`；
 - `run_dynamic`、provider、dialect 和原生结果继续 experimental；
+- API owner 于 2026-09-01 通过 `approve 008-010` 明确批准本契约；
 - 不修改已由 review packet 哈希绑定的总 API 候选清单。
 
 ## 决策
@@ -54,4 +55,4 @@ provenance 和 mid-circuit 数据语义。
 - [x] 错误类型进入稳定错误体系；
 - [x] stable root 不增加名称；
 - [x] 执行、部署和适配器实现未被误标为稳定；
-- [ ] API owner 批准冻结 DynamicCircuit 构建契约。
+- [x] API owner 批准冻结 DynamicCircuit 构建契约。

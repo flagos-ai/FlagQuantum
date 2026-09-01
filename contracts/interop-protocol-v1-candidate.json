@@ -1,10 +1,15 @@
 {
   "schema_version": "1.0",
-  "status": "implemented_pending_review",
+  "status": "frozen",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_009_INTEROP_PROTOCOL.md",
   "target": "first-public-alpha",
   "implementation_authorized": true,
   "root_manifest_change": false,
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-09-01",
+    "approved_scope": "framework-neutral interoperability protocol contract"
+  },
   "stable_extension": {
     "namespace": "flagquantum.interop",
     "additions": [
@@ -95,8 +100,9 @@
     "all adapter-specific symbols"
   ],
   "rules": {
-    "candidate_is_frozen_contract": false,
+    "candidate_is_frozen_contract": true,
     "whole_api_freeze_implied": false,
-    "adapter_stabilization_requires_separate_proposal": true
+    "adapter_stabilization_requires_separate_proposal": true,
+    "future_breaking_changes_require_api_owner_approval": true
   }
 }

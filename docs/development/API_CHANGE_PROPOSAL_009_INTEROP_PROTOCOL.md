@@ -2,13 +2,14 @@
 
 ## 状态
 
-**Implemented, pending API-owner review — 已实现，尚未冻结。**
+**Frozen by API owner — 候选稳定契约已批准并冻结。**
 
 - 候选稳定命名空间：`flagquantum.interop`；
 - 根级名称变化：无；
 - 机器可读契约：`contracts/interop-protocol-v1-candidate.json`；
 - 实施授权：API owner 于 2026-09-01 要求继续执行稳定化漏斗；
 - Qiskit、PennyLane 具体适配器仍为 experimental；
+- API owner 于 2026-09-01 通过 `approve 008-010` 明确批准本契约；
 - 本提案不代表整个首次公开 Alpha API 已冻结。
 
 ## 决策
@@ -60,4 +61,4 @@ versioned CircuitIR
 - [x] 无第三方依赖环境可以导入、发现并审查 adapter；
 - [x] Qiskit 2.0/2.5 与 PennyLane 0.44/0.45 的适配器证据继续独立运行；
 - [x] 具体适配器未被误标为稳定；
-- [ ] API owner 批准冻结框架无关 interop protocol。
+- [x] API owner 批准冻结框架无关 interop protocol。

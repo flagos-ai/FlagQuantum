@@ -1,11 +1,16 @@
 {
   "schema_version": "1.0",
-  "status": "implemented_pending_review",
+  "status": "governance_baseline_frozen",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_008_EXPERIMENTAL_NAMESPACE.md",
   "target": "first-public-alpha",
   "implementation_authorized": true,
   "root_manifest_change": false,
   "compatibility_guarantee": false,
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-09-01",
+    "approved_scope": "experimental namespace governance baseline only"
+  },
   "top_level_namespaces": [
     "distributed",
     "dynamic",
@@ -148,6 +153,9 @@
     "flat_feature_exports_at_experimental_root": 0,
     "implementation_modules_removed": false,
     "stable_core_changed": false,
-    "candidate_is_frozen_contract": false
+    "governance_baseline_is_frozen": true,
+    "candidate_is_frozen_contract": false,
+    "nested_experimental_features_are_frozen": false,
+    "future_governance_breaking_changes_require_api_owner_approval": true
   }
 }

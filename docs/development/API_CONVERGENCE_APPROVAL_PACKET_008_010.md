@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-**Awaiting API-owner decision — 等待逐项审批。**
+**Approved by API owner on 2026-09-01 — 三项审批已经记录。**
 
 本审批包只覆盖：
 
@@ -11,7 +11,11 @@
 - Proposal 010：DynamicCircuit 构建契约。
 
 机器记录为 `contracts/api-convergence-review-packet-008-010.json`。其中 SHA-256
-绑定本次审阅的精确契约和提案文档。任何 hash 变化都必须重新生成审批包。
+同时保留审阅前 SHA-256 和审批后 SHA-256，绑定审阅对象与最终冻结记录。后续任何受保护
+内容变化都必须重新提案并取得 API owner 批准。
+
+审批指令为 `approve 008-010`。Proposal 008 只冻结治理基线；Proposal 009、010 冻结
+候选稳定契约。本审批不构成整体 first-public-alpha freeze。
 
 ## 逐项建议
 
@@ -47,16 +51,8 @@ statistics 与 provenance 的可用性不同。当前原生结果不适合永久
 - Ruff、format、文档 source-of-truth 与候选契约测试通过；
 - 既有 Proposal 002–007 审批包和签署的 public candidate 哈希保持不变。
 
-## 可直接使用的审批语句
+## 审批边界
 
-若三项都同意：
-
-> 我批准 `api-convergence-review-packet-008-010.json` 所绑定的 Proposal 008 治理
-> 基线，以及 Proposal 009、010 候选稳定契约冻结。本批准不等于整体 first-public-alpha
-> freeze，不稳定二级 experimental 功能、第三方 adapter 实现或 DynamicExecutionResult。
-
-也可以只批准其中一项或两项，例如：
-
-> 我批准 Proposal 009；Proposal 008、010 暂缓。
-
-“do”“continue”或未回复不构成批准。
+未获批准且仍保持 experimental 的内容包括：二级 experimental 符号、Qiskit/PennyLane
+适配器实现、`DynamicExecutionResult`、`run_dynamic`、路由、部署、provider，以及硬件、
+性能和分布式认证。整体 first-public-alpha freeze 仍需单独审批。
