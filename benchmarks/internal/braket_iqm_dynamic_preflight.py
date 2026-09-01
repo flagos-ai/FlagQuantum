@@ -7,6 +7,7 @@ import os
 
 import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic import create_dynamic_deployment_package
 
 
 def main() -> None:
@@ -22,7 +23,7 @@ def main() -> None:
     circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
-    package = fq.experimental.dynamic.create_dynamic_deployment_package(
+    package = create_dynamic_deployment_package(
         circuit,
         backend=provider.backend,
         name="iqm_feedback",

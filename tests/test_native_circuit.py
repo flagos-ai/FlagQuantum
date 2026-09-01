@@ -424,9 +424,7 @@ def test_native_planner_analysis_and_execution_plan():
     circuit.h(0).cx(0, 1).rz(2, theta=0.2).cx(1, 2)
 
     analysis = circuit.analysis()
-    plan = fq.experimental.planning.plan_advanced(
-        circuit, bsz=2, world_size=2, memory_limit_bytes=1
-    )
+    plan = fqxp.plan_advanced(circuit, bsz=2, world_size=2, memory_limit_bytes=1)
 
     assert analysis.n_wires == 3
     assert analysis.n_instructions == 4
@@ -446,9 +444,7 @@ def test_native_planner_accepts_coupling_map():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
 
-    plan = fq.experimental.planning.plan_advanced(
-        circuit, coupling_map=fq.CouplingMap.line(3)
-    )
+    plan = fqxp.plan_advanced(circuit, coupling_map=fq.CouplingMap.line(3))
 
     assert plan.analysis.gate_counts["swap"] == 2
     assert plan.analysis.gate_counts["cx"] == 1
@@ -1023,7 +1019,7 @@ def test_distributed_mode_alias_and_plan_name_are_explicit_statevector():
         world_size=1,
         return_plan=True,
     )
-    planned = fq.experimental.planning.plan_advanced(circuit, world_size=2)
+    planned = fqxp.plan_advanced(circuit, world_size=2)
 
     assert alias_plan.state_mode == "statevector"
     assert explicit_plan.state_mode == "statevector"

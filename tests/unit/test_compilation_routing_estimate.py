@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.compilation.planner as fqxp
 from flagquantum.compilation.routing import (
     CouplingMap,
     estimate_routing_cost,
@@ -72,7 +73,7 @@ def test_auto_strategy_selects_persistent_when_it_reduces_swaps() -> None:
         coupling_map=coupling,
         routing_strategy="auto",
     )
-    plan = fq.experimental.planning.plan_advanced(
+    plan = fqxp.plan_advanced(
         circuit,
         coupling_map=coupling,
         routing_strategy="auto",

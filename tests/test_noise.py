@@ -7,7 +7,9 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+import flagquantum.compilation.planner as fqxp
 import flagquantum.noise as fqn
+from flagquantum.runtime.execution import run_advanced
 
 
 def test_batched_statevector_trajectory_is_batch_size_invariant():
@@ -110,9 +112,7 @@ def test_public_run_reports_noisy_statevector_runtime_mode():
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
 
-    result = fq.experimental.execution.run_advanced(
-        circuit, noise_model=model, trajectories=4, seed=3
-    )
+    result = run_advanced(circuit, noise_model=model, trajectories=4, seed=3)
 
     assert result.runtime["mode"] == "noisy_statevector"
     assert result.plan.noisy_execution_plan.noise_model_identity == model.identity
@@ -208,7 +208,7 @@ def test_public_batched_statevector_plan_records_adaptive_policy():
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
 
-    result = fq.experimental.execution.run_advanced(
+    result = run_advanced(
         circuit,
         noise_model=model,
         trajectories=20,
@@ -625,9 +625,7 @@ def test_structured_noisy_execution_plan_separates_evolution_semantics():
     from flagquantum.compilation.noise import build_noisy_execution_plan
 
     circuit = fq.Circuit(2).h(0).cx(0, 1)
-    execution_plan = fq.experimental.planning.plan_advanced(
-        circuit, state_mode="density_matrix"
-    )
+    execution_plan = fqxp.plan_advanced(circuit, state_mode="density_matrix")
     plan = build_noisy_execution_plan(
         execution_plan,
         representation="density_matrix",
@@ -645,9 +643,7 @@ def test_structured_noisy_execution_plan_separates_evolution_semantics():
 def test_quantum_trajectory_plan_requires_sampling_controls():
     from flagquantum.compilation.noise import build_noisy_execution_plan
 
-    execution_plan = fq.experimental.planning.plan_advanced(
-        fq.Circuit(1), state_mode="mps"
-    )
+    execution_plan = fqxp.plan_advanced(fq.Circuit(1), state_mode="mps")
     with pytest.raises(
         ValueError, match="quantum trajectory evolution requires a trajectory plan"
     ):
@@ -680,7 +676,7 @@ def test_density_noise_executor_is_resolved_through_registry():
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
     lowered = lower_noise_model(circuit, model)
-    execution_plan = fq.experimental.planning.plan_advanced(circuit, noise_model=model)
+    execution_plan = fqxp.plan_advanced(circuit, noise_model=model)
     noisy_plan = build_noisy_execution_plan(
         execution_plan,
         representation="density_matrix",
@@ -758,7 +754,7 @@ def test_noise_model_lowers_to_unified_ir_and_planner():
     model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
 
     lowered = fq.lower_noise_model(circuit, model)
-    plan = fq.experimental.planning.plan_advanced(circuit, noise_model=model)
+    plan = fqxp.plan_advanced(circuit, noise_model=model)
 
     assert [inst.name for inst in lowered] == ["x", "bit_flip"]
     assert lowered.instructions[1].metadata["is_channel"] is True

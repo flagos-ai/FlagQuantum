@@ -4,6 +4,7 @@ import torch
 import flagquantum as fq
 import flagquantum.compilation.planner as fqxp
 import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
+from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
@@ -561,13 +562,9 @@ def test_distributed_runtime_summaries_attach_jax_distributed_plan(monkeypatch):
     circuit = fq.Circuit(4)
     circuit.h(0).cx(1, 2).rz(3, theta=0.2)
 
-    statevector = fq.experimental.execution.run_advanced(
-        circuit, mode="distributed_statevector", device="cpu"
-    )
-    mps = fq.experimental.execution.run_advanced(
-        circuit, mode="distributed_mps", max_bond=4
-    )
-    tn = fq.experimental.execution.run_advanced(
+    statevector = run_advanced(circuit, mode="distributed_statevector", device="cpu")
+    mps = run_advanced(circuit, mode="distributed_mps", max_bond=4)
+    tn = run_advanced(
         circuit, mode="distributed_tensor_network", max_intermediate_size=16
     )
 
@@ -1434,9 +1431,7 @@ def test_jax_sharded_mps_run_mode_uses_development_env_world_size(monkeypatch):
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).cx(1, 2)
 
-    result = fq.experimental.execution.run_advanced(
-        circuit, mode="jax_sharded_mps", max_bond=8
-    )
+    result = run_advanced(circuit, mode="jax_sharded_mps", max_bond=8)
     summary = result.summary()
 
     assert summary["world_size"] == 2
@@ -2213,7 +2208,7 @@ def test_jax_sharded_tensor_network_run_mode_uses_development_env_world_size(
     circuit.h(0).cx(0, 2)
     sliced_label = _first_internal_tn_label(circuit)
 
-    result = fq.experimental.execution.run_advanced(
+    result = run_advanced(
         circuit, mode="jax_sharded_tensor_network", sliced_labels=(sliced_label,)
     )
     summary = result.summary()
@@ -2389,9 +2384,7 @@ def test_local_mps_fast_path_does_not_inherit_distributed_mps_readiness_metadata
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1)
 
-    summary = fq.experimental.execution.run_advanced(
-        circuit, mode="mps", max_bond=4
-    ).summary()
+    summary = run_advanced(circuit, mode="mps", max_bond=4).summary()
 
     assert summary["state_mode"] == "mps"
     assert "mps_backward_readiness_gate" not in summary

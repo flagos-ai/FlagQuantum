@@ -16,7 +16,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-import flagquantum.experimental.distributed as fqxd
+import flagquantum.runtime.distributed.tensor_network_execution as fqxd
 from flagquantum.compilation import load_tn_working_set_calibration
 from flagquantum.runtime.distributed.tensor_network_execution import (
     _persistent_plan_key,

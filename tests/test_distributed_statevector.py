@@ -8,6 +8,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
@@ -538,7 +539,7 @@ def test_run_distributed_attaches_statevector_plan_summary():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    result = fq.experimental.execution.run_advanced(
+    result = run_advanced(
         circuit, mode="distributed_statevector", device="cpu", world_size=1
     )
 

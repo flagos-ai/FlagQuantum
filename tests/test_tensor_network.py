@@ -6,7 +6,8 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.backends.tensor_network as fqbtn
-import flagquantum.experimental.distributed as fqxd
+import flagquantum.compilation.planner as fqxp
+import flagquantum.runtime.distributed.tensor_network_execution as fqxd
 import flagquantum.simulation.tensor as tensor_runtime
 import flagquantum.simulation.tensor_execution as tensor_execution
 from flagquantum.compilation import build_tn_working_set_calibration
@@ -803,7 +804,7 @@ def test_plan_accepts_tensor_network_state_mode():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3)
 
-    plan = fq.experimental.planning.plan_advanced(circuit, state_mode="tensor_network")
+    plan = fqxp.plan_advanced(circuit, state_mode="tensor_network")
 
     assert plan.state_mode == "tensor_network"
     assert plan.recommended_mode == "tensor_network"

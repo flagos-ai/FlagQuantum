@@ -575,13 +575,10 @@ training = fq.train(
 native = fq.backends.mps.run(circuit, options=options)
 ```
 
-实验能力：
+统一执行路径：
 
 ```python
-result = fq.experimental.execution.run_advanced(
-    circuit,
-    mode="distributed_statevector",
-)
+result = fq.run(circuit, options=options)
 ```
 
 ## 7. 五条开源前黄金用户路径

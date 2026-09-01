@@ -8,6 +8,12 @@ import torch
 import flagquantum as fq
 import flagquantum.errors as fqe
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic import (
+    create_dynamic_deployment_package,
+    deploy_dynamic_circuit,
+    export_dynamic_qasm3,
+    route_dynamic_circuit,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -67,7 +73,7 @@ def test_dynamic_ir_round_trip_and_qasm3_export() -> None:
     circuit.conditional("x", 1, classical_bit=1)
 
     restored = fq.CircuitIR.from_json(circuit.to_ir().to_json())
-    qasm = fq.experimental.dynamic.export_dynamic_qasm3(circuit)
+    qasm = export_dynamic_qasm3(circuit)
 
     assert tuple(item.name for item in restored.instructions) == (
         "h",
@@ -108,7 +114,7 @@ def test_multiple_classical_conditions_are_conjoined() -> None:
     circuit.conditional("x", 2, conditions={0: 1, 1: 1})
 
     result = fq.experimental.dynamic.run_dynamic(circuit, shots=4, seed=5)
-    qasm = fq.experimental.dynamic.export_dynamic_qasm3(circuit)
+    qasm = export_dynamic_qasm3(circuit)
 
     assert torch.all(result.samples == 1)
     assert "if (c[0] == true && c[1] == true) { x q[2]; }" in qasm
@@ -168,7 +174,7 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
     circuit.conditional("x", 1, classical_bit=0)
     backend = _dynamic_backend()
 
-    package = fq.experimental.dynamic.create_dynamic_deployment_package(
+    package = create_dynamic_deployment_package(
         circuit,
         backend=backend,
         name="feedback",
@@ -201,7 +207,7 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
             return {"task_id": "dynamic-1", "shots": submitted.shots}
 
     provider = RecordingProvider()
-    result = fq.experimental.dynamic.deploy_dynamic_circuit(
+    result = deploy_dynamic_circuit(
         circuit,
         provider,
         backend=backend,
@@ -216,14 +222,14 @@ def test_dynamic_deployment_rejects_unsupported_capacity_and_batching() -> None:
     circuit.measure(0, classical_bit=0)
 
     with pytest.raises(RuntimeError, match="qubit_capacity"):
-        fq.experimental.dynamic.create_dynamic_deployment_package(
+        create_dynamic_deployment_package(
             circuit,
             backend=_dynamic_backend(n_wires=1),
         )
     batched = DynamicCircuit(1, bsz=2)
     batched.measure(0, classical_bit=0)
     with pytest.raises(ValueError, match="one circuit"):
-        fq.experimental.dynamic.create_dynamic_deployment_package(
+        create_dynamic_deployment_package(
             batched,
             backend=_dynamic_backend(),
         )
@@ -237,7 +243,7 @@ def test_dynamic_routing_preserves_measurement_and_conditional_semantics() -> No
     circuit.reset(0)
     coupling = fq.CouplingMap.line(3)
 
-    routed = fq.experimental.dynamic.route_dynamic_circuit(circuit, coupling)
+    routed = route_dynamic_circuit(circuit, coupling)
     original_result = fq.experimental.dynamic.run_dynamic(circuit, shots=8, seed=17)
     routed_result = fq.experimental.dynamic.run_dynamic(routed, shots=8, seed=17)
 
@@ -270,7 +276,7 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
     )
 
     report = fq.experimental.dynamic.assess_dynamic_backend(circuit, backend)
-    package = fq.experimental.dynamic.create_dynamic_deployment_package(
+    package = create_dynamic_deployment_package(
         circuit,
         backend=backend,
         shots=32,

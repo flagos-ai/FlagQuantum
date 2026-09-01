@@ -159,7 +159,7 @@ title = "Differentiable and sharded MPS training"
 summary = "Train low-entanglement quantum systems with local or rank-owned matrix product states."
 category = "distributed_execution"
 user_goals = ["Train a large low-entanglement system", "Distribute one MPS across several GPUs", "Inspect variable-bond MPS capacity"]
-public_apis = ["flagquantum.backends.run_mps", "flagquantum.experimental.distributed.train_distributed_mps", "flagquantum.experimental.mps.plan_production_mps"]
+public_apis = ["flagquantum.backends.run_mps", "flagquantum.experimental.distributed.train_distributed_mps"]
 runtime_modes = ["mps", "distributed_mps"]
 hardware = ["cpu", "single_gpu", "multi_gpu", "multi_node"]
 gradient_support = "exact"
@@ -467,7 +467,7 @@ title = "PennyLane QuantumScript interoperability"
 summary = "Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter."
 category = "deployment_and_extension"
 user_goals = ["Import a supported PennyLane QuantumScript", "Export static FlagQuantum IR to PennyLane", "Audit semantic loss at the boundary"]
-public_apis = ["flagquantum.dynamic.DynamicCircuit", "experimental.dynamic.run_dynamic", "experimental.dynamic.create_dynamic_deployment_package"]
+public_apis = ["flagquantum.interop.pennylane.from_pennylane", "flagquantum.interop.pennylane.to_pennylane"]
 runtime_modes = ["control_plane_conversion"]
 hardware = ["cpu_control_plane"]
 gradient_support = "bound_parameters_only"
@@ -497,20 +497,20 @@ limitations = "Certified against Qiskit 2.0.x and 2.5.x with Aer 0.17.x through 
 focused_tests = "tests/test_qiskit_interop_conformance.py"
 
 [capabilities.dynamic_circuits]
-title = "Dynamic circuits and IQM Braket preflight"
-summary = "Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with fail-closed hardware preflight."
+title = "Dynamic circuits and backend assessment"
+summary = "Execute dynamic circuits locally and assess whether a backend can support their required features."
 category = "deployment_and_extension"
-user_goals = ["Prototype mid-circuit measurement and feed-forward", "Export dynamic OpenQASM 3", "Preflight an IQM Braket task without submitting it"]
-public_apis = ["experimental"]
-runtime_modes = ["local_statevector_trajectory", "provider_preflight"]
-hardware = ["cpu", "amazon_braket_iqm_unverified"]
+user_goals = ["Prototype mid-circuit measurement and feed-forward", "Assess backend support before execution"]
+public_apis = ["flagquantum.dynamic.DynamicCircuit", "flagquantum.experimental.dynamic.assess_dynamic_backend", "flagquantum.experimental.dynamic.run_dynamic"]
+runtime_modes = ["local_statevector_trajectory", "backend_assessment"]
+hardware = ["cpu", "provider_profiles_unverified"]
 gradient_support = "unsupported"
 distribution_semantics = "single_process"
-quick_start = "examples/braket_iqm_dynamic_preflight.py"
+quick_start = "docs/reference/API.md"
 documentation = "docs/reference/API.md"
 level = "experimental"
 owner = "deployment maintainers"
-limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; execution, native result, routing, deployment, dialects and providers remain experimental. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
+limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
 focused_tests = "tests/test_dynamic_conformance.py"
 
 [capabilities.extension_sdk]

@@ -1,5 +1,3 @@
-"""Unstable execution entry points for backend-specific controls."""
+"""Reserved experimental execution domain with no public entry points."""
 
-from ..runtime.execution import run_advanced
-
-__all__ = ("run_advanced",)
+__all__ = ()

@@ -89,9 +89,8 @@ This catalog is generated from the machine-validated
 | Import a supported Qiskit circuit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Export FlagQuantum IR to Qiskit | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
-| Prototype mid-circuit measurement and feed-forward | Dynamic circuits and IQM Braket preflight | Experimental | [Run example](../../examples/braket_iqm_dynamic_preflight.py) |
-| Export dynamic OpenQASM 3 | Dynamic circuits and IQM Braket preflight | Experimental | [Run example](../../examples/braket_iqm_dynamic_preflight.py) |
-| Preflight an IQM Braket task without submitting it | Dynamic circuits and IQM Braket preflight | Experimental | [Run example](../../examples/braket_iqm_dynamic_preflight.py) |
+| Prototype mid-circuit measurement and feed-forward | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
+| Assess backend support before execution | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
 | Prototype a FlagQuantum extension | Extension SDK | Experimental | [Run example](../../examples/extensions/reference_extensions.py) |
 | Register custom framework behavior | Extension SDK | Experimental | [Run example](../../examples/extensions/reference_extensions.py) |
 
@@ -360,7 +359,7 @@ Observe a fixed multi-rank complex collective matrix through the public FlagOS b
 Train low-entanglement quantum systems with local or rank-owned matrix product states.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.backends.run_mps`, `flagquantum.experimental.distributed.train_distributed_mps`, `flagquantum.experimental.mps.plan_production_mps`
+- **Public API:** `flagquantum.backends.run_mps`, `flagquantum.experimental.distributed.train_distributed_mps`
 - **Runtime modes:** `mps`, `distributed_mps`
 - **Hardware:** `cpu`, `single_gpu`, `multi_gpu`, `multi_node`
 - **Gradient support:** `exact`
@@ -405,7 +404,7 @@ Implement and certify optional external-framework conversion behind one immutabl
 Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.dynamic.DynamicCircuit`, `fq.experimental.dynamic.run_dynamic`, `fq.experimental.dynamic.create_dynamic_deployment_package`
+- **Public API:** `flagquantum.interop.pennylane.from_pennylane`, `flagquantum.interop.pennylane.to_pennylane`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `bound_parameters_only`
@@ -428,19 +427,19 @@ Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQ
 - **Documentation:** [guide](../../docs/reference/API.md)
 - **Known boundary:** Certified against Qiskit 2.0.x and 2.5.x with Aer 0.17.x through an executable operation, wire-order, statevector, classical-bit, and round-trip contract. Qiskit control flow and arbitrary ParameterExpression import are rejected; named or multiple registers require explicit lossy flattening; custom multi-qubit unitary matrices remain blocked until basis ordering is specified. Conversion does not make Qiskit a runtime dependency or certify any provider hardware.
 
-### Dynamic circuits and IQM Braket preflight
+### Dynamic circuits and backend assessment
 
-Execute dynamic circuits locally and prepare sealed IQM OpenQASM 3 programs with fail-closed hardware preflight.
+Execute dynamic circuits locally and assess whether a backend can support their required features.
 
 - **Maturity:** Experimental
-- **Public API:** `fq.experimental`
-- **Runtime modes:** `local_statevector_trajectory`, `provider_preflight`
-- **Hardware:** `cpu`, `amazon_braket_iqm_unverified`
+- **Public API:** `flagquantum.dynamic.DynamicCircuit`, `flagquantum.experimental.dynamic.assess_dynamic_backend`, `flagquantum.experimental.dynamic.run_dynamic`
+- **Runtime modes:** `local_statevector_trajectory`, `backend_assessment`
+- **Hardware:** `cpu`, `provider_profiles_unverified`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
-- **Start:** [quick example](../../examples/braket_iqm_dynamic_preflight.py)
+- **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/reference/API.md)
-- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; execution, native result, routing, deployment, dialects and providers remain experimental. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
+- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
 
 ### Extension SDK
 

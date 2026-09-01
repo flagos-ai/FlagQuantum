@@ -23,16 +23,16 @@ Experimental 的可发现 API 只保留任务级工作流和第三方 adapter �
 
 | 领域 | 原数量 | 当前数量 | 保留边界 |
 | --- | ---: | ---: | --- |
-| distributed | 25 | 6 | TN 查询与分布式训练工作流 |
-| dynamic | 22 | 6 | 运行、评估、导出、路由与部署 |
-| execution | 1 | 1 | advanced execution 入口 |
+| distributed | 25 | 2 | 分布式训练工作流 |
+| dynamic | 22 | 2 | 动态线路运行与后端评估 |
+| execution | 1 | 0 | 保留领域，统一使用 `fq.run` |
 | interop | 2 | 2 | Qiskit、PennyLane adapter 命名空间 |
-| mps | 9 | 2 | production planning 与 workload validation |
+| mps | 9 | 0 | 保留领域，统一使用正式 MPS 后端 |
 | numerics | 50 | 3 | 基础 split real/imag 执行与梯度 |
-| planning | 3 | 1 | advanced planning 入口 |
+| planning | 3 | 0 | 保留领域，统一使用 `fq.plan` |
 | simulation | 2 | 1 | TEBD 工作流 |
 
-可发现功能面由 114 个降至 22 个，减少 92 个，缩减 80.7%。返回记录仍会随工作流正常
+可发现功能面由 114 个降至 10 个，减少 104 个，缩减 91.2%。返回记录仍会随工作流正常
 返回，但不要求用户从 experimental 命名空间单独导入其实现类型。
 
 ## 迁移原则

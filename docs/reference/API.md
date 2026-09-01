@@ -275,33 +275,22 @@ real Hamiltonian coefficients before producing an expectation value. Each
 package records its group index, term indices, basis, routing evidence, and
 sealed deployment identity.
 
-### Amazon Braket IQM dynamic submission
+### Dynamic backend assessment
 
-The experimental IQM deployment path derives qubit count, native gates,
-connectivity and the dynamic dialect from an `AwsDevice`. If dynamic qubit
-groups are not present in the device-property schema, provide the current
-groups published for that device. Install the optional SDK integration with
-`pip install -e '.[braket]'`.
+Backend assessment is public as an experimental, read-only preflight. Provider
+deployment packaging and submission remain internal qualification workflows.
 
 ```python
-from flagquantum.deployment import AmazonBraketProvider
-
-provider = AmazonBraketProvider(
-    device_arn,
-    dynamic_qubit_groups=published_groups_for_device,
+report = fq.experimental.dynamic.assess_dynamic_backend(
+    circuit,
+    backend,
 )
-preview = provider.dry_run(package)
-assert preview.compatible, preview.blockers
-print(preview.program)
-result = provider.run(package)  # Creates a Braket quantum task.
+assert report.compatible, report.blockers
 ```
 
-`dry_run()` validates the sealed package, device ARN, OpenQASM version, IQM
-dialect and dynamic groups without calling `AwsDevice.run()`. See
-[`braket_iqm_dynamic_preflight.py`](../../examples/braket_iqm_dynamic_preflight.py)
-for the complete guarded-submission example. This integration has been
-validated locally through the real Braket SDK serializer and mocked task
-contract only; no real IQM QPU execution is claimed.
+The Amazon Braket IQM integration has been validated locally through the real
+SDK serializer and mocked task contract only; no real IQM QPU execution is
+claimed.
 
 ### Provider-neutral dynamic conformance
 
@@ -368,10 +357,11 @@ stable_result = result.to_execution_result()
 ```
 
 `DynamicCircuit` and its CircuitIR encoding are candidate-stable pending API
-owner approval. `run_dynamic`, `DynamicExecutionResult`, routing, dialects,
-deployment and provider adapters remain experimental. Stable dynamic execution
-will return the canonical `fq.ExecutionResult`; provider-native state and
-diagnostic fields will not be frozen into that contract.
+owner approval. `run_dynamic` and backend assessment remain experimental;
+routing, dialect export, deployment and provider adapters are internal. Stable
+dynamic execution will return the canonical `fq.ExecutionResult`;
+provider-native state and diagnostic fields will not be frozen into that
+contract.
 
 ### Interoperability adapter contract
 

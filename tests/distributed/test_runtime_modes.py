@@ -5,6 +5,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [
     pytest.mark.distributed,
@@ -104,9 +105,7 @@ def _loss_and_grad(
         run_options["distributed_executor"] = distributed_executor
     if mode.startswith("distributed"):
         run_options["world_size"] = world_size
-    result = fq.experimental.execution.run_advanced(
-        circuit, mode=mode, device=device, **run_options
-    )
+    result = run_advanced(circuit, mode=mode, device=device, **run_options)
     if mode == "distributed_statevector":
         loss = fq.measure_allZ(result.native())[:, (0, 2)].sum()
     elif mode == "distributed_tensor_network":
@@ -144,7 +143,7 @@ def test_distributed_tensor_network_torchrun_precision_alignment():
     world_size = _world_size()
     device = _device()
 
-    distributed = fq.experimental.execution.run_advanced(
+    distributed = run_advanced(
         circuit,
         mode="distributed_tensor_network",
         world_size=world_size,
@@ -152,7 +151,7 @@ def test_distributed_tensor_network_torchrun_precision_alignment():
         device=device,
         max_intermediate_size=8,
     )
-    local = fq.experimental.execution.run_advanced(
+    local = run_advanced(
         circuit,
         mode="tensor_network",
         device=device,
@@ -230,7 +229,7 @@ def test_distributed_mps_torchrun_precision_alignment():
     world_size = _world_size()
     device = _device()
 
-    distributed = fq.experimental.execution.run_advanced(
+    distributed = run_advanced(
         circuit,
         mode="distributed_mps",
         world_size=world_size,
@@ -239,9 +238,7 @@ def test_distributed_mps_torchrun_precision_alignment():
         max_bond=8,
         boundary_transport="auto",
     )
-    local = fq.experimental.execution.run_advanced(
-        circuit, mode="mps", device=device, max_bond=8
-    )
+    local = run_advanced(circuit, mode="mps", device=device, max_bond=8)
 
     max_error = _precision_assert(
         distributed.to_statevector(), local.to_statevector(), atol=1e-6
