@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-batch-a-exit-batch-b-entry",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-BATCH-A-EXIT-BATCH-B",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-batch-a-exit-batch-b-review-candidate.json",
+    "sha256": "57f33defcb58401078439bd8eca459298bddc722507437e51b0e68478fba5728"
+  },
+  "decisions": {
+    "batch_a_owner_accepted": true,
+    "batch_a_exit_authorized": true,
+    "batch_b_entry_authorized": true,
+    "private_target_gate_set_decomposition_authorized": true,
+    "batch_c_through_f_authorized": false,
+    "routing_authorized": false,
+    "emitter_authorized": false,
+    "provider_codegen_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "pause_after": "Batch B implementation review candidate"
+}

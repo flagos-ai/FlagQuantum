@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-b-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-a-exit-batch-b-authorization.json",
+    "sha256": "96acd252449442d3d314b5cb9494a45b56656175c3bb724177a3f2f05fdcfc75"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/passes/target_decomposition.py": "f56c0a276865e96811e7a8d19d6c2f9e62896d10fae7a2b1d807fd94ff88d786",
+    "flagquantum/_compiler/passes/__init__.py": "b1a7ab18f71b982a6cbd1ba4e9329eb85c94ee9cf50a785987efc65d99403e8f",
+    "benchmarks/internal/ir_phase2_batch_b_gate.py": "7f13919e3171c83b9242829d79b0f69e652853c53e7750751b092df4e981c62d",
+    "contracts/ir-phase2-batch-b-performance-baseline.json": "ee9042bee381f2cb28280d470b17c0e6db070b9f4cc7956c746c7e24ba230a49",
+    "tests/fixtures/internal_ir/phase2_batch_b_performance_budget_candidate.json": "7116761f95eba36c144e9540a366429e6649bc4c1fd7ba8c5609af79f9e02ca4",
+    "docs/development/IR_PHASE_2_BATCH_B_IMPLEMENTATION_REVIEW.md": "46345407023abb6776e25c5f2e9e390e35074170bcc46a00c37b771455a2ed7d",
+    "tests/internal_ir/test_phase2_batch_b_authorization.py": "a7ad9c3fafb9555a31fc87fc3cfa49732ed7c0de00545bb98bd538112a0c2400",
+    "tests/internal_ir/test_phase2_target_decomposition.py": "edd69999e3f21a92ad736c754294e9dd4522c63510d85b7e7c7206636d72aab8",
+    "tests/internal_ir/test_phase2_batch_b_performance_candidate.py": "6bb3d32fe59e7d2615aa097f826304ccc575fd84fe70dfe9c0e59eaa8e1b330a",
+    "tests/internal_ir/test_default_path_zero_impact.py": "8ee7146a03f31ffb564e958514481b38974d48f81813a2a64d21a1b0fff7cd2c"
+  },
+  "technical_evidence": {
+    "certified_static_unitary_opcodes": 30,
+    "native_target_operations": [
+      "quantum.rx",
+      "quantum.ry",
+      "quantum.rz",
+      "quantum.cx"
+    ],
+    "state_differential": "passed",
+    "gradient_differential": "passed",
+    "target_legality": "passed",
+    "idempotence_and_determinism": "passed",
+    "unsupported_fail_closed": "passed",
+    "default_path_zero_impact": "passed",
+    "performance_baseline_measured": true
+  },
+  "proposed_decisions": {
+    "batch_b_performance_budget_approved": true,
+    "batch_b_machine_gate_authorized": true,
+    "batch_b_exit_authorized": false,
+    "batch_c_routing_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-B-PERFORMANCE-BUDGET",
+  "approval_text": "I accept the measured rewrite-heavy Batch B CPU baseline and approve its internal regression budget and machine gate. This approval does not authorize Batch B exit, Batch C routing, emitters, provider codegen, public API or default-path changes, or legacy compiler retirement.",
+  "pause_after": "approved Batch B budget validation"
+}

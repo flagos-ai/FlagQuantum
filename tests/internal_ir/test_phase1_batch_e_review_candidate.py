@@ -14,6 +14,9 @@ SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-authorized-artifact-successor.js
 REMEDIATION_SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
 )
+BATCH_B_SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-b-authorized-artifact-successor.json"
+)
 
 
 def _candidate() -> dict[str, object]:
@@ -27,6 +30,17 @@ def _sha256(path: Path) -> str:
 def _assert_artifact_binding(relative_path: str, expected_hash: str) -> None:
     actual_hash = _sha256(ROOT / relative_path)
     if actual_hash == expected_hash:
+        return
+    batch_b = json.loads(BATCH_B_SUCCESSOR.read_text(encoding="utf-8"))
+    batch_b_candidate = batch_b["candidates"].get(str(CANDIDATE.relative_to(ROOT)))
+    transition = (
+        batch_b_candidate["artifact_transitions"].get(relative_path)
+        if batch_b_candidate
+        else None
+    )
+    if transition is not None:
+        assert transition["predecessor_sha256"] == expected_hash
+        assert transition["successor_sha256"] == actual_hash
         return
     remediation = json.loads(REMEDIATION_SUCCESSOR.read_text(encoding="utf-8"))
     remediation_candidate = remediation["candidates"].get(

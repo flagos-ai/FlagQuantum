@@ -19,6 +19,9 @@ SUCCESSOR = (
 ARTIFACT_SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
 )
+BATCH_B_SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-b-authorized-artifact-successor.json"
+)
 
 
 def test_successor_budget_review_binds_every_remediation_artifact() -> None:
@@ -28,7 +31,15 @@ def test_successor_budget_review_binds_every_remediation_artifact() -> None:
     assert review["approval_command"] == ("approve IR-PHASE2-BATCH-A-SUCCESSOR-BUDGET")
     for relative_path, expected_hash in review["artifacts"].items():
         artifact = ROOT / relative_path
-        assert hashlib.sha256(artifact.read_bytes()).hexdigest() == expected_hash
+        actual_hash = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        if actual_hash == expected_hash:
+            continue
+        successor = json.loads(BATCH_B_SUCCESSOR.read_text(encoding="utf-8"))
+        transition = successor["candidates"][str(REVIEW.relative_to(ROOT))][
+            "artifact_transitions"
+        ][relative_path]
+        assert transition["predecessor_sha256"] == expected_hash
+        assert transition["successor_sha256"] == actual_hash
 
 
 def test_artifact_successor_is_authorized_and_keeps_historical_reviews_immutable() -> (
