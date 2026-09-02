@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase3-batch-a-exit-batch-b-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization_chain": {
+    "phase3_entry_batch_a": {
+      "path": "contracts/ir-phase3-entry-batch-a-authorization.json",
+      "sha256": "2fe2810221b7c16b6c56bc905aca9ce0de2ee0d2c58fc6b189b1ad3af167e15e"
+    },
+    "batch_a_performance_budget": {
+      "path": "contracts/ir-phase3-batch-a-performance-budget-authorization.json",
+      "sha256": "8ed0df58d49dddac1e0234dce67780dec0f75e4808e9548841bfbf4a8421eb49"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase3-batch-a-performance-budget-validation.json": "2073e581d798009ae59c2e73db362ce0655850b28539f8b1578e88e9a99ae6f0",
+    "flagquantum/_compiler/target_capabilities.py": "ce045c6e4b5ed00c3c91e5b069bec00bad9840333f7b78922b64c5125f5232fd",
+    "flagquantum/_compiler/capability_comparison.py": "45bda39b78cb0ad965275b21aed5d946997cecc660fc05db748fc8904bfd0fe9",
+    "tests/fixtures/internal_ir/phase3_batch_a_target_capabilities.json": "7b5593ccd684413fe13c5a996789ac49ada008dff8e955e48c1c1975e59ce8d4",
+    "tests/internal_ir/test_phase3_target_capabilities.py": "3ced4a6f16d36f0c992108f6551f5fc9939bc6530c4c9df793924c08c7437fcc",
+    "benchmarks/internal/ir_phase3_batch_a_gate.py": "303278f588ca9cec4923e6720d46443fd3e5ed694dfd5841a1db7980eaf7c1a4",
+    "tests/internal_ir/test_phase3_batch_a_performance_authorization.py": "6abcc43227961048ed21f01054d481576434cc72cabb7cdca841f64ec3bc682b",
+    "tests/internal_ir/test_phase3_batch_a_performance_budget.py": "03b44577b603d1730a7eea9f9170a86814e39f145d54f9dee173e5cd4993b714",
+    "tests/internal_ir/test_phase3_batch_a_exit_batch_b_review_candidate.py": "a88019d063d327bb58328e9c3076f98b8f3539b28407d567af481e67c3ccef45",
+    "docs/development/IR_PHASE_3_BATCH_A_COMPLETION_REVIEW.md": "a2fca4e2540db13e3a99d9046cd67301f5feffc9c6685cf100275d4d14ed7bb7",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "batch_a_exit_evidence": {
+    "authorized_scope_implemented": true,
+    "closed_schema_and_fail_closed_validation": true,
+    "canonical_identity_and_hash_seed_determinism": true,
+    "mutation_isolation": true,
+    "structured_compatibility_diagnostics": true,
+    "privacy_boundary_enforced": true,
+    "anonymous_three_target_class_fixtures": true,
+    "approved_performance_budget_passed": true,
+    "default_path_zero_impact": true,
+    "public_api_changed": false,
+    "known_blockers": []
+  },
+  "batch_b_scope_if_approved": {
+    "feature": "private TargetIR and deterministic legalization",
+    "required_evidence": [
+      "typed target operations and explicit layout semantics",
+      "gate, parameter-domain, result and directed-topology legality",
+      "deterministic lowering and target-dependent identity",
+      "unsupported or unknown capability fails closed",
+      "structural, state, order and trainable-gradient differential where applicable",
+      "independent performance baseline before budget proposal",
+      "default path zero impact"
+    ],
+    "root": "flagquantum/_compiler",
+    "public_exports": [],
+    "executable_artifact_authorized": false,
+    "runtime_adapter_authorized": false,
+    "conformance_or_shadow_authorized": false,
+    "provider_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "batch_c_through_h_authorized": false
+  },
+  "proposed_decisions": {
+    "batch_a_owner_accepted": true,
+    "batch_a_exit_authorized": true,
+    "batch_b_entry_authorized": true,
+    "batch_c_through_h_authorized": false,
+    "runtime_or_provider_integration_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE3-BATCH-A-EXIT-BATCH-B",
+  "approval_text": "Accept Phase 3 Batch A schema, identity, validation, privacy, compatibility, default-path and approved performance evidence; authorize Batch A exit and Batch B private TargetIR and deterministic legalization only. Do not authorize ExecutableArtifact, RuntimeAdapter, conformance, shadow/default integration, provider work, real backend IDs, public APIs, legacy retirement, Batches C-H, or Phase 3 exit.",
+  "pause_after": "Batch B implementation and independent performance-baseline review"
+}
