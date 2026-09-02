@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "status": "candidate_awaiting_owner_approval",
+  "claim_scope": "Phase 3 Batch B private CPU regression candidate; not a public SLA",
+  "approval": {
+    "approved": false,
+    "approval_command": "approve IR-PHASE3-BATCH-B-PERFORMANCE-BUDGET"
+  },
+  "derivation": "Rounded envelopes above the 2026-09-02 seven-sample Docker baseline",
+  "budgets": [
+    {"operation_count": 10, "legalization_p95_ms_max": 1.0, "legalization_peak_host_memory_bytes_max": 131072},
+    {"operation_count": 100, "legalization_p95_ms_max": 3.0, "legalization_peak_host_memory_bytes_max": 524288},
+    {"operation_count": 1000, "legalization_p95_ms_max": 25.0, "legalization_peak_host_memory_bytes_max": 4194304},
+    {"operation_count": 10000, "legalization_p95_ms_max": 250.0, "legalization_peak_host_memory_bytes_max": 33554432}
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase3-batch-b-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase3-batch-a-exit-batch-b-authorization.json",
+    "sha256": "18726193a4dbb82a8014625b483c4bc43b74b005a5a53475f5173f500b253b4b"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/target_ir.py": "7ef49bb763b57ae511e9b88c445fa5f18d3937326237e2ff8845c23c2b4c26c9",
+    "flagquantum/_compiler/target_legalization.py": "873ebfe06272274c501c167dcdf7e1bb8f7933895d086d1860677d28716c7814",
+    "tests/internal_ir/test_phase3_batch_b_authorization.py": "d0dc37868cd19e8a980b6a7e2207650c59490fb4f23b69dd387ef752a351607d",
+    "tests/internal_ir/test_phase3_target_legalization.py": "b037c2da464bd99f930b6cc89e2a3a43b99c8fc1cdfc17b986b9017009f299ab",
+    "benchmarks/internal/ir_phase3_batch_b_baseline.py": "f94171db3551e1853687778c873770a204a10dbff528a21752ec889b97594923",
+    "contracts/ir-phase3-batch-b-performance-baseline.json": "d0c44f55a6697ab723e2395bb324074faeefd8ce2aa571f1caeb71656cc76cf8",
+    "tests/fixtures/internal_ir/phase3_batch_b_performance_budget_candidate.json": "9d4888a6115d38f6df2d9215549bc23caa2c9a3d1a43d4e52e6d2b941d0e10c2",
+    "tests/internal_ir/test_phase3_batch_b_performance_candidate.py": "6a617355045bcf823317a620cfaa08e7f0b544bef0d7bfb69bccedbd2f4a5172",
+    "tests/internal_ir/test_phase3_batch_b_performance_review_candidate.py": "9e2be3bceb5341afeca7c5b717b10b85a91683b0cbdf95f182bb37f98e0ac93c",
+    "docs/development/IR_PHASE_3_BATCH_B_IMPLEMENTATION_REVIEW.md": "945780319e5bee59191a622e195528109ca1e4d049e0f6c700158638d4bbf4dd",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "typed_target_ir_and_explicit_layout_passed": true,
+    "gate_parameter_result_limit_and_topology_legality_passed": true,
+    "deterministic_target_dependent_identity_passed": true,
+    "unsupported_and_unknown_capabilities_fail_closed": true,
+    "state_order_and_trainable_gradient_differential_passed": true,
+    "provider_and_execution_identity_excluded": true,
+    "public_and_default_path_unchanged": true,
+    "performance_baseline_observed": true,
+    "public_sla_claimed": false
+  },
+  "proposed_decisions": {
+    "batch_b_performance_budget_approved": true,
+    "batch_b_machine_gate_authorized": true,
+    "batch_b_exit_authorized": false,
+    "batch_c_executable_artifact_authorized": false,
+    "runtime_or_provider_integration_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE3-BATCH-B-PERFORMANCE-BUDGET",
+  "pause_after": "approved Batch B budget validation and Batch B exit review"
+}

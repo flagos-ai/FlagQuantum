@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-batch-a-exit-batch-b",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-BATCH-A-EXIT-BATCH-B",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-batch-a-exit-batch-b-review-candidate.json",
+    "sha256": "9e6d246025c2d609f3e51d4416950f204c64dbc60b8cd76d7df050f57b418be0"
+  },
+  "decisions": {
+    "batch_a_owner_accepted": true,
+    "batch_a_exit_authorized": true,
+    "batch_b_entry_authorized": true,
+    "batch_b_performance_baseline_authorized": true,
+    "batch_b_performance_budget_approved": false,
+    "batch_c_through_h_authorized": false,
+    "executable_artifact_authorized": false,
+    "runtime_adapter_authorized": false,
+    "conformance_or_shadow_authorized": false,
+    "provider_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "allowed_scope": {
+    "profile": "private_target_ir_legalization_v1",
+    "root": "flagquantum/_compiler",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "provider_fields_allowed": false
+  },
+  "pause_after": "Batch B implementation and independent performance-budget review"
+}
