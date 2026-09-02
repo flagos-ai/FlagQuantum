@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-exit",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-EXIT",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-exit-review-candidate.json",
+    "sha256": "e21dfc057091c53175932b524c1d29c0642a3d3885dba9ddaa51b32f8950009f"
+  },
+  "formal_signoffs": {
+    "api_owner": true,
+    "compiler_owner": true,
+    "runtime_owner": true,
+    "training_owner": true
+  },
+  "decisions": {
+    "phase2_technical_evidence_accepted": true,
+    "phase2_complete": true,
+    "phase3_authorized": false,
+    "public_ir_api_authorized": false,
+    "public_pass_api_authorized": false,
+    "public_compiler_api_authorized": false,
+    "default_path_change_authorized": false,
+    "production_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "adapter_or_provider_implementation_authorized": false,
+    "remote_submission_authorized": false
+  },
+  "accepted_scope": {
+    "profile": "private_static_compiler_v1",
+    "implementation_visibility": "private internal",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "provider_or_remote_execution_enabled": false,
+    "legacy_retired": false,
+    "rollback_requires_user_migration": false
+  },
+  "accepted_observations": {
+    "batch_f_five_sample_host_jitter_recorded": true,
+    "approved_budget_relaxed": false,
+    "public_performance_claim_authorized": false
+  },
+  "next_state": "Phase 2 technically complete; pause before any Phase 3 proposal, integration, public API, default-path migration, provider/adapter work, or legacy retirement"
+}
