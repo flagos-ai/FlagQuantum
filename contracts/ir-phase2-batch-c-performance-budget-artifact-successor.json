@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "authorized_artifact_successor",
+  "created_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-c-performance-budget-authorization.json",
+    "sha256": "6d2d23f4fd0a73197da45ce8b7b791ddaa2a3a712ca02526163bc113b683d929"
+  },
+  "reason": "The approved Batch C budget authorizes converting the measurement-only benchmark into a fail-closed machine gate. The historical review candidate and approved budget snapshot remain immutable.",
+  "predecessor_review_semantics_changed": false,
+  "public_or_default_path_changed": false,
+  "candidates": {
+    "contracts/ir-phase2-batch-c-performance-budget-review-candidate.json": {
+      "sha256": "04d2fd1485d8966e83e28b2a54eedc081bb4868ec6dacbb35b604eafc1ad6dbf",
+      "artifact_transitions": {
+        "benchmarks/internal/ir_phase2_batch_c_gate.py": {
+          "predecessor_sha256": "11219ffd856f4d33501d165ee3d57f6f6830fc6c79cce3399124c2c6aab3f4b9",
+          "successor_sha256": "d58b2d34d83786d66fb03b17f1ac31456cdccd1c4d642c227d86a9e39ad43abc"
+        }
+      }
+    }
+  }
+}

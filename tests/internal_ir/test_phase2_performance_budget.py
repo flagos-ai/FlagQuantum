@@ -3,10 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from benchmarks.internal.ir_phase2_batch_a_gate import measure_case
+from benchmarks.internal import ir_phase2_batch_a_gate as gate
 
 pytestmark = pytest.mark.unit
 
@@ -38,24 +39,55 @@ def test_phase2_successor_budget_is_approved_only_through_bound_authorization() 
     )
 
 
-def test_approved_phase2_batch_a_successor_budget_is_machine_enforced() -> None:
-    budget = json.loads(BUDGET.read_text(encoding="utf-8"))
-    case_budget = next(item for item in budget["budgets"] if item["gate_count"] == 1000)
+def _boundary_observation(
+    budget: dict[str, Any], *, iterations: int, warmup: int
+) -> dict[str, Any]:
+    del iterations, warmup
+    p95 = float(budget["pipeline_p95_ms_max"])
+    return {
+        "gate_count": int(budget["gate_count"]),
+        "timings_ms": {"min": p95, "p50": p95, "p95": p95, "max": p95},
+        "peak_host_memory_bytes": int(budget["peak_host_memory_bytes_max"]),
+        "budget": {
+            "pipeline_p95_ms_max": p95,
+            "peak_host_memory_bytes_max": int(budget["peak_host_memory_bytes_max"]),
+        },
+        "deterministic_identity": True,
+        "latency_passed": True,
+        "memory_passed": True,
+    }
 
-    case = measure_case(case_budget, iterations=3, warmup=1)
 
-    assert case["latency_passed"] is True
-    assert case["memory_passed"] is True
-    assert case["deterministic_identity"] is True
+def test_approved_phase2_batch_a_successor_gate_accepts_and_rejects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(gate, "measure_case", _boundary_observation)
+    accepted = gate.evaluate(BUDGET, iterations=3, warmup=1)
+
+    def regression(
+        budget: dict[str, Any], *, iterations: int, warmup: int
+    ) -> dict[str, Any]:
+        case = _boundary_observation(budget, iterations=iterations, warmup=warmup)
+        if case["gate_count"] == 1000:
+            case["latency_passed"] = False
+        return case
+
+    monkeypatch.setattr(gate, "measure_case", regression)
+    rejected = gate.evaluate(BUDGET, iterations=3, warmup=1)
+
+    assert accepted["status"] == "passed"
+    assert accepted["growth_passed"] is True
+    assert rejected["status"] == "failed"
 
 
-def test_phase2_performance_gate_never_rewrites_budget() -> None:
+def test_phase2_performance_gate_never_rewrites_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     original_before = ORIGINAL_BUDGET.read_bytes()
     before = BUDGET.read_bytes()
-    budget = json.loads(before)
-    case_budget = next(item for item in budget["budgets"] if item["gate_count"] == 10)
+    monkeypatch.setattr(gate, "measure_case", _boundary_observation)
 
-    measure_case(case_budget, iterations=3, warmup=1)
+    gate.evaluate(BUDGET, iterations=3, warmup=1)
 
     assert BUDGET.read_bytes() == before
     assert ORIGINAL_BUDGET.read_bytes() == original_before

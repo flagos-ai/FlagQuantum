@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-c-exit-batch-d",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-c-performance-budget-authorization.json",
+    "sha256": "6d2d23f4fd0a73197da45ce8b7b791ddaa2a3a712ca02526163bc113b683d929"
+  },
+  "performance_validation": {
+    "path": "contracts/ir-phase2-batch-c-performance-budget-validation.json",
+    "sha256": "ffafa2fbd29c4a03cf67c7d542123103521730e67e9bd96964e84409105cb165"
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase2-batch-c-performance-budget-artifact-successor.json": "f1f3fb479e6e3f72137959f19f76023baa122fbc0ca938ead6d4f43b177f13fb",
+    "flagquantum/_compiler/passes/placement_routing.py": "2051f3b8d911782027c7a746c01758b46ad9fb262e809bb8867723c61f4f0209",
+    "flagquantum/_compiler/passes/__init__.py": "3e05c4408567f3b55213d2288b00006feb029819ae7f7b6cc641e2954e3555b1",
+    "benchmarks/internal/ir_phase2_batch_c_gate.py": "d58b2d34d83786d66fb03b17f1ac31456cdccd1c4d642c227d86a9e39ad43abc",
+    "tests/internal_ir/test_phase2_placement_routing.py": "5df9807c546e8a32286e16d18ed1687874d5c63705562dc5c5e03549ba5b0838",
+    "tests/internal_ir/test_phase2_batch_c_authorization.py": "c8e692d6ea2da45dfe5de0ae368b49d674a31652068fedc5425b3156aac98444",
+    "tests/internal_ir/test_phase2_batch_c_performance_authorization.py": "1c865e02d0e6153efb2f30c7f337816e784c8fbfdc453c7ba73d146930191e5e",
+    "tests/internal_ir/test_phase2_batch_c_performance_budget.py": "036143ee5a33902b9d8664d481ab298375b752e11659b53d3708de86731a4baf",
+    "tests/internal_ir/test_default_path_zero_impact.py": "8ee7146a03f31ffb564e958514481b38974d48f81813a2a64d21a1b0fff7cd2c",
+    "docs/development/IR_PHASE_2_BATCH_C_COMPLETION_REVIEW.md": "9b14ff8ff61fbce2dea41c6b0a516fa9aa66f956b48485587ae1fd8dd57d9a6e"
+  },
+  "evidence": {
+    "directed_topology_legality_passed": true,
+    "logical_physical_mapping_passed": true,
+    "final_identity_restoration_passed": true,
+    "asymmetric_wire_order_passed": true,
+    "state_and_gradient_differential_passed": true,
+    "determinism_and_fail_closed_passed": true,
+    "approved_performance_gate_passed": true,
+    "default_path_zero_impact_passed": true
+  },
+  "performance_risk": {
+    "tracked": true,
+    "case": "10000 source gates",
+    "observed_p95_ms": 2943.970268,
+    "budget_p95_ms_max": 3000.0,
+    "automatic_budget_relaxation_allowed": false
+  },
+  "proposed_decisions": {
+    "batch_c_exit_approved": true,
+    "batch_d_private_emitters_authorized": true,
+    "batch_d_performance_budget_approved": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "credentials_or_backend_ids_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "batch_d_boundary": {
+    "included": [
+      "private deterministic OpenQASM 2 emitter",
+      "private restricted-static OpenQASM 3 emitter",
+      "private versioned QCIS dialect emitter",
+      "golden, parse, deterministic-format, qubit-order, and semantic fixtures",
+      "fail-closed unsupported-operation diagnostics",
+      "separate performance baseline"
+    ],
+    "excluded": [
+      "provider SDK and remote job submission",
+      "credentials and backend identifiers",
+      "public API and default execution path changes",
+      "legacy compiler retirement",
+      "Phase 2 exit"
+    ]
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-C-EXIT-BATCH-D",
+  "pause_after": "Batch D private emitter implementation review"
+}

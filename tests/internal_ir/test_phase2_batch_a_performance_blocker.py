@@ -19,6 +19,7 @@ SUCCESSOR = (
 BUDGET_SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-a-successor-budget-artifact-successor.json"
 )
+GATE_SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-machine-gate-test-successor.json"
 
 
 def _sha256(path: Path) -> str:
@@ -53,6 +54,13 @@ def test_remediation_candidate_binds_every_reviewed_artifact() -> None:
         actual_hash = _sha256(ROOT / relative_path)
         if actual_hash == expected_hash:
             continue
+        gate_successor = json.loads(GATE_SUCCESSOR.read_text(encoding="utf-8"))
+        gate_transition = gate_successor["candidates"][
+            str(CANDIDATE.relative_to(ROOT))
+        ]["artifact_transitions"].get(relative_path)
+        if gate_transition is not None:
+            assert gate_transition["successor_sha256"] == actual_hash
+            actual_hash = gate_transition["predecessor_sha256"]
         transition = successor_candidate["artifact_transitions"].get(relative_path)
         if transition is None:
             budget_successor = json.loads(BUDGET_SUCCESSOR.read_text(encoding="utf-8"))

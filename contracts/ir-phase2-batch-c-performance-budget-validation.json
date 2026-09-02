@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "status": "passed",
+  "validated_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-c-performance-budget-authorization.json",
+    "sha256": "6d2d23f4fd0a73197da45ce8b7b791ddaa2a3a712ca02526163bc113b683d929"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/phase2_batch_c_performance_budget_candidate.json",
+    "sha256": "808d2db46329a070bce7a3f7d801c117fc6652439b3dff784af48ffe4a690b43"
+  },
+  "claim_scope": "Phase 2 Batch C private CPU budget; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "iterations": 5,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "topology": "8-qubit bidirectional line",
+    "workload": "native long-range CX-heavy deterministic mix"
+  },
+  "cases": [
+    {
+      "gate_count": 10,
+      "emitted_gate_count": 142,
+      "physical_swap_count": 44,
+      "p95_ms": 3.495342,
+      "p95_ms_max": 5.0,
+      "peak_host_memory_bytes": 320796,
+      "peak_host_memory_bytes_max": 1048576,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "gate_count": 100,
+      "emitted_gate_count": 652,
+      "physical_swap_count": 184,
+      "p95_ms": 17.366608,
+      "p95_ms_max": 25.0,
+      "peak_host_memory_bytes": 1381180,
+      "peak_host_memory_bytes_max": 2097152,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "gate_count": 1000,
+      "emitted_gate_count": 5872,
+      "physical_swap_count": 1624,
+      "p95_ms": 202.137317,
+      "p95_ms_max": 500.0,
+      "peak_host_memory_bytes": 12550416,
+      "peak_host_memory_bytes_max": 16777216,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "gate_count": 10000,
+      "emitted_gate_count": 58072,
+      "physical_swap_count": 16024,
+      "p95_ms": 2943.970268,
+      "p95_ms_max": 3000.0,
+      "peak_host_memory_bytes": 123543476,
+      "peak_host_memory_bytes_max": 167772160,
+      "deterministic_identity": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "batch_c_performance_budget_gate_passed": true,
+    "batch_c_exit_authorized": false,
+    "batch_d_emitter_authorized": false,
+    "public_sla_claimed": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  }
+}

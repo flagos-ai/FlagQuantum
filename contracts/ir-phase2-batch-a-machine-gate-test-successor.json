@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "status": "authorized_artifact_successor",
+  "created_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-a-successor-budget-authorization.json",
+    "sha256": "1d98d89e2a6c0b9ca587951a01073751105de67312154ebf4f17fa527f60d367"
+  },
+  "reason": "Keep wall-clock measurement in the isolated approved CLI gate while making the shared pytest tier deterministically verify acceptance, rejection, growth, and immutability semantics. No budget value or workload changed.",
+  "budget_or_workload_changed": false,
+  "public_or_default_path_changed": false,
+  "candidates": {
+    "contracts/ir-phase2-batch-a-performance-remediation-review-candidate.json": {
+      "sha256": "e0cfb954607215f50378ff81f79b99c18d37009cb69eed3b228f40cc712b78b8",
+      "artifact_transitions": {
+        "tests/internal_ir/test_phase2_performance_budget.py": {
+          "predecessor_sha256": "c59b4348667c44bb376a8247289bea195787ed9b0967190da0d3b8ca8ac8ca42",
+          "successor_sha256": "1a441f14ccd9b48cbcf9f6a925b14926eb34b8956f831469852fbb45fd372ac9"
+        }
+      }
+    },
+    "contracts/ir-phase2-batch-a-exit-batch-b-review-candidate.json": {
+      "sha256": "57f33defcb58401078439bd8eca459298bddc722507437e51b0e68478fba5728",
+      "artifact_transitions": {
+        "tests/internal_ir/test_phase2_performance_budget.py": {
+          "predecessor_sha256": "c59b4348667c44bb376a8247289bea195787ed9b0967190da0d3b8ca8ac8ca42",
+          "successor_sha256": "1a441f14ccd9b48cbcf9f6a925b14926eb34b8956f831469852fbb45fd372ac9"
+        }
+      }
+    }
+  }
+}
