@@ -10,6 +10,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase0-exit-phase1-review-candidate.json"
+SUCCESSOR = ROOT / "contracts/ir-phase0-review-format-normalization-successor.json"
 
 
 def _candidate() -> dict[str, object]:
@@ -22,10 +23,22 @@ def _sha256(path: Path) -> str:
 
 def test_review_candidate_binds_every_reviewed_artifact() -> None:
     candidate = _candidate()
+    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
+    transitions = successor["artifact_transitions"]
+    mismatches = set()
 
     assert candidate["status"] == "ready_for_owner_approval"
     for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
+        actual_hash = _sha256(ROOT / relative_path)
+        if actual_hash == expected_hash:
+            continue
+        mismatches.add(relative_path)
+        transition = transitions[relative_path]
+        assert transition["predecessor_sha256"] == expected_hash
+        assert transition["successor_sha256"] == actual_hash
+    assert mismatches == set(transitions)
+    assert successor["predecessor"]["sha256"] == _sha256(CANDIDATE)
+    assert successor["transformation"]["semantic_or_authorization_change"] is False
 
 
 def test_review_candidate_cannot_authorize_itself() -> None:

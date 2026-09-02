@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "status": "pending_owner_approval",
+  "scope": "Phase 2 opt-in internal static compiler pipeline on local CPU",
+  "baseline": "tests/fixtures/internal_ir/phase0_performance_baseline.json",
+  "phase1_budget": "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json",
+  "derivation": {
+    "latency": "max(1.25 ms, approximately 2 * measured legacy_plan p95), rounded up to a reviewable boundary",
+    "memory": "at least 2 * measured legacy_plan peak with explicit fixed-overhead allowance, rounded up",
+    "comparison_scope": "CircuitIR import, verification, approved Phase 2 passes, restricted lowering, and verification of the lowered result",
+    "default_path": "zero new-path work unless an internal explicit opt-in is supplied"
+  },
+  "budgets": [
+    {
+      "gate_count": 10,
+      "pipeline_p95_ms_max": 1.25,
+      "peak_host_memory_bytes_max": 1310720
+    },
+    {
+      "gate_count": 100,
+      "pipeline_p95_ms_max": 2.0,
+      "peak_host_memory_bytes_max": 1310720
+    },
+    {
+      "gate_count": 1000,
+      "pipeline_p95_ms_max": 15.0,
+      "peak_host_memory_bytes_max": 2097152
+    },
+    {
+      "gate_count": 10000,
+      "pipeline_p95_ms_max": 140.0,
+      "peak_host_memory_bytes_max": 14680064
+    }
+  ],
+  "separate_baselines_required": [
+    "topology placement and routing",
+    "OpenQASM 2 static emission",
+    "OpenQASM 3 static-profile emission",
+    "QCIS emission",
+    "deployment package construction"
+  ],
+  "additional_gates": {
+    "semantic_parity": "inherit the per-oracle dtype and backend tolerances from the Phase 0 manifest; no global tolerance",
+    "determinism": "exact output identity and pipeline digest across repeated runs",
+    "gradient": "forward and gradient parity for every parameter-rewriting pass",
+    "default_runtime_regression": "zero new-path imports or work without explicit internal opt-in",
+    "budget_changes": "require new measured evidence and owner review; never auto-update to pass CI"
+  },
+  "approval": {
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "approved_scope": null
+  }
+}
