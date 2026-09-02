@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase0-exit-phase1-implementation",
+  "status": "ready_for_owner_approval",
+  "branch": "codex/open-source-api-convergence",
+  "baseline_source_commit": "84698f19",
+  "technical_review": {
+    "completed": true,
+    "phase0_exit_recommended": true,
+    "phase1_implementation_recommended": true,
+    "scope": "Codex evidence audit; not a substitute for formal project-owner approval"
+  },
+  "formal_signoffs": {
+    "compiler_owner": false,
+    "runtime_owner": false,
+    "training_owner": false,
+    "api_owner_phase0_exit": false,
+    "api_owner_phase1_implementation": false
+  },
+  "authorization": {
+    "phase0_exited": false,
+    "phase1_implementation_authorized": false,
+    "phase2_authorized": false,
+    "public_api_change_authorized": false,
+    "default_runtime_change_authorized": false
+  },
+  "phase1_scope": {
+    "allowed_root": "flagquantum/_compiler",
+    "work_packages": [
+      "P1-001",
+      "P1-002",
+      "P1-003",
+      "P1-004",
+      "P1-005",
+      "P1-006",
+      "P1-007",
+      "P1-008",
+      "P1-009"
+    ],
+    "first_batch": "A: types, values, module, and schema only",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "rollback": "remove flagquantum/_compiler and its test-only bridge; retain legacy compiler/runtime"
+  },
+  "verification": {
+    "phase0_focused": "88 passed",
+    "runtime": "168 passed, 31 skipped",
+    "default": "1019 passed, 10 skipped",
+    "ruff": "passed",
+    "black": "passed",
+    "performance": "10-10000 gate legacy CPU plan and peak-memory baseline reproduced"
+  },
+  "reviewed_artifacts": {
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "docs/architecture/MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md": "5f3c789c4d16bb135975633eefc441d680aec76bb9f65f2f1f03d7837926a5eb",
+    "docs/development/IR_PHASE_0_EXIT_AUDIT.md": "d256d9209a539be1aac77d03e925cc40f4d8a3701494d7f891c530defb6af9fd",
+    "docs/development/IR_PHASE_0_IMPLEMENTATION_OWNER_REVIEW.md": "0bbbe32d050871c40a8f7cb366507dab37a2e76186bc2b62b9b3fbb709724274",
+    "tests/fixtures/internal_ir/circuit_ir_v1/manifest.json": "860dba0f8160c5cac71e01d623f7dd79ec38366949e5c887586490fc01b97c88",
+    "tests/fixtures/internal_ir/metadata_inventory.json": "af543d3451e21ab1c41f08c0c8ef2cffb62a1cba6ef6b7b5df3d90f4e17f9f2c",
+    "tests/fixtures/internal_ir/phase0_performance_baseline.json": "f8bcbd074aacccea8e98dbc2d843e92a1c16912b24b9434d9fc948be535c9073",
+    "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json": "3b8e4ddcbf5a0e61a5791a5d8ab7a008a43789830c92212117a74d9e55499593",
+    "tests/fixtures/internal_ir/phase0_evidence.json": "68a43fe395f713a925e95ea2976eb6b9300d4b6cdf823b75984f7a9bb6d935b8",
+    "docs/architecture/decisions/IR_001_PROGRAM_REQUEST_BOUNDARY.md": "5aca076ff8e6eb0f3beca18e1a0de8097e89fc225d44fd550749d2094360e59f",
+    "docs/architecture/decisions/IR_002_LINEAR_QUBIT_VALUES.md": "30c01512013fb4f0fa79aaebd8de592ca4dcecc53296a3bc2d9feafb9f388e27",
+    "docs/architecture/decisions/IR_003_IDENTITY_LAYERS.md": "5dc13bc411663c1202d79fe75f0016cd463369b501cd9b0d2258cd76c8ab2b3b",
+    "docs/architecture/decisions/IR_004_CUSTOM_MATRIX_OPERATIONS.md": "3d6ad229976ccf806e472a1a20e8babf8fdb626dd3b1ed71a2136fc7a58953dd",
+    "docs/architecture/decisions/IR_005_PARAMETERS_AND_TENSORS.md": "bfcbadd85ac284a7d2372b70b592db00726387665f29429831ec0af4fca32a87",
+    "docs/architecture/decisions/IR_006_PHASE1_REVERSIBLE_SCOPE.md": "4a752f3541ceb16c19d5bec7bd9fdd247f11b62facbbd256c25ffaec66b79eb0"
+  },
+  "remaining_required_actions": [
+    "compiler owner formal signoff",
+    "runtime owner formal signoff",
+    "training owner formal signoff",
+    "API owner explicit Phase 0 exit approval",
+    "API owner explicit Phase 1 implementation authorization"
+  ],
+  "approval_command": "approve IR-PHASE0-EXIT-PHASE1-BATCH-A",
+  "approval_text": "I accept the compiler, runtime, and training technical review; approve FlagQuantum IR Phase 0 exit; and authorize the internal Phase 1 implementation defined by P1-001 through P1-009 and the reviewed artifact hashes in this candidate. This approval does not change Stable Core, CircuitIR 1.0, default fq.run/fq.plan, deployment contracts, or authorize Phase 2. Start with implementation batch A only."
+}

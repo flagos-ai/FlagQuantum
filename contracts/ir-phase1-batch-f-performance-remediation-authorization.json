@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase1-batch-f-performance-remediation",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE1-BATCH-F-PERFORMANCE-REMEDIATION",
+  "batch_f_authorization": {
+    "path": "contracts/ir-phase1-batch-f-authorization.json",
+    "sha256": "8f8d7d0707ebc9ac3de2fa20971cf78fdbb502e2f2bca2e1cee2f609885912b6"
+  },
+  "blocker": {
+    "path": "contracts/ir-phase1-batch-f-performance-blocker.json",
+    "sha256": "858608f960fca054a02b38b51d1d066a9031a08cc0e9821533e87160c451b916"
+  },
+  "approved_change": {
+    "path": "flagquantum/_compiler/importers/circuit_ir.py",
+    "previous_sha256": "3f8d18cccb05e5bf267d58aba3fbff3baa3579257c92da131f358fb71e606770",
+    "semantics": "compute source content hash before allocating the QuantumIR module",
+    "budget_change_allowed": false,
+    "public_api_change_allowed": false,
+    "default_path_change_allowed": false
+  },
+  "evidence_policy": "Keep the accepted Batch C candidate immutable and record the new importer hash in a successor attestation."
+}

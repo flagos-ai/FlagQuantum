@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_internal_phase1_gate",
+  "scope": "Phase 1 internal CircuitIR import plus verify; local CPU only",
+  "baseline": "tests/fixtures/internal_ir/phase0_performance_baseline.json",
+  "derivation": {
+    "latency": "max(1.0 ms, 1.75 * measured legacy_plan p95), rounded up to a reviewable boundary",
+    "memory": "max(1 MiB, 2 * measured legacy_plan peak), rounded up",
+    "default_path": "no import of flagquantum._compiler and no measurable new work in legacy fq.run/fq.plan"
+  },
+  "budgets": [
+    {"gate_count": 10, "import_verify_p95_ms_max": 1.0, "peak_host_memory_bytes_max": 1048576},
+    {"gate_count": 100, "import_verify_p95_ms_max": 1.5, "peak_host_memory_bytes_max": 1048576},
+    {"gate_count": 1000, "import_verify_p95_ms_max": 12.5, "peak_host_memory_bytes_max": 1572864},
+    {"gate_count": 10000, "import_verify_p95_ms_max": 120.0, "peak_host_memory_bytes_max": 12582912}
+  ],
+  "additional_gates": {
+    "deterministic_identity": "exact across repeated runs in the supported environment",
+    "growth": "no unexplained superlinear import or verifier growth",
+    "default_runtime_regression": "zero new-path work unless an internal test-only opt-in is explicit",
+    "budget_changes": "require new measured evidence and owner review; never auto-update to pass CI"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-09-01",
+    "approved_scope": "Phase 1 internal import-plus-verify acceptance gate only; not a public SLA or Phase 1 implementation authorization"
+  }
+}

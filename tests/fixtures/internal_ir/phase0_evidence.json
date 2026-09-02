@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "phase": "phase0",
+  "status": "in_progress",
+  "baseline_source_commit": "84698f19",
+  "environment": {
+    "runner": "compose.dev.yaml cpu profile",
+    "python": "3.12.13",
+    "claim_scope": "local CPU characterization only"
+  },
+  "public_api_contract_hashes": {
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea",
+    "contracts/public-api-v1-candidate.json": "72124b6557b09ffee1ecbcc682e958d50aa6a1895e77f96d6e3bb63581ddc256",
+    "contracts/api-convergence-review-packet-008-010.json": "068e45620f6d6beecf8ad02960c40f20db05be5906bddde6fd46308df747de03",
+    "contracts/experimental-namespace-v1-candidate.json": "852c74c6441b89764836615ad4aca93eff6b20919e897f1166a1c26635177ba4",
+    "contracts/experimental-surface-v2-candidate.json": "f400fb5d8de97f4cf51a15e4c8d2634398fbd158b5b0fda0dbfcf0d4afd63ef4"
+  },
+  "circuit_ir_schema_version": "1.0",
+  "corpus": {
+    "path": "tests/fixtures/internal_ir/circuit_ir_v1/manifest.json",
+    "sha256": "860dba0f8160c5cac71e01d623f7dd79ec38366949e5c887586490fc01b97c88",
+    "canonical_opcode_count": 35,
+    "positive_fixture_count": 12,
+    "negative_fixture_count": 14,
+    "semantic_oracle_dispatch": "machine_enforced"
+  },
+  "metadata_inventory": {
+    "path": "tests/fixtures/internal_ir/metadata_inventory.json",
+    "sha256": "af543d3451e21ab1c41f08c0c8ef2cffb62a1cba6ef6b7b5df3d90f4e17f9f2c",
+    "consumed_key_count": 55
+  },
+  "performance_baseline": {
+    "path": "tests/fixtures/internal_ir/phase0_performance_baseline.json",
+    "sha256": "f8bcbd074aacccea8e98dbc2d843e92a1c16912b24b9434d9fc948be535c9073"
+  },
+  "phase1_budget_candidate": {
+    "path": "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json",
+    "sha256": "3b8e4ddcbf5a0e61a5791a5d8ab7a008a43789830c92212117a74d9e55499593",
+    "approved": true
+  },
+  "test_commands": [
+    "python -m pytest -q tests/internal_ir/test_phase0_corpus.py",
+    "python -m pytest -q tests/unit/test_execution_options.py",
+    "python -m pytest -q tests/unit/test_markdown_code_alignment.py tests/unit/test_public_api_snapshot.py tests/unit/test_issue040_ir_public_api.py",
+    "python tools/ci_tier.py pr-default",
+    "python benchmarks/internal/ir_phase0_baseline.py --gate-counts 10 100 1000 10000 --iterations 15 --warmup 3 --run-max-gates 1000"
+  ],
+  "latest_results": {
+    "phase0_corpus": "52 passed",
+    "execution_options_precision_contract": "16 passed",
+    "documentation_and_ir_contract": "20 passed",
+    "focused_combined": "88 passed",
+    "pr_runtime": "168 passed, 31 skipped",
+    "pr_default": "1019 passed, 10 skipped",
+    "performance_reproduction": "100-10000 gate legacy plan and peak-memory baseline reproduced in the pinned CPU environment"
+  },
+  "architecture_decisions": {
+    "approved": ["IR-001", "IR-002", "IR-003", "IR-004", "IR-005", "IR-006"],
+    "proposed": []
+  },
+  "known_blockers": [
+    "IR0-EXIT-003: API/compiler/runtime/training owner review is not recorded",
+    "IR0-EXIT-004: Phase 0 exit and Phase 1 implementation authorization are not approved"
+  ],
+  "closed_findings": [
+    "IR0-EXIT-001: manifest-declared semantic oracles are dispatched and machine-enforced",
+    "IR0-EXIT-002: the minimum semantic corpus has 12 positive and 14 negative fixtures",
+    "CircuitIR complex128 precision is preserved as a program constraint through fq.run"
+  ],
+  "exit_audit": "docs/development/IR_PHASE_0_EXIT_AUDIT.md",
+  "phase1_approval_packet": "docs/development/IR_PHASE_1_IMPLEMENTATION_APPROVAL_PACKET.md",
+  "owners": {
+    "api_owner": "pending explicit Phase 0 exit and Phase 1 authorization",
+    "compiler_runtime_training_review": "pending assignment or recorded sign-off"
+  },
+  "rollback_path": "Remove Phase 0-only fixtures, tests and documents; no runtime or public API depends on them.",
+  "approval": {
+    "phase1_authorized": false,
+    "public_maturity_changed": false
+  }
+}

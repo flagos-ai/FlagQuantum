@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase1-exit",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE1-EXIT",
+  "review_candidate": {
+    "path": "contracts/ir-phase1-exit-review-candidate.json",
+    "sha256": "6de90233cdb07f82ddd7a8903da0e17524eb2c993b3423803346e4b052aecad5"
+  },
+  "formal_signoffs": {
+    "api_owner": true,
+    "compiler_owner": true,
+    "runtime_owner": true,
+    "training_owner": true
+  },
+  "decisions": {
+    "phase1_technical_evidence_accepted": true,
+    "phase1_complete": true,
+    "phase2_authorized": false,
+    "public_ir_api_authorized": false,
+    "public_pass_api_authorized": false,
+    "default_path_change_authorized": false,
+    "production_path_change_authorized": false,
+    "provider_codegen_authorized": false,
+    "optimizer_migration_authorized": false
+  },
+  "accepted_scope": {
+    "profile": "circuit_ir_v1_static",
+    "implementation_visibility": "private internal",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "rollback_requires_user_migration": false
+  },
+  "next_state": "Phase 1 complete; pause before any Phase 2 proposal or implementation"
+}

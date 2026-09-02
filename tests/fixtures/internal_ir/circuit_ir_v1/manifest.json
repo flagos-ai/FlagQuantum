@@ -1,0 +1,376 @@
+{
+  "schema_version": "1.0",
+  "status": "phase0_characterization",
+  "registry_snapshot": {
+    "canonical_opcode_count": 35
+  },
+  "fixtures": [
+    {
+      "id": "static.single_qubit_registered.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "statevector"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [2],
+        "instructions": [
+          {"opcode": "i", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "x", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "y", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "z", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "h", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "s", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "sdg", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "t", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "tdg", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "sx", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "sxdg", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "rx", "wires": [0], "params": {"theta": 0.17}, "matrix": null, "metadata": {}},
+          {"opcode": "ry", "wires": [0], "params": {"theta": -0.31}, "matrix": null, "metadata": {}},
+          {"opcode": "rz", "wires": [0], "params": {"theta": 0.43}, "matrix": null, "metadata": {}},
+          {"opcode": "phase", "wires": [0], "params": {"theta": -0.29}, "matrix": null, "metadata": {}},
+          {"opcode": "u1", "wires": [0], "params": {"theta": 0.37}, "matrix": null, "metadata": {}},
+          {"opcode": "u2", "wires": [0], "params": {"phi": 0.23, "lbd": -0.41}, "matrix": null, "metadata": {}},
+          {"opcode": "u3", "wires": [0], "params": {"theta": 0.19, "phi": -0.47, "lbd": 0.61}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.two_qubit_registered.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "statevector"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex64",
+        "shape": [4],
+        "instructions": [
+          {"opcode": "cx", "wires": [0, 1], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "cy", "wires": [1, 0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "cz", "wires": [0, 1], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "swap", "wires": [1, 0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "crx", "wires": [0, 1], "params": {"theta": 0.13}, "matrix": null, "metadata": {}},
+          {"opcode": "cry", "wires": [1, 0], "params": {"theta": -0.27}, "matrix": null, "metadata": {}},
+          {"opcode": "crz", "wires": [0, 1], "params": {"theta": 0.39}, "matrix": null, "metadata": {}},
+          {"opcode": "cphase", "wires": [1, 0], "params": {"theta": -0.45}, "matrix": null, "metadata": {}},
+          {"opcode": "rxx", "wires": [0, 1], "params": {"theta": 0.21}, "matrix": null, "metadata": {}},
+          {"opcode": "ryy", "wires": [1, 0], "params": {"theta": -0.35}, "matrix": null, "metadata": {}},
+          {"opcode": "rzz", "wires": [0, 1], "params": {"theta": 0.57}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.three_qubit_registered.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "statevector"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 3,
+        "dtype": "complex64",
+        "shape": [8],
+        "instructions": [
+          {"opcode": "ccx", "wires": [0, 1, 2], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "cswap", "wires": [2, 0, 1], "params": {}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.channels_registered.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [2],
+        "instructions": [
+          {"opcode": "bit_flip", "wires": [0], "params": {}, "matrix": null, "metadata": {"is_channel": true}},
+          {"opcode": "phase_flip", "wires": [0], "params": {}, "matrix": null, "metadata": {"is_channel": true}},
+          {"opcode": "depolarizing", "wires": [0], "params": {}, "matrix": null, "metadata": {"is_channel": true}},
+          {"opcode": "amplitude_damping", "wires": [0], "params": {}, "matrix": null, "metadata": {"is_channel": true}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.parameter_and_expression.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex64",
+        "shape": [4],
+        "instructions": [
+          {"opcode": "rx", "wires": [0], "params": {"theta": {"$parameter": "theta"}}, "matrix": null, "metadata": {}},
+          {"opcode": "rz", "wires": [0], "params": {"theta": {"$expression": {"op": "mul", "args": [{"$parameter": "theta"}, 0.5]}}}, "matrix": null, "metadata": {}},
+          {"opcode": "ry", "wires": [1], "params": {"theta": {"$expression": {"op": "add", "args": [{"$parameter": "theta"}, {"$parameter": "phi"}]}}}, "matrix": null, "metadata": {}},
+          {"opcode": "phase", "wires": [1], "params": {"theta": {"$expression": {"op": "mul", "args": [{"$expression": {"op": "add", "args": [{"$parameter": "theta"}, {"$parameter": "phi"}]}}, 0.25]}}}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.two_parameter_entangled_gradient.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "gradient"],
+      "oracle_data": {
+        "bindings": {"theta": 0.23, "phi": -0.17},
+        "expectation_wires": [0, 1],
+        "analytic": "cos(theta) * (1 + cos(phi))"
+      },
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex128",
+        "shape": [4],
+        "instructions": [
+          {"opcode": "ry", "wires": [0], "params": {"theta": {"$parameter": "theta"}}, "matrix": null, "metadata": {}},
+          {"opcode": "rx", "wires": [1], "params": {"theta": {"$parameter": "phi"}}, "matrix": null, "metadata": {}},
+          {"opcode": "cx", "wires": [0, 1], "params": {}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {"source": "phase0-two-parameter-gradient"}
+      }
+    },
+    {
+      "id": "static.requests_and_ordering.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "measurement_exact_seeded"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex128",
+        "shape": [1, 4],
+        "instructions": [
+          {"opcode": "h", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "cx", "wires": [0, 1], "params": {}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [
+          {"name": "z", "wires": [1], "coefficient": 1.0, "metadata": {"name": "z1"}},
+          {"name": "zz", "wires": [0, 1], "coefficient": -0.5, "metadata": {"name": "zz01"}}
+        ],
+        "measurements": [
+          {"kind": "sample", "wires": [1, 0], "shots": 32, "metadata": {"seed": 17, "name": "ordered_samples"}}
+        ],
+        "metadata": {"batch_size": 1, "source": "phase0-corpus"}
+      }
+    },
+    {
+      "id": "static.custom_unitary.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "statevector"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex64",
+        "shape": [4],
+        "instructions": [
+          {"opcode": "custom_identity", "wires": [0], "params": {}, "matrix": [[1.0, 0.0], [0.0, 1.0]], "metadata": {"source": "phase0-corpus"}},
+          {"opcode": "custom_identity_4x4", "wires": [0, 1], "params": {}, "matrix": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], "metadata": {"source": "phase0-corpus"}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.expectation.complex64.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "expectation"],
+      "oracle_data": {"expected": [[-1.0, 0.0]], "atol": 1e-6},
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex64",
+        "shape": [4],
+        "instructions": [
+          {"opcode": "x", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "h", "wires": [1], "params": {}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [
+          {"kind": "expectation_z", "wires": [0, 1], "shots": null, "metadata": {"name": "z_pair"}}
+        ],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "static.expectation.complex128.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "expectation"],
+      "oracle_data": {"expected": [[-1.0, 0.0]], "atol": 1e-12},
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 2,
+        "dtype": "complex128",
+        "shape": [1, 4],
+        "instructions": [
+          {"opcode": "x", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "h", "wires": [1], "params": {}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [
+          {"kind": "expectation_z", "wires": [0, 1], "shots": null, "metadata": {"name": "z_pair"}}
+        ],
+        "metadata": {"batch_size": 1}
+      }
+    },
+    {
+      "id": "static.routing_and_emitters.v1",
+      "expected_import": "supported_exact",
+      "round_trip_expected": true,
+      "oracles": ["serialization_exact", "statevector", "routing_legality", "emitter_parse_or_golden", "backend_selection"],
+      "oracle_data": {
+        "coupling": "line",
+        "routing_strategy": "persistent_layout",
+        "qasm2_sha256": "65ffc46223dea13281ba5ec80f50832e7816fe55617114558404cb4d14ff7544",
+        "qcis_sha256": "91289dea37f289d8b15d3f1b0f7157caf4172a81bb083a8ac742040e6852513d"
+      },
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 4,
+        "dtype": "complex64",
+        "shape": [16],
+        "instructions": [
+          {"opcode": "x", "wires": [3], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "cx", "wires": [0, 3], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "h", "wires": [0], "params": {}, "matrix": null, "metadata": {}},
+          {"opcode": "rz", "wires": [2], "params": {"theta": 0.37}, "matrix": null, "metadata": {}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      }
+    },
+    {
+      "id": "dynamic.condition.v1",
+      "expected_import": "unsupported_with_diagnostics",
+      "round_trip_expected": false,
+      "oracles": ["serialization_exact", "unsupported_diagnostic"],
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [2],
+        "instructions": [
+          {"opcode": "measure", "wires": [0], "params": {}, "matrix": null, "metadata": {"is_dynamic": true, "classical_bit": 0}},
+          {"opcode": "x", "wires": [0], "params": {}, "matrix": null, "metadata": {"is_dynamic": true, "condition": {"classical_bit": 0, "equals": 1}}}
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {"num_clbits": 1}
+      }
+    }
+  ],
+  "negative_fixtures": [
+    {
+      "id": "invalid.kind.v1",
+      "expected_error": "IRSerializationError",
+      "payload": {"kind": "not.flagquantum", "version": "1.0"}
+    },
+    {
+      "id": "invalid.version.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "2.0", "n_wires": 1, "instructions": []}
+    },
+    {
+      "id": "invalid.unknown_top_level.v1",
+      "expected_error": "IRSerializationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [], "unknown": true}
+    },
+    {
+      "id": "invalid.n_wires.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 0, "instructions": []}
+    },
+    {
+      "id": "invalid.repeated_wire.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 2, "instructions": [{"opcode": "cx", "wires": [0, 0], "params": {}, "matrix": null, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.arity.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 2, "instructions": [{"opcode": "x", "wires": [0, 1], "params": {}, "matrix": null, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.missing_parameter.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [{"opcode": "rx", "wires": [0], "params": {}, "matrix": null, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.unknown_opcode.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [{"opcode": "unknown_gate", "wires": [0], "params": {}, "matrix": null, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.measurement_shots.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [], "measurements": [{"kind": "sample", "wires": [0], "shots": 0, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.shape.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "shape": [0], "instructions": []}
+    },
+    {
+      "id": "invalid.dtype.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "dtype": "", "instructions": []}
+    },
+    {
+      "id": "invalid.wire_range.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [{"opcode": "x", "wires": [1], "params": {}, "matrix": null, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.measurement_wire_range.v1",
+      "expected_error": "IRValidationError",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [], "measurements": [{"kind": "sample", "wires": [1], "shots": 8, "metadata": {}}]}
+    },
+    {
+      "id": "invalid.request_conflict.v1",
+      "expected_error": "ValueError",
+      "operation": "plan_with_external_measurement",
+      "payload": {"kind": "flagquantum.circuit_ir", "version": "1.0", "n_wires": 1, "instructions": [], "measurements": [{"kind": "sample", "wires": [0], "shots": 8, "metadata": {}}]}
+    }
+  ]
+}

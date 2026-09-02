@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "status": "phase0_development_baseline",
+  "claim_scope": "local CPU characterization; not a scalability claim",
+  "source_commit": "84698f19",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1,
+    "dtype": "complex64",
+    "n_wires": 4
+  },
+  "method": {
+    "script": "benchmarks/internal/ir_phase0_baseline.py",
+    "iterations": 15,
+    "warmup": 3,
+    "clock": "time.perf_counter_ns",
+    "timing_gc": "disabled after explicit collection",
+    "peak_memory": "tracemalloc",
+    "run_max_gates": 1000
+  },
+  "cases": [
+    {
+      "gate_count": 10,
+      "serialized_ir_bytes": 1230,
+      "p50_ms": {
+        "circuit_build_to_ir": 0.038,
+        "ir_to_json": 0.030208,
+        "legacy_simple_compile": 0.023542,
+        "legacy_plan": 0.17575,
+        "legacy_run": 1.093333
+      },
+      "p95_ms": {
+        "circuit_build_to_ir": 0.042892,
+        "ir_to_json": 0.067,
+        "legacy_simple_compile": 0.033591,
+        "legacy_plan": 0.1897,
+        "legacy_run": 1.228725
+      },
+      "peak_host_memory_bytes": {
+        "circuit_build_to_ir": 8283,
+        "ir_to_json": 17694,
+        "legacy_simple_compile": 2512,
+        "legacy_plan": 11511,
+        "legacy_run": 50836
+      }
+    },
+    {
+      "gate_count": 100,
+      "serialized_ir_bytes": 8386,
+      "p50_ms": {
+        "circuit_build_to_ir": 0.314167,
+        "ir_to_json": 0.182333,
+        "legacy_simple_compile": 0.142167,
+        "legacy_plan": 0.764875,
+        "legacy_run": 6.85475
+      },
+      "p95_ms": {
+        "circuit_build_to_ir": 0.326984,
+        "ir_to_json": 0.189425,
+        "legacy_simple_compile": 0.162796,
+        "legacy_plan": 0.849959,
+        "legacy_run": 7.25747
+      },
+      "peak_host_memory_bytes": {
+        "circuit_build_to_ir": 45168,
+        "ir_to_json": 44129,
+        "legacy_simple_compile": 4576,
+        "legacy_plan": 70456,
+        "legacy_run": 236916
+      }
+    },
+    {
+      "gate_count": 1000,
+      "serialized_ir_bytes": 79687,
+      "p50_ms": {
+        "circuit_build_to_ir": 3.160875,
+        "ir_to_json": 1.714,
+        "legacy_simple_compile": 1.374,
+        "legacy_plan": 6.757417,
+        "legacy_run": 62.386625
+      },
+      "p95_ms": {
+        "circuit_build_to_ir": 3.28385,
+        "ir_to_json": 1.846159,
+        "legacy_simple_compile": 1.472729,
+        "legacy_plan": 6.875863,
+        "legacy_run": 64.467579
+      },
+      "peak_host_memory_bytes": {
+        "circuit_build_to_ir": 430712,
+        "ir_to_json": 545859,
+        "legacy_simple_compile": 27032,
+        "legacy_plan": 628493,
+        "legacy_run": 2340222
+      }
+    },
+    {
+      "gate_count": 10000,
+      "serialized_ir_bytes": 796659,
+      "p50_ms": {
+        "circuit_build_to_ir": 31.514167,
+        "ir_to_json": 17.413333,
+        "legacy_simple_compile": 14.046041,
+        "legacy_plan": 67.218834
+      },
+      "p95_ms": {
+        "circuit_build_to_ir": 36.264646,
+        "ir_to_json": 32.251483,
+        "legacy_simple_compile": 17.378437,
+        "legacy_plan": 67.787533
+      },
+      "peak_host_memory_bytes": {
+        "circuit_build_to_ir": 4389512,
+        "ir_to_json": 5502009,
+        "legacy_simple_compile": 247352,
+        "legacy_plan": 6288342
+      }
+    }
+  ]
+}

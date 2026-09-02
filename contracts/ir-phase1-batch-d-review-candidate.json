@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase1-batch-d-exit",
+  "status": "ready_for_batch_d_review",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase1-batch-d-authorization.json",
+    "sha256": "752eaaec4a422fccc9e1f051e20fac0d383235932d9b64674d4b0f618968443a"
+  },
+  "scope": {
+    "implemented": [
+      "sealed canonical CircuitIR source envelope",
+      "source-hash and internal-program-identity binding",
+      "restricted exact CircuitIR exporter",
+      "canonical payload equality validation",
+      "tamper detection with structured diagnostics"
+    ],
+    "supported_fixture_round_trip_exact": true,
+    "lossy_mode": false,
+    "best_effort_mode": false,
+    "provider_codegen": false,
+    "public_exports_added": [],
+    "default_path_enabled": false
+  },
+  "implementation_artifacts": {
+    "flagquantum/_compiler/exporters/__init__.py": "64527bc8d78174604dc3c57eecbd098ace34ce18b5a774f385a8375425807bf2",
+    "flagquantum/_compiler/exporters/circuit_ir.py": "8d7add704574987c174b08796401bc2c6df0748a8ac6bc8c9fbaf06f841cc502"
+  },
+  "test_artifacts": {
+    "tests/internal_ir/test_phase1_batch_d_authorization.py": "4e40555a474e7defc403b6e5fa8b65761ba07eab95d95fc20e9963620c22e700",
+    "tests/internal_ir/test_circuit_ir_round_trip.py": "3c9cc2c8f308aaf63a045aa8c06bda6d3ef22647609a5aaaa8b8d7fc2bb9e55d"
+  },
+  "verification": {
+    "internal_ir": "178 passed",
+    "default": "1145 passed, 10 skipped",
+    "runtime": "168 passed, 31 skipped",
+    "ruff": "passed",
+    "black": "passed"
+  },
+  "capability_boundary": {
+    "can_restore_sealed_supported_source_exactly": true,
+    "can_export_arbitrarily_transformed_quantum_ir": false,
+    "can_generate_provider_payload": false
+  },
+  "exit_decision": {
+    "batch_d_technical_complete": true,
+    "batch_d_owner_accepted": false,
+    "batch_e_authorized": false,
+    "phase1_complete": false,
+    "phase2_authorized": false
+  },
+  "next_review_command": "approve IR-PHASE1-BATCH-D-EXIT-BATCH-E",
+  "next_review_semantics": "Accept Batch D evidence and authorize only Batch E analysis cache, DefUseAnalysis, QubitLifetimeAnalysis, PassManager contracts, deterministic pipeline digest, and one no-semantic-change example pass. No differential runtime bridge, public API, default runtime, Phase 2, or production-path change is authorized."
+}

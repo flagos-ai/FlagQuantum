@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase1-batch-e-exit",
+  "status": "ready_for_batch_e_review",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase1-batch-e-authorization.json",
+    "sha256": "662b70af9fb1eff1ba5d520b229ee60f1f30b34cfe682908e54e29d10f269a48"
+  },
+  "scope": {
+    "implemented": [
+      "deterministic nested block and operation traversal",
+      "instance-local revision-aware AnalysisManager cache",
+      "explicit preserved-analysis carry across equivalent revisions",
+      "DefUseAnalysis",
+      "QubitLifetimeAnalysis",
+      "immutable PassDescriptor and PassResult contracts",
+      "fail-closed PassManager semantic and revision checks",
+      "deterministic pipeline digest binding pass order, version, options, and seed",
+      "no-semantic-change canonicalization example pass"
+    ],
+    "semantic_transformations": false,
+    "optimizer_migration": false,
+    "differential_bridge": false,
+    "public_exports_added": [],
+    "default_path_enabled": false
+  },
+  "implementation_artifacts": {
+    "flagquantum/_compiler/analyses/__init__.py": "39cfaf6c0837f9af2d3349ae304897d97740fb715213139668e402f95f13b807",
+    "flagquantum/_compiler/analyses/base.py": "232d91452bd686c5ffbabdafb527147de6da4d8b9e87af6979abfc896a8faa6e",
+    "flagquantum/_compiler/analyses/def_use.py": "f36240fe3eb3a50928b59eabf42468d274dd0f07740a65e84a7aea38edfe4322",
+    "flagquantum/_compiler/analyses/qubit_lifetime.py": "d3276d4d3c21800516adb0b404c588161721b04f58927e3ff246bf398188ddaf",
+    "flagquantum/_compiler/passes/__init__.py": "f4a2be58fb5343da3629cbe52585606087417d56165500bcda47feedff958e65",
+    "flagquantum/_compiler/passes/base.py": "1509f3b9c8cfe55eb9a1768986c8caea721651252e618a7835c67cc76932826a",
+    "flagquantum/_compiler/passes/manager.py": "c9eecfb7e133b4595385042d50c8ff3b5c5851ce73c3b934578ed6a43ef14248",
+    "flagquantum/_compiler/passes/canonicalize.py": "68dd3504db42ce16d122e03d48db61ce45f8478fcedc38e756f7b48989ed0d96"
+  },
+  "test_artifacts": {
+    "tests/internal_ir/test_phase1_batch_e_authorization.py": "97e9772294fc3ec104c425b65f0e5757b49566b8e6ad126746e64e91e73f8bbe",
+    "tests/internal_ir/test_analyses.py": "ff0c52f6d389d46b7b0a4eff261dbe10b0074e764941f6cad05c1ce86845dea8",
+    "tests/internal_ir/test_pass_manager.py": "08dfa0564d19fbd5c1b81801c17af9fb0feffec42bd86b9d7adf64e758d4c56b"
+  },
+  "verification": {
+    "internal_ir": "193 passed",
+    "default": "1160 passed, 10 skipped",
+    "runtime": "168 passed, 31 skipped",
+    "ruff": "passed",
+    "black": "passed"
+  },
+  "capability_boundary": {
+    "can_cache_analysis_by_program_and_revision": true,
+    "can_track_linear_qubit_definition_use_and_lifetime": true,
+    "can_reject_phase1_pass_contract_violations": true,
+    "can_execute_semantic_optimization_passes": false,
+    "can_route_default_execution_through_quantum_ir": false
+  },
+  "exit_decision": {
+    "batch_e_technical_complete": true,
+    "batch_e_owner_accepted": false,
+    "batch_f_authorized": false,
+    "phase1_complete": false,
+    "phase2_authorized": false
+  },
+  "next_review_command": "approve IR-PHASE1-BATCH-E-EXIT-BATCH-F",
+  "next_review_semantics": "Accept Batch E evidence and authorize only Batch F test/development differential bridge, correctness and gradient parity, property and negative testing, approved importer/verifier performance budgets, and proof of zero default-path impact. No public API, production-path switch, Phase 2, provider codegen, or optimizer migration is authorized."
+}

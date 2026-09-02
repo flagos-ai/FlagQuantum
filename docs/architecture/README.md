@@ -1,5 +1,6 @@
 # Architecture
 
+- [Multi-level IR and quantum compiler infrastructure](MULTI_LEVEL_IR_ARCHITECTURE.md)
 - [Noise code organization and architecture review](NOISY_SIMULATION_CODE_ORGANIZATION.md)
 
 Design documents for execution, parallelism, state ownership, and internal

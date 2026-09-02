@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "attestation": "ir-phase1-batch-c-importer-successor",
+  "status": "passed",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase1-batch-f-performance-remediation-authorization.json",
+    "sha256": "94ab93e81aa19c288f41dd520a39734b1894e6f5f00d4d623cd6f5c4c0377984"
+  },
+  "historical_candidate": {
+    "path": "contracts/ir-phase1-batch-c-review-candidate.json",
+    "sha256": "913ead806f4a0fb6f262271047f60d877dabf6a3410015ad7c86ba4c2e8385af",
+    "mutated": false
+  },
+  "successors": {
+    "flagquantum/_compiler/importers/circuit_ir.py": {
+      "previous_sha256": "3f8d18cccb05e5bf267d58aba3fbff3baa3579257c92da131f358fb71e606770",
+      "current_sha256": "e67ac3e5dad0cc3e5241708c6b5592bc945595870d637c1194a41172fbdc23c3",
+      "change_class": "allocation_lifetime_only",
+      "semantic_output_change": false
+    }
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json",
+    "sha256": "3b8e4ddcbf5a0e61a5791a5d8ab7a008a43789830c92212117a74d9e55499593",
+    "changed": false
+  },
+  "retest": {
+    "environment": "flagquantum-dev:pr-check; Linux aarch64; Python 3.12.13; torch 2.13.0+cpu; one torch thread",
+    "iterations": 15,
+    "warmup": 3,
+    "growth_passed": true,
+    "cases": [
+      {
+        "gate_count": 10,
+        "p95_ms": 0.258725,
+        "peak_host_memory_bytes": 39816,
+        "latency_passed": true,
+        "memory_passed": true
+      },
+      {
+        "gate_count": 100,
+        "p95_ms": 1.142159,
+        "peak_host_memory_bytes": 130678,
+        "latency_passed": true,
+        "memory_passed": true
+      },
+      {
+        "gate_count": 1000,
+        "p95_ms": 11.923438,
+        "peak_host_memory_bytes": 1055846,
+        "latency_passed": true,
+        "memory_passed": true
+      },
+      {
+        "gate_count": 10000,
+        "p95_ms": 93.778325,
+        "peak_host_memory_bytes": 9956478,
+        "latency_passed": true,
+        "memory_passed": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+# Multi-level IR Architecture Decisions
+
+本目录记录多层 IR 实施过程中需要独立评审的架构决策。ADR 批准不自动改变 Stable
+Core，不自动完成 Phase 退出门，也不替代实现测试、性能证据和 API change proposal。
+
+| ADR | 决策 | 状态 | 批准范围 |
+| --- | --- | --- | --- |
+| [IR-001](IR_001_PROGRAM_REQUEST_BOUNDARY.md) | 程序语义与执行请求边界 | Approved | 内部 importer 与受限 round-trip |
+| [IR-002](IR_002_LINEAR_QUBIT_VALUES.md) | QuantumIR 线性 qubit value | Approved | 内部 value/verifier 模型 |
+| [IR-003](IR_003_IDENTITY_LAYERS.md) | Program、Compilation、Execution identity 分层 | Approved | Phase 1 内部 program identity；不替换公共 identity |
+| [IR-004](IR_004_CUSTOM_MATRIX_OPERATIONS.md) | 自定义 matrix operation 边界 | Approved | concrete unitary 验证与 round-trip |
+| [IR-005](IR_005_PARAMETERS_AND_TENSORS.md) | 参数、tensor 与 late binding | Approved | 内部 binding 与 gradient 保持 |
+| [IR-006](IR_006_PHASE1_REVERSIBLE_SCOPE.md) | Phase 1 可逆静态范围 | Approved | `circuit_ir_v1_static` profile |
+
+批准记录：API owner 于 2026-09-01 通过明确指令批准 IR-001～003。实现仍须遵守
+[`MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md`](../MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md)
+中的 Phase 0/1 退出门。
+
+API owner 于同日通过后续明确指令批准 IR-004～006。六份 ADR 的批准均只覆盖内部架构
+决策，不自动完成 Phase 0，也不授权修改 Stable Core 或切换默认执行路径。

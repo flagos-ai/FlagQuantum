@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase1-batch-c-exit",
+  "status": "ready_for_batch_c_review",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase1-batch-c-authorization.json",
+    "sha256": "3030cbac4c73a44ba2f1113f2d503f47a054857dcd639d3d6b28f289998181a6"
+  },
+  "scope": {
+    "implemented": [
+      "CircuitIR v1 static-profile importer",
+      "deterministic wire-to-linear-value chains",
+      "typed execution-request split",
+      "typed dtype, shape, batch, and runtime constraints",
+      "source identity and non-semantic provenance",
+      "typed instruction semantic annotations",
+      "symbolic parameter and expression preservation",
+      "external autograd-safe runtime binding table",
+      "concrete custom-unitary validation"
+    ],
+    "canonical_opcodes_imported": 35,
+    "phase0_manifest_status_matched": true,
+    "input_mutation": false,
+    "public_exports_added": [],
+    "default_path_enabled": false,
+    "exporter_implemented": false
+  },
+  "implementation_artifacts": {
+    "flagquantum/_compiler/bindings.py": "c3260178a881a87ecf064b847a4f8ff6be2855e0d70a64def7a81a3af7084e6d",
+    "flagquantum/_compiler/import_models.py": "cbc5bf7f9cb32188109b6f57d0cacfaac5207676ca6f74ad308878ce3e595787",
+    "flagquantum/_compiler/importers/__init__.py": "981b5158e9eed8e4546ac221669bbe8e675ac396678a3431b26f3486fce26766",
+    "flagquantum/_compiler/importers/circuit_ir.py": "3f8d18cccb05e5bf267d58aba3fbff3baa3579257c92da131f358fb71e606770"
+  },
+  "test_artifacts": {
+    "tests/internal_ir/test_phase1_batch_c_authorization.py": "09ea35c49ae502d2f5a14a777b96ce9874a79b2e3d15665e78cff9bc7e734963",
+    "tests/internal_ir/test_circuit_ir_import.py": "6d05b8142bc57318cf90b1149f2066ceab747b80e686c5235aae1a4c86913168",
+    "tests/internal_ir/test_circuit_ir_import_negative.py": "057dbb064e46aa85995ebc770490041799797bb8214126c15d8e608fa25aa6eb"
+  },
+  "verification": {
+    "internal_ir": "155 passed",
+    "default": "1122 passed, 10 skipped",
+    "runtime": "168 passed, 31 skipped",
+    "ruff": "passed",
+    "black": "passed"
+  },
+  "exit_decision": {
+    "batch_c_technical_complete": true,
+    "batch_c_owner_accepted": false,
+    "batch_d_authorized": false,
+    "phase1_complete": false,
+    "phase2_authorized": false
+  },
+  "next_review_command": "approve IR-PHASE1-BATCH-C-EXIT-BATCH-D",
+  "next_review_semantics": "Accept Batch C evidence and authorize only Batch D restricted CircuitIR exporter and exact canonical round-trip validation. No provider codegen, public API, default runtime, Phase 2, or production-path change is authorized."
+}
