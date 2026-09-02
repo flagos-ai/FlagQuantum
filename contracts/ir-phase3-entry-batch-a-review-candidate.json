@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "phase": "IR Phase 3 entry / Batch A",
+  "branch": "codex/open-source-api-convergence",
+  "reviewed_artifacts": {
+    "contracts/ir-phase2-exit-authorization.json": "ef4fa0592338c5ff19f11dcaaf7676c6c8f91fd82d84144cb74238a1ea1acc01",
+    "docs/development/IR_IMPLEMENTATION_STATUS.md": "5931df5b2324aa7d1af67fc7bd648ac7501b0a4f8cf2d0849c0c2d3c949fd819",
+    "docs/development/IR_PHASE_3_ENTRY_APPROVAL_PACKET.md": "5ec4feb11cb11fbedd0ffd0e05ce15a5a9becf3904e7f6e7a9d2c80fb215924d",
+    "docs/architecture/MULTI_LEVEL_IR_ARCHITECTURE.md": "33ce39bb1040818248baf74f491caa17ab234f1e5d006088bfba107cc26e1a65",
+    "docs/roadmap/UNIFIED_HYBRID_EXECUTION_ROADMAP.md": "1bbbd216d8fc6b1b3a53310a595ed050b74e264b18960281eb6d79c461d6d8cd",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "technical_review": {
+    "phase2_exit_verified": true,
+    "identity_ownership_boundaries_defined": true,
+    "batching_and_sequential_gates_defined": true,
+    "shadow_mode_safety_boundary_defined": true,
+    "rollback_defined": true,
+    "performance_baseline_before_budget_required": true
+  },
+  "batch_a_scope": {
+    "profile": "private_provider_free_target_capabilities_v1",
+    "allowed_capabilities": [
+      "immutable closed-vocabulary target capability snapshot",
+      "canonical semantic fingerprint",
+      "structured capability difference diagnostics",
+      "anonymous local, QASM, and non-QASM fixtures",
+      "privacy and invalid-combination fail-closed checks",
+      "independent performance baseline"
+    ],
+    "allowed_root": "flagquantum/_compiler",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "real_provider_or_backend_identity_allowed": false,
+    "later_batches_authorized": false
+  },
+  "authorization": {
+    "phase3_entry_authorized": false,
+    "batch_a_authorized": false,
+    "batch_a_performance_baseline_authorized": false,
+    "batch_a_performance_budget_approved": false,
+    "batch_b_through_h_authorized": false,
+    "target_ir_or_artifact_implementation_authorized": false,
+    "runtime_adapter_or_conformance_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "provider_or_remote_submission_authorized": false,
+    "public_api_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "formal_signoffs": {
+    "compiler_owner": false,
+    "runtime_owner": false,
+    "deployment_owner": false,
+    "api_owner": false
+  },
+  "remaining_required_actions": [
+    "compiler owner accepts the capability schema and identity boundary",
+    "runtime owner accepts that Batch A has no runtime or default-path integration",
+    "deployment owner accepts external backend IDs remain execution bindings only",
+    "API owner accepts the private-only and rollback constraints",
+    "owner explicitly authorizes Phase 3 entry, Batch A, and baseline collection"
+  ],
+  "approval_command": "approve IR-PHASE3-ENTRY-BATCH-A",
+  "approval_text": "Authorize IR Phase 3 entry and Batch A private provider-free TargetCapabilities schema, semantic fingerprint, structured diagnostics, anonymous fixtures, and performance baseline only. Do not authorize Batch B-H, TargetIR, ExecutableArtifact, RuntimeAdapter, conformance, shadow/default integration, provider SDK or remote submission, real backend IDs, public APIs, legacy retirement, a performance budget, or Phase 3 exit."
+}
