@@ -22,6 +22,9 @@ ARTIFACT_SUCCESSOR = (
 BATCH_B_SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-b-authorized-artifact-successor.json"
 )
+BATCH_C_SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-c-authorized-artifact-successor.json"
+)
 
 
 def test_successor_budget_review_binds_every_remediation_artifact() -> None:
@@ -34,6 +37,14 @@ def test_successor_budget_review_binds_every_remediation_artifact() -> None:
         actual_hash = hashlib.sha256(artifact.read_bytes()).hexdigest()
         if actual_hash == expected_hash:
             continue
+        batch_c = json.loads(BATCH_C_SUCCESSOR.read_text(encoding="utf-8"))
+        candidate = batch_c["candidates"].get(str(REVIEW.relative_to(ROOT)))
+        transition = (
+            candidate["artifact_transitions"].get(relative_path) if candidate else None
+        )
+        if transition is not None:
+            assert transition["successor_sha256"] == actual_hash
+            actual_hash = transition["predecessor_sha256"]
         successor = json.loads(BATCH_B_SUCCESSOR.read_text(encoding="utf-8"))
         transition = successor["candidates"][str(REVIEW.relative_to(ROOT))][
             "artifact_transitions"

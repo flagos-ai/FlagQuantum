@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-c-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-b-exit-batch-c-authorization.json",
+    "sha256": "d77484a0eeaff43164f19e40599429121ca5f0e7215bae9cb66a36fbf8a7e896"
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase2-batch-c-authorized-artifact-successor.json": "619257cfa276d0f753af0e0b6ec9535028aa1acfde838b6659977ee802ed25ef",
+    "flagquantum/_compiler/passes/placement_routing.py": "2051f3b8d911782027c7a746c01758b46ad9fb262e809bb8867723c61f4f0209",
+    "flagquantum/_compiler/passes/__init__.py": "3e05c4408567f3b55213d2288b00006feb029819ae7f7b6cc641e2954e3555b1",
+    "benchmarks/internal/ir_phase2_batch_c_gate.py": "11219ffd856f4d33501d165ee3d57f6f6830fc6c79cce3399124c2c6aab3f4b9",
+    "contracts/ir-phase2-batch-c-performance-baseline.json": "72f768ef814a892f63496d918ce24c3e2d683521736213168f363d9b3e16d5a8",
+    "tests/fixtures/internal_ir/phase2_batch_c_performance_budget_candidate.json": "808d2db46329a070bce7a3f7d801c117fc6652439b3dff784af48ffe4a690b43",
+    "tests/internal_ir/test_phase2_batch_c_authorization.py": "c8e692d6ea2da45dfe5de0ae368b49d674a31652068fedc5425b3156aac98444",
+    "tests/internal_ir/test_phase2_placement_routing.py": "5df9807c546e8a32286e16d18ed1687874d5c63705562dc5c5e03549ba5b0838",
+    "tests/internal_ir/test_phase2_batch_c_performance_candidate.py": "d2a78fd64c6341081fe5fa4dc9508b991380236d82629982d8bfed4efceed58e",
+    "tests/internal_ir/test_default_path_zero_impact.py": "8ee7146a03f31ffb564e958514481b38974d48f81813a2a64d21a1b0fff7cd2c",
+    "docs/development/IR_PHASE_2_BATCH_C_IMPLEMENTATION_REVIEW.md": "454e163b1e1ebf29cbb145802149889010277084f5c32d56e149a4ce6479a9e3"
+  },
+  "technical_evidence": {
+    "directed_topology_legality": "passed",
+    "logical_physical_mapping": "passed",
+    "final_identity_restoration": "passed",
+    "asymmetric_wire_order": "passed",
+    "state_differential": "passed",
+    "gradient_differential": "passed",
+    "determinism": "passed",
+    "unsupported_fail_closed": "passed",
+    "default_path_zero_impact": "passed",
+    "performance_baseline_measured": true
+  },
+  "proposed_decisions": {
+    "batch_c_performance_budget_approved": true,
+    "batch_c_machine_gate_authorized": true,
+    "batch_c_exit_authorized": false,
+    "batch_d_authorized": false,
+    "emitter_or_provider_codegen_authorized": false,
+    "remote_submission_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-C-PERFORMANCE-BUDGET",
+  "approval_text": "I accept the isolated Batch C routing-stress CPU baseline and approve its internal regression budget and machine gate. This approval does not authorize Batch C exit, Batch D, emitters, provider code generation, remote submission, public API or default-path changes, legacy compiler retirement, or Phase 2 exit.",
+  "pause_after": "approved Batch C budget validation"
+}

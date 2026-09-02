@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "status": "pending_owner_approval",
+  "scope": "Phase 2 Batch C opt-in private placement/routing pass on local CPU",
+  "baseline": "contracts/ir-phase2-batch-c-performance-baseline.json",
+  "derivation": {
+    "latency": "at least 1.25 * measured p95, rounded upward to a reviewable boundary",
+    "memory": "at least 1.25 * measured tracemalloc peak, rounded upward to a binary reviewable boundary",
+    "workload": "8-qubit bidirectional line with a long-range CX-heavy deterministic mix",
+    "claim_boundary": "internal regression budget only; not a public SLA"
+  },
+  "budgets": [
+    {
+      "gate_count": 10,
+      "pipeline_p95_ms_max": 5.0,
+      "peak_host_memory_bytes_max": 1048576
+    },
+    {
+      "gate_count": 100,
+      "pipeline_p95_ms_max": 25.0,
+      "peak_host_memory_bytes_max": 2097152
+    },
+    {
+      "gate_count": 1000,
+      "pipeline_p95_ms_max": 500.0,
+      "peak_host_memory_bytes_max": 16777216
+    },
+    {
+      "gate_count": 10000,
+      "pipeline_p95_ms_max": 3000.0,
+      "peak_host_memory_bytes_max": 167772160
+    }
+  ],
+  "approval": {
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null
+  },
+  "later_scope": {
+    "batch_c_exit_authorized": false,
+    "batch_d_authorized": false,
+    "public_or_default_path_change_authorized": false
+  }
+}

@@ -3,6 +3,7 @@
 from .base import CompilerPass, PassDescriptor, PassResult
 from .canonicalize import CanonicalizeAttributesPass
 from .manager import PassManager, PipelineResult
+from .placement_routing import DirectedCouplingGraph, PlacementRoutingPass
 from .static_canonicalization import (
     CancelSelfInverseOperationsPass,
     MergeAdjacentRotationsPass,
@@ -24,6 +25,8 @@ __all__ = [
     "PassManager",
     "PassResult",
     "PipelineResult",
+    "DirectedCouplingGraph",
+    "PlacementRoutingPass",
     "MergeAdjacentRotationsPass",
     "RemoveIdentityOperationsPass",
     "StaticCanonicalizationPass",

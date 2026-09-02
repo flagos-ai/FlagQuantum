@@ -15,6 +15,9 @@ CANDIDATE = (
 SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-b-performance-budget-artifact-successor.json"
 )
+BATCH_C_SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-c-authorized-artifact-successor.json"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -25,6 +28,8 @@ def test_batch_b_performance_review_binds_authorization_and_artifacts() -> None:
     candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
     successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
     successor_candidate = successor["candidates"][str(CANDIDATE.relative_to(ROOT))]
+    batch_c = json.loads(BATCH_C_SUCCESSOR.read_text(encoding="utf-8"))
+    batch_c_candidate = batch_c["candidates"][str(CANDIDATE.relative_to(ROOT))]
     authorization = candidate["authorization"]
 
     assert candidate["status"] == "ready_for_owner_approval"
@@ -33,7 +38,9 @@ def test_batch_b_performance_review_binds_authorization_and_artifacts() -> None:
         actual_hash = _sha256(ROOT / relative_path)
         if actual_hash == expected_hash:
             continue
-        transition = successor_candidate["artifact_transitions"][relative_path]
+        transition = batch_c_candidate["artifact_transitions"].get(relative_path)
+        if transition is None:
+            transition = successor_candidate["artifact_transitions"][relative_path]
         assert transition["predecessor_sha256"] == expected_hash
         assert transition["successor_sha256"] == actual_hash
 

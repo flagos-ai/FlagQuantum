@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-batch-b-exit-batch-c",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-BATCH-B-EXIT-BATCH-C",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-batch-b-exit-batch-c-review-candidate.json",
+    "sha256": "4d9a5de5f7401f66b3a60e0dc69ab05f3f765fb0711a497eb416b7b8ae2b9caa"
+  },
+  "decisions": {
+    "batch_b_exit_approved": true,
+    "batch_c_private_placement_routing_authorized": true,
+    "batch_c_performance_baseline_authorized": true,
+    "batch_c_performance_budget_approved": false,
+    "emitter_or_provider_codegen_authorized": false,
+    "remote_submission_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "pause_after": "Batch C placement and routing implementation review"
+}
