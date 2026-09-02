@@ -24,6 +24,13 @@ from flagquantum._compiler.pipeline_cache import BoundedPipelineCache, CacheDisp
 from flagquantum.core.ir import CircuitIR, Instruction
 
 ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BUDGET = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "internal_ir"
+    / "phase2_batch_f_performance_budget_candidate.json"
+)
 
 
 def build_source(gate_count: int) -> CircuitIR:
@@ -123,11 +130,39 @@ def measure_case(gate_count: int, *, iterations: int, warmup: int) -> dict[str, 
     }
 
 
-def evaluate(*, iterations: int, warmup: int) -> dict[str, Any]:
+def evaluate(budget_path: Path, *, iterations: int, warmup: int) -> dict[str, Any]:
+    budget_path = budget_path.resolve()
+    payload = json.loads(budget_path.read_text(encoding="utf-8"))
+    budgets = {int(item["gate_count"]): item for item in payload["budgets"]}
+    cases = []
+    for count in (10, 100, 1000, 10000):
+        case = measure_case(count, iterations=iterations, warmup=warmup)
+        budget = budgets[count]
+        case["budget"] = budget
+        case["cold_latency_passed"] = (
+            case["cold_end_to_end_p95_ms"] <= budget["cold_end_to_end_p95_ms_max"]
+        )
+        case["cached_latency_passed"] = (
+            case["cached_end_to_end_p95_ms"] <= budget["cached_end_to_end_p95_ms_max"]
+        )
+        case["memory_passed"] = (
+            case["cold_peak_host_memory_bytes"]
+            <= budget["cold_peak_host_memory_bytes_max"]
+        )
+        case["passed"] = bool(
+            case["cold_latency_passed"]
+            and case["cached_latency_passed"]
+            and case["memory_passed"]
+            and case["deterministic_identity"]
+            and case["deterministic_text_size"]
+        )
+        cases.append(case)
+    passed = all(case["passed"] for case in cases)
     return {
         "schema_version": "1.0",
-        "status": "observed_baseline_not_budget",
-        "claim_scope": "Phase 2 Batch F private CPU baseline; not a public SLA",
+        "status": "passed" if passed else "failed",
+        "claim_scope": "Phase 2 Batch F private CPU budget; not a public SLA",
+        "budget_path": str(budget_path.relative_to(ROOT)),
         "environment": {
             "python": platform.python_version(),
             "torch": torch.__version__,
@@ -141,10 +176,7 @@ def evaluate(*, iterations: int, warmup: int) -> dict[str, Any]:
             "peak_memory": "tracemalloc",
             "pipeline": "import, canonicalize, decompose, route, cache, and three emitters",
         },
-        "cases": [
-            measure_case(count, iterations=iterations, warmup=warmup)
-            for count in (10, 100, 1000, 10000)
-        ],
+        "cases": cases,
     }
 
 
@@ -152,13 +184,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=2)
+    parser.add_argument("--budget", type=Path, default=DEFAULT_BUDGET)
     args = parser.parse_args()
     if args.iterations < 3 or args.warmup < 1:
         raise ValueError("iterations must be >= 3 and warmup must be >= 1")
     torch.set_num_threads(1)
-    print(
-        json.dumps(evaluate(iterations=args.iterations, warmup=args.warmup), indent=2)
-    )
+    result = evaluate(args.budget, iterations=args.iterations, warmup=args.warmup)
+    print(json.dumps(result, indent=2))
+    if result["status"] != "passed":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

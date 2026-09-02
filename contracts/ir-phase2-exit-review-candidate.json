@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "phase": "2",
+  "review": "ir-phase2-exit",
+  "status": "ready_for_owner_review",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "source_commit": "working-tree",
+  "entry_authorization": {
+    "path": "contracts/ir-phase2-entry-batch-a-authorization.json",
+    "sha256": "e23391b18cf262556633485915f6de7ecb81b83452918b4d27f127d2f3cbd222"
+  },
+  "final_authorization": {
+    "path": "contracts/ir-phase2-batch-f-performance-budget-authorization.json",
+    "sha256": "e91772c1bd45473699a7adeb733e00c0625e8ea5e5dfd9f043881755c55c4276"
+  },
+  "public_contract": {
+    "stable_api_manifest": {
+      "path": "docs/public_api_v1.json",
+      "sha256": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4"
+    },
+    "baseline": {
+      "path": "contracts/public-api-v0.2-baseline.json",
+      "sha256": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+    },
+    "root_exports_added": [],
+    "default_run_plan_path_changed": false,
+    "deployment_package_schema_changed": false
+  },
+  "implemented_batches": [
+    "A: static canonicalization",
+    "B: RX/RY/RZ/CX target decomposition",
+    "C: directed placement and routing",
+    "D: restricted OpenQASM 2, OpenQASM 3, and QCIS emitters",
+    "E: deterministic compilation identity and bounded in-memory cache",
+    "F: provider-free end-to-end offline compilation and differential corpus"
+  ],
+  "performance_validations": {
+    "batch_a": {"path": "contracts/ir-phase2-batch-a-successor-budget-validation.json", "sha256": "2332cd1e0917df0075c39587d90064853b12117f4c72157b12abb627aa8d693a"},
+    "batch_b": {"path": "contracts/ir-phase2-batch-b-performance-budget-validation.json", "sha256": "e6334436fdda0616e4e3b1405f21793ba198d59b12b0690557bcfcbf165e81fd"},
+    "batch_c": {"path": "contracts/ir-phase2-batch-c-performance-budget-validation.json", "sha256": "ffafa2fbd29c4a03cf67c7d542123103521730e67e9bd96964e84409105cb165"},
+    "batch_d": {"path": "contracts/ir-phase2-batch-d-performance-budget-validation.json", "sha256": "945af247281f8e42410bb2354d7d932f757dc8ff4cf34db6e6186b44e511becb"},
+    "batch_e": {"path": "contracts/ir-phase2-batch-e-performance-budget-validation.json", "sha256": "487d53b75e48ffb80f13ffdc0176241033111727827c4bd48eef8d1900be9072"},
+    "batch_f": {"path": "contracts/ir-phase2-batch-f-performance-budget-validation.json", "sha256": "407305dec25ebd54994aac8e6db0b4dfd66d12514aa262ec22e622bfea7d6e47"}
+  },
+  "implementation_artifacts": {
+    "flagquantum/_compiler/passes/static_canonicalization.py": "00674ac31ab35625b0a21a39b2260fee3fcab46d2fae09e64f16e675bca90dfb",
+    "flagquantum/_compiler/passes/target_decomposition.py": "f56c0a276865e96811e7a8d19d6c2f9e62896d10fae7a2b1d807fd94ff88d786",
+    "flagquantum/_compiler/passes/placement_routing.py": "2051f3b8d911782027c7a746c01758b46ad9fb262e809bb8867723c61f4f0209",
+    "flagquantum/_compiler/exporters/text.py": "5edcef998f0033a06a3cd3c17d7de3bf753ecf17d184303d190bbb91d300b80a",
+    "flagquantum/_compiler/pipeline_cache.py": "04cb9851b6a50fec4b90bbe90dce4b7193ee2c4fdbd05b454db3ebab1972c37e",
+    "flagquantum/_compiler/offline_deployment.py": "fe3aa9ddd492d80ba262edeb5c7afe16c52b3da8b93730071b0e856dce94b3d7",
+    "tests/fixtures/internal_ir/phase2_batch_f_offline_corpus.json": "ceb5e2e2aac7c6bc584649d82ce6dc48f25dbe4341547c13ae42e82cc8379936",
+    "docs/development/IR_PHASE_2_BATCH_F_COMPLETION_REVIEW.md": "b710c4b15b1acc1b20e04d303c77b1920ef5c8bdb2f3d14f1ab7a50bd7a12fca"
+  },
+  "correctness": {
+    "static_canonicalization": "passed",
+    "target_decomposition_up_to_global_phase": "passed",
+    "directed_routing_and_logical_output_order": "passed",
+    "openqasm2_openqasm3_qcis_parser_semantics": "passed",
+    "state_expectation_gradient_and_order_differential": "passed",
+    "unsupported_deployment_features_fail_closed": "passed",
+    "deterministic_identity_hash_and_cache": "passed",
+    "default_and_public_path_zero_impact": "passed"
+  },
+  "verification": {
+    "internal_ir": "445 passed",
+    "default": "1414 passed, 10 skipped",
+    "runtime": "168 passed, 31 skipped",
+    "benchmark_release_contract": "120 passed, 10 skipped",
+    "batch_f_performance": "10, 100, 1000, and 10000 gate budgets passed",
+    "pre_commit": "passed"
+  },
+  "accepted_scope_if_approved": {
+    "profile": "private_static_compiler_v1",
+    "implementation_visibility": "private internal",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "provider_or_remote_execution_enabled": false,
+    "legacy_retired": false
+  },
+  "known_limitations": [
+    "no public IR, pass, or compiler API",
+    "no default-path or production deployment migration",
+    "no provider discovery, live calibration, credentials, backend IDs, or remote jobs",
+    "no dynamic circuit, measurement/classical register, timing, pulse, noise-channel, or unrestricted OpenQASM 3 lowering",
+    "no persistent or distributed compilation cache",
+    "no auxiliary-qubit allocation"
+  ],
+  "formal_exit_decision": {
+    "technical_evidence_complete": true,
+    "api_owner_accepted": false,
+    "compiler_owner_accepted": false,
+    "runtime_owner_accepted": false,
+    "training_owner_accepted": false,
+    "phase2_complete": false,
+    "phase3_authorized": false
+  },
+  "next_review_command": "approve IR-PHASE2-EXIT",
+  "next_review_semantics": "Accept only the private static compiler evidence and mark IR Phase 2 technically complete. This does not authorize public APIs, default or production path switching, legacy retirement, provider/adapter implementation, remote submission, or Phase 3 implementation."
+}
