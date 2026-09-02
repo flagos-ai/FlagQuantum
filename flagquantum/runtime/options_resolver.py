@@ -108,9 +108,14 @@ def runtime_config_to_execution_options(config: Any | None) -> ExecutionOptions:
 def circuit_execution_constraints(circuit: Any) -> ExecutionOptions:
     """Extract only stable program constraints from a Circuit-like object."""
 
-    if not hasattr(circuit, "bsz"):
-        return ExecutionOptions()
     dtype = str(getattr(circuit, "dtype", "")).removeprefix("torch.") or None
+    if not hasattr(circuit, "bsz"):
+        # CircuitIR carries a numerical precision constraint even though it has
+        # no live Circuit device or ``bsz`` attribute. Ignoring it would let the
+        # framework complex64 default silently downcast a complex128 program.
+        if dtype is not None:
+            return ExecutionOptions(precision=dtype)
+        return ExecutionOptions()
     device = str(getattr(circuit, "device", "")) or None
     return ExecutionOptions(
         batch_size=int(circuit.bsz),

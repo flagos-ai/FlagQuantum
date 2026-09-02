@@ -36,7 +36,7 @@ def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
 def _statevector_target(output: Any, n_wires: int) -> Any:
     if not isinstance(output, torch.Tensor):
         return output
-    if output.is_complex() and output.ndim >= 2 and output.shape[-1] == 2**n_wires:
+    if output.is_complex() and output.ndim == 2 and output.shape[-1] == 2**n_wires:
         from ..circuit import Circuit
 
         return Circuit(
@@ -50,6 +50,36 @@ def _statevector_target(output: Any, n_wires: int) -> Any:
         "measurements for this tensor result are not implemented; "
         "request a statevector, MPS, or tensor-network execution mode"
     )
+
+
+def _density_matrix_probabilities(
+    output: torch.Tensor,
+    wires: tuple[int, ...],
+    *,
+    n_wires: int,
+    noise_model: Any | None,
+) -> torch.Tensor | None:
+    dimension = 2**n_wires
+    if (
+        not output.is_complex()
+        or output.ndim != 3
+        or output.shape[-2:] != (dimension, dimension)
+    ):
+        return None
+    probabilities = torch.real(torch.diagonal(output, dim1=-2, dim2=-1))
+    if noise_model is not None:
+        probabilities = noise_model.apply_readout_probabilities(
+            probabilities,
+            n_wires=n_wires,
+        )
+    shaped = probabilities.reshape((output.shape[0],) + (2,) * n_wires)
+    unselected_axes = tuple(wire + 1 for wire in range(n_wires) if wire not in wires)
+    marginal = shaped.sum(dim=unselected_axes) if unselected_axes else shaped
+    current_order = tuple(sorted(wires))
+    if wires != current_order:
+        permutation = (0,) + tuple(current_order.index(wire) + 1 for wire in wires)
+        marginal = marginal.permute(permutation)
+    return marginal.reshape(output.shape[0], 2 ** len(wires))
 
 
 def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
@@ -271,13 +301,21 @@ def execute_measurements(
     requests: Sequence[MeasurementNode],
     *,
     n_wires: int,
+    noise_model: Any | None = None,
 ) -> tuple[MeasurementResult, ...]:
     """Execute ordered measurement requests against one native backend result."""
 
     if not requests:
         return ()
     validate_measurements(requests, n_wires=n_wires)
-    target = _statevector_target(output, n_wires)
+    target: Any | None = None
+
+    def measurement_target() -> Any:
+        nonlocal target
+        if target is None:
+            target = _statevector_target(output, n_wires)
+        return target
+
     results: list[MeasurementResult] = []
     for request in requests:
         kind = request.kind.strip().lower()
@@ -288,6 +326,7 @@ def execute_measurements(
         )
 
         if kind == "expectation_z":
+            target = measurement_target()
             method = getattr(target, "expectation_z", None)
             if not callable(method):
                 raise CapabilityError(
@@ -295,6 +334,7 @@ def execute_measurements(
                 )
             value = method(wires)
         elif kind == "expectation_ps":
+            target = measurement_target()
             method = getattr(target, "expectation_ps", None)
             if not callable(method):
                 raise CapabilityError(
@@ -308,8 +348,20 @@ def execute_measurements(
                 axes["z"] = wires
             value = method(**axes)
         elif kind == "probabilities":
-            value = _marginal_probabilities(target, wires)
+            value = (
+                _density_matrix_probabilities(
+                    output,
+                    wires,
+                    n_wires=n_wires,
+                    noise_model=noise_model,
+                )
+                if isinstance(output, torch.Tensor)
+                else None
+            )
+            if value is None:
+                value = _marginal_probabilities(measurement_target(), wires)
         else:
+            target = measurement_target()
             assert request.shots is not None
             samples, sampling_statistics = _sample(
                 target,

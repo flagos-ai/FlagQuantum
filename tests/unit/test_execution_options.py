@@ -4,9 +4,13 @@ from dataclasses import FrozenInstanceError, fields
 
 import pytest
 
+from flagquantum.core.ir import CircuitIR
 from flagquantum.core.runtime_config import RuntimeConfig
 from flagquantum.runtime.options import ExecutionOptions
-from flagquantum.runtime.options_resolver import resolve_execution_options
+from flagquantum.runtime.options_resolver import (
+    circuit_execution_constraints,
+    resolve_execution_options,
+)
 from flagquantum.runtime.policy import RuntimePolicy
 
 pytestmark = pytest.mark.unit
@@ -95,6 +99,18 @@ def test_resolver_rejects_program_batch_conflict() -> None:
             ExecutionOptions(batch_size=3),
             program_constraints=ExecutionOptions(batch_size=2),
         )
+
+
+def test_circuit_ir_precision_is_a_program_constraint() -> None:
+    constraints = circuit_execution_constraints(
+        CircuitIR(n_wires=1, instructions=(), dtype="complex128")
+    )
+
+    assert constraints.precision == "complex128"
+    assert constraints.batch_size is None
+    resolved = resolve_execution_options(program_constraints=constraints)
+    assert resolved.precision == "complex128"
+    assert resolved.source_for("precision") == "program_constraints"
 
 
 def test_resolver_requires_typed_options_instead_of_kwargs_escape_hatch() -> None:

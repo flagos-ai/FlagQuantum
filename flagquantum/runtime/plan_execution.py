@@ -83,6 +83,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         source_ir=source_ir,
         requests=requests,
         mode=mode,
+        noise_model=noise_model,
     )
 
 

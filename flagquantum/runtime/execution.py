@@ -1045,6 +1045,7 @@ def run_advanced(
         source_ir=source_ir,
         requests=requests,
         mode=selected_mode,
+        noise_model=noise_model,
     )
 
 
@@ -1055,13 +1056,17 @@ def _normalize_execution_output(
     source_ir: CircuitIR,
     requests: Sequence[MeasurementNode],
     mode: str,
+    noise_model: NoiseModel | None = None,
 ) -> ExecutionResult:
     from .measurements import execute_measurements
     from .result import normalize_execution_result
 
     result = normalize_execution_result(output, mode=mode, plan=execution_plan)
     measurement_results = execute_measurements(
-        output, requests, n_wires=source_ir.n_wires
+        output,
+        requests,
+        n_wires=source_ir.n_wires,
+        noise_model=noise_model,
     )
     first_samples = next(
         (

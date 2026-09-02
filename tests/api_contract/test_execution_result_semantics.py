@@ -66,6 +66,28 @@ def test_noise_model_is_verified_serialized_and_executed_from_the_plan() -> None
         fq.ExecutionPlan.from_dict(tampered)
 
 
+def test_noisy_density_probability_measurement_uses_wire_order_and_readout() -> None:
+    circuit = fq.Circuit(2).x(0)
+    noise_model = fqn.NoiseModel().add_readout(
+        0,
+        fqn.ReadoutError(((0.0, 1.0), (1.0, 0.0))),
+    )
+
+    result = fq.run(
+        circuit,
+        measurements=(fq.MeasurementNode("probabilities", (1, 0)),),
+        noise_model=noise_model,
+    )
+
+    # True |10> becomes observed |00> after flipping wire 0 at readout. The
+    # requested wire order is still (1, 0), so the returned basis order is
+    # explicitly tied to the request rather than an internal tensor layout.
+    torch.testing.assert_close(
+        result.measurement(0).value,
+        torch.tensor([[1.0, 0.0, 0.0, 0.0]]),
+    )
+
+
 def test_result_accessors_are_explicit_and_backend_attributes_do_not_leak() -> None:
     circuit = fq.Circuit(1).x(0)
     result = fq.run(
