@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-e-exit-batch-f",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-e-performance-budget-authorization.json",
+    "sha256": "89c7a2123f8ba8542ce3f5b6db924791a46bfe0f1b59d32c565ce42326722376"
+  },
+  "performance_validation": {
+    "path": "contracts/ir-phase2-batch-e-performance-budget-validation.json",
+    "sha256": "487d53b75e48ffb80f13ffdc0176241033111727827c4bd48eef8d1900be9072"
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase2-batch-e-performance-budget-artifact-successor.json": "77e952f3474171e8e8196256754b594d85394fdd0120b98ce6fbfeac3a59897c",
+    "flagquantum/_compiler/pipeline_cache.py": "04cb9851b6a50fec4b90bbe90dce4b7193ee2c4fdbd05b454db3ebab1972c37e",
+    "benchmarks/internal/ir_phase2_batch_e_gate.py": "c2d2184213f34a9cb172335f16b6d59a4abc27c6489ba72d670e731b2b506ebd",
+    "tests/internal_ir/test_phase2_pipeline_cache.py": "61bb6e344c47b2b6d70f641159f0c76dad2def2f08ad9916c75ddbf29e69ce66",
+    "tests/internal_ir/test_phase2_batch_e_performance_authorization.py": "23f31ec5c92e52a3e2627591c39f005cffbbefc86c91cba1d9a3a15f42415124",
+    "tests/internal_ir/test_phase2_batch_e_performance_budget.py": "0ed2b425b8fd5eea2b5fdfadfd25b770c51ee63a261ac37238c190ae8db1d413",
+    "tests/internal_ir/test_phase2_batch_e_performance_review_candidate.py": "32e4ed95f90f4ec846c4dfd4dfc6bb0d12fcb146cdac24e8da5d88323c29fde3",
+    "docs/development/IR_PHASE_2_BATCH_E_COMPLETION_REVIEW.md": "e2699deeaef30fe86a1d3056124f203cb1a2e350c3a69d5f8e09e2e3c9cf4036"
+  },
+  "evidence": {
+    "complete_deterministic_compilation_identity_passed": true,
+    "bounded_lru_and_single_flight_passed": true,
+    "collision_and_failure_non_reuse_passed": true,
+    "runtime_binding_and_unknown_identity_bypass_passed": true,
+    "structured_causal_diagnostics_passed": true,
+    "cache_observability_passed": true,
+    "approved_performance_gate_passed": true,
+    "public_and_default_path_zero_impact_passed": true
+  },
+  "proposed_decisions": {
+    "batch_e_exit_approved": true,
+    "batch_f_private_offline_differential_authorized": true,
+    "batch_f_quafu_static_corpus_authorized": true,
+    "batch_f_performance_baseline_authorized": true,
+    "batch_f_performance_budget_approved": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "adapter_repository_source_authorized": false,
+    "credentials_or_backend_ids_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "batch_f_boundary": {
+    "included": [
+      "versioned offline legacy-deployment and Quafu-static corpus",
+      "private end-to-end Phase 2 static compilation pipeline",
+      "structural, parser, state, expectation, gradient, order, and text differential evidence",
+      "unsupported deployment-feature fail-closed fixtures",
+      "full-pipeline identity, hash, cache, default-path, and performance evidence",
+      "Phase 2 exit review candidate after all gates pass"
+    ],
+    "excluded": [
+      "adapter repository source, provider SDK, and remote submission",
+      "credentials, tokens, real backend IDs, queues, jobs, and prices",
+      "public/default-path integration and legacy retirement",
+      "automatic Phase 2 exit"
+    ]
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-E-EXIT-BATCH-F",
+  "pause_after": "Batch F private offline differential implementation review"
+}

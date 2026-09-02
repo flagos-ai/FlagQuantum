@@ -11,6 +11,7 @@ import time
 import tracemalloc
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -28,6 +29,15 @@ from flagquantum._compiler.pipeline_cache import (
     CompilationIdentityInputs,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BUDGET = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "internal_ir"
+    / "phase2_batch_e_performance_budget_candidate.json"
+)
 
 
 def build_module(gate_count: int) -> QuantumModule:
@@ -144,11 +154,46 @@ def measure_case(gate_count: int, *, iterations: int, warmup: int) -> dict[str, 
     }
 
 
-def evaluate(*, iterations: int, warmup: int) -> dict[str, Any]:
+def evaluate(budget_path: Path, *, iterations: int, warmup: int) -> dict[str, Any]:
+    budget_path = budget_path.resolve()
+    payload = json.loads(budget_path.read_text(encoding="utf-8"))
+    budgets = {int(item["gate_count"]): item for item in payload["budgets"]}
+    cases = []
+    for gate_count in (10, 100, 1000, 10000):
+        case = measure_case(gate_count, iterations=iterations, warmup=warmup)
+        budget = budgets[gate_count]
+        case["budget"] = budget
+        case["cold_miss_latency_passed"] = (
+            case["cold_miss_p95_ms"] <= budget["cold_miss_p95_ms_max"]
+        )
+        case["cache_hit_latency_passed"] = (
+            case["cache_hit_p95_ms"] <= budget["cache_hit_p95_ms_max"]
+        )
+        case["bypass_latency_passed"] = (
+            case["identity_bypass_p95_ms"] <= budget["identity_bypass_p95_ms_max"]
+        )
+        case["hit_speedup_passed"] = (
+            case["observed_hit_speedup"] >= budget["cache_hit_speedup_min"]
+        )
+        case["memory_passed"] = (
+            case["cold_peak_host_memory_bytes"]
+            <= budget["cold_peak_host_memory_bytes_max"]
+        )
+        case["passed"] = bool(
+            case["cold_miss_latency_passed"]
+            and case["cache_hit_latency_passed"]
+            and case["bypass_latency_passed"]
+            and case["hit_speedup_passed"]
+            and case["memory_passed"]
+            and case["deterministic_identity"]
+        )
+        cases.append(case)
+    passed = all(case["passed"] for case in cases)
     return {
         "schema_version": "1.0",
-        "status": "measured",
-        "claim_scope": "Phase 2 Batch E private CPU baseline; not a public SLA",
+        "status": "passed" if passed else "failed",
+        "claim_scope": "Phase 2 Batch E private CPU budget; not a public SLA",
+        "budget_path": str(budget_path.relative_to(ROOT)),
         "environment": {
             "python": platform.python_version(),
             "torch": torch.__version__,
@@ -162,10 +207,7 @@ def evaluate(*, iterations: int, warmup: int) -> dict[str, Any]:
             "peak_memory": "tracemalloc",
             "pipeline": "one private static-canonicalization pass",
         },
-        "cases": [
-            measure_case(gate_count, iterations=iterations, warmup=warmup)
-            for gate_count in (10, 100, 1000, 10000)
-        ],
+        "cases": cases,
     }
 
 
@@ -173,17 +215,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=2)
+    parser.add_argument("--budget", type=Path, default=DEFAULT_BUDGET)
     args = parser.parse_args()
     if args.iterations < 3 or args.warmup < 1:
         raise ValueError("iterations must be >= 3 and warmup must be >= 1")
     torch.set_num_threads(1)
-    print(
-        json.dumps(
-            evaluate(iterations=args.iterations, warmup=args.warmup),
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    result = evaluate(args.budget, iterations=args.iterations, warmup=args.warmup)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    if result["status"] != "passed":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
