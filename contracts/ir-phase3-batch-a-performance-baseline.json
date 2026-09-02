@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "status": "observed_baseline_not_budget",
+  "claim_scope": "Phase 3 Batch A private CPU baseline; not a public SLA or approved budget",
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "entry_definition": "one directed topology edge",
+    "operations": "construct, canonicalize, fingerprint, compatible compare"
+  },
+  "cases": [
+    {
+      "capability_entry_count": 10,
+      "physical_qubit_capacity": 4,
+      "construct_and_fingerprint_p95_ms": 0.062229,
+      "compatible_comparison_p95_ms": 0.015117,
+      "construct_and_fingerprint_peak_host_memory_bytes": 9396,
+      "canonical_bytes": 864,
+      "deterministic_identity": true
+    },
+    {
+      "capability_entry_count": 100,
+      "physical_qubit_capacity": 11,
+      "construct_and_fingerprint_p95_ms": 0.101125,
+      "compatible_comparison_p95_ms": 0.034491,
+      "construct_and_fingerprint_peak_host_memory_bytes": 22882,
+      "canonical_bytes": 1417,
+      "deterministic_identity": true
+    },
+    {
+      "capability_entry_count": 1000,
+      "physical_qubit_capacity": 33,
+      "construct_and_fingerprint_p95_ms": 0.374617,
+      "compatible_comparison_p95_ms": 0.178666,
+      "construct_and_fingerprint_peak_host_memory_bytes": 160059,
+      "canonical_bytes": 8179,
+      "deterministic_identity": true
+    },
+    {
+      "capability_entry_count": 10000,
+      "physical_qubit_capacity": 101,
+      "construct_and_fingerprint_p95_ms": 3.442754,
+      "compatible_comparison_p95_ms": 14.506317,
+      "construct_and_fingerprint_peak_host_memory_bytes": 1531880,
+      "canonical_bytes": 78920,
+      "deterministic_identity": true
+    }
+  ]
+}
