@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "status": "authorized_artifact_successor",
+  "created_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-entry-batch-a-authorization.json",
+    "sha256": "e23391b18cf262556633485915f6de7ecb81b83452918b4d27f127d2f3cbd222"
+  },
+  "reason": "Phase 2 Batch A explicitly authorized private evolution of the Phase 1 pass contract, pass manager, differential lowering, and their tests. Historical review candidates remain immutable evidence of their reviewed snapshots; this record binds their authorized successors.",
+  "predecessor_review_semantics_changed": false,
+  "public_or_default_path_changed": false,
+  "candidates": {
+    "contracts/ir-phase1-batch-e-review-candidate.json": {
+      "sha256": "6df696413e4e3f93e89aa5c80d83f3cf7be7b705b9696f71b8c4707c5932dd55",
+      "artifact_transitions": {
+        "flagquantum/_compiler/passes/__init__.py": {
+          "predecessor_sha256": "f4a2be58fb5343da3629cbe52585606087417d56165500bcda47feedff958e65",
+          "successor_sha256": "be6f9c9062178bfe1cba5c29550347ea1ba57b7f7aece806e01eb6479777991f"
+        },
+        "flagquantum/_compiler/passes/base.py": {
+          "predecessor_sha256": "1509f3b9c8cfe55eb9a1768986c8caea721651252e618a7835c67cc76932826a",
+          "successor_sha256": "9194c4fb56dfda933a7c1aecc71f9b2398b2cf9af6db76fc44dbe134081930fe"
+        },
+        "flagquantum/_compiler/passes/manager.py": {
+          "predecessor_sha256": "c9eecfb7e133b4595385042d50c8ff3b5c5851ce73c3b934578ed6a43ef14248",
+          "successor_sha256": "e5df61e325908b6828e62ba647e66507f256388e0e7b4022dd59f7049b41338d"
+        },
+        "tests/internal_ir/test_pass_manager.py": {
+          "predecessor_sha256": "08dfa0564d19fbd5c1b81801c17af9fb0feffec42bd86b9d7adf64e758d4c56b",
+          "successor_sha256": "355109ada85780143b1de4577a6cfbfd7d33921d97dfaf9d702d2dd8a50ee8bd"
+        }
+      }
+    },
+    "contracts/ir-phase1-exit-review-candidate.json": {
+      "sha256": "6de90233cdb07f82ddd7a8903da0e17524eb2c993b3423803346e4b052aecad5",
+      "artifact_transitions": {
+        "flagquantum/_compiler/testing/differential.py": {
+          "predecessor_sha256": "ee0d9e49e248a9f9eb0c570f88cf13ce1ee8fe416abc338fb72bd4a04fac4337",
+          "successor_sha256": "f4d1a894d679e83c8b9cdd1b461de9454295698b8928506d091912e9aa9d7b43"
+        }
+      }
+    },
+    "contracts/ir-phase2-entry-batch-a-review-candidate.json": {
+      "sha256": "1b9e5cd2aec95ee3af92440edc4316db24cc55c1eee8b104eacf3e502ecfe2e4",
+      "artifact_transitions": {
+        "flagquantum/_compiler/passes/manager.py": {
+          "predecessor_sha256": "c9eecfb7e133b4595385042d50c8ff3b5c5851ce73c3b934578ed6a43ef14248",
+          "successor_sha256": "e5df61e325908b6828e62ba647e66507f256388e0e7b4022dd59f7049b41338d"
+        },
+        "flagquantum/_compiler/testing/differential.py": {
+          "predecessor_sha256": "ee0d9e49e248a9f9eb0c570f88cf13ce1ee8fe416abc338fb72bd4a04fac4337",
+          "successor_sha256": "f4d1a894d679e83c8b9cdd1b461de9454295698b8928506d091912e9aa9d7b43"
+        }
+      }
+    }
+  }
+}

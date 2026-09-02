@@ -10,6 +10,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase2-entry-batch-a-review-candidate.json"
+SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-authorized-artifact-successor.json"
 
 
 def _candidate() -> dict[str, object]:
@@ -20,12 +21,26 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _assert_artifact_binding(relative_path: str, expected_hash: str) -> None:
+    actual_hash = _sha256(ROOT / relative_path)
+    if actual_hash == expected_hash:
+        return
+    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
+    candidate = successor["candidates"][str(CANDIDATE.relative_to(ROOT))]
+    transition = candidate["artifact_transitions"][relative_path]
+    assert candidate["sha256"] == _sha256(CANDIDATE)
+    assert transition["predecessor_sha256"] == expected_hash
+    assert transition["successor_sha256"] == actual_hash
+    assert successor["predecessor_review_semantics_changed"] is False
+    assert successor["public_or_default_path_changed"] is False
+
+
 def test_phase2_candidate_binds_every_reviewed_artifact() -> None:
     candidate = _candidate()
 
     assert candidate["status"] == "ready_for_owner_approval"
     for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
+        _assert_artifact_binding(relative_path, expected_hash)
 
 
 def test_phase2_candidate_is_narrow_and_cannot_authorize_itself() -> None:

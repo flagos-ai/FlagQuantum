@@ -19,7 +19,10 @@ from ..exporters.circuit_ir import (
     export_circuit_ir,
     seal_circuit_ir_round_trip,
 )
+from ..ir.modules import QuantumModule
 from ..ir.operations import FrozenAttributes
+from ..ir.schemas import circuit_ir_v1_schema_registry
+from ..ir.verifier import verify_module
 
 
 class DifferentialStatus(str, Enum):
@@ -103,6 +106,8 @@ def _restore_attribute(
     value: object,
     artifact: SealedCircuitIRRoundTrip,
     consumed_bindings: set[str],
+    *,
+    evaluate_binding_expressions: bool = False,
 ) -> object:
     if isinstance(value, RuntimeBindingRef):
         try:
@@ -128,13 +133,27 @@ def _restore_attribute(
     if isinstance(value, SymbolicParameter):
         return Parameter(value.name)
     if isinstance(value, SymbolicExpression):
-        return ParameterExpression(
-            value.op,
-            tuple(
-                _restore_attribute(item, artifact, consumed_bindings)
-                for item in value.args
-            ),
+        args = tuple(
+            _restore_attribute(
+                item,
+                artifact,
+                consumed_bindings,
+                evaluate_binding_expressions=evaluate_binding_expressions,
+            )
+            for item in value.args
         )
+        if evaluate_binding_expressions and not any(
+            isinstance(item, (Parameter, ParameterExpression)) for item in args
+        ):
+            if value.op == "add":
+                return args[0] + args[1]  # type: ignore[operator]
+            if value.op == "sub":
+                return args[0] - args[1]  # type: ignore[operator]
+            if value.op == "mul":
+                return args[0] * args[1]  # type: ignore[operator]
+            if value.op == "neg":
+                return -args[0]  # type: ignore[operator]
+        return ParameterExpression(value.op, args)
     if isinstance(value, FrozenAttributes):
         if value.get("kind") != "tensor":
             raise _LoweringError("unsupported structured operation attribute")
@@ -151,18 +170,33 @@ def _lower_operations(
     artifact: SealedCircuitIRRoundTrip,
     restored: CircuitIR,
     consumed_bindings: set[str],
+    *,
+    module: QuantumModule | None = None,
+    allow_rewrites: bool = False,
 ) -> tuple[object, ...]:
-    module = artifact.imported.module
+    module = module or artifact.imported.module
     if len(module.body.blocks) != 1:
         raise _LoweringError("differential lowering requires one entry block")
     block = module.body.blocks[0]
-    if len(block.operations) != len(restored.instructions):
+    if not allow_rewrites and len(block.operations) != len(restored.instructions):
         raise _LoweringError("operation count changed after import")
     value_wires = {argument.id: wire for wire, argument in enumerate(block.arguments)}
     instructions = []
-    for operation, skeleton in zip(
-        block.operations, restored.instructions, strict=True
-    ):
+    for index, operation in enumerate(block.operations):
+        if allow_rewrites:
+            location = operation.location
+            if (
+                location is None
+                or location.source != "CircuitIR.instructions"
+                or location.line < 1
+                or location.line > len(restored.instructions)
+            ):
+                raise _LoweringError(
+                    "optimized operation lacks sealed CircuitIR source provenance"
+                )
+            skeleton = restored.instructions[location.line - 1]
+        else:
+            skeleton = restored.instructions[index]
         try:
             wires = tuple(value_wires[operand.id] for operand in operation.operands)
         except KeyError as exc:
@@ -193,7 +227,12 @@ def _lower_operations(
                 f"operation {operation.name!r} is outside the test lowering profile"
             )
         params = {
-            key: _restore_attribute(value, artifact, consumed_bindings)
+            key: _restore_attribute(
+                value,
+                artifact,
+                consumed_bindings,
+                evaluate_binding_expressions=allow_rewrites,
+            )
             for key, value in operation.attributes.items()
         }
         instructions.append(
@@ -262,6 +301,66 @@ def lower_sealed_for_differential(
         observables=tuple(observables),
     )
     return DifferentialLoweringResult(lowered, identity_preserved)
+
+
+def lower_module_for_differential(
+    artifact: SealedCircuitIRRoundTrip,
+    module: QuantumModule,
+) -> DifferentialLoweringResult:
+    """Lower one verified Phase 2 module against its immutable source envelope."""
+
+    verification = verify_module(module, circuit_ir_v1_schema_registry())
+    if not verification.ok:
+        return DifferentialLoweringResult(None, False, verification.diagnostics)
+    exported = export_circuit_ir(artifact)
+    if not exported.ok or exported.circuit_ir is None:
+        return DifferentialLoweringResult(None, False, exported.diagnostics)
+    restored = exported.circuit_ir
+    consumed_bindings: set[str] = set()
+    try:
+        instructions = _lower_operations(
+            artifact,
+            restored,
+            consumed_bindings,
+            module=module,
+            allow_rewrites=True,
+        )
+    except (KeyError, _LoweringError, TypeError) as exc:
+        return DifferentialLoweringResult(None, False, (_failure(str(exc)),))
+    observables = list(restored.observables)
+    if len(observables) != len(artifact.imported.request.observables):
+        return DifferentialLoweringResult(
+            None, False, (_failure("observable count changed after import"),)
+        )
+    try:
+        for index, request in enumerate(artifact.imported.request.observables):
+            coefficient = _restore_attribute(
+                request.coefficient,
+                artifact,
+                consumed_bindings,
+                evaluate_binding_expressions=True,
+            )
+            observables[index] = replace(
+                observables[index],
+                name=request.name,
+                wires=request.wires,
+                coefficient=coefficient,
+            )
+    except _LoweringError as exc:
+        return DifferentialLoweringResult(None, False, (_failure(str(exc)),))
+    expected_bindings = set(artifact.imported.bindings)
+    if consumed_bindings != expected_bindings:
+        return DifferentialLoweringResult(
+            None,
+            False,
+            (_failure("runtime binding table contains unused slots"),),
+        )
+    lowered = replace(
+        restored,
+        instructions=instructions,
+        observables=tuple(observables),
+    )
+    return DifferentialLoweringResult(lowered, True)
 
 
 def _first_tensor(result: object) -> Any | None:
@@ -391,5 +490,6 @@ __all__ = [
     "DifferentialStatus",
     "ExecutionObservation",
     "execute_differential",
+    "lower_module_for_differential",
     "lower_sealed_for_differential",
 ]

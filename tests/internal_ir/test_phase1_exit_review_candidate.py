@@ -10,6 +10,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase1-exit-review-candidate.json"
+SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-authorized-artifact-successor.json"
 
 
 def _candidate() -> dict[str, object]:
@@ -20,6 +21,20 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _assert_artifact_binding(relative_path: str, expected_hash: str) -> None:
+    actual_hash = _sha256(ROOT / relative_path)
+    if actual_hash == expected_hash:
+        return
+    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
+    candidate = successor["candidates"][str(CANDIDATE.relative_to(ROOT))]
+    transition = candidate["artifact_transitions"][relative_path]
+    assert candidate["sha256"] == _sha256(CANDIDATE)
+    assert transition["predecessor_sha256"] == expected_hash
+    assert transition["successor_sha256"] == actual_hash
+    assert successor["predecessor_review_semantics_changed"] is False
+    assert successor["public_or_default_path_changed"] is False
+
+
 def test_phase1_exit_candidate_binds_authorizations_and_artifacts() -> None:
     candidate = _candidate()
 
@@ -27,7 +42,7 @@ def test_phase1_exit_candidate_binds_authorizations_and_artifacts() -> None:
         assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
     for section in ("implementation_artifacts", "test_artifacts"):
         for relative_path, expected_hash in candidate[section].items():
-            assert _sha256(ROOT / relative_path) == expected_hash
+            _assert_artifact_binding(relative_path, expected_hash)
 
 
 def test_phase1_exit_candidate_binds_public_contract_corpus_and_budget() -> None:

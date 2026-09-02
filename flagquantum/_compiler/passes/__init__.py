@@ -3,12 +3,22 @@
 from .base import CompilerPass, PassDescriptor, PassResult
 from .canonicalize import CanonicalizeAttributesPass
 from .manager import PassManager, PipelineResult
+from .static_canonicalization import (
+    CancelSelfInverseOperationsPass,
+    MergeAdjacentRotationsPass,
+    RemoveIdentityOperationsPass,
+    phase2_batch_a_passes,
+)
 
 __all__ = [
     "CanonicalizeAttributesPass",
+    "CancelSelfInverseOperationsPass",
     "CompilerPass",
     "PassDescriptor",
     "PassManager",
     "PassResult",
     "PipelineResult",
+    "MergeAdjacentRotationsPass",
+    "RemoveIdentityOperationsPass",
+    "phase2_batch_a_passes",
 ]

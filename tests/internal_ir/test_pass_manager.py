@@ -97,6 +97,53 @@ def test_semantic_change_fails_closed_with_structured_diagnostic() -> None:
     assert "semantic program identity" in result.diagnostics[0].message
 
 
+def test_explicit_transform_identity_policy_accepts_private_rewrite() -> None:
+    module = _module()
+
+    class TransformPass:
+        descriptor = PassDescriptor(
+            "transform",
+            "2",
+            program_identity_policy="transform",
+        )
+
+        def run(self, current: QuantumModule) -> PassResult:
+            return PassResult(
+                QuantumModule(
+                    Region((Block(current.body.blocks[0].arguments),)),
+                    revision=current.revision + 1,
+                ),
+                changed=True,
+            )
+
+    result = PassManager((TransformPass(),)).run(module)
+
+    assert result.ok
+    assert result.module.program_identity != module.program_identity
+
+
+def test_transform_policy_rejects_false_identity_change_claim() -> None:
+    module = _module()
+
+    class FalseTransformPass:
+        descriptor = PassDescriptor(
+            "false_transform",
+            "2",
+            program_identity_policy="transform",
+        )
+
+        def run(self, current: QuantumModule) -> PassResult:
+            return PassResult(
+                QuantumModule(current.body, revision=current.revision + 1),
+                changed=True,
+            )
+
+    result = PassManager((FalseTransformPass(),)).run(module)
+
+    assert not result.ok
+    assert "without deriving a new program identity" in result.diagnostics[0].message
+
+
 def test_changed_pass_must_advance_revision() -> None:
     module = _module()
 

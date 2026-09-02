@@ -86,9 +86,22 @@ class PassManager:
             return self._contract_error(
                 f"Phase 1 pass {label!r} must declare semantic preservation"
             )
-        if result.module.program_identity != before.program_identity:
+        identity_changed = result.module.program_identity != before.program_identity
+        if (
+            compiler_pass.descriptor.program_identity_policy == "preserve"
+            and identity_changed
+        ):
             return self._contract_error(
                 f"pass {label!r} changed semantic program identity"
+            )
+        if (
+            compiler_pass.descriptor.program_identity_policy == "transform"
+            and result.changed
+            and not identity_changed
+        ):
+            return self._contract_error(
+                f"transform pass {label!r} reported a change without deriving "
+                "a new program identity"
             )
         if result.changed and result.module.revision <= before.revision:
             return self._contract_error(

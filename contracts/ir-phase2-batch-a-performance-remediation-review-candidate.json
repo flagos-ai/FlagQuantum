@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "scope": "IR Phase 2 Batch A performance remediation and successor-budget evidence",
+  "blocker": {
+    "id": "IR2A-PERF-001",
+    "path": "contracts/ir-phase2-batch-a-performance-blocker.json",
+    "sha256": "52e6e15f4172f4c742f8d18cfaa247598e36c69d6a33becb5657b73040fc1eb9"
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase2-entry-batch-a-authorization.json": "e23391b18cf262556633485915f6de7ecb81b83452918b4d27f127d2f3cbd222",
+    "docs/development/IR_PHASE_2_BATCH_A_PERFORMANCE_BLOCKER.md": "422a6ed9852de92b65941f7816987740e3c287d6b6418e2e49305a5e65ea158d",
+    "tests/fixtures/internal_ir/phase2_performance_budget_candidate.json": "2b3f49ce6f0819fd74be7c9447de7db5f18d639059512b5a42dfd7500fb35230",
+    "flagquantum/_compiler/passes/base.py": "9194c4fb56dfda933a7c1aecc71f9b2398b2cf9af6db76fc44dbe134081930fe",
+    "flagquantum/_compiler/passes/manager.py": "e5df61e325908b6828e62ba647e66507f256388e0e7b4022dd59f7049b41338d",
+    "flagquantum/_compiler/passes/static_canonicalization.py": "bee2bae3c44c2eb0e6ce0a0d7f10e7a311db9da6ee02c7773ed427957e511cee",
+    "flagquantum/_compiler/testing/differential.py": "f4d1a894d679e83c8b9cdd1b461de9454295698b8928506d091912e9aa9d7b43",
+    "benchmarks/internal/ir_phase2_batch_a_gate.py": "2bee0cea859aa06b08cb4e379e45a58307d96d85af3dd758612ab7a95e74f923",
+    "tests/internal_ir/test_pass_manager.py": "355109ada85780143b1de4577a6cfbfd7d33921d97dfaf9d702d2dd8a50ee8bd",
+    "tests/internal_ir/test_phase2_batch_a_authorization.py": "98ec05f8b2d6ce1e21f89e2928ecaef07038419c07e09b017e3c0dd907112bb7",
+    "tests/internal_ir/test_phase2_static_canonicalization.py": "fc7f0f594e936e8ab244142ff5906541655a8a79a5c4c7c9b700c3a9e8ac76cb",
+    "tests/internal_ir/test_phase2_performance_budget.py": "865d0e629029203b711261c28c75e662fb0df7c5dbf9dfcf1c221f37e556f283"
+  },
+  "allowed_remediation": [
+    "component-level latency and memory instrumentation",
+    "immutable QuantumModule identity caching without canonical or hash changes",
+    "entry-and-exit verification with independent per-pass verifier tests",
+    "an internal fused execution path proven identical to the independent pass sequence",
+    "allocation and source-envelope lifetime reduction",
+    "10/100/1000/10000 gate evidence collection",
+    "a successor performance budget candidate derived from measured component costs"
+  ],
+  "authorization": {
+    "remediation_implementation_authorized": false,
+    "original_budget_change_authorized": false,
+    "successor_budget_approval_authorized": false,
+    "batch_a_exit_authorized": false,
+    "batch_b_start_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "required_outputs": [
+    "component benchmark evidence before and after remediation",
+    "exact structural and scientific parity between independent and fused paths",
+    "unchanged canonical identity semantics",
+    "successor budget candidate with explicit derivation",
+    "separate owner approval before the successor budget becomes an exit gate"
+  ],
+  "approval_command": "approve IR-PHASE2-BATCH-A-PERFORMANCE-REMEDIATION",
+  "approval_text": "I accept blocker IR2A-PERF-001 and authorize internal performance diagnostics, implementation optimization, and creation of a measured successor-budget candidate for Phase 2 Batch A. This approval does not modify or supersede the original budget, approve any successor budget, authorize Batch A exit or Batch B, change public APIs or default paths, or retire the legacy compiler."
+}

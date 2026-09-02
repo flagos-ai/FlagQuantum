@@ -17,6 +17,7 @@ class PassDescriptor:
     options: FrozenAttributes = field(default_factory=FrozenAttributes)
     seed: int | None = None
     preserves_semantics: bool = True
+    program_identity_policy: str = "preserve"
 
     def __post_init__(self) -> None:
         name = str(self.name).strip().lower()
@@ -28,6 +29,12 @@ class PassDescriptor:
         object.__setattr__(self, "options", FrozenAttributes(self.options))
         if self.seed is not None:
             object.__setattr__(self, "seed", int(self.seed))
+        policy = str(self.program_identity_policy).strip().lower()
+        if policy not in {"preserve", "transform"}:
+            raise ValueError(
+                "program identity policy must be 'preserve' or 'transform'"
+            )
+        object.__setattr__(self, "program_identity_policy", policy)
 
     def canonical(self) -> dict[str, object]:
         return {
@@ -36,6 +43,7 @@ class PassDescriptor:
             "options": canonical_value(self.options),
             "seed": self.seed,
             "preserves_semantics": self.preserves_semantics,
+            "program_identity_policy": self.program_identity_policy,
         }
 
 

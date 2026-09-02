@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-entry-batch-a",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-ENTRY-BATCH-A",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-entry-batch-a-review-candidate.json",
+    "sha256": "1b9e5cd2aec95ee3af92440edc4316db24cc55c1eee8b104eacf3e502ecfe2e4"
+  },
+  "accepted_technical_reviews": [
+    "compiler",
+    "runtime",
+    "training",
+    "api"
+  ],
+  "decisions": {
+    "phase2_entry_authorized": true,
+    "phase2_batch_a_authorized": true,
+    "phase2_performance_budget_approved": true,
+    "phase2_later_batches_authorized_to_start": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_compiler_retirement_authorized": false,
+    "provider_codegen_authorized": false
+  },
+  "allowed_scope": {
+    "profile": "private_static_canonicalization_v1",
+    "root": "flagquantum/_compiler",
+    "passes": [
+      "remove identity operations",
+      "remove legacy-compatible numeric zero rotations",
+      "cancel adjacent self-inverse operations",
+      "merge adjacent rotations with autograd preservation"
+    ],
+    "tests": "tests/internal_ir",
+    "benchmarks": "benchmarks/internal",
+    "public_exports": [],
+    "default_path_enabled": false
+  },
+  "approved_budget": "tests/fixtures/internal_ir/phase2_performance_budget_candidate.json",
+  "pause_after": "Phase 2 Batch A evidence review"
+}
