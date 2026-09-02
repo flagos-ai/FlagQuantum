@@ -11,6 +11,7 @@ import statistics
 import time
 import tracemalloc
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -29,6 +30,14 @@ EMITTERS: tuple[tuple[str, Emitter], ...] = (
     ("openqasm2", emit_openqasm2),
     ("openqasm3", emit_openqasm3),
     ("qcis_v1", emit_qcis_v1),
+)
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BUDGET = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "internal_ir"
+    / "phase2_batch_d_performance_budget_candidate.json"
 )
 
 
@@ -97,7 +106,10 @@ def measure_emitter(
     }
 
 
-def evaluate(*, iterations: int, warmup: int) -> dict[str, Any]:
+def evaluate(budget_path: Path, *, iterations: int, warmup: int) -> dict[str, Any]:
+    budget_path = budget_path.resolve()
+    payload = json.loads(budget_path.read_text(encoding="utf-8"))
+    budgets = {int(item["gate_count"]): item for item in payload["budgets"]}
     cases = []
     for gate_count in (10, 100, 1000, 10000):
         module = build_module(gate_count)
@@ -110,11 +122,37 @@ def evaluate(*, iterations: int, warmup: int) -> dict[str, Any]:
             )
             for name, emitter in EMITTERS
         }
-        cases.append({"gate_count": gate_count, "emitters": measurements})
+        budget = budgets[gate_count]
+        passed = True
+        for name, measurement in measurements.items():
+            measurement["budget"] = {
+                "p95_ms_max": budget[f"{name}_p95_ms_max"],
+                "peak_host_memory_bytes_max": budget[
+                    f"{name}_peak_host_memory_bytes_max"
+                ],
+            }
+            measurement["latency_passed"] = (
+                measurement["timings_ms"]["p95"] <= measurement["budget"]["p95_ms_max"]
+            )
+            measurement["memory_passed"] = (
+                measurement["peak_host_memory_bytes"]
+                <= measurement["budget"]["peak_host_memory_bytes_max"]
+            )
+            measurement["passed"] = bool(
+                measurement["latency_passed"]
+                and measurement["memory_passed"]
+                and measurement["deterministic_content_hash"]
+            )
+            passed = passed and measurement["passed"]
+        cases.append(
+            {"gate_count": gate_count, "emitters": measurements, "passed": passed}
+        )
+    passed = all(case["passed"] for case in cases)
     return {
         "schema_version": "1.0",
-        "status": "measured",
-        "claim_scope": "Phase 2 Batch D private CPU baseline; not a public SLA",
+        "status": "passed" if passed else "failed",
+        "claim_scope": "Phase 2 Batch D private CPU budget; not a public SLA",
+        "budget_path": str(budget_path.relative_to(ROOT)),
         "environment": {
             "python": platform.python_version(),
             "torch": torch.__version__,
@@ -136,17 +174,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=2)
+    parser.add_argument("--budget", type=Path, default=DEFAULT_BUDGET)
     args = parser.parse_args()
     if args.iterations < 3 or args.warmup < 1:
         raise ValueError("iterations must be >= 3 and warmup must be >= 1")
     torch.set_num_threads(1)
-    print(
-        json.dumps(
-            evaluate(iterations=args.iterations, warmup=args.warmup),
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    result = evaluate(args.budget, iterations=args.iterations, warmup=args.warmup)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    if result["status"] != "passed":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

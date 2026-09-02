@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "status": "passed",
+  "validated_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-d-performance-budget-authorization.json",
+    "sha256": "870d4862a0cb5892f86a7f94dbb687f1f6a59a7bbfe5550764af7576d9fc2694"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/phase2_batch_d_performance_budget_candidate.json",
+    "sha256": "9ffc0a0b3ce0914912f8d048523909eeaf330520fbc52e2077df57eec7c7aa87"
+  },
+  "claim_scope": "Phase 2 Batch D private CPU budget; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "iterations": 5,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "scope": "emission of a prebuilt verified native target module"
+  },
+  "cases": [
+    {
+      "gate_count": 10,
+      "openqasm2_p95_ms": 0.119975,
+      "openqasm3_p95_ms": 0.0812,
+      "qcis_v1_p95_ms": 0.073942,
+      "openqasm2_peak_host_memory_bytes": 4760,
+      "openqasm3_peak_host_memory_bytes": 4696,
+      "qcis_v1_peak_host_memory_bytes": 5350,
+      "deterministic_content_hashes": true,
+      "passed": true
+    },
+    {
+      "gate_count": 100,
+      "openqasm2_p95_ms": 0.54405,
+      "openqasm3_p95_ms": 0.37105,
+      "qcis_v1_p95_ms": 0.388075,
+      "openqasm2_peak_host_memory_bytes": 34353,
+      "openqasm3_peak_host_memory_bytes": 34436,
+      "qcis_v1_peak_host_memory_bytes": 43249,
+      "deterministic_content_hashes": true,
+      "passed": true
+    },
+    {
+      "gate_count": 1000,
+      "openqasm2_p95_ms": 3.558525,
+      "openqasm3_p95_ms": 4.275492,
+      "qcis_v1_p95_ms": 3.57395,
+      "openqasm2_peak_host_memory_bytes": 332989,
+      "openqasm3_peak_host_memory_bytes": 333747,
+      "qcis_v1_peak_host_memory_bytes": 423096,
+      "deterministic_content_hashes": true,
+      "passed": true
+    },
+    {
+      "gate_count": 10000,
+      "openqasm2_p95_ms": 43.445417,
+      "openqasm3_p95_ms": 35.441816,
+      "qcis_v1_p95_ms": 55.424059,
+      "openqasm2_peak_host_memory_bytes": 3316309,
+      "openqasm3_peak_host_memory_bytes": 3323817,
+      "qcis_v1_peak_host_memory_bytes": 4236926,
+      "deterministic_content_hashes": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "batch_d_performance_budget_gate_passed": true,
+    "batch_d_exit_authorized": false,
+    "batch_e_provider_packaging_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "public_sla_claimed": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  }
+}
