@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "status": "measured_not_approved",
+  "measured_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-d-exit-batch-e-authorization.json",
+    "sha256": "7b191049c55a012a5b7d31f3e7e325aa4417cc5c053980803cd4f7203d7b42a7"
+  },
+  "claim_scope": "Phase 2 Batch E private CPU baseline; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "runs": 2,
+    "iterations_per_run": 5,
+    "warmup_per_run": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "pipeline": "one private static-canonicalization pass"
+  },
+  "observed_envelope": [
+    {
+      "gate_count": 10,
+      "cold_miss_p95_ms_max": 0.230609,
+      "cache_hit_p95_ms_max": 0.017117,
+      "identity_bypass_p95_ms_max": 0.15055,
+      "observed_hit_speedup_min": 13.238386,
+      "cold_peak_host_memory_bytes_max": 22669
+    },
+    {
+      "gate_count": 100,
+      "cold_miss_p95_ms_max": 1.031025,
+      "cache_hit_p95_ms_max": 0.057325,
+      "identity_bypass_p95_ms_max": 0.93795,
+      "observed_hit_speedup_min": 17.944031,
+      "cold_peak_host_memory_bytes_max": 89319
+    },
+    {
+      "gate_count": 1000,
+      "cold_miss_p95_ms_max": 9.282492,
+      "cache_hit_p95_ms_max": 0.680908,
+      "identity_bypass_p95_ms_max": 9.040509,
+      "observed_hit_speedup_min": 13.632512,
+      "cold_peak_host_memory_bytes_max": 576484
+    },
+    {
+      "gate_count": 10000,
+      "cold_miss_p95_ms_max": 108.521867,
+      "cache_hit_p95_ms_max": 4.374349,
+      "identity_bypass_p95_ms_max": 115.313509,
+      "observed_hit_speedup_min": 24.808687,
+      "cold_peak_host_memory_bytes_max": 4438231
+    }
+  ],
+  "observations": {
+    "all_identities_deterministic": true,
+    "cache_hit_retains_identity_safety_scan": true,
+    "automatic_budget_approval_allowed": false
+  }
+}
