@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-batch-e-exit-batch-f",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-BATCH-E-EXIT-BATCH-F",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-batch-e-exit-batch-f-review-candidate.json",
+    "sha256": "81da6d722b7b90cc4e41b50b6dad31f7d7142654ced7bd966fa3e7ba500e8474"
+  },
+  "decisions": {
+    "batch_e_exit_approved": true,
+    "batch_f_private_offline_differential_authorized": true,
+    "batch_f_quafu_static_corpus_authorized": true,
+    "batch_f_performance_baseline_authorized": true,
+    "batch_f_performance_budget_approved": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "adapter_repository_source_authorized": false,
+    "credentials_or_backend_ids_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "pause_after": "Batch F private offline differential implementation review"
+}
