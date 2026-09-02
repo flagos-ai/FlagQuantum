@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "authorized_artifact_successor",
+  "created_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-a-successor-budget-authorization.json",
+    "sha256": "1d98d89e2a6c0b9ca587951a01073751105de67312154ebf4f17fa527f60d367"
+  },
+  "reason": "The approved successor budget replaces the strict expected-failure assertion with an ordinary machine-enforced gate. Historical review candidates and the original budget remain immutable.",
+  "predecessor_review_semantics_changed": false,
+  "public_or_default_path_changed": false,
+  "candidates": {
+    "contracts/ir-phase2-batch-a-performance-remediation-review-candidate.json": {
+      "sha256": "e0cfb954607215f50378ff81f79b99c18d37009cb69eed3b228f40cc712b78b8",
+      "artifact_transitions": {
+        "tests/internal_ir/test_phase2_performance_budget.py": {
+          "predecessor_sha256": "865d0e629029203b711261c28c75e662fb0df7c5dbf9dfcf1c221f37e556f283",
+          "successor_sha256": "c59b4348667c44bb376a8247289bea195787ed9b0967190da0d3b8ca8ac8ca42"
+        }
+      }
+    }
+  }
+}

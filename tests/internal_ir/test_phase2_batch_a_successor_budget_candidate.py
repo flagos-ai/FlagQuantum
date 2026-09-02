@@ -48,7 +48,7 @@ def test_artifact_successor_is_authorized_and_keeps_historical_reviews_immutable
         )
 
 
-def test_successor_is_unapproved_and_preserves_original_snapshot() -> None:
+def test_successor_candidate_is_immutable_and_preserves_original_snapshot() -> None:
     successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
     review = json.loads(REVIEW.read_text(encoding="utf-8"))
 

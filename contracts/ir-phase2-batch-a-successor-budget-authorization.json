@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-batch-a-successor-budget",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-BATCH-A-SUCCESSOR-BUDGET",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-batch-a-successor-budget-review-candidate.json",
+    "sha256": "a11d82c46cf1e001849f4d3f02d7bbfacfc7f8b12dc41fcd8f2fedfdf657b75d"
+  },
+  "approved_budget": {
+    "path": "tests/fixtures/internal_ir/phase2_performance_budget_successor_candidate.json",
+    "sha256": "e763cac80b0768ffcee49f4a3c8287614b0347fd6121a3b9c5fa46d35b0e1f2a"
+  },
+  "preserved_original_budget": {
+    "path": "tests/fixtures/internal_ir/phase2_performance_budget_candidate.json",
+    "sha256": "2b3f49ce6f0819fd74be7c9447de7db5f18d639059512b5a42dfd7500fb35230",
+    "modified": false
+  },
+  "decisions": {
+    "successor_budget_approved": true,
+    "successor_machine_gate_authorized": true,
+    "original_budget_snapshot_modified": false,
+    "batch_a_exit_authorized": false,
+    "batch_b_start_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "pause_after": "successor budget machine-gate validation"
+}

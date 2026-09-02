@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-a-exit-batch-b-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization_chain": {
+    "phase2_entry_batch_a": {
+      "path": "contracts/ir-phase2-entry-batch-a-authorization.json",
+      "sha256": "e23391b18cf262556633485915f6de7ecb81b83452918b4d27f127d2f3cbd222"
+    },
+    "performance_remediation": {
+      "path": "contracts/ir-phase2-batch-a-performance-remediation-authorization.json",
+      "sha256": "bec25bf88bbbb865f623dfef4744c4dd7422f50e75713b8a58d25e0c9e844a12"
+    },
+    "successor_budget": {
+      "path": "contracts/ir-phase2-batch-a-successor-budget-authorization.json",
+      "sha256": "1d98d89e2a6c0b9ca587951a01073751105de67312154ebf4f17fa527f60d367"
+    }
+  },
+  "reviewed_artifacts": {
+    "docs/development/IR_PHASE_2_BATCH_A_COMPLETION_REVIEW.md": "809673e5d0472e2c263cf7e05de9efd725656072b269cafb3c041ec290054e30",
+    "contracts/ir-phase2-batch-a-successor-budget-validation.json": "2332cd1e0917df0075c39587d90064853b12117f4c72157b12abb627aa8d693a",
+    "contracts/ir-phase2-batch-a-performance-remediation-evidence.json": "d2aa352e6b40994977b296c5013742f320b0d326380f6f227365314f0f81ae0e",
+    "tests/fixtures/internal_ir/phase2_performance_budget_successor_candidate.json": "e763cac80b0768ffcee49f4a3c8287614b0347fd6121a3b9c5fa46d35b0e1f2a",
+    "flagquantum/_compiler/passes/static_canonicalization.py": "00674ac31ab35625b0a21a39b2260fee3fcab46d2fae09e64f16e675bca90dfb",
+    "benchmarks/internal/ir_phase2_batch_a_gate.py": "949ce42b1bad7534c4ccf288536c32bb7cb2e5e0022326b442a2eb21ea922396",
+    "tests/internal_ir/test_phase2_static_canonicalization.py": "c730ab345a207e0a45be250c45d47c9707684a13e449f5174e003e8ff35c4da9",
+    "tests/internal_ir/test_gradient_differential.py": "9595fac0582bf3fa3ed0d9928c147545d731e95ee23bcf53c62fa6ad2efa1262",
+    "tests/internal_ir/test_default_path_zero_impact.py": "8ee7146a03f31ffb564e958514481b38974d48f81813a2a64d21a1b0fff7cd2c",
+    "tests/internal_ir/test_phase2_performance_budget.py": "c59b4348667c44bb376a8247289bea195787ed9b0967190da0d3b8ca8ac8ca42",
+    "tests/internal_ir/test_phase2_batch_a_successor_budget_authorization.py": "481b179754c2aaec3f040c1556de166a837d141d72942df5671c94517e82a59e"
+  },
+  "batch_a_exit_evidence": {
+    "authorized_scope_implemented": true,
+    "structural_parity": true,
+    "state_and_expectation_parity": true,
+    "trainable_gradient_parity": true,
+    "failure_semantics_fail_closed": true,
+    "identity_determinism": true,
+    "successor_performance_budget_passed": true,
+    "default_path_zero_impact": true,
+    "public_api_changed": false,
+    "legacy_compiler_retained": true,
+    "known_blockers": []
+  },
+  "batch_b_scope_if_approved": {
+    "feature": "private target gate-set decomposition",
+    "required_evidence": [
+      "exact target gate-set legality contract",
+      "per-rewrite structural and state differential",
+      "parameter and gradient differential",
+      "deterministic identity and idempotence",
+      "unsupported target or operation fails closed",
+      "separate measured performance evidence",
+      "default path zero impact"
+    ],
+    "routing_authorized": false,
+    "emitter_authorized": false,
+    "provider_codegen_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "batch_c_through_f_authorized": false
+  },
+  "proposed_decisions": {
+    "batch_a_owner_accepted": true,
+    "batch_a_exit_authorized": true,
+    "batch_b_entry_authorized": true,
+    "batch_c_through_f_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-A-EXIT-BATCH-B",
+  "approval_text": "I accept the Phase 2 Batch A structural, semantic, gradient, determinism, failure, default-path, and approved successor-budget evidence; authorize Batch A exit and Batch B private target gate-set decomposition only. This approval does not authorize routing, emitters, provider codegen, public API or default-path changes, legacy compiler retirement, or Batch C through F.",
+  "pause_after": "Batch B implementation review candidate"
+}
