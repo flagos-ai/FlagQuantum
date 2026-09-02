@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-d-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-c-exit-batch-d-authorization.json",
+    "sha256": "da96dff8b8a5d7294ca8e1b1eb092069826700ab5c7a2d1552e5ee8744b7e878"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/exporters/text.py": "5edcef998f0033a06a3cd3c17d7de3bf753ecf17d184303d190bbb91d300b80a",
+    "benchmarks/internal/ir_phase2_batch_d_gate.py": "4ca4ba304aebe0a51ec094e4d7cf92559241bbaa33627ef051ade8d2fcdaf570",
+    "contracts/ir-phase2-batch-d-performance-baseline.json": "92138d8117734baf426051cc425c9d9c9884d2a15d6c697c2ac104476f2f2a09",
+    "tests/fixtures/internal_ir/phase2_batch_d_performance_budget_candidate.json": "9ffc0a0b3ce0914912f8d048523909eeaf330520fbc52e2077df57eec7c7aa87",
+    "tests/internal_ir/test_phase2_batch_d_authorization.py": "3f79d74e0eb496c331ace9301dac376590a37b6a41e6b7e2b37fecc1a49543aa",
+    "tests/internal_ir/test_phase2_batch_d_performance_candidate.py": "ba2c452c5b7c90a40410b35735db25cbcd886858db89aee224042e913efc7eda",
+    "tests/internal_ir/test_phase2_text_emitters.py": "31c413fda5540a1a0ef76cfe1b57ffcf0b893b2163d7a31d60ee748830664ce7",
+    "docs/development/IR_PHASE_2_BATCH_D_IMPLEMENTATION_REVIEW.md": "df50bc8e0b29a7b23717a28f25bed1def0f613e41891f1101b70316a27825c1d"
+  },
+  "technical_evidence": {
+    "openqasm2_golden_parse_semantics": "passed",
+    "restricted_openqasm3_golden_parse_semantics": "passed",
+    "versioned_qcis_native_golden_parse_semantics": "passed",
+    "asymmetric_qubit_order": "passed",
+    "character_and_hash_determinism": "passed",
+    "source_program_identity_binding": "passed",
+    "unsupported_and_invalid_fail_closed": "passed",
+    "public_and_default_path_zero_impact": "passed",
+    "performance_baseline_measured": true,
+    "performance_outliers_retained": true
+  },
+  "proposed_decisions": {
+    "batch_d_performance_budget_approved": true,
+    "batch_d_machine_gate_authorized": true,
+    "batch_d_exit_authorized": false,
+    "batch_e_provider_packaging_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "credentials_or_backend_ids_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-D-PERFORMANCE-BUDGET",
+  "approval_text": "I accept the isolated Batch D text-emission CPU baseline and approve its private regression budget and machine gate. This approval does not authorize Batch D exit, Batch E, provider SDK integration, remote submission, credentials, backend IDs, public API or default-path changes, legacy compiler retirement, or Phase 2 exit.",
+  "pause_after": "approved Batch D budget validation"
+}
