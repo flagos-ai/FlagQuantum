@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "status": "passed",
+  "validated_at": "2026-09-02",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-b-performance-budget-authorization.json",
+    "sha256": "58cdb920ac8e272b8716190f8e752675548dd9c00ffd3c96b43e52e71b5f67ed"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/phase2_batch_b_performance_budget_candidate.json",
+    "sha256": "7116761f95eba36c144e9540a366429e6649bc4c1fd7ba8c5609af79f9e02ca4"
+  },
+  "claim_scope": "Phase 2 Batch B private CPU budget; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "iterations": 5,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc"
+  },
+  "cases": [
+    {
+      "gate_count": 10,
+      "emitted_gate_count": 48,
+      "p95_ms": 1.62045,
+      "p95_ms_max": 6.0,
+      "peak_host_memory_bytes": 121020,
+      "peak_host_memory_bytes_max": 1048576,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "gate_count": 100,
+      "emitted_gate_count": 589,
+      "p95_ms": 13.572958,
+      "p95_ms_max": 45.0,
+      "peak_host_memory_bytes": 1205557,
+      "peak_host_memory_bytes_max": 2097152,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "gate_count": 1000,
+      "emitted_gate_count": 5984,
+      "p95_ms": 213.000892,
+      "p95_ms_max": 250.0,
+      "peak_host_memory_bytes": 12091044,
+      "peak_host_memory_bytes_max": 16777216,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "gate_count": 10000,
+      "emitted_gate_count": 60000,
+      "p95_ms": 2190.197026,
+      "p95_ms_max": 2700.0,
+      "peak_host_memory_bytes": 123472479,
+      "peak_host_memory_bytes_max": 167772160,
+      "deterministic_identity": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "batch_b_performance_budget_gate_passed": true,
+    "batch_b_exit_authorized": false,
+    "batch_c_routing_authorized": false,
+    "public_sla_claimed": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  }
+}

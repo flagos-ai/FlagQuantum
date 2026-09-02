@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase2-batch-b-exit-batch-c",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase2-batch-b-performance-budget-authorization.json",
+    "sha256": "58cdb920ac8e272b8716190f8e752675548dd9c00ffd3c96b43e52e71b5f67ed"
+  },
+  "performance_validation": {
+    "path": "contracts/ir-phase2-batch-b-performance-budget-validation.json",
+    "sha256": "e6334436fdda0616e4e3b1405f21793ba198d59b12b0690557bcfcbf165e81fd"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/passes/target_decomposition.py": "f56c0a276865e96811e7a8d19d6c2f9e62896d10fae7a2b1d807fd94ff88d786",
+    "flagquantum/_compiler/passes/__init__.py": "b1a7ab18f71b982a6cbd1ba4e9329eb85c94ee9cf50a785987efc65d99403e8f",
+    "benchmarks/internal/ir_phase2_batch_b_gate.py": "c41c23561845f2fd5112111a499f3d77d161023d766480a39a22020dd300498d",
+    "contracts/ir-phase2-batch-b-performance-budget-artifact-successor.json": "1930e66826e87ab1d20197c860b48303bc09de4fe5015025152d41cc97e6442b",
+    "tests/internal_ir/test_phase2_target_decomposition.py": "edd69999e3f21a92ad736c754294e9dd4522c63510d85b7e7c7206636d72aab8",
+    "tests/internal_ir/test_phase2_batch_b_authorization.py": "a7ad9c3fafb9555a31fc87fc3cfa49732ed7c0de00545bb98bd538112a0c2400",
+    "tests/internal_ir/test_phase2_batch_b_performance_authorization.py": "104f2487beee8b257ae489db39aba8ab1089003f110902e8b7eaa59a1949b32a",
+    "tests/internal_ir/test_phase2_batch_b_performance_budget.py": "f10d921998efb08ecffdda4f058177eba3e07ce89c7dd5c081748abb791bb89e",
+    "tests/internal_ir/test_default_path_zero_impact.py": "8ee7146a03f31ffb564e958514481b38974d48f81813a2a64d21a1b0fff7cd2c",
+    "docs/development/IR_PHASE_2_BATCH_B_COMPLETION_REVIEW.md": "fd16197921de55bb33d2d25818ce0310497df4381b61d89694b60a630748bd4f"
+  },
+  "evidence": {
+    "certified_static_unitary_opcodes": 30,
+    "target_legality_passed": true,
+    "state_differential_passed": true,
+    "trainable_gradient_differential_passed": true,
+    "unsupported_fail_closed_passed": true,
+    "determinism_and_idempotence_passed": true,
+    "approved_performance_gate_passed": true,
+    "default_path_zero_impact_passed": true
+  },
+  "proposed_decisions": {
+    "batch_b_exit_approved": true,
+    "batch_c_private_placement_routing_authorized": true,
+    "batch_c_performance_budget_approved": false,
+    "emitter_or_provider_codegen_authorized": false,
+    "remote_submission_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase2_exit_authorized": false
+  },
+  "batch_c_boundary": {
+    "included": [
+      "logical-to-physical mapping",
+      "coupling-map and directed-edge legality",
+      "deterministic placement and routing metadata",
+      "asymmetric two-qubit wire-order preservation",
+      "fail-closed unrouteable topology behavior",
+      "state, determinism, and separate performance-baseline evidence"
+    ],
+    "excluded": [
+      "emitters and provider-specific code generation",
+      "remote job submission",
+      "public API and default execution path changes",
+      "legacy compiler retirement",
+      "Phase 2 exit"
+    ]
+  },
+  "approval_command": "approve IR-PHASE2-BATCH-B-EXIT-BATCH-C",
+  "pause_after": "Batch C placement and routing implementation review"
+}

@@ -11,6 +11,8 @@ import statistics
 import time
 import tracemalloc
 from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 import torch
 
@@ -24,6 +26,15 @@ from flagquantum._compiler.passes.target_decomposition import (
 )
 from flagquantum._compiler.testing.differential import lower_module_for_differential
 from flagquantum.core.ir import CircuitIR, Instruction
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BUDGET = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "internal_ir"
+    / "phase2_batch_b_performance_budget_candidate.json"
+)
 
 
 def build_ir(gate_count: int) -> CircuitIR:
@@ -80,7 +91,7 @@ def compile_batch_b(source: CircuitIR) -> tuple[str, str, str, int]:
     )
 
 
-def measure_case(gate_count: int, *, iterations: int, warmup: int) -> dict[str, object]:
+def measure_case(gate_count: int, *, iterations: int, warmup: int) -> dict[str, Any]:
     source = build_ir(gate_count)
     for _ in range(warmup):
         compile_batch_b(source)
@@ -112,42 +123,62 @@ def measure_case(gate_count: int, *, iterations: int, warmup: int) -> dict[str, 
     }
 
 
+def evaluate(budget_path: Path, *, iterations: int, warmup: int) -> dict[str, Any]:
+    budget_path = budget_path.resolve()
+    budget_payload = json.loads(budget_path.read_text(encoding="utf-8"))
+    budgets = {int(item["gate_count"]): item for item in budget_payload["budgets"]}
+    cases = []
+    for gate_count in (10, 100, 1000, 10000):
+        case = measure_case(gate_count, iterations=iterations, warmup=warmup)
+        budget = budgets[gate_count]
+        case["budget"] = budget
+        case["latency_passed"] = (
+            case["timings_ms"]["p95"] <= budget["pipeline_p95_ms_max"]
+        )
+        case["memory_passed"] = (
+            case["peak_host_memory_bytes"] <= budget["peak_host_memory_bytes_max"]
+        )
+        case["passed"] = bool(
+            case["latency_passed"]
+            and case["memory_passed"]
+            and case["deterministic_identity"]
+        )
+        cases.append(case)
+    passed = all(case["passed"] for case in cases)
+    return {
+        "schema_version": "1.0",
+        "status": "passed" if passed else "failed",
+        "claim_scope": "Phase 2 Batch B private CPU budget; not a public SLA",
+        "budget_path": str(budget_path.relative_to(ROOT)),
+        "environment": {
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "platform": platform.platform(),
+            "torch_num_threads": torch.get_num_threads(),
+        },
+        "method": {
+            "iterations": iterations,
+            "warmup": warmup,
+            "clock": "time.perf_counter_ns",
+            "peak_memory": "tracemalloc",
+        },
+        "cases": cases,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=2)
+    parser.add_argument("--budget", type=Path, default=DEFAULT_BUDGET)
     args = parser.parse_args()
     if args.iterations < 3 or args.warmup < 1:
         raise ValueError("iterations must be >= 3 and warmup must be >= 1")
     torch.set_num_threads(1)
-    cases = [
-        measure_case(gates, iterations=args.iterations, warmup=args.warmup)
-        for gates in (10, 100, 1000, 10000)
-    ]
-    print(
-        json.dumps(
-            {
-                "schema_version": "1.0",
-                "status": "measured",
-                "claim_scope": "Phase 2 Batch B private CPU baseline; not a public SLA",
-                "environment": {
-                    "python": platform.python_version(),
-                    "torch": torch.__version__,
-                    "platform": platform.platform(),
-                    "torch_num_threads": torch.get_num_threads(),
-                },
-                "method": {
-                    "iterations": args.iterations,
-                    "warmup": args.warmup,
-                    "clock": "time.perf_counter_ns",
-                    "peak_memory": "tracemalloc",
-                },
-                "cases": cases,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    result = evaluate(args.budget, iterations=args.iterations, warmup=args.warmup)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    if result["status"] != "passed":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
