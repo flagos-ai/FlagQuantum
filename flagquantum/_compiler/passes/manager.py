@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from functools import cached_property
 
 from ..analyses.base import AnalysisManager
 from ..diagnostics import Diagnostic, DiagnosticCode, DiagnosticSeverity
@@ -30,7 +31,7 @@ class PassManager:
     def __init__(self, passes: tuple[CompilerPass, ...] = ()) -> None:
         self._passes = tuple(passes)
 
-    @property
+    @cached_property
     def pipeline_digest(self) -> str:
         payload = json.dumps(
             [item.descriptor.canonical() for item in self._passes],

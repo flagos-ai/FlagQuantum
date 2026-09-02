@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
+from functools import cache
+from types import MappingProxyType
 
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 
@@ -74,7 +76,7 @@ class OperationSchema:
 class OperationSchemaRegistry(Mapping[str, OperationSchema]):
     """An immutable, versioned collection of operation schemas."""
 
-    __slots__ = ("_schemas", "version")
+    __slots__ = ("_by_name", "_schemas", "version")
 
     def __init__(
         self,
@@ -91,14 +93,17 @@ class OperationSchemaRegistry(Mapping[str, OperationSchema]):
         if len(names) != len(set(names)):
             raise ValueError("operation schema names must be unique")
         self._schemas = ordered
+        self._by_name = MappingProxyType({schema.name: schema for schema in ordered})
         self.version = version
 
     def __getitem__(self, name: str) -> OperationSchema:
         normalized = str(name).strip().lower()
-        for schema in self._schemas:
-            if schema.name == normalized:
-                return schema
-        raise UnknownOperationError(f"unknown internal operation {normalized!r}")
+        try:
+            return self._by_name[normalized]
+        except KeyError as exc:
+            raise UnknownOperationError(
+                f"unknown internal operation {normalized!r}"
+            ) from exc
 
     def __iter__(self) -> Iterator[str]:
         return (schema.name for schema in self._schemas)
@@ -107,6 +112,7 @@ class OperationSchemaRegistry(Mapping[str, OperationSchema]):
         return len(self._schemas)
 
 
+@cache
 def circuit_ir_v1_schema_registry() -> OperationSchemaRegistry:
     """Build the immutable registry for the approved 35-opcode static profile."""
 

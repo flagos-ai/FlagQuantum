@@ -13,6 +13,9 @@ BLOCKER = ROOT / "contracts/ir-phase2-batch-a-performance-blocker.json"
 CANDIDATE = (
     ROOT / "contracts/ir-phase2-batch-a-performance-remediation-review-candidate.json"
 )
+SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -36,13 +39,20 @@ def test_performance_blocker_preserves_original_budget_and_stops_exit() -> None:
 
 def test_remediation_candidate_binds_every_reviewed_artifact() -> None:
     candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
+    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
+    successor_candidate = successor["candidates"][str(CANDIDATE.relative_to(ROOT))]
 
     assert candidate["status"] == "ready_for_owner_approval"
     assert _sha256(ROOT / candidate["blocker"]["path"]) == (
         candidate["blocker"]["sha256"]
     )
     for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
+        actual_hash = _sha256(ROOT / relative_path)
+        if actual_hash == expected_hash:
+            continue
+        transition = successor_candidate["artifact_transitions"][relative_path]
+        assert transition["predecessor_sha256"] == expected_hash
+        assert transition["successor_sha256"] == actual_hash
 
 
 def test_remediation_candidate_cannot_approve_budget_or_later_work() -> None:

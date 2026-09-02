@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from functools import cached_property
 
 from .operations import Operation
 from .values import ValueRef
@@ -64,7 +65,7 @@ class QuantumModule:
             "body": self.body.canonical(),
         }
 
-    @property
+    @cached_property
     def program_identity(self) -> str:
         payload = json.dumps(
             self.canonical(),

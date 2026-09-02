@@ -6,6 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from enum import Enum
+from functools import cached_property
 
 from .bindings import BindingTable
 from .diagnostics import Diagnostic
@@ -148,7 +149,7 @@ class ImportedCircuitProgram:
     instruction_semantics: tuple[InstructionSemantics, ...]
     bindings: BindingTable
 
-    @property
+    @cached_property
     def internal_program_identity(self) -> str:
         payload = {
             "module": self.module.canonical(),

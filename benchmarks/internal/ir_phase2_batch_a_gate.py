@@ -68,7 +68,7 @@ def percentile(values: Sequence[float], fraction: float) -> float:
 def compile_batch_a(source: CircuitIR) -> tuple[str, str, str]:
     sealed = seal_circuit_ir_round_trip(source)
     assert sealed.ok and sealed.artifact is not None
-    manager = PassManager(phase2_batch_a_passes())
+    manager = PassManager(phase2_batch_a_passes(fused=True))
     pipeline = manager.run(sealed.artifact.imported.module)
     assert pipeline.ok
     lowered = lower_module_for_differential(sealed.artifact, pipeline.module)
@@ -78,6 +78,76 @@ def compile_batch_a(source: CircuitIR) -> tuple[str, str, str]:
         pipeline.pipeline_digest,
         lowered.circuit_ir.content_hash,
     )
+
+
+def _timing_summary(values: Sequence[float]) -> dict[str, float]:
+    return {
+        "p50": round(statistics.median(values), 6),
+        "p95": round(percentile(values, 0.95), 6),
+    }
+
+
+def measure_components(
+    gate_count: int, *, iterations: int, warmup: int
+) -> dict[str, Any]:
+    """Measure the immutable pipeline stages without changing their boundaries."""
+
+    source = build_ir(gate_count)
+    manager = PassManager(phase2_batch_a_passes(fused=True))
+    for _ in range(warmup):
+        sealed = seal_circuit_ir_round_trip(source)
+        assert sealed.ok and sealed.artifact is not None
+        pipeline = manager.run(sealed.artifact.imported.module)
+        assert pipeline.ok
+        lowered = lower_module_for_differential(sealed.artifact, pipeline.module)
+        assert lowered.ok and lowered.circuit_ir is not None
+
+    samples: dict[str, list[float]] = {
+        "seal_import_verify": [],
+        "batch_a_pass_pipeline": [],
+        "optimized_lowering_verify": [],
+        "identity_digest": [],
+        "total": [],
+    }
+    identities: list[tuple[str, str, str]] = []
+    for _ in range(iterations):
+        started = time.perf_counter_ns()
+        sealed = seal_circuit_ir_round_trip(source)
+        imported = time.perf_counter_ns()
+        assert sealed.ok and sealed.artifact is not None
+        pipeline = manager.run(sealed.artifact.imported.module)
+        optimized = time.perf_counter_ns()
+        assert pipeline.ok
+        lowered = lower_module_for_differential(sealed.artifact, pipeline.module)
+        lowered_at = time.perf_counter_ns()
+        assert lowered.ok and lowered.circuit_ir is not None
+        identities.append(
+            (
+                pipeline.module.program_identity,
+                pipeline.pipeline_digest,
+                lowered.circuit_ir.content_hash,
+            )
+        )
+        completed = time.perf_counter_ns()
+        spans = {
+            "seal_import_verify": (started, imported),
+            "batch_a_pass_pipeline": (imported, optimized),
+            "optimized_lowering_verify": (optimized, lowered_at),
+            "identity_digest": (lowered_at, completed),
+            "total": (started, completed),
+        }
+        for name, (begin, end) in spans.items():
+            samples[name].append((end - begin) / 1_000_000.0)
+
+    return {
+        "gate_count": int(gate_count),
+        "iterations": int(iterations),
+        "warmup": int(warmup),
+        "timings_ms": {
+            name: _timing_summary(values) for name, values in samples.items()
+        },
+        "deterministic_identity": len(set(identities)) == 1,
+    }
 
 
 def measure_case(
@@ -134,6 +204,7 @@ def evaluate(
     iterations: int = 15,
     warmup: int = 3,
 ) -> dict[str, Any]:
+    budget_path = budget_path.resolve()
     budget = json.loads(budget_path.read_text(encoding="utf-8"))
     cases = [
         measure_case(item, iterations=iterations, warmup=warmup)

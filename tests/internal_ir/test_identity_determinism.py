@@ -8,6 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from flagquantum._compiler.importers.circuit_ir import import_circuit_ir
+from flagquantum.core.ir import CircuitIR, Instruction
+
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -57,3 +60,21 @@ def test_identity_debug_encoding_and_pipeline_digest_ignore_hash_seed() -> None:
     assert first == second
     assert len(first["program_identity"]) == 64
     assert len(first["pipeline_digest"]) == 64
+
+
+def test_immutable_program_identities_are_cached_without_changing_digest() -> None:
+    imported = import_circuit_ir(
+        CircuitIR(1, (Instruction("rz", (0,), {"theta": 0.25}),))
+    ).imported
+    assert imported is not None
+    module = imported.module
+
+    assert "program_identity" not in module.__dict__
+    first_module_identity = module.program_identity
+    assert module.__dict__["program_identity"] == first_module_identity
+    assert module.program_identity is first_module_identity
+
+    assert "internal_program_identity" not in imported.__dict__
+    first_import_identity = imported.internal_program_identity
+    assert imported.__dict__["internal_program_identity"] == first_import_identity
+    assert imported.internal_program_identity is first_import_identity

@@ -10,6 +10,9 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase1-batch-a-review-candidate.json"
+SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
+)
 
 
 def _candidate() -> dict[str, object]:
@@ -23,11 +26,21 @@ def _sha256(path: Path) -> str:
 def test_batch_a_candidate_binds_authorization_and_all_artifacts() -> None:
     candidate = _candidate()
     authorization = candidate["authorization"]
+    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
+    transitions = successor["candidates"][str(CANDIDATE.relative_to(ROOT))][
+        "artifact_transitions"
+    ]
 
     assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
     for section in ("implementation_artifacts", "test_artifacts"):
         for relative_path, expected_hash in candidate[section].items():
-            assert _sha256(ROOT / relative_path) == expected_hash
+            actual_hash = _sha256(ROOT / relative_path)
+            if actual_hash == expected_hash:
+                continue
+            assert transitions[relative_path] == {
+                "predecessor_sha256": expected_hash,
+                "successor_sha256": actual_hash,
+            }
 
 
 def test_batch_a_candidate_records_completed_scope() -> None:

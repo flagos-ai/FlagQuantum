@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "status": "measured",
+  "measured_at": "2026-09-02",
+  "authorization": "contracts/ir-phase2-batch-a-performance-remediation-authorization.json",
+  "environment": {
+    "image": "flagquantum-dev:pr-check",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 3,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "full_pipeline_scope": "CircuitIR import and verification, fused private Batch A pipeline, restricted lowering and verification, and identity digests"
+  },
+  "full_pipeline": [
+    {
+      "gate_count": 10,
+      "p50_ms": 0.468417,
+      "p95_ms": 0.554146,
+      "peak_host_memory_bytes": 44480,
+      "original_latency_passed": true,
+      "original_memory_passed": true,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 100,
+      "p50_ms": 4.363209,
+      "p95_ms": 5.365787,
+      "peak_host_memory_bytes": 257326,
+      "original_latency_passed": false,
+      "original_memory_passed": true,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 1000,
+      "p50_ms": 35.606167,
+      "p95_ms": 35.769,
+      "peak_host_memory_bytes": 2505077,
+      "original_latency_passed": false,
+      "original_memory_passed": false,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 10000,
+      "p50_ms": 385.909292,
+      "p95_ms": 434.161429,
+      "peak_host_memory_bytes": 25075043,
+      "original_latency_passed": false,
+      "original_memory_passed": false,
+      "deterministic_identity": true
+    }
+  ],
+  "component_p95_ms": [
+    {
+      "gate_count": 10,
+      "seal_import_verify": 0.183225,
+      "batch_a_pass_pipeline": 0.154746,
+      "optimized_lowering_verify": 0.143437,
+      "identity_digest": 0.01805,
+      "total": 0.492941
+    },
+    {
+      "gate_count": 100,
+      "seal_import_verify": 1.513871,
+      "batch_a_pass_pipeline": 1.260421,
+      "optimized_lowering_verify": 1.094167,
+      "identity_digest": 0.127841,
+      "total": 3.892983
+    },
+    {
+      "gate_count": 1000,
+      "seal_import_verify": 27.110979,
+      "batch_a_pass_pipeline": 21.078179,
+      "optimized_lowering_verify": 10.684792,
+      "identity_digest": 1.2306,
+      "total": 50.915195
+    },
+    {
+      "gate_count": 10000,
+      "seal_import_verify": 248.342271,
+      "batch_a_pass_pipeline": 149.2379,
+      "optimized_lowering_verify": 140.973717,
+      "identity_digest": 12.059008,
+      "total": 517.261513
+    }
+  ],
+  "before_after_1000": {
+    "blocker_p95_ms": 67.628971,
+    "remediated_p95_ms": 35.769,
+    "latency_reduction_percent": 47.11,
+    "blocker_peak_host_memory_bytes": 2726417,
+    "remediated_peak_host_memory_bytes": 2505077,
+    "memory_reduction_percent": 8.12
+  },
+  "conclusion": {
+    "functional_equivalence": "passed",
+    "determinism": "passed",
+    "original_budget": "failed",
+    "successor_budget_required": true,
+    "batch_a_exit_allowed": false
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase2-batch-a-performance-remediation",
+  "status": "approved",
+  "approved_at": "2026-09-02",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE2-BATCH-A-PERFORMANCE-REMEDIATION",
+  "review_candidate": {
+    "path": "contracts/ir-phase2-batch-a-performance-remediation-review-candidate.json",
+    "sha256": "e0cfb954607215f50378ff81f79b99c18d37009cb69eed3b228f40cc712b78b8"
+  },
+  "blocker": {
+    "id": "IR2A-PERF-001",
+    "path": "contracts/ir-phase2-batch-a-performance-blocker.json",
+    "sha256": "52e6e15f4172f4c742f8d18cfaa247598e36c69d6a33becb5657b73040fc1eb9"
+  },
+  "decisions": {
+    "remediation_implementation_authorized": true,
+    "component_instrumentation_authorized": true,
+    "identity_cache_authorized": true,
+    "entry_exit_verification_authorized": true,
+    "fused_private_pipeline_authorized": true,
+    "successor_budget_candidate_authorized": true,
+    "original_budget_change_authorized": false,
+    "successor_budget_approved": false,
+    "batch_a_exit_authorized": false,
+    "batch_b_start_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "required_evidence": [
+    "independent and fused pipeline structural equivalence",
+    "unchanged state, expectation, gradient, ordering, and failure semantics",
+    "unchanged identity canonical encoding and digest",
+    "10/100/1000/10000 component and full-pipeline measurements",
+    "successor budget candidate awaiting separate owner approval"
+  ],
+  "pause_after": "successor budget and remediation evidence review"
+}

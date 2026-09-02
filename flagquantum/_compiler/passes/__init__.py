@@ -7,6 +7,7 @@ from .static_canonicalization import (
     CancelSelfInverseOperationsPass,
     MergeAdjacentRotationsPass,
     RemoveIdentityOperationsPass,
+    StaticCanonicalizationPass,
     phase2_batch_a_passes,
 )
 
@@ -20,5 +21,6 @@ __all__ = [
     "PipelineResult",
     "MergeAdjacentRotationsPass",
     "RemoveIdentityOperationsPass",
+    "StaticCanonicalizationPass",
     "phase2_batch_a_passes",
 ]

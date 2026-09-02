@@ -11,6 +11,9 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase1-batch-c-review-candidate.json"
 SUCCESSOR = ROOT / "contracts/ir-phase1-batch-f-performance-remediation.json"
+REMEDIATION_SUCCESSOR = (
+    ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
+)
 
 
 def _candidate() -> dict[str, object]:
@@ -26,12 +29,21 @@ def test_batch_c_candidate_binds_authorization_and_artifacts() -> None:
     authorization = candidate["authorization"]
     successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
     successors = successor["successors"]
+    remediation = json.loads(REMEDIATION_SUCCESSOR.read_text(encoding="utf-8"))
+    remediation_transitions = remediation["candidates"][
+        str(CANDIDATE.relative_to(ROOT))
+    ]["artifact_transitions"]
 
     assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
     for section in ("implementation_artifacts", "test_artifacts"):
         for relative_path, expected_hash in candidate[section].items():
             actual_hash = _sha256(ROOT / relative_path)
             if actual_hash == expected_hash:
+                continue
+            amendment = remediation_transitions.get(relative_path)
+            if amendment is not None:
+                assert amendment["predecessor_sha256"] == expected_hash
+                assert amendment["successor_sha256"] == actual_hash
                 continue
             amendment = successors[relative_path]
             assert amendment["previous_sha256"] == expected_hash

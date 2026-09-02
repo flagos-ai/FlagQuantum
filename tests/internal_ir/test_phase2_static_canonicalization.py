@@ -62,6 +62,40 @@ def test_batch_a_matches_legacy_structure_across_disjoint_wires() -> None:
     )
 
 
+def test_fused_pipeline_is_exactly_equivalent_to_independent_passes() -> None:
+    source = fq.CircuitIR(
+        3,
+        (
+            fq.Instruction("i", (0,)),
+            fq.Instruction("h", (1,)),
+            fq.Instruction("h", (1,)),
+            fq.Instruction("rx", (2,), {"theta": 0.1}),
+            fq.Instruction("rx", (2,), {"theta": 0.2}),
+            fq.Instruction("x", (0,)),
+        ),
+    )
+    sealed = seal_circuit_ir_round_trip(source)
+    assert sealed.ok and sealed.artifact is not None
+
+    independent = PassManager(phase2_batch_a_passes()).run(
+        sealed.artifact.imported.module
+    )
+    fused = PassManager(phase2_batch_a_passes(fused=True)).run(
+        sealed.artifact.imported.module
+    )
+    assert independent.ok and fused.ok
+    assert fused.module == independent.module
+    assert fused.module.canonical() == independent.module.canonical()
+    assert fused.module.program_identity == independent.module.program_identity
+
+    independent_lowered = lower_module_for_differential(
+        sealed.artifact, independent.module
+    )
+    fused_lowered = lower_module_for_differential(sealed.artifact, fused.module)
+    assert independent_lowered.ok and fused_lowered.ok
+    assert fused_lowered.circuit_ir == independent_lowered.circuit_ir
+
+
 @pytest.mark.parametrize(
     "compiler_pass",
     (

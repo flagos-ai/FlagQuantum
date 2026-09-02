@@ -15,7 +15,7 @@ from ..ir.operations import FrozenAttributes, Operation
 from ..ir.schemas import circuit_ir_v1_schema_registry
 from ..ir.values import ValueId, ValueRef
 from ..ir.verifier import verify_module
-from .base import PassDescriptor, PassResult
+from .base import CompilerPass, PassDescriptor, PassResult
 
 _SELF_INVERSE = {
     "quantum.x",
@@ -200,6 +200,7 @@ def _result(
     *,
     changed: bool,
     statistics: dict[str, int],
+    verify_output: bool = True,
 ) -> PassResult:
     if not changed:
         return PassResult(
@@ -213,14 +214,15 @@ def _result(
         Region((Block(block.arguments, tuple(operations)),)),
         revision=before.revision + 1,
     )
-    verification = verify_module(candidate, circuit_ir_v1_schema_registry())
-    if not verification.ok:
-        return PassResult(
-            candidate,
-            changed=True,
-            diagnostics=verification.diagnostics,
-            statistics=statistics,
-        )
+    if verify_output:
+        verification = verify_module(candidate, circuit_ir_v1_schema_registry())
+        if not verification.ok:
+            return PassResult(
+                candidate,
+                changed=True,
+                diagnostics=verification.diagnostics,
+                statistics=statistics,
+            )
     return PassResult(candidate, changed=True, statistics=statistics)
 
 
@@ -230,6 +232,9 @@ class RemoveIdentityOperationsPass:
         "2.0",
         program_identity_policy="transform",
     )
+
+    def __init__(self, *, verify_output: bool = True) -> None:
+        self._verify_output = bool(verify_output)
 
     def run(self, module: QuantumModule) -> PassResult:
         block = _single_block(module)
@@ -257,6 +262,7 @@ class RemoveIdentityOperationsPass:
             operations,
             changed=bool(removed),
             statistics={"operations_removed": removed},
+            verify_output=self._verify_output,
         )
 
 
@@ -266,6 +272,9 @@ class CancelSelfInverseOperationsPass:
         "2.0",
         program_identity_policy="transform",
     )
+
+    def __init__(self, *, verify_output: bool = True) -> None:
+        self._verify_output = bool(verify_output)
 
     def run(self, module: QuantumModule) -> PassResult:
         block = _single_block(module)
@@ -308,6 +317,7 @@ class CancelSelfInverseOperationsPass:
             [operation for operation in operations if operation is not None],
             changed=bool(cancelled_pairs),
             statistics={"pairs_cancelled": cancelled_pairs},
+            verify_output=self._verify_output,
         )
 
 
@@ -317,6 +327,9 @@ class MergeAdjacentRotationsPass:
         "2.0",
         program_identity_policy="transform",
     )
+
+    def __init__(self, *, verify_output: bool = True) -> None:
+        self._verify_output = bool(verify_output)
 
     def run(self, module: QuantumModule) -> PassResult:
         block = _single_block(module)
@@ -387,23 +400,96 @@ class MergeAdjacentRotationsPass:
                 "rotations_merged": merged_count,
                 "zero_sums_removed": removed_zero_count,
             },
+            verify_output=self._verify_output,
         )
 
 
-def phase2_batch_a_passes() -> tuple[object, ...]:
+class StaticCanonicalizationPass:
+    """Fused Batch A path with one entry and one exit verification."""
+
+    descriptor = PassDescriptor(
+        "static_canonicalization",
+        "2.0",
+        options={
+            "components": (
+                "remove_identity_operations",
+                "cancel_self_inverse_operations",
+                "merge_adjacent_rotations",
+                "remove_identity_operations",
+            ),
+            "verification": "entry_exit",
+        },
+        program_identity_policy="transform",
+    )
+
+    def run(self, module: QuantumModule) -> PassResult:
+        entry_verification = verify_module(module, circuit_ir_v1_schema_registry())
+        if not entry_verification.ok:
+            return PassResult(module, diagnostics=entry_verification.diagnostics)
+        current = module
+        changed = False
+        operations_removed = 0
+        pairs_cancelled = 0
+        rotations_merged = 0
+        zero_sums_removed = 0
+        for compiler_pass in _independent_passes(verify_output=False):
+            result = compiler_pass.run(current)
+            if result.diagnostics:
+                return PassResult(module, diagnostics=result.diagnostics)
+            changed |= result.changed
+            operations_removed += int(result.statistics.get("operations_removed", 0))
+            pairs_cancelled += int(result.statistics.get("pairs_cancelled", 0))
+            rotations_merged += int(result.statistics.get("rotations_merged", 0))
+            zero_sums_removed += int(result.statistics.get("zero_sums_removed", 0))
+            current = result.module
+        if not changed:
+            return PassResult(
+                module,
+                changed=False,
+                preserved_analyses=frozenset({"def_use", "qubit_lifetime"}),
+                statistics={"component_passes": 4},
+            )
+        exit_verification = verify_module(current, circuit_ir_v1_schema_registry())
+        if not exit_verification.ok:
+            return PassResult(
+                current,
+                changed=True,
+                diagnostics=exit_verification.diagnostics,
+            )
+        return PassResult(
+            current,
+            changed=True,
+            statistics={
+                "component_passes": 4,
+                "operations_removed": operations_removed,
+                "pairs_cancelled": pairs_cancelled,
+                "rotations_merged": rotations_merged,
+                "zero_sums_removed": zero_sums_removed,
+            },
+        )
+
+
+def _independent_passes(*, verify_output: bool) -> tuple[CompilerPass, ...]:
+    return (
+        RemoveIdentityOperationsPass(verify_output=verify_output),
+        CancelSelfInverseOperationsPass(verify_output=verify_output),
+        MergeAdjacentRotationsPass(verify_output=verify_output),
+        RemoveIdentityOperationsPass(verify_output=verify_output),
+    )
+
+
+def phase2_batch_a_passes(*, fused: bool = False) -> tuple[CompilerPass, ...]:
     """Return the approved deterministic Batch A pass sequence."""
 
-    return (
-        RemoveIdentityOperationsPass(),
-        CancelSelfInverseOperationsPass(),
-        MergeAdjacentRotationsPass(),
-        RemoveIdentityOperationsPass(),
-    )
+    if fused:
+        return (StaticCanonicalizationPass(),)
+    return _independent_passes(verify_output=True)
 
 
 __all__ = [
     "CancelSelfInverseOperationsPass",
     "MergeAdjacentRotationsPass",
     "RemoveIdentityOperationsPass",
+    "StaticCanonicalizationPass",
     "phase2_batch_a_passes",
 ]

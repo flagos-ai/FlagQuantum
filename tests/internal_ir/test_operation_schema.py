@@ -58,3 +58,11 @@ def test_registry_is_immutable_by_construction() -> None:
 
     with pytest.raises(TypeError):
         registry["quantum.x"] = registry["quantum.h"]  # type: ignore[index]
+
+
+def test_static_registry_is_reused_as_an_immutable_singleton() -> None:
+    first = circuit_ir_v1_schema_registry()
+    second = circuit_ir_v1_schema_registry()
+
+    assert second is first
+    assert second[" QUANTUM.X "] is first["quantum.x"]

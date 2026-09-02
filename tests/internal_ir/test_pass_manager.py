@@ -51,6 +51,15 @@ def test_pipeline_digest_binds_order_version_options_and_seed() -> None:
     )
 
 
+def test_pipeline_digest_is_cached_on_immutable_pass_sequence() -> None:
+    manager = PassManager((_RevisionPass(),))
+
+    assert "pipeline_digest" not in manager.__dict__
+    digest = manager.pipeline_digest
+    assert manager.__dict__["pipeline_digest"] == digest
+    assert manager.pipeline_digest is digest
+
+
 def test_canonicalization_is_a_semantic_and_object_no_op() -> None:
     module = _module()
     result = PassManager((CanonicalizeAttributesPass(),)).run(module)
