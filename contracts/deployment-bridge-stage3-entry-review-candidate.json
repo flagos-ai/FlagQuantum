@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "review": "deployment-bridge-stage3-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage2-exit-stage3-proposal-authorization.json",
+    "sha256": "ddcd5a2325899c0d512a95b2c5d970e9d2aab6849557cd1e9e1079135178efca"
+  },
+  "current_contracts": {
+    "stage2_private_dry_run": {
+      "path": "flagquantum/_compiler/deployment_dry_run.py",
+      "sha256": "135604485571c07c9b2fa88ebf871716f4898695a1757788263c7dbdbd562922"
+    },
+    "provider_neutral_conformance": {
+      "path": "flagquantum/_compiler/provider_conformance.py",
+      "sha256": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1"
+    },
+    "private_shadow_contracts": {
+      "path": "flagquantum/_compiler/shadow_contracts.py",
+      "sha256": "5c8e382e1c1e245d04ed63512ca923ed3b0e1c06b7224cf017111da6c5701f3d"
+    },
+    "private_local_and_mock_adapters": {
+      "path": "flagquantum/_compiler/runtime_adapters.py",
+      "sha256": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8"
+    },
+    "authoritative_legacy_deployment": {
+      "path": "flagquantum/deployment/cloud.py",
+      "sha256": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b"
+    },
+    "public_api_snapshot": {
+      "path": "docs/public_api_v1.json",
+      "sha256": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4"
+    },
+    "public_api_baseline": {
+      "path": "contracts/public-api-v0.2-baseline.json",
+      "sha256": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/deployment-bridge-stage2-exit-stage3-proposal-authorization.json": "ddcd5a2325899c0d512a95b2c5d970e9d2aab6849557cd1e9e1079135178efca",
+    "contracts/deployment-bridge-stage3-entry-proposal.json": "a30680de0fe9dec1f82d15dbae5e01a74e71f8420e03fffca9fd3733ce976921",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_3_ENTRY_PROPOSAL.md": "9c2ab62995517cfd3cc43e41303150445659ab09c69bd5937f6e3a4a5d5f6c44",
+    "tests/internal_ir/test_deployment_bridge_stage3_proposal_authorization.py": "26e2996a932808c389e82747572cc2d79b4d2b0245bea675603a7f2080964929",
+    "tests/internal_ir/test_deployment_bridge_stage3_entry_proposal.py": "6b11aefa51343755373fc7233169be5241ec8727763ebf213a1d831c4fb8d309",
+    "flagquantum/_compiler/deployment_dry_run.py": "135604485571c07c9b2fa88ebf871716f4898695a1757788263c7dbdbd562922",
+    "flagquantum/_compiler/provider_conformance.py": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1",
+    "flagquantum/_compiler/shadow_contracts.py": "5c8e382e1c1e245d04ed63512ca923ed3b0e1c06b7224cf017111da6c5701f3d",
+    "flagquantum/_compiler/runtime_adapters.py": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8",
+    "flagquantum/deployment/cloud.py": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "stage2_exit_and_stage3_proposal_authorization_bound": true,
+    "stage3_is_distinct_from_unified_ir_provider_conformance_stage3": true,
+    "current_readiness_truthfully_blocks_activation": true,
+    "readiness_output_cannot_claim_activation": true,
+    "explicit_per_request_opt_in_and_legacy_authority_required": true,
+    "unknown_submission_never_automatically_retried_or_fallen_back": true,
+    "at_most_once_dispatch_identity_required_before_future_submission": true,
+    "independent_fail_closed_kill_switch_and_rollback_contract_complete": true,
+    "correctness_privacy_resource_queue_quota_and_cost_budgets_required": true,
+    "provider_specific_conformance_expiry_revocation_and_target_binding_required": true,
+    "portable_and_operational_identity_stores_separated": true,
+    "retention_deletion_access_incident_and_cost_ownership_required": true,
+    "six_step_separately_gated_rollout_defined": true,
+    "next_entry_is_private_offline_step_zero_only": true,
+    "runtime_execution_submission_sampling_routing_and_activation_excluded": true,
+    "provider_network_credentials_real_identifiers_and_telemetry_excluded": true,
+    "public_and_default_path_unchanged": true
+  },
+  "proposed_decisions": {
+    "stage3_private_offline_readiness_evaluator_authorized": true,
+    "stage3_anonymous_synthetic_fixtures_authorized": true,
+    "stage3_independent_performance_baseline_authorized": true,
+    "stage3_performance_budget_approved": false,
+    "stage3_runtime_integration_authorized": false,
+    "canary_activation_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "execution_or_submission_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "real_provider_attestation_creation_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE3-ENTRY",
+  "approval_text": "Authorize only a private deterministic offline canary-readiness evaluator, anonymous synthetic evidence fixtures, internal tests and an independent performance baseline. The evaluator may report at most readiness for a separate activation review. Do not authorize runtime integration, artifact or ExecutionBinding creation, execution, submission, shadow/dual execution, canary activation, sampling, routing, real provider conformance, provider SDKs, network calls, credentials, real backend/job identities, telemetry, deployment migration, public/default API changes, legacy retirement, a performance budget, or Phase 4 entry.",
+  "pause_after": "Stage 3 private offline readiness evaluator, independent baseline, and performance-budget review"
+}

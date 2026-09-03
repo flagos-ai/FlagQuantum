@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "authorization": "deployment-bridge-stage2-exit-stage3-proposal",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE2-EXIT-STAGE3-PROPOSAL",
+  "review_candidate": {
+    "path": "contracts/deployment-bridge-stage2-exit-stage3-proposal-review-candidate.json",
+    "sha256": "bbb21e0f3f57fa99729415978a5b2a4f1b9a8b615499e9ac1006330f96a3061b"
+  },
+  "decisions": {
+    "stage2_owner_accepted": true,
+    "stage2_exit_authorized": true,
+    "stage3_proposal_authorized": true,
+    "stage3_runtime_implementation_authorized": false,
+    "canary_activation_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "execution_or_submission_authorized": false,
+    "execution_binding_creation_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "allowed_scope": {
+    "feature": "bounded canary-readiness proposal",
+    "roots": [
+      "docs/development",
+      "contracts",
+      "tests/internal_ir"
+    ],
+    "proposal_and_offline_contract_tests_only": true,
+    "opt_in_legacy_authority_and_dispatch_safety_contract_required": true,
+    "kill_switch_rollback_and_incident_contract_required": true,
+    "correctness_privacy_resource_queue_and_cost_contract_required": true,
+    "provider_conformance_and_identity_observability_contract_required": true,
+    "retention_deletion_and_zero_default_impact_review_required": true
+  },
+  "pause_after": "Stage 3 proposal and independent owner review"
+}
