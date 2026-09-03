@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0",
+  "proposal": "deployment-bridge-stage7-named-provider-live-sandbox-activation",
+  "status": "awaiting_explicit_provider_selection_entry_not_authorized",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "stage_name": "Deployment Bridge Stage 7",
+  "distinct_from": "product-roadmap Stage 7, production provider activation, multi-provider routing, and public API stabilization",
+  "prerequisites": {
+    "stage6_exit_stage7_proposal_authorization": {
+      "path": "contracts/deployment-bridge-stage6-exit-stage7-proposal-authorization.json",
+      "sha256": "e7e03ae18540877428ae01e82aac2586526b3d39b43ed6709ecd40aeb4090717"
+    },
+    "stage6_performance_validation": {
+      "path": "contracts/deployment-bridge-stage6-performance-budget-validation.json",
+      "sha256": "3a6020c5a6980055eff10014eef3798ecdec624eb28ae1c59cb9b146f13bf990"
+    },
+    "stage6_offline_scripted_connector": {
+      "path": "flagquantum/_compiler/provider_sandbox_connector.py",
+      "sha256": "25c6382ba6d0214ff5d1e51c3d93ba69f67dd434cbe2170a0898f1e7957a48da"
+    }
+  },
+  "objective": "Define the evidence and approval boundary for activating exactly one explicitly selected Provider's non-billable live sandbox. This proposal selects no Provider, performs no discovery, resolves no credential and authorizes neither implementation nor live access.",
+  "provider_selection": {
+    "selection_status": "not_selected",
+    "selected_provider_namespace": null,
+    "selected_sandbox_target": null,
+    "selection_must_be_owner_supplied": true,
+    "selection_by_inference_or_repository_history_allowed": false,
+    "required_selection_evidence": [
+      "canonical Provider namespace and responsible owner",
+      "authoritative public sandbox documentation reference and captured digest",
+      "non-billable and sandbox-only attestation",
+      "sandbox backend discovery method and stable identity rules",
+      "supported capability and result-format snapshot",
+      "endpoint region jurisdiction data-residency and retention declaration",
+      "terms quota maintenance and incident-contact references"
+    ],
+    "selection_is_not_entry_or_live_access_approval": true
+  },
+  "source_and_ownership_boundary": {
+    "future_core_implementation_root": "flagquantum/_compiler/provider_sandboxes/<selected_provider>.py",
+    "public_export_allowed": false,
+    "default_registration_allowed": false,
+    "external_adapter_may_contain_flagquantum_core_source": false,
+    "provider_specific_sdk_or_transport_must_not_enter_program_ir": true,
+    "provider_backend_and_job_identities_are_execution_evidence_only": true,
+    "shared_runtime_adapter_modification_requires_separate_review": true
+  },
+  "target_discovery_and_attestation_contract": {
+    "discovery_source": "selected Provider's authoritative sandbox control plane only after live-access approval",
+    "endpoint_source": "immutable owner-approved allowlist; never program input environment discovery or provider response",
+    "required_attestation": [
+      "provider namespace",
+      "sandbox target identity",
+      "sandbox-only and non-billable flags",
+      "capability identity",
+      "region and jurisdiction identity",
+      "discovery evidence identity",
+      "expiry and refresh sequence"
+    ],
+    "target_mismatch": "fail_closed_before_submission",
+    "production_or_billable_target": "deny",
+    "dynamic_endpoint_redirect": "deny"
+  },
+  "credential_resolution_contract": {
+    "future_interface": "resolve(reference_identity, provider_namespace, required_scope) -> ephemeral_secret_handle",
+    "reference_only_in_serializable_input": true,
+    "secret_handle_visible_only_to_future_selected_transport": true,
+    "secret_value_environment_variable_name_store_path_and_token_metadata_serializable": false,
+    "plaintext_secret_logging_caching_hashing_or_evidence_capture_allowed": false,
+    "provider_namespace_scope_expiry_and_revocation_match_required": true,
+    "least_privilege_submit_status_cancel_result_scope_required": true,
+    "resolver_implementation_authorized": false
+  },
+  "network_policy_contract": {
+    "default": "deny",
+    "future_allowed_destinations": "exact owner-approved HTTPS host port and path prefixes for the selected sandbox",
+    "dns_redirect_proxy_and_certificate_policy_must_be_explicit": true,
+    "provider_returned_or_environment_supplied_endpoint_allowed": false,
+    "non_tls_loopback_metadata_service_and private_network destinations_allowed": false,
+    "request_methods_and_operations_must_be_allowlisted": true,
+    "network_implementation_authorized": false
+  },
+  "bounded_synthetic_probe_contract": {
+    "program": "owner-reviewed deterministic non-sensitive synthetic circuit only",
+    "maximum_submissions": 1,
+    "maximum_jobs": 1,
+    "maximum_shots": 100,
+    "maximum_poll_operations": 20,
+    "maximum_cancel_operations": 1,
+    "maximum_wall_time_seconds": 300,
+    "maximum_estimated_cost_microunits": 0,
+    "automatic_retry_or_fallback_allowed": false,
+    "unknown_submission_outcome": "stop preserve idempotency disable further submission and require manual reconciliation",
+    "raw_program_or_result_payload_in_audit_evidence_allowed": false,
+    "production_result_claim_allowed": false
+  },
+  "safety_and_operations_contract": {
+    "kill_switch_default": "disabled",
+    "explicit_operator_acknowledgement_required": true,
+    "fresh_target_and_credential_attestation_required": true,
+    "quota_cost_shot_queue_timeout_and_retention_ceilings_required": true,
+    "preflight_must_prove_non_billable_sandbox_target": true,
+    "rollback_action": "disable connector revoke credential reference and reconcile every unknown job",
+    "incident_owner_and_reconciliation_runbook_required": true,
+    "evidence_must_exclude_secrets_personal_data_and_raw_payloads": true
+  },
+  "approval_ladder": {
+    "current_step": "proposal_only",
+    "next_step": "explicit_provider_and_sandbox_selection",
+    "after_selection": "independent Stage 7 Entry review for private implementation only",
+    "after_implementation": "independent implementation-readiness and performance-budget review",
+    "before_any_live_access": "separate live-access approval bound to provider target endpoint credential scope probe and expiry",
+    "entry_approval_implies_live_access": false,
+    "implementation_readiness_implies_live_access": false,
+    "live_sandbox_approval_implies_production_access": false
+  },
+  "proposed_entry_decisions": {
+    "stage7_entry_authorized": false,
+    "provider_selection_completed": false,
+    "stage7_private_provider_contracts_authorized": false,
+    "stage7_live_transport_implementation_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_reference_resolution_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "real_execution_or_submission_authorized": false,
+    "retry_or_fallback_authorized": false,
+    "production_target_authorized": false,
+    "shadow_canary_or_request_routing_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "product_roadmap_stage7_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "next_owner_action": {
+    "action": "select exactly one Provider and one documented non-billable sandbox target",
+    "entry_approval_available_now": false,
+    "required_form": "approve DEPLOYMENT-BRIDGE-STAGE7-PROVIDER-SELECTION provider=<canonical-provider-namespace> sandbox=<documented-non-billable-sandbox-target>",
+    "pause_after": "Provider selection evidence capture and independent Stage 7 Entry review"
+  }
+}

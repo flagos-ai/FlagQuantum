@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "review": "deployment-bridge-stage7-entry",
+  "status": "awaiting_explicit_provider_selection",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage6-exit-stage7-proposal-authorization.json",
+    "sha256": "e7e03ae18540877428ae01e82aac2586526b3d39b43ed6709ecd40aeb4090717"
+  },
+  "current_contracts": {
+    "stage6_offline_scripted_connector": {
+      "path": "flagquantum/_compiler/provider_sandbox_connector.py",
+      "sha256": "25c6382ba6d0214ff5d1e51c3d93ba69f67dd434cbe2170a0898f1e7957a48da"
+    },
+    "stage5_private_observation": {
+      "path": "flagquantum/_compiler/provider_sandbox_observation.py",
+      "sha256": "bc1761cf136b8c53b8b5be6d156c6daae77f83a92d8babd9aa458b0a2b915ee8"
+    },
+    "provider_neutral_conformance": {
+      "path": "flagquantum/_compiler/provider_conformance.py",
+      "sha256": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1"
+    },
+    "private_local_and_mock_adapters": {
+      "path": "flagquantum/_compiler/runtime_adapters.py",
+      "sha256": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8"
+    },
+    "authoritative_legacy_deployment": {
+      "path": "flagquantum/deployment/cloud.py",
+      "sha256": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b"
+    },
+    "public_api_snapshot": {
+      "path": "docs/public_api_v1.json",
+      "sha256": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4"
+    },
+    "public_api_baseline": {
+      "path": "contracts/public-api-v0.2-baseline.json",
+      "sha256": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/deployment-bridge-stage6-exit-stage7-proposal-authorization.json": "e7e03ae18540877428ae01e82aac2586526b3d39b43ed6709ecd40aeb4090717",
+    "contracts/deployment-bridge-stage7-entry-proposal.json": "dfa432a81e4ce7f513a4177bd404841dc62b800f1a26a52dec6c175f94aef689",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_7_ENTRY_PROPOSAL.md": "5216c64fc98b3a387b48079986cd4fd6bf6ae65c3dbc1c907d6ae5ce5fbac99e",
+    "tests/internal_ir/test_deployment_bridge_stage7_proposal_authorization.py": "aa2caa5f9eb00faf62e6be039ec1a6d261b3fb3223ee1cd2f4bda4cde242881a",
+    "tests/internal_ir/test_deployment_bridge_stage7_entry_proposal.py": "a98faa2cf851fcb20c6edac318b8e6edaa0cc005b71da875c3e7dce70d933c14",
+    "flagquantum/_compiler/provider_sandbox_connector.py": "25c6382ba6d0214ff5d1e51c3d93ba69f67dd434cbe2170a0898f1e7957a48da",
+    "flagquantum/_compiler/provider_sandbox_observation.py": "bc1761cf136b8c53b8b5be6d156c6daae77f83a92d8babd9aa458b0a2b915ee8",
+    "flagquantum/_compiler/provider_conformance.py": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1",
+    "flagquantum/_compiler/runtime_adapters.py": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8",
+    "flagquantum/deployment/cloud.py": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "stage6_exit_and_stage7_proposal_authorization_bound": true,
+    "stage7_is_distinct_from_product_roadmap_stage7_and_production_activation": true,
+    "provider_selection_schema_complete": true,
+    "provider_selection_inferred": false,
+    "provider_selection_completed": false,
+    "target_discovery_attestation_endpoint_and_identity_boundaries_defined": true,
+    "credential_resolution_redaction_and_least_privilege_boundaries_defined": true,
+    "network_is_deny_by_default_and_allowlist_must_be_owner_bound": true,
+    "first_probe_has_hard_non_billable_submission_shot_poll_time_and_cost_ceilings": true,
+    "unknown_outcome_forbids_retry_and_requires_manual_reconciliation": true,
+    "separate_entry_implementation_readiness_and_live_access_approvals_required": true,
+    "implementation_or_live_access_authorized": false,
+    "runtime_provider_network_credentials_and_real_submission_unchanged": true,
+    "public_and_default_path_unchanged": true
+  },
+  "proposed_decisions": {
+    "stage7_entry_authorized": false,
+    "provider_selection_completed": false,
+    "stage7_private_provider_contracts_authorized": false,
+    "stage7_live_transport_implementation_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_reference_resolution_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "real_execution_or_submission_authorized": false,
+    "retry_or_fallback_authorized": false,
+    "production_target_authorized": false,
+    "shadow_canary_or_request_routing_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "product_roadmap_stage7_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "next_owner_action": {
+    "action": "select exactly one Provider and one documented non-billable sandbox target",
+    "entry_approval_available_now": false,
+    "required_form": "approve DEPLOYMENT-BRIDGE-STAGE7-PROVIDER-SELECTION provider=<canonical-provider-namespace> sandbox=<documented-non-billable-sandbox-target>",
+    "selection_is_not_entry_or_live_access_approval": true
+  },
+  "pause_after": "Provider selection evidence capture and independent Stage 7 Entry review"
+}
