@@ -203,14 +203,14 @@ def capabilities(*, refresh: bool = False) -> dict[str, Any]:
 def preflight_execution(circuit_or_ir: Any, **options: Any) -> AgentExecutionPlan:
     """Validate and plan a workload, converting all expected failures to blockers."""
 
-    from .compilation.planner import plan
+    from .compilation.planner import plan_runtime_selection
 
     requires_gradient = bool(options.get("require_gradients", False))
     validation = validate(circuit_or_ir, requires_gradient=requires_gradient)
     if not validation.valid:
         return AgentExecutionPlan(False, None, validation, blockers=validation.errors)
     try:
-        native_plan = plan(circuit_or_ir, **options)
+        native_plan = plan_runtime_selection(circuit_or_ir, **options)
         summary = native_plan.summary()
         return AgentExecutionPlan(
             executable=True,

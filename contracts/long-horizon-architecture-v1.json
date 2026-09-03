@@ -1,0 +1,31 @@
+{
+  "schema": "flagquantum.long_horizon_architecture",
+  "version": "1.0",
+  "status": "candidate",
+  "stable_contracts": [
+    "program_artifact",
+    "target_capabilities",
+    "execution_request",
+    "execution_result"
+  ],
+  "execution_modes": ["job", "session", "realtime_session", "workflow"],
+  "provider_kinds": ["accelerator", "simulation", "qpu", "service"],
+  "domains": {
+    "core": {"may_depend_on": []},
+    "compiler": {"may_depend_on": ["core"]},
+    "runtime": {"may_depend_on": ["core", "compiler_contracts"]},
+    "simulation": {"may_depend_on": ["core", "provider_contracts"]},
+    "agent_services": {"may_depend_on": ["core", "compiler_contracts", "runtime_contracts"]},
+    "gateways": {"repository": "external", "may_depend_on": ["agent_services"]},
+    "providers": {"may_depend_on": ["core", "provider_contracts", "vendor_sdk"]}
+  },
+  "future_extensions": [
+    "fault_tolerance",
+    "pulse_control",
+    "realtime_feedback",
+    "multi_qpu",
+    "quantum_network",
+    "domestic_accelerators",
+    "agent_protocols"
+  ]
+}

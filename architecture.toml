@@ -35,6 +35,20 @@ runtime_import_allowed = [
     "flagquantum/simulation/noise.py",
 ]
 
+[northbound_boundaries]
+gateway_forbidden = [
+    "_compiler",
+    "compilation",
+    "deployment",
+    "runtime",
+    "simulation",
+]
+agent_services_forbidden = [
+    "backends",
+    "platforms",
+    "simulation",
+]
+
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/algorithms/optimization.py" = 6
 "flagquantum/benchmarking/statevector_local.py" = 7

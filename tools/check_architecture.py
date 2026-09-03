@@ -53,6 +53,7 @@ def architecture_errors() -> tuple[str, ...]:
     accelerator_boundaries = CONFIG.get("accelerator_boundaries", {})
     interop_boundaries = CONFIG.get("interop_boundaries", {})
     simulation_boundaries = CONFIG.get("simulation_boundaries", {})
+    northbound_boundaries = CONFIG.get("northbound_boundaries", {})
     simulation_runtime_import_allowed = set(
         simulation_boundaries.get("runtime_import_allowed", ())
     )
@@ -180,6 +181,24 @@ def architecture_errors() -> tuple[str, ...]:
             for module, _ in imports:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(f"{relative}: core imports forbidden layer {module}")
+
+        if relative.startswith("flagquantum/_gateways/"):
+            forbidden = tuple(northbound_boundaries.get("gateway_forbidden", ()))
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: northbound gateway imports forbidden "
+                        f"implementation layer {module}"
+                    )
+
+        if relative.startswith("flagquantum/_agent_services/"):
+            forbidden = tuple(northbound_boundaries.get("agent_services_forbidden", ()))
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: agent service imports forbidden implementation "
+                        f"layer {module}"
+                    )
 
         if relative.startswith("flagquantum/noise/"):
             forbidden = tuple(boundaries["noise_forbidden"])
