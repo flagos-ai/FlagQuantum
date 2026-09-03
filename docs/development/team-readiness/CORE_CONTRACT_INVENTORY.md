@@ -326,10 +326,16 @@ imports，以及旧类型 importer 数量单调下降。
 - 新增特征测试：6 项通过；
 - 相关 IR、artifact、runtime contract、options、target capabilities、ExecutionPlan 和
   ExecutionResult 测试：86 项通过；
-- 默认 `smoke or unit` 门禁：1804 项通过、12 项跳过、6 项失败。失败与本次文件无关：
-  两项仓库检查因系统 `/usr/bin/git` 缺少 macOS developer tools 失败，使用随附 Git 路径
-  单独复跑后 10 项全部通过；两项 watchdog 测试依赖 Linux `/proc`；一项浮点抵消测试在
-  当前 PyTorch 2.13.0 的 `torch.dot` 结果与固定预期不同；一项 10000-gate 本机性能预算的
-  p95 为 441.063251 ms，高于 120 ms 限额且 growth gate 未通过。
+- 主机默认 `smoke or unit` 门禁：1804 项通过、12 项跳过、6 项失败。两项仓库检查因系统
+  `/usr/bin/git` 缺少 macOS developer tools 失败，使用随附 Git 路径单独复跑后 10 项全部
+  通过；两项 watchdog 测试依赖 Linux `/proc`；一项浮点抵消测试在主机 PyTorch 2.13.0
+  的 `torch.dot` 结果与固定预期不同；一项 10000-gate 性能预算失败。
+- 使用仓库 `flagquantum-dev:local` CPU Docker 环境复跑默认门禁：1809 项通过、10 项跳过、
+  3 项失败。Linux 容器消除了 watchdog 和浮点差异；剩余两项仓库检查是 linked worktree
+  `.git` 文件指向未挂载的主机绝对路径，容器中的 `git ls-files` 无法访问共享 Git 元数据；
+  另一项仍为 Phase 1 import/verify 性能预算。
+- 容器内单独测量性能门禁时，10/100/1000/10000-gate p95 分别为 0.358158、2.429283、
+  15.866691 和 239.094925 ms；后三者中的 100/1000/10000 超过各自 1.5/12.5/120 ms
+  限额，所有 case 的内存和 deterministic identity 检查均通过，但 growth gate 未通过。
 
 上述默认门禁失败没有通过修改阈值、快照或受保护行为规避，也不作为本轮契约变更证据。
