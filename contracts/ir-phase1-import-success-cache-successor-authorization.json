@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase1-import-success-cache-successor",
+  "status": "approved_pending_compiler_successor",
+  "approved_at": "2026-09-03",
+  "branch": "codex/vnext-phase1-compiler-attestation",
+  "review_candidate": {
+    "path": "contracts/ir-phase1-import-success-cache-successor-review-candidate.json",
+    "sha256": "ceda2e54681cb3d2c04815ff2b9dcc3ad3388da16fe088431b451e76db9aa677"
+  },
+  "historical_records_mutated": false,
+  "historical_bindings": [
+    {
+      "path": "contracts/ir-phase1-batch-f-performance-remediation.json",
+      "sha256": "a36df4b9794940894ddfdc906eb8bb5516180d6303781176e29ec722c89e46f7"
+    },
+    {
+      "path": "contracts/ir-phase1-exit-review-candidate.json",
+      "sha256": "6de90233cdb07f82ddd7a8903da0e17524eb2c993b3423803346e4b052aecad5"
+    },
+    {
+      "path": "contracts/deployment-bridge-stage2-entry-review-candidate.json",
+      "sha256": "1f52ffac7a19844f27c080622151cc19f36e29d4072b25da680a6ef90e5b250a"
+    }
+  ],
+  "predecessor_importer_sha256": "e67ac3e5dad0cc3e5241708c6b5592bc945595870d637c1194a41172fbdc23c3",
+  "allowed_change": {
+    "change_class": "successful_result_cache",
+    "implementation_path": "flagquantum/_compiler/importers/circuit_ir.py",
+    "cache_successes_only": true,
+    "cache_failures": false,
+    "nested_content_change_requires_reimport_and_revalidation": true,
+    "trainable_tensor_identity_change_requires_reimport_and_revalidation": true,
+    "semantic_output_change_allowed": false
+  },
+  "prohibited_changes": {
+    "performance_budget": true,
+    "measurement_method_or_statistics": true,
+    "public_api": true,
+    "default_compilation_semantics": true,
+    "accepted_input_or_failure_semantics": true,
+    "identity_or_round_trip_semantics": true,
+    "test_wrapper_or_benchmark_cache": true,
+    "historical_contract_rewrite": true,
+    "hash_check_deletion_or_weakening": true
+  },
+  "successor_attestation": {
+    "path": "tests/fixtures/internal_ir/phase1_import_success_cache_successor_candidate.json",
+    "sha256_mode": "exact_at_submission",
+    "wildcards_allowed": false,
+    "required_when_importer_sha256_differs_from_predecessor": true,
+    "deletion_after_importer_change_is_an_error": true
+  },
+  "required_evidence_tests": [
+    "tests/internal_ir/test_phase1_import_success_cache.py",
+    "tests/internal_ir/test_phase1_import_success_cache_authorization.py",
+    "tests/internal_ir/test_phase1_batch_f_performance_remediation.py",
+    "tests/internal_ir/test_phase1_batch_c_review_candidate.py",
+    "tests/internal_ir/test_phase1_exit_review_candidate.py",
+    "tests/internal_ir/test_deployment_bridge_stage2_entry_proposal.py",
+    "tests/internal_ir/test_performance_budget.py"
+  ],
+  "required_semantic_evidence": {
+    "successful_results_only": true,
+    "failures_never_cached": true,
+    "nested_content_change_reimports_and_revalidates": true,
+    "trainable_tensor_identity_change_reimports_and_revalidates": true,
+    "mutation_and_autograd_ownership_preserved": true,
+    "diagnostics_identity_round_trip_and_input_domain_unchanged": true,
+    "default_path_unchanged": true
+  },
+  "test_harness_transitions": {
+    "tests/internal_ir/test_phase1_batch_f_performance_remediation.py": {
+      "predecessor_sha256": "2eb0a76d2fa22fa5228e75d15c617c47ccfbbdf12653d181b16bb77afa2707d8",
+      "successor_sha256": "f26a629ff37f46b0150a3ffc7f37d74ee222a0b0cb1336bb56bf7c830f43d7d9",
+      "reason": "Preserve the historical importer binding while accepting only one exact authorized successor attestation."
+    },
+    "tests/internal_ir/test_deployment_bridge_stage2_entry_proposal.py": {
+      "predecessor_sha256": "5ade2bf1ac4e6fb291e44da318f899bc39c99b0be2dbf76a714f9767c08ffe5a",
+      "successor_sha256": "c6a491154632463b55599980b305172f9c9f5d8ee7c41cf6d857af7a0a02ddbf",
+      "reason": "Keep the Stage 2 historical review immutable while resolving the importer through the exact successor attestation."
+    }
+  },
+  "compiler_submission_requirements": {
+    "future_importer_sha256_must_be_exact": true,
+    "future_importer_sha256_recorded_in_this_authorization": false,
+    "candidate_must_bind_this_authorization_sha256": true,
+    "candidate_must_bind_actual_evidence_file_sha256_values": true,
+    "candidate_must_report_unchanged_budget_and_statistics": true,
+    "candidate_must_report_cold_and_repeated_measurements": true
+  },
+  "pause_after": "Compiler implementation and exact successor evidence; no phase exit, deployment promotion, or public/default change is authorized"
+}
