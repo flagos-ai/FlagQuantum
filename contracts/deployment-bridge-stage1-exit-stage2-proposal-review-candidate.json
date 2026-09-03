@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "review": "deployment-bridge-stage1-exit-stage2-proposal",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization_chain": {
+    "stage1_entry": {
+      "path": "contracts/deployment-bridge-stage1-entry-authorization.json",
+      "sha256": "e12b928a89573fcd5c96a3f9615e50ef163232a6339523ef18a50fe15fc430ba"
+    },
+    "stage1_performance_budget": {
+      "path": "contracts/deployment-bridge-stage1-performance-budget-authorization.json",
+      "sha256": "4b9ef3548d22384cfb5cadc1dfb9cd453a27c4bce9924b5c2465fee08dc31374"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/deployment-bridge-stage1-performance-budget-validation.json": "f9098fcd672a11f08d04028c0d5a76636a3203039e31e495e8f7061143d257f3",
+    "flagquantum/_compiler/deployment_compatibility.py": "371a24fed9499efa30174e3984d8672f93500ed4cbf469583a83b33d172500cf",
+    "tests/fixtures/internal_ir/deployment_bridge_stage1.json": "41de1140163e59ba84db0f6f58ff33299e65c467f4adf58cbb6af0a8185895f1",
+    "tests/internal_ir/test_deployment_bridge_stage1.py": "c4eb34023b21f6b3c2690a9122c788bae0fc22ba25f02db405fbf5de65e1a34b",
+    "benchmarks/internal/deployment_bridge_stage1_gate.py": "7a7a5f90de75083ff5a3f018f8b9f073b1de4d426d2e04557fc6c1cc46925c85",
+    "tests/internal_ir/test_deployment_bridge_stage1_performance_authorization.py": "d71aade352623365c094790b48625f28611afaf6ffcf6d0c648cc457300a5e53",
+    "tests/internal_ir/test_deployment_bridge_stage1_performance_budget.py": "123d41482fe7296f78a19ed94644dd5ca46fa595ca4ca18d26e815869f07a6be",
+    "tests/internal_ir/test_deployment_bridge_stage1_exit_stage2_review_candidate.py": "a1e67e7fb8a2ff633f4b362f1291a04acdd9acfcb8115a56b7c5e0230892dc5b",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_1_COMPLETION_REVIEW.md": "34d234f2da747add192fb9a06f87364ba747d9225e343e767a4867bb9182c4dd",
+    "flagquantum/deployment/cloud.py": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b",
+    "flagquantum/deployment/routing_evidence.py": "9ecf515877e8ba44404b8d8c80af6435c4f638cceb557f113492720321a28ec1",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "stage1_exit_evidence": {
+    "authorized_scope_implemented": true,
+    "closed_eligibility_and_finding_taxonomies": true,
+    "legacy_package_validation_preserved": true,
+    "privacy_and_limits_fail_closed": true,
+    "anonymous_deterministic_fixtures": true,
+    "approved_performance_budget_passed": true,
+    "timing_variance_observation_retained": true,
+    "budget_auto_relaxed": false,
+    "conversion_execution_submission_and_activation_absent": true,
+    "provider_network_credential_and_telemetry_access_absent": true,
+    "default_path_zero_impact": true,
+    "public_api_changed": false,
+    "known_blockers": []
+  },
+  "stage2_scope_if_approved": {
+    "feature": "explicit local dry-run proposal",
+    "stage_name_is_distinct_from_unified_roadmap_quafu_stage2": true,
+    "required_evidence": [
+      "define the verified DeploymentPackage import and recompilation boundary",
+      "define legacy-authoritative differential observations without returning a candidate result",
+      "define package program compilation artifact binding and evidence identities without reusing legacy digests",
+      "define closed import legalization artifact and comparison failure taxonomy",
+      "define explicit privacy input time memory operation and evidence limits",
+      "define rollback at one removable private integration point with zero package or receipt rewrite",
+      "prove no provider SDK network credential real backend or job dependency",
+      "prove no public API snapshot deployment schema or default execution path change",
+      "produce independent review before any dry-run implementation"
+    ],
+    "roots": [
+      "docs/development",
+      "contracts",
+      "tests/internal_ir"
+    ],
+    "proposal_and_offline_contract_tests_only": true,
+    "runtime_implementation_authorized": false,
+    "package_conversion_authorized": false,
+    "target_ir_or_artifact_creation_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "telemetry_export_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_or_real_backend_identity_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "proposed_decisions": {
+    "stage1_owner_accepted": true,
+    "stage1_exit_authorized": true,
+    "stage2_proposal_authorized": true,
+    "stage2_runtime_implementation_authorized": false,
+    "package_conversion_authorized": false,
+    "target_ir_or_artifact_creation_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "telemetry_export_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_or_real_backend_identity_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE1-EXIT-STAGE2-PROPOSAL",
+  "approval_text": "Accept Deployment Bridge Stage 1 private offline compatibility inspection, privacy, bounded-resource, deterministic identity, zero-default-impact and approved performance evidence; authorize Stage 1 exit and only a Stage 2 explicit local dry-run proposal plus offline contract tests. Do not authorize dry-run implementation, package conversion, TargetIR or artifact creation, execution, submission, shadowing, canary activation, telemetry, provider SDKs, network calls, credentials, real backend/job identities, deployment migration, public/default API changes, legacy retirement, or Phase 4 entry.",
+  "pause_after": "Stage 2 proposal and independent owner review"
+}
