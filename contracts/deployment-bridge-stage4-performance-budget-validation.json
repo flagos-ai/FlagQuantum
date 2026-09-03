@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "validation": "deployment-bridge-stage4-performance-budget",
+  "status": "passed",
+  "validated_at": "2026-09-03",
+  "claim_scope": "Deployment Bridge Stage 4 private CPU budget; not a public SLA",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage4-performance-budget-authorization.json",
+    "sha256": "64791b4a1ce01ef7849556640141007276da899d90afa6b4b5af4372dbcff067"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/deployment_bridge_stage4_performance_budget_candidate.json",
+    "sha256": "9607a172860db32eebd1de675c133d9e8aa7070959f10c47399ec5f4d644909f"
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "container_image": "flagquantum-dev:pr-check"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "pipeline": "anonymous offline unknown-submission rehearsal"
+  },
+  "cases": [
+    {
+      "rehearsal_count": 10,
+      "offline_rehearsal_p95_ms": 0.573737,
+      "offline_rehearsal_peak_host_memory_bytes": 10252,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "rehearsal_count": 100,
+      "offline_rehearsal_p95_ms": 5.020883,
+      "offline_rehearsal_peak_host_memory_bytes": 16732,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "rehearsal_count": 1000,
+      "offline_rehearsal_p95_ms": 54.124634,
+      "offline_rehearsal_peak_host_memory_bytes": 81564,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "rehearsal_count": 10000,
+      "offline_rehearsal_p95_ms": 647.537226,
+      "offline_rehearsal_peak_host_memory_bytes": 153564,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "stage4_performance_budget_passed": true,
+    "stage4_machine_gate_active": true,
+    "stage4_exit_authorized": false,
+    "stage5_proposal_authorized": false,
+    "public_sla_claimed": false
+  }
+}

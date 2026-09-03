@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "authorization": "deployment-bridge-stage4-performance-budget",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE4-PERFORMANCE-BUDGET",
+  "review_candidate": {
+    "path": "contracts/deployment-bridge-stage4-performance-budget-review-candidate.json",
+    "sha256": "a21b3c0d74288ff6c367f951fc6b91ec0d658c2b9332174ce67f42c42d701e81"
+  },
+  "approved_budget": {
+    "path": "tests/fixtures/internal_ir/deployment_bridge_stage4_performance_budget_candidate.json",
+    "sha256": "9607a172860db32eebd1de675c133d9e8aa7070959f10c47399ec5f4d644909f"
+  },
+  "baseline": {
+    "path": "contracts/deployment-bridge-stage4-performance-baseline.json",
+    "sha256": "24c55baab6a2ac88d8df5230465bd5c2c26f31ceb97e207f85c543bf057ea9eb"
+  },
+  "decisions": {
+    "stage4_performance_budget_approved": true,
+    "stage4_machine_gate_authorized": true,
+    "stage4_exit_authorized": false,
+    "stage5_proposal_authorized": false,
+    "rehearsal_action_side_effect_authorized": false,
+    "provider_sandbox_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "pause_after": "approved Stage 4 budget validation and Stage 4 exit review"
+}
