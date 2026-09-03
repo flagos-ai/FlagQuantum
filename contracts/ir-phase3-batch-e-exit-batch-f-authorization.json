@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-batch-e-exit-batch-f",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-BATCH-E-EXIT-BATCH-F",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-batch-e-exit-batch-f-review-candidate.json",
+    "sha256": "1bb9d05d938ba95548f54212ca4abc18af4f7bc296f2fe1391bfac04b5040079"
+  },
+  "decisions": {
+    "batch_e_owner_accepted": true,
+    "batch_e_exit_authorized": true,
+    "batch_f_entry_authorized": true,
+    "batch_f_performance_baseline_authorized": true,
+    "batch_f_performance_budget_approved": false,
+    "batch_g_through_h_authorized": false,
+    "production_shadow_authorized": false,
+    "telemetry_export_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "allowed_scope": {
+    "feature": "private explicit opt-in shadow comparison harness",
+    "root": "flagquantum/_compiler",
+    "public_exports": [],
+    "offline_explicit_invocation_only": true,
+    "legacy_authoritative": true,
+    "kill_switch_required": true,
+    "bounded_overhead_required": true,
+    "privacy_safe_local_evidence_only": true,
+    "environment_or_import_hook_activation_allowed": false,
+    "background_or_production_activation_allowed": false,
+    "telemetry_export_allowed": false,
+    "default_path_enabled": false
+  },
+  "pause_after": "Batch F implementation and independent performance-budget review"
+}

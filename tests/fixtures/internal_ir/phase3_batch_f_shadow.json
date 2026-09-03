@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {"name": "match", "classification": "match", "expected_evidence_identity": "e4e6619391af160005227035013dfd05aa36054307e60f4fd61951d2a837a164"},
+    {"name": "status", "classification": "status_mismatch", "expected_evidence_identity": "bf283c10feb95a4e64f8e3744f73cb25a18b6db3bba6af7bdf94c81ca3cd6cf8"},
+    {"name": "type", "classification": "type_mismatch", "expected_evidence_identity": "e6c2c7893e32cf6efdab7524b85016237fe874c29172afe2d3ee3b361027c254"},
+    {"name": "shape", "classification": "shape_mismatch", "expected_evidence_identity": "0b9ad1a345030f2eb0f88bc613ae75eef5cc02a49f5074c0c4efe2f3df5934b3"},
+    {"name": "value", "classification": "value_mismatch", "expected_evidence_identity": "b22a6cf7bc501e1f9dc8b92e30e20e0c00b9d3f90d03aa614832ef449c677189"},
+    {"name": "identity", "classification": "identity_mismatch", "expected_evidence_identity": "0a046e13db8bfeaa015e795d72ebf933a9f865ae82d56300d979e4dcf0a8cf38"},
+    {"name": "candidate_failure", "classification": "candidate_failure", "expected_evidence_identity": "23156bbbc57808e2c86e9bd8e1cab7c7a46a2b1cf0d0a47ef98fca17d3e22c2b"}
+  ]
+}
