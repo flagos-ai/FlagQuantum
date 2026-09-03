@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase3-batch-d-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase3-batch-c-exit-batch-d-authorization.json",
+    "sha256": "379eb0efebcdea74f927df35733773c6dacd76326c856460181b52396b42c08d"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/runtime_abi.py": "6b0b6b77980b375cb0d355b25f4aa30309aafc8aa8b89f416c8ce2e127d3511b",
+    "flagquantum/_compiler/runtime_adapters.py": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8",
+    "tests/internal_ir/test_phase3_batch_d_authorization.py": "aeac3152f46899c48fb8200cde11f051d1e6779065742f74a88477b01cc665f7",
+    "tests/internal_ir/test_phase3_runtime_adapter.py": "e25312e6137fe46fea73c39c2cfcdb6b175b14637fef58996d4599462d1e158b",
+    "benchmarks/internal/ir_phase3_batch_d_baseline.py": "58e1a04a1c4c9e53c55c2ad2dfdf919d662a16854d8e7744bad31d036f2b3627",
+    "contracts/ir-phase3-batch-d-performance-baseline.json": "ff84612767ca05e3e66d6445f23a0331d3940d8dc30e7a3da38f021e4f5c7f9d",
+    "tests/fixtures/internal_ir/phase3_batch_d_performance_budget_candidate.json": "c004e260884751237a652b0daa8ca518ab06e90511d8ba66719435ac69ee3303",
+    "tests/internal_ir/test_phase3_batch_d_performance_candidate.py": "60fdce410812cc84abd2bc6931bb9724cd053f2b05f0aa6d0cbfce091d22c6a0",
+    "tests/internal_ir/test_phase3_batch_d_performance_review_candidate.py": "c78c7d6a686bf4ac4604e1098b6605d2a30e018a82731fd3a99e627df5f9a3d4",
+    "docs/development/IR_PHASE_3_BATCH_D_IMPLEMENTATION_REVIEW.md": "36ed217d9e77a6b3ab6542ccf6470606ebb896ac8e1a6ef5a971dbe5aac9a2b0",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "provider_neutral_runtime_protocol_passed": true,
+    "local_sync_lifecycle_passed": true,
+    "offline_async_lifecycle_passed": true,
+    "terminal_state_idempotency_passed": true,
+    "artifact_receipt_result_identity_chain_passed": true,
+    "unknown_tampered_and_invalid_transition_fail_closed": true,
+    "executor_failure_sanitization_passed": true,
+    "concurrent_handle_uniqueness_passed": true,
+    "provider_sdk_credentials_and_network_excluded": true,
+    "public_and_default_path_unchanged": true,
+    "performance_baseline_observed": true,
+    "public_sla_claimed": false
+  },
+  "proposed_decisions": {
+    "batch_d_performance_budget_approved": true,
+    "batch_d_machine_gate_authorized": true,
+    "batch_d_exit_authorized": false,
+    "batch_e_provider_conformance_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "credentials_authorized": false,
+    "real_backend_identity_authorized": false,
+    "new_emitter_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE3-BATCH-D-PERFORMANCE-BUDGET",
+  "pause_after": "approved Batch D budget validation and Batch D exit review"
+}
