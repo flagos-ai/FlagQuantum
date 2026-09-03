@@ -15,6 +15,7 @@ contracts consumed by FlagQuantum tests and repository tools.
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
 | `legacy-root-api-test-debt.json` | Zero baseline preventing legacy root API references from returning to tests. |
 | `execution-options-v1-candidate.json` | Proposed, not-yet-authorized Stable Core contract for `ExecutionOptions`. |
+| `target-capabilities-v1-implementation-authorization.json` | Proposed internal Phase 2 authorization for the minimal Core requirement/snapshot lineage and adapters; it does not change Stable Core or certify hardware. |
 
 Validate the API migration baseline with
 `python tools/public_api_snapshot.py`. It is not the final Stable Core contract
