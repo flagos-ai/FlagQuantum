@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "status": "observed_baseline_not_budget",
+  "recorded_at": "2026-09-03",
+  "claim_scope": "Deployment Bridge Stage 6 private CPU baseline; not a budget or SLA",
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "container_image": "flagquantum-dev:pr-check"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "timing_gc": "disabled after explicit collection",
+    "peak_memory": "tracemalloc",
+    "pipeline": "anonymous offline successful scripted connector"
+  },
+  "cases": [
+    {
+      "connector_count": 10,
+      "scripted_connector_p95_ms": 0.665416,
+      "scripted_connector_peak_host_memory_bytes": 10707,
+      "deterministic_evidence_identity": true
+    },
+    {
+      "connector_count": 100,
+      "scripted_connector_p95_ms": 5.360467,
+      "scripted_connector_peak_host_memory_bytes": 10707,
+      "deterministic_evidence_identity": true
+    },
+    {
+      "connector_count": 1000,
+      "scripted_connector_p95_ms": 52.576479,
+      "scripted_connector_peak_host_memory_bytes": 10739,
+      "deterministic_evidence_identity": true
+    },
+    {
+      "connector_count": 10000,
+      "scripted_connector_p95_ms": 643.552908,
+      "scripted_connector_peak_host_memory_bytes": 10739,
+      "deterministic_evidence_identity": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "description": "Anonymous deterministic Deployment Bridge Stage 6 scripted connector evidence",
+  "outcomes": {
+    "cancelled": "4bcabf05ebecf70fb486fa8269591084544806d7e3be30aa55d1e7c3e35183ea",
+    "rejected": "752295ddb888888798e7dba8bb9e2e08d9a77556e7d7ecb01a61f78df17f296e",
+    "succeeded": "8090eb4e46698bef22db8fc9aae71d18a6a6039e5a5746a5438d68707cd38f28",
+    "unknown": "9a1a22f77b804404e8ef533efa77be4120873fe12128448c27afe0e357717633"
+  }
+}
