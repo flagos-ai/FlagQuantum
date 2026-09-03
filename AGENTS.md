@@ -163,6 +163,16 @@ branches synchronize that baseline and implement independently; the integration
 branch then runs replacement and cross-implementation tests. Follow
 `docs/development/MULTI_TEAM_DEVELOPMENT.md`.
 
+`codex/flagquantum-vnext-architecture` is the only authoritative integration
+branch. Team branches must deliver committed, clean work with a handoff record,
+must obtain other teams' changes only by merging the integration branch, and
+must never merge each other directly. The integration worktree merges one team
+at a time with a non-fast-forward merge and runs required checks before the next
+merge. Abort conflicted merges and return them to the owning team; revert a
+shared failed merge instead of rewriting integration history. Releases,
+benchmarks, and capability claims must name a verified integration commit or
+tag, never an unintegrated team branch.
+
 ## Architecture North Star
 
 The intended product architecture is:
