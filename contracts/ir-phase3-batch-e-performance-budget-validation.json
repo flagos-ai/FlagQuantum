@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "status": "passed",
+  "validated_at": "2026-09-03",
+  "authorization": {
+    "path": "contracts/ir-phase3-batch-e-performance-budget-authorization.json",
+    "sha256": "2486a92654e04c74231768ee741efc5c9ad30d22c20cd40ada82a2a5aa11d12c"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/phase3_batch_e_performance_budget_candidate.json",
+    "sha256": "9462e12345a01d91a9c2caf4cd7113d0926716e258ff0dc9b1d0edb39ae9c8b6"
+  },
+  "claim_scope": "Phase 3 Batch E private CPU budget; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "pipeline": "identical conformance lifecycle across three target families"
+  },
+  "cases": [
+    {
+      "suite_count": 10,
+      "target_lifecycle_count": 30,
+      "three_family_conformance_p95_ms": 1.428037,
+      "three_family_conformance_p95_ms_max": 8.0,
+      "three_family_conformance_peak_host_memory_bytes": 50455,
+      "three_family_conformance_peak_host_memory_bytes_max": 262144,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "suite_count": 100,
+      "target_lifecycle_count": 300,
+      "three_family_conformance_p95_ms": 13.507338,
+      "three_family_conformance_p95_ms_max": 60.0,
+      "three_family_conformance_peak_host_memory_bytes": 400987,
+      "three_family_conformance_peak_host_memory_bytes_max": 2097152,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "suite_count": 1000,
+      "target_lifecycle_count": 3000,
+      "three_family_conformance_p95_ms": 172.064137,
+      "three_family_conformance_p95_ms_max": 500.0,
+      "three_family_conformance_peak_host_memory_bytes": 3830443,
+      "three_family_conformance_peak_host_memory_bytes_max": 16777216,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "suite_count": 10000,
+      "target_lifecycle_count": 30000,
+      "three_family_conformance_p95_ms": 1684.889368,
+      "three_family_conformance_p95_ms_max": 6000.0,
+      "three_family_conformance_peak_host_memory_bytes": 37078803,
+      "three_family_conformance_peak_host_memory_bytes_max": 134217728,
+      "deterministic_identity": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "batch_e_performance_budget_gate_passed": true,
+    "batch_e_exit_authorized": false,
+    "batch_f_shadow_harness_authorized": false,
+    "public_sla_claimed": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  }
+}

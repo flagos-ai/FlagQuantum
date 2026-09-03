@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-batch-e-performance-budget",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-BATCH-E-PERFORMANCE-BUDGET",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-batch-e-performance-budget-review-candidate.json",
+    "sha256": "fd1cb3c23908ad6ae67ab0fe3fe886e3d62850ec74d99e224f99dc86cfc7e12d"
+  },
+  "approved_budget": {
+    "path": "tests/fixtures/internal_ir/phase3_batch_e_performance_budget_candidate.json",
+    "sha256": "9462e12345a01d91a9c2caf4cd7113d0926716e258ff0dc9b1d0edb39ae9c8b6"
+  },
+  "baseline": {
+    "path": "contracts/ir-phase3-batch-e-performance-baseline.json",
+    "sha256": "de66aedf85ca604bbe4da3abdd9ad454c49871727d4d0c8bb73ad518acbf4e4e"
+  },
+  "decisions": {
+    "batch_e_performance_budget_approved": true,
+    "batch_e_machine_gate_authorized": true,
+    "batch_e_exit_authorized": false,
+    "batch_f_shadow_harness_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "pause_after": "approved Batch E budget validation and Batch E exit review"
+}
