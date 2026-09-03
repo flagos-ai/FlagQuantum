@@ -49,6 +49,33 @@ def test_evidence_levels_and_fact_exposure_are_distinct_from_support_status():
     assert "不得隐瞒已经知道或观察到的" in text
 
 
+def test_program_artifact_v1_remains_the_only_envelope_authority():
+    text = _read("ARCH_002_ARTIFACT_METADATA_AUTHORITY.md")
+    assert "`ProgramArtifact` v1 继续作为唯一 artifact envelope 权威" in text
+    assert "任何 v2 都是同一契约" in text
+    assert "不得并行创建第二套" in text
+    assert "当前唯一实际运行的生产消费链" in text
+    for legacy in (
+        "`SealedExecutableArtifact`",
+        "`SealedCircuitIRRoundTrip`",
+        "`DeploymentPackage`",
+    ):
+        assert legacy in text
+    assert "不能无损替代" in text
+
+
+def test_program_artifact_v1_hash_and_metadata_facts_are_not_reinterpreted():
+    text = _read("ARCH_002_ARTIFACT_METADATA_AUTHORITY.md")
+    assert "完整 `to_dict()` canonical JSON 重算" in text
+    assert "`metadata` 均参与现有" in text
+    assert "不作为声明字段随 envelope 传输" in text
+    assert "接收方从接收到的完整" in text
+    assert "任意对象的 callable `to_dict()`" in text
+    assert "值域未闭合" in text
+    assert "这不是 v1 当前行为" in text
+    assert "不将 v1 metadata 描述为“不参与 hash”" in text
+
+
 def test_migration_dispositions_and_verification_paths_are_bounded():
     text = _read("ARCH_008_MIGRATION_AND_VERIFICATION_PATHS.md")
     for value in ("migrate", "adapt", "freeze_legacy", "retire"):
