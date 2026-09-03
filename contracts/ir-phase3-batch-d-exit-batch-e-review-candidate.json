@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase3-batch-d-exit-batch-e-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization_chain": {
+    "phase3_batch_d_entry": {
+      "path": "contracts/ir-phase3-batch-c-exit-batch-d-authorization.json",
+      "sha256": "379eb0efebcdea74f927df35733773c6dacd76326c856460181b52396b42c08d"
+    },
+    "batch_d_performance_budget": {
+      "path": "contracts/ir-phase3-batch-d-performance-budget-authorization.json",
+      "sha256": "d97bef7896c0e8c254f325289af619652e59064d49c7b3a023095d608d7207dc"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase3-batch-d-performance-budget-validation.json": "9f7e46c139d0fa713e0968a5f6137d08a5233ab05dd5b02f14416bd65a74c200",
+    "flagquantum/_compiler/runtime_abi.py": "6b0b6b77980b375cb0d355b25f4aa30309aafc8aa8b89f416c8ce2e127d3511b",
+    "flagquantum/_compiler/runtime_adapters.py": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8",
+    "tests/internal_ir/test_phase3_runtime_adapter.py": "e25312e6137fe46fea73c39c2cfcdb6b175b14637fef58996d4599462d1e158b",
+    "benchmarks/internal/ir_phase3_batch_d_gate.py": "7eb8abbf72feaea264511f6d22f1d0f332c0755c471d6f84cd73aee4ebd6cfdf",
+    "tests/internal_ir/test_phase3_batch_d_performance_authorization.py": "382f806124a2c25e7235c8b85cbaa6022b40d4c6958f712893883e5d64dc9f52",
+    "tests/internal_ir/test_phase3_batch_d_performance_budget.py": "59b9dcbaec6d97b4f979594d07171d73a2882431d6c9ed615e65875baf7a6d63",
+    "tests/internal_ir/test_phase3_batch_d_exit_batch_e_review_candidate.py": "12e69117b0021e958adc1aa4f196870f88d2e340c4c9acd10c8a8d3cf02590a3",
+    "docs/development/IR_PHASE_3_BATCH_D_COMPLETION_REVIEW.md": "460d5c8a4c3c671ca0dfedaf8dc8546e538ddfbdc8ee7ff1dcef5f41b5d37256",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "batch_d_exit_evidence": {
+    "authorized_scope_implemented": true,
+    "runtime_protocol_and_closed_lifecycle": true,
+    "artifact_to_result_identity_chain": true,
+    "terminal_idempotency_and_fail_closed_transitions": true,
+    "privacy_and_offline_boundary_enforced": true,
+    "approved_performance_budget_passed": true,
+    "default_path_zero_impact": true,
+    "public_api_changed": false,
+    "known_blockers": []
+  },
+  "batch_e_scope_if_approved": {
+    "feature": "private provider-neutral conformance suite",
+    "target_families": [
+      "local_runtime_plan",
+      "synthetic_qasm_text",
+      "synthetic_non_qasm_artifact"
+    ],
+    "required_evidence": [
+      "identical artifact and runtime lifecycle assertions for all target families",
+      "source through result identity continuity for every fixture",
+      "format profile and adapter compatibility fail closed",
+      "provider extensions are namespaced immutable and non-semantic",
+      "reserved core keys credentials secrets and mutable account state rejected",
+      "no provider SDK network discovery remote submission or real execution identity",
+      "independent performance baseline before budget proposal",
+      "default path zero impact"
+    ],
+    "root": "flagquantum/_compiler",
+    "public_exports": [],
+    "provider_sdk_or_remote_submission_authorized": false,
+    "credentials_or_secrets_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "new_emitter_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "batch_f_through_h_authorized": false
+  },
+  "proposed_decisions": {
+    "batch_d_owner_accepted": true,
+    "batch_d_exit_authorized": true,
+    "batch_e_entry_authorized": true,
+    "batch_f_through_h_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE3-BATCH-D-EXIT-BATCH-E",
+  "approval_text": "Accept Phase 3 Batch D protocol, lifecycle, identity, terminal-state, privacy, offline, default-path and approved performance evidence; authorize Batch D exit and Batch E private provider-neutral conformance suite for anonymous local runtime-plan, synthetic QASM text and synthetic non-QASM artifacts only. Do not authorize provider SDKs, credentials, network calls, discovery, remote submission, real backend/job identities, new emitters, shadow/default integration, deployment migration, public APIs, legacy retirement, Batches F-H, or Phase 3 exit.",
+  "pause_after": "Batch E implementation and independent performance-baseline review"
+}
