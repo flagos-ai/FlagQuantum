@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "status": "observed_baseline_not_budget",
+  "recorded_at": "2026-09-03",
+  "claim_scope": "Deployment Bridge Stage 5 private CPU baseline; not a budget or SLA",
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "container_image": "flagquantum-dev:pr-check"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "timing_gc": "disabled after explicit collection",
+    "peak_memory": "tracemalloc",
+    "pipeline": "anonymous offline accepted sandbox observation"
+  },
+  "cases": [
+    {
+      "observation_count": 10,
+      "offline_observation_p95_ms": 0.457825,
+      "offline_observation_peak_host_memory_bytes": 9895,
+      "deterministic_evidence_identity": true
+    },
+    {
+      "observation_count": 100,
+      "offline_observation_p95_ms": 4.400775,
+      "offline_observation_peak_host_memory_bytes": 16375,
+      "deterministic_evidence_identity": true
+    },
+    {
+      "observation_count": 1000,
+      "offline_observation_p95_ms": 40.732813,
+      "offline_observation_peak_host_memory_bytes": 81207,
+      "deterministic_evidence_identity": true
+    },
+    {
+      "observation_count": 10000,
+      "offline_observation_p95_ms": 482.168021,
+      "offline_observation_peak_host_memory_bytes": 153207,
+      "deterministic_evidence_identity": true
+    }
+  ]
+}
