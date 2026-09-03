@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from flagquantum._agent_services import AgentApplicationService
+from flagquantum.core._artifacts import ArtifactKind, ProgramArtifact
 from flagquantum.core.ir import CircuitIR, Instruction
 
 
@@ -30,3 +31,18 @@ def test_agent_service_plans_without_executing_or_using_protocol_types() -> None
     assert report["executable"] is True
     assert report["selected_backend"]
     assert report["validation"]["valid"] is True
+
+
+def test_artifact_to_agent_service_to_planner_compatibility_chain() -> None:
+    artifact = ProgramArtifact(
+        kind=ArtifactKind.CIRCUIT,
+        payload=_program(),
+        producer="test-sdk",
+        required_capabilities=("statevector",),
+    )
+    report = AgentApplicationService().plan_execution(
+        artifact.to_dict(),
+        options={"require_gradients": False, "target": "full_state"},
+    )
+    assert report["executable"] is True
+    assert report["plan"]["n_wires"] == 1

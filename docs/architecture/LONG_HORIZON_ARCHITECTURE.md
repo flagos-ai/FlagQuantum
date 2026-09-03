@@ -50,6 +50,12 @@ and execution results remain authoritative for their current stable scopes. A
 program-artifact envelope adds type, provenance, and future-stage composition;
 it does not replace `CircuitIR`.
 
+The first compatibility slice accepts either serialized `CircuitIR` or a
+circuit `ProgramArtifact` at the protocol-neutral agent service, unwraps it to
+the existing canonical IR, and invokes the existing deterministic validator
+and planner. Other artifact kinds fail closed until their compiler/runtime
+contracts exist.
+
 ## Dependency direction
 
 ```text
