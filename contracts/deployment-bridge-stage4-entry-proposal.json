@@ -1,0 +1,327 @@
+{
+  "schema_version": "1.0",
+  "proposal": "deployment-bridge-stage4-offline-failure-injection-rehearsal",
+  "status": "ready_for_owner_review_implementation_not_authorized",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "stage_name": "Deployment Bridge Stage 4",
+  "distinct_from": "Unified IR Phase 4 and every production canary or provider-sandbox stage",
+  "prerequisites": {
+    "stage3_exit_stage4_proposal_authorization": {
+      "path": "contracts/deployment-bridge-stage3-exit-stage4-proposal-authorization.json",
+      "sha256": "6fb81f5debdfcf306438bce96851fca50625a3f64c0b58c0109fe1d93716ae71"
+    },
+    "stage3_performance_validation": {
+      "path": "contracts/deployment-bridge-stage3-performance-budget-validation.json",
+      "sha256": "bb316b6495a050e120f898c8decbd965003e3d96224ebc23c5dfefceff6601a7"
+    },
+    "stage3_offline_readiness_evaluator": {
+      "path": "flagquantum/_compiler/deployment_canary_readiness.py",
+      "sha256": "d0593e26282c82fe6ffc5652412c16a4c2e66f38804a9eb920ddc9c1e94f6b1c"
+    }
+  },
+  "objective": "Deterministically rehearse how anonymous operator roles should classify and respond to synthetic deployment-bridge failures, producing immutable evidence without performing any control-plane or data-plane action. The rehearsal must never activate a kill switch, alter admission, retry, fall back, route, dispatch, execute, submit, contact a provider, or claim production readiness.",
+  "proposed_private_api": {
+    "module": "flagquantum._compiler.deployment_rehearsal",
+    "operation": "run_offline_deployment_rehearsal(readiness_report, scenario, observations, policy)",
+    "inputs": [
+      "immutable CanaryReadinessReport",
+      "one closed synthetic RehearsalScenario",
+      "immutable synthetic RehearsalObservationSnapshot",
+      "immutable explicit RehearsalPolicy"
+    ],
+    "output": "immutable OfflineRehearsalReport containing simulated decisions only",
+    "forbidden_inputs": [
+      "RuntimeAdapter or provider SDK client",
+      "ExecutionBinding SealedExecutableArtifact or TargetIR",
+      "kill-switch admission routing retry or telemetry controller",
+      "credentials secrets endpoints or network sessions",
+      "real provider backend job account user or person identifier",
+      "raw program result payload metadata receipt or diagnostic text",
+      "wall-clock sleeping background work or environment activation"
+    ],
+    "public_exports": [],
+    "default_registration": false,
+    "environment_activation": false
+  },
+  "scenario_taxonomy": [
+    "kill_switch_unavailable",
+    "kill_switch_state_stale",
+    "conformance_revoked",
+    "target_identity_mismatch",
+    "readiness_evidence_unavailable",
+    "queue_budget_breach",
+    "provider_quota_budget_breach",
+    "monetary_cost_budget_breach",
+    "privacy_boundary_breach",
+    "unknown_submission_outcome",
+    "operator_acknowledgement_timeout",
+    "rollback_recovery_timeout",
+    "retention_or_deletion_breach"
+  ],
+  "state_taxonomy": [
+    "not_started",
+    "injected",
+    "detected",
+    "admission_blocked",
+    "operator_acknowledged",
+    "rollback_verified",
+    "evidence_sealed",
+    "completed",
+    "rehearsal_failed"
+  ],
+  "simulated_action_taxonomy": [
+    "record_detection",
+    "block_new_candidate_admission",
+    "preserve_legacy_authority",
+    "request_kill_switch_review",
+    "freeze_candidate_retry",
+    "require_submission_reconciliation",
+    "mark_conformance_unusable",
+    "escalate_anonymous_owner_role",
+    "verify_synthetic_rollback",
+    "request_evidence_restriction_or_deletion",
+    "seal_anonymous_rehearsal_evidence"
+  ],
+  "outcome_taxonomy": [
+    "offline_rehearsal_passed",
+    "offline_rehearsal_failed",
+    "offline_rehearsal_incomplete"
+  ],
+  "role_taxonomy": [
+    "activation_approver",
+    "kill_switch_owner",
+    "provider_adapter_owner",
+    "privacy_retention_owner",
+    "incident_commander",
+    "cost_quota_owner"
+  ],
+  "state_machine_contract": {
+    "initial_state": "not_started",
+    "terminal_states": [
+      "completed",
+      "rehearsal_failed"
+    ],
+    "normal_transition_order": [
+      "not_started",
+      "injected",
+      "detected",
+      "admission_blocked",
+      "operator_acknowledged",
+      "rollback_verified",
+      "evidence_sealed",
+      "completed"
+    ],
+    "skipped_reordered_duplicated_or_unknown_transition": "rehearsal_failed",
+    "all_actions_are_simulated_evidence_only": true,
+    "state_transition_callback_or_side_effect_allowed": false,
+    "production_readiness_or_activation_state_exists": false
+  },
+  "scenario_response_contract": [
+    {
+      "scenario": "kill_switch_unavailable",
+      "required_roles": ["kill_switch_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "freeze_candidate_retry", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "kill_switch_state_stale",
+      "required_roles": ["kill_switch_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_kill_switch_review", "freeze_candidate_retry", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "conformance_revoked",
+      "required_roles": ["provider_adapter_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "mark_conformance_unusable", "verify_synthetic_rollback", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "target_identity_mismatch",
+      "required_roles": ["provider_adapter_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "mark_conformance_unusable", "freeze_candidate_retry", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "readiness_evidence_unavailable",
+      "required_roles": ["activation_approver", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "freeze_candidate_retry", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "queue_budget_breach",
+      "required_roles": ["incident_commander", "cost_quota_owner"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_kill_switch_review", "verify_synthetic_rollback", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "provider_quota_budget_breach",
+      "required_roles": ["provider_adapter_owner", "cost_quota_owner"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "freeze_candidate_retry", "verify_synthetic_rollback", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "monetary_cost_budget_breach",
+      "required_roles": ["incident_commander", "cost_quota_owner"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_kill_switch_review", "freeze_candidate_retry", "verify_synthetic_rollback", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "privacy_boundary_breach",
+      "required_roles": ["privacy_retention_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_kill_switch_review", "freeze_candidate_retry", "request_evidence_restriction_or_deletion", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "unknown_submission_outcome",
+      "required_roles": ["provider_adapter_owner", "incident_commander", "cost_quota_owner"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_kill_switch_review", "freeze_candidate_retry", "require_submission_reconciliation", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "operator_acknowledgement_timeout",
+      "required_roles": ["kill_switch_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "freeze_candidate_retry", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "rollback_recovery_timeout",
+      "required_roles": ["activation_approver", "kill_switch_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_kill_switch_review", "freeze_candidate_retry", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    },
+    {
+      "scenario": "retention_or_deletion_breach",
+      "required_roles": ["privacy_retention_owner", "incident_commander"],
+      "required_actions": ["record_detection", "block_new_candidate_admission", "preserve_legacy_authority", "request_evidence_restriction_or_deletion", "escalate_anonymous_owner_role", "seal_anonymous_rehearsal_evidence"]
+    }
+  ],
+  "unknown_submission_contract": {
+    "candidate_retry_decision": "freeze",
+    "automatic_legacy_fallback_submission": false,
+    "receipt_or_provider_status_assumed": false,
+    "reconciliation_required_before_any_later_action": true,
+    "quota_and_cost_owner_required": true,
+    "reason": "an unknown outcome may already represent accepted QPU work and must not be duplicated"
+  },
+  "synthetic_objective_contract": {
+    "observations": [
+      "detection_duration_ns",
+      "operator_acknowledgement_duration_ns",
+      "rollback_recovery_duration_ns",
+      "evidence_restriction_or_deletion_duration_ns"
+    ],
+    "limits": [
+      "maximum_detection_duration_ns",
+      "maximum_operator_acknowledgement_duration_ns",
+      "maximum_rollback_recovery_duration_ns",
+      "maximum_evidence_restriction_or_deletion_duration_ns"
+    ],
+    "durations_are_caller_supplied_nonnegative_synthetic_values": true,
+    "wall_clock_or_sleep_used": false,
+    "objective_breach_outcome": "offline_rehearsal_failed",
+    "objective_values_enter_evidence_identity": true
+  },
+  "privacy_identity_and_report_contract": {
+    "report_fields": [
+      "scenario",
+      "outcome",
+      "states",
+      "simulated_actions",
+      "responsible_roles",
+      "readiness_evidence_identity",
+      "observation_identity",
+      "policy_identity",
+      "objective_results",
+      "evidence_identity"
+    ],
+    "person_provider_backend_job_account_user_or_credential_included": false,
+    "raw_program_result_payload_metadata_receipt_or_diagnostic_included": false,
+    "timestamps_environment_values_and_display_labels_in_identity": false,
+    "scenario_actions_roles_objectives_and_parent_identities_in_identity": true,
+    "anonymous_deterministic_identity_required": true
+  },
+  "resource_and_isolation_contract": {
+    "policy_is_explicit_and_immutable": true,
+    "required_limits": [
+      "maximum scenario count",
+      "maximum state transitions",
+      "maximum simulated actions",
+      "maximum input bytes",
+      "maximum evidence bytes",
+      "maximum synthetic objective values"
+    ],
+    "one_scenario_per_invocation": true,
+    "input_snapshots_mutated": false,
+    "global_registry_cache_queue_or_worker_allowed": false,
+    "callback_hook_controller_or_plugin_allowed": false,
+    "filesystem_environment_network_or_background_work_allowed": false,
+    "limit_breach_fails_closed": true
+  },
+  "completion_rule": {
+    "offline_rehearsal_passed_requires": [
+      "exact expected state sequence",
+      "all scenario-required simulated actions",
+      "all scenario-required anonymous roles",
+      "all synthetic objectives within explicit limits",
+      "immutable evidence within size limits"
+    ],
+    "passed_means_production_ready": false,
+    "passed_authorizes_canary_activation": false,
+    "passed_authorizes_provider_sandbox": false,
+    "passed_authorizes_runtime_integration": false
+  },
+  "required_evidence_if_entry_approved": [
+    "all thirteen anonymous scenarios have deterministic golden evidence",
+    "runtime taxonomies exactly match the approved proposal",
+    "transition omission reordering duplication and unknown values fail closed",
+    "missing required simulated action or anonymous role fails closed",
+    "each synthetic objective boundary and breach is tested",
+    "unknown submission always freezes candidate retry and never requests fallback submission",
+    "sensitive or executable inputs cannot enter report fields or identities",
+    "inputs remain unchanged and no callback controller global state or background work exists",
+    "evidence identities remain stable across Python hash seeds",
+    "independent 10 100 1K and 10K rehearsal baseline precedes any performance budget",
+    "public API deployment provider runtime shadow and default paths remain unchanged"
+  ],
+  "allowed_changes_if_entry_approved": [
+    "flagquantum/_compiler/deployment_rehearsal.py",
+    "tests/internal_ir/test_deployment_bridge_stage4.py",
+    "tests/fixtures/internal_ir/deployment_bridge_stage4.json",
+    "benchmarks/internal/deployment_bridge_stage4_baseline.py",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_4_IMPLEMENTATION_REVIEW.md",
+    "contracts/deployment-bridge-stage4-*.json"
+  ],
+  "explicit_exclusions": {
+    "modify_readiness_deployment_provider_runtime_or_shadow_sources": false,
+    "rehearsal_action_side_effect": false,
+    "provider_sandbox": false,
+    "runtime_adapter_access": false,
+    "artifact_or_execution_binding_creation": false,
+    "execution_or_submission": false,
+    "shadow_or_dual_execution": false,
+    "canary_activation": false,
+    "sampling_or_request_routing": false,
+    "provider_sdk_or_network": false,
+    "credential_access": false,
+    "real_backend_or_job_identity": false,
+    "telemetry_export": false,
+    "deployment_migration": false,
+    "public_api_change": false,
+    "default_path_change": false,
+    "legacy_retirement": false,
+    "unified_ir_phase4_entry": false
+  },
+  "proposed_entry_decisions": {
+    "stage4_private_offline_rehearsal_authorized": true,
+    "stage4_anonymous_synthetic_fixtures_authorized": true,
+    "stage4_independent_performance_baseline_authorized": true,
+    "stage4_performance_budget_approved": false,
+    "rehearsal_action_side_effect_authorized": false,
+    "provider_sandbox_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE4-ENTRY",
+  "pause_after": "Stage 4 private offline rehearsal, independent baseline, and performance-budget review"
+}

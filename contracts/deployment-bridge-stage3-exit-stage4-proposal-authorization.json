@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "authorization": "deployment-bridge-stage3-exit-stage4-proposal",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE3-EXIT-STAGE4-PROPOSAL",
+  "review_candidate": {
+    "path": "contracts/deployment-bridge-stage3-exit-stage4-proposal-review-candidate.json",
+    "sha256": "acad509931d59bbe003a34619cb05694a9778327a181ac6adeeeb55ec213a6ec"
+  },
+  "decisions": {
+    "stage3_owner_accepted": true,
+    "stage3_exit_authorized": true,
+    "stage4_proposal_authorized": true,
+    "stage4_rehearsal_implementation_authorized": false,
+    "provider_sandbox_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_or_real_backend_identity_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "allowed_scope": {
+    "feature": "offline failure-injection and operator-rehearsal proposal",
+    "roots": [
+      "docs/development",
+      "contracts",
+      "tests/internal_ir"
+    ],
+    "proposal_and_offline_contract_tests_only": true,
+    "closed_scenario_state_action_and_outcome_contract_required": true,
+    "unknown_submission_and_no_retry_contract_required": true,
+    "anonymous_role_separation_and_objectives_contract_required": true,
+    "privacy_resource_determinism_and_isolation_contract_required": true,
+    "zero_runtime_provider_public_and_default_impact_review_required": true
+  },
+  "pause_after": "Stage 4 proposal and independent owner review"
+}
