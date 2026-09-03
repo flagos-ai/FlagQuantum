@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "authorization": "deployment-bridge-stage1-exit-stage2-proposal",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE1-EXIT-STAGE2-PROPOSAL",
+  "review_candidate": {
+    "path": "contracts/deployment-bridge-stage1-exit-stage2-proposal-review-candidate.json",
+    "sha256": "3c4a6de466709ac8408268d2282bd823c9515f6da5abee206e8a66f19bec2119"
+  },
+  "decisions": {
+    "stage1_owner_accepted": true,
+    "stage1_exit_authorized": true,
+    "stage2_proposal_authorized": true,
+    "stage2_runtime_implementation_authorized": false,
+    "package_conversion_authorized": false,
+    "target_ir_or_artifact_creation_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "telemetry_export_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_or_real_backend_identity_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "allowed_scope": {
+    "feature": "explicit local dry-run proposal",
+    "roots": [
+      "docs/development",
+      "contracts",
+      "tests/internal_ir"
+    ],
+    "proposal_and_offline_contract_tests_only": true,
+    "verified_recompile_boundary_required": true,
+    "identity_and_differential_contract_required": true,
+    "privacy_resource_and_failure_contract_required": true,
+    "rollback_and_zero_default_impact_review_required": true
+  },
+  "pause_after": "Stage 2 proposal and independent owner review"
+}

@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "review": "deployment-bridge-stage2-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage1-exit-stage2-proposal-authorization.json",
+    "sha256": "57e5c690e80e2e38ee79ef5058319a99a186c41b7034711e44ffee8599512cfb"
+  },
+  "current_contracts": {
+    "stage1_checker": {
+      "path": "flagquantum/_compiler/deployment_compatibility.py",
+      "sha256": "371a24fed9499efa30174e3984d8672f93500ed4cbf469583a83b33d172500cf"
+    },
+    "phase2_offline_compiler": {
+      "path": "flagquantum/_compiler/offline_deployment.py",
+      "sha256": "fe3aa9ddd492d80ba262edeb5c7afe16c52b3da8b93730071b0e856dce94b3d7"
+    },
+    "verified_importer": {
+      "path": "flagquantum/_compiler/importers/circuit_ir.py",
+      "sha256": "e67ac3e5dad0cc3e5241708c6b5592bc945595870d637c1194a41172fbdc23c3"
+    },
+    "target_legalizer": {
+      "path": "flagquantum/_compiler/target_legalization.py",
+      "sha256": "873ebfe06272274c501c167dcdf7e1bb8f7933895d086d1860677d28716c7814"
+    },
+    "artifact_profiles": {
+      "path": "flagquantum/_compiler/artifact_profiles.py",
+      "sha256": "f265694eaec95aa65f5fb16ed310f6542151ba906013248cae91e9c9ce28f4fb"
+    },
+    "artifact_sealing": {
+      "path": "flagquantum/_compiler/executable_artifact.py",
+      "sha256": "a1e6fffa26403e489a583557bdefebd0a090190c84b39e80c249f0e13761237e"
+    },
+    "runtime_abi": {
+      "path": "flagquantum/_compiler/runtime_abi.py",
+      "sha256": "6b0b6b77980b375cb0d355b25f4aa30309aafc8aa8b89f416c8ce2e127d3511b"
+    },
+    "legacy_deployment": {
+      "path": "flagquantum/deployment/cloud.py",
+      "sha256": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/deployment-bridge-stage2-entry-proposal.json": "22b46260febeb7ddee3d9d02fa9486eeb827be85f022d2482ff47be71787a617",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_2_ENTRY_PROPOSAL.md": "03c9b44f05d3eb7cfda43bb29969dfdf06d77908c70b6a516eaac21bc600f8ea",
+    "tests/internal_ir/test_deployment_bridge_stage2_proposal_authorization.py": "d877eb59cf309cbf955715040ebf54fc70770802dd40d711dfe7a70dd3672db6",
+    "tests/internal_ir/test_deployment_bridge_stage2_entry_proposal.py": "5ade2bf1ac4e6fb291e44da318f899bc39c99b0be2dbf76a714f9767c08ffe5a",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "stage1_formally_exited": true,
+    "stage2_name_distinguished_from_quafu_roadmap_stage": true,
+    "verified_recompile_chain_defined": true,
+    "legacy_authority_preserved": true,
+    "canonical_encoder_single_source_required": true,
+    "shots_and_locators_excluded_from_artifact_identity": true,
+    "ephemeral_artifact_not_returned": true,
+    "execution_binding_not_created": true,
+    "closed_status_finding_failure_and_limit_contracts_defined": true,
+    "rollback_without_package_or_receipt_migration_defined": true,
+    "provider_network_credentials_execution_and_submission_excluded": true,
+    "public_and_default_path_unchanged": true,
+    "performance_budget_approved": false
+  },
+  "proposed_decisions": {
+    "stage2_private_implementation_authorized": true,
+    "stage2_ephemeral_target_ir_and_artifact_authorized": true,
+    "stage2_canonical_encoder_refactor_authorized": true,
+    "stage2_performance_baseline_authorized": true,
+    "stage2_performance_budget_approved": false,
+    "persistent_package_conversion_authorized": false,
+    "return_target_ir_or_artifact_authorized": false,
+    "create_execution_binding_authorized": false,
+    "execution_or_submission_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "telemetry_export_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "deployment_migration_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE2-ENTRY",
+  "approval_text": "Authorize only the private explicit local compile dry-run, ephemeral TargetIR and artifact construction that never escapes the report, one canonical private artifact encoder shared with verification, anonymous fixtures, internal tests and an independent measurement baseline. Do not authorize a performance budget, persistent package conversion, returned artifacts, ExecutionBinding creation, runtime adapter access, execution, submission, shadowing, canary activation, telemetry, provider SDKs, network calls, credentials, real backend/job identities, deployment migration, public/default API changes, legacy retirement, or Phase 4 entry.",
+  "pause_after": "Stage 2 implementation, independent performance baseline, and budget review"
+}
