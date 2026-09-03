@@ -66,15 +66,22 @@
 │ Runtime                                                            │
 │ 目标选择、资源编排、Session、分布式执行、恢复、观测和证据采集      │
 └───────────────┬─────────────────────────────────────────────────────┘
-                │ Provider Contract
-        ┌───────┼─────────────────┬──────────────────┐
-        │       │                 │                  │
-┌───────▼───┐ ┌─▼────────────┐ ┌──▼────────────┐ ┌──▼──────────────┐
-│Simulation │ │ Accelerator  │ │ QPU Provider  │ │Service Provider│
-│SV/MPS/TN  │ │国产 GPU/NPU  │ │真实 QPU       │ │远程计算服务    │
-│Noise/Diff │ │Kernel/通信   │ │校准/提交/解码 │ │提交/查询/结果  │
-└───────┬───┘ └─┬────────────┘ └──┬────────────┘ └──┬──────────────┘
-        └────────┴─────────────────┴──────────────────┘
+                │ Core 所有的 Execution Provider Contract
+      ┌─────────┼────────────────────┐
+      │         │                    │
+┌─────▼──────┐ ┌▼──────────────┐ ┌──▼────────────────┐
+│Simulation  │ │ QPU Provider  │ │Remote Service     │
+│Provider    │ │ 真实 QPU      │ │Provider           │
+└─────┬──────┘ └───────────────┘ └───────────────────┘
+      │
+┌─────▼──────────────────────┐
+│ Simulation Engine         │
+│ SV / MPS / TN / Noise     │
+└─────┬──────────────────────┘
+      │ Core 所有的 Platform Provider Contract
+┌─────▼───────────────────────────────────────────────────────────────┐
+│ Platform Providers：CPU | 国产 GPU/NPU | 通信与异构互联            │
+└─────────────────────────────────────────────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
 │ Core                                                               │
@@ -94,11 +101,20 @@
 | Compiler | 将程序从一种产物变换为另一种产物 | 捕获、校验、分析、Pass、Lowering、代码生成 | 任务提交、设备生命周期、数值模拟 |
 | Runtime | 组织一次执行及其生命周期 | 规划、资源、Session、分布式编排、恢复、观测 | 编译优化、状态向量/MPS/TN 算法、长期服务任务 |
 | Simulation | 实现量子数值计算 | 状态向量、MPS、张量网络、噪声、可微计算 | 用户策略、凭据、集群资源治理 |
-| Providers | 隔离外部执行系统 | 国产加速器、QPU、远程服务适配及能力探测 | 公共领域语义、通用编译 Pass |
+| Providers | 隔离外部执行目标和计算平台 | Execution Provider；Platform Provider | 公共领域语义、通用编译 Pass |
 | Ecosystem | 连接外部开发生态 | 框架适配、格式导入导出、插件入口 | 第二套规范 IR、Runtime 调度、设备直调 |
 
 Agent Services 是应用服务层，不是第七套计算内核。它组合 Core、Compiler 和 Runtime
 公开契约，为 MCP、REST、CLI 或 IDE 提供稳定而确定性的能力。
+
+Providers 内部有两个不可混用的抽象层级：
+
+- **Execution Provider** 接受完整执行请求，包括 Simulation、QPU 和 Remote Service；
+- **Platform Provider** 向执行引擎提供设备、Kernel、精度和通信能力，包括 CPU、国产
+  GPU/NPU 及通信实现。
+
+Simulation Provider 可以组合 Simulation Engine 与一个或多个 Platform Provider；QPU
+Provider 和 Remote Service Provider 不因此被迫依赖模拟算法。
 
 ## 5. 目标代码结构
 
@@ -115,7 +131,6 @@ flagquantum/
 │   ├── evidence/
 │   └── errors/
 ├── compiler/                # 公共编译门面
-│   ├── contracts/
 │   ├── capture/
 │   ├── analyses/
 │   ├── passes/
@@ -123,7 +138,6 @@ flagquantum/
 │   ├── codegen/
 │   └── pipelines/
 ├── runtime/
-│   ├── contracts/
 │   ├── planning/
 │   ├── execution/
 │   ├── sessions/
@@ -132,7 +146,6 @@ flagquantum/
 │   ├── observability/
 │   └── platforms/           # 现有设备生命周期权威入口
 ├── simulation/
-│   ├── contracts/
 │   ├── statevector/
 │   ├── mps/
 │   ├── tensor_network/
@@ -140,10 +153,14 @@ flagquantum/
 │   ├── differentiation/
 │   └── kernels/
 ├── providers/
-│   ├── contracts/
-│   ├── accelerators/        # 国产 GPU/NPU/异构加速器
-│   ├── qpu/                 # 超导、离子阱、中性原子、光量子等
-│   └── services/            # 远程计算服务
+│   ├── execution/
+│   │   ├── simulation/      # 组合模拟引擎与计算平台
+│   │   ├── qpu/             # 超导、离子阱、中性原子、光量子等
+│   │   └── remote_service/  # 远程计算服务
+│   └── platform/
+│       ├── cpu/
+│       ├── accelerators/    # 国产 GPU/NPU/异构加速器
+│       └── communication/   # 集合通信、P2P 和异构互联
 ├── ecosystem/
 │   ├── pytorch/
 │   ├── jax/
@@ -156,24 +173,34 @@ flagquantum/
 ├── benchmarking/            # 统一测评与证据生成
 └── testing/                 # 契约、替换与一致性测试工具
 
-contracts/                   # 跨仓库、机器可读的版本化契约
+contracts/                   # 契约快照与架构策略；运行时类型由 Core 所有
 docs/architecture/           # 架构总纲、ADR 和专题设计
 ```
 
-### 5.1 当前代码到目标领域的映射
+### 5.1 迁移台账
 
-| 当前权威位置 | 目标领域 | 迁移原则 |
-| --- | --- | --- |
-| `flagquantum/core` | Core | 保持后端无关，逐步按契约类型归类 |
-| `flagquantum/_compiler`、`compilation` | Compiler | 先统一门面和契约，再移动内部实现 |
-| `flagquantum/runtime` | Runtime | 保持现有可运行路径，拆出算法实现 |
-| `flagquantum/simulation`、部分 `runtime/backends` | Simulation | 按替换测试逐个迁移，不批量搬目录 |
-| `runtime/platforms`、`extensions/sdk` | Providers 的现有权威入口 | 通过受保护 API 演进，禁止另建平行注册体系 |
-| `interop`、部分 `extensions` | Ecosystem | 转换后立即落到核心表示 |
-| `_agent_services` | Agent Services | 成熟并通过保护流程后再考虑公开命名 |
-| `_gateways/mcp` | 过渡代码 | MCP 正式网关由外部 Compute Service 持有 |
+机器可读的完整台账位于 `contracts/long-horizon-architecture-v1.json`。任何迁移项必须同时
+声明责任团队、目标里程碑、当前权威位置、目标权威位置、适配器、完成证据、旧实现退出
+条件和状态。
+
+| 迁移项 | 当前权威位置 | 目标位置 | 完成证据 | 旧实现退出条件 |
+| --- | --- | --- | --- | --- |
+| 核心契约 | `core`、部分 `_compiler` 和 `runtime/contracts.py` | `core` | 跨领域产物、能力、请求、结果和证据均由 Core 定义并通过序列化测试 | 重复私有契约没有调用者 |
+| 编译器收敛 | `_compiler`、`compilation` | `compiler` | 替换一条编译管线不修改 Runtime 和用户 API | 旧内部入口引用归零 |
+| 模拟算法抽离 | `simulation`、部分 `runtime/backends` | `simulation` | 真实引擎和契约假实现通过同一套一致性测试 | Runtime 下不再拥有数值算法 |
+| 计算平台收敛 | `runtime/platforms`、`extensions/sdk` | `providers/platform` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |
+| 执行目标收敛 | `runtime/backends`、`deployment` | `providers/execution` | 模拟与 QPU/远程服务共享结果契约 | 后端选择和结果解码只存在于 Provider 后方 |
+| 生态收敛 | `interop`、部分 `extensions` | `ecosystem` | 边界转换和往返一致性测试通过 | 外部框架对象不进入核心领域 |
+| Agent/网关分离 | `_agent_services`、`_gateways/mcp` | 主仓库 Agent Services；外部网关 | 无 MCP SDK 时本地路径通过，跨仓库契约测试通过 | 主仓库无生产 MCP 传输依赖 |
+
+禁止只有目标目录而没有退出条件的迁移。一个迁移项完成后，必须删除或封闭旧权威入口，
+不得让两套实现无限期并存。
 
 ## 6. 四类核心契约
+
+四类跨领域契约全部由 Core 所有。Compiler、Runtime、Simulation 和 Provider 可以实现或
+消费这些契约，但不得各自复制定义。尤其是 Runtime 只接收 Core 定义的可执行产物和
+执行请求，不依赖 Compiler 包或 `compiler_contracts`。
 
 ### 6.1 ProgramArtifact
 
@@ -300,13 +327,14 @@ LLM / IDE / MCP Host
 | 是否允许降低精度或回退 CPU | Request Policy + Runtime |
 | 实际发生了何种精度、通信和回退 | Provider 采集，Runtime 汇总为 Evidence |
 
-Simulation 通过 Provider Contract 被 Runtime 调用，因此既可以是内置实现，也可以被独立
-高性能模拟库替换。
+Runtime 调用 Simulation Execution Provider，Provider 再组合一个 Simulation Engine 和所需
+Platform Provider。因而 Simulation Engine 既可以是内置实现，也可以被独立高性能模拟库
+替换；设备平台也可以在不修改模拟算法调用方的前提下替换。
 
 ## 9. 国产异构算力
 
-每一家国产 GPU/NPU/异构芯片通过独立 Accelerator Provider 接入，不向上暴露厂商对象。
-Provider 至少实现：
+每一家国产 GPU/NPU/异构芯片通过独立 Platform Provider 接入，不向上暴露厂商对象。
+Platform Provider 至少实现：
 
 1. 设备发现、生命周期和内存能力；
 2. Kernel 注册、编译或调用；
@@ -351,10 +379,12 @@ Runtime 负责跨 QPU 编排，Compiler 负责程序划分，Provider 负责纠�
 
 ```text
 Core <- Compiler
+Core <- Runtime
 Core <- Simulation
-Core + Compiler Contracts <- Runtime
-Core + Provider Contracts + Vendor SDK <- Providers
-Core + Compiler/Runtime Contracts <- Agent Services
+Core + Vendor SDK <- Platform Providers
+Core + Simulation + Platform Providers <- Simulation Execution Provider
+Core + Vendor SDK <- QPU / Remote Service Execution Providers
+Core + Compiler/Runtime public APIs <- Agent Services
 Public API + Core <- Ecosystem
 Agent Services <- External Gateways
 ```
@@ -363,7 +393,9 @@ Agent Services <- External Gateways
 
 - Core 不导入 Runtime、Simulation、Provider、Ecosystem 或网关；
 - Compiler 不导入 Runtime、具体 Provider 或设备 SDK；
+- Runtime 不导入 Compiler 包；二者共享的数据契约必须由 Core 所有；
 - Simulation 不导入 Runtime 策略和部署代码；
+- Execution Provider 与 Platform Provider 不得混成同一接口；
 - 通用代码不导入具体 Provider；
 - Ecosystem 对象在边界完成转换，不向核心层泄漏；
 - 网关不直调 Kernel、设备或编译器内部模块；
@@ -379,9 +411,10 @@ Agent Services <- External Gateways
 | --- | --- | --- |
 | Core/IR | `core`、契约模式 | 无下游具体实现 |
 | Compiler | `compiler` | ProgramArtifact、Capabilities |
-| Runtime | `runtime` | ExecutionRequest、Provider Contract |
+| Runtime | `runtime` | Core 中的 ExecutionRequest、Execution Provider Contract |
 | Simulation | `simulation` | Simulation Contract、Evidence |
-| Hardware/QPU | `providers` | Provider Contract |
+| Platform | `providers/platform` | Core 中的 Platform Provider Contract |
+| Execution target | `providers/execution` | Core 中的 Execution Provider Contract |
 | Ecosystem | `ecosystem` | 公共 API、ProgramArtifact |
 | Agent/Service | `agent_services`、外部服务仓库 | Application Service Contract |
 
@@ -427,7 +460,8 @@ declared -> prototyped -> validated -> production
 
 ### 阶段 3：Provider 化
 
-- 先将现有设备平台和扩展 SDK 演进为统一 Provider Contract；
+- 先将现有设备平台和扩展 SDK 演进为 Platform Provider Contract；
+- 再分别建立 Simulation、QPU 和 Remote Service Execution Provider；
 - 逐个接入国产加速器、真实 QPU 和远程服务；
 - 禁止建立第二套设备注册和能力发现系统。
 

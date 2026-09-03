@@ -49,6 +49,22 @@ agent_services_forbidden = [
     "simulation",
 ]
 
+[long_horizon_boundaries]
+# Existing target-architecture debt. New Runtime -> Compiler imports are blocked;
+# remove entries as contracts move into Core.
+runtime_compiler_import_allowed = [
+    "flagquantum/runtime/backends/density_matrix/execution.py",
+    "flagquantum/runtime/backends/statevector/noisy.py",
+    "flagquantum/runtime/backends/statevector/planning.py",
+    "flagquantum/runtime/distributed/tensor_network_execution.py",
+    "flagquantum/runtime/dynamic/routing.py",
+    "flagquantum/runtime/execution.py",
+    "flagquantum/runtime/noise_registry.py",
+    "flagquantum/runtime/plan_execution.py",
+    "flagquantum/runtime/result.py",
+    "flagquantum/runtime/target_execution.py",
+]
+
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/algorithms/optimization.py" = 6
 "flagquantum/benchmarking/statevector_local.py" = 7

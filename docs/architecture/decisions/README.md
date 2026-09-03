@@ -1,7 +1,15 @@
-# Multi-level IR Architecture Decisions
+# Architecture Decisions
 
-本目录记录多层 IR 实施过程中需要独立评审的架构决策。ADR 批准不自动改变 Stable
+本目录记录总体架构及多层 IR 实施过程中需要独立评审的架构决策。ADR 批准不自动改变 Stable
 Core，不自动完成 Phase 退出门，也不替代实现测试、性能证据和 API change proposal。
+
+## 总体架构
+
+| ADR | 决策 | 状态 | 批准范围 |
+| --- | --- | --- | --- |
+| [ARCH-001](ARCH_001_PROVIDER_LAYERS_AND_CORE_CONTRACTS.md) | Provider 分层与 Core 契约所有权 | Approved | vNext 目标边界、迁移台账与新增依赖约束 |
+
+## 多层 IR
 
 | ADR | 决策 | 状态 | 批准范围 |
 | --- | --- | --- | --- |

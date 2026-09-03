@@ -1,7 +1,8 @@
 {
   "schema": "flagquantum.long_horizon_architecture",
-  "version": "1.0",
+  "version": "1.1",
   "status": "candidate",
+  "shared_contract_owner": "core",
   "stable_contracts": [
     "program_artifact",
     "target_capabilities",
@@ -9,16 +10,106 @@
     "execution_result"
   ],
   "execution_modes": ["job", "session", "realtime_session", "workflow"],
-  "provider_kinds": ["accelerator", "simulation", "qpu", "service"],
+  "provider_layers": {
+    "execution": ["simulation", "qpu", "remote_service"],
+    "platform": ["cpu", "accelerator", "communication"]
+  },
   "domains": {
     "core": {"may_depend_on": []},
     "compiler": {"may_depend_on": ["core"]},
-    "runtime": {"may_depend_on": ["core", "compiler_contracts"]},
-    "simulation": {"may_depend_on": ["core", "provider_contracts"]},
-    "agent_services": {"may_depend_on": ["core", "compiler_contracts", "runtime_contracts"]},
-    "gateways": {"repository": "external", "may_depend_on": ["agent_services"]},
-    "providers": {"may_depend_on": ["core", "provider_contracts", "vendor_sdk"]}
+    "runtime": {"may_depend_on": ["core"]},
+    "simulation": {"may_depend_on": ["core"]},
+    "platform_providers": {"may_depend_on": ["core", "vendor_sdk"]},
+    "simulation_provider": {
+      "may_depend_on": ["core", "simulation", "platform_providers"]
+    },
+    "qpu_provider": {"may_depend_on": ["core", "vendor_sdk"]},
+    "remote_service_provider": {"may_depend_on": ["core", "vendor_sdk"]},
+    "ecosystem": {"may_depend_on": ["core", "public_api"]},
+    "agent_services": {
+      "may_depend_on": ["core", "compiler_public_api", "runtime_public_api"]
+    },
+    "gateways": {"repository": "external", "may_depend_on": ["agent_services"]}
   },
+  "migration_tracks": [
+    {
+      "name": "core_contracts",
+      "owner": "core-maintainers",
+      "target_milestone": "vnext-phase-2",
+      "current_authority": ["flagquantum/core", "flagquantum/_compiler/target_capabilities.py", "flagquantum/runtime/contracts.py"],
+      "target_authority": "flagquantum/core",
+      "compatibility_adapter": "private typed adapters at current public entry points",
+      "completion_evidence": "all cross-domain program, capability, request, result, and evidence types are Core-owned and pass serialization contracts",
+      "retirement_condition": "duplicate private contract definitions have no importers",
+      "status": "in_progress"
+    },
+    {
+      "name": "compiler_convergence",
+      "owner": "compiler-maintainers",
+      "target_milestone": "vnext-phase-2",
+      "current_authority": ["flagquantum/_compiler", "flagquantum/compilation"],
+      "target_authority": "flagquantum/compiler",
+      "compatibility_adapter": "existing public compilation facade",
+      "completion_evidence": "one pipeline can be replaced without Runtime or user API changes",
+      "retirement_condition": "all supported compiler entry points delegate to the target facade and legacy internal imports reach zero",
+      "status": "planned"
+    },
+    {
+      "name": "simulation_extraction",
+      "owner": "simulation-maintainers",
+      "target_milestone": "vnext-phase-2",
+      "current_authority": ["flagquantum/simulation", "flagquantum/runtime/backends"],
+      "target_authority": "flagquantum/simulation",
+      "compatibility_adapter": "Runtime execution-provider adapter",
+      "completion_evidence": "a real engine and a contract fake pass the same conformance suite without Runtime consumer changes",
+      "retirement_condition": "numerical algorithm ownership under runtime/backends reaches zero",
+      "status": "planned"
+    },
+    {
+      "name": "platform_provider_convergence",
+      "owner": "platform-maintainers",
+      "target_milestone": "vnext-phase-3",
+      "current_authority": ["flagquantum/runtime/platforms", "flagquantum/extensions/sdk"],
+      "target_authority": "flagquantum/providers/platform",
+      "compatibility_adapter": "evolved PlatformRuntime and extension SDK contracts",
+      "completion_evidence": "two platform implementations pass capability, precision, communication, fallback, and replacement tests",
+      "retirement_condition": "no general-purpose module imports a concrete vendor runtime",
+      "status": "planned"
+    },
+    {
+      "name": "execution_provider_convergence",
+      "owner": "runtime-provider-maintainers",
+      "target_milestone": "vnext-phase-3",
+      "current_authority": ["flagquantum/runtime/backends", "flagquantum/deployment"],
+      "target_authority": "flagquantum/providers/execution",
+      "compatibility_adapter": "Runtime provider facade",
+      "completion_evidence": "simulation and QPU or remote-service implementations pass one execution-result contract",
+      "retirement_condition": "backend selection and vendor result decoding exist only behind execution-provider contracts",
+      "status": "planned"
+    },
+    {
+      "name": "ecosystem_convergence",
+      "owner": "ecosystem-maintainers",
+      "target_milestone": "vnext-phase-4",
+      "current_authority": ["flagquantum/interop", "flagquantum/extensions"],
+      "target_authority": "flagquantum/ecosystem",
+      "compatibility_adapter": "existing interop and extension entry points",
+      "completion_evidence": "external objects are converted at the boundary and round-trip conformance tests pass",
+      "retirement_condition": "external framework objects no longer cross into Core, Compiler, Runtime, or Simulation",
+      "status": "planned"
+    },
+    {
+      "name": "agent_gateway_separation",
+      "owner": "agent-service-maintainers",
+      "target_milestone": "vnext-phase-4",
+      "current_authority": ["flagquantum/_agent_services", "flagquantum/_gateways/mcp"],
+      "target_authority": "protocol-neutral Agent Services in FlagQuantum; gateways in external Compute Service",
+      "compatibility_adapter": "versioned service contract",
+      "completion_evidence": "local SDK and Agent Services pass with the MCP SDK absent, and cross-repository contract tests pass",
+      "retirement_condition": "the main repository has no production MCP transport dependency",
+      "status": "in_progress"
+    }
+  ],
   "future_extensions": [
     "fault_tolerance",
     "pulse_control",

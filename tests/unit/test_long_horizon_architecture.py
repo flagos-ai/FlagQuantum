@@ -13,14 +13,25 @@ def test_architecture_contract_declares_independent_domains() -> None:
         (root / "contracts" / "long-horizon-architecture-v1.json").read_text()
     )
     assert payload["status"] == "candidate"
+    assert payload["version"] == "1.1"
+    assert payload["shared_contract_owner"] == "core"
     assert payload["domains"]["core"]["may_depend_on"] == []
+    assert payload["domains"]["runtime"]["may_depend_on"] == ["core"]
     assert payload["domains"]["gateways"]["may_depend_on"] == ["agent_services"]
-    assert set(payload["provider_kinds"]) == {
-        "accelerator",
+    assert set(payload["provider_layers"]["execution"]) == {
         "simulation",
         "qpu",
-        "service",
+        "remote_service",
     }
+    assert set(payload["provider_layers"]["platform"]) == {
+        "cpu",
+        "accelerator",
+        "communication",
+    }
+    migration_tracks = payload["migration_tracks"]
+    assert len(migration_tracks) == 7
+    assert all(track["completion_evidence"] for track in migration_tracks)
+    assert all(track["retirement_condition"] for track in migration_tracks)
 
 
 def test_program_artifact_wraps_circuit_without_replacing_circuit_ir() -> None:

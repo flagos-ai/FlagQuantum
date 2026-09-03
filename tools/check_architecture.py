@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import sys
 from pathlib import Path
 
@@ -17,6 +18,71 @@ PACKAGE = ROOT / "flagquantum"
 MAINTAINED_ENTRYPOINTS = ("benchmarks", "examples", "tools")
 DEVELOPMENT_MILESTONE_TOKENS = ("phase4", "phase5", "phase_4", "phase_5")
 CONFIG = tomllib.loads((ROOT / "architecture.toml").read_text(encoding="utf-8"))
+LONG_HORIZON_CONTRACT = ROOT / "contracts" / "long-horizon-architecture-v1.json"
+
+
+def _long_horizon_contract_errors() -> tuple[str, ...]:
+    """Validate invariants that keep the target architecture unambiguous."""
+
+    payload = json.loads(LONG_HORIZON_CONTRACT.read_text(encoding="utf-8"))
+    errors: list[str] = []
+    if payload.get("shared_contract_owner") != "core":
+        errors.append("long-horizon architecture: Core must own shared contracts")
+
+    domains = payload.get("domains", {})
+    if domains.get("runtime", {}).get("may_depend_on") != ["core"]:
+        errors.append(
+            "long-horizon architecture: Runtime may depend only on Core contracts"
+        )
+
+    provider_layers = payload.get("provider_layers", {})
+    if set(provider_layers.get("execution", ())) != {
+        "simulation",
+        "qpu",
+        "remote_service",
+    }:
+        errors.append(
+            "long-horizon architecture: execution providers must remain distinct"
+        )
+    if set(provider_layers.get("platform", ())) != {
+        "cpu",
+        "accelerator",
+        "communication",
+    }:
+        errors.append(
+            "long-horizon architecture: platform providers must remain distinct"
+        )
+
+    required_track_fields = {
+        "name",
+        "owner",
+        "target_milestone",
+        "current_authority",
+        "target_authority",
+        "compatibility_adapter",
+        "completion_evidence",
+        "retirement_condition",
+        "status",
+    }
+    tracks = payload.get("migration_tracks", ())
+    names = [track.get("name") for track in tracks]
+    if not tracks or len(names) != len(set(names)):
+        errors.append(
+            "long-horizon architecture: migration tracks must be present and unique"
+        )
+    for index, track in enumerate(tracks):
+        missing = required_track_fields - set(track)
+        if missing:
+            errors.append(
+                "long-horizon architecture: migration track "
+                f"{index} is missing {', '.join(sorted(missing))}"
+            )
+        if track.get("status") not in {"planned", "in_progress", "complete"}:
+            errors.append(
+                "long-horizon architecture: migration track "
+                f"{track.get('name', index)!r} has an invalid status"
+            )
+    return tuple(errors)
 
 
 def _imports(path: Path) -> tuple[tuple[str, str], ...]:
@@ -44,7 +110,7 @@ def _torch_cuda_use_count(path: Path) -> int:
 
 
 def architecture_errors() -> tuple[str, ...]:
-    errors: list[str] = []
+    errors = list(_long_horizon_contract_errors())
     boundaries = CONFIG["boundaries"]
     exceptions = CONFIG.get("legacy_exceptions", {})
     legacy_subsystems = CONFIG.get("legacy_subsystems", {})
@@ -54,6 +120,11 @@ def architecture_errors() -> tuple[str, ...]:
     interop_boundaries = CONFIG.get("interop_boundaries", {})
     simulation_boundaries = CONFIG.get("simulation_boundaries", {})
     northbound_boundaries = CONFIG.get("northbound_boundaries", {})
+    long_horizon_boundaries = CONFIG.get("long_horizon_boundaries", {})
+    runtime_compiler_import_allowed = set(
+        long_horizon_boundaries.get("runtime_compiler_import_allowed", ())
+    )
+    observed_runtime_compiler_imports: set[str] = set()
     simulation_runtime_import_allowed = set(
         simulation_boundaries.get("runtime_import_allowed", ())
     )
@@ -182,6 +253,22 @@ def architecture_errors() -> tuple[str, ...]:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(f"{relative}: core imports forbidden layer {module}")
 
+        if relative.startswith("flagquantum/runtime/"):
+            imports_compiler = any(
+                any(
+                    part in {"_compiler", "compilation"}
+                    for part in module.split(".")
+                )
+                for module, _ in imports
+            )
+            if imports_compiler:
+                observed_runtime_compiler_imports.add(relative)
+                if relative not in runtime_compiler_import_allowed:
+                    errors.append(
+                        f"{relative}: new Runtime dependency on Compiler is "
+                        "forbidden; move the shared contract to Core"
+                    )
+
         if relative.startswith("flagquantum/_gateways/"):
             forbidden = tuple(northbound_boundaries.get("gateway_forbidden", ()))
             for module, _ in imports:
@@ -277,6 +364,14 @@ def architecture_errors() -> tuple[str, ...]:
                         f"{relative}: maintained entrypoints must import "
                         f"flagquantum.algorithms, not deprecated {module}"
                     )
+
+    stale_runtime_compiler_allowances = (
+        runtime_compiler_import_allowed - observed_runtime_compiler_imports
+    )
+    for relative in sorted(stale_runtime_compiler_allowances):
+        errors.append(
+            f"{relative}: stale Runtime -> Compiler migration allowance must be removed"
+        )
 
     for path, policy in exceptions.items():
         if not policy.get("owner") or not policy.get("removal_version"):
