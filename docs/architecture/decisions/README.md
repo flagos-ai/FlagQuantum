@@ -8,6 +8,11 @@ Core，不自动完成 Phase 退出门，也不替代实现测试、性能证据
 | ADR | 决策 | 状态 | 批准范围 |
 | --- | --- | --- | --- |
 | [ARCH-001](ARCH_001_PROVIDER_LAYERS_AND_CORE_CONTRACTS.md) | Provider 分层与 Core 契约所有权 | Approved | vNext 目标边界、迁移台账与新增依赖约束 |
+| [ARCH-002](ARCH_002_ARTIFACT_METADATA_AUTHORITY.md) | Artifact 与 metadata 权威及兼容边界 | Proposed | Phase 1 契约候选；不修改 Stable Core |
+| [ARCH-003](ARCH_003_CAPABILITY_REQUIREMENT_DISCOVERY_EVIDENCE.md) | Capability 的需求、发现与证据三分法 | Proposed | Phase 1 契约候选；不代表能力可用 |
+| [ARCH-004](ARCH_004_EXECUTION_REQUEST_POLICY_BOUNDARY.md) | Execution Request 与 policy 边界 | Proposed | Phase 1 契约候选；不修改执行入口 |
+| [ARCH-005](ARCH_005_EXECUTION_RESULT_EVIDENCE_COMPATIBILITY.md) | Execution Result 与 Evidence 兼容边界 | Proposed | Phase 1 契约候选；不新增结果实现 |
+| [ARCH-006](ARCH_006_PROVIDER_ADMISSION_MODEL.md) | Platform/Execution Provider 两层模型与准入依赖 | Proposed | Phase 1 契约候选；不认证 Provider |
 
 ## 多层 IR
 
