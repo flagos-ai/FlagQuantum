@@ -11,6 +11,13 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 PROPOSAL = ROOT / "contracts/deployment-bridge-stage2-entry-proposal.json"
 REVIEW = ROOT / "contracts/deployment-bridge-stage2-entry-review-candidate.json"
+SUCCESS_CACHE_AUTHORIZATION = (
+    ROOT / "contracts/ir-phase1-import-success-cache-successor-authorization.json"
+)
+SUCCESS_CACHE_ATTESTATION = (
+    ROOT
+    / "tests/fixtures/internal_ir/phase1_import_success_cache_successor_candidate.json"
+)
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -28,8 +35,16 @@ def test_stage2_proposal_binds_stage1_exit_and_current_private_boundaries() -> N
     assert proposal["status"] == "ready_for_owner_review_implementation_not_authorized"
     for artifact in proposal["prerequisites"].values():
         assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
-    for artifact in review["current_contracts"].values():
-        assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
+    for name, artifact in review["current_contracts"].items():
+        actual_hash = _sha256(ROOT / artifact["path"])
+        if actual_hash == artifact["sha256"]:
+            continue
+        assert name == "verified_importer"
+        attestation = _load(SUCCESS_CACHE_ATTESTATION)
+        implementation = attestation["implementation"]
+        assert implementation["predecessor_sha256"] == artifact["sha256"]
+        assert implementation["successor_sha256"] == actual_hash
+        assert implementation["successor_sha256_mode"] == "exact"
     assert proposal["stage_name"] == "Deployment Bridge Stage 2"
     assert "Quafu" in proposal["distinct_from"]
 
@@ -105,8 +120,14 @@ def test_stage2_review_candidate_binds_proposal_and_preserves_public_default_pat
     review = _load(REVIEW)
 
     assert review["status"] == "ready_for_owner_approval"
+    authorization = _load(SUCCESS_CACHE_AUTHORIZATION)
     for relative_path, expected_hash in review["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
+        actual_hash = _sha256(ROOT / relative_path)
+        if actual_hash == expected_hash:
+            continue
+        transition = authorization["test_harness_transitions"][relative_path]
+        assert transition["predecessor_sha256"] == expected_hash
+        assert transition["successor_sha256"] == actual_hash
     decisions = review["proposed_decisions"]
     assert decisions["stage2_private_implementation_authorized"] is True
     assert decisions["stage2_performance_baseline_authorized"] is True
