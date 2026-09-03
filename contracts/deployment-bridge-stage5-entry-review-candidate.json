@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0",
+  "review": "deployment-bridge-stage5-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage4-exit-stage5-proposal-authorization.json",
+    "sha256": "aa573bea5a32cc1b8f5803cba78fe54cac5440074c4d3d87f58a493482f75a97"
+  },
+  "current_contracts": {
+    "stage4_private_rehearsal": {
+      "path": "flagquantum/_compiler/deployment_rehearsal.py",
+      "sha256": "f1d809443f8956f27b08f654fff7109a584ec0a2cff09ad69fbcccd90d7925a4"
+    },
+    "stage3_private_readiness": {
+      "path": "flagquantum/_compiler/deployment_canary_readiness.py",
+      "sha256": "d0593e26282c82fe6ffc5652412c16a4c2e66f38804a9eb920ddc9c1e94f6b1c"
+    },
+    "stage2_private_dry_run": {
+      "path": "flagquantum/_compiler/deployment_dry_run.py",
+      "sha256": "135604485571c07c9b2fa88ebf871716f4898695a1757788263c7dbdbd562922"
+    },
+    "provider_neutral_conformance": {
+      "path": "flagquantum/_compiler/provider_conformance.py",
+      "sha256": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1"
+    },
+    "private_shadow_contracts": {
+      "path": "flagquantum/_compiler/shadow_contracts.py",
+      "sha256": "5c8e382e1c1e245d04ed63512ca923ed3b0e1c06b7224cf017111da6c5701f3d"
+    },
+    "private_local_and_mock_adapters": {
+      "path": "flagquantum/_compiler/runtime_adapters.py",
+      "sha256": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8"
+    },
+    "authoritative_legacy_deployment": {
+      "path": "flagquantum/deployment/cloud.py",
+      "sha256": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b"
+    },
+    "public_api_snapshot": {
+      "path": "docs/public_api_v1.json",
+      "sha256": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4"
+    },
+    "public_api_baseline": {
+      "path": "contracts/public-api-v0.2-baseline.json",
+      "sha256": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/deployment-bridge-stage4-exit-stage5-proposal-authorization.json": "aa573bea5a32cc1b8f5803cba78fe54cac5440074c4d3d87f58a493482f75a97",
+    "contracts/deployment-bridge-stage5-entry-proposal.json": "23bc1f5eb3184a7e54d8a583d60ba7888e4c9271c5fb7602b989764be0ada8c0",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_5_ENTRY_PROPOSAL.md": "2ed4de9f8ca089cd8530ff8301f8ba0b7b1f0ef1091857345d146b04acf6ae3a",
+    "tests/internal_ir/test_deployment_bridge_stage5_proposal_authorization.py": "43069cdb7983c1fb04146cbc923a0d3b0d83d4cd9fb696757811caaff32b5b5e",
+    "tests/internal_ir/test_deployment_bridge_stage5_entry_proposal.py": "904d2844dc74d872478f5bed58595be7428974b2d03da15cf639ab4aaed8f688",
+    "flagquantum/_compiler/deployment_rehearsal.py": "f1d809443f8956f27b08f654fff7109a584ec0a2cff09ad69fbcccd90d7925a4",
+    "flagquantum/_compiler/deployment_canary_readiness.py": "d0593e26282c82fe6ffc5652412c16a4c2e66f38804a9eb920ddc9c1e94f6b1c",
+    "flagquantum/_compiler/deployment_dry_run.py": "135604485571c07c9b2fa88ebf871716f4898695a1757788263c7dbdbd562922",
+    "flagquantum/_compiler/provider_conformance.py": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1",
+    "flagquantum/_compiler/shadow_contracts.py": "5c8e382e1c1e245d04ed63512ca923ed3b0e1c06b7224cf017111da6c5701f3d",
+    "flagquantum/_compiler/runtime_adapters.py": "d70e7603640de6b3df7fc8abd3ba9c7ff2f7a606f146c6ccf316615af4e7bbd8",
+    "flagquantum/deployment/cloud.py": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "stage4_exit_and_stage5_proposal_authorization_bound": true,
+    "bridge_stage5_is_distinct_from_product_roadmap_stage5_and_live_canary": true,
+    "closed_observation_state_and_decision_taxonomies_defined": true,
+    "intent_attempt_acceptance_terminal_and_unknown_facts_are_separate": true,
+    "unknown_submission_preserves_idempotency_and_forbids_retry_and_fallback": true,
+    "readiness_rehearsal_kill_switch_rollback_conformance_and_operator_gates_defined": true,
+    "queue_quota_cost_and_retention_limits_are_explicit_synthetic_values": true,
+    "credentials_real_identities_raw_payloads_transports_and_controllers_excluded": true,
+    "accepted_observation_does_not_mean_integration_or_production_ready": true,
+    "next_entry_is_private_offline_evaluator_and_baseline_only": true,
+    "live_sandbox_runtime_provider_network_execution_submission_and_activation_excluded": true,
+    "public_and_default_path_unchanged": true
+  },
+  "proposed_decisions": {
+    "stage5_private_offline_observation_evaluator_authorized": true,
+    "stage5_anonymous_synthetic_fixtures_authorized": true,
+    "stage5_independent_performance_baseline_authorized": true,
+    "stage5_performance_budget_approved": false,
+    "stage5_live_sandbox_integration_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE5-ENTRY",
+  "approval_text": "Authorize only a private deterministic offline provider-sandbox observation evaluator, anonymous synthetic fixtures, internal tests and an independent performance baseline. It may validate caller-supplied facts but must not contact a sandbox or accept transport, provider SDK, endpoint, credential, real backend/job identity, artifact or raw program/result input. Do not authorize live sandbox integration, Runtime access, provider/network/credential access, execution, submission, retry, fallback, shadow/dual execution, canary activation, sampling, routing, telemetry, deployment migration, public/default changes, legacy retirement, a performance budget, product-roadmap Stage 5 work, or unified IR Phase 4 entry.",
+  "pause_after": "Stage 5 private offline observation evaluator, independent baseline, and performance-budget review"
+}
