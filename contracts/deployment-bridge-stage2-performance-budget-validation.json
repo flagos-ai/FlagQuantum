@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "validation": "deployment-bridge-stage2-performance-budget",
+  "status": "passed",
+  "validated_at": "2026-09-03",
+  "claim_scope": "Deployment Bridge Stage 2 private CPU budget; not a public SLA",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage2-performance-budget-authorization.json",
+    "sha256": "289e912b371dbdd45f5aa140e9ce5e2f1f69bc64e985cd8ea41cac904621d957"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/deployment_bridge_stage2_performance_budget_candidate.json",
+    "sha256": "3216ed474998954ead8f6cc9753d5011525efdc8dfd6dc4eee1cd68122991deb"
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "container_image": "flagquantum-dev:pr-check"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "pipeline": "explicit offline OpenQASM2 compile dry-run"
+  },
+  "cases": [
+    {
+      "operation_count": 10,
+      "dry_run_p95_ms": 1.696233,
+      "dry_run_peak_host_memory_bytes": 63409,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "operation_count": 100,
+      "dry_run_p95_ms": 6.528125,
+      "dry_run_peak_host_memory_bytes": 229636,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "operation_count": 1000,
+      "dry_run_p95_ms": 39.300317,
+      "dry_run_peak_host_memory_bytes": 1808516,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "operation_count": 10000,
+      "dry_run_p95_ms": 829.386671,
+      "dry_run_peak_host_memory_bytes": 18104757,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    }
+  ],
+  "variance_observation": {
+    "initial_full_gate_status": "passed",
+    "subsequent_focused_pytest_gate_status": "failed",
+    "broad_suite_gate_attempts": ["failed", "failed"],
+    "independent_five_sample_rerun_status": "passed",
+    "independent_rerun_10000_p95_ms": 377.20165,
+    "focused_suite_rerun_status": "passed",
+    "stage1_then_stage2_gate_rerun_status": "passed",
+    "budget_changed_after_observation": false,
+    "evidence_hidden_or_rewritten": false,
+    "interpretation": "environmental timing variance was observed when the wall-clock gate ran inside the broad suite; independent and focused reruns passed, all failed observations are retained, and the gate remains fail closed"
+  },
+  "decisions": {
+    "stage2_performance_budget_passed": true,
+    "stage2_machine_gate_active": true,
+    "stage2_exit_authorized": false,
+    "stage3_proposal_authorized": false,
+    "public_sla_claimed": false
+  }
+}
