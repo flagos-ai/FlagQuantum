@@ -1,134 +1,474 @@
-# FlagQuantum Long-Horizon Architecture
+# FlagQuantum 新一代总体架构
 
-Status: candidate architecture for staged adoption. This document does not
-promote an experimental capability to production maturity.
+> 状态：候选架构，分阶段落地
+>
+> 适用范围：FlagQuantum 主仓库及其对外集成边界
+>
+> 机器可读契约：`contracts/long-horizon-architecture-v1.json`
+>
+> 约束优先级：`AGENTS.md`、Stable Core API 保护政策、能力成熟度政策和科研证据要求高于本文
 
-## Objective
+## 1. 文档目的
 
-FlagQuantum keeps semantics stable while compiler technology, execution modes,
-simulation algorithms, accelerator stacks, QPU providers, and agent protocols
-evolve independently. The architecture is successful when a new implementation
-is added through a versioned contract instead of a branch in an unrelated
-subsystem.
+本文定义 FlagQuantum 面向未来十年以上演进的稳定边界，但不承诺具体实现十年不变。
+长期稳定的是领域职责、依赖方向和契约演进方式；量子编译算法、模拟算法、硬件 SDK、
+通信库、智能体协议和部署方式均可替换。
 
-## Constitution
+架构成功的判据不是“目录看起来整齐”，而是：
 
-1. Core owns backend-neutral semantics and versioned data contracts only.
-2. Compiler transforms program artifacts and never submits work.
-3. Runtime owns one execution attempt, resources, orchestration, recovery hooks,
-   and evidence; it never implements numerical simulation algorithms. Durable
-   user-facing Job state belongs to the external Compute Service.
-4. Simulation owns numerical methods and implements an execution-provider
-   contract; it does not own cluster or user-session policy.
-5. Providers adapt external accelerators, QPUs, and services. Vendor SDK objects
-   do not cross the provider boundary.
-6. Ecosystem adapters translate external framework objects at the boundary and
-   never establish a second canonical IR.
-7. MCP, REST, gRPC, and CLI are replaceable northbound gateways owned by the
-   external Compute Service. FlagQuantum exposes protocol-neutral application
-   services; protocol adapters never call kernels or devices directly.
-8. Unsupported capabilities fail at the earliest knowable stage. Approximation,
-   precision downgrade, and CPU fallback are explicit and auditable.
-9. Public contracts are versioned and evolve additively before an old version is
-   removed through the public API change process.
-10. Architecture rules are executable checks, not naming conventions.
+1. 新编译器、新模拟器、新国产加速器或新 QPU 能通过版本化契约接入；
+2. 替换某一实现时，其上游调用方无需修改；
+3. 不支持的能力在执行前失败，精度降级、CPU 回退和后端替换均可审计；
+4. 单机、多卡、多节点、真实 QPU 和服务化执行共享同一套核心语义；
+5. 多团队可围绕稳定接口并行开发，而不依赖跨目录修改内部实现。
 
-## Stable concepts
+## 2. 设计目标与非目标
 
-The long-lived contract vocabulary is deliberately small:
+### 2.1 设计目标
 
-- program artifacts: source, circuit, logical, physical, pulse, network,
-  simulation plan, and executable;
-- target capabilities: quantum, accelerator, precision, communication, timing,
-  fault tolerance, and network;
-- execution modes: job, session, realtime session, and workflow;
-- result evidence: value, statistics, provenance, actual execution path,
-  precision, communication, fallback, checkpoint, and failures.
+- **统一语义**：线路、混合控制、目标能力、执行请求和结果证据拥有唯一权威表示；
+- **编译与执行分离**：Compiler 只负责变换程序，Runtime 只负责组织一次执行；
+- **运行时与算法分离**：Runtime 管资源和生命周期，Simulation 管数值方法；
+- **硬件隔离**：国产加速器、QPU 和外部服务 SDK 对象不进入核心层；
+- **生态可替换**：PyTorch、JAX、Qiskit、OpenQASM、QIR 等只在边界进行转换；
+- **协议可替换**：MCP、REST、gRPC、CLI 不成为计算内核的依赖；
+- **证据内建**：能力、精度、通信、回退和性能口径是执行结果的一部分；
+- **渐进迁移**：保护现有稳定 API，每一步都保持最小端到端路径可运行。
 
-Existing `CircuitIR`, runtime plan, numerical contracts, target capabilities,
-and execution results remain authoritative for their current stable scopes. A
-program-artifact envelope adds type, provenance, and future-stage composition;
-it does not replace `CircuitIR`.
+### 2.2 非目标
 
-The first compatibility slice accepts either serialized `CircuitIR` or a
-circuit `ProgramArtifact` at the protocol-neutral agent service, unwraps it to
-the existing canonical IR, and invokes the existing deterministic validator
-and planner. Other artifact kinds fail closed until their compiler/runtime
-contracts exist.
+- 不建立一个囊括所有未来对象的“万能 IR”；
+- 不把所有现有代码一次性移动到新目录；
+- 不为尚无真实用例的能力建立预防性抽象；
+- 不在主仓库中复制 Compute Service 的租户、鉴权、计费和持久化任务能力；
+- 不以兼容层掩盖语义差异或虚假的硬件支持。
 
-## Dependency direction
+## 3. 总体架构
 
 ```text
-SDK / Ecosystem / external gateways
-            |
-            v
-  protocol-neutral services
-            |
-            v
-Compiler   Runtime   Simulation
-     \        |        /
-      \       v       /
-        versioned Core
+┌─────────────────────────────────────────────────────────────────────┐
+│ 用户与生态层                                                        │
+│ Python SDK | PyTorch/JAX | OpenQASM/QIR | Qiskit | CLI             │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ 边界转换
+┌──────────────────────────────▼──────────────────────────────────────┐
+│ Ecosystem / API                                                    │
+│ 外部对象适配、公共 API、程序捕获；不产生第二套核心语义              │
+└───────────────┬──────────────────────────────────┬──────────────────┘
+                │                                  │
+┌───────────────▼─────────────────┐  ┌─────────────▼──────────────────┐
+│ Compiler                        │  │ Agent Services                 │
+│ 校验、分析、优化、Lowering      │  │ 发现、解释、规划、预检         │
+│ 只变换 ProgramArtifact          │  │ 协议无关、确定性、无 LLM 依赖  │
+└───────────────┬─────────────────┘  └─────────────┬──────────────────┘
+                │ Executable / Plan                │ ExecutionRequest
+┌───────────────▼──────────────────────────────────▼──────────────────┐
+│ Runtime                                                            │
+│ 目标选择、资源编排、Session、分布式执行、恢复、观测和证据采集      │
+└───────────────┬─────────────────────────────────────────────────────┘
+                │ Provider Contract
+        ┌───────┼─────────────────┬──────────────────┐
+        │       │                 │                  │
+┌───────▼───┐ ┌─▼────────────┐ ┌──▼────────────┐ ┌──▼──────────────┐
+│Simulation │ │ Accelerator  │ │ QPU Provider  │ │Service Provider│
+│SV/MPS/TN  │ │国产 GPU/NPU  │ │真实 QPU       │ │远程计算服务    │
+│Noise/Diff │ │Kernel/通信   │ │校准/提交/解码 │ │提交/查询/结果  │
+└───────┬───┘ └─┬────────────┘ └──┬────────────┘ └──┬──────────────┘
+        └────────┴─────────────────┴──────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────────┐
+│ Core                                                               │
+│ 版本化 IR、ProgramArtifact、Capabilities、Request、Result、Evidence│
+└─────────────────────────────────────────────────────────────────────┘
 
-Providers depend on public contracts plus their vendor SDK. No general-purpose
-package depends on a concrete provider.
+外部控制面：MCP / REST / gRPC → Compute Service → Agent Services / Runtime
 ```
 
-## Domain responsibilities
+所有箭头均表示允许的依赖或调用方向。Core 不反向依赖任何上层模块。
 
-| Domain | Owns | Must not own |
+## 4. 六个稳定领域
+
+| 领域 | 唯一职责 | 可以拥有 | 禁止拥有 |
+| --- | --- | --- | --- |
+| Core | 定义稳定语义和数据契约 | IR、程序产物、能力、请求、结果、证据、错误分类 | 硬件 SDK、调度策略、数值算法、网络框架 |
+| Compiler | 将程序从一种产物变换为另一种产物 | 捕获、校验、分析、Pass、Lowering、代码生成 | 任务提交、设备生命周期、数值模拟 |
+| Runtime | 组织一次执行及其生命周期 | 规划、资源、Session、分布式编排、恢复、观测 | 编译优化、状态向量/MPS/TN 算法、长期服务任务 |
+| Simulation | 实现量子数值计算 | 状态向量、MPS、张量网络、噪声、可微计算 | 用户策略、凭据、集群资源治理 |
+| Providers | 隔离外部执行系统 | 国产加速器、QPU、远程服务适配及能力探测 | 公共领域语义、通用编译 Pass |
+| Ecosystem | 连接外部开发生态 | 框架适配、格式导入导出、插件入口 | 第二套规范 IR、Runtime 调度、设备直调 |
+
+Agent Services 是应用服务层，不是第七套计算内核。它组合 Core、Compiler 和 Runtime
+公开契约，为 MCP、REST、CLI 或 IDE 提供稳定而确定性的能力。
+
+## 5. 目标代码结构
+
+下列结构是目标态，不要求一次性搬迁。带 `contracts` 的目录只放接口和数据模型，
+不放具体实现。
+
+```text
+flagquantum/
+├── core/                    # 后端无关的稳定语义
+│   ├── ir/
+│   ├── artifacts/
+│   ├── capabilities/
+│   ├── execution/
+│   ├── evidence/
+│   └── errors/
+├── compiler/                # 公共编译门面
+│   ├── contracts/
+│   ├── capture/
+│   ├── analyses/
+│   ├── passes/
+│   ├── lowering/
+│   ├── codegen/
+│   └── pipelines/
+├── runtime/
+│   ├── contracts/
+│   ├── planning/
+│   ├── execution/
+│   ├── sessions/
+│   ├── distributed/
+│   ├── recovery/
+│   ├── observability/
+│   └── platforms/           # 现有设备生命周期权威入口
+├── simulation/
+│   ├── contracts/
+│   ├── statevector/
+│   ├── mps/
+│   ├── tensor_network/
+│   ├── noise/
+│   ├── differentiation/
+│   └── kernels/
+├── providers/
+│   ├── contracts/
+│   ├── accelerators/        # 国产 GPU/NPU/异构加速器
+│   ├── qpu/                 # 超导、离子阱、中性原子、光量子等
+│   └── services/            # 远程计算服务
+├── ecosystem/
+│   ├── pytorch/
+│   ├── jax/
+│   ├── qiskit/
+│   ├── openqasm/
+│   ├── qir/
+│   └── extensions/
+├── agent_services/          # 协议无关的确定性应用服务
+├── algorithms/              # 面向用户的算法组合
+├── benchmarking/            # 统一测评与证据生成
+└── testing/                 # 契约、替换与一致性测试工具
+
+contracts/                   # 跨仓库、机器可读的版本化契约
+docs/architecture/           # 架构总纲、ADR 和专题设计
+```
+
+### 5.1 当前代码到目标领域的映射
+
+| 当前权威位置 | 目标领域 | 迁移原则 |
 | --- | --- | --- |
-| Core | IR, artifacts, capability vocabulary, schemas | hardware, scheduling, algorithms |
-| Compiler | capture, validation, passes, lowering | job submission, numerical kernels |
-| Runtime | execution attempts, sessions, resources, recovery hooks | durable service jobs, circuit optimization, amplitudes |
-| Simulation | statevector, MPS, TN, noise, differentiation | user policy, provider credentials |
-| Accelerator provider | device runtime, kernels, precision, collectives, topology | public semantics |
-| QPU provider | discovery, calibration, submission, sessions, result decoding | generic compiler passes |
-| Agent services | discovery, validation, planning, preflight, explanation | LLM or transport implementation |
-| Compute Service gateway | tools, resources, protocol lifecycle, authorization | numerical and compiler semantics |
+| `flagquantum/core` | Core | 保持后端无关，逐步按契约类型归类 |
+| `flagquantum/_compiler`、`compilation` | Compiler | 先统一门面和契约，再移动内部实现 |
+| `flagquantum/runtime` | Runtime | 保持现有可运行路径，拆出算法实现 |
+| `flagquantum/simulation`、部分 `runtime/backends` | Simulation | 按替换测试逐个迁移，不批量搬目录 |
+| `runtime/platforms`、`extensions/sdk` | Providers 的现有权威入口 | 通过受保护 API 演进，禁止另建平行注册体系 |
+| `interop`、部分 `extensions` | Ecosystem | 转换后立即落到核心表示 |
+| `_agent_services` | Agent Services | 成熟并通过保护流程后再考虑公开命名 |
+| `_gateways/mcp` | 过渡代码 | MCP 正式网关由外部 Compute Service 持有 |
 
-## Evolution model
+## 6. 四类核心契约
 
-- Fault tolerance adds logical and physical artifacts, QEC workflows, and
-  capability components.
-- Pulse control adds a pulse artifact and target compiler/provider support.
-- Realtime feedback adds a realtime-session contract and bounded feedback
-  channel without changing batch jobs.
-- Multi-QPU and quantum networking add a resource graph, network artifact, and
-  entanglement-resource provider.
-- A new domestic accelerator adds a provider implementing device, kernel,
-  precision, collective, topology, and evidence contracts.
-- A new MCP revision changes only the external Compute Service gateway unless a
-  genuinely new product capability is introduced.
+### 6.1 ProgramArtifact
 
-## Compute Service and MCP boundary
+`ProgramArtifact` 是编译阶段之间的版本化信封，不取代现有 `CircuitIR`。
 
-The existing FlagQuantum Compute Service and MCP implementation remains an
-independent product/control-plane repository. It owns tenants, authorization,
-budgets, durable jobs, REST/OpenAPI, MCP transport, and public projections.
-This repository owns deterministic IR validation, compilation, local runtime,
-provider execution, and machine-readable evidence.
+最小字段包括：
 
-The integration direction is one way:
+- `kind`：source、circuit、logical、physical、pulse、network、simulation_plan、executable；
+- `schema_version`：产物模式版本；
+- `payload`：该阶段的规范数据；
+- `provenance`：来源、生成工具、输入摘要和父产物；
+- `requirements`：精度、动态控制、通信、QEC、脉冲或网络需求；
+- `extensions`：带命名空间的可选扩展，不改变核心字段含义。
+
+编译器函数遵循：
 
 ```text
-MCP host -> Compute Service -> FlagQuantum agent service/runtime contracts
+ProgramArtifact + TargetCapabilities + CompileOptions
+    -> ProgramArtifact + CompileEvidence
 ```
 
-FlagQuantum does not depend on the Compute Service or an MCP SDK. Deleting or
-replacing MCP leaves local SDK execution and runtime semantics unchanged.
+### 6.2 TargetCapabilities
 
-## Existing extension and provider authority
+能力模型表达“目标真实具备什么”，而不是“用户希望它具备什么”。至少覆盖：
 
-`flagquantum.extensions.sdk` remains the current authority for third-party
-extension manifests, capability negotiation, lifecycle containment, and
-provider registration. `flagquantum.runtime.platforms` remains the authority
-for accelerator device lifecycle. The target provider taxonomy is introduced
-by evolving those contracts through the protected API process, not by creating
-a parallel SPI.
+- 量子能力：门集、比特数、测量、动态线路、参数化；
+- 加速器能力：设备类型、内存、原生精度、软件扩展精度、Kernel；
+- 通信能力：P2P、集合通信、节点间通信、拓扑和带宽等级；
+- 时间能力：Batch、Session、实时反馈时延范围；
+- 容错能力：逻辑比特、码族、纠错周期、魔态和资源估算；
+- 网络能力：多 QPU 拓扑、链路、纠缠生成和资源状态。
 
-## Adoption rule
+能力必须标注成熟度和证据来源。仅有接口声明不等于生产能力。
 
-The target architecture is adopted through compatibility adapters. Existing
-stable APIs remain operational. A subsystem moves only after its new contract,
-focused tests, compatibility path, and rollback boundary exist.
+### 6.3 ExecutionRequest
+
+执行请求只描述一次执行所需的稳定输入：
+
+- 待执行产物及参数；
+- 目标约束和执行模式；
+- 精度、回退、近似和后端替换策略；
+- 资源预算、随机种子、超时和恢复策略；
+- 所需证据等级。
+
+执行模式分为：
+
+| 模式 | 用途 | 生命周期责任 |
+| --- | --- | --- |
+| Job | 一次批处理执行 | Runtime 管一次尝试，Compute Service 可管长期任务 |
+| Session | 多次低开销连续执行 | Runtime 管会话内资源和状态 |
+| Realtime Session | 有界时延的量子—经典反馈 | 专用 Runtime/Provider 能力 |
+| Workflow | 编译、执行、训练、缓解、纠错等有向流程 | 工作流编排器组合原子契约 |
+
+### 6.4 ExecutionResult 与 Evidence
+
+结果不能只有数值。最小证据应包含：
+
+- 请求、程序、编译产物、目标和环境摘要；
+- 实际后端、设备、精度和执行路径；
+- 计算与通信路径、拓扑、进程和设备驻留；
+- 近似、截断、噪声、软件扩展精度及误差口径；
+- CPU 回退、后端替换、重试和恢复记录；
+- 时间、吞吐、内存等性能统计及测量方法；
+- 成功、失败或部分完成的结构化原因。
+
+任何未声明 CPU 回退均视为契约违约，而不是性能优化。
+
+## 7. 三条端到端主路径
+
+### 7.1 本地或分布式模拟
+
+```text
+用户程序
+ -> Ecosystem/API 捕获
+ -> CircuitIR / ProgramArtifact
+ -> Compiler 校验与面向模拟的优化
+ -> Runtime 选择执行计划和资源
+ -> Simulation Provider
+ -> 状态向量 / MPS / TN / Noise / Diff
+ -> ExecutionResult + Evidence
+```
+
+Runtime 不实现张量收缩或量子门 Kernel；Simulation 不自行决定集群、账号和回退策略。
+
+### 7.2 真实 QPU
+
+```text
+用户程序
+ -> 规范 IR
+ -> Compiler 按 QPU 能力完成逻辑/物理 Lowering
+ -> Runtime 建立 Job、Session 或 Realtime Session
+ -> QPU Provider 隔离厂商 SDK、凭据、校准和结果格式
+ -> 统一 ExecutionResult + QPU Evidence
+```
+
+真实 QPU 因而属于 **Provider 的具体实现**；QPU 的调度生命周期属于 Runtime；
+面向 QPU 的变换属于 Compiler；QPU 的能力词汇和结果模式属于 Core。
+
+### 7.3 Agent、MCP 与 Compute Service
+
+```text
+LLM / IDE / MCP Host
+ -> MCP / REST / gRPC Gateway（外部 Compute Service）
+ -> FlagQuantum Agent Services
+ -> Validator / Compiler / Runtime 公共契约
+ -> 结构化结果与证据
+```
+
+- 主仓库不依赖 MCP SDK，也不包含 LLM 决策逻辑；
+- Agent Services 只提供确定性的发现、校验、规划、预检、解释和执行入口；
+- Compute Service 负责租户、鉴权、配额、预算、持久化任务和协议生命周期；
+- 替换 MCP 版本或网关不影响本地 SDK 和计算语义。
+
+## 8. Runtime 与 Simulation 的边界
+
+两者是“执行导演”和“数值演员”的关系：
+
+| 问题 | 责任方 |
+| --- | --- |
+| 用哪个目标、多少设备、什么执行模式 | Runtime |
+| 状态向量如何更新、MPS 如何截断、TN 如何收缩 | Simulation |
+| 何时建立通信组、保存检查点、恢复任务 | Runtime |
+| 前向、反向和梯度 Kernel 如何计算 | Simulation |
+| 是否允许降低精度或回退 CPU | Request Policy + Runtime |
+| 实际发生了何种精度、通信和回退 | Provider 采集，Runtime 汇总为 Evidence |
+
+Simulation 通过 Provider Contract 被 Runtime 调用，因此既可以是内置实现，也可以被独立
+高性能模拟库替换。
+
+## 9. 国产异构算力
+
+每一家国产 GPU/NPU/异构芯片通过独立 Accelerator Provider 接入，不向上暴露厂商对象。
+Provider 至少实现：
+
+1. 设备发现、生命周期和内存能力；
+2. Kernel 注册、编译或调用；
+3. 原生精度与 Double-Single 等软件扩展精度声明；
+4. 节点内 P2P、集合通信和节点间通信能力；
+5. 设备拓扑、异构互联和不可用原因；
+6. 实际设备驻留、Kernel、通信、精度和 CPU 回退证据；
+7. 契约一致性和替换测试。
+
+上层只依赖能力，不根据厂商名称分支。硬件选择由 Runtime Planner 根据请求约束、
+能力证据和策略完成。只支持单精度的设备可以声明软件扩展双精度能力，但必须明确适用
+算例、数值验证、性能开销和真实执行路径，不得等同宣称原生双精度。
+
+## 10. 面向未来技术变化的扩展方式
+
+### 10.1 容错量子计算
+
+新增逻辑、物理和容错编译产物，扩展 `TargetCapabilities.fault_tolerance`，并以 Workflow
+组合逻辑—物理映射、QEC 周期、魔态蒸馏和资源估算。基础 Runtime 不感知具体码算法。
+
+### 10.2 量子—经典实时反馈
+
+增加 `RealtimeSession` 契约，显式声明反馈时延、控制位置、可用指令和超时语义。
+普通远程 Job 不伪装成实时能力；Compiler 和 Provider 分别验证动态线路语义与硬件能力。
+
+### 10.3 多 QPU 与量子网络
+
+新增 Network Artifact、分布式 QPU 目标描述、量子网络拓扑和纠缠资源 Provider。
+Runtime 负责跨 QPU 编排，Compiler 负责程序划分，Provider 负责纠缠资源的真实操作和证据。
+
+### 10.4 脉冲级编译与控制
+
+新增 Pulse Artifact 和相应 Compiler Pipeline。脉冲对象不塞入通用 CircuitIR；只有声明
+脉冲能力的 QPU Provider 才能接受该产物。
+
+### 10.5 新模拟范式与 AI 编译优化
+
+新的模拟算法实现 Simulation Contract；AI 优化器作为 Compiler Pass 或 Planner Policy
+接入。模型建议必须经过确定性校验，不能绕过能力检查和语义一致性验证。
+
+## 11. 依赖与导入规则
+
+```text
+Core <- Compiler
+Core <- Simulation
+Core + Compiler Contracts <- Runtime
+Core + Provider Contracts + Vendor SDK <- Providers
+Core + Compiler/Runtime Contracts <- Agent Services
+Public API + Core <- Ecosystem
+Agent Services <- External Gateways
+```
+
+强制规则：
+
+- Core 不导入 Runtime、Simulation、Provider、Ecosystem 或网关；
+- Compiler 不导入 Runtime、具体 Provider 或设备 SDK；
+- Simulation 不导入 Runtime 策略和部署代码；
+- 通用代码不导入具体 Provider；
+- Ecosystem 对象在边界完成转换，不向核心层泄漏；
+- 网关不直调 Kernel、设备或编译器内部模块；
+- 临时例外必须登记、设置责任人和移除条件，并由架构检查器跟踪。
+
+这些规则应由 `architecture.toml` 和 `tools/check_architecture.py` 自动执行。
+
+## 12. 多团队并行开发规则
+
+按领域而不是按技术栈划分所有权：
+
+| 团队/工作流 | 主要修改范围 | 依赖的稳定接口 |
+| --- | --- | --- |
+| Core/IR | `core`、契约模式 | 无下游具体实现 |
+| Compiler | `compiler` | ProgramArtifact、Capabilities |
+| Runtime | `runtime` | ExecutionRequest、Provider Contract |
+| Simulation | `simulation` | Simulation Contract、Evidence |
+| Hardware/QPU | `providers` | Provider Contract |
+| Ecosystem | `ecosystem` | 公共 API、ProgramArtifact |
+| Agent/Service | `agent_services`、外部服务仓库 | Application Service Contract |
+
+跨领域变更必须先修改契约提案和契约测试，再修改实现。禁止通过导入对方内部模块解决
+短期联调问题。每个领域至少维护：所有者、公共入口、契约测试、替换用假实现和变更记录。
+
+## 13. 能力成熟度与发布
+
+所有能力分别标记，而不是给整个软件贴一个笼统标签：
+
+```text
+declared -> prototyped -> validated -> production
+```
+
+- **declared**：有契约和失败语义；
+- **prototyped**：存在可运行实现，但尚无完整证据；
+- **validated**：通过代表性环境、精度、替换和一致性测试；
+- **production**：具有持续测试、文档、运维边界和发布承诺。
+
+接口存在、Mock 通过或单机演示成功，均不能自动提升为生产能力。
+
+## 14. 迁移路线
+
+迁移遵循“先契约、后替换；先纵切、后横展”，不进行一次性目录重构。
+
+### 阶段 0：冻结事实与边界
+
+- 盘点公共 API、现有权威实现和真实能力；
+- 用依赖检查固化禁止方向；
+- 建立当前行为的契约测试和证据基线。
+
+### 阶段 1：最小端到端契约
+
+- 稳定 ProgramArtifact、TargetCapabilities、ExecutionRequest、ExecutionResult；
+- 让现有 `CircuitIR` 通过兼容适配器进入新服务；
+- 跑通“捕获—校验—规划—模拟—结果—证据”。
+
+### 阶段 2：Compiler、Runtime、Simulation 解耦
+
+- 建立各自公共门面；
+- 将跨层直调替换为契约；
+- 每拆出一项实现，都用替换测试证明消费者无需修改。
+
+### 阶段 3：Provider 化
+
+- 先将现有设备平台和扩展 SDK 演进为统一 Provider Contract；
+- 逐个接入国产加速器、真实 QPU 和远程服务；
+- 禁止建立第二套设备注册和能力发现系统。
+
+### 阶段 4：生态与服务化
+
+- 统一 PyTorch/JAX、OpenQASM/QIR 和第三方生态边界；
+- 稳定 Agent Services；
+- 与外部 Compute Service 通过版本化契约联调 MCP/REST/gRPC。
+
+### 阶段 5：未来能力插件
+
+- 按真实项目需求增加容错、实时、多 QPU、量子网络和脉冲产物；
+- 每项能力独立成熟，不改写既有基础执行模型。
+
+## 15. 架构完成判据
+
+一个模块只有同时满足以下条件，才算完成解耦：
+
+1. 职责、输入、输出和失败语义已文档化；
+2. 对外只暴露版本化契约，不泄漏内部或厂商对象；
+3. 至少存在两个实现，或一个真实实现加一个契约假实现；
+4. 替换实现时消费者代码无需修改；
+5. 契约测试、一致性测试和架构依赖检查通过；
+6. 不支持能力、降级和回退可以被机器识别；
+7. 文档明确当前成熟度，不把目标态描述为已实现。
+
+## 16. 架构决策治理
+
+以下变更必须提交 Architecture Decision Record（ADR）：
+
+- 修改核心数据模型或依赖方向；
+- 引入新的跨领域契约或 Provider 类型；
+- 改变 Stable Core 公共 API 或序列化模式；
+- 新增生产依赖、长期兼容层或跨仓库协议；
+- 允许新的精度降级、CPU 回退或后端替换策略。
+
+ADR 至少包含问题、约束、备选方案、决定、兼容性影响、迁移路径、验证方法、所有者和
+退出条件。实现细节可持续演进，核心边界不得以“先这样以后再换”为依据临时突破。
+
+## 17. 当前采用规则
+
+本文描述目标架构，不会自动提升任何实验能力的成熟度。现有 `CircuitIR`、Runtime Plan、
+数值契约、目标能力和执行结果，在各自稳定范围内仍是权威实现。目标结构通过兼容适配器
+和受保护 API 流程逐步采用；每次迁移都必须具有聚焦测试、回滚边界和可验证证据。

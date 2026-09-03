@@ -1,5 +1,7 @@
 # Architecture
 
+- [FlagQuantum 新一代总体架构](LONG_HORIZON_ARCHITECTURE.md) —
+  全局领域边界、目标目录、核心契约、执行链路和分阶段迁移的权威总纲。
 - [Multi-level IR and quantum compiler infrastructure](MULTI_LEVEL_IR_ARCHITECTURE.md)
 - [Noise code organization and architecture review](NOISY_SIMULATION_CODE_ORGANIZATION.md)
 
