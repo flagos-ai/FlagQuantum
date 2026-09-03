@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "status": "passed",
+  "validated_at": "2026-09-03",
+  "authorization": {
+    "path": "contracts/ir-phase3-batch-b-performance-budget-authorization.json",
+    "sha256": "c5ca0bd463b4c88fb6fc10cc7d55841ab57dce82ec3be81bd1d9727a9221103b"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/phase3_batch_b_performance_budget_candidate.json",
+    "sha256": "9d4888a6115d38f6df2d9215549bc23caa2c9a3d1a43d4e52e6d2b941d0e10c2"
+  },
+  "claim_scope": "Phase 3 Batch B private CPU budget; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "pipeline": "verified QuantumIR to immutable TargetIR legalization and identity"
+  },
+  "cases": [
+    {
+      "operation_count": 10,
+      "legalization_p95_ms": 0.178008,
+      "legalization_p95_ms_max": 1.0,
+      "legalization_peak_host_memory_bytes": 15933,
+      "legalization_peak_host_memory_bytes_max": 131072,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "operation_count": 100,
+      "legalization_p95_ms": 1.173858,
+      "legalization_p95_ms_max": 3.0,
+      "legalization_peak_host_memory_bytes": 101843,
+      "legalization_peak_host_memory_bytes_max": 524288,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "operation_count": 1000,
+      "legalization_p95_ms": 8.350021,
+      "legalization_p95_ms_max": 25.0,
+      "legalization_peak_host_memory_bytes": 958777,
+      "legalization_peak_host_memory_bytes_max": 4194304,
+      "deterministic_identity": true,
+      "passed": true
+    },
+    {
+      "operation_count": 10000,
+      "legalization_p95_ms": 132.36428,
+      "legalization_p95_ms_max": 250.0,
+      "legalization_peak_host_memory_bytes": 9188711,
+      "legalization_peak_host_memory_bytes_max": 33554432,
+      "deterministic_identity": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "batch_b_performance_budget_gate_passed": true,
+    "batch_b_exit_authorized": false,
+    "batch_c_executable_artifact_authorized": false,
+    "public_sla_claimed": false,
+    "runtime_or_provider_integration_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  }
+}
