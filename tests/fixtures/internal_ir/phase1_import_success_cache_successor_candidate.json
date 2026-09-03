@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "attestation": "ir-phase1-import-success-cache-successor-candidate",
+  "status": "compiler_evidence_complete_pending_integration_review",
+  "authorization": {
+    "path": "contracts/ir-phase1-import-success-cache-successor-authorization.json",
+    "sha256": "794633a70612188d3e1d17345fa21c88fa69e93964abbb15a4519a6728bab050"
+  },
+  "implementation": {
+    "path": "flagquantum/_compiler/importers/circuit_ir.py",
+    "predecessor_sha256": "e67ac3e5dad0cc3e5241708c6b5592bc945595870d637c1194a41172fbdc23c3",
+    "successor_sha256": "9616014e7fb24076ec89812ac4c16cb1efaacdba6009b11a075b059112b6af56",
+    "successor_sha256_mode": "exact",
+    "cache_location": "product_importer_module",
+    "test_wrapper_cache_used": false
+  },
+  "semantic_guards": {
+    "successful_results_only": true,
+    "failures_never_cached": true,
+    "nested_content_change_reimports_and_revalidates": true,
+    "trainable_tensor_identity_change_reimports_and_revalidates": true,
+    "mutation_and_autograd_ownership_preserved": true,
+    "diagnostics_changed": false,
+    "identity_changed": false,
+    "round_trip_changed": false,
+    "accepted_input_domain_changed": false,
+    "public_api_changed": false,
+    "default_compilation_semantics_changed": false
+  },
+  "performance_budget": {
+    "path": "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json",
+    "sha256": "3b8e4ddcbf5a0e61a5791a5d8ab7a008a43789830c92212117a74d9e55499593",
+    "changed": false,
+    "measurement_method_changed": false,
+    "statistics_changed": false
+  },
+  "measurement_environment": {
+    "image": "flagquantum-dev:pr-check",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1,
+    "clock": "time.perf_counter_ns"
+  },
+  "cold_import_measurement": {
+    "method": "Five distinct source objects per gate count; source construction excluded, each source imported once and released before the next sample; p95 uses the unchanged gate percentile function.",
+    "iterations": 5,
+    "cases": [
+      {
+        "gate_count": 10,
+        "samples_ms": [0.260459, 0.2525, 0.317583, 0.251375, 0.2815],
+        "p50_ms": 0.260459,
+        "p95_ms": 0.310366
+      },
+      {
+        "gate_count": 100,
+        "samples_ms": [1.310167, 1.249125, 1.176542, 1.180916, 1.273834],
+        "p50_ms": 1.249125,
+        "p95_ms": 1.3029
+      },
+      {
+        "gate_count": 1000,
+        "samples_ms": [11.914792, 13.19925, 11.3065, 15.072625, 11.134375],
+        "p50_ms": 11.914792,
+        "p95_ms": 14.69795
+      },
+      {
+        "gate_count": 10000,
+        "samples_ms": [181.480042, 261.847333, 146.070833, 177.4715, 265.197917],
+        "p50_ms": 181.480042,
+        "p95_ms": 264.5278
+      }
+    ]
+  },
+  "repeated_import_measurement": {
+    "method": "Unchanged approved gate: five timed iterations after two warmups, wall-clock p95, tracemalloc peak memory, deterministic identity and normalized growth checks.",
+    "complete_evaluations": 5,
+    "all_evaluations_passed": true,
+    "rounds": [
+      {
+        "p95_ms": {"10": 0.048083, "100": 0.196125, "1000": 1.658, "10000": 16.6955},
+        "growth_passed": true
+      },
+      {
+        "p95_ms": {"10": 0.047667, "100": 0.213733, "1000": 1.655409, "10000": 16.309792},
+        "growth_passed": true
+      },
+      {
+        "p95_ms": {"10": 0.056909, "100": 0.175158, "1000": 1.836192, "10000": 16.514584},
+        "growth_passed": true
+      },
+      {
+        "p95_ms": {"10": 0.03855, "100": 0.208976, "1000": 1.7081, "10000": 17.296974},
+        "growth_passed": true
+      },
+      {
+        "p95_ms": {"10": 0.070917, "100": 0.398483, "1000": 2.344767, "10000": 17.443967},
+        "growth_passed": true
+      }
+    ],
+    "peak_host_memory_bytes": {
+      "10": 5710,
+      "100": 44532,
+      "1000": 430200,
+      "10000": 4306784
+    }
+  },
+  "evidence_artifacts": {
+    "tests/internal_ir/test_phase1_import_success_cache.py": "04a2294f2bb42be3c43fd8a77619135feaa1641529e209a8d0530b3ad9704107",
+    "tests/internal_ir/test_phase1_import_success_cache_authorization.py": "2a56cc45f55f59f1755588a11d6a71e9107941c975180fd74aa6f55e08cac976",
+    "tests/internal_ir/test_phase1_batch_f_performance_remediation.py": "f26a629ff37f46b0150a3ffc7f37d74ee222a0b0cb1336bb56bf7c830f43d7d9",
+    "tests/internal_ir/test_phase1_batch_c_review_candidate.py": "260a475d6970ef662aabf3c1e4c5db8d114447f1d394314951c671e8c3758eb0",
+    "tests/internal_ir/test_phase1_exit_review_candidate.py": "2dcfabfeba9317b1f1d29b610d5e9d5d7468f85e4d8e1aa8391b0d5fc4a759ad",
+    "tests/internal_ir/test_deployment_bridge_stage2_entry_proposal.py": "c6a491154632463b55599980b305172f9c9f5d8ee7c41cf6d857af7a0a02ddbf",
+    "tests/internal_ir/test_performance_budget.py": "5bcf0422a324687727e35933b4f4e4af026db58b003ad65ec8debed7a80912ab"
+  }
+}

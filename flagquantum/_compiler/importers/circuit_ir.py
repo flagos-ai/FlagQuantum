@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import math
+import weakref
+from collections import OrderedDict
 from collections.abc import Mapping
+from threading import RLock
 from typing import Any
 
 import torch
@@ -76,12 +79,145 @@ _MEASUREMENT_METADATA = {
 _OBSERVABLE_METADATA = {"name", "pauli", "source"}
 _EMPTY_ATTRIBUTES = FrozenAttributes()
 _QUANTUM_OPERATION_NAMES = {opcode: f"quantum.{opcode}" for opcode in OPERATOR_SCHEMAS}
+_SUCCESS_CACHE_CAPACITY = 16
+_SUCCESS_CACHE_LOCK = RLock()
+_SUCCESS_CACHE: OrderedDict[
+    int,
+    tuple[
+        weakref.ReferenceType[CircuitIR],
+        tuple[object, ...],
+        ImportedCircuitProgram,
+    ],
+] = OrderedDict()
 
 
 class _UnsupportedImportError(Exception):
     def __init__(self, diagnostic: Diagnostic) -> None:
         self.diagnostic = diagnostic
         super().__init__(diagnostic.message)
+
+
+def _fingerprint_value(value: object) -> object:
+    """Build a lossless comparison value without JSON encoding or hashing."""
+
+    if isinstance(value, Parameter):
+        return ("parameter", value.name)
+    if isinstance(value, ParameterExpression):
+        return (
+            "expression",
+            value.op,
+            tuple(_fingerprint_value(item) for item in value.args),
+        )
+    if isinstance(value, torch.Tensor):
+        tensor = value.detach().cpu()
+        return (
+            "tensor",
+            id(value),
+            bool(value.requires_grad),
+            str(tensor.dtype),
+            tuple(tensor.shape),
+            _fingerprint_value(tensor.tolist()),
+        )
+    if isinstance(value, Mapping):
+        return (
+            "mapping",
+            tuple(
+                (str(key), _fingerprint_value(item))
+                for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+            ),
+        )
+    if isinstance(value, tuple):
+        return ("tuple", tuple(_fingerprint_value(item) for item in value))
+    if isinstance(value, list):
+        return ("list", tuple(_fingerprint_value(item) for item in value))
+    if isinstance(value, complex):
+        return ("complex", value.real, value.imag)
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return (type(value).__name__, value)
+    if hasattr(value, "tolist"):
+        return (
+            "array_like",
+            str(getattr(value, "dtype", "")),
+            tuple(getattr(value, "shape", ())),
+            _fingerprint_value(value.tolist()),
+        )
+    return (type(value), id(value), repr(value))
+
+
+def _source_fingerprint(program: CircuitIR) -> tuple[object, ...]:
+    return (
+        program.version,
+        program.n_wires,
+        program.dtype,
+        tuple(program.shape),
+        tuple(
+            (
+                instruction.name,
+                tuple(instruction.wires),
+                _fingerprint_value(instruction.params),
+                _fingerprint_value(instruction.matrix),
+                _fingerprint_value(instruction.metadata),
+            )
+            for instruction in program.instructions
+        ),
+        tuple(
+            (
+                observable.name,
+                tuple(observable.wires),
+                _fingerprint_value(observable.coefficient),
+                _fingerprint_value(observable.metadata),
+            )
+            for observable in program.observables
+        ),
+        tuple(
+            (
+                measurement.kind,
+                tuple(measurement.wires),
+                measurement.shots,
+                _fingerprint_value(measurement.metadata),
+            )
+            for measurement in program.measurements
+        ),
+        _fingerprint_value(program.metadata),
+    )
+
+
+def _cached_success(
+    program: CircuitIR,
+    source_fingerprint: tuple[object, ...],
+) -> ImportedCircuitProgram | None:
+    key = id(program)
+    with _SUCCESS_CACHE_LOCK:
+        cached = _SUCCESS_CACHE.get(key)
+        if cached is None:
+            return None
+        source_ref, cached_fingerprint, imported = cached
+        if source_ref() is not program or cached_fingerprint != source_fingerprint:
+            del _SUCCESS_CACHE[key]
+            return None
+        _SUCCESS_CACHE.move_to_end(key)
+        return imported
+
+
+def _remember_success(
+    program: CircuitIR,
+    source_fingerprint: tuple[object, ...],
+    imported: ImportedCircuitProgram,
+) -> None:
+    key = id(program)
+
+    def discard(source_ref: weakref.ReferenceType[CircuitIR]) -> None:
+        with _SUCCESS_CACHE_LOCK:
+            cached = _SUCCESS_CACHE.get(key)
+            if cached is not None and cached[0] is source_ref:
+                del _SUCCESS_CACHE[key]
+
+    source_ref = weakref.ref(program, discard)
+    with _SUCCESS_CACHE_LOCK:
+        _SUCCESS_CACHE[key] = (source_ref, source_fingerprint, imported)
+        _SUCCESS_CACHE.move_to_end(key)
+        while len(_SUCCESS_CACHE) > _SUCCESS_CACHE_CAPACITY:
+            _SUCCESS_CACHE.popitem(last=False)
 
 
 def _source_location(index: int) -> DiagnosticLocation:
@@ -461,6 +597,10 @@ def import_circuit_ir(program: object) -> CircuitImportResult:
                 "CircuitIR has unclassified top-level metadata",
                 notes=(f"unclassified keys: {', '.join(unknown_circuit_metadata)}",),
             )
+        source_fingerprint = _source_fingerprint(program)
+        cached = _cached_success(program, source_fingerprint)
+        if cached is not None:
+            return CircuitImportResult(ImportStatus.SUPPORTED_EXACT, cached)
         # Compute the canonical source identity before allocating the internal
         # module so serialization temporaries do not overlap its retained graph.
         source_content_hash = program.content_hash
@@ -552,6 +692,7 @@ def import_circuit_ir(program: object) -> CircuitImportResult:
             tuple(instruction_semantics),
             BindingTable(tuple(binding_entries)),
         )
+        _remember_success(program, source_fingerprint, imported)
         return CircuitImportResult(ImportStatus.SUPPORTED_EXACT, imported)
     except _UnsupportedImportError as exc:
         return CircuitImportResult(
