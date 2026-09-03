@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-batch-d-exit-batch-e",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-BATCH-D-EXIT-BATCH-E",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-batch-d-exit-batch-e-review-candidate.json",
+    "sha256": "8f9b0cb1392957e4b04074fdc111654ef73e08e3d81cb983be4f01a39b825706"
+  },
+  "decisions": {
+    "batch_d_owner_accepted": true,
+    "batch_d_exit_authorized": true,
+    "batch_e_entry_authorized": true,
+    "batch_e_performance_baseline_authorized": true,
+    "batch_e_performance_budget_approved": false,
+    "batch_f_through_h_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "credentials_or_secrets_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "new_emitter_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "allowed_scope": {
+    "feature": "private provider-neutral conformance suite",
+    "root": "flagquantum/_compiler",
+    "target_families": [
+      "local_runtime_plan",
+      "synthetic_qasm_text",
+      "synthetic_non_qasm_artifact"
+    ],
+    "public_exports": [],
+    "anonymous_offline_fixtures_only": true,
+    "provider_extensions_namespaced_non_semantic": true,
+    "real_provider_calls_allowed": false,
+    "credentials_allowed": false,
+    "default_path_enabled": false
+  },
+  "pause_after": "Batch E implementation and independent performance-budget review"
+}

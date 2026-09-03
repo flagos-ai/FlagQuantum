@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "name": "anonymous_local_runtime_plan",
+      "artifact_fixture": "anonymous_runtime_plan",
+      "family": "local_runtime_plan",
+      "driver": "local_sync",
+      "extension_namespace": "org.flagquantum.fixture",
+      "expected_conformance_identity": "151963cceb98cbe8d1ccbee55659de0069202e634e352e3358ed2cc73a1fc8c2"
+    },
+    {
+      "name": "anonymous_synthetic_qasm",
+      "artifact_fixture": "anonymous_openqasm2",
+      "family": "synthetic_qasm_text",
+      "driver": "offline_async_mock",
+      "extension_namespace": "org.flagquantum.fixture",
+      "expected_conformance_identity": "c8c9c545a929f7d8424fe65fad8c5c70071d187ddcbd52e70cf011c5c59761b9"
+    },
+    {
+      "name": "anonymous_synthetic_non_qasm",
+      "artifact_fixture": "anonymous_qcis",
+      "family": "synthetic_non_qasm_artifact",
+      "driver": "offline_async_mock",
+      "extension_namespace": "org.flagquantum.fixture",
+      "expected_conformance_identity": "2f66a497549cf148995c07532ceb7d8c497cabc570192fdd86c1b23bd589a20e"
+    }
+  ]
+}

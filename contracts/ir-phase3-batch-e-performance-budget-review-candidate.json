@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase3-batch-e-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/ir-phase3-batch-d-exit-batch-e-authorization.json",
+    "sha256": "570743919c9be020094fe9dbb3adab814978447d8e906a2d974957a4231d3189"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/provider_conformance.py": "a2a25478f2ed0a2300f6d56582bf05a5795e8920aa85aded901b2fefa6fa14c1",
+    "tests/fixtures/internal_ir/phase3_batch_e_conformance.json": "0a4e3c88b0277719355bb6050e954686f0d39d68b2389d48bf49dcaa462fe4eb",
+    "tests/internal_ir/test_phase3_batch_e_authorization.py": "3e3681a737d03d5256d66231b3865c8cafafe154b8593d046c3f227303ed9eae",
+    "tests/internal_ir/test_phase3_provider_conformance.py": "0157d80036689d55d69e1c40fb390a6076f80e10ede51d0c87ebe937d56738f9",
+    "benchmarks/internal/ir_phase3_batch_e_baseline.py": "a7a70f1aafdc4a2b65b22b2001866e0badf1fc650018e6cb83973061e5339ef9",
+    "contracts/ir-phase3-batch-e-performance-baseline.json": "de66aedf85ca604bbe4da3abdd9ad454c49871727d4d0c8bb73ad518acbf4e4e",
+    "tests/fixtures/internal_ir/phase3_batch_e_performance_budget_candidate.json": "9462e12345a01d91a9c2caf4cd7113d0926716e258ff0dc9b1d0edb39ae9c8b6",
+    "tests/internal_ir/test_phase3_batch_e_performance_candidate.py": "05dfec42761d44dc77d1322407e431412846ddae24a8b9cce032dec8b137be82",
+    "tests/internal_ir/test_phase3_batch_e_performance_review_candidate.py": "7af8f77b64f4e3678c7a0d570672303165bb8a44788cb4e4f77ebb1017291f22",
+    "docs/development/IR_PHASE_3_BATCH_E_IMPLEMENTATION_REVIEW.md": "707ccf7011e87abf942603097de62a9addde1064984460ff94d34a97eff1698f",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "identical_three_family_suite_passed": true,
+    "complete_source_to_result_identity_continuity_passed": true,
+    "family_profile_adapter_mismatch_fail_closed": true,
+    "namespaced_immutable_nonsemantic_extensions_passed": true,
+    "reserved_execution_sensitive_and_secret_data_rejected": true,
+    "deterministic_anonymous_golden_identities_passed": true,
+    "provider_sdk_network_and_real_execution_identity_excluded": true,
+    "public_and_default_path_unchanged": true,
+    "performance_baseline_observed": true,
+    "public_sla_claimed": false
+  },
+  "proposed_decisions": {
+    "batch_e_performance_budget_approved": true,
+    "batch_e_machine_gate_authorized": true,
+    "batch_e_exit_authorized": false,
+    "batch_f_shadow_harness_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE3-BATCH-E-PERFORMANCE-BUDGET",
+  "pause_after": "approved Batch E budget validation and Batch E exit review"
+}
