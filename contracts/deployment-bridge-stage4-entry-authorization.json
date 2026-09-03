@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "authorization": "deployment-bridge-stage4-entry",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE4-ENTRY",
+  "review_candidate": {
+    "path": "contracts/deployment-bridge-stage4-entry-review-candidate.json",
+    "sha256": "0b79b0e8132824a418ca45f3a04a00a6d41545ae9bd756c8f7259b6049b2e65e"
+  },
+  "proposal": {
+    "path": "contracts/deployment-bridge-stage4-entry-proposal.json",
+    "sha256": "a6bb79bf9d842ab9c7fd1255cdd88aa2ac0fa63986dd78a35a0d4e9ec6ae4172"
+  },
+  "decisions": {
+    "stage4_private_offline_rehearsal_authorized": true,
+    "stage4_anonymous_synthetic_fixtures_authorized": true,
+    "stage4_independent_performance_baseline_authorized": true,
+    "stage4_performance_budget_approved": false,
+    "rehearsal_action_side_effect_authorized": false,
+    "provider_sandbox_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "execution_or_submission_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "allowed_scope": {
+    "engine": "flagquantum/_compiler/deployment_rehearsal.py",
+    "explicit_offline_invocation_only": true,
+    "one_anonymous_synthetic_scenario_per_invocation": true,
+    "simulated_enum_actions_only": true,
+    "maximum_outcome": "offline_rehearsal_passed",
+    "independent_performance_baseline_required": true,
+    "existing_readiness_deployment_provider_runtime_and_shadow_sources_mutable": false
+  },
+  "pause_after": "Stage 4 private offline rehearsal, independent baseline, and performance-budget review"
+}
