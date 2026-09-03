@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "status": "candidate_awaiting_owner_approval",
+  "claim_scope": "Deployment Bridge Stage 2 private CPU regression candidate; not a public SLA",
+  "approval": {
+    "approved": false,
+    "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE2-PERFORMANCE-BUDGET"
+  },
+  "derivation": "Rounded envelopes above the 2026-09-03 seven-sample Docker baseline",
+  "budgets": [
+    {"operation_count": 10, "dry_run_p95_ms_max": 5.0, "dry_run_peak_host_memory_bytes_max": 262144},
+    {"operation_count": 100, "dry_run_p95_ms_max": 25.0, "dry_run_peak_host_memory_bytes_max": 1048576},
+    {"operation_count": 1000, "dry_run_p95_ms_max": 100.0, "dry_run_peak_host_memory_bytes_max": 4194304},
+    {"operation_count": 10000, "dry_run_p95_ms_max": 1000.0, "dry_run_peak_host_memory_bytes_max": 33554432}
+  ]
+}

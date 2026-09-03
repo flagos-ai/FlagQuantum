@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "contains_real_provider_backend_job_or_credentials": false,
+  "positive_cases": [
+    {"name": "anonymous_openqasm2", "format": "openqasm_2", "expected_evidence_identity": "7cee3469626e8e501d2076420638ac11185fa902aa2e92f7704057f13bea3a17", "expected_artifact_identity": "1098bc5ab98fe6915981b2cbf68e6294e79476fb585d85c78268d8007609e610"},
+    {"name": "anonymous_openqasm3", "format": "openqasm_3_static", "expected_evidence_identity": "185b55ec082a47467056ba68f670f03c02a81603a3066d7824ded92cabbe0ada", "expected_artifact_identity": "c2e1d8e817bb309c0d8d3813f52ac6160274d5519f419d7ee3cf4c7dc64e1e7f"},
+    {"name": "anonymous_qcis", "format": "qcis_1", "expected_evidence_identity": "518b750a150185405c94acbc25b9687ca9f53f4ae63024079eccb6d322dfd461", "expected_artifact_identity": "ce7db0c70ce9ca44b1a2be3fd977b07b64ca109f736296ac099d9221d225e568"}
+  ]
+}
