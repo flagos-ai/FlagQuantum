@@ -24,12 +24,18 @@ verdict 与自由 metrics 也未统一。数值结果、持久执行记录和发
 4. backend-native result/metrics 可保留在域内；跨 Provider 边界必须无损投影核心字段，扩展值
    进入受控 namespace，不能覆盖核心字段。
 
+Evidence envelope 采用 ARCH-003 的两条正交状态轴和 `basic < observable < certification`
+等级。每个关键事实都要携带值、字段暴露状态、来源和适用范围；support 状态只描述能力，
+不能充当字段来源。声明等级由最弱的必需证据决定，缺失字段形成 blocker 而不是推测值。
+
 ## 禁止事项
 
 - 不创建第四个公共 result，不把 counts 直接包装为“统一结果”而遗漏 wire/bit order。
 - 不把自由 metadata 当作 Evidence，不让 native 字段覆盖 failure、fallback 或 identity。
 - 不以 CPU distributed、Mock、replicated execution 或接口测试形成 scalability/QPU 声明。
 - 不通过修改快照承诺新的 tensor 序列化或改变稳定异常。
+- 不将 `not_exposed`/`unknown` 解释为“未发生”，尤其不得借此宣称不存在 CPU、host 或
+  backend fallback；已知 fallback 必须进入结果和 evidence。
 
 ## 兼容性
 
@@ -52,6 +58,8 @@ verdict 与自由 metrics 也未统一。数值结果、持久执行记录和发
 - success/failure/fallback 均产生 identity 完整的 record；
 - local simulation 与 remote fake 通过同一 result/evidence conformance；
 - distributed claim 缺任一规定字段或真实 evidence 时 fail closed。
+- basic/observable/certification 升级及 observed/declared/not_exposed/unknown/not_applicable
+  字段组合通过 schema 与负向 fixture；claim level 不得高于 evidence level。
 
 ## 未决问题
 

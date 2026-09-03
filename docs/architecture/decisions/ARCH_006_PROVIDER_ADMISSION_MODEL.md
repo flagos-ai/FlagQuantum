@@ -29,12 +29,20 @@ Simulation Execution Provider 组合 Simulation Engine 与一个 Platform Provid
 Service Provider 不依赖模拟算法。ExtensionRegistry 保持唯一扩展注册与生命周期权威，不再建
 第二 registry。
 
+Agent Services 是 **Agent-facing deterministic application services**：它向 Agent/协议适配层
+提供确定性的 capabilities、validate、plan、preflight、execute/explain 候选操作。LLM 与
+Reasoning Layer 位于外部 Compute Service，可替换、可关闭，也可以组合这些操作，但不得绕过
+artifact/schema 校验、capability fail-closed、既定 plan identity 或 result/evidence 组装。自然
+语言解释不覆盖结构化事实。
+
 ## 禁止事项
 
 - 不把两个层级合并成带大量 optional 方法的通用 Provider。
 - 不让 vendor object、live job、credentials 或不可序列化 stream/event 越过 adapter。
 - 不因 provider 被发现、contract conformance 通过或 A800 开发材料而宣称国产卡/QPU/生产能力。
 - 不允许 Provider 自行重写 request policy、吞掉未知状态或静默 backend/CPU fallback。
+- 不把 LLM、MCP、租户状态或长期任务控制面放入主仓库 Agent Services，也不允许外部
+  reasoning 直接调用数值实现绕过确定性服务。
 
 ## 兼容性
 
