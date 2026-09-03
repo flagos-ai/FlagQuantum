@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "validation": "deployment-bridge-stage6-performance-budget",
+  "status": "passed",
+  "validated_at": "2026-09-03",
+  "claim_scope": "Deployment Bridge Stage 6 private CPU budget; not a public SLA",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage6-performance-budget-authorization.json",
+    "sha256": "069ed97214f83e81ea6234675031e5687d785a0260f90595ad68387e20b5fd33"
+  },
+  "budget": {
+    "path": "tests/fixtures/internal_ir/deployment_bridge_stage6_performance_budget_candidate.json",
+    "sha256": "784f65431a43e7fd0e509f6c8158541a3df8a0d640c6d4f400622c9100f2a466"
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "container_image": "flagquantum-dev:pr-check"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "pipeline": "anonymous offline successful scripted connector"
+  },
+  "cases": [
+    {
+      "connector_count": 10,
+      "scripted_connector_p95_ms": 3.106296,
+      "scripted_connector_peak_host_memory_bytes": 10707,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "connector_count": 100,
+      "scripted_connector_p95_ms": 4.808658,
+      "scripted_connector_peak_host_memory_bytes": 10707,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "connector_count": 1000,
+      "scripted_connector_p95_ms": 48.310846,
+      "scripted_connector_peak_host_memory_bytes": 10739,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    },
+    {
+      "connector_count": 10000,
+      "scripted_connector_p95_ms": 612.402021,
+      "scripted_connector_peak_host_memory_bytes": 10739,
+      "deterministic_evidence_identity": true,
+      "latency_passed": true,
+      "memory_passed": true,
+      "passed": true
+    }
+  ],
+  "decisions": {
+    "stage6_performance_budget_passed": true,
+    "stage6_machine_gate_active": true,
+    "stage6_exit_authorized": false,
+    "stage7_proposal_authorized": false,
+    "public_sla_claimed": false
+  }
+}
