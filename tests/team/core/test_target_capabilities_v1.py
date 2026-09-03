@@ -293,6 +293,11 @@ def test_rejects_unknown_enum_name_non_json_and_conflicting_mandatory_predicates
         )
 
 
+def test_scope_rejects_a_string_instead_of_a_device_id_sequence() -> None:
+    with pytest.raises(CapabilityContractError, match="array or tuple"):
+        CapabilityScope(device_ids="cpu:0")  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize(
     ("operator", "available", "required", "executable"),
     [
@@ -354,7 +359,7 @@ def test_missing_not_exposed_stale_scope_and_identity_fail_closed() -> None:
     result = match_target_capabilities(
         requirements, _snapshot(not_exposed), evaluated_at=_NOW
     )
-    assert result.blockers[0].code == "exposure_not_accepted"
+    assert result.blockers[0].code == "fact_not_exposed"
 
     result = match_target_capabilities(
         requirements,
@@ -368,6 +373,77 @@ def test_missing_not_exposed_stale_scope_and_identity_fail_closed() -> None:
         "target_identity_mismatch",
         "scope_mismatch",
     }
+
+
+@pytest.mark.parametrize(
+    ("exposure", "expected_code"),
+    [
+        (FactExposure.UNKNOWN, "exposure_unknown"),
+        (FactExposure.NOT_EXPOSED, "fact_not_exposed"),
+    ],
+)
+def test_unknown_and_not_exposed_fail_even_when_explicitly_accepted(
+    exposure: FactExposure, expected_code: str
+) -> None:
+    requirement = _requirement(
+        "target.class",
+        "local_runtime",
+        operator=ComparisonOperator.EQUALS,
+        accepted_exposures=(exposure,),
+    )
+    result = match_target_capabilities(
+        RequirementSet(requirements=(requirement,)),
+        _snapshot(_fact("target.class", "local_runtime", exposure=exposure)),
+        evaluated_at=_NOW,
+    )
+
+    assert result.executable is False
+    assert [item.code for item in result.blockers] == [expected_code]
+
+
+def test_snapshot_blockers_fail_closed_and_are_deterministic() -> None:
+    blocker_a = CapabilityBlocker("z_blocker", "second")
+    blocker_b = CapabilityBlocker("a_blocker", "first")
+    snapshot = replace(
+        _snapshot(),
+        blockers=(blocker_a, blocker_b),
+        snapshot_id="",
+    )
+
+    result = match_target_capabilities(
+        RequirementSet(requirements=(_requirement(),)),
+        snapshot,
+        evaluated_at=_NOW,
+    )
+
+    assert result.executable is False
+    assert [item.code for item in result.blockers] == ["a_blocker", "z_blocker"]
+
+
+def test_verified_fact_cannot_carry_an_unclassified_blocker() -> None:
+    with pytest.raises(CapabilityContractError, match="verified facts"):
+        CapabilityFact(
+            name="device.count",
+            value=4,
+            support_status=SupportStatus.VERIFIED,
+            fact_exposure=FactExposure.OBSERVED,
+            source=FactSource("probe", "probe-1"),
+            blockers=(CapabilityBlocker("partial", "unclassified limitation"),),
+        )
+
+
+def test_equivalent_timezone_offsets_have_one_canonical_snapshot_identity() -> None:
+    utc_snapshot = _snapshot()
+    offset_snapshot = replace(
+        utc_snapshot,
+        captured_at="2026-09-03T08:00:00+08:00",
+        valid_until="2026-09-04T08:00:00+08:00",
+        snapshot_id="",
+    )
+
+    assert offset_snapshot.captured_at == "2026-09-03T00:00:00Z"
+    assert offset_snapshot.valid_until == "2026-09-04T00:00:00Z"
+    assert offset_snapshot.snapshot_id == utc_snapshot.snapshot_id
 
 
 def test_evidence_threshold_is_strongest_mandatory_and_weak_evidence_fails() -> None:
@@ -483,6 +559,26 @@ def test_two_fake_producers_conform_without_consumer_changes() -> None:
             evaluated_at=_NOW,
         )
         assert result.executable is True
+
+
+def test_core_covers_is_conservative_for_structured_artifact_profiles() -> None:
+    available = [{"format": "qir", "version": "1.0", "vendor": "example"}]
+    required_subset = [{"format": "qir", "version": "1.0"}]
+    requirement = _requirement(
+        "artifacts.profiles",
+        required_subset,
+        operator=ComparisonOperator.COVERS,
+    )
+    snapshot = _snapshot(_fact("artifacts.profiles", available))
+
+    result = match_target_capabilities(
+        RequirementSet(requirements=(requirement,)),
+        snapshot,
+        evaluated_at=_NOW,
+    )
+
+    assert result.executable is False
+    assert result.blockers[0].code == "value_mismatch"
 
 
 def test_unknown_requirement_extension_handler_fails_closed_but_snapshot_round_trips() -> (

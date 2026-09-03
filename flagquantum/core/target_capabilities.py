@@ -142,6 +142,8 @@ class MatchBlockerCode(str, Enum):
     FACT_UNKNOWN = "fact_unknown"
     FACT_UNMEASURED = "fact_unmeasured"
     FACT_UNSUPPORTED = "fact_unsupported"
+    EXPOSURE_UNKNOWN = "exposure_unknown"
+    FACT_NOT_EXPOSED = "fact_not_exposed"
     EXPOSURE_NOT_ACCEPTED = "exposure_not_accepted"
     EXPOSURE_REQUIRES_OBSERVATION = "exposure_requires_observation"
     DECLARATION_NOT_AUTHORITATIVE = "declaration_not_authoritative"
@@ -273,6 +275,12 @@ def _parse_timestamp(value: str, *, field_name: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _canonical_timestamp(value: str, *, field_name: str) -> str:
+    parsed = _parse_timestamp(value, field_name=field_name)
+    timespec = "microseconds" if parsed.microsecond else "seconds"
+    return parsed.isoformat(timespec=timespec).replace("+00:00", "Z")
+
+
 def _validate_capability_value(
     name: str, value: Any, operator: ComparisonOperator
 ) -> Any:
@@ -350,6 +358,12 @@ class CapabilityScope:
 
     def __post_init__(self) -> None:
         if self.device_ids is not None:
+            if isinstance(self.device_ids, (str, bytes)) or not isinstance(
+                self.device_ids, (list, tuple)
+            ):
+                raise CapabilityContractError(
+                    "scope.device_ids must be an array or tuple of strings"
+                )
             normalized = tuple(self.device_ids)
             if any(not isinstance(item, str) or not item for item in normalized):
                 raise CapabilityContractError(
@@ -562,6 +576,8 @@ class CapabilityFact:
             raise CapabilityContractError(
                 "non-verified facts require at least one blocker"
             )
+        if self.support_status is SupportStatus.VERIFIED and blockers:
+            raise CapabilityContractError("verified facts must not contain blockers")
         if self.fact_exposure is FactExposure.NOT_APPLICABLE and not blockers:
             raise CapabilityContractError("not_applicable facts require a blocker")
         object.__setattr__(self, "blockers", tuple(sorted(blockers, key=_blocker_key)))
@@ -872,8 +888,14 @@ class TargetCapabilitySnapshot:
             raise CapabilityContractError("target_identity must be a TargetIdentity")
         if not isinstance(self.scope, CapabilityScope):
             raise CapabilityContractError("scope must be a CapabilityScope")
-        captured = _parse_timestamp(self.captured_at, field_name="captured_at")
-        valid_until = _parse_timestamp(self.valid_until, field_name="valid_until")
+        captured_at = _canonical_timestamp(self.captured_at, field_name="captured_at")
+        valid_until_at = _canonical_timestamp(
+            self.valid_until, field_name="valid_until"
+        )
+        object.__setattr__(self, "captured_at", captured_at)
+        object.__setattr__(self, "valid_until", valid_until_at)
+        captured = _parse_timestamp(captured_at, field_name="captured_at")
+        valid_until = _parse_timestamp(valid_until_at, field_name="valid_until")
         if valid_until <= captured:
             raise CapabilityContractError("valid_until must be later than captured_at")
         facts = tuple(self.facts)
@@ -1011,6 +1033,14 @@ def _compare_values(
 
 
 def _covers(available: Any, required: Any) -> bool:
+    """Conservatively cover JSON structures without Compiler semantics.
+
+    Object keys recurse, while array elements require exact canonical equality.
+    In particular, this does not claim the richer gate parameter-domain or
+    artifact-profile compatibility owned by ``_compiler.TargetCapabilities``;
+    that behavior remains deferred to its loss-accounted adapter.
+    """
+
     if isinstance(required, _FrozenJSONObject):
         if not isinstance(available, _FrozenJSONObject):
             return False

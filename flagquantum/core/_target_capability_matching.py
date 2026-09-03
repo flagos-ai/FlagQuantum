@@ -98,6 +98,7 @@ def match_target_capabilities(
                 "RequirementSet contains extensions without a registered v1 matcher",
             )
         )
+    blockers.extend(snapshot.blockers)
 
     facts = {fact.name: fact for fact in snapshot.facts}
     evidence = {item.evidence_id: item for item in snapshot.evidence_refs}
@@ -161,6 +162,18 @@ def _match_requirement(
         return _match_blocker(
             status_codes[fact.support_status],
             f"fact support status is {fact.support_status.value}",
+            name,
+        )
+    if fact.fact_exposure is FactExposure.UNKNOWN:
+        return _match_blocker(
+            MatchBlockerCode.EXPOSURE_UNKNOWN,
+            "unknown fact exposure cannot satisfy a mandatory requirement",
+            name,
+        )
+    if fact.fact_exposure is FactExposure.NOT_EXPOSED:
+        return _match_blocker(
+            MatchBlockerCode.FACT_NOT_EXPOSED,
+            "a value not exposed by its authority cannot satisfy a mandatory requirement",
             name,
         )
     if fact.fact_exposure not in requirement.accepted_exposures:
