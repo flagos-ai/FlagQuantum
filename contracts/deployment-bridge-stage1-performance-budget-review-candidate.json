@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "review": "deployment-bridge-stage1-performance-budget",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization": {
+    "path": "contracts/deployment-bridge-stage1-entry-authorization.json",
+    "sha256": "e12b928a89573fcd5c96a3f9615e50ef163232a6339523ef18a50fe15fc430ba"
+  },
+  "reviewed_artifacts": {
+    "flagquantum/_compiler/deployment_compatibility.py": "371a24fed9499efa30174e3984d8672f93500ed4cbf469583a83b33d172500cf",
+    "tests/fixtures/internal_ir/deployment_bridge_stage1.json": "41de1140163e59ba84db0f6f58ff33299e65c467f4adf58cbb6af0a8185895f1",
+    "tests/internal_ir/test_deployment_bridge_stage1_authorization.py": "9a9cad2f36adc94c21669791d15f42f209e0aa3d613b58d7e02ac5366911cf0e",
+    "tests/internal_ir/test_deployment_bridge_stage1.py": "c4eb34023b21f6b3c2690a9122c788bae0fc22ba25f02db405fbf5de65e1a34b",
+    "benchmarks/internal/deployment_bridge_stage1_baseline.py": "2e9fda149ee9b3705426c73da21d2a69f5663282a57834939879103d9dded553",
+    "contracts/deployment-bridge-stage1-performance-baseline.json": "b88db26370185ad5fca92039733a0698a238f0b73b6313b5771ab0b5e1a5c8f0",
+    "tests/fixtures/internal_ir/deployment_bridge_stage1_performance_budget_candidate.json": "3c047e84dba8d568e9820acc504cb408d94834fd0e6504434a933c657363e201",
+    "tests/internal_ir/test_deployment_bridge_stage1_performance_candidate.py": "39579aa9f5b2cb50eeae5560fd3ee72b563622eaaba43471d3cd43fbb242718a",
+    "tests/internal_ir/test_deployment_bridge_stage1_performance_review_candidate.py": "6005735addc701a3f0c2e5ca90ef06265a37dbb17c46fadc7314ee486981dd4e",
+    "docs/development/DEPLOYMENT_BRIDGE_STAGE_1_IMPLEMENTATION_REVIEW.md": "480f12dce18cfffb0698a776fca2b9ee7133df7750d15322de551a45fc7cfc2b",
+    "flagquantum/deployment/cloud.py": "eddbd01cd45f98660b7a44c66a6f78c7f9decd88b7be9adc8448e5fcab25bc8b",
+    "flagquantum/deployment/routing_evidence.py": "9ecf515877e8ba44404b8d8c80af6435c4f638cceb557f113492720321a28ec1",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "evidence": {
+    "three_supported_source_profiles_passed": true,
+    "legacy_validation_and_closed_taxonomy_passed": true,
+    "immutable_non_mutating_report_passed": true,
+    "privacy_safe_bounded_evidence_passed": true,
+    "malformed_and_sensitive_inputs_fail_closed": true,
+    "semantic_and_nonsemantic_identity_rules_passed": true,
+    "deterministic_anonymous_golden_identities_across_hash_seeds_passed": true,
+    "no_conversion_execution_submission_or_activation_passed": true,
+    "provider_network_credential_and_telemetry_access_excluded": true,
+    "existing_deployment_sources_unchanged": true,
+    "public_and_default_path_unchanged": true,
+    "performance_baseline_observed": true,
+    "public_sla_claimed": false
+  },
+  "proposed_decisions": {
+    "stage1_performance_budget_approved": true,
+    "stage1_machine_gate_authorized": true,
+    "stage1_exit_authorized": false,
+    "package_to_artifact_conversion_authorized": false,
+    "target_ir_or_artifact_creation_authorized": false,
+    "execution_or_submission_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "telemetry_export_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "deployment_migration_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE1-PERFORMANCE-BUDGET",
+  "pause_after": "approved Stage 1 budget validation and Stage 1 exit review"
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "status": "observed_baseline_not_budget",
+  "recorded_at": "2026-09-03",
+  "claim_scope": "Deployment Bridge Stage 1 private CPU baseline; not a budget or SLA",
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "container_image": "flagquantum-dev:pr-check"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "pipeline": "explicit offline eligible QASM2 package inspection"
+  },
+  "cases": [
+    {
+      "inspection_count": 10,
+      "eligible_inspection_p95_ms": 0.657429,
+      "eligible_inspection_peak_host_memory_bytes": 36574,
+      "deterministic_report_identity": true
+    },
+    {
+      "inspection_count": 100,
+      "eligible_inspection_p95_ms": 6.286408,
+      "eligible_inspection_peak_host_memory_bytes": 152286,
+      "deterministic_report_identity": true
+    },
+    {
+      "inspection_count": 1000,
+      "eligible_inspection_p95_ms": 60.225625,
+      "eligible_inspection_peak_host_memory_bytes": 228558,
+      "deterministic_report_identity": true
+    },
+    {
+      "inspection_count": 10000,
+      "eligible_inspection_p95_ms": 672.844309,
+      "eligible_inspection_peak_host_memory_bytes": 254398,
+      "deterministic_report_identity": true
+    }
+  ]
+}

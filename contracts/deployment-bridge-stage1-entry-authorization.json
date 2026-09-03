@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "authorization": "deployment-bridge-stage1-entry",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE1-ENTRY",
+  "review_candidate": {
+    "path": "contracts/deployment-bridge-stage1-entry-review-candidate.json",
+    "sha256": "7345d420ff22c1b554ba32b3c45eca7c2a4d141cfc7383c09a09c5f250286cbd"
+  },
+  "proposal": {
+    "path": "contracts/deployment-bridge-stage1-entry-proposal.json",
+    "sha256": "c97dd05b278f9ff0c4646ff6d8abe6957f60e96d1b4ca4c596a1e9799fffd9bd"
+  },
+  "decisions": {
+    "stage1_implementation_authorized": true,
+    "stage1_performance_baseline_authorized": true,
+    "stage1_performance_budget_approved": false,
+    "package_to_artifact_conversion_authorized": false,
+    "target_ir_or_artifact_creation_authorized": false,
+    "execution_or_submission_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_access_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "telemetry_export_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "deployment_migration_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "allowed_scope": {
+    "module": "flagquantum/_compiler/deployment_compatibility.py",
+    "explicit_offline_invocation_only": true,
+    "immutable_report_only": true,
+    "anonymous_fixtures_only": true,
+    "bounded_deterministic_privacy_safe_evidence": true,
+    "independent_performance_baseline_required": true,
+    "existing_deployment_and_provider_sources_mutable": false
+  },
+  "pause_after": "Stage 1 implementation, independent performance baseline, and budget review"
+}
