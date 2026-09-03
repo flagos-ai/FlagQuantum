@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-batch-g-exit-batch-h",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-BATCH-G-EXIT-BATCH-H",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-batch-g-exit-batch-h-review-candidate.json",
+    "sha256": "f3041a6a53fa8ffc78c94de03f82d273d9024a26c099def01099a59331168c54"
+  },
+  "decisions": {
+    "batch_g_owner_accepted": true,
+    "batch_g_exit_authorized": true,
+    "batch_h_entry_authorized": true,
+    "runtime_implementation_authorized": false,
+    "canary_activation_authorized": false,
+    "production_or_default_shadow_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false,
+    "phase4_entry_authorized": false
+  },
+  "allowed_scope": {
+    "feature": "aggregate Phase 3 exit review",
+    "roots": [
+      "docs/development",
+      "contracts",
+      "tests/internal_ir"
+    ],
+    "bind_batches_a_through_g": true,
+    "verify_three_target_family_boundary": true,
+    "verify_all_approved_performance_gates": true,
+    "record_residual_limitations_and_rollback": true,
+    "machine_readable_exit_candidate_required": true,
+    "offline_contract_tests_only": true
+  },
+  "pause_after": "Phase 3 aggregate exit candidate and independent owner decision"
+}
