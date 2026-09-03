@@ -55,6 +55,80 @@ FlagQuantum must become a flagship quantum AI framework with:
    proposal. Never update an API contract or snapshot merely to make tests
    pass. Follow `docs/development/PUBLIC_API_PROTECTION.md`.
 
+## Engineering Decision Principles
+
+These principles govern architecture and implementation decisions. They are
+subordinate to the repository's non-negotiable rules, Stable Core API
+protection policy, capability maturity policy, and scientific evidence
+requirements.
+
+1. **Do not create permanent compatibility debt.** Experimental and
+   unprotected implementations may be removed when obsolete. Protected public
+   APIs, serialized schemas, deployment packages, checkpoints, and released
+   provider contracts must follow the approved deprecation and migration
+   process. Compatibility adapters must have a named owner, documented scope,
+   removal condition, and target version.
+
+2. **Choose the smallest implementation that satisfies the current verified
+   requirement.** Do not add speculative configuration layers, generic
+   managers, or extension points without a concrete use case. Prefer a narrow
+   implementation that preserves established architectural boundaries.
+   Simplicity does not justify bypassing contracts, evidence, safety, or
+   capability checks.
+
+3. **Deliver the smallest complete vertical slice first.** Establish an
+   end-to-end path through input, validation, planning, execution, result,
+   failure, and evidence before expanding breadth. Preserve working local CPU
+   and single-device paths while distributed, accelerator, QPU, and service
+   capabilities mature independently.
+
+4. **Keep responsibilities and failure domains separate.** Each module has one
+   authoritative responsibility. Compiler transforms programs; Runtime
+   organizes execution; Simulation performs numerical computation; Providers
+   adapt external systems; Ecosystem adapters translate external objects;
+   Agent and MCP layers invoke deterministic services. Cross-layer shortcuts
+   are prohibited.
+
+5. **Keep core semantics infrastructure- and vendor-neutral.** Core domain
+   models, IR, capability vocabulary, and validation rules must not depend on
+   network frameworks, databases, MCP SDKs, vendor runtimes, QPU SDKs, or
+   accelerator-specific types. Infrastructure adapters should use mature,
+   maintained libraries when justified, but external library objects must stop
+   at their owning boundary.
+
+6. **Inspect existing capabilities before adding dependencies or
+   abstractions.** Before adding a dependency, package, contract, registry, or
+   compatibility layer, inspect the existing repository and current
+   dependencies for an authoritative implementation. Do not create a second
+   source of truth. A new production dependency requires a documented need,
+   ownership boundary, license and supply-chain review, replacement interface,
+   and exit plan.
+
+7. **Design stable boundaries for long-term evolution.** Program artifacts,
+   capability models, execution contracts, result evidence, and module
+   responsibilities must be designed for versioned evolution. Avoid temporary
+   cross-layer designs described as "replace later." Stable contracts may
+   change only through an explicit proposal, compatibility analysis, migration
+   path, conformance tests, and approval.
+
+8. **Reuse proven patterns without surrendering architectural ownership.**
+   Review mature frameworks, standards, and production systems before
+   inventing a new mechanism. Adopt validated principles and isolated,
+   replaceable components where appropriate, while preserving FlagQuantum-owned
+   semantics, contracts, evidence rules, product identity, and dependency
+   direction.
+
+9. **Fail closed and make degradation observable.** Unsupported capabilities
+   must fail at the earliest knowable stage. Approximation, precision downgrade,
+   backend substitution, and CPU fallback are permitted only when explicitly
+   authorized by policy and must be recorded in the plan, result, and evidence.
+   Silent fallback is forbidden.
+
+10. **Prove architecture through replacement and conformance.** A boundary is
+    not considered complete merely because an interface exists. It must be
+    demonstrated by replacing at least one implementation without modifying its
+    consumers and by passing the corresponding contract and conformance tests.
+
 ## Source Documents
 
 Before changing distributed runtime, planners, benchmark claims, or quantum AI
