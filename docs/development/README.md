@@ -5,6 +5,7 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 - [Testing manual](TESTING.md)
 - [Code organization](CODE_ORGANIZATION.md)
 - [Repository governance](REPOSITORY_GOVERNANCE.md)
+- [Multi-team linked-worktree development](MULTI_TEAM_DEVELOPMENT.md)
 - [Public API protection](PUBLIC_API_PROTECTION.md)
 - [Stable Core API change proposal](API_CHANGE_PROPOSAL_001_STABLE_CORE.md)
 - [Dependency policy](DEPENDENCY_POLICY.md)

@@ -142,6 +142,27 @@ training paths, read:
 
 These documents are binding design standards.
 
+## Multi-Team Worktrees
+
+Concurrent development sessions must use the branch and linked worktree assigned
+in `team-ownership.toml`. Never run two writing sessions in the same worktree,
+switch another team's worktree to a different branch, or commit unrelated
+changes left by another session.
+
+Before editing, identify the responsible team and run
+`python tools/check_team_scope.py --team <team> --files <paths...>`. A team may
+change its most-specific owned paths and shared test/documentation paths.
+Protected integration surfaces, including Stable Core contracts, public API,
+architecture policy, CI, dependency manifests, and ADRs, require a separate
+integration change before team implementations proceed. Do not create a private
+duplicate contract to bypass this rule.
+
+Cross-team work follows contract first, then implementation: the integration
+branch lands the versioned contract, contract fake, and conformance test; team
+branches synchronize that baseline and implement independently; the integration
+branch then runs replacement and cross-implementation tests. Follow
+`docs/development/MULTI_TEAM_DEVELOPMENT.md`.
+
 ## Architecture North Star
 
 The intended product architecture is:
