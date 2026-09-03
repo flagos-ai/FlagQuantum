@@ -6,6 +6,20 @@
 
 依据：Phase 0 架构盘点与 Phase 2 Core、Platform、Runtime 三方对账；接口存在不等于能力已实现
 
+## 上下文
+
+现有 Compiler、Platform、Runtime、Deployment 和 Extension 均有局部 capability 类型，
+但它们分别表达编译合法性、平台发现、运行策略或接入能力，不能互相冒充。
+Phase 2 需要在不改变现有公共行为的前提下，确立唯一、可验证的跨层能力语义。
+
+## 决策候选
+
+1. 将各团队现有类型直接合并为一个巨型 capability 对象；
+2. 保留多套平行契约，由 Runtime 临时解释；
+3. 建立 Core-owned 的需求—事实谱系，现有类型通过显式 adapter 接入。
+
+选择第 3 项：它能固定语义和所有权，同时避免将不稳定的未来领域提前冻结。
+
 ## 决策
 
 Core v1 只拥有以下唯一谱系，不再增加第四种跨层 capability 类型：
@@ -91,7 +105,7 @@ fact exposure 回答“值怎样获得或为何没有”：
 - `unknown`：来源不清、冲突或不能安全投影；
 - `not_applicable`：对当前 scope 不适用，必须有 blocker 说明依据。
 
-两轴不互相推导。`declared` 不自动成为 `verified`，`not_exposed` 不等于 false 或“未发生”，
+这是两条正交轴，不互相推导。`declared` 不自动成为 `verified`，`not_exposed` 不等于 false 或“未发生”，
 `unsupported/observed` 是合法负向观测。`verified/declared` 只在机器授权中该闭集名称被列入
 `authoritative_static_declaration_allowed` validation profile、requirement 的
 `accepted_exposures` 包含 `declared`，且引用材料、scope 和 freshness 全部满足时合法；一条未验证
@@ -104,8 +118,9 @@ fact exposure 回答“值怎样获得或为何没有”：
 requirements 和 claim gate 中的**最强等级**；候选可用证据上限取支撑这些事实的全部不可缺
 evidence references 中的**最弱等级**。只有可用上限不低于所需阈值，并且每项 fact 的 status、
 accepted exposure、scope、freshness 与值比较都通过时才满足。`verified` 只表示这一完整规则下的
-当前匹配成立，不等于 release certification。Mock、接口、环境变量和 CPU 分布式语义测试不能
-支撑真实 accelerator、QPU、生产或 scalability 声明。
+当前匹配成立，不等于 release certification。能力或发布声明的等级不得高于其
+可用证据上限，且不得隐瞒已经知道或观察到的 blocker、fallback 或退化路径。Mock、接口、
+环境变量和 CPU 分布式语义测试不能支撑真实 accelerator、QPU、生产或 scalability 声明。
 
 ## v1 闭集与精度裁决
 
@@ -161,7 +176,16 @@ handler、测试和退出/晋级条件。Requirement 中出现未知 namespace �
 fail closed；snapshot 的未知 extension 可为 round-trip 保留，但不能参与满足 Core 谓词或提升
 claim。稳定后通过新的 minor/major contract proposal 晋级，禁止预先把所有不稳定域塞进 v1。
 
-## 兼容、授权与迁移
+## 禁止事项
+
+- 禁止用 preference、provider 声明或默认 policy 推导 fallback 授权；
+- 禁止把未观测、不可见或过期的事实当作已验证能力；
+- 禁止修改历史契约、旧 fingerprint、默认选择或失败阶段来规避 adapter；
+- 禁止将未认证的硬件、QPU、多节点或性能结果写成已验证声明。
+
+## 兼容性
+
+### 授权与迁移
 
 现有 `_compiler.TargetCapabilities`、`compare_target_capabilities`、Runtime/Platform/Deployment/
 Extension capability 类型和稳定 API 全部保持不变。批准的下一步仅是内部 Core 值对象、strict
@@ -177,7 +201,7 @@ ARCH-006/008 认证路径；本决策不声明任何国产硬件已经验证。
 CPU Platform adapter → Runtime matching seam 与独立 CPU candidate → 第二 Platform/remote fake
 替换测试 → 逐域 proposal。每一步保持旧路径行为，直到获批迁移完成。
 
-## 验收
+## 验收测试
 
 - strict schema、canonical SHA-256、重复/冲突谓词、stale/scope/identity mismatch 负向测试；
 - mandatory/preference、五个 comparison operator、minimum evidence 与 unknown/unmeasured/
@@ -190,3 +214,9 @@ CPU Platform adapter → Runtime matching seam 与独立 CPU candidate → 第�
 
 机器授权与精确字段见 `contracts/target-capabilities-v1-implementation-authorization.json`；裁决说明
 见 `docs/development/VNEXT_PHASE2_CAPABILITIES_DECISION.md`。
+
+## 未决问题
+
+- 各延后域何时达到进入 Core 闭集的稳定性和替换性条件；
+- 第二个独立 producer 通过 conformance 后，哪些 adapter 可以进入默认运行路径；
+- claim gate 与外部测评、硬件认证之间的具体证据绑定规则。
