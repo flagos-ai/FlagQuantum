@@ -232,3 +232,25 @@ unsupported capability 和 identity mismatch 必须是可机器识别的 Core er
 
 截至本盘点提交，所有 provider 测试均为本地模拟、fake SDK object 或 mock transport；没有
 发起网络请求或付费任务，也没有真实 QPU 校准、队列、控制或 measurement evidence。
+
+## 验证记录
+
+验证使用仓库 `compose.dev.yaml` 与现有 `flagquantum-dev:local` Linux 开发镜像；该镜像按
+仓库声明仅用于 development，不能作为性能、硬件或 release evidence。
+
+- Execution Provider、deployment、target execution、extension protocol 定向集合：
+  `81 passed`；
+- 本轮新增特征测试：`6 passed`，并通过 Ruff check/format；
+- `python tools/ci_tier.py pr-runtime`：`168 passed, 31 skipped`；
+- `python tools/ci_tier.py pr-default`：`1811 passed, 10 skipped, 1 failed`。唯一失败为既有
+  Phase 1 internal import/verify latency budget；Linux aarch64 容器中 100、1,000 与 10,000
+  gate 的 p95 分别约为 7.97 ms、50.79 ms 与 661.09 ms，高于 1.5 ms、12.5 ms 与
+  120 ms 预算。growth、memory 和 deterministic identity 均通过；本轮没有修改该跨团队
+  性能基线或实现；
+- `tools/check_team_scope.py --team execution --base
+  codex/flagquantum-vnext-architecture`：通过；
+- `tools/check_architecture.py`：通过。
+
+Docker 复核消除了宿主 macOS 上缺少 `/proc`、sandbox 禁止 localhost socket、系统 Git
+不可用和 PyTorch 数值环境导致的伪失败。以上仍全部是 CPU/mock 开发证据，不扩大任何
+provider 成熟度或真实 QPU 声明。
