@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-exit",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-EXIT",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-exit-review-candidate.json",
+    "sha256": "c0560d2857ef27038c958b65d8d8222dc05f4c0e547447deec9948f5b2ea6cff"
+  },
+  "formal_signoffs": {
+    "api_owner": true,
+    "compiler_owner": true,
+    "runtime_owner": true,
+    "training_owner": true
+  },
+  "decisions": {
+    "phase3_technical_evidence_accepted": true,
+    "phase3_complete": true,
+    "phase4_authorized": false,
+    "public_ir_or_compiler_api_authorized": false,
+    "runtime_integration_authorized": false,
+    "production_or_default_shadow_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "real_backend_or_qpu_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "deployment_migration_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false
+  },
+  "accepted_scope": {
+    "profile": "private_target_executable_abi_v1alpha1",
+    "implementation_visibility": "private internal",
+    "public_exports": [],
+    "default_path_enabled": false,
+    "provider_or_remote_execution_enabled": false,
+    "canary_enabled": false,
+    "deployment_migrated": false,
+    "legacy_retired": false,
+    "rollback_requires_user_migration": false
+  },
+  "accepted_observations": {
+    "local_runtime_plan_conformance": true,
+    "synthetic_qasm_conformance": true,
+    "synthetic_non_qasm_conformance": true,
+    "real_provider_or_qpu_claimed": false,
+    "batch_a_through_f_private_performance_budgets_passed": true,
+    "public_performance_sla_authorized": false,
+    "phase1_pytest_plugin_instrumentation_jitter_recorded": true,
+    "approved_performance_budgets_relaxed": false,
+    "batch_g_is_proposal_only": true,
+    "deployment_compatibility_bridge_implemented": false
+  },
+  "next_state": "Phase 3 private technical architecture complete; pause before any Phase 4 proposal or any public, runtime, provider, canary, deployment-migration, default-path, or legacy-retirement work"
+}
