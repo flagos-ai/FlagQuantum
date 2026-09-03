@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "review": "ir-phase3-batch-c-exit-batch-d-entry",
+  "status": "ready_for_owner_approval",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "authorization_chain": {
+    "phase3_batch_c_entry": {
+      "path": "contracts/ir-phase3-batch-b-exit-batch-c-authorization.json",
+      "sha256": "3c6b9c121d42aaf82d67f413350bdc6306cccb0e9fdc5e0a6fcc7bba0775ef68"
+    },
+    "batch_c_performance_budget": {
+      "path": "contracts/ir-phase3-batch-c-performance-budget-authorization.json",
+      "sha256": "5a05ea3e0924b4d74fe4da971b0f9adfcd417705ca2cab2337e38cb0bc3cf788"
+    }
+  },
+  "reviewed_artifacts": {
+    "contracts/ir-phase3-batch-c-performance-budget-validation.json": "6ece71b01d4f77f1ae2af50d52e980271d352c29a69a7405a6a4872cb172bc22",
+    "flagquantum/_compiler/artifact_profiles.py": "f265694eaec95aa65f5fb16ed310f6542151ba906013248cae91e9c9ce28f4fb",
+    "flagquantum/_compiler/executable_artifact.py": "a1e6fffa26403e489a583557bdefebd0a090190c84b39e80c249f0e13761237e",
+    "tests/fixtures/internal_ir/phase3_batch_c_artifacts.json": "6a746cf3cf3dc4991cec238b28497b48e13c7650eff7debc1e84d910fa4b505c",
+    "tests/internal_ir/test_phase3_executable_artifact.py": "bf1829dcbab9df2895b2379472bb70a725db141f23e031eb521013f6e96b8714",
+    "benchmarks/internal/ir_phase3_batch_c_gate.py": "6718035ca8b3b8511a6d27953212fc21b226f23bceef30864f4ea816011add83",
+    "tests/internal_ir/test_phase3_batch_c_performance_authorization.py": "51e0edaad1ad684e060c980af9bf5a77f618e9ba585db4423b9c90e26ed89667",
+    "tests/internal_ir/test_phase3_batch_c_performance_budget.py": "5289669ab0454354c434f3bf37de61edd24deb061e10c8cb888b9a5e21bc6812",
+    "tests/internal_ir/test_phase3_batch_c_exit_batch_d_review_candidate.py": "6e0c98db1a0fc7510999ae68125ee8fafbd1d3bb53d630e090e76cc0ccf83b54",
+    "docs/development/IR_PHASE_3_BATCH_C_COMPLETION_REVIEW.md": "218a7d3de74321d87d78d65617544190bc989bd36b1ffada0332645e7084c0fe",
+    "docs/public_api_v1.json": "d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4",
+    "contracts/public-api-v0.2-baseline.json": "ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea"
+  },
+  "batch_c_exit_evidence": {
+    "authorized_scope_implemented": true,
+    "profile_payload_and_identity_chain": true,
+    "tamper_and_mismatch_fail_closed": true,
+    "privacy_boundary_enforced": true,
+    "deterministic_anonymous_fixtures": true,
+    "approved_performance_budget_passed": true,
+    "default_path_zero_impact": true,
+    "public_api_changed": false,
+    "known_blockers": []
+  },
+  "batch_d_scope_if_approved": {
+    "feature": "private RuntimeAdapter protocol and execution-binding contract",
+    "required_evidence": [
+      "closed submit, status, cancel and result lifecycle states",
+      "artifact identity separated from provider and job identity",
+      "local synchronous runtime-plan lifecycle conformance",
+      "offline asynchronous mock lifecycle and terminal-state idempotency",
+      "receipt and result identity bind to the submitted artifact",
+      "invalid transition, unknown handle and identity mismatch fail closed",
+      "execution-only metadata excluded from compiler identities and portable artifacts",
+      "independent performance baseline before budget proposal",
+      "default path zero impact"
+    ],
+    "root": "flagquantum/_compiler",
+    "public_exports": [],
+    "provider_sdk_or_remote_submission_authorized": false,
+    "credentials_authorized": false,
+    "real_backend_identity_in_anonymous_evidence_authorized": false,
+    "new_emitter_authorized": false,
+    "provider_conformance_suite_authorized": false,
+    "shadow_or_default_integration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "batch_e_through_h_authorized": false
+  },
+  "proposed_decisions": {
+    "batch_c_owner_accepted": true,
+    "batch_c_exit_authorized": true,
+    "batch_d_entry_authorized": true,
+    "batch_e_through_h_authorized": false,
+    "provider_sdk_or_remote_submission_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "approval_command": "approve IR-PHASE3-BATCH-C-EXIT-BATCH-D",
+  "approval_text": "Accept Phase 3 Batch C profile, payload, identity, tamper, privacy, deterministic fixture, default-path and approved performance evidence; authorize Batch C exit and Batch D private RuntimeAdapter protocol and execution-binding contract only. Do not authorize provider SDKs, credentials, remote submission, real backend identities in anonymous evidence, new emitters, provider conformance, shadow/default integration, public APIs, legacy retirement, Batches E-H, or Phase 3 exit.",
+  "pause_after": "Batch D implementation and independent performance-baseline review"
+}

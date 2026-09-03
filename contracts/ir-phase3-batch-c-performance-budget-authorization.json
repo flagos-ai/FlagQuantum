@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "authorization": "ir-phase3-batch-c-performance-budget",
+  "status": "approved",
+  "approved_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "approval_command": "approve IR-PHASE3-BATCH-C-PERFORMANCE-BUDGET",
+  "review_candidate": {
+    "path": "contracts/ir-phase3-batch-c-performance-budget-review-candidate.json",
+    "sha256": "1bb8b813a4b4e1757af4cf5ffdceea7f4580bf9ebc0536ace653ef25468231b1"
+  },
+  "approved_budget": {
+    "path": "tests/fixtures/internal_ir/phase3_batch_c_performance_budget_candidate.json",
+    "sha256": "8374386f40f3b8f1243881402705de3e5fe7ea37aae9d930cf732c518b9571c8"
+  },
+  "baseline": {
+    "path": "contracts/ir-phase3-batch-c-performance-baseline.json",
+    "sha256": "70cf087847839bf9de3f47d54cc191cc446ca48ff238d5d6feb7f45688ba8167"
+  },
+  "decisions": {
+    "batch_c_performance_budget_approved": true,
+    "batch_c_machine_gate_authorized": true,
+    "batch_c_exit_authorized": false,
+    "batch_d_runtime_adapter_authorized": false,
+    "new_emitter_authorized": false,
+    "runtime_or_provider_integration_authorized": false,
+    "real_backend_identity_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "phase3_exit_authorized": false
+  },
+  "pause_after": "approved Batch C budget validation and Batch C exit review"
+}
