@@ -1,0 +1,221 @@
+{
+  "schema_version": "1.0",
+  "proposal": "deployment-bridge-stage6-controlled-provider-sandbox-connector",
+  "status": "ready_for_owner_review_implementation_not_authorized",
+  "created_at": "2026-09-03",
+  "branch": "codex/open-source-api-convergence",
+  "stage_name": "Deployment Bridge Stage 6",
+  "distinct_from": "product-roadmap Stage 6 hybrid orchestration, every production connector, and every live-access authorization",
+  "prerequisites": {
+    "stage5_exit_stage6_proposal_authorization": {
+      "path": "contracts/deployment-bridge-stage5-exit-stage6-proposal-authorization.json",
+      "sha256": "734d9849d6b512bf0606dc5549632f90c168ee0cdcb1ae642e7475290ae51b32"
+    },
+    "stage5_performance_validation": {
+      "path": "contracts/deployment-bridge-stage5-performance-budget-validation.json",
+      "sha256": "309c709ad7091036cc5cee2422c3c779ac281a53a02cd93cf1e06e7274394a0a"
+    },
+    "stage5_offline_observation": {
+      "path": "flagquantum/_compiler/provider_sandbox_observation.py",
+      "sha256": "bc1761cf136b8c53b8b5be6d156c6daae77f83a92d8babd9aa458b0a2b915ee8"
+    }
+  },
+  "objective": "Define a transport-neutral connector contract that can later support a separately approved non-billable provider sandbox while initially executing only against an in-memory scripted transport. The first implementation must prove lifecycle, idempotency, identity, error, safety and privacy semantics without network access, credential resolution, a provider SDK or a real submission.",
+  "proposed_private_api": {
+    "module": "flagquantum._compiler.provider_sandbox_connector",
+    "operation": "run_scripted_sandbox_connector(request, attestation, credential_reference, transport, policy)",
+    "inputs": [
+      "immutable anonymous SandboxConnectorRequest",
+      "immutable non-billable SandboxTargetAttestation",
+      "opaque CredentialReference containing identity and scope but no secret",
+      "ScriptedSandboxTransport with a finite immutable response transcript",
+      "immutable explicit SandboxConnectorPolicy"
+    ],
+    "output": "immutable SandboxConnectorReport containing normalized facts and evidence only",
+    "forbidden_inputs": [
+      "RuntimeAdapter provider SDK HTTP client socket endpoint or network session",
+      "credential token secret password private key cookie or environment variable value",
+      "real production provider backend job account user or person identifier",
+      "raw Circuit TargetIR executable program result payload or provider metadata",
+      "retry fallback routing sampling telemetry or activation controller"
+    ],
+    "public_exports": [],
+    "default_registration": false,
+    "environment_activation": false
+  },
+  "operation_taxonomy": [
+    "preflight",
+    "submit_once",
+    "read_status",
+    "request_cancel",
+    "read_result"
+  ],
+  "lifecycle_state_taxonomy": [
+    "prepared",
+    "admitted",
+    "submission_started",
+    "accepted",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "outcome_unknown"
+  ],
+  "terminal_state_taxonomy": [
+    "succeeded",
+    "failed",
+    "cancelled",
+    "outcome_unknown"
+  ],
+  "error_taxonomy": [
+    "none",
+    "policy_rejected",
+    "target_attestation_invalid",
+    "credential_reference_invalid",
+    "capability_mismatch",
+    "quota_or_cost_limit",
+    "transport_transcript_exhausted",
+    "provider_rejected",
+    "provider_failed",
+    "cancellation_failed",
+    "submission_outcome_unknown",
+    "result_invalid"
+  ],
+  "transport_contract": {
+    "first_implementation": "finite immutable in-memory scripted transcript only",
+    "allowed_operations_exactly_match_operation_taxonomy": true,
+    "one_response_consumed_per_operation": true,
+    "unexpected_missing_extra_or_reordered_operation": "fail_closed",
+    "network_provider_sdk_socket_filesystem_environment_or_subprocess_allowed": false,
+    "callback_plugin_dynamic_import_or_background_worker_allowed": false,
+    "real_transport_implementation_authorized": false
+  },
+  "target_attestation_contract": {
+    "required_fields": [
+      "provider_namespace_identity",
+      "sandbox_target_identity",
+      "capability_identity",
+      "attestation_identity",
+      "non_billable",
+      "sandbox_only",
+      "expires_after_sequence"
+    ],
+    "identities_are_anonymous_lowercase_sha256": true,
+    "non_billable_and_sandbox_only_must_be_true": true,
+    "target_identity_enters_execution_evidence_not_program_identity": true,
+    "display_name_endpoint_region_account_and_real_backend_id_accepted": false
+  },
+  "credential_reference_contract": {
+    "fields": [
+      "reference_identity",
+      "provider_namespace_identity",
+      "scope_identity",
+      "expires_after_sequence"
+    ],
+    "values_are_anonymous_lowercase_sha256_or_nonnegative_sequence": true,
+    "secret_value_endpoint_environment_variable_name_or_store_path_accepted": false,
+    "reference_resolution_authorized": false,
+    "reference_enters_program_or_artifact_identity": false,
+    "reference_identity_enters_connector_evidence": true
+  },
+  "request_and_idempotency_contract": {
+    "required_identities": [
+      "request_identity",
+      "program_identity",
+      "artifact_identity",
+      "idempotency_identity",
+      "requested_target_identity"
+    ],
+    "submission_count": 1,
+    "same_idempotency_identity_for_every_fact": true,
+    "automatic_retry_allowed": false,
+    "automatic_fallback_allowed": false,
+    "unknown_outcome_requires_reconciliation": true,
+    "unknown_outcome_allows_later_submission": false,
+    "terminal_state_is_irreversible": true
+  },
+  "normalized_report_contract": {
+    "required_facts": [
+      "operations",
+      "lifecycle_states",
+      "terminal_state",
+      "error_class",
+      "request_identity",
+      "program_identity",
+      "artifact_identity",
+      "idempotency_identity",
+      "provider_namespace_identity",
+      "requested_target_identity",
+      "actual_target_identity",
+      "credential_reference_identity",
+      "quota_units",
+      "cost_microunits",
+      "evidence_identity"
+    ],
+    "provider_job_identity_accepted_in_first_implementation": false,
+    "raw_provider_status_error_receipt_result_or_metadata_accepted": false,
+    "actual_target_must_equal_attested_requested_target": true,
+    "offline_scripted_evidence_label_required": true,
+    "sandbox_or_production_certification_claim_allowed": false
+  },
+  "policy_and_safety_contract": {
+    "required_limits": [
+      "maximum operation count",
+      "maximum transcript count",
+      "maximum input bytes",
+      "maximum evidence bytes",
+      "maximum quota units",
+      "maximum cost microunits",
+      "maximum sequence value"
+    ],
+    "kill_switch_available_and_current_required": true,
+    "admission_approved_required": true,
+    "operator_acknowledgement_required": true,
+    "rollback_evidence_required": true,
+    "conformance_and_capability_match_required": true,
+    "all_limits_explicit_immutable_and_fail_closed": true
+  },
+  "two_step_activation_contract": {
+    "step_one": "approve private connector contracts scripted transport fixtures and baseline",
+    "step_two": "separately approve one named live sandbox transport and credential-reference resolution after external readiness evidence",
+    "step_one_authorizes_step_two": false,
+    "network_or_credential_access_before_step_two": false,
+    "production_target_or_billable_work_allowed_in_either_step": false
+  },
+  "proposed_entry_decisions": {
+    "stage6_private_connector_contracts_authorized": true,
+    "stage6_scripted_transport_and_anonymous_fixtures_authorized": true,
+    "stage6_independent_performance_baseline_authorized": true,
+    "stage6_performance_budget_approved": false,
+    "stage6_live_sandbox_transport_authorized": false,
+    "runtime_adapter_access_authorized": false,
+    "provider_sdk_or_network_authorized": false,
+    "credential_reference_resolution_authorized": false,
+    "real_backend_or_job_identity_authorized": false,
+    "real_execution_or_submission_authorized": false,
+    "retry_or_fallback_authorized": false,
+    "shadow_or_dual_execution_authorized": false,
+    "canary_activation_authorized": false,
+    "sampling_or_request_routing_authorized": false,
+    "telemetry_export_authorized": false,
+    "deployment_migration_authorized": false,
+    "public_api_change_authorized": false,
+    "default_path_change_authorized": false,
+    "legacy_retirement_authorized": false,
+    "product_roadmap_stage6_authorized": false,
+    "unified_ir_phase4_entry_authorized": false
+  },
+  "explicit_exclusions": {
+    "live_sandbox_or_provider_contact": false,
+    "runtime_adapter_or_real_transport": false,
+    "provider_sdk_network_socket_or_endpoint": false,
+    "credential_resolution_or_secret_access": false,
+    "real_backend_job_account_or_person_identity": false,
+    "real_execution_submission_retry_or_fallback": false,
+    "shadow_canary_sampling_routing_or_telemetry": false,
+    "deployment_migration_or_public_default_change": false,
+    "legacy_retirement_product_roadmap_stage6_or_unified_ir_phase4": false
+  },
+  "approval_command": "approve DEPLOYMENT-BRIDGE-STAGE6-ENTRY",
+  "pause_after": "Stage 6 private connector contracts, scripted transport baseline, and performance-budget review"
+}
