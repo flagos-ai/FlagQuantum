@@ -125,6 +125,8 @@ def test_success_verdict_binds_projection_available_and_loss_accounting() -> Non
 
 
 def test_core_success_cannot_override_gate_parameter_legality_failure() -> None:
+    """A provider's narrow RX domain is not legal for this static circuit."""
+
     required = _target()
     available = _target(
         native_gates=(
