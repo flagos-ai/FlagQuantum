@@ -19,15 +19,13 @@ from ....core.parameters import (
 from ....providers.platform import get_platform_runtime, resolve_platform_device
 from ....simulation.split_real_imag_statevector import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
+    run_split_real_imag_statevector,
 )
 from ....simulation.split_real_imag_statevector import (
     apply_gate_pair as _apply_gate_pair,
 )
 from ....simulation.split_real_imag_statevector import (
     fixed_matrix_pair as _fixed_matrix,
-)
-from ....simulation.split_real_imag_statevector import (
-    instruction_matrix_pair as _instruction_matrix_pair,
 )
 
 SPLIT_REAL_IMAG_SCHEMA = "flagquantum_split_real_imag_statevector_result_v1"
@@ -282,27 +280,12 @@ def _execute_bound_split_statevector(
         operator_profile = operator_report.profile
         operator_profile_hash = operator_report.profile_hash
         operator_evidence_ids = tuple(operator_report.evidence_ids)
-    amplitude_count = 2**ir.n_wires
-    real = torch.zeros(amplitude_count, dtype=torch.float32, device=resolved_device)
-    imag = torch.zeros_like(real)
-    real[0] = 1.0
-    for instruction in ir.instructions:
-        matrix_real, matrix_imag = _instruction_matrix_pair(
-            instruction, device=resolved_device
-        )
-        real, imag = _apply_gate_pair(
-            real,
-            imag,
-            matrix_real,
-            matrix_imag,
-            instruction.wires,
-            n_wires=ir.n_wires,
-        )
-        if (
-            real.device.type != resolved_device.type
-            or imag.device.type != resolved_device.type
-        ):
-            raise RuntimeError("split statevector escaped the requested logical device")
+    real, imag = run_split_real_imag_statevector(ir, device=resolved_device)
+    if (
+        real.device.type != resolved_device.type
+        or imag.device.type != resolved_device.type
+    ):
+        raise RuntimeError("split statevector escaped the requested logical device")
     return SplitRealImagStatevectorResult(
         real=real,
         imag=imag,

@@ -12,6 +12,9 @@ from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.operator_probes import (
     preflight_split_real_imag_statevector_p0,
 )
+from flagquantum.simulation.split_real_imag_statevector import (
+    run_split_real_imag_statevector,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -45,6 +48,18 @@ _TWO_QUBIT = {
     "ryy",
     "rzz",
 }
+
+
+def test_simulation_kernel_runs_a_zero_state_circuit_directly() -> None:
+    circuit = Circuit(2).h(0).cx(0, 1)
+
+    real, imag = run_split_real_imag_statevector(
+        circuit.to_ir(), device=torch.device("cpu")
+    )
+
+    expected = torch.tensor([2**-0.5, 0.0, 0.0, 2**-0.5])
+    torch.testing.assert_close(real, expected, atol=2e-6, rtol=2e-6)
+    torch.testing.assert_close(imag, torch.zeros(4), atol=0.0, rtol=0.0)
 
 
 @pytest.mark.parametrize("name", sorted(SPLIT_REAL_IMAG_SUPPORTED_GATES))

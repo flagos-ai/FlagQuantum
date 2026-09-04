@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from ..core.ir import Instruction
+from ..core.ir import CircuitIR, Instruction
 from ..core.parameters import value_to_tensor
 
 SPLIT_REAL_IMAG_SUPPORTED_GATES = frozenset(
@@ -252,9 +252,32 @@ def apply_gate_pair(
     )
 
 
+def run_split_real_imag_statevector(
+    ir: CircuitIR, *, device: torch.device
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Evolve a zero state with the split-real/imag numerical kernel."""
+
+    amplitude_count = 2**ir.n_wires
+    real = torch.zeros(amplitude_count, dtype=torch.float32, device=device)
+    imag = torch.zeros_like(real)
+    real[0] = 1.0
+    for instruction in ir.instructions:
+        matrix_real, matrix_imag = instruction_matrix_pair(instruction, device=device)
+        real, imag = apply_gate_pair(
+            real,
+            imag,
+            matrix_real,
+            matrix_imag,
+            instruction.wires,
+            n_wires=ir.n_wires,
+        )
+    return real, imag
+
+
 __all__ = (
     "SPLIT_REAL_IMAG_SUPPORTED_GATES",
     "apply_gate_pair",
     "fixed_matrix_pair",
     "instruction_matrix_pair",
+    "run_split_real_imag_statevector",
 )

@@ -100,6 +100,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append("split real/imag supported gates drifted from contract")
 
     executor_names = {
+        "run_split_real_imag_statevector",
         "instruction_matrix_pair",
         "apply_gate_pair",
         "execute_split_real_imag_statevector",
