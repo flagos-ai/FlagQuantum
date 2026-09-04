@@ -21,9 +21,13 @@ from flagquantum.core.target_capabilities import (
     CapabilityContractError,
     CapabilityMatchResult,
     CapabilityScope,
+    ComparisonOperator,
     EvidenceLevel,
+    FactExposure,
     FallbackAuthorizations,
     RequirementSet,
+    RequirementStrength,
+    SupportStatus,
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
@@ -49,6 +53,8 @@ class RuntimeDecisionBlockerCode(str, Enum):
     CANDIDATE_CORE_MISMATCH = "candidate_core_mismatch"
     FALLBACK_AXIS_UNAUTHORIZED = "fallback_axis_unauthorized"
     CPU_CANDIDATE_REQUIRED = "cpu_candidate_required"
+    CPU_IDENTITY_MISMATCH = "cpu_identity_mismatch"
+    CPU_IDENTITY_UNVERIFIED = "cpu_identity_unverified"
     DUPLICATE_CANDIDATE_ID = "duplicate_candidate_id"
     DUPLICATE_SNAPSHOT_IDENTITY = "duplicate_snapshot_identity"
     DUPLICATE_TARGET_IDENTITY = "duplicate_target_identity"
@@ -60,8 +66,8 @@ class TargetCapabilityCandidate:
     """One explicit target snapshot offered to Runtime policy.
 
     ``fallback_axes`` describes what changed relative to the original request;
-    it does not modify that request or the snapshot.  A CPU candidate is
-    explicitly marked so device resolution cannot silently manufacture one.
+    it does not modify that request or the snapshot.  ``is_cpu_candidate`` is
+    only an explicit policy marker and must agree with a verified Core fact.
     """
 
     candidate_id: str
@@ -183,6 +189,94 @@ def _axis_authorized(
     authorizations: FallbackAuthorizations, axis: FallbackAxis
 ) -> bool:
     return bool(getattr(authorizations, axis.value))
+
+
+def _cpu_identity(snapshot: TargetCapabilitySnapshot) -> bool | None:
+    """Return CPU identity only from a verified, observed Core fact.
+
+    Runtime candidate metadata is not evidence.  Missing, unsupported,
+    unmeasured, unknown, or non-observed ``device.kind`` facts remain
+    unresolved rather than being guessed as CPU or non-CPU.
+    """
+
+    fact = next((item for item in snapshot.facts if item.name == "device.kind"), None)
+    if (
+        fact is None
+        or fact.support_status is not SupportStatus.VERIFIED
+        or fact.fact_exposure is not FactExposure.OBSERVED
+        or not isinstance(fact.value, str)
+    ):
+        return None
+    return fact.value == "cpu"
+
+
+def _requires_cpu(requirements: RequirementSet) -> bool:
+    """Whether the original mandatory request explicitly requires a CPU."""
+
+    return any(
+        requirement.strength is RequirementStrength.MANDATORY
+        and requirement.name == "device.kind"
+        and requirement.operator is ComparisonOperator.EQUALS
+        and requirement.value == "cpu"
+        for requirement in requirements.requirements
+    )
+
+
+def _cpu_identity_blockers(
+    candidate: TargetCapabilityCandidate,
+    *,
+    cpu_identity: bool | None,
+    request_requires_cpu: bool,
+) -> tuple[RuntimeDecisionBlocker, ...]:
+    blockers: list[RuntimeDecisionBlocker] = []
+    declares_cpu = FallbackAxis.CPU in candidate.fallback_axes
+    if cpu_identity is None:
+        if candidate.is_cpu_candidate or declares_cpu:
+            blockers.append(
+                RuntimeDecisionBlocker(
+                    code=RuntimeDecisionBlockerCode.CPU_IDENTITY_UNVERIFIED,
+                    message=(
+                        "CPU identity requires a verified observed device.kind "
+                        "fact; candidate metadata cannot supply it"
+                    ),
+                    candidate_id=candidate.candidate_id,
+                    fallback_axes=((FallbackAxis.CPU,) if declares_cpu else ()),
+                )
+            )
+        return tuple(blockers)
+    if cpu_identity is False:
+        if candidate.is_cpu_candidate or declares_cpu:
+            blockers.append(
+                RuntimeDecisionBlocker(
+                    code=RuntimeDecisionBlockerCode.CPU_IDENTITY_MISMATCH,
+                    message="candidate CPU metadata conflicts with device.kind fact",
+                    candidate_id=candidate.candidate_id,
+                    fallback_axes=((FallbackAxis.CPU,) if declares_cpu else ()),
+                )
+            )
+        return tuple(blockers)
+    if candidate.is_cpu_candidate is False and declares_cpu:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.CPU_CANDIDATE_REQUIRED,
+                message="a CPU fallback candidate must be explicitly marked",
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.CPU,),
+            )
+        )
+    if not request_requires_cpu and not declares_cpu:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.CPU_CANDIDATE_REQUIRED,
+                message=(
+                    "a CPU snapshot is a fallback unless the original request "
+                    "explicitly requires CPU; declare the cpu fallback axis"
+                ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.CPU,),
+            )
+        )
+    return tuple(blockers)
 
 
 def _canonical_evaluation_time(value: datetime | None) -> tuple[datetime, str]:
@@ -417,11 +511,17 @@ def match_target_capability_candidates(
         for snapshot_id, candidate_ids in snapshot_identity_groups.items()
         if len(candidate_ids) > 1
     }
-    seen_ids: set[str] = set()
+    candidate_id_groups: dict[str, int] = {}
+    for item in ordered:
+        candidate_id_groups[item.candidate_id] = (
+            candidate_id_groups.get(item.candidate_id, 0) + 1
+        )
+    duplicate_candidate_ids = {
+        candidate_id for candidate_id, count in candidate_id_groups.items() if count > 1
+    }
+    request_requires_cpu = _requires_cpu(requirements)
     evaluations: list[TargetCapabilityCandidateEvaluation] = []
     for candidate in ordered:
-        duplicate = candidate.candidate_id in seen_ids
-        seen_ids.add(candidate.candidate_id)
         # Core matching is deliberately called before Runtime authorization;
         # unauthorized alternatives cannot hide stale/scope/identity blockers.
         core_match = _core.match_target_capabilities(
@@ -433,11 +533,14 @@ def match_target_capability_candidates(
             claim_minimum_evidence_level=claim_minimum_evidence_level,
         )
         candidate_blockers: list[RuntimeDecisionBlocker] = []
-        if duplicate:
+        if candidate.candidate_id in duplicate_candidate_ids:
             candidate_blockers.append(
                 RuntimeDecisionBlocker(
                     code=RuntimeDecisionBlockerCode.DUPLICATE_CANDIDATE_ID,
-                    message="candidate_id must be unique for deterministic selection",
+                    message=(
+                        "candidate_id is shared by multiple candidates; all "
+                        "conflicting members are rejected"
+                    ),
                     candidate_id=candidate.candidate_id,
                 )
             )
@@ -463,18 +566,13 @@ def match_target_capability_candidates(
                     candidate_id=candidate.candidate_id,
                 )
             )
-        if (
-            FallbackAxis.CPU in candidate.fallback_axes
-            and not candidate.is_cpu_candidate
-        ):
-            candidate_blockers.append(
-                RuntimeDecisionBlocker(
-                    code=RuntimeDecisionBlockerCode.CPU_CANDIDATE_REQUIRED,
-                    message="the cpu fallback axis requires an explicit CPU candidate",
-                    candidate_id=candidate.candidate_id,
-                    fallback_axes=(FallbackAxis.CPU,),
-                )
+        candidate_blockers.extend(
+            _cpu_identity_blockers(
+                candidate,
+                cpu_identity=_cpu_identity(candidate.snapshot),
+                request_requires_cpu=request_requires_cpu,
             )
+        )
         unauthorized = _unauthorized_axes_blocker(
             candidate, requirements.fallback_authorizations
         )

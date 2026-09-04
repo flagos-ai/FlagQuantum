@@ -8,6 +8,7 @@ import pytest
 
 import flagquantum.core.target_capabilities as core_capabilities
 from flagquantum.core.target_capabilities import (
+    CapabilityBlocker,
     CapabilityFact,
     CapabilityRequirement,
     CapabilityScope,
@@ -217,6 +218,7 @@ def test_cpu_is_an_explicit_candidate_and_is_fully_rematched() -> None:
         memory=8 * 1024**3,
         fallback_axes=frozenset({FallbackAxis.CPU}),
         is_cpu_candidate=True,
+        include_device_kind=True,
     )
 
     decision = match_target_capability_candidates(
@@ -268,6 +270,130 @@ def test_no_cpu_candidate_means_no_silent_cpu_fallback() -> None:
     assert all(not item.candidate.is_cpu_candidate for item in decision.evaluations)
 
 
+@pytest.mark.parametrize("is_cpu_candidate", (False, True))
+def test_verified_cpu_snapshot_requires_declared_cpu_fallback_axis(
+    is_cpu_candidate: bool,
+) -> None:
+    cpu = _candidate(
+        "cpu",
+        kind="cpu",
+        include_device_kind=True,
+        is_cpu_candidate=is_cpu_candidate,
+    )
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (cpu,),
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.CPU_CANDIDATE_REQUIRED
+        and blocker.fallback_axes == (FallbackAxis.CPU,)
+        for blocker in decision.blockers
+    )
+
+
+def test_explicit_cpu_requirement_allows_normal_cpu_without_fallback_authorization() -> (
+    None
+):
+    cpu = _candidate(
+        "cpu",
+        kind="cpu",
+        include_device_kind=True,
+    )
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("device.kind", "cpu"),
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+        ),
+        (cpu,),
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert decision.executable is True
+    assert decision.selected is not None
+    assert decision.selected.candidate.is_cpu_candidate is False
+    assert decision.fallback_record is None
+
+
+def test_cpu_marker_cannot_replace_missing_or_unknown_device_kind_fact() -> None:
+    missing = _candidate("missing-cpu", kind="cpu", is_cpu_candidate=True)
+    unknown_base = _candidate("unknown-cpu", kind="cpu")
+    unknown_snapshot = unknown_base.snapshot
+    unknown_fact = CapabilityFact(
+        name="device.kind",
+        value=None,
+        support_status=SupportStatus.UNKNOWN,
+        fact_exposure=FactExposure.NOT_EXPOSED,
+        source=FactSource(
+            kind="test_probe", ref=unknown_snapshot.evidence_refs[0].evidence_id
+        ),
+        blockers=(
+            CapabilityBlocker(
+                code="device_kind_not_exposed",
+                message="device kind probe did not expose a value",
+                capability_name="device.kind",
+            ),
+        ),
+    )
+    unknown = TargetCapabilityCandidate(
+        "unknown-cpu",
+        TargetCapabilitySnapshot(
+            target_identity=unknown_snapshot.target_identity,
+            scope=unknown_snapshot.scope,
+            captured_at=unknown_snapshot.captured_at,
+            valid_until=unknown_snapshot.valid_until,
+            facts=(*unknown_snapshot.facts, unknown_fact),
+            evidence_refs=unknown_snapshot.evidence_refs,
+        ),
+        is_cpu_candidate=True,
+    )
+
+    for candidate in (missing, unknown):
+        decision = match_target_capability_candidates(
+            _requirements(
+                _require(
+                    "memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST
+                )
+            ),
+            (candidate,),
+            evaluated_at=_EVALUATED_AT,
+        )
+
+        assert decision.selected is None
+        assert any(
+            blocker.code is RuntimeDecisionBlockerCode.CPU_IDENTITY_UNVERIFIED
+            for blocker in decision.blockers
+        )
+
+
+def test_cpu_marker_and_axis_cannot_override_non_cpu_device_kind_fact() -> None:
+    claimed_cpu = _candidate(
+        "cuda",
+        kind="cuda",
+        include_device_kind=True,
+        fallback_axes=frozenset({FallbackAxis.CPU}),
+        is_cpu_candidate=True,
+    )
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+            authorizations=FallbackAuthorizations(cpu=True),
+        ),
+        (claimed_cpu,),
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.CPU_IDENTITY_MISMATCH
+        for blocker in decision.blockers
+    )
+
+
 def test_cpu_candidate_does_not_rewrite_a_mandatory_device_requirement() -> None:
     requirements = _requirements(
         _require("device.kind", "cuda"),
@@ -303,6 +429,7 @@ def test_fallback_axes_are_independent_and_authorized_per_axis(
         kind="cpu" if axis is FallbackAxis.CPU else "cuda",
         fallback_axes=frozenset({axis}),
         is_cpu_candidate=axis is FallbackAxis.CPU,
+        include_device_kind=axis is FallbackAxis.CPU,
     )
 
     decision = match_target_capability_candidates(
@@ -325,6 +452,7 @@ def test_backend_authorization_does_not_imply_cpu_or_precision() -> None:
         kind="cpu",
         fallback_axes=frozenset({FallbackAxis.CPU}),
         is_cpu_candidate=True,
+        include_device_kind=True,
     )
     decision = match_target_capability_candidates(
         _requirements(
@@ -394,6 +522,40 @@ def test_preference_cannot_rescue_an_ineligible_candidate() -> None:
     assert decision.selected is not None
     assert decision.selected.candidate.candidate_id == "fallback"
     assert decision.evaluations[1].core_match.executable is False
+
+
+def test_failed_preferred_candidate_cannot_select_unauthorized_cpu_fallback() -> None:
+    requirements = _requirements(
+        _require(
+            "memory.available_bytes", 4 * 1024**3, operator=ComparisonOperator.AT_LEAST
+        )
+    )
+    preferred = _candidate("preferred", memory=1, preference_rank=0)
+    cpu = _candidate(
+        "cpu",
+        kind="cpu",
+        memory=8 * 1024**3,
+        include_device_kind=True,
+        fallback_axes=frozenset({FallbackAxis.CPU}),
+        is_cpu_candidate=True,
+        preference_rank=1,
+    )
+
+    decision = match_target_capability_candidates(
+        requirements, (preferred, cpu), evaluated_at=_EVALUATED_AT
+    )
+
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED
+        and blocker.fallback_axes == (FallbackAxis.CPU,)
+        for blocker in decision.blockers
+    )
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.CANDIDATE_CORE_MISMATCH
+        and blocker.candidate_id == "preferred"
+        for blocker in decision.blockers
+    )
 
 
 def test_candidate_order_does_not_change_deterministic_preference_selection() -> None:
@@ -543,6 +705,31 @@ def test_duplicate_snapshot_identity_is_not_last_write_wins() -> None:
         )
         for evaluation in decision.evaluations
     )
+
+
+def test_duplicate_candidate_id_rejects_all_members_under_input_permutations() -> None:
+    requirements = _requirements(
+        _require(
+            "memory.available_bytes", 4 * 1024**3, operator=ComparisonOperator.AT_LEAST
+        )
+    )
+    executable = _candidate("shared", memory=8 * 1024**3)
+    ineligible = _candidate("shared", memory=1 * 1024**3)
+
+    for candidates in ((executable, ineligible), (ineligible, executable)):
+        decision = match_target_capability_candidates(
+            requirements, candidates, evaluated_at=_EVALUATED_AT
+        )
+
+        assert decision.selected is None
+        assert len(decision.evaluations) == 2
+        assert all(
+            any(
+                blocker.code is RuntimeDecisionBlockerCode.DUPLICATE_CANDIDATE_ID
+                for blocker in evaluation.blockers
+            )
+            for evaluation in decision.evaluations
+        )
 
 
 def test_unauthorized_fallback_returns_typed_blocker_without_selection() -> None:
