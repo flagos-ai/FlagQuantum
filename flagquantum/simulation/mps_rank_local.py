@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import torch
 
@@ -78,8 +78,44 @@ def tensor_nbytes(tensor: torch.Tensor) -> int:
     return int(tensor.numel() * tensor.element_size())
 
 
+def apply_rank_local_mps_instruction(
+    instruction: Instruction,
+    tensors: Sequence[torch.Tensor],
+    config: MPSConfig,
+    *,
+    bsz: int,
+    device: torch.device | str,
+    dtype: torch.dtype,
+) -> tuple[tuple[torch.Tensor, ...], Mapping[str, Any] | None]:
+    """Apply one already-routed instruction to its rank-local site tensors."""
+
+    if len(tensors) != len(instruction.wires):
+        raise ValueError(
+            "instruction wires and rank-local tensors must have equal arity"
+        )
+    matrix = instruction_matrix_for_mps(
+        instruction,
+        bsz=bsz,
+        device=device,
+        dtype=dtype,
+    )
+    if len(tensors) == 1:
+        return (apply_one_mps_tensor(tensors[0], matrix),), None
+    if len(tensors) == 2:
+        left, right, split_info = apply_two_mps_tensors_with_info(
+            tensors[0],
+            tensors[1],
+            matrix,
+            config,
+            reverse=int(instruction.wires[0]) > int(instruction.wires[1]),
+        )
+        return (left, right), split_info
+    raise ValueError("rank-local MPS execution supports only one- and two-site gates")
+
+
 __all__ = (
     "apply_one_mps_tensor",
+    "apply_rank_local_mps_instruction",
     "apply_two_mps_tensors",
     "apply_two_mps_tensors_with_info",
     "instruction_matrix_for_mps",

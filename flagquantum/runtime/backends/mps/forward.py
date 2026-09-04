@@ -12,10 +12,11 @@ from ....simulation.mps import (
     MPSConfig,
     MPSState,
 )
+from ....simulation.mps_rank_local import (
+    apply_rank_local_mps_instruction as _apply_rank_local_instruction,
+)
 from .canonicalization import canonicalize_rank_owned_mps
 from .communication import (
-    _apply_one_mps_tensor,
-    _apply_two_mps_tensors_with_info,
     _instruction_matrix_for_mps,
     _recv_tensor_p2p,
     _send_tensor_p2p,
@@ -184,17 +185,17 @@ def execute_torch_distributed_mps_forward(
         if len(wires) == 1:
             if rank in owners:
                 if instruction_index in precomputed:
-                    state.local_tensors[wires[0]] = precomputed.pop(instruction_index)[
-                        0
-                    ]
+                    outputs = precomputed.pop(instruction_index)
                 else:
-                    matrix = _instruction_matrix_for_mps(
-                        instruction, bsz=bsz, device=resolved_device, dtype=dtype
+                    outputs, _ = _apply_rank_local_instruction(
+                        instruction,
+                        (state.local_tensors[wires[0]],),
+                        state.config,
+                        bsz=bsz,
+                        device=resolved_device,
+                        dtype=dtype,
                     )
-                    state.local_tensors[wires[0]] = _apply_one_mps_tensor(
-                        state.local_tensors[wires[0]], matrix
-                    )
-                    del matrix
+                state.local_tensors[wires[0]] = outputs[0]
                 local_count += 1
         elif len(owners) == 1:
             owner = next(iter(owners))
@@ -205,20 +206,19 @@ def execute_torch_distributed_mps_forward(
                         instruction_index
                     )
                 else:
-                    matrix = _instruction_matrix_for_mps(
-                        instruction, bsz=bsz, device=resolved_device, dtype=dtype
-                    )
-                    first, second = wires
-                    updated_left, updated_right, split_info = (
-                        _apply_two_mps_tensors_with_info(
+                    outputs, split_info = _apply_rank_local_instruction(
+                        instruction,
+                        (
                             state.local_tensors[left],
                             state.local_tensors[left + 1],
-                            matrix,
-                            state.config,
-                            reverse=first > second,
-                        )
+                        ),
+                        state.config,
+                        bsz=bsz,
+                        device=resolved_device,
+                        dtype=dtype,
                     )
-                    del matrix
+                    updated_left, updated_right = outputs
+                    assert split_info is not None
                 state.local_tensors[left] = updated_left
                 state.local_tensors[left + 1] = updated_right
                 local_truncation_records.append(

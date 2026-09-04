@@ -144,12 +144,12 @@ def main() -> None:
         dist.barrier()
 
         invalid = Circuit(circuit.n_wires).h(0).cx(0, circuit.n_wires - 1)
-        original_apply = mps_forward._apply_one_mps_tensor
+        original_apply = mps_forward._apply_rank_local_instruction
 
         def forbidden_apply(*args, **kwargs):
             raise AssertionError("prevalidation must precede partial execution")
 
-        mps_forward._apply_one_mps_tensor = forbidden_apply
+        mps_forward._apply_rank_local_instruction = forbidden_apply
         try:
             try:
                 execute_torch_distributed_mps_forward(invalid)
@@ -158,7 +158,7 @@ def main() -> None:
             else:
                 raise AssertionError("nonlocal gate did not fail compilation")
         finally:
-            mps_forward._apply_one_mps_tensor = original_apply
+            mps_forward._apply_rank_local_instruction = original_apply
         assert not any(name == "jax" or name.startswith("jax.") for name in sys.modules)
         assert result.summary()["jax_required"] is False
         assert result.summary()["jax_imported"] is False

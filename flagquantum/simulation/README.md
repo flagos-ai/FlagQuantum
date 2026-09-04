@@ -36,7 +36,8 @@ MPO compression, and batched observable contraction. `tensor_execution.py`
 preserves the public wrappers and amplitude entry points; distributed
 scheduling, rank lifecycle, and communication remain outside these paths.
 
-`mps_rank_local.py` owns rank-local MPS gate application and tensor sizing.
+`mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
+and tensor sizing.
 `mps_site_kernels.py` owns eager/compiled site kernels and their bounded
 compile cache. `mps_factorization.py` owns QR/SVD numerical routines.
 Distributed ownership, transport ordering, memory budgets, microbatch

@@ -14,7 +14,8 @@ do not recreate Runtime aliases or a second implementation.
 
 - Change rank ownership or communication order in `state.py`,
   `distribution.py`, or `communication.py`.
-- Change forward/reverse lifecycle in `forward.py`, `reverse.py`, or
+- Change forward ownership, communication, lifecycle, or evidence in
+  `forward.py`; change reverse lifecycle in `reverse.py` or
   `reverse_replay.py`.
 - Change memory admission or microbatch policy in `factorization.py`.
 - Change numerical tensor behavior in the corresponding Simulation module,
