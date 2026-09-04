@@ -355,11 +355,8 @@ def test_missing_not_exposed_stale_scope_and_identity_fail_closed() -> None:
     result = match_target_capabilities(requirements, missing, evaluated_at=_NOW)
     assert result.blockers[0].code == "missing_fact"
 
-    not_exposed = _fact(exposure=FactExposure.NOT_EXPOSED)
-    result = match_target_capabilities(
-        requirements, _snapshot(not_exposed), evaluated_at=_NOW
-    )
-    assert result.blockers[0].code == "fact_not_exposed"
+    with pytest.raises(CapabilityContractError, match="verified facts cannot use"):
+        _fact(exposure=FactExposure.NOT_EXPOSED)
 
     result = match_target_capabilities(
         requirements,
@@ -376,29 +373,17 @@ def test_missing_not_exposed_stale_scope_and_identity_fail_closed() -> None:
 
 
 @pytest.mark.parametrize(
-    ("exposure", "expected_code"),
+    "exposure",
     [
-        (FactExposure.UNKNOWN, "exposure_unknown"),
-        (FactExposure.NOT_EXPOSED, "fact_not_exposed"),
+        FactExposure.UNKNOWN,
+        FactExposure.NOT_EXPOSED,
     ],
 )
-def test_unknown_and_not_exposed_fail_even_when_explicitly_accepted(
-    exposure: FactExposure, expected_code: str
+def test_unknown_and_not_exposed_verified_combinations_are_rejected(
+    exposure: FactExposure,
 ) -> None:
-    requirement = _requirement(
-        "target.class",
-        "local_runtime",
-        operator=ComparisonOperator.EQUALS,
-        accepted_exposures=(exposure,),
-    )
-    result = match_target_capabilities(
-        RequirementSet(requirements=(requirement,)),
-        _snapshot(_fact("target.class", "local_runtime", exposure=exposure)),
-        evaluated_at=_NOW,
-    )
-
-    assert result.executable is False
-    assert [item.code for item in result.blockers] == [expected_code]
+    with pytest.raises(CapabilityContractError, match="verified facts cannot use"):
+        _fact("target.class", "local_runtime", exposure=exposure)
 
 
 def test_snapshot_blockers_fail_closed_and_are_deterministic() -> None:
