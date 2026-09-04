@@ -49,20 +49,21 @@ _CAPTURED_AT = datetime(2026, 9, 4, 8, 0, tzinfo=timezone.utc)
 _EVALUATED_AT = _CAPTURED_AT + timedelta(minutes=1)
 _ROUTE_INTENT = RouteIntent(
     backend="test-backend",
-    device="cuda",
+    device_kind="cuda",
     cpu=False,
-    precision="float64",
+    effective_precision="float64",
     algorithm="exact",
     approximation="exact",
 )
 _CPU_ROUTE_INTENT = RouteIntent(
     backend="test-backend",
-    device="cpu",
+    device_kind="cpu",
     cpu=True,
-    precision="float64",
+    effective_precision="float64",
     algorithm="exact",
     approximation="exact",
 )
+_UNSET = object()
 
 
 def match_target_capability_candidates(requirements, candidates, **kwargs):
@@ -117,6 +118,7 @@ def _snapshot(
     captured_at: datetime = _CAPTURED_AT,
     valid_for: timedelta = timedelta(hours=1),
     include_device_kind: bool = True,
+    effective_precision: str | None = "float64",
     memory_status: SupportStatus = SupportStatus.VERIFIED,
     memory_exposure: FactExposure = FactExposure.OBSERVED,
     evidence_level: EvidenceLevel = EvidenceLevel.OBSERVABLE,
@@ -169,6 +171,16 @@ def _snapshot(
                 source=source,
             )
         )
+    if effective_precision is not None:
+        facts.append(
+            CapabilityFact(
+                name="precision.effective_dtype",
+                value=effective_precision,
+                support_status=SupportStatus.VERIFIED,
+                fact_exposure=FactExposure.OBSERVED,
+                source=source,
+            )
+        )
     return TargetCapabilitySnapshot(
         target_identity=TargetIdentity(
             target_id=f"target-{candidate_id}",
@@ -192,14 +204,22 @@ def _candidate(
     kind: str = "cuda",
     memory: int = 8 * 1024**3,
     preference_rank: int = 0,
-    fallback_axes: frozenset[FallbackAxis] = frozenset(),
-    is_cpu_candidate: bool = False,
+    provenance_axes: frozenset[FallbackAxis] = frozenset(),
     provenance: CandidateProvenance | None = None,
     route_intent: RouteIntent = _ROUTE_INTENT,
+    effective_precision: str | None | object = _UNSET,
     **snapshot_kwargs: object,
 ) -> TargetCapabilityCandidate:
     effective_kind = (
-        "rocm" if FallbackAxis.DEVICE in fallback_axes and kind == "cuda" else kind
+        "rocm" if FallbackAxis.DEVICE in provenance_axes and kind == "cuda" else kind
+    )
+    snapshot_kwargs.setdefault(
+        "effective_precision",
+        (
+            ("float32" if FallbackAxis.PRECISION in provenance_axes else "float64")
+            if effective_precision is _UNSET
+            else effective_precision
+        ),
     )
     snapshot = _snapshot(
         candidate_id,
@@ -208,24 +228,27 @@ def _candidate(
         **snapshot_kwargs,
     )
     if provenance is None:
-        axes = set(fallback_axes)
+        axes = set(provenance_axes)
         if effective_kind == "cpu" and FallbackAxis.CPU in axes:
             axes.add(FallbackAxis.DEVICE)
         provenance = CandidateProvenance(
             intent_id=route_intent.intent_id,
+            snapshot_id=snapshot.snapshot_id,
             backend=(
                 "fallback-backend"
                 if FallbackAxis.BACKEND in axes
                 else route_intent.backend
             ),
-            device=(
+            device_kind=(
                 effective_kind
                 if FallbackAxis.DEVICE in axes or effective_kind == "cpu"
-                else route_intent.device
+                else route_intent.device_kind
             ),
             cpu=(effective_kind == "cpu"),
-            precision=(
-                "float32" if FallbackAxis.PRECISION in axes else route_intent.precision
+            effective_precision=(
+                "float32"
+                if FallbackAxis.PRECISION in axes
+                else route_intent.effective_precision
             ),
             algorithm=(
                 "approximate"
@@ -238,13 +261,10 @@ def _candidate(
                 else route_intent.approximation
             ),
         )
-        fallback_axes = frozenset(axes)
     return TargetCapabilityCandidate(
         candidate_id=candidate_id,
         snapshot=snapshot,
         preference_rank=preference_rank,
-        fallback_axes=fallback_axes,
-        is_cpu_candidate=is_cpu_candidate,
         provenance=provenance,
     )
 
@@ -274,7 +294,7 @@ def test_every_candidate_uses_the_same_immutable_requirement_set_and_core_matche
 
     candidate_calls = [call for call in calls if call[0] is requirements]
     assert len(candidate_calls) == 2
-    assert len(calls) == 4
+    assert len(calls) == 6
     assert all(request is requirements for request, _ in candidate_calls)
     assert {snapshot_id for _, snapshot_id in calls} == {
         item.snapshot.snapshot_id for item in candidates
@@ -297,8 +317,7 @@ def test_cpu_is_an_explicit_candidate_and_is_fully_rematched() -> None:
         "cpu",
         kind="cpu",
         memory=8 * 1024**3,
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+        provenance_axes=frozenset({FallbackAxis.CPU}),
         include_device_kind=True,
     )
 
@@ -351,19 +370,11 @@ def test_no_cpu_candidate_means_no_silent_cpu_fallback() -> None:
     assert decision.executable is False
     assert decision.selected is None
     assert decision.fallback_record is None
-    assert all(not item.candidate.is_cpu_candidate for item in decision.evaluations)
+    assert all(item.candidate.provenance is not None for item in decision.evaluations)
 
 
-@pytest.mark.parametrize("is_cpu_candidate", (False, True))
-def test_verified_cpu_snapshot_requires_declared_cpu_fallback_axis(
-    is_cpu_candidate: bool,
-) -> None:
-    cpu = _candidate(
-        "cpu",
-        kind="cpu",
-        include_device_kind=True,
-        is_cpu_candidate=is_cpu_candidate,
-    )
+def test_verified_cpu_snapshot_requires_declared_cpu_fallback_axis() -> None:
+    cpu = _candidate("cpu", kind="cpu", include_device_kind=True)
     decision = match_target_capability_candidates(
         _requirements(
             _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
@@ -401,7 +412,7 @@ def test_explicit_cpu_requirement_allows_normal_cpu_without_fallback_authorizati
 
     assert decision.executable is True
     assert decision.selected is not None
-    assert decision.selected.candidate.is_cpu_candidate is False
+    assert decision.selected.candidate.provenance is not None
     assert decision.fallback_record is None
 
 
@@ -435,7 +446,6 @@ def test_cpu_marker_cannot_replace_missing_or_unknown_device_kind_fact() -> None
             facts=(*unknown_snapshot.facts, unknown_fact),
             evidence_refs=unknown_snapshot.evidence_refs,
         ),
-        is_cpu_candidate=True,
     )
 
     for candidate in (missing, unknown):
@@ -456,13 +466,16 @@ def test_cpu_marker_cannot_replace_missing_or_unknown_device_kind_fact() -> None
         )
 
 
-def test_cpu_marker_and_axis_cannot_override_non_cpu_device_kind_fact() -> None:
-    claimed_cpu = _candidate(
-        "cuda",
-        kind="cuda",
-        include_device_kind=True,
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+def test_cpu_provenance_cannot_override_non_cpu_device_kind_fact() -> None:
+    base = _candidate("cuda", kind="cuda", include_device_kind=True)
+    claimed_cpu = replace(
+        base,
+        provenance=replace(
+            base.provenance,
+            device_kind="cpu",
+            cpu=True,
+            provenance_id="",
+        ),
     )
     decision = match_target_capability_candidates(
         _requirements(
@@ -475,7 +488,7 @@ def test_cpu_marker_and_axis_cannot_override_non_cpu_device_kind_fact() -> None:
 
     assert decision.selected is None
     assert any(
-        blocker.code is RuntimeDecisionBlockerCode.CPU_IDENTITY_MISMATCH
+        blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH
         for blocker in decision.blockers
     )
 
@@ -538,8 +551,7 @@ def test_cpu_candidate_does_not_rewrite_a_mandatory_device_requirement() -> None
     cpu = _candidate(
         "cpu",
         kind="cpu",
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+        provenance_axes=frozenset({FallbackAxis.CPU}),
         include_device_kind=True,
     )
 
@@ -566,8 +578,7 @@ def test_fallback_axes_are_independent_and_authorized_per_axis(
     candidate = _candidate(
         f"fallback-{axis.value}",
         kind="cpu" if axis is FallbackAxis.CPU else "cuda",
-        fallback_axes=frozenset({axis}),
-        is_cpu_candidate=axis is FallbackAxis.CPU,
+        provenance_axes=frozenset({axis}),
         include_device_kind=True,
     )
 
@@ -592,8 +603,7 @@ def test_backend_authorization_does_not_imply_cpu_or_precision() -> None:
     candidate = _candidate(
         "cpu",
         kind="cpu",
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+        provenance_axes=frozenset({FallbackAxis.CPU}),
         include_device_kind=True,
     )
     decision = match_target_capability_candidates(
@@ -617,7 +627,7 @@ def test_backend_authorization_does_not_imply_cpu_or_precision() -> None:
 def test_multiple_changed_axes_require_all_authorizations() -> None:
     candidate = _candidate(
         "multi",
-        fallback_axes=frozenset({FallbackAxis.BACKEND, FallbackAxis.PRECISION}),
+        provenance_axes=frozenset({FallbackAxis.BACKEND, FallbackAxis.PRECISION}),
     )
     requirements = _requirements(
         _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
@@ -678,8 +688,7 @@ def test_failed_preferred_candidate_cannot_select_unauthorized_cpu_fallback() ->
         kind="cpu",
         memory=8 * 1024**3,
         include_device_kind=True,
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+        provenance_axes=frozenset({FallbackAxis.CPU}),
         preference_rank=1,
     )
 
@@ -758,12 +767,12 @@ def test_decision_identity_binds_time_and_fallback_authorization() -> None:
     )
     backend_axis = match_target_capability_candidates(
         axis_requirements,
-        (_candidate("candidate", fallback_axes=frozenset({FallbackAxis.BACKEND})),),
+        (_candidate("candidate", provenance_axes=frozenset({FallbackAxis.BACKEND})),),
         evaluated_at=_EVALUATED_AT,
     )
     precision_axis = match_target_capability_candidates(
         axis_requirements,
-        (_candidate("candidate", fallback_axes=frozenset({FallbackAxis.PRECISION})),),
+        (_candidate("candidate", provenance_axes=frozenset({FallbackAxis.PRECISION})),),
         evaluated_at=_EVALUATED_AT,
     )
 
@@ -872,7 +881,7 @@ def test_unauthorized_fallback_returns_typed_blocker_without_selection() -> None
     alternative = _candidate(
         "alternative",
         memory=8 * 1024**3,
-        fallback_axes=frozenset({FallbackAxis.BACKEND}),
+        provenance_axes=frozenset({FallbackAxis.BACKEND}),
     )
 
     decision = match_target_capability_candidates(
@@ -944,27 +953,24 @@ def test_core_unmeasured_and_weak_evidence_blockers_are_not_reinterpreted() -> N
     assert "insufficient_evidence" in codes
 
 
-def test_fallback_axes_are_computed_and_caller_reports_cannot_lie() -> None:
-    requirements = _requirements(
-        _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
-        authorizations=FallbackAuthorizations(backend=True),
+def test_fallback_axes_and_cpu_identity_are_not_candidate_self_reports() -> None:
+    assert not hasattr(TargetCapabilityCandidate, "fallback_axes")
+    assert not hasattr(TargetCapabilityCandidate, "is_cpu_candidate")
+    assert not hasattr(seam.TargetCapabilityCandidateEvaluation, "fallback_axes")
+    candidate = _candidate(
+        "computed-backend", provenance_axes=frozenset({FallbackAxis.BACKEND})
     )
-    underreported_base = _candidate(
-        "underreported", fallback_axes=frozenset({FallbackAxis.BACKEND})
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+            authorizations=FallbackAuthorizations(backend=True),
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
     )
-    underreported = replace(underreported_base, fallback_axes=frozenset())
-    equivalent = _candidate("equivalent")
-    overreported = replace(equivalent, fallback_axes=frozenset({FallbackAxis.BACKEND}))
-
-    for candidate in (underreported, overreported):
-        decision = match_target_capability_candidates(
-            requirements, (candidate,), evaluated_at=_EVALUATED_AT
-        )
-        assert decision.selected is None
-        assert any(
-            blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_AXIS_MISMATCH
-            for blocker in decision.blockers
-        )
+    assert decision.selected is not None
+    assert decision.fallback_record is not None
+    assert decision.fallback_record.fallback_axes == (FallbackAxis.BACKEND,)
 
 
 def test_non_cpu_axis_pairs_require_each_independent_authorization() -> None:
@@ -972,7 +978,7 @@ def test_non_cpu_axis_pairs_require_each_independent_authorization() -> None:
     for first_axis, second_axis in combinations(axes, 2):
         candidate = _candidate(
             f"pair-{first_axis.value}-{second_axis.value}",
-            fallback_axes=frozenset({first_axis, second_axis}),
+            provenance_axes=frozenset({first_axis, second_axis}),
         )
         decision = match_target_capability_candidates(
             _requirements(
@@ -1033,16 +1039,13 @@ def test_missing_route_intent_fails_closed_even_with_candidate_provenance() -> N
 
 
 def test_snapshot_device_declaration_must_match_provenance() -> None:
-    candidate = _candidate(
-        "device-conflict",
-        provenance=CandidateProvenance(
-            intent_id=_ROUTE_INTENT.intent_id,
-            backend=_ROUTE_INTENT.backend,
-            device="other-device-kind",
-            cpu=False,
-            precision=_ROUTE_INTENT.precision,
-            algorithm=_ROUTE_INTENT.algorithm,
-            approximation=_ROUTE_INTENT.approximation,
+    base = _candidate("device-conflict")
+    candidate = replace(
+        base,
+        provenance=replace(
+            base.provenance,
+            device_kind="other-device-kind",
+            provenance_id="",
         ),
     )
     decision = match_target_capability_candidates(
@@ -1057,6 +1060,109 @@ def test_snapshot_device_declaration_must_match_provenance() -> None:
         blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH
         for blocker in decision.blockers
     )
+
+
+def test_provenance_must_bind_the_exact_snapshot_identity() -> None:
+    original = _candidate("original")
+    replacement = _candidate("replacement")
+    swapped = replace(original, snapshot=replacement.snapshot)
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (swapped,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH
+        for blocker in decision.blockers
+    )
+
+
+@pytest.mark.parametrize(
+    ("effective_precision", "evidence_level", "expected"),
+    (
+        (
+            None,
+            EvidenceLevel.OBSERVABLE,
+            RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+        ),
+        (
+            "float64",
+            EvidenceLevel.BASIC,
+            RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+        ),
+    ),
+)
+def test_effective_precision_requires_observed_core_evidence(
+    effective_precision: str | None,
+    evidence_level: EvidenceLevel,
+    expected: RuntimeDecisionBlockerCode,
+) -> None:
+    candidate = _candidate(
+        "precision-unverified",
+        effective_precision=effective_precision,
+        evidence_level=evidence_level,
+    )
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert decision.selected is None
+    assert any(blocker.code is expected for blocker in decision.blockers)
+
+
+def test_effective_precision_provenance_cannot_disagree_with_snapshot() -> None:
+    base = _candidate("precision-mismatch")
+    candidate = replace(
+        base,
+        provenance=replace(
+            base.provenance,
+            effective_precision="float32",
+            provenance_id="",
+        ),
+    )
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+            authorizations=FallbackAuthorizations(precision=True),
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH
+        and blocker.fallback_axes == (FallbackAxis.PRECISION,)
+        for blocker in decision.blockers
+    )
+
+
+def test_route_values_reject_cpu_device_kind_contradictions() -> None:
+    with pytest.raises(ValueError, match="cpu must agree with device_kind"):
+        RouteIntent(
+            backend="test-backend",
+            device_kind="cpu",
+            cpu=False,
+            effective_precision="float64",
+            algorithm="exact",
+            approximation="exact",
+        )
+    with pytest.raises(ValueError, match="cpu must agree with device_kind"):
+        CandidateProvenance(
+            intent_id=_ROUTE_INTENT.intent_id,
+            snapshot_id="snapshot",
+            backend=_ROUTE_INTENT.backend,
+            device_kind="cpu",
+            cpu=False,
+            effective_precision=_ROUTE_INTENT.effective_precision,
+            algorithm=_ROUTE_INTENT.algorithm,
+            approximation=_ROUTE_INTENT.approximation,
+        )
 
 
 def test_equivalent_provenance_has_no_fallback_record() -> None:
