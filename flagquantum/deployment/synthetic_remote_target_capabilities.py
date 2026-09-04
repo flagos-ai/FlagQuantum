@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from math import isfinite
+from types import MappingProxyType
 from typing import Any, Mapping
 
 from flagquantum.core.target_capabilities import (
@@ -37,6 +39,73 @@ SYNTHETIC_REMOTE_PROVIDER = "flagquantum.synthetic_remote"
 SYNTHETIC_REMOTE_TARGET_CLASS = "synthetic_remote_service"
 _OBSERVED_SOURCE_KIND = "synthetic_remote_fixture_observation"
 _DECLARED_SOURCE_KIND = "synthetic_remote_fixture_declaration"
+_NUMERIC_FACT_NAMES = {
+    "device.count",
+    "memory.available_bytes",
+    "qubits.logical_capacity",
+    "qubits.physical_capacity",
+    "limits.maximum_shots",
+    "limits.maximum_program_operations",
+    "ancillas.maximum_compiler",
+}
+_COLLECTION_FACT_NAMES = {
+    "gates.native",
+    "measurements.results",
+    "artifacts.profiles",
+}
+
+
+def _freeze_fixture_json(value: Any, *, path: str) -> Any:
+    """Deep-copy JSON-safe values into immutable containers at fixture build."""
+
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        if not isfinite(value):
+            raise ValueError(f"{path} must contain only finite numbers")
+        return value
+    if isinstance(value, Mapping):
+        frozen: dict[str, Any] = {}
+        for key in value:
+            if not isinstance(key, str):
+                raise TypeError(f"{path} mapping keys must be strings")
+            frozen[key] = _freeze_fixture_json(value[key], path=f"{path}.{key}")
+        return MappingProxyType({key: frozen[key] for key in sorted(frozen)})
+    if isinstance(value, (list, tuple)):
+        return tuple(
+            _freeze_fixture_json(item, path=f"{path}[{index}]")
+            for index, item in enumerate(value)
+        )
+    raise TypeError(
+        f"{path} must contain only JSON-safe values, got {type(value).__name__}"
+    )
+
+
+def _validate_fixture_fact_value(name: str, value: Any) -> None:
+    if value is None:
+        return
+    if name in _NUMERIC_FACT_NAMES:
+        if type(value) is not int or value < 0:
+            raise ValueError(f"synthetic fact {name} must be a non-negative integer")
+    elif name in _COLLECTION_FACT_NAMES:
+        if not isinstance(value, tuple):
+            raise ValueError(f"synthetic fact {name} must be a JSON array")
+    elif not isinstance(value, str):
+        raise ValueError(f"synthetic fact {name} must be a string")
+
+
+def _freeze_fact_mapping(
+    values: Mapping[str, Any], *, field_name: str
+) -> Mapping[str, Any]:
+    if not isinstance(values, Mapping):
+        raise TypeError(f"synthetic fixture {field_name} must be a mapping")
+    frozen: dict[str, Any] = {}
+    for name, value in values.items():
+        if not isinstance(name, str) or not name:
+            raise ValueError(f"synthetic fixture {field_name} keys must be strings")
+        frozen_value = _freeze_fixture_json(value, path=f"{field_name}[{name!r}]")
+        frozen[name] = frozen_value
+    return MappingProxyType({name: frozen[name] for name in sorted(frozen)})
 
 
 @dataclass(frozen=True)
@@ -101,11 +170,13 @@ class SyntheticRemoteCapabilityFixture:
             raise ValueError("synthetic fixture evidence_refs must be unique")
         object.__setattr__(self, "evidence_refs", evidence_refs)
         for field_name in ("observed_facts", "declared_facts"):
-            values = getattr(self, field_name)
-            if not isinstance(values, Mapping):
-                raise TypeError(f"synthetic fixture {field_name} must be a mapping")
-            if any(not isinstance(name, str) or not name for name in values):
-                raise ValueError(f"synthetic fixture {field_name} keys must be strings")
+            frozen_values = _freeze_fact_mapping(
+                getattr(self, field_name), field_name=field_name
+            )
+            for name, value in frozen_values.items():
+                _validate_fixture_fact_value(name, value)
+            object.__setattr__(self, field_name, frozen_values)
+        _validate_fact_names(self)
 
 
 def _isoformat(value: datetime) -> str:

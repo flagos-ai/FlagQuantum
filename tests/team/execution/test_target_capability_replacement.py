@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
+from math import nan
 
 import pytest
 
@@ -90,13 +91,14 @@ def _cpu_snapshot(*, memory: int = 8 * 1024**3):
     )
 
 
-def _remote_snapshot(
+def _remote_fixture(
     *,
     target_id: str = "synthetic-remote-target",
     source_prefix: str = "remote",
     memory: int | None = 8 * 1024**3,
-    valid_for: timedelta = timedelta(hours=1),
     device_kind: str = "synthetic_qpu",
+    extra_observed_facts: dict[str, object] | None = None,
+    declared_facts: dict[str, object] | None = None,
 ):
     scope = CapabilityScope(device_ids=(f"{target_id}:0",))
     evidence = (
@@ -116,6 +118,8 @@ def _remote_snapshot(
     observed_facts = {"device.count": 1}
     if memory is not None:
         observed_facts["memory.available_bytes"] = memory
+    if extra_observed_facts is not None:
+        observed_facts.update(extra_observed_facts)
     fixture = SyntheticRemoteCapabilityFixture(
         target_id=target_id,
         target_revision="fixture-revision",
@@ -124,8 +128,30 @@ def _remote_snapshot(
         device_ids=scope.device_ids or (),
         evidence_refs=evidence,
         observed_facts=observed_facts,
+        declared_facts=declared_facts or {},
         observed_source_ref=f"{source_prefix}-observation",
         declared_source_ref=f"{source_prefix}-declaration",
+    )
+    return fixture
+
+
+def _remote_snapshot(
+    *,
+    target_id: str = "synthetic-remote-target",
+    source_prefix: str = "remote",
+    memory: int | None = 8 * 1024**3,
+    valid_for: timedelta = timedelta(hours=1),
+    device_kind: str = "synthetic_qpu",
+    observed_facts: dict[str, object] | None = None,
+    declared_facts: dict[str, object] | None = None,
+):
+    fixture = _remote_fixture(
+        target_id=target_id,
+        source_prefix=source_prefix,
+        memory=memory,
+        device_kind=device_kind,
+        extra_observed_facts=observed_facts,
+        declared_facts=declared_facts,
     )
     return synthetic_remote_target_capability_snapshot(
         fixture=fixture,
@@ -380,3 +406,57 @@ def test_cpu_fallback_axis_is_not_inferred_or_authorized_by_other_axes() -> None
         and blocker.fallback_axes == (FallbackAxis.CPU,)
         for blocker in decision.blockers
     )
+
+
+def test_synthetic_fixture_deep_freezes_inputs_and_keeps_identity_stable() -> None:
+    raw_observed = {
+        "device.count": 1,
+        "gates.native": [{"name": "h", "parameters": ["theta"]}],
+    }
+    raw_declared = {"artifacts.profiles": ["openqasm3"]}
+    fixture = _remote_fixture(
+        extra_observed_facts=raw_observed,
+        declared_facts=raw_declared,
+    )
+    raw_observed["device.count"] = 2
+    raw_observed["gates.native"][0]["parameters"].append("phi")
+    raw_declared["artifacts.profiles"].append("qcis")
+
+    assert fixture.observed_facts["device.count"] == 1
+    assert fixture.observed_facts["gates.native"][0]["parameters"] == ("theta",)
+    assert fixture.declared_facts["artifacts.profiles"] == ("openqasm3",)
+    with pytest.raises(TypeError):
+        fixture.observed_facts["device.count"] = 2  # type: ignore[index]
+    with pytest.raises(TypeError):
+        fixture.observed_facts["gates.native"][0]["name"] = "x"  # type: ignore[index]
+    with pytest.raises(TypeError):
+        fixture.declared_facts["artifacts.profiles"] = ("qcis",)  # type: ignore[index]
+
+    first = synthetic_remote_target_capability_snapshot(
+        fixture=fixture,
+        captured_at=_CAPTURED_AT,
+        ttl=timedelta(hours=1),
+    )
+    second = synthetic_remote_target_capability_snapshot(
+        fixture=fixture,
+        captured_at=_CAPTURED_AT,
+        ttl=timedelta(hours=1),
+    )
+    assert first.snapshot_id == second.snapshot_id
+    assert first.to_json() == second.to_json()
+
+
+@pytest.mark.parametrize(
+    ("fact_name", "value", "error_match"),
+    (
+        ("gates.native", "h", "JSON array"),
+        ("memory.available_bytes", nan, "finite"),
+        ("memory.available_bytes", object(), "JSON-safe"),
+        ("memory.available_bytes", -1, "non-negative integer"),
+    ),
+)
+def test_synthetic_fixture_rejects_invalid_fact_values_early(
+    fact_name: str, value: object, error_match: str
+) -> None:
+    with pytest.raises((TypeError, ValueError), match=error_match):
+        _remote_fixture(extra_observed_facts={fact_name: value})
