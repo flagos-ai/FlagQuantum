@@ -22,8 +22,9 @@ dispatch through `runtime/noise_registry.py`.
 
 `mps_local.py` owns the single-device, noiseless MPS instruction loop.
 `mps_execution.py` preserves the public wrapper and currently contains the
-separate adaptive and noisy-trajectory paths; their checkpoint and rank
-lifecycle remain explicit migration debt, not part of the local golden path.
+separate adaptive and single noisy-trajectory numerical paths. Multi-trajectory
+ownership, random streams, convergence, retry, checkpoint/restart, and rank
+result merging belong to `runtime/trajectories/mps.py`.
 
 `tensor_local.py` owns local tensor-network plan construction and the numerical
 state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,

@@ -18,6 +18,30 @@ from flagquantum.runtime.trajectories import (
 pytestmark = pytest.mark.unit
 
 
+def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
+    import flagquantum.runtime.trajectories.mps as mps_runtime
+    import flagquantum.simulation.mps_execution as mps_execution
+
+    expected = object()
+    calls = []
+
+    def replacement(circuit_or_ir, noise_model, **options):
+        calls.append((circuit_or_ir, noise_model, options))
+        return expected
+
+    monkeypatch.setattr(mps_runtime, "run_noisy_mps_runtime", replacement)
+    circuit = fq.Circuit(1).x(0)
+    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+
+    assert fqb.run_noisy_mps(circuit, noise_model, trajectories=3, seed=7) is expected
+    assert calls[0][0] is circuit
+    assert calls[0][1] is noise_model
+    assert calls[0][2]["trajectories"] == 3
+    assert calls[0][2]["seed"] == 7
+    assert calls[0][2]["trajectory_executor"] is mps_execution.run_noisy_mps_trajectory
+    assert calls[0][2]["result_factory"] is fq.MPSMonteCarloResult
+
+
 def test_trajectory_ownership_preserves_global_ids_across_world_sizes():
     expected = tuple(range(17))
 
