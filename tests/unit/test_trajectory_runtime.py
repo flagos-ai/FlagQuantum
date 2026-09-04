@@ -20,7 +20,6 @@ pytestmark = pytest.mark.unit
 
 def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
     import flagquantum.runtime.trajectories.mps as mps_runtime
-    import flagquantum.simulation.mps_execution as mps_execution
 
     expected = object()
     calls = []
@@ -38,8 +37,33 @@ def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
     assert calls[0][1] is noise_model
     assert calls[0][2]["trajectories"] == 3
     assert calls[0][2]["seed"] == 7
-    assert calls[0][2]["trajectory_executor"] is mps_execution.run_noisy_mps_trajectory
+    assert callable(calls[0][2]["trajectory_executor"])
     assert calls[0][2]["result_factory"] is fq.MPSMonteCarloResult
+
+
+def test_run_native_uses_lowered_mps_entrypoints(monkeypatch):
+    import flagquantum.simulation.mps_execution as mps_execution
+
+    def legacy_entrypoint(*args, **kwargs):
+        raise AssertionError("run_native must not re-enter legacy noise lowering")
+
+    monkeypatch.setattr(mps_execution, "run_noisy_mps_trajectory", legacy_entrypoint)
+    monkeypatch.setattr(mps_execution, "run_noisy_mps", legacy_entrypoint)
+    circuit = fq.Circuit(1).x(0)
+    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+
+    single = fqb.run_native(circuit, noise_model=noise_model, mode="mps_trajectory")
+    sampled = fqb.run_native(
+        circuit,
+        noise_model=noise_model,
+        mode="noisy_mps",
+        trajectories=2,
+        seed=5,
+        retain_trajectories=False,
+    )
+
+    assert torch.allclose(single.expectation_z(0), torch.ones(1, 1))
+    assert sampled.n_trajectories == 2
 
 
 def test_trajectory_ownership_preserves_global_ids_across_world_sizes():

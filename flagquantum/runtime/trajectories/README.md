@@ -18,7 +18,9 @@ are supplied by Simulation; Runtime schedules them and records their outcomes.
 
 `mps.py` also resolves a trajectory seed into an explicit generator before it
 invokes the Simulation callback. Noise lowering and MPS numerical evolution do
-not belong here.
+not belong here. `runtime/execution.py` receives the Compiler-lowered program
+and supplies it to the MPS callback; the multi-trajectory loop never lowers the
+same program per trajectory.
 
 Run:
 

@@ -78,7 +78,7 @@
 | `static_mps.py`、`mps_brickwork.py`、`tebd.py`、`dense_island.py` | 数值算法 + Kernel 调用 | 固定形状图、TEBD、dense island、局部编译核 | 编译/缓存策略和能力选择需与 Runtime/Compiler 的决定区分 |
 | `mps_local.py` | 纯数值执行 | 已初始化 MPS 上的 IR 门作用、融合与 bucket kernel 调用 | 无 Runtime 生命周期所有权 |
 | `mps_noisy.py` | 纯数值执行 | 已降低 IR 上的 unitary/Kraus MPS 单轨迹演化 | 不导入 Compiler 或 Runtime，不派生 seed，不拥有 checkpoint |
-| `mps_execution.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、legacy noise lowering、adaptive bond rerun | 多轨迹生命周期与 seed 派生已委托 Runtime；legacy 直接入口仍负责调用 Compiler lowering |
+| `mps_execution.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、lowered IR 内部入口、adaptive bond rerun | 正式 `run_native` 路径由 Runtime 先调用 Compiler lowering；受保护的 legacy 直接入口仍保留同签名 lowering |
 | `runtime/trajectories/mps.py` | Runtime 生命周期 | 多轨迹 ownership、随机流、统计收敛、失败重试、checkpoint/restart 和 rank 结果合并 | 通过调用方提供的单轨迹执行器调用 Simulation，不实现 MPS 门或 Kraus 数值算法 |
 | `mps_planning_mixin.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
 | `mps_models.py`、`mps.py` | 结果转换/兼容门面 | 算法内部诊断或短期门面 | 长期结果契约必须由 Core；门面退出条件是 Runtime 只经获批 Engine Contract 调用 |
@@ -142,7 +142,7 @@
 6. **跨层结果和公共类型**：Simulation 可产生内部数值 diagnostics，但稳定请求、结果、
    Evidence、Failure 和序列化 schema 均由 Core 唯一拥有。
 
-优先迁移热点是 `simulation/mps_execution.py` 的 legacy noise lowering 入口，以及三个分布式 backend
+`mps_execution.py` 的 Runtime 导入豁免暂时只服务受保护的 `run_noisy_mps*` 限定名称；应在公共 API 完成正式弃用迁移后删除，不得通过动态导入绕过。下一批迁移热点是三个分布式 backend
 中的 process-group/数值核交织。不能简单搬文件；必须先有 Core 契约和替换测试。
 
 ## 7. 第一个可替换切片

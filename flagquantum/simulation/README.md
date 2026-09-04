@@ -26,7 +26,9 @@ and accepts an initialized MPS plus an explicit random generator.
 `mps_execution.py` preserves the public wrappers and adapts legacy Circuit
 inputs. Multi-trajectory ownership, random streams, convergence, retry,
 checkpoint/restart, and rank result merging belong to
-`runtime/trajectories/mps.py`.
+`runtime/trajectories/mps.py`. The primary `run_native` path lowers noise once
+before entering the lowered MPS entry points; only protected direct legacy
+calls still perform lowering in the compatibility wrapper.
 
 `tensor_local.py` owns local tensor-network plan construction and the numerical
 state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,

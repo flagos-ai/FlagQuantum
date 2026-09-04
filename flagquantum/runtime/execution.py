@@ -885,8 +885,11 @@ def run_native(
             ),
         )
     elif mode == "mps_trajectory":
-        from ..compilation.noise import build_noisy_execution_plan
-        from ..simulation.mps import run_noisy_mps_trajectory
+        from ..compilation.noise import (
+            build_noisy_execution_plan,
+            lower_noise_model,
+        )
+        from ..simulation.mps_execution import run_lowered_noisy_mps_trajectory
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)
@@ -894,9 +897,11 @@ def run_native(
         mps_options.pop("world_sz", None)
         mps_options.pop("coupling_map", None)
         mps_options.pop("optimize", None)
-        result = run_noisy_mps_trajectory(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            noise_model,
+        source = execution_ir if coupling_map is not None else circuit_or_ir
+        lowered = lower_noise_model(execution_ir, noise_model)
+        result = run_lowered_noisy_mps_trajectory(
+            lowered,
+            source=source,
             **mps_options,
         )
         execution_plan = provided_execution_plan or build_plan(
@@ -919,8 +924,11 @@ def run_native(
             ),
         )
     elif mode == "noisy_mps":
-        from ..compilation.noise import build_noisy_execution_plan
-        from ..simulation.mps import run_noisy_mps
+        from ..compilation.noise import (
+            build_noisy_execution_plan,
+            lower_noise_model,
+        )
+        from ..simulation.mps_execution import run_lowered_noisy_mps
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)
@@ -938,9 +946,12 @@ def run_native(
             )
         mps_options.pop("coupling_map", None)
         mps_options.pop("optimize", None)
-        result = run_noisy_mps(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            noise_model,
+        source = execution_ir if coupling_map is not None else circuit_or_ir
+        lowered = lower_noise_model(execution_ir, noise_model)
+        result = run_lowered_noisy_mps(
+            lowered,
+            source=source,
+            noise_model=noise_model,
             **mps_options,
         )
         execution_plan = provided_execution_plan or build_plan(
