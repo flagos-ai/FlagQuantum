@@ -20,14 +20,15 @@ from flagquantum.core.target_capabilities import (
     CapabilityBlocker,
     CapabilityContractError,
     CapabilityMatchResult,
+    CapabilityRequirement,
     CapabilityScope,
     ComparisonOperator,
     EvidenceLevel,
     FactExposure,
     FallbackAuthorizations,
     RequirementSet,
+    RequirementSource,
     RequirementStrength,
-    SupportStatus,
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
@@ -191,23 +192,50 @@ def _axis_authorized(
     return bool(getattr(authorizations, axis.value))
 
 
-def _cpu_identity(snapshot: TargetCapabilitySnapshot) -> bool | None:
-    """Return CPU identity only from a verified, observed Core fact.
+def _cpu_identity(
+    snapshot: TargetCapabilitySnapshot,
+    *,
+    evaluated_at: datetime,
+    expected_target_identity: TargetIdentity | None,
+    required_scope: CapabilityScope | None,
+    claim_minimum_evidence_level: EvidenceLevel,
+) -> tuple[bool | None, tuple[CapabilityBlocker, ...]]:
+    """Return CPU identity only after Core validates the ``device.kind`` fact.
 
     Runtime candidate metadata is not evidence.  Missing, unsupported,
     unmeasured, unknown, or non-observed ``device.kind`` facts remain
-    unresolved rather than being guessed as CPU or non-CPU.
+    unresolved rather than being guessed as CPU or non-CPU.  The policy
+    requirement deliberately reuses Core's source, evidence, scope, freshness,
+    and blocker semantics instead of duplicating an evidence matcher here.
     """
 
     fact = next((item for item in snapshot.facts if item.name == "device.kind"), None)
-    if (
-        fact is None
-        or fact.support_status is not SupportStatus.VERIFIED
-        or fact.fact_exposure is not FactExposure.OBSERVED
-        or not isinstance(fact.value, str)
-    ):
-        return None
-    return fact.value == "cpu"
+    if fact is None or not isinstance(fact.value, str):
+        return None, ()
+    identity_requirements = RequirementSet(
+        requirements=(
+            CapabilityRequirement(
+                name="device.kind",
+                operator=ComparisonOperator.EQUALS,
+                value=fact.value,
+                strength=RequirementStrength.MANDATORY,
+                source=RequirementSource.RUNTIME_PROTOCOL,
+                minimum_evidence_level=EvidenceLevel.OBSERVABLE,
+                accepted_exposures=(FactExposure.OBSERVED,),
+            ),
+        )
+    )
+    identity_match = _core.match_target_capabilities(
+        identity_requirements,
+        snapshot,
+        evaluated_at=evaluated_at,
+        expected_target_identity=expected_target_identity,
+        required_scope=required_scope,
+        claim_minimum_evidence_level=claim_minimum_evidence_level,
+    )
+    if not identity_match.executable:
+        return None, identity_match.blockers
+    return fact.value == "cpu", ()
 
 
 def _requires_cpu(requirements: RequirementSet) -> bool:
@@ -226,23 +254,24 @@ def _cpu_identity_blockers(
     candidate: TargetCapabilityCandidate,
     *,
     cpu_identity: bool | None,
+    cpu_identity_core_blockers: tuple[CapabilityBlocker, ...],
     request_requires_cpu: bool,
 ) -> tuple[RuntimeDecisionBlocker, ...]:
     blockers: list[RuntimeDecisionBlocker] = []
     declares_cpu = FallbackAxis.CPU in candidate.fallback_axes
     if cpu_identity is None:
-        if candidate.is_cpu_candidate or declares_cpu:
-            blockers.append(
-                RuntimeDecisionBlocker(
-                    code=RuntimeDecisionBlockerCode.CPU_IDENTITY_UNVERIFIED,
-                    message=(
-                        "CPU identity requires a verified observed device.kind "
-                        "fact; candidate metadata cannot supply it"
-                    ),
-                    candidate_id=candidate.candidate_id,
-                    fallback_axes=((FallbackAxis.CPU,) if declares_cpu else ()),
-                )
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.CPU_IDENTITY_UNVERIFIED,
+                message=(
+                    "candidate device.kind identity is not verifiable by Core; "
+                    "Runtime cannot assume it is non-CPU"
+                ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=((FallbackAxis.CPU,) if declares_cpu else ()),
+                core_blockers=cpu_identity_core_blockers,
             )
+        )
         return tuple(blockers)
     if cpu_identity is False:
         if candidate.is_cpu_candidate or declares_cpu:
@@ -566,10 +595,18 @@ def match_target_capability_candidates(
                     candidate_id=candidate.candidate_id,
                 )
             )
+        cpu_identity, cpu_identity_core_blockers = _cpu_identity(
+            candidate.snapshot,
+            evaluated_at=evaluation_instant,
+            expected_target_identity=expected_target_identity,
+            required_scope=required_scope,
+            claim_minimum_evidence_level=claim_minimum_evidence_level,
+        )
         candidate_blockers.extend(
             _cpu_identity_blockers(
                 candidate,
-                cpu_identity=_cpu_identity(candidate.snapshot),
+                cpu_identity=cpu_identity,
+                cpu_identity_core_blockers=cpu_identity_core_blockers,
                 request_requires_cpu=request_requires_cpu,
             )
         )

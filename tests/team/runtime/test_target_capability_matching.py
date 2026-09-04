@@ -76,7 +76,7 @@ def _snapshot(
     device_count: int = 1,
     captured_at: datetime = _CAPTURED_AT,
     valid_for: timedelta = timedelta(hours=1),
-    include_device_kind: bool = False,
+    include_device_kind: bool = True,
     memory_status: SupportStatus = SupportStatus.VERIFIED,
     memory_exposure: FactExposure = FactExposure.OBSERVED,
     evidence_level: EvidenceLevel = EvidenceLevel.OBSERVABLE,
@@ -193,8 +193,10 @@ def test_every_candidate_uses_the_same_immutable_requirement_set_and_core_matche
         requirements, candidates, evaluated_at=_EVALUATED_AT
     )
 
-    assert len(calls) == 2
-    assert all(request is requirements for request, _ in calls)
+    candidate_calls = [call for call in calls if call[0] is requirements]
+    assert len(candidate_calls) == 2
+    assert len(calls) == 4
+    assert all(request is requirements for request, _ in candidate_calls)
     assert {snapshot_id for _, snapshot_id in calls} == {
         item.snapshot.snapshot_id for item in candidates
     }
@@ -320,8 +322,8 @@ def test_explicit_cpu_requirement_allows_normal_cpu_without_fallback_authorizati
 
 
 def test_cpu_marker_cannot_replace_missing_or_unknown_device_kind_fact() -> None:
-    missing = _candidate("missing-cpu", kind="cpu", is_cpu_candidate=True)
-    unknown_base = _candidate("unknown-cpu", kind="cpu")
+    missing = _candidate("missing-cpu", kind="cpu", include_device_kind=False)
+    unknown_base = _candidate("unknown-cpu", kind="cpu", include_device_kind=False)
     unknown_snapshot = unknown_base.snapshot
     unknown_fact = CapabilityFact(
         name="device.kind",
@@ -394,6 +396,56 @@ def test_cpu_marker_and_axis_cannot_override_non_cpu_device_kind_fact() -> None:
     )
 
 
+def test_device_kind_identity_reuses_core_evidence_validation() -> None:
+    unresolved_base = _candidate("unresolved-kind", kind="cuda")
+    unresolved_snapshot = unresolved_base.snapshot
+    unresolved_kind = CapabilityFact(
+        name="device.kind",
+        value="cuda",
+        support_status=SupportStatus.VERIFIED,
+        fact_exposure=FactExposure.OBSERVED,
+        source=FactSource(kind="test_probe", ref="missing-device-kind-evidence"),
+    )
+    unresolved = TargetCapabilityCandidate(
+        "unresolved-kind",
+        TargetCapabilitySnapshot(
+            target_identity=unresolved_snapshot.target_identity,
+            scope=unresolved_snapshot.scope,
+            captured_at=unresolved_snapshot.captured_at,
+            valid_until=unresolved_snapshot.valid_until,
+            facts=tuple(
+                unresolved_kind if fact.name == "device.kind" else fact
+                for fact in unresolved_snapshot.facts
+            ),
+            evidence_refs=unresolved_snapshot.evidence_refs,
+        ),
+    )
+    weak = _candidate(
+        "weak-kind",
+        kind="cuda",
+        evidence_level=EvidenceLevel.BASIC,
+    )
+
+    for candidate, expected_code in (
+        (unresolved, "unresolved_evidence_reference"),
+        (weak, "insufficient_evidence"),
+    ):
+        decision = match_target_capability_candidates(
+            _requirements(), (candidate,), evaluated_at=_EVALUATED_AT
+        )
+
+        assert decision.selected is None
+        identity_blocker = next(
+            blocker
+            for blocker in decision.blockers
+            if blocker.code is RuntimeDecisionBlockerCode.CPU_IDENTITY_UNVERIFIED
+        )
+        assert any(
+            blocker.code == expected_code and blocker.capability_name == "device.kind"
+            for blocker in identity_blocker.core_blockers
+        )
+
+
 def test_cpu_candidate_does_not_rewrite_a_mandatory_device_requirement() -> None:
     requirements = _requirements(
         _require("device.kind", "cuda"),
@@ -429,7 +481,7 @@ def test_fallback_axes_are_independent_and_authorized_per_axis(
         kind="cpu" if axis is FallbackAxis.CPU else "cuda",
         fallback_axes=frozenset({axis}),
         is_cpu_candidate=axis is FallbackAxis.CPU,
-        include_device_kind=axis is FallbackAxis.CPU,
+        include_device_kind=True,
     )
 
     decision = match_target_capability_candidates(
