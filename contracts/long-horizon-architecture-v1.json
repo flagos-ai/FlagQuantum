@@ -47,12 +47,12 @@
       "name": "compiler_convergence",
       "owner": "compiler-maintainers",
       "target_milestone": "vnext-phase-2",
-      "current_authority": ["flagquantum/_compiler", "flagquantum/compilation"],
+      "current_authority": ["flagquantum/compiler", "flagquantum/_compiler", "flagquantum/compilation"],
       "target_authority": "flagquantum/compiler",
-      "compatibility_adapter": "existing public compilation facade",
+      "compatibility_adapter": "stable flagquantum.compiler package and bounded planning migration",
       "completion_evidence": "one pipeline can be replaced without Runtime or user API changes",
       "retirement_condition": "all supported compiler entry points delegate to the target facade and legacy internal imports reach zero",
-      "status": "planned"
+      "status": "in_progress"
     },
     {
       "name": "simulation_extraction",

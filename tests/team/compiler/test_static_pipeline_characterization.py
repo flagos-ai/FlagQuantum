@@ -16,7 +16,7 @@ from flagquantum._compiler.offline_deployment import (
 from flagquantum._compiler.passes.placement_routing import DirectedCouplingGraph
 from flagquantum._compiler.pipeline_cache import BoundedPipelineCache, CacheDisposition
 from flagquantum._compiler.testing.differential import lower_module_for_differential
-from flagquantum.compilation.compiler import simple_compile
+from flagquantum.compiler import simple_compile
 
 pytestmark = pytest.mark.unit
 

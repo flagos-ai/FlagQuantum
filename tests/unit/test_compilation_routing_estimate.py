@@ -3,7 +3,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.compilation.planner as fqxp
-from flagquantum.compilation.routing import (
+from flagquantum.compiler.routing import (
     CouplingMap,
     estimate_routing_cost,
     route_to_topology,

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.compilation.compiler import simple_compile
+from flagquantum.compiler import simple_compile
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

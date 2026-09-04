@@ -1,0 +1,20 @@
+# Compiler
+
+This package transforms a Core-owned `CircuitIR` without executing it.
+`pipeline.py` owns the stable optimization, layer scheduling, and backend
+lowering entry points. `routing.py` owns coupling maps and topology-aware SWAP
+routing. `__init__.py` is the stable expert-facing compiler interface.
+
+## Ten-minute change path
+
+- Change local canonical optimization in `pipeline.py`.
+- Change instruction layer scheduling in `pipeline.py`.
+- Change coupling maps or SWAP routing in `routing.py`.
+- Run the compiler fixed-point, trainable-parameter, scheduler, routing, public
+  namespace, and CPU vertical-slice tests.
+
+Runtime planning, backend selection, resource estimation, execution-plan
+assembly, noise execution policy, provider lifecycle, and simulation numerics
+do not belong here. The private `_compiler` research tree remains frozen until
+one of its implementations replaces a stable compiler concern under the same
+consumer-facing tests.

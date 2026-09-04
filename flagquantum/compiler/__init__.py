@@ -3,7 +3,7 @@
 Normal execution compiles internally through :func:`flagquantum.plan`.
 """
 
-from .compilation.compiler import (
+from .pipeline import (
     CouplingMap,
     compile_for_backend,
     merge_adjacent_rotations,

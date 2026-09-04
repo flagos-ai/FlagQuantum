@@ -16,7 +16,7 @@ from typing import Any
 import torch
 
 import flagquantum as fq
-from flagquantum.compilation.compiler import simple_compile
+from flagquantum.compiler import simple_compile
 
 
 def _build_circuit(gate_count: int) -> fq.Circuit:

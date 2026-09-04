@@ -168,6 +168,16 @@ def architecture_errors() -> tuple[str, ...]:
             "flagquantum/runtime/platforms: migrated platform package must not return; "
             "use flagquantum/providers/platform"
         )
+    for removed_compiler_path in (
+        PACKAGE / "compiler.py",
+        PACKAGE / "compilation" / "compiler.py",
+        PACKAGE / "compilation" / "routing.py",
+    ):
+        if removed_compiler_path.exists():
+            errors.append(
+                f"{removed_compiler_path.relative_to(ROOT).as_posix()}: migrated "
+                "compiler authority must not return; use flagquantum/compiler"
+            )
 
     for directory in ("flagquantum", "tests", *MAINTAINED_ENTRYPOINTS):
         for path in (ROOT / directory).rglob("*"):
@@ -261,9 +271,20 @@ def architecture_errors() -> tuple[str, ...]:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(f"{relative}: core imports forbidden layer {module}")
 
+        if relative.startswith("flagquantum/compiler/"):
+            forbidden = tuple(boundaries["compiler_forbidden"])
+            for module, _ in imports:
+                if any(part in module.split(".") for part in forbidden):
+                    errors.append(
+                        f"{relative}: compiler imports forbidden layer {module}"
+                    )
+
         if relative.startswith("flagquantum/runtime/"):
             imports_compiler = any(
-                any(part in {"_compiler", "compilation"} for part in module.split("."))
+                any(
+                    part in {"_compiler", "compilation", "compiler"}
+                    for part in module.split(".")
+                )
                 for module, _ in imports
             )
             if imports_compiler:

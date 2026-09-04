@@ -1,4 +1,4 @@
-"""Hardware coupling maps and topology-aware SWAP routing."""
+"""Compiler-owned coupling maps and topology-aware SWAP routing."""
 
 from __future__ import annotations
 

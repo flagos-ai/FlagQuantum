@@ -5,7 +5,7 @@ from __future__ import annotations
 from math import log2
 from typing import Any, Sequence
 
-from ....compilation.compiler import schedule_layers
+from ....compiler import schedule_layers
 from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
 
 _DIAGONAL_GATES = {

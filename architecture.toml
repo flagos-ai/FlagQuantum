@@ -3,6 +3,7 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 
 [boundaries]
 core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
+compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simulation", "providers"]
 noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
 compilation_noise_forbidden = ["circuit", "deployment", "runtime", "simulation"]
 trajectory_runtime_forbidden = ["circuit", "simulation", "backends", "deployment"]

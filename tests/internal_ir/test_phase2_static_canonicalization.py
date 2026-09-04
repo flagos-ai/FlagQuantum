@@ -18,7 +18,7 @@ from flagquantum._compiler.passes.static_canonicalization import (
 from flagquantum._compiler.testing.differential import (
     lower_module_for_differential,
 )
-from flagquantum.compilation.compiler import simple_compile
+from flagquantum.compiler import simple_compile
 
 pytestmark = pytest.mark.unit
 

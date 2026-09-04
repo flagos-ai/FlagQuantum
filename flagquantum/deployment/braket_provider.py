@@ -64,7 +64,7 @@ def _first_property(value: Any, paths: tuple[tuple[str, ...], ...]) -> Any:
 
 
 def _braket_coupling_map(properties: Any, n_wires: int) -> Any:
-    from ..compilation.routing import CouplingMap
+    from ..compiler import CouplingMap
 
     graph = _first_property(
         properties,

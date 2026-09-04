@@ -1,8 +1,8 @@
 # Compiler convergence inventory
 
-Status: Compiler team characterization and migration proposal
+Status: stable transformation authority migrated; planning convergence in progress
 
-Date: 2026-09-03
+Date: 2026-09-04
 
 Path classification: `single_device_fast_path` and provider-free static compilation
 
@@ -10,24 +10,27 @@ Public API impact: none
 
 ## Decision
 
-The two compiler trees do not currently form one authority.
+Stable program transformation now has one authoritative package, while private
+research compilation and execution planning remain bounded migration work.
 
-- `flagquantum.compilation` is the factual authority for the stable and default
-  execution path. The public `flagquantum.compiler` facade, `fq.plan`, Circuit
-  convenience methods, Runtime, Simulation, and Deployment import it directly.
+- `flagquantum.compiler` is the factual authority for stable canonical
+  optimization, instruction scheduling, backend lowering, coupling maps, and
+  topology routing. The former public forwarding file and the corresponding
+  `compilation.compiler`/`compilation.routing` modules were removed.
+- `flagquantum.compilation` still owns the stable/default execution-plan model,
+  serialization, selection, estimates, and plan assembly. Those responsibilities
+  are transitional because selection belongs to Runtime and shared plan products
+  require Core-owned contracts.
 - `flagquantum._compiler` is the factual authority for the private
   `private_static_compiler_v1` candidate: exact import, immutable internal IR,
   verifier, analyses, pass manager, static lowering, deterministic text emission,
   compilation identity/cache, TargetIR legalization, and sealed executable
   artifacts. Its package `__init__` intentionally exports nothing and the default
   path does not import it.
-- Neither tree imports the other. There is no direct `_compiler` ↔ `compilation`
-  Python import cycle. Their convergence problem is duplicated behavior and
-  consumers coupled to concrete `compilation` modules, not an existing delegation
-  chain.
-- The intended final authority remains `flagquantum.compiler`, as recorded by the
-  long-horizon architecture contract. This inventory does not create that package,
-  expose a new compiler API, redirect the default path, or retire either tree.
+- The default CPU path now calls `flagquantum.compiler` directly for program
+  transformation and `flagquantum.compilation` only for transitional planning.
+  `_compiler` remains off the default path and must replace proven concerns rather
+  than being copied wholesale into the stable package.
 
 Consequently, `_compiler` is not a replacement for all of `compilation` today.
 It is the best implementation candidate for a narrowly defined static program
@@ -42,14 +45,14 @@ capability, request, and artifact types require a Core-owned contract first.
 | Concern | Current entry points | Input → output | Current authority and notes |
 | --- | --- | --- | --- |
 | Program capture | `Circuit.to_ir()`; `CircuitIR`; `Module._compile_builder_program()` | Python circuit/builder → `CircuitIR` or Runtime builder template | Public circuit capture is split between Core/API and Runtime. Neither compiler tree owns a unified capture boundary. Runtime builder capture is a misplaced compiler-like responsibility but is outside this team's edit scope. |
-| Normalization/import | `compilation.compiler._as_ir()` through `ensure_circuit_ir()`; `_compiler.importers.circuit_ir.import_circuit_ir()`; `_compiler.exporters.circuit_ir.seal_circuit_ir_round_trip()` | `Circuit`/`CircuitIR` → `CircuitIR`, or validated `CircuitIR` → `ImportedCircuitProgram`/`SealedCircuitIRRoundTrip` | `compilation` performs permissive public normalization. `_compiler` owns the exact, allowlisted private import profile and structured diagnostics. |
+| Normalization/import | `compiler.pipeline._as_ir()` through `ensure_circuit_ir()`; `_compiler.importers.circuit_ir.import_circuit_ir()`; `_compiler.exporters.circuit_ir.seal_circuit_ir_round_trip()` | `Circuit`/`CircuitIR` → `CircuitIR`, or validated `CircuitIR` → `ImportedCircuitProgram`/`SealedCircuitIRRoundTrip` | `compiler` performs stable public normalization. `_compiler` owns the exact, allowlisted private import profile and structured diagnostics. |
 | Validation | `CircuitIR.validate()`; stable checks in `compilation.planner.plan()`; `_compiler.ir.verifier.verify_module()`; `TargetCapabilities`/`TargetIR` constructors and `legalize_quantum_module()` | candidate program/target → accepted value or typed failure | Core validates public IR. `_compiler` has the only compiler-internal verifier. Stable plan validation remains embedded in `compilation.planner`. |
 | Analysis | `compilation.planner.analyze()`; `_compiler.analyses.AnalysisManager`, `DefUseAnalysis`, `QubitLifetimeAnalysis` | IR/module → structural or reusable analysis result | Duplicate structural analysis responsibility. `compilation.analyze` feeds current runtime planning; `_compiler` analyses feed private passes and are not default-path consumers. |
-| Pass execution | `compilation.compiler.simple_compile()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Duplicate canonicalization exists. `_compiler` additionally provides descriptors, identity policy, preservation checks, diagnostics, analysis invalidation, and deterministic pipeline digest. |
-| Routing | `compilation.routing.route_to_topology()` and `select_routing_strategy()`; `_compiler.passes.placement_routing.PlacementRoutingPass` | logical program + coupling graph → routed program | Duplicate routing responsibility with different graph/result models and metadata contracts. Dynamic Runtime also calls the legacy routing function directly. |
-| Lowering | `compilation.compiler.compile_for_backend()`; `compilation.noise.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compilation` owns default local/noise lowering. `_compiler` owns provider-free static gate-set and TargetIR lowering. Differential lowering is evidence tooling, not a production boundary. |
+| Pass execution | `compiler.simple_compile()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Stable canonicalization is authoritative in `compiler`; `_compiler` remains a private replacement candidate with descriptors, diagnostics, analyses, and pipeline identity. |
+| Routing | `compiler.routing.route_to_topology()` and `select_routing_strategy()`; `_compiler.passes.placement_routing.PlacementRoutingPass` | logical program + coupling graph → routed program | Stable routing is authoritative in `compiler`; the private implementation has a different graph and evidence model and remains off the default path. |
+| Lowering | `compiler.compile_for_backend()`; `compilation.noise.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local/topology lowering; noise execution planning remains transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
 | Backend/mode selection | `compilation.backend_selection.select_backend_by_cost()`; `compilation.planner.select_execution_mode()` and `plan_runtime_selection()`; noise selection | `CircuitIR` + execution/resource policy → backend/mode candidate or selection plan | Only `compilation` implements current selection. This is Runtime policy under the target architecture, not a reason to move selection into the converged Compiler. `_compiler.TargetCapabilities` describes target legality and does not select a runtime backend. |
-| Scheduling/planning | `compilation.compiler.schedule_layers()`; `compilation.execution_plan_builder`; `compilation.planner.plan()`, `plan_advanced()`, `plan_for_backend()` | compiled IR + resolved execution options → `ExecutionPlan` | Current stable/default authority is `compilation`; Runtime directly consumes these concrete functions and types. |
+| Scheduling/planning | `compiler.schedule_layers()`; `compilation.execution_plan_builder`; `compilation.planner.plan()`, `plan_advanced()`, `plan_for_backend()` | compiled IR + resolved execution options → `ExecutionPlan` | Compiler owns instruction scheduling; transitional `compilation` still owns plan assembly and Runtime policy. |
 | Code generation | `_compiler.exporters.text.emit_openqasm2()`, `emit_openqasm3()`, `emit_qcis_v1()`; legacy `flagquantum.utils` exporters used by deployment | verified static module → canonical text + content hash | `_compiler` owns the deterministic private emitters. `compilation` has no generic code-generation boundary. Legacy utility emitters remain separate consumers and are not retired here. |
 | Artifact packaging | `compilation.execution_plan_contract.attach_execution_contract()` and plan serialization; `_compiler.exporters.circuit_ir`; `_compiler.offline_deployment.compile_offline_static()`; `_compiler.executable_artifact.seal_executable_artifact()` | compiled program/plan/bytes → identity-bound plan, round-trip envelope, offline result, or executable artifact | Both trees define cross-stage products. Core already contains a protected candidate `ProgramArtifact`, but neither compiler path uses it. Cross-domain convergence therefore needs a Core contract before implementation migration. |
 
@@ -69,18 +72,19 @@ capability, request, and artifact types require a Core-owned contract first.
 ### Direct package dependency direction
 
 ```text
-Runtime consumers ───────────────► compilation ───────────────► Core
+Runtime consumers ───────────────► compiler ──────────────────► Core
+                └───────────────► compilation planning ───────► Core
                                       _compiler ───────────────► Core
                                       (not on the default path)
 
-_compiler  ── no import ──► compilation
-compilation ─ no import ──► _compiler
-Runtime     ─ no import ──► _compiler
+compiler    ── no import ──► _compiler
+_compiler   ── no import ──► compiler
+Runtime     ── no import ──► _compiler
 ```
 
-Both trees depend on Core. There is currently no one-way dependency between the
-two compiler trees and no direct package cycle between them. This isolation is why
-the private path can be characterized without changing default execution.
+The stable and private compiler implementations both depend on Core and do not
+import each other. Transitional planning imports the stable compiler, while the
+private path remains isolated from default execution.
 
 There are, however, architectural reverse dependencies outside that pair:
 
@@ -105,11 +109,11 @@ current compilation implementation behind one narrow contract.
 
 | Runtime consumer | Direct dependency from `flagquantum.compilation` | Coupling type |
 | --- | --- | --- |
-| `runtime/execution.py` | `compile_for_backend`; `ExecutionPlan`; `select_execution_mode`; `plan_advanced`; `plan`; noisy-plan construction and noise lowering | default compilation, planning, type identity, and noise lowering |
+| `runtime/execution.py` | `compiler.compile_for_backend`; `ExecutionPlan`; `select_execution_mode`; `plan_advanced`; `plan`; noisy-plan construction and noise lowering | stable compilation plus transitional planning, type identity, and noise lowering |
 | `runtime/plan_execution.py` | `ExecutionPlanContractError`, `plan_decision`, `plan_noise_model`, `plan_program`, `validate_plan_environment`; `ExecutionPlan` | protected plan schema, validation, and decoding |
 | `runtime/result.py` | `ExecutionPlan` under type checking | result type contract |
-| `runtime/backends/statevector/planning.py` | `schedule_layers` | concrete compiler scheduling algorithm |
-| `runtime/dynamic/routing.py` | `CouplingMap`, `route_to_topology` | concrete routing model and implementation |
+| `runtime/backends/statevector/planning.py` | `compiler.schedule_layers` | concrete compiler scheduling algorithm |
+| `runtime/dynamic/routing.py` | `compiler.CouplingMap`, `compiler.route_to_topology` | concrete routing model and implementation |
 | `runtime/backends/statevector/noisy.py` | `lower_noise_model` | lowering implementation |
 | `runtime/noise_registry.py` | `EvolutionSemantics`, `NoisyExecutionPlan`, `StateRepresentation` | compiler-owned execution contract types |
 | `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | planner calibration type |
@@ -177,13 +181,14 @@ CircuitIR
   -> CircuitIR
 ```
 
-The eventual compatibility adapter would sit behind the existing
-`compilation.compiler.simple_compile(circuit_or_ir) -> CircuitIR` boundary. Runtime,
+The eventual replacement adapter would sit behind the existing
+`compiler.simple_compile(circuit_or_ir) -> CircuitIR` boundary. Runtime,
 `compile_for_backend`, public imports, and callers would remain unchanged. This is
 smaller and safer than first replacing routing, planning, backend selection, noise,
 or artifact serialization.
 
-This round does **not** add that adapter or change dispatch. Before a later switch,
+The physical authority move does **not** switch to the private implementation.
+Before a later implementation replacement,
 the integration branch must approve a replacement contract and prove:
 
 1. the accepted-input domain matches the current `simple_compile` domain, including
@@ -204,9 +209,9 @@ for the candidate slice, not authorization to switch it on.
 
 ## Human-maintainability notes for the next slice
 
-**Primary domain:** Compiler. The first migration candidate remains the static
-canonicalization path behind `compilation.compiler.simple_compile`; this
-inventory does not authorize changing the default dispatch or public API.
+**Primary domain:** Compiler. The first replacement candidate remains the static
+canonicalization path behind `compiler.simple_compile`; the physical directory
+migration does not authorize changing semantics or the public API.
 
 **Readable scenario:**
 `tests/team/compiler/test_static_pipeline_characterization.py` is the existing

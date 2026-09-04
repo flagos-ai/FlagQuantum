@@ -19,6 +19,7 @@ import logging
 # Also expose submodules for advanced users
 from . import (
     algorithms,
+    compiler,
     deployment,
     devices,
     drawer,
@@ -57,8 +58,7 @@ from .algorithms import (
     zz_chain_hamiltonian,
 )
 from .circuit import Circuit, expectation
-from .compilation import compiler, planner
-from .compilation.compiler import CouplingMap, compile_for_backend, route_to_topology
+from .compilation import planner
 from .compilation.noise import (
     NOISE_SELECTOR_CALIBRATION_SCHEMA,
     NoiseBackendCandidate,
@@ -85,6 +85,7 @@ from .compilation.planner import (
     select_backend_by_cost,
     select_execution_mode,
 )
+from .compiler import CouplingMap, compile_for_backend, route_to_topology
 from .core.ir import (
     IR_VERSION,
     CircuitIR,

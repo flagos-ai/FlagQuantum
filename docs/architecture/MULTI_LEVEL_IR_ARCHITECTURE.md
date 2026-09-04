@@ -41,8 +41,8 @@ FlagQuantum 当前并非没有 IR，而是已经具备一个稳定、实用的�
 
 - `flagquantum/core/ir.py`
 - `flagquantum/circuit.py`
-- `flagquantum/compilation/compiler.py`
-- `flagquantum/compilation/routing.py`
+- `flagquantum/compiler/pipeline.py`
+- `flagquantum/compiler/routing.py`
 - `flagquantum/runtime/execution.py`
 - `flagquantum/runtime/dynamic/`
 - `flagquantum/deployment/cloud.py`

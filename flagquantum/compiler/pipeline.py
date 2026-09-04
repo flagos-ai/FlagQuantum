@@ -1,4 +1,4 @@
-"""Native FlagQuantum compiler passes."""
+"""Native FlagQuantum optimization, scheduling, and lowering pipeline."""
 
 from __future__ import annotations
 

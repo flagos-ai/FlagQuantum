@@ -34,7 +34,7 @@ def test_team_can_change_owned_and_shared_test_paths() -> None:
     assert (
         scope_errors(
             "compiler",
-            ["flagquantum/_compiler/pipeline.py", "tests/unit/test_compiler.py"],
+            ["flagquantum/compiler/pipeline.py", "tests/unit/test_compiler.py"],
             policy,
         )
         == ()

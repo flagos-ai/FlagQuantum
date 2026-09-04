@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from ..compiler import schedule_layers
 from ..core.ir import CircuitIR
-from .compiler import schedule_layers
 from .models import CircuitAnalysis, ExecutionPlan, LayerPlan
 
 

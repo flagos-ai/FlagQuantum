@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from ...compilation.routing import CouplingMap, route_to_topology
+from ...compiler import CouplingMap, route_to_topology
 from .circuit import DynamicCircuit
 
 

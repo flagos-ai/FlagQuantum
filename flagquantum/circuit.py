@@ -456,7 +456,7 @@ class Circuit:
         return self.run_distributed(**options)
 
     def compile(self, **options: Any) -> "Circuit":
-        from .compilation.compiler import compile_for_backend
+        from .compiler import compile_for_backend
 
         compiled_ir = compile_for_backend(self, **options)
         compiled = type(self).from_ir(
@@ -467,7 +467,7 @@ class Circuit:
         return compiled
 
     def layers(self) -> list[list[Instruction]]:
-        from .compilation.compiler import schedule_layers
+        from .compiler import schedule_layers
 
         return schedule_layers(self.to_ir())
 

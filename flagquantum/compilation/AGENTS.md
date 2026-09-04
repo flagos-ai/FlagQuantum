@@ -1,5 +1,6 @@
-# Compiler Team Boundary
+# Transitional Planning Boundary
 
-This is a current Compiler authority during convergence. Keep public behavior
-stable and do not add Runtime, concrete Provider, device SDK, or numerical-kernel
-responsibilities. New cross-domain types belong to Core, not this package.
+This directory temporarily contains execution planning, selection, estimates,
+and plan serialization. Stable program transformation and routing have moved to
+`flagquantum/compiler`; do not recreate them here. New Runtime policy belongs in
+Runtime, and new cross-domain types belong in Core.

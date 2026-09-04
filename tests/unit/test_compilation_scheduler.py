@@ -1,6 +1,6 @@
 import pytest
 
-from flagquantum.compilation.compiler import schedule_layers
+from flagquantum.compiler import schedule_layers
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

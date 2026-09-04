@@ -6,7 +6,7 @@ import hashlib
 import json
 from typing import Any, Mapping
 
-from ..compilation.routing import CouplingMap
+from ..compiler import CouplingMap
 
 DEPLOYMENT_ROUTING_EVIDENCE_SCHEMA = "flagquantum_deployment_routing_evidence_v1"
 DEPLOYMENT_PACKAGE_SCHEMA = "flagquantum_deployment_package_v1"

@@ -67,3 +67,25 @@ This is directory ownership evidence, not a new CUDA, FlagOS, domestic-device,
 communication, or performance claim. Platform convergence remains in progress
 until its separately recorded replacement and hardware-evidence conditions are
 met.
+
+## Stable Compiler authority migration
+
+The same proven path now enters `flagquantum/compiler` for canonical
+optimization, instruction scheduling, backend lowering, and optional topology
+routing. The public `flagquantum.compiler` module became the authoritative
+package without changing its expert-facing functions. The former forwarding
+file, `compilation/compiler.py`, and `compilation/routing.py` were deleted after
+all in-repository consumers switched in the same change.
+
+This migration reused the existing `CircuitIR`, optimization and routing
+implementations, public compiler functions, and CPU vertical tests. It added no
+new compiler contract, pass framework, registry, fallback, or parallel
+implementation. Architecture checks prevent the removed paths from returning.
+The `_compiler` research implementation remains frozen and off the default path
+until a bounded concern can replace the stable implementation under the same
+consumer-facing conformance tests.
+
+Execution-plan models, serialization, resource estimates, and backend/mode
+selection remain temporarily under `flagquantum/compilation`; moving them into
+Compiler would be the wrong boundary. Their next migration must separate
+Runtime policy from Core-owned plan products rather than rename the directory.

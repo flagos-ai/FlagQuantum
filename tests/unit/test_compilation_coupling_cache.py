@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from flagquantum.compilation.routing import CouplingMap
+from flagquantum.compiler import CouplingMap
 
 pytestmark = pytest.mark.unit
 

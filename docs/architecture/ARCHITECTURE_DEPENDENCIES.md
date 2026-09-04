@@ -39,7 +39,8 @@ Every exception names an owner and removal version. Run
 | Stable API | `flagquantum.__init__`, `flagquantum.circuit` |
 | Compatibility API | `flagquantum.api` through version 0.3.0 |
 | IR and parameters | `flagquantum.core` |
-| Compiler and planner | `flagquantum.compilation.compiler`, `.planner` |
+| Compiler | `flagquantum.compiler` |
+| Transitional execution planning | `flagquantum.compilation.planner` |
 | Runtime API and contracts | `flagquantum.runtime` |
 | Executor protocols | `flagquantum.runtime.contracts` |
 | Backend boundaries | `flagquantum.runtime.backends` |

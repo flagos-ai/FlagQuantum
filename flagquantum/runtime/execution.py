@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
-from ..compilation.compiler import compile_for_backend
 from ..compilation.planner import ExecutionPlan, select_execution_mode
 from ..compilation.planner import plan_advanced as build_plan
+from ..compiler import compile_for_backend
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
 from ..core.parameters import value_to_tensor

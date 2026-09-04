@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compilation.routing import CouplingMap, route_to_topology
+from flagquantum.compiler import CouplingMap, route_to_topology
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

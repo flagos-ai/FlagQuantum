@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from flagquantum.compilation.routing import (
+from flagquantum.compiler.routing import (
     CouplingMap,
     estimate_routing_cost,
     route_to_topology,

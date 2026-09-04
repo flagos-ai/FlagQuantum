@@ -15,7 +15,7 @@ import torch
 
 from ..algorithms import Hamiltonian
 from ..circuit import Circuit
-from ..compilation.compiler import CouplingMap, compile_for_backend
+from ..compiler import CouplingMap, compile_for_backend
 from ..core.ir import CircuitIR, Instruction, MeasurementNode
 from ..runtime.parallel import ObservableGroup, group_observables
 from ..utils.qasm_exporter import export_to_qasm_str

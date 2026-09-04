@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Sequence
 
+from ..compiler import compile_for_backend, schedule_layers
 from ..core.ir import CircuitIR, MeasurementNode
 from ..errors import CapabilityError, ValidationError
 from .backend_selection import OutputTarget, select_backend_by_cost
@@ -13,7 +14,6 @@ from .candidates import (
     RuntimeCandidate,
     RuntimeCandidateBuilder,
 )
-from .compiler import compile_for_backend, schedule_layers
 from .estimates import (
     estimate_density_bytes,
     estimate_mps_bytes,

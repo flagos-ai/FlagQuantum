@@ -45,6 +45,7 @@ owns = [
 branch = "codex/vnext-team-compiler"
 worktree = "FlagQuantum-vNext-compiler"
 owns = [
+    "flagquantum/compiler/**",
     "flagquantum/_compiler/**",
     "flagquantum/compilation/**",
     "flagquantum/drawer/**",
