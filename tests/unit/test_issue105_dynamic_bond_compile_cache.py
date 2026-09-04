@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.runtime.backends.mps.site_kernels import (
+from flagquantum.simulation.mps_site_kernels import (
     SiteKernelBucket,
     SiteKernelCachePolicy,
     apply_rxx_contraction_bucket,
@@ -166,7 +166,7 @@ def test_bucket_capacity_bounds_packed_inputs_before_stacking():
 
 
 def test_dynamo_specialization_limit_accounts_for_microbatch_variants():
-    from flagquantum.runtime.backends.mps import site_kernels as kernels
+    from flagquantum.simulation import mps_site_kernels as kernels
 
     configure_site_kernel_cache(
         SiteKernelCachePolicy(

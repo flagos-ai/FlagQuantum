@@ -17,17 +17,17 @@ from flagquantum.runtime.backends.mps.forward import (
     execute_torch_distributed_mps_forward,
     gather_mps_for_validation,
 )
-from flagquantum.runtime.backends.mps.site_kernels import (
-    configure_site_kernel_cache,
-    reset_site_kernel_stats,
-    site_kernel_cache_policy,
-)
 from flagquantum.runtime.distributed.models import (
     DistributedShardPlan,
     ShardedMPSState,
     TorchDistributedContext,
 )
 from flagquantum.simulation.mps import run_mps
+from flagquantum.simulation.mps_site_kernels import (
+    configure_site_kernel_cache,
+    reset_site_kernel_stats,
+    site_kernel_cache_policy,
+)
 
 
 def circuit_for_world(world: int, *, device: torch.device) -> Circuit:

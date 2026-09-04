@@ -6,9 +6,9 @@ from typing import Any, Mapping
 
 import torch
 
-from ....core.ir import Instruction
-from ....ops.gate_matrix import gate_matrix
-from ....simulation.mps import MPSConfig, _split_pair_matrix
+from ..core.ir import Instruction
+from ..ops.gate_matrix import gate_matrix
+from .mps import MPSConfig, _split_pair_matrix
 
 
 def instruction_matrix_for_mps(

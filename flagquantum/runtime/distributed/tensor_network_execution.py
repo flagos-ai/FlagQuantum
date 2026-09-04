@@ -21,6 +21,9 @@ import torch
 import torch.distributed as dist
 
 from ...compilation.tn_calibration import TNWorkingSetCalibration
+from ...simulation.mps_rank_local import (
+    tensor_nbytes as _tensor_nbytes,
+)
 from ...simulation.tensor import (
     PairContractionStep,
     TensorNetworkNode,
@@ -41,9 +44,6 @@ from ...simulation.tensor_path_search import (
 from ...simulation.tensor_stages import execute_pair_steps as _execute_pair_steps
 from ...version import __version__
 from ..backends.jax import plan_jax_distributed_quantum_backend
-from ..backends.mps.operations import (
-    tensor_nbytes as _tensor_nbytes,
-)
 from ..backends.tensor_network.joint_planning import (
     DistributedTNWorkingSetPolicy,
 )

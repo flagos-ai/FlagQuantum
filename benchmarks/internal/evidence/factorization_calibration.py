@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.runtime.backends.mps.site_kernels import apply_rxx_contraction_bucket
+from flagquantum.simulation.mps_site_kernels import apply_rxx_contraction_bucket
 from flagquantum.simulation.mps import (
     MPSConfig,
     _split_pair_matrix,

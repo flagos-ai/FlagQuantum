@@ -8,6 +8,11 @@ import torch
 
 from ....core.ir import Instruction
 from ....simulation.mps import _split_pair_matrix, _split_pair_matrix_bucket
+from ....simulation.mps_site_kernels import (
+    apply_rxx_contraction_bucket,
+    apply_ry_bucket,
+    site_kernel_bucket_capacity,
+)
 from .communication import _instruction_matrix_for_mps
 from .errors import MPSForwardLifetimeError
 from .factorization import (
@@ -15,11 +20,6 @@ from .factorization import (
     MemoryProvider,
     factorization_workspace_pool,
     plan_rxx_factorization_microbatch,
-)
-from .site_kernels import (
-    apply_rxx_contraction_bucket,
-    apply_ry_bucket,
-    site_kernel_bucket_capacity,
 )
 from .state import RankOwnedMPSState
 

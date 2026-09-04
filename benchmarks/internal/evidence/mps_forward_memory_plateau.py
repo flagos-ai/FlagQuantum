@@ -31,7 +31,7 @@ from flagquantum.runtime.backends.mps.forward import (
 )
 from flagquantum.runtime.backends.mps.factorization import FactorizationWorkspacePolicy
 from flagquantum.runtime.backends.mps.reverse import site_sharded_z_zz_observations
-from flagquantum.runtime.backends.mps.site_kernels import (
+from flagquantum.simulation.mps_site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,
 )

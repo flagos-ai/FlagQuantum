@@ -8,13 +8,16 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....simulation.mps_site_kernels import (
+    environment_transfer,
+    environment_transfer_channels,
+)
 from .reverse_observables import (
     SiteShardedZZScanResult,
     mps_expectation_and_adjoints,
     parse_mps_z_zz_terms,
 )
 from .reverse_transport import receive_reverse_tensor, send_reverse_tensor
-from .site_kernels import environment_transfer, environment_transfer_channels
 from .state import RankOwnedMPSState
 
 _recv = receive_reverse_tensor

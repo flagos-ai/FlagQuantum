@@ -24,17 +24,17 @@ from ...simulation.mps import (
     MPSConfig,
     MPSState,
 )
-from ...simulation.tensor import (
-    TensorNetworkState,
-)
-from ..backends.mps.operations import (
+from ...simulation.mps_rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
-from ..backends.mps.operations import (
+from ...simulation.mps_rank_local import (
     apply_two_mps_tensors as _apply_two_mps_tensors,
 )
-from ..backends.mps.operations import (
+from ...simulation.mps_rank_local import (
     tensor_nbytes as _tensor_nbytes,
+)
+from ...simulation.tensor import (
+    TensorNetworkState,
 )
 from .backend_policy import (
     DistributedBackendPolicy,

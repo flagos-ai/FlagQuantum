@@ -13,6 +13,11 @@ from ....simulation.mps import (
     _split_pair_matrix,
     _split_pair_matrix_bucket,
 )
+from ....simulation.mps_site_kernels import (
+    apply_rxx_contraction_bucket,
+    apply_ry_bucket,
+    site_kernel_bucket_capacity,
+)
 from .communication import (
     _apply_one_mps_tensor,
     _instruction_matrix_for_mps,
@@ -75,11 +80,6 @@ from .reverse_z_observables import (
     mps_site_sharded_z_zz_scan,
     site_sharded_z_zz_objective_pipeline,
     site_sharded_z_zz_observations,
-)
-from .site_kernels import (
-    apply_rxx_contraction_bucket,
-    apply_ry_bucket,
-    site_kernel_bucket_capacity,
 )
 from .state import (
     initial_mps_ownership,

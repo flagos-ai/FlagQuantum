@@ -12,7 +12,7 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.mps.site_kernels import (
+from flagquantum.simulation.mps_site_kernels import (
     SiteKernelBucket,
     SiteKernelCachePolicy,
     apply_ry_bucket,

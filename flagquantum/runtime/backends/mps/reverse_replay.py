@@ -9,6 +9,10 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....simulation.mps_site_kernels import (
+    apply_rxx_contraction_bucket,
+    apply_ry_bucket,
+)
 from .communication import (
     _apply_one_mps_tensor,
     _instruction_matrix_for_mps,
@@ -17,7 +21,6 @@ from .errors import MPSReverseContractError
 from .factorization import apply_mps_pair_forward, apply_mps_qr_forward
 from .records import MPSReverseTapeRecord, TorchDistributedMPSGradientResult
 from .reverse_transport import receive_static_reverse_tensor, send_static_reverse_tensor
-from .site_kernels import apply_rxx_contraction_bucket, apply_ry_bucket
 from .state import RankOwnedMPSState
 
 

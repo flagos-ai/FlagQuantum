@@ -1,4 +1,4 @@
-"""Audited eager/compiled kernels for rank-owned MPS site work."""
+"""Audited eager/compiled kernels for MPS site computation."""
 
 from __future__ import annotations
 
@@ -277,7 +277,7 @@ def _run(eager, args, *, kind: str, compiled: bool, prewarm: bool = False):
         with _recompile_limit_context():
             result = kernel(*args)
         if args[0].is_cuda:
-            torch.cuda.synchronize(args[0].device)
+            torch.accelerator.synchronize(args[0].device)
     except Exception as error:
         raise RuntimeError(
             f"compiled site-sharded {kind} kernel failed closed: {error}"

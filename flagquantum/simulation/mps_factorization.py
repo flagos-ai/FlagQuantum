@@ -400,3 +400,49 @@ def _discarded_weight(values: torch.Tensor, rank: int) -> float:
     return float(
         torch.sum(torch.real(discarded * torch.conj(discarded))).detach().cpu()
     )
+
+
+def mps_qr_forward(
+    left: torch.Tensor, right: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute a rank-local thin QR update without owning runtime state."""
+
+    bsz, left_dim, physical, right_dim = left.shape
+    matrix = left.reshape(bsz, left_dim * physical, right_dim)
+    if right_dim <= 2:
+        first = matrix[..., 0]
+        r00 = torch.linalg.vector_norm(first, dim=-1, keepdim=True)
+        tiny = torch.finfo(first.real.dtype).tiny
+        threshold = torch.finfo(first.real.dtype).eps * max(1, matrix.shape[-2])
+        if torch.any(r00 <= threshold):
+            raise ValueError("thin QR pullback is rank deficient in its first column")
+        q0 = first / r00.clamp_min(tiny)
+        columns = [q0]
+        rows = [r00]
+        if right_dim == 2:
+            second = matrix[..., 1]
+            r01 = torch.sum(q0.conj() * second, dim=-1, keepdim=True)
+            residual = second - q0 * r01
+            r11 = torch.linalg.vector_norm(residual, dim=-1, keepdim=True)
+            scale = torch.maximum(
+                r00, torch.linalg.vector_norm(second, dim=-1, keepdim=True)
+            )
+            if torch.any(r11 <= threshold * scale.clamp_min(1.0)):
+                raise ValueError(
+                    "thin QR pullback is rank deficient or near-degenerate"
+                )
+            q1 = residual / r11.clamp_min(tiny)
+            columns.append(q1)
+            rows = [
+                torch.cat((r00, r01), dim=-1),
+                torch.cat((torch.zeros_like(r11), r11), dim=-1),
+            ]
+        q = torch.stack(columns, dim=-1)
+        transfer = (
+            rows[0].unsqueeze(-2) if right_dim == 1 else torch.stack(rows, dim=-2)
+        )
+    else:
+        q, transfer = torch.linalg.qr(matrix, mode="reduced")
+    return q.reshape(bsz, left_dim, physical, q.shape[-1]), torch.einsum(
+        "bij,bjsk->bisk", transfer, right
+    )
