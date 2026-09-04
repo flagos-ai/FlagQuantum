@@ -7,9 +7,9 @@ from typing import Any
 
 import torch
 
-from ....core.ir import Instruction
-from ....core.parameters import Parameter, ParameterExpression
-from ....numerics.double_single import (
+from ..core.ir import Instruction
+from ..core.parameters import Parameter, ParameterExpression
+from ..numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
     double_single_sin_cos,

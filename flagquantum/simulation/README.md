@@ -20,6 +20,11 @@ Runtime enters through `run_local_statevector()`.
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.
 
+`double_single_device_gates.py` owns the device-resident FP32 Double-Single
+gate-matrix numerics used by the experimental statevector precision path.
+Runtime retains precision authorization, platform selection, execution evidence,
+and conformance reporting.
+
 `mps_local.py` owns the single-device, noiseless MPS instruction loop.
 `mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory
 and accepts an initialized MPS plus an explicit random generator.

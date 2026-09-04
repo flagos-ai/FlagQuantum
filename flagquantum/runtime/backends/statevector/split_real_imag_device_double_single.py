@@ -23,7 +23,7 @@ from ....numerics.double_single import (
     double_single_sum,
 )
 from ....providers.platform import get_platform_runtime, resolve_platform_device
-from .double_single_device_gates import (
+from ....simulation.double_single_device_gates import (
     P4_PARAMETER_GATES,
     encode_device_double_single_matrix,
 )

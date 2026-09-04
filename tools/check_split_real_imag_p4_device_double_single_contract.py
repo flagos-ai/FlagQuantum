@@ -23,7 +23,7 @@ IMPLEMENTATION = (
     ROOT
     / "flagquantum/runtime/backends/statevector/split_real_imag_device_double_single.py"
 )
-GATES = ROOT / "flagquantum/runtime/backends/statevector/double_single_device_gates.py"
+GATES = ROOT / "flagquantum/simulation/double_single_device_gates.py"
 PROFILE = (
     ROOT
     / "flagquantum/runtime/profiles/split_real_imag_statevector_p4_device_double_single.json"

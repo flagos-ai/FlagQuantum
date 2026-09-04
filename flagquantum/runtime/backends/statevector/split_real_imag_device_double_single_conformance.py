@@ -11,7 +11,7 @@ import torch
 from ....core.parameters import Parameter, ParameterExpression
 from ....numerics.double_single import DoubleSingleTensor, double_single_sin_cos
 from ....providers.platform import resolve_platform_device
-from .double_single_device_gates import encode_device_double_single_matrix
+from ....simulation.double_single_device_gates import encode_device_double_single_matrix
 from .split_real_imag import (
     _normalized_observables,
     _parameter_occurrences,
