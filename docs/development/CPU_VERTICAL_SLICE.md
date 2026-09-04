@@ -122,3 +122,11 @@ consumer had ever exercised the duplicate calibration path. The remaining
 performance adapter exists only for the current
 `ExecutionPlan.calibrated_cost()` behavior; moving or removing that method
 requires a separate protected-contract decision.
+
+## Plan projection consolidation
+
+The single-use `compilation/contract_adapter.py` was folded into
+`execution_plan_contract.py`, which already owns plan identity, serialization,
+and contract projection. `ExecutionPlan.to_contract()` retains its signature,
+return type, lossy audit semantics, and deterministic identity. The removed
+adapter path is guarded against reintroduction.

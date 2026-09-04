@@ -235,7 +235,7 @@ class ExecutionPlan:
         return plan_from_json(text)
 
     def to_contract(self) -> RuntimePlanContract:
-        from .contract_adapter import execution_plan_contract
+        from .execution_plan_contract import execution_plan_contract
 
         return execution_plan_contract(self)
 

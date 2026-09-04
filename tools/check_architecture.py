@@ -178,6 +178,12 @@ def architecture_errors() -> tuple[str, ...]:
                 f"{removed_compiler_path.relative_to(ROOT).as_posix()}: migrated "
                 "compiler authority must not return; use flagquantum/compiler"
             )
+    removed_plan_adapter = PACKAGE / "compilation" / "contract_adapter.py"
+    if removed_plan_adapter.exists():
+        errors.append(
+            "flagquantum/compilation/contract_adapter.py: merged single-use plan "
+            "projection must not return; use execution_plan_contract.py"
+        )
     for removed_runtime_planning_name in (
         "backend_selection.py",
         "candidate_plans.py",
