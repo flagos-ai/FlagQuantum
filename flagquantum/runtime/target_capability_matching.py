@@ -8,14 +8,17 @@ copied into or rewritten on either Core object.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Iterable
 
 import flagquantum.core.target_capabilities as _core
 from flagquantum.core.target_capabilities import (
     CapabilityBlocker,
+    CapabilityContractError,
     CapabilityMatchResult,
     CapabilityScope,
     EvidenceLevel,
@@ -24,6 +27,9 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+
+DECISION_SCHEMA_VERSION = "flagquantum.runtime.target_capability_decision.v1"
+SORTING_KEY_VERSION = "satisfied_preferences_then_rank_then_identity.v1"
 
 
 class FallbackAxis(str, Enum):
@@ -44,6 +50,8 @@ class RuntimeDecisionBlockerCode(str, Enum):
     FALLBACK_AXIS_UNAUTHORIZED = "fallback_axis_unauthorized"
     CPU_CANDIDATE_REQUIRED = "cpu_candidate_required"
     DUPLICATE_CANDIDATE_ID = "duplicate_candidate_id"
+    DUPLICATE_SNAPSHOT_IDENTITY = "duplicate_snapshot_identity"
+    DUPLICATE_TARGET_IDENTITY = "duplicate_target_identity"
     NO_EXECUTABLE_CANDIDATE = "no_executable_candidate"
 
 
@@ -144,6 +152,11 @@ class FallbackDecisionRecord:
     fallback_axes: tuple[FallbackAxis, ...]
     core_blockers: tuple[CapabilityBlocker, ...]
     score: tuple[int, int, str, str, str]
+    decision_id: str
+    candidate_snapshot_ids: tuple[str, ...]
+    evaluated_at: str
+    fallback_authorization_id: str
+    sorting_key_version: str = SORTING_KEY_VERSION
 
 
 @dataclass(frozen=True)
@@ -155,6 +168,11 @@ class TargetCapabilityDecision:
     selected: TargetCapabilityCandidateEvaluation | None
     blockers: tuple[RuntimeDecisionBlocker, ...]
     fallback_record: FallbackDecisionRecord | None = None
+    decision_id: str = ""
+    evaluated_at: str = ""
+    candidate_snapshot_ids: tuple[str, ...] = ()
+    fallback_authorization_id: str = ""
+    sorting_key_version: str = SORTING_KEY_VERSION
 
     @property
     def executable(self) -> bool:
@@ -165,6 +183,108 @@ def _axis_authorized(
     authorizations: FallbackAuthorizations, axis: FallbackAxis
 ) -> bool:
     return bool(getattr(authorizations, axis.value))
+
+
+def _canonical_evaluation_time(value: datetime | None) -> tuple[datetime, str]:
+    selected = value or datetime.now(timezone.utc)
+    if selected.tzinfo is None:
+        # Keep Core's contract error family for invalid evaluation context;
+        # Runtime must not reinterpret a fail-closed validation failure.
+        raise CapabilityContractError("evaluated_at must include a timezone")
+    selected = selected.astimezone(timezone.utc)
+    # ISO-8601 is the only time representation included in the decision
+    # identity.  The Core matcher receives the same timezone-aware instant.
+    return selected, selected.isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _canonical_json(payload: object) -> str:
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+
+
+def _authorization_identity(authorizations: FallbackAuthorizations) -> str:
+    payload = authorizations.to_dict()
+    return hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def _target_identity_key(identity: TargetIdentity) -> tuple[str, ...]:
+    return (
+        identity.target_id,
+        identity.target_class,
+        identity.provider,
+        identity.provider_version,
+        identity.target_revision,
+        identity.environment_id,
+    )
+
+
+def _runtime_blocker_payload(blocker: RuntimeDecisionBlocker) -> dict[str, object]:
+    return {
+        "code": blocker.code.value,
+        "message": blocker.message,
+        "candidate_id": blocker.candidate_id,
+        "fallback_axes": [item.value for item in blocker.fallback_axes],
+        "core_blockers": [item.to_dict() for item in blocker.core_blockers],
+    }
+
+
+def _decision_identity(
+    requirements: RequirementSet,
+    evaluations: tuple[TargetCapabilityCandidateEvaluation, ...],
+    selected: TargetCapabilityCandidateEvaluation | None,
+    blockers: tuple[RuntimeDecisionBlocker, ...],
+    *,
+    evaluated_at: str,
+    fallback_authorization_id: str,
+) -> str:
+    payload = {
+        "schema_version": DECISION_SCHEMA_VERSION,
+        "requirement_set_id": requirements.requirement_set_id,
+        "candidate_snapshot_ids": [
+            item.candidate.snapshot.snapshot_id for item in evaluations
+        ],
+        "selected_snapshot_id": (
+            selected.candidate.snapshot.snapshot_id if selected is not None else None
+        ),
+        "selected_target_identity": (
+            selected.candidate.snapshot.target_identity.to_dict()
+            if selected is not None
+            else None
+        ),
+        "evaluated_at": evaluated_at,
+        "fallback_authorization_id": fallback_authorization_id,
+        "sorting_key_version": SORTING_KEY_VERSION,
+        "evaluations": [
+            {
+                "candidate_id": item.candidate.candidate_id,
+                "snapshot_id": item.candidate.snapshot.snapshot_id,
+                "preference_rank": item.candidate.preference_rank,
+                "fallback_axes": [
+                    axis.value
+                    for axis in sorted(
+                        item.candidate.fallback_axes, key=lambda axis: axis.value
+                    )
+                ],
+                "is_cpu_candidate": item.candidate.is_cpu_candidate,
+                "core_executable": item.core_match.executable,
+                "core_blockers": [
+                    blocker.to_dict() for blocker in item.core_match.blockers
+                ],
+                "runtime_blockers": [
+                    _runtime_blocker_payload(blocker) for blocker in item.blockers
+                ],
+                "score": list(item.score),
+            }
+            for item in evaluations
+        ],
+        "blockers": [_runtime_blocker_payload(item) for item in blockers],
+    }
+    return hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
 
 
 def _candidate_sort_key(
@@ -245,17 +365,32 @@ def match_target_capability_candidates(
 
     if not isinstance(requirements, RequirementSet):
         raise TypeError("requirements must be a Core RequirementSet")
+    evaluation_instant, evaluation_time = _canonical_evaluation_time(evaluated_at)
+    fallback_authorization_id = _authorization_identity(
+        requirements.fallback_authorizations
+    )
     candidate_values = tuple(candidates)
     if not candidate_values:
         blocker = RuntimeDecisionBlocker(
             code=RuntimeDecisionBlockerCode.NO_EXECUTABLE_CANDIDATE,
             message="Runtime candidate set is empty",
         )
+        decision_id = _decision_identity(
+            requirements,
+            (),
+            None,
+            (blocker,),
+            evaluated_at=evaluation_time,
+            fallback_authorization_id=fallback_authorization_id,
+        )
         return TargetCapabilityDecision(
             requirement_set_id=requirements.requirement_set_id,
             evaluations=(),
             selected=None,
             blockers=(blocker,),
+            decision_id=decision_id,
+            evaluated_at=evaluation_time,
+            fallback_authorization_id=fallback_authorization_id,
         )
     if any(
         not isinstance(item, TargetCapabilityCandidate) for item in candidate_values
@@ -263,6 +398,25 @@ def match_target_capability_candidates(
         raise TypeError("candidates must contain TargetCapabilityCandidate values")
 
     ordered = tuple(sorted(candidate_values, key=_candidate_sort_key))
+    target_identity_groups: dict[tuple[str, ...], set[str]] = {}
+    snapshot_identity_groups: dict[str, set[str]] = {}
+    for item in ordered:
+        target_identity_groups.setdefault(
+            _target_identity_key(item.snapshot.target_identity), set()
+        ).add(item.snapshot.snapshot_id)
+        snapshot_identity_groups.setdefault(item.snapshot.snapshot_id, set()).add(
+            item.candidate_id
+        )
+    conflicting_target_identities = {
+        key
+        for key, snapshot_ids in target_identity_groups.items()
+        if len(snapshot_ids) > 1
+    }
+    duplicate_snapshot_ids = {
+        snapshot_id
+        for snapshot_id, candidate_ids in snapshot_identity_groups.items()
+        if len(candidate_ids) > 1
+    }
     seen_ids: set[str] = set()
     evaluations: list[TargetCapabilityCandidateEvaluation] = []
     for candidate in ordered:
@@ -273,7 +427,7 @@ def match_target_capability_candidates(
         core_match = _core.match_target_capabilities(
             requirements,
             candidate.snapshot,
-            evaluated_at=evaluated_at,
+            evaluated_at=evaluation_instant,
             expected_target_identity=expected_target_identity,
             required_scope=required_scope,
             claim_minimum_evidence_level=claim_minimum_evidence_level,
@@ -284,6 +438,28 @@ def match_target_capability_candidates(
                 RuntimeDecisionBlocker(
                     code=RuntimeDecisionBlockerCode.DUPLICATE_CANDIDATE_ID,
                     message="candidate_id must be unique for deterministic selection",
+                    candidate_id=candidate.candidate_id,
+                )
+            )
+        if (
+            _target_identity_key(candidate.snapshot.target_identity)
+            in conflicting_target_identities
+        ):
+            candidate_blockers.append(
+                RuntimeDecisionBlocker(
+                    code=RuntimeDecisionBlockerCode.DUPLICATE_TARGET_IDENTITY,
+                    message=(
+                        "one target identity was offered with different snapshot "
+                        "semantics"
+                    ),
+                    candidate_id=candidate.candidate_id,
+                )
+            )
+        if candidate.snapshot.snapshot_id in duplicate_snapshot_ids:
+            candidate_blockers.append(
+                RuntimeDecisionBlocker(
+                    code=RuntimeDecisionBlockerCode.DUPLICATE_SNAPSHOT_IDENTITY,
+                    message="one snapshot identity was offered more than once",
                     candidate_id=candidate.candidate_id,
                 )
             )
@@ -326,13 +502,35 @@ def match_target_capability_candidates(
                     message="no candidate satisfied all mandatory requirements",
                 ),
             )
+        decision_id = _decision_identity(
+            requirements,
+            tuple(evaluations),
+            None,
+            blockers,
+            evaluated_at=evaluation_time,
+            fallback_authorization_id=fallback_authorization_id,
+        )
         return TargetCapabilityDecision(
             requirement_set_id=requirements.requirement_set_id,
             evaluations=evaluations,
             selected=None,
             blockers=blockers,
+            decision_id=decision_id,
+            evaluated_at=evaluation_time,
+            candidate_snapshot_ids=tuple(
+                item.candidate.snapshot.snapshot_id for item in evaluations
+            ),
+            fallback_authorization_id=fallback_authorization_id,
         )
 
+    decision_id = _decision_identity(
+        requirements,
+        tuple(evaluations),
+        selected,
+        (),
+        evaluated_at=evaluation_time,
+        fallback_authorization_id=fallback_authorization_id,
+    )
     fallback_record = None
     if selected.candidate.fallback_axes:
         fallback_record = FallbackDecisionRecord(
@@ -344,6 +542,12 @@ def match_target_capability_candidates(
             ),
             core_blockers=selected.core_match.blockers,
             score=selected.score,
+            decision_id=decision_id,
+            candidate_snapshot_ids=tuple(
+                item.candidate.snapshot.snapshot_id for item in evaluations
+            ),
+            evaluated_at=evaluation_time,
+            fallback_authorization_id=fallback_authorization_id,
         )
     return TargetCapabilityDecision(
         requirement_set_id=requirements.requirement_set_id,
@@ -351,6 +555,12 @@ def match_target_capability_candidates(
         selected=selected,
         blockers=(),
         fallback_record=fallback_record,
+        decision_id=decision_id,
+        evaluated_at=evaluation_time,
+        candidate_snapshot_ids=tuple(
+            item.candidate.snapshot.snapshot_id for item in evaluations
+        ),
+        fallback_authorization_id=fallback_authorization_id,
     )
 
 
@@ -360,10 +570,12 @@ select_target_capability_candidate = match_target_capability_candidates
 
 
 __all__ = [
+    "DECISION_SCHEMA_VERSION",
     "FallbackAxis",
     "FallbackDecisionRecord",
     "RuntimeDecisionBlocker",
     "RuntimeDecisionBlockerCode",
+    "SORTING_KEY_VERSION",
     "TargetCapabilityCandidate",
     "TargetCapabilityCandidateEvaluation",
     "TargetCapabilityDecision",

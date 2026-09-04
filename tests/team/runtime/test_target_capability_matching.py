@@ -234,6 +234,17 @@ def test_cpu_is_an_explicit_candidate_and_is_fully_rematched() -> None:
     assert decision.fallback_record.target_identity == cpu.snapshot.target_identity
     assert decision.fallback_record.fallback_axes == (FallbackAxis.CPU,)
     assert decision.fallback_record.core_blockers == ()
+    assert decision.fallback_record.decision_id == decision.decision_id
+    assert (
+        decision.fallback_record.candidate_snapshot_ids
+        == decision.candidate_snapshot_ids
+    )
+    assert decision.fallback_record.evaluated_at == decision.evaluated_at
+    assert (
+        decision.fallback_record.fallback_authorization_id
+        == decision.fallback_authorization_id
+    )
+    assert decision.fallback_record.sorting_key_version == seam.SORTING_KEY_VERSION
 
 
 def test_no_cpu_candidate_means_no_silent_cpu_fallback() -> None:
@@ -407,6 +418,131 @@ def test_candidate_order_does_not_change_deterministic_preference_selection() ->
     assert [item.candidate.candidate_id for item in first.evaluations] == [
         item.candidate.candidate_id for item in second.evaluations
     ]
+    assert first.decision_id == second.decision_id
+    assert first.candidate_snapshot_ids == tuple(
+        item.candidate.snapshot.snapshot_id for item in first.evaluations
+    )
+
+
+def test_decision_identity_binds_time_and_fallback_authorization() -> None:
+    requirements = _requirements(
+        _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+    )
+    candidate = _candidate("candidate")
+    first = match_target_capability_candidates(
+        requirements, (candidate,), evaluated_at=_EVALUATED_AT
+    )
+    same = match_target_capability_candidates(
+        requirements, (candidate,), evaluated_at=_EVALUATED_AT
+    )
+    later = match_target_capability_candidates(
+        requirements,
+        (candidate,),
+        evaluated_at=_EVALUATED_AT + timedelta(seconds=1),
+    )
+    authorized = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+            authorizations=FallbackAuthorizations(backend=True),
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    axis_requirements = _requirements(
+        _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+        authorizations=FallbackAuthorizations(backend=True, precision=True),
+    )
+    backend_axis = match_target_capability_candidates(
+        axis_requirements,
+        (
+            TargetCapabilityCandidate(
+                "candidate",
+                candidate.snapshot,
+                fallback_axes=frozenset({FallbackAxis.BACKEND}),
+            ),
+        ),
+        evaluated_at=_EVALUATED_AT,
+    )
+    precision_axis = match_target_capability_candidates(
+        axis_requirements,
+        (
+            TargetCapabilityCandidate(
+                "candidate",
+                candidate.snapshot,
+                fallback_axes=frozenset({FallbackAxis.PRECISION}),
+            ),
+        ),
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert first.decision_id == same.decision_id
+    assert first.decision_id != later.decision_id
+    assert first.decision_id != authorized.decision_id
+    assert backend_axis.decision_id != precision_axis.decision_id
+    assert len(first.decision_id) == 64
+    assert first.evaluated_at == "2026-09-04T08:01:00.000000Z"
+    assert len(first.fallback_authorization_id) == 64
+
+
+def test_duplicate_target_identity_with_different_snapshot_semantics_fails_closed() -> (
+    None
+):
+    first_snapshot = _snapshot("first")
+    second_raw = _snapshot("second", memory=16 * 1024**3)
+    second_snapshot = TargetCapabilitySnapshot(
+        target_identity=first_snapshot.target_identity,
+        scope=second_raw.scope,
+        captured_at=second_raw.captured_at,
+        valid_until=second_raw.valid_until,
+        facts=second_raw.facts,
+        evidence_refs=second_raw.evidence_refs,
+    )
+    candidates = (
+        TargetCapabilityCandidate("first", first_snapshot),
+        TargetCapabilityCandidate("second", second_snapshot),
+    )
+
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        candidates,
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert decision.selected is None
+    assert all(
+        any(
+            blocker.code is RuntimeDecisionBlockerCode.DUPLICATE_TARGET_IDENTITY
+            for blocker in evaluation.blockers
+        )
+        for evaluation in decision.evaluations
+    )
+
+
+def test_duplicate_snapshot_identity_is_not_last_write_wins() -> None:
+    snapshot = _snapshot("duplicate")
+    candidates = (
+        TargetCapabilityCandidate("first", snapshot),
+        TargetCapabilityCandidate("second", snapshot),
+    )
+
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        candidates,
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert decision.selected is None
+    assert all(
+        any(
+            blocker.code is RuntimeDecisionBlockerCode.DUPLICATE_SNAPSHOT_IDENTITY
+            for blocker in evaluation.blockers
+        )
+        for evaluation in decision.evaluations
+    )
 
 
 def test_unauthorized_fallback_returns_typed_blocker_without_selection() -> None:
