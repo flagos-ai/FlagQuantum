@@ -2,6 +2,11 @@
 
 状态：Simulation 团队交付候选（事实盘点与测试草案，不是公共契约）
 
+集成进展（2026-09-04）：本地状态向量执行循环已迁入
+`flagquantum/simulation/statevector.py`，`Circuit.state()` 仅保留稳定门面。初态、生命周期缓存
+仍暂由 `Circuit` 持有，底层门作用与融合 helper 仍位于 `circuit_statevector.py`；后续迁移不得
+改变 `fq.Circuit`、Runtime 或结果契约。
+
 盘点日期：2026-09-03
 
 共同基线：`d7c56603e363bba95d5e98b9a77a75adb3c52e0d`
@@ -10,8 +15,8 @@
 
 ## 1. 结论
 
-当前数值实现并没有以一个可替换 Simulation Engine 为边界收敛：稳定的本地 PyTorch
-状态向量主路径位于 `flagquantum/circuit.py` 和
+当前数值实现尚未全部以可替换 Simulation Engine 为边界收敛：稳定的本地 PyTorch
+状态向量执行循环已位于 `flagquantum/simulation/statevector.py`，底层门作用与融合仍位于
 `flagquantum/circuit_statevector.py`；本地 MPS/TN 主要位于
 `flagquantum/simulation/`；密度矩阵及大量分布式数值实现位于过渡目录
 `flagquantum/runtime/backends/`。两个过渡目录都混合了数值算法、Kernel 调用、执行适配、
@@ -19,7 +24,7 @@
 
 首个候选应是现有本地 PyTorch 状态向量的 `single_device_fast_path`：执行已经校验的
 `CircuitIR`，从调用方提供或规范零态出发，返回保持 PyTorch autograd 图的完整批量状态。
-本轮不移动实现、不修改 `fq.Circuit`/`run`、不增加导出，也不在 Simulation 内私建契约。
+首轮测试没有移动实现、修改 `fq.Circuit`/`run`、增加导出或在 Simulation 内私建契约。
 新增测试先冻结数值行为，并利用 `run_native(..., mode="statevector")` 已有的结构性接缝证明
 测试假实现可以在消费者调用逻辑不变时被使用。该接缝不是获批契约，只是 Core 提案落地前
 的替换可行性证据。
@@ -49,7 +54,7 @@
 
 | 能力 | 当前数值权威位置 | 编排/消费者位置 | 现状 |
 | --- | --- | --- | --- |
-| 本地状态向量 | `circuit_statevector.py` 的布局、门作用和融合；`Circuit.state()` 的执行循环；`simulation/triton_kernels/statevector_gates.py` 等 CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.run()` | 生产支持，但算法循环嵌在 Stable Core 邻近对象中，是最清晰也最敏感的抽离候选 |
+| 本地状态向量 | `simulation/statevector.py` 的执行循环；`circuit_statevector.py` 的布局、门作用和融合；`simulation/triton_kernels/statevector_gates.py` 等 CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；执行循环已归 Simulation，helper 与生命周期缓存仍待后续克制迁移 |
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `runtime/backends/statevector/forward.py`、`reverse_adjoint.py`、`triton.py`、`local_execution.py` 的数值部分 | 同目录 planning/models/environment/forward_executor/training/checkpointing/gradient_reduction | 真正 amplitude/qubit-address sharding 与 Runtime 生命周期高度混合 |
 | Split real/imag 与 Double-Single | `runtime/backends/statevector/split_real_imag*.py`、`double_single_device_gates.py` | 同文件中的平台身份、精度计划、conformance/result | 实验路径；不得成为首切片默认实现或被描述为等价 FP64 |
@@ -153,8 +158,8 @@
 
 它比 density/MPS/TN 更适合作为首切片，因为能力矩阵已将本地状态向量训练标为
 `production_supported`，数值基线成熟、输入输出最小、无需近似误差契约，并且可以直接用
-现有 PyTorch 路径做真实现。抽离时需把 `Circuit.state()` 中的程序缓存与 kernel dispatch
-逐步归入实现内部或由显式执行上下文注入，同时保持 Stable Core 行为完全不变。
+现有 PyTorch 路径做真实现。执行循环和 kernel dispatch 已归入 Simulation；程序、初态与
+生命周期缓存仍应逐步归入实现内部或由既有执行上下文承载，同时保持 Stable Core 行为完全不变。
 
 ### 7.2 消费者替换证明
 
@@ -203,7 +208,7 @@ Protocol、注册表或导出；因此它证明替换方向可行，但还没有
 | Runtime 越权重新规划或换实现 | supplied plan identity、显式 mode、fallback evidence/fail-closed 测试 |
 | 将 local fake 误作 scalability 证据 | 测试仅标 `integration` 与 `single_device_fast_path`；不产生 distributed claim |
 
-下一阶段在 Core 契约批准后应：先用现有实现做 adapter，再让 test fake 与 adapter 跑同一套
-conformance；随后把 Runtime 的 statevector 分支只保留请求组织和结果投影；最后才考虑移动
-`Circuit.state()` 内数值循环。任何迁移都必须保持 `fq.Circuit`、`run`、`plan` 和
-`ExecutionResult` 的受保护签名、默认值、失败阶段与序列化语义不变。
+下一阶段应让现有实现与 test fake 跑同一套 conformance，并继续把 Runtime 的 statevector
+分支限制为请求组织和结果投影。执行循环已完成物理归位；后续只迁移有明确收益的 helper 和
+生命周期状态。任何迁移都必须保持 `fq.Circuit`、`run`、`plan` 和 `ExecutionResult` 的
+受保护签名、默认值、失败阶段与序列化语义不变。

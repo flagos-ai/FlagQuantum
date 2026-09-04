@@ -66,9 +66,9 @@ def test_native_parameter_gradient():
 
 
 def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monkeypatch):
-    import flagquantum.circuit as circuit_runtime
+    import flagquantum.simulation.statevector as statevector_runtime
 
-    diagonal_gates = circuit_runtime._DIAGONAL_STATEVECTOR_GATES
+    diagonal_gates = statevector_runtime._DIAGONAL_STATEVECTOR_GATES
     reference_theta = torch.tensor(0.31, requires_grad=True)
     theta = torch.tensor(0.31, requires_grad=True)
     initial = torch.tensor([[0.5, 0.5j, -0.5j, 0.5]], dtype=torch.complex64)
@@ -79,16 +79,18 @@ def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monke
     circuit = fq.Circuit(2, inputs=initial)
     circuit.rz(0, theta).cphase(0, 1, theta * 0.5).rzz(1, 0, theta * 0.25)
 
-    monkeypatch.setattr(circuit_runtime, "_DIAGONAL_STATEVECTOR_GATES", frozenset())
+    monkeypatch.setattr(statevector_runtime, "_DIAGONAL_STATEVECTOR_GATES", frozenset())
     reference_state = reference.state()
     reference_loss = reference_state.real.sum()
     reference_loss.backward()
-    monkeypatch.setattr(circuit_runtime, "_DIAGONAL_STATEVECTOR_GATES", diagonal_gates)
+    monkeypatch.setattr(
+        statevector_runtime, "_DIAGONAL_STATEVECTOR_GATES", diagonal_gates
+    )
 
     def unexpected_bmm(*args, **kwargs):
         raise AssertionError("known diagonal gates must not launch torch.bmm")
 
-    monkeypatch.setattr(circuit_runtime.torch, "bmm", unexpected_bmm)
+    monkeypatch.setattr(statevector_runtime.torch, "bmm", unexpected_bmm)
     state = circuit.state()
     loss = state.real.sum()
     loss.backward()
@@ -176,7 +178,7 @@ def test_fixed_y_specialization_avoids_dense_bmm(monkeypatch, wire):
 
 
 def test_same_wire_gate_fusion_preserves_state_and_gradient():
-    import flagquantum.circuit as circuit_runtime
+    import flagquantum.simulation.statevector as statevector_runtime
 
     initial = torch.tensor([[0.5, 0.5j, -0.5j, 0.5]], dtype=torch.complex64)
     reference_theta = torch.tensor(0.23, requires_grad=True)
@@ -187,13 +189,13 @@ def test_same_wire_gate_fusion_preserves_state_and_gradient():
     )
     reference_state = initial
     for instruction in reference_circuit.to_ir().instructions:
-        matrix = circuit_runtime._gate_matrix(
+        matrix = statevector_runtime._gate_matrix(
             instruction,
             bsz=initial.shape[0],
             device=initial.device,
             dtype=initial.dtype,
         )
-        reference_state = circuit_runtime._apply_matrix(
+        reference_state = statevector_runtime._apply_matrix(
             reference_state, matrix, instruction.wires, 2
         )
     reference_loss = reference_state.real.sum()

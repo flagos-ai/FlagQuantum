@@ -33,6 +33,23 @@ class _FakeLocalStatevectorProgram:
         return self.output
 
 
+def test_circuit_state_facade_delegates_to_simulation(monkeypatch):
+    import flagquantum.simulation.statevector as statevector
+
+    circuit = fq.Circuit(1)
+    expected = torch.tensor([[0.0, 1.0j]], dtype=torch.complex64)
+    calls = []
+
+    def replacement(candidate, *, refresh=False):
+        calls.append((candidate, refresh))
+        return expected
+
+    monkeypatch.setattr(statevector, "state", replacement)
+
+    assert circuit.state(refresh=True) is expected
+    assert calls == [(circuit, True)]
+
+
 def test_runtime_consumer_can_replace_local_statevector_implementation():
     source = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
     replacement_output = torch.tensor(

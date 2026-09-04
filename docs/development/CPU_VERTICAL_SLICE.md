@@ -22,11 +22,11 @@ Simulation owns the numerical statevector call. The CPU Platform Provider owns
 device availability and identity. Compiler remains the only stage that changes
 the program.
 
-`simulation.statevector.run_local_statevector` is the named migration seam,
-owned by Simulation. It currently delegates to the established `Circuit`
-numerical loop and should be removed as an adapter once that loop is housed
-directly in Simulation; Runtime callers must not change during that move. Its
-target removal milestone is the vNext Simulation directory migration.
+`simulation.statevector` now owns the local numerical loop. `Circuit.state()`
+is a thin public facade, so existing users and Runtime callers do not change.
+For this first physical migration, `Circuit` still owns the initial-state and
+lifecycle cache containers; moving those containers is separate work and must
+not create a second public execution contract.
 
 The result reports the selected device, platform provider, simulation engine,
 and `single_device_fast_path` semantics. An explicit CPU request reports
