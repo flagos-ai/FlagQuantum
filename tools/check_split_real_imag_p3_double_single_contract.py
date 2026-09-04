@@ -20,6 +20,7 @@ CONTRACT = (
 IMPLEMENTATION = (
     ROOT / "flagquantum/runtime/backends/statevector/split_real_imag_double_single.py"
 )
+GATES = ROOT / "flagquantum/simulation/double_single_host_gates.py"
 PROFILE = (
     ROOT
     / "flagquantum/runtime/profiles/split_real_imag_statevector_p3_double_single.json"
@@ -36,6 +37,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "schema": "flagquantum_split_real_imag_statevector_p3_double_single_contract_v1",
         "maturity": "experimental",
         "implementation": "flagquantum.runtime.backends.statevector.split_real_imag_double_single",
+        "gate_implementation": "flagquantum.simulation.double_single_host_gates",
         "operator_profile": "split_real_imag_statevector_p3_double_single",
         "base_executor": "split_real_imag_statevector_p2_precision",
         "representation": "double_single_fp32_complex",
@@ -91,9 +93,10 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     if not any(name.endswith("numerics.double_single") for name in imports):
         errors.append("split real/imag P3 must compose Double-Single primitives")
     source = IMPLEMENTATION.read_text(encoding="utf-8")
+    gate_source = GATES.read_text(encoding="utf-8")
     if "view_as_complex" in source:
         errors.append("split real/imag P3 materializes accelerator complex tensors")
-    if 'device="cpu"' not in source or "from_complex128" not in source:
+    if 'device="cpu"' not in gate_source or "from_complex128" not in gate_source:
         errors.append("split real/imag P3 host gate encoding must remain explicit")
 
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))

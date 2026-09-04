@@ -33,14 +33,13 @@ from ....numerics.double_single import (
     DoubleSingleTensor,
     double_single_sum,
 )
-from ....ops.matrices import GATE_MAT_DICT
 from ....providers.platform import get_platform_runtime, resolve_platform_device
+from ....simulation.double_single_host_gates import encode_host_double_single_matrix
 from ....simulation.double_single_statevector import (
     apply_double_single_gate,
     normalize_double_single_state,
 )
 from .split_real_imag import (
-    SPLIT_REAL_IMAG_SUPPORTED_GATES,
     _normalized_observables,
     _parameter_occurrences,
     _PauliTerm,
@@ -294,102 +293,6 @@ class SplitRealImagDoubleSingleGradientResult:
         return summary
 
 
-def _fixed_matrix_complex128(name: str) -> torch.Tensor:
-    q = 1.0 / math.sqrt(2.0)
-    fixed: dict[str, Sequence[Sequence[complex]]] = {
-        "i": ((1, 0), (0, 1)),
-        "x": ((0, 1), (1, 0)),
-        "y": ((0, -1j), (1j, 0)),
-        "z": ((1, 0), (0, -1)),
-        "h": ((q, q), (q, -q)),
-        "s": ((1, 0), (0, 1j)),
-        "sdg": ((1, 0), (0, -1j)),
-        "t": ((1, 0), (0, complex(q, q))),
-        "tdg": ((1, 0), (0, complex(q, -q))),
-        "sx": (
-            (complex(0.5, 0.5), complex(0.5, -0.5)),
-            (complex(0.5, -0.5), complex(0.5, 0.5)),
-        ),
-        "sxdg": (
-            (complex(0.5, -0.5), complex(0.5, 0.5)),
-            (complex(0.5, 0.5), complex(0.5, -0.5)),
-        ),
-        "cx": ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1), (0, 0, 1, 0)),
-        "cy": ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, -1j), (0, 0, 1j, 0)),
-        "cz": ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, -1)),
-        "swap": ((1, 0, 0, 0), (0, 0, 1, 0), (0, 1, 0, 0), (0, 0, 0, 1)),
-    }
-    try:
-        return torch.tensor(fixed[name], dtype=torch.complex128, device="cpu")
-    except KeyError as exc:
-        raise KeyError(name) from exc
-
-
-_PARAMETER_ORDER: dict[str, tuple[str, ...]] = {
-    "rx": ("theta",),
-    "ry": ("theta",),
-    "rz": ("theta",),
-    "phase": ("theta",),
-    "u1": ("theta",),
-    "u2": ("phi", "lbd"),
-    "u3": ("theta", "phi", "lbd"),
-    "crx": ("theta",),
-    "cry": ("theta",),
-    "crz": ("theta",),
-    "cphase": ("theta",),
-    "rxx": ("theta",),
-    "ryy": ("theta",),
-    "rzz": ("theta",),
-}
-
-
-def _host_matrix_complex128(instruction: Instruction) -> torch.Tensor:
-    if instruction.matrix is not None:
-        raise NotImplementedError("split real/imag P3 rejects custom matrices")
-    if instruction.name not in SPLIT_REAL_IMAG_SUPPORTED_GATES:
-        raise NotImplementedError(
-            f"split real/imag P3 does not support gate {instruction.name!r}"
-        )
-    try:
-        return _fixed_matrix_complex128(instruction.name)
-    except KeyError:
-        pass
-    order = _PARAMETER_ORDER[instruction.name]
-    values = []
-    for name in order:
-        raw_value = instruction.params[name]
-        tensor = (
-            raw_value.detach()
-            if isinstance(raw_value, torch.Tensor)
-            else torch.as_tensor(raw_value, dtype=torch.float64, device="cpu")
-        )
-        if tensor.numel() != 1 or tensor.requires_grad:
-            raise ValueError("split real/imag P3 gate parameters must be fixed scalars")
-        if tensor.is_complex():
-            if bool(torch.any(tensor.imag != 0).item()):
-                raise ValueError("split real/imag P3 gate parameters must be real")
-            tensor = tensor.real
-        values.append(tensor.detach().cpu().to(torch.float64).reshape(()))
-    params = torch.stack(values)
-    generator = GATE_MAT_DICT[instruction.name]
-    if not callable(generator):
-        raise RuntimeError(
-            f"missing parameterized matrix generator for {instruction.name}"
-        )
-    matrix = generator(params)
-    if matrix.ndim == 3 and matrix.shape[0] == 1:
-        matrix = matrix[0]
-    return matrix.detach().cpu().to(torch.complex128)
-
-
-def _encode_matrix(
-    instruction: Instruction, *, device: torch.device
-) -> DoubleSingleComplexTensor:
-    return DoubleSingleComplexTensor.from_complex128(
-        _host_matrix_complex128(instruction)
-    ).to(device)
-
-
 def _normalized_p3_bindings(
     parameter_bindings: Mapping[str | Parameter, Any],
 ) -> dict[str, torch.Tensor]:
@@ -501,7 +404,7 @@ def _execute_bound_p3_statevector(
     for index, instruction in enumerate(ir.instructions, start=1):
         state = apply_double_single_gate(
             state,
-            _encode_matrix(instruction, device=resolved_device),
+            encode_host_double_single_matrix(instruction, device=resolved_device),
             instruction.wires,
             n_wires=ir.n_wires,
         )
@@ -568,7 +471,7 @@ def _term_expectation(
         instruction = Instruction(name=name, wires=(wire,))
         transformed = apply_double_single_gate(
             transformed,
-            _encode_matrix(instruction, device=state.device),
+            encode_host_double_single_matrix(instruction, device=state.device),
             (wire,),
             n_wires=n_wires,
         )

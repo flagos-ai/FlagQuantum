@@ -12,6 +12,7 @@ from ....core.parameters import Parameter, ParameterExpression
 from ....numerics.double_single import DoubleSingleTensor, double_single_sin_cos
 from ....providers.platform import resolve_platform_device
 from ....simulation.double_single_device_gates import encode_device_double_single_matrix
+from ....simulation.double_single_host_gates import host_matrix_complex128
 from .split_real_imag import (
     _normalized_observables,
     _parameter_occurrences,
@@ -25,7 +26,6 @@ from .split_real_imag_device_double_single import (
 )
 from .split_real_imag_double_single import (
     _bind_p3_ir,
-    _host_matrix_complex128,
     _normalized_p3_bindings,
 )
 from .split_real_imag_double_single_conformance import (
@@ -187,7 +187,7 @@ def _gate_error(device: torch.device) -> float:
             errors.append(
                 torch.max(
                     torch.abs(
-                        reconstructed - _host_matrix_complex128(reference_instruction)
+                        reconstructed - host_matrix_complex128(reference_instruction)
                     )
                 )
             )

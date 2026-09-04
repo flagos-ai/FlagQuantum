@@ -20,8 +20,9 @@ Runtime enters through `run_local_statevector()`.
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.
 
-`double_single_device_gates.py` owns the device-resident FP32 Double-Single
-gate-matrix numerics used by the experimental statevector precision path.
+`double_single_host_gates.py` owns P3's explicit CPU reference encoding;
+`double_single_device_gates.py` separately owns P4's device-resident FP32
+gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
 `double_single_statevector.py` owns the shared gate application and state
 normalization numerics used by its P3 and P4 executors.
 Runtime retains precision authorization, platform selection, execution evidence,
