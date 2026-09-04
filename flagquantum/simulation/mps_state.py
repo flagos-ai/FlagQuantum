@@ -7,11 +7,11 @@ from typing import Any, Iterable, Sequence
 
 import torch
 
-from ..circuit import _apply_matrix, _bits_from_indices
 from ..core.ir import Instruction
 from ..ops.gate_matrix import gate_matrix
 from ..ops.matrices import GATE_MAT_DICT, get_global_precision
 from .real_imag_kernels import complex_einsum_pair
+from .statevector_ops import _apply_matrix, _bits_from_indices
 
 _DENSE_Z_SUM_WEIGHT_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor

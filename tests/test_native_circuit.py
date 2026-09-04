@@ -10,6 +10,8 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.compilation.planner as fqxp
+from flagquantum.ops.matrices import GATE_MAT_DICT
+from flagquantum.simulation.statevector_ops import _apply_matrix, _gate_matrix
 
 pytestmark = pytest.mark.integration
 
@@ -109,9 +111,9 @@ def test_cx_statevector_uses_permutation_without_dense_bmm(monkeypatch, wires):
     generator = torch.Generator().manual_seed(903)
     initial = torch.randn(2, 16, dtype=torch.complex64, generator=generator)
     initial = initial / torch.linalg.vector_norm(initial, dim=-1, keepdim=True)
-    reference = circuit_runtime._apply_matrix(
+    reference = _apply_matrix(
         initial,
-        circuit_runtime.GATE_MAT_DICT["cx"],
+        GATE_MAT_DICT["cx"],
         wires,
         4,
     )
@@ -136,9 +138,7 @@ def test_fixed_basis_permutations_avoid_dense_bmm(monkeypatch, name, wires):
 
     generator = torch.Generator().manual_seed(904)
     initial = torch.randn(2, 16, dtype=torch.complex64, generator=generator)
-    reference = circuit_runtime._apply_matrix(
-        initial, circuit_runtime.GATE_MAT_DICT[name], wires, 4
-    )
+    reference = _apply_matrix(initial, GATE_MAT_DICT[name], wires, 4)
     circuit = fq.Circuit(4, inputs=initial)
     getattr(circuit, name)(*wires)
 
@@ -159,9 +159,7 @@ def test_fixed_y_specialization_avoids_dense_bmm(monkeypatch, wire):
     name = "y"
     generator = torch.Generator().manual_seed(905)
     initial = torch.randn(2, 16, dtype=torch.complex64, generator=generator)
-    reference = circuit_runtime._apply_matrix(
-        initial, circuit_runtime.GATE_MAT_DICT[name], (wire,), 4
-    )
+    reference = _apply_matrix(initial, GATE_MAT_DICT[name], (wire,), 4)
     circuit = fq.Circuit(4, inputs=initial)
     getattr(circuit, name)(wire)
 
@@ -178,8 +176,6 @@ def test_fixed_y_specialization_avoids_dense_bmm(monkeypatch, wire):
 
 
 def test_same_wire_gate_fusion_preserves_state_and_gradient():
-    import flagquantum.simulation.statevector as statevector_runtime
-
     initial = torch.tensor([[0.5, 0.5j, -0.5j, 0.5]], dtype=torch.complex64)
     reference_theta = torch.tensor(0.23, requires_grad=True)
     theta = reference_theta.detach().clone().requires_grad_(True)
@@ -189,15 +185,13 @@ def test_same_wire_gate_fusion_preserves_state_and_gradient():
     )
     reference_state = initial
     for instruction in reference_circuit.to_ir().instructions:
-        matrix = statevector_runtime._gate_matrix(
+        matrix = _gate_matrix(
             instruction,
             bsz=initial.shape[0],
             device=initial.device,
             dtype=initial.dtype,
         )
-        reference_state = statevector_runtime._apply_matrix(
-            reference_state, matrix, instruction.wires, 2
-        )
+        reference_state = _apply_matrix(reference_state, matrix, instruction.wires, 2)
     reference_loss = reference_state.real.sum()
     reference_loss.backward()
 

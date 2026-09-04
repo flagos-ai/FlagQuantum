@@ -14,9 +14,10 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import torch
 
-from ..circuit import Circuit, _apply_matrix
+from ..circuit import Circuit
 from ..ops.matrices import GATE_MAT_DICT, get_global_precision
 from ..simulation.mps import MPSState
+from ..simulation.statevector_ops import _apply_matrix
 from .optimization import (
     HybridOptimizationResult,
     OptimizationStage,

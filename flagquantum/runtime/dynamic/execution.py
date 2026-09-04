@@ -5,17 +5,17 @@ from time import perf_counter
 
 import torch
 
-from ...circuit_statevector import (
+from ...core.ir import Instruction
+from ...core.operator_schema import canonical_opcode
+from ...ops.gate_matrix import gate_matrix
+from ...simulation.statevector_ops import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_single_qubit_fixed,
-    _canonical_name,
     _statevector_layout,
 )
-from ...core.ir import Instruction
-from ...ops.gate_matrix import gate_matrix
 from ._conditions import classical_width, instruction_conditions
 from .circuit import DynamicCircuit
 from .result import DynamicExecutionResult
@@ -49,7 +49,7 @@ def _apply_instruction(
 ) -> torch.Tensor:
     """Apply one static instruction without constructing a temporary circuit."""
 
-    name = _canonical_name(instruction.name)
+    name = canonical_opcode(instruction.name)
     if name in {"x", "cx", "swap"}:
         return _apply_fixed_permutation(state, name, instruction.wires, n_wires)
     if name == "y":

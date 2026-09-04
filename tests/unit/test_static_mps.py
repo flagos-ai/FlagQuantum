@@ -1,7 +1,8 @@
 import pytest
 import torch
 
-from flagquantum.circuit import Circuit, _apply_matrix
+from flagquantum.circuit import Circuit
+from flagquantum.simulation.statevector_ops import _apply_matrix
 from flagquantum.simulation.static_mps import (
     CX,
     StaticMPSProgram,

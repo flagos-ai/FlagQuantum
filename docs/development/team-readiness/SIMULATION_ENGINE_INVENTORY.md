@@ -3,9 +3,9 @@
 状态：Simulation 团队交付候选（事实盘点与测试草案，不是公共契约）
 
 集成进展（2026-09-04）：本地状态向量执行循环已迁入
-`flagquantum/simulation/statevector.py`，`Circuit.state()` 仅保留稳定门面。初态、生命周期缓存
-仍暂由 `Circuit` 持有，底层门作用与融合 helper 仍位于 `circuit_statevector.py`；后续迁移不得
-改变 `fq.Circuit`、Runtime 或结果契约。
+`flagquantum/simulation/statevector.py`，布局、门作用和融合 helper 已迁入
+`flagquantum/simulation/statevector_ops.py`，`Circuit.state()` 仅保留稳定门面。初态与生命周期
+缓存仍暂由 `Circuit` 持有；后续迁移不得改变 `fq.Circuit`、Runtime 或结果契约。
 
 盘点日期：2026-09-03
 
@@ -16,8 +16,8 @@
 ## 1. 结论
 
 当前数值实现尚未全部以可替换 Simulation Engine 为边界收敛：稳定的本地 PyTorch
-状态向量执行循环已位于 `flagquantum/simulation/statevector.py`，底层门作用与融合仍位于
-`flagquantum/circuit_statevector.py`；本地 MPS/TN 主要位于
+状态向量执行循环已位于 `flagquantum/simulation/statevector.py`，底层门作用与融合位于
+`flagquantum/simulation/statevector_ops.py`；本地 MPS/TN 主要位于
 `flagquantum/simulation/`；密度矩阵及大量分布式数值实现位于过渡目录
 `flagquantum/runtime/backends/`。两个过渡目录都混合了数值算法、Kernel 调用、执行适配、
 资源/通信编排和结果转换。
@@ -54,7 +54,7 @@
 
 | 能力 | 当前数值权威位置 | 编排/消费者位置 | 现状 |
 | --- | --- | --- | --- |
-| 本地状态向量 | `simulation/statevector.py` 的执行循环；`circuit_statevector.py` 的布局、门作用和融合；`simulation/triton_kernels/statevector_gates.py` 等 CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；执行循环已归 Simulation，helper 与生命周期缓存仍待后续克制迁移 |
+| 本地状态向量 | `simulation/statevector.py` 的执行循环；`simulation/statevector_ops.py` 的布局、门作用和融合；`simulation/triton_kernels/statevector_gates.py` 等 CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有 |
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `runtime/backends/statevector/forward.py`、`reverse_adjoint.py`、`triton.py`、`local_execution.py` 的数值部分 | 同目录 planning/models/environment/forward_executor/training/checkpointing/gradient_reduction | 真正 amplitude/qubit-address sharding 与 Runtime 生命周期高度混合 |
 | Split real/imag 与 Double-Single | `runtime/backends/statevector/split_real_imag*.py`、`double_single_device_gates.py` | 同文件中的平台身份、精度计划、conformance/result | 实验路径；不得成为首切片默认实现或被描述为等价 FP64 |

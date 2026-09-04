@@ -12,16 +12,11 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 import torch
 
-from .circuit_statevector import (
-    _apply_matrix,
-    _bits_from_indices,
-    _canonical_name,
-    _normalize_wires,
-)
 from .core.ir import CircuitIR, Instruction, MeasurementNode
 from .core.operator_schema import (
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
+    canonical_opcode,
     get_operator_schema,
 )
 from .core.parameters import (
@@ -32,12 +27,19 @@ from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
 from .ops.complex_ops import complex_conj, complex_mul
 from .ops.matrices import GATE_MAT_DICT
+from .simulation.statevector_ops import _apply_matrix, _bits_from_indices
 
 if TYPE_CHECKING:
     from .compilation.planner import ExecutionPlan
     from .noise import NoiseModel
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
+
+
+def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
+    if isinstance(wires, int):
+        return (wires,)
+    return tuple(int(wire) for wire in wires)
 
 
 class Circuit:
@@ -146,7 +148,7 @@ class Circuit:
                 f"range [0, {self.n_wires - 1}]."
             )
         instruction = Instruction(
-            name=_canonical_name(name),
+            name=canonical_opcode(name),
             wires=normalized_wires,
             params=merged_params,
             matrix=matrix,

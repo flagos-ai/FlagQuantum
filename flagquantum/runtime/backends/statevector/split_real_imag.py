@@ -999,8 +999,9 @@ def _training_conformance_observable() -> Any:
 def _complex128_pauli_expectation(
     ir: CircuitIR, terms: Sequence[_PauliTerm]
 ) -> torch.Tensor:
-    from ....circuit import Circuit, _apply_matrix
+    from ....circuit import Circuit
     from ....ops.matrices import GATE_MAT_DICT
+    from ....simulation.statevector_ops import _apply_matrix
 
     state = Circuit.from_ir(ir, device="cpu", dtype=torch.complex128).state()
     batched = state.reshape(1, -1)

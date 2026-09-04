@@ -1,23 +1,23 @@
-"""Private statevector compilation and tensor helpers for :mod:`circuit`."""
+"""Private statevector compilation and tensor operations."""
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Sequence
 
 import torch
 
-from .core.ir import Instruction
-from .core.operator_schema import canonical_opcode
-from .ops.complex_ops import complex_mul
-from .ops.gate_matrix import (
+from ..core.ir import Instruction
+from ..core.operator_schema import canonical_opcode
+from ..ops.complex_ops import complex_mul
+from ..ops.gate_matrix import (
     gate_matrix as _gate_matrix,
 )
-from .ops.gate_matrix import (
+from ..ops.gate_matrix import (
     parameter_tensor as _parameter_tensor,
 )
-from .ops.matrices import GATE_MAT_DICT
+from ..ops.matrices import GATE_MAT_DICT
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -243,7 +243,7 @@ def _compile_statevector_program(
         step = fused_program[index]
         if not (
             isinstance(step, _StatevectorGateStep)
-            and _canonical_name(step.instruction.name) == "cx"
+            and canonical_opcode(step.instruction.name) == "cx"
         ):
             optimized_program.append(step)
             index += 1
@@ -254,7 +254,7 @@ def _compile_statevector_program(
             candidate = fused_program[cursor]
             if not (
                 isinstance(candidate, _StatevectorGateStep)
-                and _canonical_name(candidate.instruction.name) == "cx"
+                and canonical_opcode(candidate.instruction.name) == "cx"
             ):
                 break
             cx_steps.append(candidate)
@@ -270,16 +270,6 @@ def _compile_statevector_program(
             optimized_program.extend(cx_steps)
         index = cursor
     return tuple(optimized_program)
-
-
-def _canonical_name(name: str) -> str:
-    return canonical_opcode(name)
-
-
-def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
-    if isinstance(wires, int):
-        return (wires,)
-    return tuple(int(wire) for wire in wires)
 
 
 def _statevector_layout(
@@ -413,7 +403,7 @@ def _apply_rx_rz_loop(
     n_wires: int,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
-    from .simulation.triton_kernels import repeated_rx_rz
+    from .triton_kernels import repeated_rx_rz
 
     rx_angles = []
     rz_angles = []

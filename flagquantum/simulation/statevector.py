@@ -12,7 +12,10 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from ..circuit_statevector import (
+from ..core.ir import CircuitIR, Instruction
+from ..core.operator_schema import canonical_opcode
+from ..core.runtime_config import runtime_config
+from .statevector_ops import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
     _apply_diagonal_matrix,
@@ -22,7 +25,6 @@ from ..circuit_statevector import (
     _apply_single_qubit_fixed,
     _batched_rotation_sequence_matrices,
     _batched_rx_ry_rz_matrices,
-    _canonical_name,
     _compile_statevector_program,
     _fused_gate_matrix,
     _gate_matrix,
@@ -36,8 +38,6 @@ from ..circuit_statevector import (
     _triton_single_qubit_loop_enabled,
     _triton_single_qubit_matrix_enabled,
 )
-from ..core.ir import CircuitIR, Instruction
-from ..core.runtime_config import runtime_config
 
 if TYPE_CHECKING:
     from ..circuit import Circuit
@@ -163,13 +163,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             "triton_single_qubit_matrix_regions": 0,
             "diagonal_elementwise_gates": sum(
                 isinstance(step, _StatevectorGateStep)
-                and _canonical_name(step.instruction.name)
+                and canonical_opcode(step.instruction.name)
                 in _DIAGONAL_STATEVECTOR_GATES
                 for step in program
             ),
             "permutation_gates": sum(
                 isinstance(step, _StatevectorGateStep)
-                and _canonical_name(step.instruction.name) in {"x", "cx", "swap"}
+                and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
                 for step in program
             )
             + sum(
@@ -182,7 +182,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             ),
             "fixed_single_qubit_specialized_gates": sum(
                 isinstance(step, _StatevectorGateStep)
-                and _canonical_name(step.instruction.name) == "y"
+                and canonical_opcode(step.instruction.name) == "y"
                 for step in program
             ),
             "fused_gate_regions": sum(
@@ -425,7 +425,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 )
                 continue
             instruction = step.instruction
-            name = _canonical_name(instruction.name)
+            name = canonical_opcode(instruction.name)
             if name in {"x", "cx", "swap"}:
                 output = _apply_fixed_permutation(
                     output, name, instruction.wires, circuit.n_wires
