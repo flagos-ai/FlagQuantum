@@ -29,13 +29,18 @@ from flagquantum.deployment.synthetic_remote_target_capabilities import (
 )
 from flagquantum.runtime.platforms.cpu_target_capabilities import (
     CPUCapabilityObservation,
+    CPUPrecisionObservation,
     cpu_platform_to_target_capability_snapshot,
 )
 from flagquantum.runtime.target_capability_matching import (
+    CandidateProvenance,
     FallbackAxis,
+    RouteIntent,
     RuntimeDecisionBlockerCode,
     TargetCapabilityCandidate,
-    match_target_capability_candidates,
+)
+from flagquantum.runtime.target_capability_matching import (
+    match_target_capability_candidates as _raw_match_target_capability_candidates,
 )
 
 pytestmark = pytest.mark.unit
@@ -43,6 +48,19 @@ pytestmark = pytest.mark.unit
 _CAPTURED_AT = datetime(2026, 9, 4, 8, 0, tzinfo=timezone.utc)
 _EVALUATED_AT = _CAPTURED_AT + timedelta(minutes=1)
 _MEMORY_REQUIREMENT = 4 * 1024**3
+_ROUTE_INTENT = RouteIntent(
+    backend="runtime-test",
+    device_kind="synthetic_qpu",
+    cpu=False,
+    effective_precision="float64",
+    algorithm="exact",
+    approximation="exact",
+)
+
+
+def match_target_capability_candidates(requirements, candidates, **kwargs):
+    kwargs.setdefault("route_intent", _ROUTE_INTENT)
+    return _raw_match_target_capability_candidates(requirements, candidates, **kwargs)
 
 
 @dataclass
@@ -81,6 +99,12 @@ def _cpu_snapshot(*, memory: int = 8 * 1024**3):
             device_count=1,
             device_ids=("cpu:0",),
             memory_available_bytes=memory,
+            precision=(
+                CPUPrecisionObservation(
+                    "precision.effective_dtype",
+                    "float64",
+                ),
+            ),
         )
     )
     return cpu_platform_to_target_capability_snapshot(
@@ -115,7 +139,10 @@ def _remote_fixture(
             scope=scope,
         ),
     )
-    observed_facts = {"device.count": 1}
+    observed_facts = {
+        "device.count": 1,
+        "precision.effective_dtype": "float64",
+    }
     if memory is not None:
         observed_facts["memory.available_bytes"] = memory
     if extra_observed_facts is not None:
@@ -185,15 +212,47 @@ def _candidate(
     snapshot,
     *,
     preference_rank: int = 0,
-    fallback_axes: frozenset[FallbackAxis] = frozenset(),
-    is_cpu_candidate: bool = False,
+    provenance_axes: frozenset[FallbackAxis] = frozenset(),
 ) -> TargetCapabilityCandidate:
+    kind = next(fact.value for fact in snapshot.facts if fact.name == "device.kind")
+    declared_axes = set(provenance_axes)
+    if kind == "cpu" and FallbackAxis.CPU in declared_axes:
+        declared_axes.add(FallbackAxis.DEVICE)
+    provenance = CandidateProvenance(
+        intent_id=_ROUTE_INTENT.intent_id,
+        snapshot_id=snapshot.snapshot_id,
+        backend=(
+            "fallback-backend"
+            if FallbackAxis.BACKEND in declared_axes
+            else _ROUTE_INTENT.backend
+        ),
+        device_kind=(
+            str(kind)
+            if kind == "cpu" or FallbackAxis.DEVICE in declared_axes
+            else _ROUTE_INTENT.device_kind
+        ),
+        cpu=(kind == "cpu"),
+        effective_precision=(
+            "float32"
+            if FallbackAxis.PRECISION in declared_axes
+            else _ROUTE_INTENT.effective_precision
+        ),
+        algorithm=(
+            "approximate"
+            if FallbackAxis.ALGORITHM in declared_axes
+            else _ROUTE_INTENT.algorithm
+        ),
+        approximation=(
+            "approximate"
+            if FallbackAxis.APPROXIMATION in declared_axes
+            else _ROUTE_INTENT.approximation
+        ),
+    )
     return TargetCapabilityCandidate(
         candidate_id=candidate_id,
         snapshot=snapshot,
         preference_rank=preference_rank,
-        fallback_axes=fallback_axes,
-        is_cpu_candidate=is_cpu_candidate,
+        provenance=provenance,
     )
 
 
@@ -224,12 +283,13 @@ def test_synthetic_producer_emits_complete_core_snapshot_without_inference() -> 
 
 
 def test_same_runtime_consumer_replaces_cpu_with_synthetic_remote_snapshot() -> None:
-    requirements = _requirements(authorizations=FallbackAuthorizations(cpu=True))
+    requirements = _requirements(
+        authorizations=FallbackAuthorizations(cpu=True, device=True)
+    )
     cpu = _candidate(
         "cpu",
         _cpu_snapshot(),
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+        provenance_axes=frozenset({FallbackAxis.CPU}),
     )
     remote = _candidate("remote", _remote_snapshot())
 
@@ -392,8 +452,7 @@ def test_cpu_fallback_axis_is_not_inferred_or_authorized_by_other_axes() -> None
     cpu = _candidate(
         "cpu",
         _cpu_snapshot(),
-        fallback_axes=frozenset({FallbackAxis.CPU}),
-        is_cpu_candidate=True,
+        provenance_axes=frozenset({FallbackAxis.CPU}),
     )
     requirements = _requirements(authorizations=FallbackAuthorizations(backend=True))
     decision = match_target_capability_candidates(
@@ -403,7 +462,7 @@ def test_cpu_fallback_axis_is_not_inferred_or_authorized_by_other_axes() -> None
     assert decision.selected is None
     assert any(
         blocker.code is RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED
-        and blocker.fallback_axes == (FallbackAxis.CPU,)
+        and blocker.fallback_axes == (FallbackAxis.CPU, FallbackAxis.DEVICE)
         for blocker in decision.blockers
     )
 

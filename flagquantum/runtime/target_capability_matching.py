@@ -1,9 +1,9 @@
 """Runtime-owned candidate matching over the Core Target Capabilities seam.
 
 This module is intentionally not imported by the default execution path.  It
-owns candidate ordering, fallback authorization and a private decision record;
-Core owns requirement/snapshot validation and pure comparison.  No value is
-copied into or rewritten on either Core object.
+owns candidate ordering, route provenance, fallback authorization and a private
+decision record; Core owns requirement/snapshot validation and pure comparison.
+No value is copied into or rewritten on either Core object.
 """
 
 from __future__ import annotations
@@ -35,6 +35,8 @@ from flagquantum.core.target_capabilities import (
 
 DECISION_SCHEMA_VERSION = "flagquantum.runtime.target_capability_decision.v1"
 SORTING_KEY_VERSION = "satisfied_preferences_then_rank_then_identity.v1"
+ROUTE_INTENT_SCHEMA_VERSION = "flagquantum.runtime.route_intent.v1"
+CANDIDATE_PROVENANCE_SCHEMA_VERSION = "flagquantum.runtime.candidate_provenance.v1"
 
 
 class FallbackAxis(str, Enum):
@@ -56,26 +58,192 @@ class RuntimeDecisionBlockerCode(str, Enum):
     CPU_CANDIDATE_REQUIRED = "cpu_candidate_required"
     CPU_IDENTITY_MISMATCH = "cpu_identity_mismatch"
     CPU_IDENTITY_UNVERIFIED = "cpu_identity_unverified"
+    PRECISION_IDENTITY_UNVERIFIED = "precision_identity_unverified"
+    ROUTE_INTENT_REQUIRED = "route_intent_required"
+    CANDIDATE_PROVENANCE_REQUIRED = "candidate_provenance_required"
+    PROVENANCE_IDENTITY_MISMATCH = "provenance_identity_mismatch"
+    PROVENANCE_SNAPSHOT_MISMATCH = "provenance_snapshot_mismatch"
     DUPLICATE_CANDIDATE_ID = "duplicate_candidate_id"
     DUPLICATE_SNAPSHOT_IDENTITY = "duplicate_snapshot_identity"
     DUPLICATE_TARGET_IDENTITY = "duplicate_target_identity"
     NO_EXECUTABLE_CANDIDATE = "no_executable_candidate"
 
 
+_ROUTE_FIELDS = (
+    (FallbackAxis.BACKEND, "backend"),
+    (FallbackAxis.DEVICE, "device_kind"),
+    (FallbackAxis.CPU, "cpu"),
+    (FallbackAxis.PRECISION, "effective_precision"),
+    (FallbackAxis.ALGORITHM, "algorithm"),
+    (FallbackAxis.APPROXIMATION, "approximation"),
+)
+
+
+def _route_value(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value.strip()
+
+
+def _stable_identity(payload: object) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+@dataclass(frozen=True)
+class RouteIntent:
+    """The original Runtime routing intent with a closed six-axis shape.
+
+    ``effective_precision`` is the execution dtype expected from a candidate.
+    This is an internal policy value.  It contains no provider handles or
+    credentials; its identity is derived only from its normalized values.
+    """
+
+    backend: str
+    device_kind: str
+    cpu: bool
+    effective_precision: str
+    algorithm: str
+    approximation: str
+    intent_id: str = ""
+
+    def __post_init__(self) -> None:
+        for name in (
+            "backend",
+            "device_kind",
+            "effective_precision",
+            "algorithm",
+            "approximation",
+        ):
+            object.__setattr__(
+                self, name, _route_value(getattr(self, name), field_name=name)
+            )
+        if type(self.cpu) is not bool:
+            raise TypeError("cpu must be a boolean")
+        if self.cpu is not (self.device_kind == "cpu"):
+            raise ValueError("cpu must agree with device_kind")
+        if not isinstance(self.intent_id, str):
+            raise TypeError("intent_id must be a string")
+        if self.intent_id and not self.intent_id.strip():
+            raise ValueError("intent_id must be empty or a non-empty string")
+        object.__setattr__(self, "intent_id", self.intent_id.strip())
+        if not self.intent_id:
+            object.__setattr__(self, "intent_id", self.canonical_identity)
+
+    def _identity_payload(self) -> dict[str, object]:
+        return {
+            "schema_version": ROUTE_INTENT_SCHEMA_VERSION,
+            "backend": self.backend,
+            "device_kind": self.device_kind,
+            "cpu": self.cpu,
+            "effective_precision": self.effective_precision,
+            "algorithm": self.algorithm,
+            "approximation": self.approximation,
+        }
+
+    @property
+    def canonical_identity(self) -> str:
+        return _stable_identity(self._identity_payload())
+
+    @property
+    def identity_valid(self) -> bool:
+        return self.intent_id == self.canonical_identity
+
+    def to_dict(self) -> dict[str, object]:
+        return {**self._identity_payload(), "intent_id": self.intent_id}
+
+
+@dataclass(frozen=True)
+class CandidateProvenance:
+    """Immutable route provenance bound to one intent and one snapshot.
+
+    The binding and canonical identity detect accidental misattachment or
+    mutation; they are not external source authentication.
+    """
+
+    intent_id: str
+    snapshot_id: str
+    backend: str
+    device_kind: str
+    cpu: bool
+    effective_precision: str
+    algorithm: str
+    approximation: str
+    provenance_id: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.intent_id, str) or not self.intent_id.strip():
+            raise ValueError("intent_id must be a non-empty string")
+        object.__setattr__(self, "intent_id", self.intent_id.strip())
+        if not isinstance(self.snapshot_id, str) or not self.snapshot_id.strip():
+            raise ValueError("snapshot_id must be a non-empty string")
+        object.__setattr__(self, "snapshot_id", self.snapshot_id.strip())
+        for name in (
+            "backend",
+            "device_kind",
+            "effective_precision",
+            "algorithm",
+            "approximation",
+        ):
+            object.__setattr__(
+                self, name, _route_value(getattr(self, name), field_name=name)
+            )
+        if type(self.cpu) is not bool:
+            raise TypeError("cpu must be a boolean")
+        if self.cpu is not (self.device_kind == "cpu"):
+            raise ValueError("cpu must agree with device_kind")
+        if not isinstance(self.provenance_id, str):
+            raise TypeError("provenance_id must be a string")
+        if self.provenance_id and not self.provenance_id.strip():
+            raise ValueError("provenance_id must be empty or a non-empty string")
+        object.__setattr__(self, "provenance_id", self.provenance_id.strip())
+        if not self.provenance_id:
+            object.__setattr__(self, "provenance_id", self.canonical_identity)
+
+    def _identity_payload(self) -> dict[str, object]:
+        return {
+            "schema_version": CANDIDATE_PROVENANCE_SCHEMA_VERSION,
+            "intent_id": self.intent_id,
+            "snapshot_id": self.snapshot_id,
+            "backend": self.backend,
+            "device_kind": self.device_kind,
+            "cpu": self.cpu,
+            "effective_precision": self.effective_precision,
+            "algorithm": self.algorithm,
+            "approximation": self.approximation,
+        }
+
+    @property
+    def canonical_identity(self) -> str:
+        return _stable_identity(self._identity_payload())
+
+    @property
+    def identity_valid(self) -> bool:
+        return self.provenance_id == self.canonical_identity
+
+    def to_dict(self) -> dict[str, object]:
+        return {**self._identity_payload(), "provenance_id": self.provenance_id}
+
+
 @dataclass(frozen=True)
 class TargetCapabilityCandidate:
     """One explicit target snapshot offered to Runtime policy.
 
-    ``fallback_axes`` describes what changed relative to the original request;
-    it does not modify that request or the snapshot.  ``is_cpu_candidate`` is
-    only an explicit policy marker and must agree with a verified Core fact.
+    Runtime computes fallback axes from ``route_intent`` and ``provenance``;
+    candidate metadata cannot assert, remove, or reinterpret an axis.
     """
 
     candidate_id: str
     snapshot: TargetCapabilitySnapshot
     preference_rank: int = 0
-    fallback_axes: frozenset[FallbackAxis] = frozenset()
-    is_cpu_candidate: bool = False
+    provenance: CandidateProvenance | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.candidate_id, str) or not self.candidate_id:
@@ -84,16 +252,10 @@ class TargetCapabilityCandidate:
             raise TypeError("snapshot must be a Core TargetCapabilitySnapshot")
         if type(self.preference_rank) is not int or self.preference_rank < 0:
             raise ValueError("preference_rank must be a non-negative integer")
-        axes: set[FallbackAxis] = set()
-        for axis in self.fallback_axes:
-            try:
-                axes.add(axis if isinstance(axis, FallbackAxis) else FallbackAxis(axis))
-            except (TypeError, ValueError) as error:
-                allowed = ", ".join(item.value for item in FallbackAxis)
-                raise ValueError(f"fallback_axes must use only: {allowed}") from error
-        object.__setattr__(self, "fallback_axes", frozenset(axes))
-        if type(self.is_cpu_candidate) is not bool:
-            raise TypeError("is_cpu_candidate must be a boolean")
+        if self.provenance is not None and not isinstance(
+            self.provenance, CandidateProvenance
+        ):
+            raise TypeError("provenance must be a CandidateProvenance")
 
 
 @dataclass(frozen=True)
@@ -139,6 +301,7 @@ class TargetCapabilityCandidateEvaluation:
     core_match: CapabilityMatchResult
     blockers: tuple[RuntimeDecisionBlocker, ...]
     score: tuple[int, int, str, str, str]
+    computed_fallback_axes: frozenset[FallbackAxis] = frozenset()
 
     @property
     def executable(self) -> bool:
@@ -192,30 +355,30 @@ def _axis_authorized(
     return bool(getattr(authorizations, axis.value))
 
 
-def _cpu_identity(
+def _verified_string_fact(
     snapshot: TargetCapabilitySnapshot,
     *,
+    capability_name: str,
     evaluated_at: datetime,
     expected_target_identity: TargetIdentity | None,
     required_scope: CapabilityScope | None,
     claim_minimum_evidence_level: EvidenceLevel,
-) -> tuple[bool | None, tuple[CapabilityBlocker, ...]]:
-    """Return CPU identity only after Core validates the ``device.kind`` fact.
+) -> tuple[str | None, tuple[CapabilityBlocker, ...]]:
+    """Return one string fact only after Core validates its evidence.
 
-    Runtime candidate metadata is not evidence.  Missing, unsupported,
-    unmeasured, unknown, or non-observed ``device.kind`` facts remain
-    unresolved rather than being guessed as CPU or non-CPU.  The policy
-    requirement deliberately reuses Core's source, evidence, scope, freshness,
-    and blocker semantics instead of duplicating an evidence matcher here.
+    Missing, unsupported, unmeasured, unknown, or non-observed facts remain
+    unresolved.  The policy requirement deliberately reuses Core's source,
+    evidence, scope, freshness, and blocker semantics instead of duplicating an
+    evidence matcher here.
     """
 
-    fact = next((item for item in snapshot.facts if item.name == "device.kind"), None)
+    fact = next((item for item in snapshot.facts if item.name == capability_name), None)
     if fact is None or not isinstance(fact.value, str):
         return None, ()
     identity_requirements = RequirementSet(
         requirements=(
             CapabilityRequirement(
-                name="device.kind",
+                name=capability_name,
                 operator=ComparisonOperator.EQUALS,
                 value=fact.value,
                 strength=RequirementStrength.MANDATORY,
@@ -235,7 +398,44 @@ def _cpu_identity(
     )
     if not identity_match.executable:
         return None, identity_match.blockers
-    return fact.value == "cpu", ()
+    return fact.value, ()
+
+
+def _cpu_identity(
+    snapshot: TargetCapabilitySnapshot,
+    *,
+    evaluated_at: datetime,
+    expected_target_identity: TargetIdentity | None,
+    required_scope: CapabilityScope | None,
+    claim_minimum_evidence_level: EvidenceLevel,
+) -> tuple[bool | None, tuple[CapabilityBlocker, ...]]:
+    device_kind, blockers = _verified_string_fact(
+        snapshot,
+        capability_name="device.kind",
+        evaluated_at=evaluated_at,
+        expected_target_identity=expected_target_identity,
+        required_scope=required_scope,
+        claim_minimum_evidence_level=claim_minimum_evidence_level,
+    )
+    return (None if device_kind is None else device_kind == "cpu"), blockers
+
+
+def _effective_precision_identity(
+    snapshot: TargetCapabilitySnapshot,
+    *,
+    evaluated_at: datetime,
+    expected_target_identity: TargetIdentity | None,
+    required_scope: CapabilityScope | None,
+    claim_minimum_evidence_level: EvidenceLevel,
+) -> tuple[str | None, tuple[CapabilityBlocker, ...]]:
+    return _verified_string_fact(
+        snapshot,
+        capability_name="precision.effective_dtype",
+        evaluated_at=evaluated_at,
+        expected_target_identity=expected_target_identity,
+        required_scope=required_scope,
+        claim_minimum_evidence_level=claim_minimum_evidence_level,
+    )
 
 
 def _requires_cpu(requirements: RequirementSet) -> bool:
@@ -250,15 +450,144 @@ def _requires_cpu(requirements: RequirementSet) -> bool:
     )
 
 
+def _computed_fallback_axes(
+    route_intent: RouteIntent, provenance: CandidateProvenance
+) -> frozenset[FallbackAxis]:
+    """Compute all changed route axes; caller assertions are never consulted."""
+
+    return frozenset(
+        axis
+        for axis, field_name in _ROUTE_FIELDS
+        if getattr(route_intent, field_name) != getattr(provenance, field_name)
+    )
+
+
+def _provenance_blockers(
+    candidate: TargetCapabilityCandidate,
+    *,
+    route_intent: RouteIntent | None,
+) -> tuple[RuntimeDecisionBlocker, ...]:
+    blockers: list[RuntimeDecisionBlocker] = []
+    provenance = candidate.provenance
+    if route_intent is None:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.ROUTE_INTENT_REQUIRED,
+                message="candidate selection requires an immutable original route intent",
+                candidate_id=candidate.candidate_id,
+            )
+        )
+        return tuple(blockers)
+    if not route_intent.identity_valid or provenance is None:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=(
+                    RuntimeDecisionBlockerCode.CANDIDATE_PROVENANCE_REQUIRED
+                    if provenance is None
+                    else RuntimeDecisionBlockerCode.PROVENANCE_IDENTITY_MISMATCH
+                ),
+                message=(
+                    "candidate provenance is required and must bind the route intent"
+                    if provenance is None
+                    else "route intent identity is not canonical"
+                ),
+                candidate_id=candidate.candidate_id,
+            )
+        )
+        return tuple(blockers)
+    if not provenance.identity_valid or provenance.intent_id != route_intent.intent_id:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PROVENANCE_IDENTITY_MISMATCH,
+                message="candidate provenance identity does not bind the route intent",
+                candidate_id=candidate.candidate_id,
+            )
+        )
+    return tuple(blockers)
+
+
+def _provenance_snapshot_blockers(
+    candidate: TargetCapabilityCandidate,
+    *,
+    provenance: CandidateProvenance | None,
+    cpu_identity: bool | None,
+    effective_precision: str | None,
+    effective_precision_core_blockers: tuple[CapabilityBlocker, ...],
+) -> tuple[RuntimeDecisionBlocker, ...]:
+    """Cross-check provenance claims against Core-validated snapshot facts."""
+
+    if provenance is None:
+        return ()
+    blockers: list[RuntimeDecisionBlocker] = []
+    if provenance.snapshot_id != candidate.snapshot.snapshot_id:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH,
+                message="candidate provenance is bound to a different snapshot identity",
+                candidate_id=candidate.candidate_id,
+            )
+        )
+    if effective_precision is None:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+                message=(
+                    "candidate effective precision is not verifiable by Core; "
+                    "Runtime cannot assume the precision"
+                ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+                core_blockers=effective_precision_core_blockers,
+            )
+        )
+    elif provenance.effective_precision != effective_precision:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH,
+                message="provenance effective precision conflicts with the Core fact",
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+            )
+        )
+    if cpu_identity is not None and provenance.cpu is not cpu_identity:
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH,
+                message="provenance CPU axis conflicts with verified device.kind fact",
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.CPU,),
+            )
+        )
+    device_kind_fact = next(
+        (item for item in candidate.snapshot.facts if item.name == "device.kind"),
+        None,
+    )
+    if cpu_identity is not None and (
+        device_kind_fact is None
+        or not isinstance(device_kind_fact.value, str)
+        or provenance.device_kind != device_kind_fact.value
+    ):
+        blockers.append(
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH,
+                message="provenance device identity conflicts with the verified device.kind fact",
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.DEVICE,),
+            )
+        )
+    return tuple(blockers)
+
+
 def _cpu_identity_blockers(
     candidate: TargetCapabilityCandidate,
     *,
     cpu_identity: bool | None,
     cpu_identity_core_blockers: tuple[CapabilityBlocker, ...],
     request_requires_cpu: bool,
+    computed_fallback_axes: frozenset[FallbackAxis],
 ) -> tuple[RuntimeDecisionBlocker, ...]:
     blockers: list[RuntimeDecisionBlocker] = []
-    declares_cpu = FallbackAxis.CPU in candidate.fallback_axes
+    declares_cpu = FallbackAxis.CPU in computed_fallback_axes
     if cpu_identity is None:
         blockers.append(
             RuntimeDecisionBlocker(
@@ -274,7 +603,7 @@ def _cpu_identity_blockers(
         )
         return tuple(blockers)
     if cpu_identity is False:
-        if candidate.is_cpu_candidate or declares_cpu:
+        if declares_cpu:
             blockers.append(
                 RuntimeDecisionBlocker(
                     code=RuntimeDecisionBlockerCode.CPU_IDENTITY_MISMATCH,
@@ -284,15 +613,6 @@ def _cpu_identity_blockers(
                 )
             )
         return tuple(blockers)
-    if candidate.is_cpu_candidate is False and declares_cpu:
-        blockers.append(
-            RuntimeDecisionBlocker(
-                code=RuntimeDecisionBlockerCode.CPU_CANDIDATE_REQUIRED,
-                message="a CPU fallback candidate must be explicitly marked",
-                candidate_id=candidate.candidate_id,
-                fallback_axes=(FallbackAxis.CPU,),
-            )
-        )
     if not request_requires_cpu and not declares_cpu:
         blockers.append(
             RuntimeDecisionBlocker(
@@ -364,6 +684,7 @@ def _decision_identity(
     *,
     evaluated_at: str,
     fallback_authorization_id: str,
+    route_intent: RouteIntent | None,
 ) -> str:
     payload = {
         "schema_version": DECISION_SCHEMA_VERSION,
@@ -381,6 +702,7 @@ def _decision_identity(
         ),
         "evaluated_at": evaluated_at,
         "fallback_authorization_id": fallback_authorization_id,
+        "route_intent": (route_intent.to_dict() if route_intent is not None else None),
         "sorting_key_version": SORTING_KEY_VERSION,
         "evaluations": [
             {
@@ -390,10 +712,14 @@ def _decision_identity(
                 "fallback_axes": [
                     axis.value
                     for axis in sorted(
-                        item.candidate.fallback_axes, key=lambda axis: axis.value
+                        item.computed_fallback_axes, key=lambda axis: axis.value
                     )
                 ],
-                "is_cpu_candidate": item.candidate.is_cpu_candidate,
+                "provenance": (
+                    item.candidate.provenance.to_dict()
+                    if item.candidate.provenance is not None
+                    else None
+                ),
                 "core_executable": item.core_match.executable,
                 "core_blockers": [
                     blocker.to_dict() for blocker in item.core_match.blockers
@@ -447,12 +773,13 @@ def _core_mismatch_blocker(
 def _unauthorized_axes_blocker(
     candidate: TargetCapabilityCandidate,
     authorizations: FallbackAuthorizations,
+    computed_fallback_axes: frozenset[FallbackAxis],
 ) -> RuntimeDecisionBlocker | None:
     unauthorized = tuple(
         sorted(
             (
                 axis
-                for axis in candidate.fallback_axes
+                for axis in computed_fallback_axes
                 if not _axis_authorized(authorizations, axis)
             ),
             key=lambda item: item.value,
@@ -462,7 +789,7 @@ def _unauthorized_axes_blocker(
         return None
     return RuntimeDecisionBlocker(
         code=RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED,
-        message="candidate declares fallback axes that are not authorized",
+        message="computed candidate fallback axes are not authorized",
         candidate_id=candidate.candidate_id,
         fallback_axes=unauthorized,
     )
@@ -476,6 +803,7 @@ def match_target_capability_candidates(
     expected_target_identity: TargetIdentity | None = None,
     required_scope: CapabilityScope | None = None,
     claim_minimum_evidence_level: EvidenceLevel = EvidenceLevel.BASIC,
+    route_intent: RouteIntent | None = None,
 ) -> TargetCapabilityDecision:
     """Match and rank explicit snapshots without touching the execution path.
 
@@ -505,6 +833,7 @@ def match_target_capability_candidates(
             (blocker,),
             evaluated_at=evaluation_time,
             fallback_authorization_id=fallback_authorization_id,
+            route_intent=route_intent,
         )
         return TargetCapabilityDecision(
             requirement_set_id=requirements.requirement_set_id,
@@ -562,6 +891,20 @@ def match_target_capability_candidates(
             claim_minimum_evidence_level=claim_minimum_evidence_level,
         )
         candidate_blockers: list[RuntimeDecisionBlocker] = []
+        provenance = candidate.provenance
+        if (
+            route_intent is not None
+            and provenance is not None
+            and route_intent.identity_valid
+            and provenance.identity_valid
+            and provenance.intent_id == route_intent.intent_id
+        ):
+            computed_axes = _computed_fallback_axes(route_intent, provenance)
+        else:
+            computed_axes = frozenset()
+        candidate_blockers.extend(
+            _provenance_blockers(candidate, route_intent=route_intent)
+        )
         if candidate.candidate_id in duplicate_candidate_ids:
             candidate_blockers.append(
                 RuntimeDecisionBlocker(
@@ -602,16 +945,35 @@ def match_target_capability_candidates(
             required_scope=required_scope,
             claim_minimum_evidence_level=claim_minimum_evidence_level,
         )
+        effective_precision, effective_precision_core_blockers = (
+            _effective_precision_identity(
+                candidate.snapshot,
+                evaluated_at=evaluation_instant,
+                expected_target_identity=expected_target_identity,
+                required_scope=required_scope,
+                claim_minimum_evidence_level=claim_minimum_evidence_level,
+            )
+        )
         candidate_blockers.extend(
             _cpu_identity_blockers(
                 candidate,
                 cpu_identity=cpu_identity,
                 cpu_identity_core_blockers=cpu_identity_core_blockers,
                 request_requires_cpu=request_requires_cpu,
+                computed_fallback_axes=computed_axes,
+            )
+        )
+        candidate_blockers.extend(
+            _provenance_snapshot_blockers(
+                candidate,
+                provenance=provenance,
+                cpu_identity=cpu_identity,
+                effective_precision=effective_precision,
+                effective_precision_core_blockers=effective_precision_core_blockers,
             )
         )
         unauthorized = _unauthorized_axes_blocker(
-            candidate, requirements.fallback_authorizations
+            candidate, requirements.fallback_authorizations, computed_axes
         )
         if unauthorized is not None:
             candidate_blockers.append(unauthorized)
@@ -623,6 +985,7 @@ def match_target_capability_candidates(
                 core_match=core_match,
                 blockers=tuple(candidate_blockers),
                 score=_score(candidate, core_match),
+                computed_fallback_axes=computed_axes,
             )
         )
 
@@ -644,6 +1007,7 @@ def match_target_capability_candidates(
             blockers,
             evaluated_at=evaluation_time,
             fallback_authorization_id=fallback_authorization_id,
+            route_intent=route_intent,
         )
         return TargetCapabilityDecision(
             requirement_set_id=requirements.requirement_set_id,
@@ -665,15 +1029,16 @@ def match_target_capability_candidates(
         (),
         evaluated_at=evaluation_time,
         fallback_authorization_id=fallback_authorization_id,
+        route_intent=route_intent,
     )
     fallback_record = None
-    if selected.candidate.fallback_axes:
+    if selected.computed_fallback_axes:
         fallback_record = FallbackDecisionRecord(
             requirement_set_id=requirements.requirement_set_id,
             snapshot_id=selected.candidate.snapshot.snapshot_id,
             target_identity=selected.candidate.snapshot.target_identity,
             fallback_axes=tuple(
-                sorted(selected.candidate.fallback_axes, key=lambda item: item.value)
+                sorted(selected.computed_fallback_axes, key=lambda item: item.value)
             ),
             core_blockers=selected.core_match.blockers,
             score=selected.score,
@@ -705,11 +1070,15 @@ select_target_capability_candidate = match_target_capability_candidates
 
 
 __all__ = [
+    "CANDIDATE_PROVENANCE_SCHEMA_VERSION",
     "DECISION_SCHEMA_VERSION",
+    "CandidateProvenance",
     "FallbackAxis",
     "FallbackDecisionRecord",
     "RuntimeDecisionBlocker",
     "RuntimeDecisionBlockerCode",
+    "ROUTE_INTENT_SCHEMA_VERSION",
+    "RouteIntent",
     "SORTING_KEY_VERSION",
     "TargetCapabilityCandidate",
     "TargetCapabilityCandidateEvaluation",
