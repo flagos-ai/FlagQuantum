@@ -30,6 +30,8 @@ implementation.
   `simulation/mps_observables.py`; change cross-rank scans and pipelines in
   `reverse_observables.py` or `reverse_z_observables.py`.
 - Change memory admission or microbatch policy in `factorization.py`.
+  That file also owns the bounded workspace pool and Runtime error translation;
+  it must not wrap rank-local gate application or duplicate QR/SVD numerics.
 - Change numerical tensor behavior in the corresponding Simulation module,
   not here.
 

@@ -4,23 +4,15 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from threading import Lock
-from typing import Any, Callable, Mapping, Sequence
+from typing import Callable, Sequence
 
 import torch
 from torch.profiler import record_function
 
-from ....core.ir import Instruction
 from ....simulation.mps_factorization import (
     mps_qr_forward as _simulation_mps_qr_forward,
 )
-from ....simulation.mps_rank_local import (
-    apply_two_mps_tensors_with_info as _apply_two_mps_tensors_with_info,
-)
-from ....simulation.mps_rank_local import (
-    instruction_matrix_for_mps as _instruction_matrix_for_mps,
-)
 from .records import MPSReverseContractError
-from .state import RankOwnedMPSState
 
 
 class MPSFactorizationMemoryError(RuntimeError):
@@ -384,49 +376,16 @@ def plan_rxx_factorization_microbatch(
     )
 
 
-def apply_mps_pair_forward(
-    left: torch.Tensor,
-    right: torch.Tensor,
-    instruction: Instruction,
-    state: RankOwnedMPSState,
-) -> tuple[torch.Tensor, torch.Tensor, Mapping[str, Any]]:
-    """Apply and split one owner-local adjacent two-site instruction."""
-    with record_function("flagquantum::mps::two_site_split"):
-        matrix = _instruction_matrix_for_mps(
-            instruction, bsz=state.bsz, device=left.device, dtype=left.dtype
-        )
-        output_left, output_right, split_info = _apply_two_mps_tensors_with_info(
-            left,
-            right,
-            matrix,
-            state.config,
-            reverse=int(instruction.wires[0]) > int(instruction.wires[1]),
-        )
-    return output_left, output_right, dict(split_info)
-
-
 def mps_qr_forward(
     left: torch.Tensor, right: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Translate Simulation rank-deficiency failures to the Runtime contract."""
 
     try:
-        return _simulation_mps_qr_forward(left, right)
+        with record_function("flagquantum::mps::qr"):
+            return _simulation_mps_qr_forward(left, right)
     except ValueError as error:
         raise MPSReverseContractError(str(error)) from error
-
-
-def apply_mps_qr_forward(
-    left: torch.Tensor, right: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Apply one profiled owner-local QR canonicalization step."""
-    with record_function("flagquantum::mps::qr"):
-        return mps_qr_forward(left, right)
-
-
-# Historical explicit-import compatibility. The canonical public name intentionally
-# omits the development-era implementation suffix.
-mps_qr_forward_impl = mps_qr_forward
 
 
 __all__ = [
@@ -440,7 +399,5 @@ __all__ = [
     "estimate_rxx_factorization_working_set",
     "factorization_workspace_pool",
     "plan_rxx_factorization_microbatch",
-    "apply_mps_pair_forward",
-    "apply_mps_qr_forward",
     "mps_qr_forward",
 ]

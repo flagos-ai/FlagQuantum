@@ -13,9 +13,10 @@ from ....simulation.mps_compiled_layers import (
     apply_mps_one_site_bucket,
     contract_mps_two_site_bucket,
 )
+from ....simulation.mps_rank_local import apply_rank_local_mps_instruction
 from ....simulation.mps_reverse import mps_vjp as _mps_vjp
 from .errors import MPSReverseContractError
-from .factorization import apply_mps_pair_forward, apply_mps_qr_forward
+from .factorization import mps_qr_forward
 from .records import MPSReverseTapeRecord, TorchDistributedMPSGradientResult
 from .reverse_transport import receive_static_reverse_tensor, send_static_reverse_tensor
 from .state import RankOwnedMPSState
@@ -44,8 +45,6 @@ def build_mps_reverse_backward(
     bsz = batch_size
     resolved_device = device
     resolved_dtype = dtype
-    _pair_forward = apply_mps_pair_forward
-    _qr_forward = apply_mps_qr_forward
     _recv_static = receive_static_reverse_tensor
     _send_static = send_static_reverse_tensor
 
@@ -218,12 +217,17 @@ def build_mps_reverse_backward(
                     outputs = (pair,)
                     output_adjoints = [pair_adjoint]
                 elif payload.kind == "two_site":
-                    left, right, _ = _pair_forward(
-                        inputs[0], inputs[1], payload.instruction, state
+                    output_tensors, _ = apply_rank_local_mps_instruction(
+                        payload.instruction,
+                        inputs,
+                        state.config,
+                        bsz=bsz,
+                        device=resolved_device,
+                        dtype=resolved_dtype,
                     )
-                    outputs = (left, right)
+                    outputs = output_tensors
                 else:
-                    outputs = _qr_forward(inputs[0], inputs[1])
+                    outputs = mps_qr_forward(inputs[0], inputs[1])
                 try:
                     derivatives = _mps_vjp(
                         outputs,

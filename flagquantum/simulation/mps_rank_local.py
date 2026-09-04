@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Sequence
 
 import torch
+from torch.profiler import record_function
 
 from ..core.ir import Instruction
 from ..ops.gate_matrix import gate_matrix
@@ -38,26 +39,27 @@ def apply_two_mps_tensors_with_info(
     *,
     reverse: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, Mapping[str, Any]]:
-    matrix = matrix.to(device=left.device, dtype=left.dtype)
-    theta = torch.einsum("blsm,bmtr->blstr", left, right)
-    if reverse:
-        theta = theta.transpose(2, 3)
-    theta = theta.reshape(left.shape[0], left.shape[1], 4, right.shape[3])
-    if matrix.ndim == 2:
-        theta = torch.einsum("ij,bljr->blir", matrix, theta)
-    else:
-        theta = torch.einsum("bij,bljr->blir", matrix, theta)
-    theta = theta.reshape(left.shape[0], left.shape[1], 2, 2, right.shape[3])
-    if reverse:
-        theta = theta.transpose(2, 3)
-    bsz, left_dim, _, _, right_dim = theta.shape
-    pair_matrix = theta.reshape(bsz, left_dim * 2, 2 * right_dim)
-    return _split_pair_matrix(
-        pair_matrix,
-        left_dim=left_dim,
-        right_dim=right_dim,
-        config=config,
-    )
+    with record_function("flagquantum::mps::two_site_split"):
+        matrix = matrix.to(device=left.device, dtype=left.dtype)
+        theta = torch.einsum("blsm,bmtr->blstr", left, right)
+        if reverse:
+            theta = theta.transpose(2, 3)
+        theta = theta.reshape(left.shape[0], left.shape[1], 4, right.shape[3])
+        if matrix.ndim == 2:
+            theta = torch.einsum("ij,bljr->blir", matrix, theta)
+        else:
+            theta = torch.einsum("bij,bljr->blir", matrix, theta)
+        theta = theta.reshape(left.shape[0], left.shape[1], 2, 2, right.shape[3])
+        if reverse:
+            theta = theta.transpose(2, 3)
+        bsz, left_dim, _, _, right_dim = theta.shape
+        pair_matrix = theta.reshape(bsz, left_dim * 2, 2 * right_dim)
+        return _split_pair_matrix(
+            pair_matrix,
+            left_dim=left_dim,
+            right_dim=right_dim,
+            config=config,
+        )
 
 
 def apply_two_mps_tensors(

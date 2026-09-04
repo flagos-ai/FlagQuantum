@@ -16,6 +16,7 @@ from ....simulation.mps_compiled_layers import (
 from ....simulation.mps_observables import transfer_mps_operator_environment
 from ....simulation.mps_rank_local import (
     apply_one_mps_tensor,
+    apply_rank_local_mps_instruction,
     instruction_matrix_for_mps,
     tensor_nbytes,
 )
@@ -25,11 +26,7 @@ from ....simulation.mps_reverse import (
 )
 from ....simulation.mps_site_kernels import site_kernel_bucket_capacity
 from .errors import NonlocalMPSCompilationError
-from .factorization import (
-    apply_mps_pair_forward,
-    apply_mps_qr_forward,
-    mps_qr_forward,
-)
+from .factorization import mps_qr_forward
 from .records import (
     MPSParameterGradientOwnership,
     MPSReverseCheckpointPolicy,
@@ -105,10 +102,8 @@ _parameter_layout = build_mps_parameter_layout
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
 _parse_z_zz_terms = parse_mps_z_zz_terms
-_pair_forward = apply_mps_pair_forward
 _planned_canonicalization_bonds = plan_mps_canonicalization_bonds
-_qr_forward = apply_mps_qr_forward
-_qr_forward_impl = mps_qr_forward
+_qr_forward = mps_qr_forward
 _recv = receive_reverse_tensor
 _recv_batch = receive_reverse_tensor_batch
 _recv_static = receive_static_reverse_tensor
@@ -575,12 +570,18 @@ def execute_torch_distributed_mps_reverse(
                         saved_factorization = (pair_leaf, after_left, after_right)
                     else:
                         with torch.enable_grad():
-                            after_left, after_right, info = _pair_forward(
-                                before_left.detach().requires_grad_(True),
-                                before_right.detach().requires_grad_(True),
+                            outputs, info = apply_rank_local_mps_instruction(
                                 candidate,
-                                state,
+                                (
+                                    before_left.detach().requires_grad_(True),
+                                    before_right.detach().requires_grad_(True),
+                                ),
+                                state.config,
+                                bsz=bsz,
+                                device=resolved_device,
+                                dtype=resolved_dtype,
                             )
+                            after_left, after_right = outputs
                     precomputed_rxx[candidate_index] = (
                         before_left,
                         before_right,
@@ -750,12 +751,18 @@ def execute_torch_distributed_mps_reverse(
                     saved_factorization = (pair_leaf, after_left, after_right)
                 else:
                     with torch.enable_grad():
-                        after_left, after_right, info = _pair_forward(
-                            before_left.detach().requires_grad_(True),
-                            before_right.detach().requires_grad_(True),
+                        outputs, info = apply_rank_local_mps_instruction(
                             instruction,
-                            state,
+                            (
+                                before_left.detach().requires_grad_(True),
+                                before_right.detach().requires_grad_(True),
+                            ),
+                            state.config,
+                            bsz=bsz,
+                            device=resolved_device,
+                            dtype=resolved_dtype,
                         )
+                        after_left, after_right = outputs
                 after_left = after_left.detach()
                 after_right = after_right.detach()
             state.local_tensors[left_wire] = after_left
