@@ -216,6 +216,28 @@ unsupported capability 和 identity mismatch 必须是可机器识别的 Core er
 
 这些是 CPU/mock 合同证据，不是性能、分布式扩展、真实云服务或真实 QPU 证据。
 
+## Phase 2 第二生产者替换证据
+
+`flagquantum/deployment/synthetic_remote_target_capabilities.py` 增加了一个仅供内部
+conformance 使用的 synthetic remote-style producer。它接收匿名、JSON-safe、显式提供的
+fixture，直接生成 Core Target Capabilities v1 snapshot；不建立 provider registry，不提交或
+轮询任务，不读取凭据，不调用网络或 vendor SDK，也不声明真实 QPU、硬件或生产能力。
+
+- fixture 明确提供的 `device.kind` 才会成为 `verified/observed`；当前测试值为
+  `synthetic_qpu`，其
+  target class/provider 明确带有 synthetic 标识，不能解释为硬件观测；
+- `target.class` 使用 v1 授权的静态 `verified/declared` exposure；scope、TTL、target
+  identity、source/evidence reference 均由 fixture 和调用者显式给出；
+- 其余省略事实仍输出 `value=null`、`unknown/not_exposed` 与按 capability 命名的 blocker，
+  不从 device id、target identity、接口或 evidence 引用推断能力；
+- `tests/team/execution/test_target_capability_replacement.py` 让同一个 Runtime
+  `match_target_capability_candidates` 和同一个 Core RequirementSet 分别消费 CPU Platform
+  snapshot 与 synthetic snapshot，并覆盖 stale、scope/evidence 引用错误、unknown/not_exposed、
+  候选顺序、未授权 fallback 和 target identity 冲突。
+
+这项证据只证明第二个 snapshot producer 可被现有 Runtime consumer 替换；它不改变默认执行
+路径、plan/result/schema、failure stage 或 capability maturity。
+
 ## 真实 QPU 接入阻塞
 
 在以下条件完成前，不应宣称真实 QPU 已接入：
