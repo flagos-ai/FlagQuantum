@@ -21,10 +21,15 @@ codex/vnext-team-platform-providers   FlagQuantum-vNext-platform    Platform Pro
 codex/vnext-team-execution-providers  FlagQuantum-vNext-execution   Execution Provider
 codex/vnext-team-ecosystem            FlagQuantum-vNext-ecosystem   Ecosystem
 codex/vnext-team-agent-services       FlagQuantum-vNext-agent       Agent Services
+codex/vnext-team-docs                 FlagQuantum-vNext-docs        Docs / User Experience
 ```
 
 每个 Codex 会话只打开其中一个目录。团队工作区内不得切换到其他团队分支，也不得将其他
 工作区的未提交文件复制进来。
+
+Docs / User Experience 团队可与实现收口并行定义目标用户旅程，但只能将未实现
+行为标记为 `Target Experience`。该团队不得自行修改公共 API、能力成熟度、依赖、
+CI 或发布声明；这些变更仍由 Integration 单独审批。
 
 ## 会话启动检查
 
