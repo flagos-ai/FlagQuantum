@@ -58,11 +58,13 @@ from .algorithms import (
     zz_chain_hamiltonian,
 )
 from .circuit import Circuit, expectation
-from .compilation.noise import (
+from .compiler import (
+    CouplingMap,
     channel_instruction,
+    compile_for_backend,
     lower_noise_model,
+    route_to_topology,
 )
-from .compiler import CouplingMap, compile_for_backend, route_to_topology
 from .core.ir import (
     IR_VERSION,
     CircuitIR,

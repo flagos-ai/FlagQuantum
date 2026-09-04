@@ -8,12 +8,12 @@ from typing import Any
 
 import torch
 
-from ..compilation.noise import (
+from ..compilation.models import (
     EvolutionSemantics,
     NoisyExecutionPlan,
     StateRepresentation,
-    lower_noise_model,
 )
+from ..compiler import lower_noise_model
 from ..core.ir import CircuitIR
 from ..noise import NoiseModel
 

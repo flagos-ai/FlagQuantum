@@ -1,11 +1,11 @@
 """Compatibility facade for native noise and density-matrix execution.
 
 New code should import noise semantics from :mod:`flagquantum.noise`, lowering
-from :mod:`flagquantum.compilation.noise`, and numerical execution from
+from :mod:`flagquantum.compiler`, and numerical execution from
 :mod:`flagquantum.simulation.density_matrix`.
 """
 
-from ..compilation.noise import channel_instruction, lower_noise_model
+from ..compiler import channel_instruction, lower_noise_model
 from ..noise import (
     CorrelatedReadoutError,
     DeviceNoiseProfile,

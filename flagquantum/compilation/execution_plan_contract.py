@@ -158,8 +158,8 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
 
     planned_program = program
     if normalized["extensions"]:
+        from ..compiler import lower_noise_model
         from ..noise import NoiseModel
-        from .noise import lower_noise_model
 
         noise_model = NoiseModel.from_dict(normalized["extensions"][0]["payload"])
         planned_program = lower_noise_model(program, noise_model)
@@ -186,7 +186,7 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         _contract_payload_json=canonical_json(normalized),
     )
     if normalized["extensions"]:
-        from .noise import build_noisy_execution_plan
+        from .execution_plan_builder import build_noisy_execution_plan
 
         extension = normalized["extensions"][0]
         plan = replace(

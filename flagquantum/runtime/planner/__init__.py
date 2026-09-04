@@ -5,9 +5,12 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Sequence
 
-from ...compilation.execution_plan_builder import build_execution_plan
+from ...compilation.execution_plan_builder import (
+    build_execution_plan,
+    build_noisy_execution_plan,
+)
 from ...compilation.models import CircuitAnalysis, ExecutionPlan, LayerPlan
-from ...compiler import compile_for_backend, schedule_layers
+from ...compiler import compile_for_backend, lower_noise_model, schedule_layers
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
 from .backend_selection import (
@@ -427,8 +430,6 @@ def plan_advanced(
         config=selected_config,
     )
     if noise_model is not None:
-        from ...compilation.noise import lower_noise_model
-
         ir = lower_noise_model(ir, noise_model)
     analysis = analyze(ir)
     auto_selected_mode = None
@@ -590,8 +591,6 @@ def plan(
         config=selected_config,
     )
     if noise_model is not None:
-        from ...compilation.noise import build_noisy_execution_plan
-
         internal_plan = replace(
             internal_plan,
             noisy_execution_plan=build_noisy_execution_plan(

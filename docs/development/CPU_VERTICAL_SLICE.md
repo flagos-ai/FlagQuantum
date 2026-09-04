@@ -97,5 +97,19 @@ types, added no manager, registry, compatibility facade, or duplicate policy,
 and deleted their former `compilation` modules. Architecture checks prevent the
 old paths from returning. `flagquantum/compilation` temporarily retains the
 stable `ExecutionPlan` product, serialization, assembly, contract attachment,
-performance calibration, and noise lowering; these are the next bounded seams,
-not authorization for new planning policy in that package.
+and performance calibration; these are the next bounded seams, not
+authorization for new planning policy in that package.
+
+## Noise lowering authority migration
+
+Noise-model lowering now lives in `flagquantum/compiler/noise.py`: it performs
+the deterministic `CircuitIR + NoiseModel` to channel-bearing `CircuitIR`
+transformation. Runtime still selects the noisy execution strategy, and
+Simulation still performs channel and trajectory numerics. The former
+`flagquantum/compilation/noise` package was deleted rather than retained as a
+forwarder.
+
+This move added no new public type or compatibility layer. Existing noisy-plan
+types and their builder remain with the transitional execution-plan product in
+`flagquantum/compilation` until an approved contract migration can preserve the
+protected `ExecutionPlan` schema and identity behavior.

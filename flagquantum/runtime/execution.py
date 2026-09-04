@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
+from ..compilation.execution_plan_builder import build_noisy_execution_plan
 from ..compilation.models import ExecutionPlan
-from ..compiler import compile_for_backend
+from ..compiler import compile_for_backend, lower_noise_model
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
 from ..core.parameters import value_to_tensor
@@ -625,10 +626,6 @@ def run_native(
             if provided_execution_plan is None:
                 execution_plan = replace(execution_plan, routing_plan=routing_plan)
     elif mode == "density_matrix":
-        from ..compilation.noise import (
-            build_noisy_execution_plan,
-            lower_noise_model,
-        )
         from .noise_registry import execute_noisy_plan
 
         lowered = lower_noise_model(execution_ir, noise_model)
@@ -834,7 +831,6 @@ def run_native(
     elif mode == "noisy_statevector":
         if noise_model is None:
             raise ValueError("noisy_statevector mode requires a noise_model")
-        from ..compilation.noise import build_noisy_execution_plan
         from .backends.statevector import run_noisy_statevector
 
         statevector_options = dict(options)
@@ -886,10 +882,6 @@ def run_native(
             ),
         )
     elif mode == "mps_trajectory":
-        from ..compilation.noise import (
-            build_noisy_execution_plan,
-            lower_noise_model,
-        )
         from ..simulation.mps_execution import run_lowered_noisy_mps_trajectory
 
         mps_options = dict(options)
@@ -925,10 +917,6 @@ def run_native(
             ),
         )
     elif mode == "noisy_mps":
-        from ..compilation.noise import (
-            build_noisy_execution_plan,
-            lower_noise_model,
-        )
         from ..simulation.mps_execution import run_lowered_noisy_mps
 
         mps_options = dict(options)

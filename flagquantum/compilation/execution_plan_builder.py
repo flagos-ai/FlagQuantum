@@ -6,7 +6,18 @@ from typing import Any, Mapping
 
 from ..compiler import schedule_layers
 from ..core.ir import CircuitIR
-from .models import CircuitAnalysis, ExecutionPlan, LayerPlan
+from .models import (
+    CircuitAnalysis,
+    EvolutionSemantics,
+    ExecutionPlan,
+    LayerPlan,
+    MemoryPlan,
+    NoiseErrorBudget,
+    NoisyExecutionPlan,
+    ParallelPlan,
+    StateRepresentation,
+    TrajectoryPlan,
+)
 
 
 def build_layer_plans(ir: CircuitIR) -> tuple[LayerPlan, ...]:
@@ -58,3 +69,57 @@ def build_execution_plan(
         runtime_config=runtime_config,
         routing_plan=routing_plan,
     )
+
+
+def build_noisy_execution_plan(
+    execution_plan: ExecutionPlan,
+    *,
+    representation: StateRepresentation,
+    evolution: EvolutionSemantics,
+    trajectories: int | None = None,
+    seed: int | None = None,
+    min_trajectories: int = 1,
+    target_standard_error: float | None = None,
+    cutoff: float = 0.0,
+    memory_limit_bytes: int | None = None,
+    estimated_memory_bytes: int | None = None,
+    noise_model_identity: str | None = None,
+) -> NoisyExecutionPlan:
+    """Project an execution plan into the noisy-runtime plan contract."""
+
+    trajectory = (
+        TrajectoryPlan(
+            count=trajectories,
+            seed=seed,
+            min_count=min_trajectories,
+            target_standard_error=target_standard_error,
+        )
+        if evolution == "quantum_trajectory" and trajectories is not None
+        else None
+    )
+    return NoisyExecutionPlan(
+        representation=representation,
+        evolution=evolution,
+        trajectory=trajectory,
+        parallel=ParallelPlan(world_size=execution_plan.world_size),
+        error_budget=NoiseErrorBudget(
+            sampling_error_enabled=evolution == "quantum_trajectory",
+            truncation_cutoff=cutoff,
+        ),
+        memory=MemoryPlan(
+            estimated_bytes=(
+                execution_plan.state_bytes
+                if estimated_memory_bytes is None
+                else int(estimated_memory_bytes)
+            ),
+            limit_bytes=memory_limit_bytes,
+        ),
+        noise_model_identity=noise_model_identity,
+    )
+
+
+__all__ = (
+    "build_execution_plan",
+    "build_layer_plans",
+    "build_noisy_execution_plan",
+)

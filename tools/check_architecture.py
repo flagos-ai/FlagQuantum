@@ -199,13 +199,15 @@ def architecture_errors() -> tuple[str, ...]:
                 f"{removed_path.relative_to(ROOT).as_posix()}: Runtime planning "
                 "authority must not return; use flagquantum/runtime/planner"
             )
-    for removed_noise_planning_name in ("calibration.py", "selection.py"):
-        removed_path = PACKAGE / "compilation" / "noise" / removed_noise_planning_name
-        if removed_path.exists():
-            errors.append(
-                f"{removed_path.relative_to(ROOT).as_posix()}: noisy Runtime "
-                "selection policy must not return; use flagquantum/runtime/planner"
-            )
+    removed_noise_compilation = PACKAGE / "compilation" / "noise"
+    if removed_noise_compilation.exists() and any(
+        removed_noise_compilation.glob("*.py")
+    ):
+        errors.append(
+            "flagquantum/compilation/noise: migrated noise compilation package "
+            "must not return; use flagquantum/compiler/noise.py for lowering and "
+            "the existing execution-plan product for planning"
+        )
 
     for directory in ("flagquantum", "tests", *MAINTAINED_ENTRYPOINTS):
         for path in (ROOT / directory).rglob("*"):
@@ -347,14 +349,6 @@ def architecture_errors() -> tuple[str, ...]:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(
                         f"{relative}: noise semantics import forbidden layer {module}"
-                    )
-
-        if relative.startswith("flagquantum/compilation/noise/"):
-            forbidden = tuple(boundaries["compilation_noise_forbidden"])
-            for module, _ in imports:
-                if any(part in module.split(".") for part in forbidden):
-                    errors.append(
-                        f"{relative}: noise compilation imports forbidden layer {module}"
                     )
 
         if relative.startswith("flagquantum/runtime/trajectories/"):

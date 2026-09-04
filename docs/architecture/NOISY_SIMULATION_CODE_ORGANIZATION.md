@@ -183,19 +183,18 @@ flagquantum/noise/
 ### 3.2 Noise 编译层
 
 ```text
-flagquantum/compilation/noise/
-├── __init__.py
-├── lowering.py
-└── planning.py
+flagquantum/compiler/noise.py
 ```
 
-`lowering.py` 是将 `CircuitIR + NoiseModel` 转换为带 ChannelInstruction 的
+`noise.py` 是将 `CircuitIR + NoiseModel` 转换为带 ChannelInstruction 的
 IR 的唯一入口。它只能依赖 core、noise domain 和 ops schema，不允许依赖
 Circuit、runtime、simulation 或具体 backend。
 
 噪声后端选择与设备校准属于执行策略，权威入口位于
 `flagquantum/runtime/planner/noise_selection.py` 和
-`noise_calibration.py`。
+`noise_calibration.py`。现有 `NoisyExecutionPlan` 等子计划类型暂随受保护的
+执行计划产品保留在 `flagquantum/compilation/models.py`，由
+`execution_plan_builder.py` 组装；这不是 Compiler 的执行策略。
 
 ### 3.3 Density matrix 数值实现
 
@@ -260,9 +259,9 @@ noise
   → core
   → 禁止依赖 runtime/simulation/circuit
 
-compilation.noise
+compiler.noise
   → core + noise + ops schema
-  → 禁止依赖 backend
+  → 禁止依赖 runtime/simulation/provider/backend
 
 runtime.trajectories
   → core contracts + compilation plans

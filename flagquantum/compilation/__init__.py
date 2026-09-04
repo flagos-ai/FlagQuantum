@@ -1,3 +1,3 @@
-"""Transitional execution-plan products and noise lowering."""
+"""Transitional execution-plan products and assembly."""
 
 __all__: tuple[str, ...] = ()

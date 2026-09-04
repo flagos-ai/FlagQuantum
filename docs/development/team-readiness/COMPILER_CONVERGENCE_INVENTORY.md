@@ -20,7 +20,10 @@ research compilation and execution planning remain bounded migration work.
 - `flagquantum.runtime.planner` now owns stable/default execution selection,
   estimates, backend calibration, and planning orchestration. The transitional
   `flagquantum.compilation` package retains execution-plan models, serialization,
-  assembly, and noise lowering until shared products gain Core-owned contracts.
+  assembly, and calibration until shared products gain Core-owned contracts.
+- `flagquantum.compiler.noise` now owns stable noise-model lowering. The former
+  `flagquantum.compilation.noise` package was deleted; noisy execution-plan
+  models remain with the transitional plan product rather than Compiler.
 - `flagquantum._compiler` is the factual authority for the private
   `private_static_compiler_v1` candidate: exact import, immutable internal IR,
   verifier, analyses, pass manager, static lowering, deterministic text emission,
@@ -50,7 +53,7 @@ capability, request, and artifact types require a Core-owned contract first.
 | Analysis | `runtime.planner.analyze()`; `_compiler.analyses.AnalysisManager`, `DefUseAnalysis`, `QubitLifetimeAnalysis` | IR/module → structural or reusable analysis result | Runtime structural analysis feeds execution planning; `_compiler` analyses feed private passes and are not default-path consumers. |
 | Pass execution | `compiler.simple_compile()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Stable canonicalization is authoritative in `compiler`; `_compiler` remains a private replacement candidate with descriptors, diagnostics, analyses, and pipeline identity. |
 | Routing | `compiler.routing.route_to_topology()` and `select_routing_strategy()`; `_compiler.passes.placement_routing.PlacementRoutingPass` | logical program + coupling graph → routed program | Stable routing is authoritative in `compiler`; the private implementation has a different graph and evidence model and remains off the default path. |
-| Lowering | `compiler.compile_for_backend()`; `compilation.noise.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local/topology lowering; noise execution planning remains transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
+| Lowering | `compiler.compile_for_backend()`; `compiler.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local, topology, and noise lowering; noisy execution-plan products remain transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
 | Backend/mode selection | `runtime.planner.select_backend_by_cost()`; `select_execution_mode()`; `plan_runtime_selection()`; noisy-backend selection | `CircuitIR` + execution/resource policy → backend/mode candidate or selection plan | Runtime is authoritative for execution selection. `_compiler.TargetCapabilities` describes target legality and does not select a runtime backend. |
 | Scheduling/planning | `compiler.schedule_layers()`; `compilation.execution_plan_builder`; `runtime.planner.plan()`, `plan_advanced()`, `plan_for_backend()` | compiled IR + resolved execution options → `ExecutionPlan` | Compiler owns instruction scheduling; Runtime owns orchestration and temporarily calls transitional plan assembly. |
 | Code generation | `_compiler.exporters.text.emit_openqasm2()`, `emit_openqasm3()`, `emit_qcis_v1()`; legacy `flagquantum.utils` exporters used by deployment | verified static module → canonical text + content hash | `_compiler` owns the deterministic private emitters. `compilation` has no generic code-generation boundary. Legacy utility emitters remain separate consumers and are not retired here. |
@@ -90,7 +93,7 @@ There are, however, architectural reverse dependencies outside that pair:
 
 - `runtime.planner` owns option resolution and distributed backend policy and
   calls Compiler transformations directly. It still imports transitional
-  `compilation` plan models, assembly, contracts, and noise lowering; removing
+  `compilation` plan models, assembly, and contracts; removing
   that one-way dependency requires moving shared plan products to Core.
 - `_compiler.deployment_compatibility` and `_compiler.deployment_dry_run` import
   Deployment modules. These are explicitly authorized bridge/evidence paths, but
@@ -108,13 +111,13 @@ current compilation implementation behind one narrow contract.
 
 | Runtime consumer | Direct dependency from `flagquantum.compilation` | Coupling type |
 | --- | --- | --- |
-| `runtime/execution.py` | `compiler.compile_for_backend`; `ExecutionPlan`; `select_execution_mode`; `plan_advanced`; `plan`; noisy-plan construction and noise lowering | stable compilation plus transitional planning, type identity, and noise lowering |
+| `runtime/execution.py` | `compiler.compile_for_backend`; `compiler.lower_noise_model`; `ExecutionPlan`; `select_execution_mode`; `plan_advanced`; `plan`; noisy-plan construction | stable Compiler service calls plus transitional planning and type identity |
 | `runtime/plan_execution.py` | `ExecutionPlanContractError`, `plan_decision`, `plan_noise_model`, `plan_program`, `validate_plan_environment`; `ExecutionPlan` | protected plan schema, validation, and decoding |
 | `runtime/result.py` | `ExecutionPlan` under type checking | result type contract |
 | `runtime/backends/statevector/planning.py` | `compiler.schedule_layers` | concrete compiler scheduling algorithm |
 | `runtime/dynamic/routing.py` | `compiler.CouplingMap`, `compiler.route_to_topology` | concrete routing model and implementation |
 | `runtime/backends/statevector/noisy.py` | `lower_noise_model` | lowering implementation |
-| `runtime/noise_registry.py` | `EvolutionSemantics`, `NoisyExecutionPlan`, `StateRepresentation` | compiler-owned execution contract types |
+| `runtime/noise_registry.py` | `EvolutionSemantics`, `NoisyExecutionPlan`, `StateRepresentation` | transitional execution-plan product types |
 | `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | planner calibration type |
 | `runtime/target_execution.py` | `BackendSelection`, `select_backend_by_cost` | backend policy type and algorithm |
 

@@ -176,7 +176,7 @@ def run_noisy_mps_trajectory(
 ) -> MPSState:
     """Prepare and execute one sampled MPS quantum trajectory."""
 
-    from ..compilation.noise import lower_noise_model
+    from ..compiler import lower_noise_model
 
     lowered = lower_noise_model(circuit_or_ir, noise_model)
     return run_lowered_noisy_mps_trajectory(
@@ -293,7 +293,7 @@ def run_noisy_mps(
 ) -> MPSMonteCarloResult:
     """Schedule noisy MPS trajectories through the Runtime lifecycle."""
 
-    from ..compilation.noise import lower_noise_model
+    from ..compiler import lower_noise_model
 
     lowered = lower_noise_model(circuit_or_ir, noise_model)
     return run_lowered_noisy_mps(

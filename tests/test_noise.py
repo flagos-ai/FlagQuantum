@@ -606,8 +606,8 @@ def test_two_qubit_mps_trajectory_samples_kraus_branches():
 
 
 def test_noise_semantics_have_one_canonical_public_identity():
+    import flagquantum.compiler as noise_compiler
     import flagquantum.simulation.density_matrix as density_backend
-    from flagquantum.compilation import noise as noise_compilation
     from flagquantum.simulation import noise as legacy_noise
 
     assert fq.noise.NoiseModel is fqn.NoiseModel
@@ -615,9 +615,9 @@ def test_noise_semantics_have_one_canonical_public_identity():
     assert fq.noise.KrausChannel is fq.KrausChannel
     assert legacy_noise.NoiseModel is fqn.NoiseModel
     assert legacy_noise.KrausChannel is fq.KrausChannel
-    assert legacy_noise.lower_noise_model is noise_compilation.lower_noise_model
+    assert legacy_noise.lower_noise_model is noise_compiler.lower_noise_model
     assert legacy_noise.density_matrix_from_ir is density_backend.density_matrix_from_ir
-    assert fq.lower_noise_model is noise_compilation.lower_noise_model
+    assert fq.lower_noise_model is noise_compiler.lower_noise_model
     assert fq.density_matrix_from_ir is density_backend.density_matrix_from_ir
 
 
@@ -640,7 +640,9 @@ def test_noisy_density_runtime_delegates_numerics_to_simulation(monkeypatch):
 
 
 def test_structured_noisy_execution_plan_separates_evolution_semantics():
-    from flagquantum.compilation.noise import build_noisy_execution_plan
+    from flagquantum.compilation.execution_plan_builder import (
+        build_noisy_execution_plan,
+    )
 
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     execution_plan = fqxp.plan_advanced(circuit, state_mode="density_matrix")
@@ -659,7 +661,9 @@ def test_structured_noisy_execution_plan_separates_evolution_semantics():
 
 
 def test_quantum_trajectory_plan_requires_sampling_controls():
-    from flagquantum.compilation.noise import build_noisy_execution_plan
+    from flagquantum.compilation.execution_plan_builder import (
+        build_noisy_execution_plan,
+    )
 
     execution_plan = fqxp.plan_advanced(fq.Circuit(1), state_mode="mps")
     with pytest.raises(
@@ -685,10 +689,10 @@ def test_quantum_trajectory_plan_requires_sampling_controls():
 
 
 def test_density_noise_executor_is_resolved_through_registry():
-    from flagquantum.compilation.noise import (
+    from flagquantum.compilation.execution_plan_builder import (
         build_noisy_execution_plan,
-        lower_noise_model,
     )
+    from flagquantum.compiler import lower_noise_model
     from flagquantum.runtime.noise_registry import execute_noisy_plan
 
     circuit = fq.Circuit(1).x(0)

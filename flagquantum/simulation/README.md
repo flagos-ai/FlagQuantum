@@ -17,8 +17,8 @@ is a new public API. `Circuit.state()` remains the stable user facade and
 Runtime enters through `run_local_statevector()`.
 
 `density_matrix.py` owns local exact density evolution, Kraus application, and
-density-matrix measurements. Runtime owns noise lowering and execution-plan
-dispatch through `runtime/noise_registry.py`.
+density-matrix measurements. Compiler owns noise lowering; Runtime owns
+execution-plan dispatch through `runtime/noise_registry.py`.
 
 `mps_local.py` owns the single-device, noiseless MPS instruction loop.
 `mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory

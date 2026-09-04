@@ -9,7 +9,7 @@ from typing import Any
 import torch
 
 from ....circuit import Circuit
-from ....compilation.noise import lower_noise_model
+from ....compiler import lower_noise_model
 from ....noise import NoiseModel
 from ....ops.gate_matrix import gate_matrix
 from ....ops.matrices import GATE_MAT_DICT

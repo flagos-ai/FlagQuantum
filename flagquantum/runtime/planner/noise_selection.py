@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from math import ceil, isfinite, log, sqrt
 from typing import Any, Mapping
 
-from ...compilation.noise import lower_noise_model
+from ...compiler import lower_noise_model
 from ...core.ir import ensure_circuit_ir
 from .estimates import estimate_density_bytes, estimate_mps_bytes, estimate_state_bytes
 from .noise_calibration import (

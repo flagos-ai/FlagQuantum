@@ -1,12 +1,12 @@
-"""Lower noise model rules into explicit channel instructions."""
+"""Lower noise-model rules into explicit channel instructions."""
 
 from __future__ import annotations
 
 from dataclasses import replace
 from typing import Any, Mapping, Sequence
 
-from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...noise import KrausChannel, NoiseModel, thermal_relaxation_channel
+from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from ..noise import KrausChannel, NoiseModel, thermal_relaxation_channel
 
 
 def channel_instruction(

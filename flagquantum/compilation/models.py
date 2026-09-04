@@ -3,14 +3,121 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, cast
+from typing import TYPE_CHECKING, Any, Literal, Mapping, cast
 
 from ..core.contracts import RuntimePlanContract
 from ..core.ir import Instruction
 
 if TYPE_CHECKING:
-    from .noise.planning import NoisyExecutionPlan
     from .performance_calibration import CalibratedPlanCost
+
+StateRepresentation = Literal["density_matrix", "statevector", "mps", "tensor_network"]
+EvolutionSemantics = Literal["exact_channel", "quantum_trajectory"]
+
+
+@dataclass(frozen=True)
+class TrajectoryPlan:
+    """Sampling controls shared by all quantum-trajectory backends."""
+
+    count: int
+    seed: int | None = None
+    min_count: int = 1
+    target_standard_error: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.count <= 0:
+            raise ValueError("trajectory count must be positive")
+        if self.min_count <= 0 or self.min_count > self.count:
+            raise ValueError("minimum trajectory count must be in [1, count]")
+        if self.target_standard_error is not None and self.target_standard_error <= 0:
+            raise ValueError("target standard error must be positive")
+
+
+@dataclass(frozen=True)
+class ParallelPlan:
+    """Backend-neutral parallel ownership requested by a noisy workload."""
+
+    world_size: int = 1
+
+    def __post_init__(self) -> None:
+        if self.world_size <= 0:
+            raise ValueError("world_size must be positive")
+
+
+@dataclass(frozen=True)
+class NoiseErrorBudget:
+    """Approximation controls attributable to noisy evolution."""
+
+    sampling_error_enabled: bool
+    truncation_cutoff: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.truncation_cutoff < 0:
+            raise ValueError("truncation_cutoff must be non-negative")
+
+
+@dataclass(frozen=True)
+class MemoryPlan:
+    """Memory estimate and optional capacity limit for noisy execution."""
+
+    estimated_bytes: int
+    limit_bytes: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.estimated_bytes < 0:
+            raise ValueError("estimated_bytes must be non-negative")
+        if self.limit_bytes is not None and self.limit_bytes <= 0:
+            raise ValueError("limit_bytes must be positive when provided")
+
+    @property
+    def fits(self) -> bool:
+        return self.limit_bytes is None or self.estimated_bytes <= self.limit_bytes
+
+
+@dataclass(frozen=True)
+class NoisyExecutionPlan:
+    """Representation-independent contract consumed by noise executors."""
+
+    representation: StateRepresentation
+    evolution: EvolutionSemantics
+    trajectory: TrajectoryPlan | None
+    parallel: ParallelPlan
+    error_budget: NoiseErrorBudget
+    memory: MemoryPlan
+    noise_model_identity: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.evolution == "exact_channel" and self.trajectory is not None:
+            raise ValueError("exact channel evolution cannot have a trajectory plan")
+        if self.evolution == "quantum_trajectory" and self.trajectory is None:
+            raise ValueError("quantum trajectory evolution requires a trajectory plan")
+
+    def summary(self) -> dict[str, object]:
+        return {
+            "representation": self.representation,
+            "evolution": self.evolution,
+            "trajectory_count": (
+                None if self.trajectory is None else self.trajectory.count
+            ),
+            "trajectory_seed": (
+                None if self.trajectory is None else self.trajectory.seed
+            ),
+            "min_trajectory_count": (
+                None if self.trajectory is None else self.trajectory.min_count
+            ),
+            "target_standard_error": (
+                None
+                if self.trajectory is None
+                else self.trajectory.target_standard_error
+            ),
+            "world_size": self.parallel.world_size,
+            "sampling_error_enabled": self.error_budget.sampling_error_enabled,
+            "truncation_cutoff": self.error_budget.truncation_cutoff,
+            "estimated_memory_bytes": self.memory.estimated_bytes,
+            "memory_limit_bytes": self.memory.limit_bytes,
+            "memory_fits": self.memory.fits,
+            "noise_model_identity": self.noise_model_identity,
+        }
 
 
 @dataclass(frozen=True)
@@ -202,6 +309,13 @@ class ExecutionPlan:
 
 __all__ = [
     "CircuitAnalysis",
+    "EvolutionSemantics",
     "ExecutionPlan",
     "LayerPlan",
+    "MemoryPlan",
+    "NoiseErrorBudget",
+    "NoisyExecutionPlan",
+    "ParallelPlan",
+    "StateRepresentation",
+    "TrajectoryPlan",
 ]
