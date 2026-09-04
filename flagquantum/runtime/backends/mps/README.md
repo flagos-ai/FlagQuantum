@@ -6,7 +6,8 @@ production gates, profiling, and Runtime-facing result records.
 
 It does not own tensor algebra or numerical kernels. Rank-local gate math lives
 in `simulation/mps_rank_local.py`, compiled site kernels live in
-`simulation/mps_site_kernels.py`, and QR/SVD math lives in
+`simulation/mps_site_kernels.py`, compiled layer contraction and factorization
+live in `simulation/mps_compiled_layers.py`, and QR/SVD math lives in
 `simulation/mps_factorization.py`. Rank-local adjoint projection and VJP
 evaluation live in `simulation/mps_reverse.py`. Import these numerical owners
 directly; local observable contractions live in

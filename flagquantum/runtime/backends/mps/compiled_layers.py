@@ -7,12 +7,11 @@ from typing import Any, Sequence
 import torch
 
 from ....core.ir import Instruction
-from ....simulation.mps import _split_pair_matrix, _split_pair_matrix_bucket
-from ....simulation.mps_site_kernels import (
-    apply_rxx_contraction_bucket,
-    apply_ry_bucket,
-    site_kernel_bucket_capacity,
+from ....simulation.mps_compiled_layers import (
+    apply_compiled_mps_one_site_bucket,
+    apply_compiled_mps_two_site_bucket,
 )
+from ....simulation.mps_site_kernels import site_kernel_bucket_capacity
 from .communication import _instruction_matrix_for_mps
 from .errors import MPSForwardLifetimeError
 from .factorization import (
@@ -107,19 +106,12 @@ def prepare_compiled_mps_layer(
             )
             for start in range(0, len(bucket), capacity):
                 chunk = bucket[start : start + capacity]
-                packed = torch.stack(
-                    [state.local_tensors[wires[0]] for _, _, wires in chunk]
-                )
-                packed_matrices = []
-                for _, candidate, _ in chunk:
-                    matrix = _instruction_matrix_for_mps(
-                        candidate, bsz=bsz, device=device, dtype=dtype
-                    )
-                    packed_matrices.append(
-                        matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
-                    )
-                updated = apply_ry_bucket(
-                    packed, torch.stack(packed_matrices), compiled=True
+                updated = apply_compiled_mps_one_site_bucket(
+                    tuple(candidate for _, candidate, _ in chunk),
+                    tuple(state.local_tensors[wires[0]] for _, _, wires in chunk),
+                    bsz=bsz,
+                    device=device,
+                    dtype=dtype,
                 )
                 for position, (index, _, wires) in enumerate(chunk):
                     value = updated[position]
@@ -171,48 +163,20 @@ def prepare_compiled_mps_layer(
                         "bucket_item_start": start,
                     }
                 )
-                lefts = torch.stack(
-                    [state.local_tensors[min(wires)] for _, _, wires in chunk]
-                )
-                rights = torch.stack(
-                    [state.local_tensors[min(wires) + 1] for _, _, wires in chunk]
-                )
-                packed_matrices = []
-                for _, candidate, _ in chunk:
-                    matrix = _instruction_matrix_for_mps(
-                        candidate, bsz=bsz, device=device, dtype=dtype
-                    )
-                    packed_matrices.append(
-                        matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
-                    )
-                pairs = apply_rxx_contraction_bucket(
-                    lefts,
-                    rights,
-                    torch.stack(packed_matrices),
-                    compiled=True,
-                )
                 isolate_factorizations = (
                     state.config.max_bond is not None
                     and int(state.config.max_bond) >= 128
                 )
-                split_outputs = (
-                    tuple(
-                        _split_pair_matrix(
-                            pair,
-                            left_dim=lefts.shape[2],
-                            right_dim=rights.shape[-1],
-                            config=state.config,
-                        )
-                        for pair in pairs
-                    )
-                    if isolate_factorizations
-                    else _split_pair_matrix_bucket(
-                        pairs,
-                        left_dim=lefts.shape[2],
-                        right_dim=rights.shape[-1],
-                        config=state.config,
-                        svd_driver=factorization_workspace_policy.svd_driver,
-                    )
+                split_outputs = apply_compiled_mps_two_site_bucket(
+                    tuple(candidate for _, candidate, _ in chunk),
+                    tuple(state.local_tensors[min(wires)] for _, _, wires in chunk),
+                    tuple(state.local_tensors[min(wires) + 1] for _, _, wires in chunk),
+                    state.config,
+                    bsz=bsz,
+                    device=device,
+                    dtype=dtype,
+                    isolate_factorizations=isolate_factorizations,
+                    svd_driver=factorization_workspace_policy.svd_driver,
                 )
                 factorization_records[-1]["batched_contraction_enabled"] = True
                 factorization_records[-1][
