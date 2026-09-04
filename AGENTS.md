@@ -378,16 +378,25 @@ workload is exact, approximate, sharded, sliced, or replicated.
 
 ## Current Strategic Priority
 
-The highest-value work is to close real training loops for:
+The immediate vNext control sequence is binding:
 
-1. sharded statevector forward and backward
-2. sharded MPS site/bond forward and backward
-3. sliced or partitioned TN contraction and reverse-mode parameter gradients
-4. PyTorch-facing JAX kernels with clear DLPack/autograd boundaries
-5. deployment of trained parameterized IR to quantum cloud providers
+1. freeze new horizontal abstractions;
+2. finish and simplify the current Compiler boundary;
+3. deliver the smallest complete CPU vertical path;
+4. move the code on that proven path into its authoritative target domains;
+5. delete or explicitly freeze legacy and transitional code in every round.
 
-Do not spend time on distributed-looking work that cannot help a single
-too-large quantum AI workload fit, train, or deploy.
+A new cross-domain contract or abstraction is allowed during this sequence only
+when the current vertical path cannot be completed with an existing
+authoritative type, and the change passes the proposal and subtraction review.
+Do not open additional horizontal architecture tracks while the CPU path is
+incomplete.
+
+Longer-term statevector, MPS, tensor-network, accelerator, QPU, and distributed
+training goals remain product outcomes, but they must grow by extending proven
+vertical paths rather than by accumulating parallel scaffolding. The target is
+a repository whose structure is obvious, whose code is restrained, and whose
+hard scientific and systems problems are handled deeply.
 
 ## Execution Environment Safety
 
