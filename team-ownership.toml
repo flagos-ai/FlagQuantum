@@ -97,3 +97,12 @@ owns = [
     "flagquantum/_gateways/**",
     "flagquantum/agent.py",
 ]
+
+[teams.docs]
+branch = "codex/vnext-team-docs"
+worktree = "FlagQuantum-vNext-docs"
+owns = [
+    "docs/roadmap/VNEXT_EXPERIENCE.md",
+    "docs/development/DOCUMENTATION_STRATEGY.md",
+    "docs/site/**",
+]
