@@ -59,7 +59,7 @@
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `runtime/backends/statevector/forward.py`、`reverse_adjoint.py`、`triton.py`、`local_execution.py` 的数值部分 | 同目录 planning/models/environment/forward_executor/training/checkpointing/gradient_reduction | 真正 amplitude/qubit-address sharding 与 Runtime 生命周期高度混合 |
 | Split real/imag 与 Double-Single | `runtime/backends/statevector/split_real_imag*.py`、`double_single_device_gates.py` | 同文件中的平台身份、精度计划、conformance/result | 实验路径；不得成为首切片默认实现或被描述为等价 FP64 |
-| 本地 MPS | `simulation/mps_local.py` 的无噪声指令循环；`mps_execution.py` 的 adaptive 与单条 noisy trajectory；`mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `runtime/trajectories/mps.py` 的多轨迹调度、恢复与合并；`mps.py` 门面 | 单设备数值路径已独立；多轨迹 ownership、随机流、停止、重试、checkpoint 和 rank 合并已归 Runtime |
+| 本地 MPS | `simulation/mps_local.py` 的无噪声指令循环；`mps_noisy.py` 的已降低单轨迹数值循环；`mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `mps_execution.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并；`mps.py` 门面 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
 | 分布式 MPS | `runtime/backends/mps/operations.py`、`factorization.py`、`site_kernels.py` 及 forward/reverse 的数值段 | state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 算法与 rank ownership、collective、持久恢复、生产门禁混合 |
 | 本地张量网络 | `simulation/tensor_local.py` 的计划构建与数值状态入口；`tensor_observables.py` 的观测量计划与 MPO；`tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容门面与振幅入口、`tensor_path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
 | 分布式张量网络 | `runtime/backends/tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` 的数值段 | distributed_dag/execution/redistribution/multi_axis/partial_mesh/joint_planning/checkpoint/rematerialization/memory_evidence | sliced、sharded 与通信计划交织；生产 transport 未认证 |
@@ -77,7 +77,8 @@
 | `mps_state.py`、`mps_factorization.py`、`mps_low_rank.py` | 纯数值算法 | MPS 状态、门作用、分解、截断和误差 | 环境变量控制 kernel/分解策略应由请求/Runtime 决策后显式传入；dense correctness fallback 必须可见 |
 | `static_mps.py`、`mps_brickwork.py`、`tebd.py`、`dense_island.py` | 数值算法 + Kernel 调用 | 固定形状图、TEBD、dense island、局部编译核 | 编译/缓存策略和能力选择需与 Runtime/Compiler 的决定区分 |
 | `mps_local.py` | 纯数值执行 | 已初始化 MPS 上的 IR 门作用、融合与 bucket kernel 调用 | 无 Runtime 生命周期所有权 |
-| `mps_execution.py` | 兼容入口与数值执行 | Circuit/IR 到本地 MPS 初态的薄适配、adaptive bond rerun、单轨迹数值演化 | 多轨迹生命周期已委托 Runtime；noise lowering 与随机流派生仍待按现有契约逐步收口 |
+| `mps_noisy.py` | 纯数值执行 | 已降低 IR 上的 unitary/Kraus MPS 单轨迹演化 | 不导入 Compiler 或 Runtime，不派生 seed，不拥有 checkpoint |
+| `mps_execution.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、legacy noise lowering、adaptive bond rerun | 多轨迹生命周期与 seed 派生已委托 Runtime；legacy 直接入口仍负责调用 Compiler lowering |
 | `runtime/trajectories/mps.py` | Runtime 生命周期 | 多轨迹 ownership、随机流、统计收敛、失败重试、checkpoint/restart 和 rank 结果合并 | 通过调用方提供的单轨迹执行器调用 Simulation，不实现 MPS 门或 Kraus 数值算法 |
 | `mps_planning_mixin.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
 | `mps_models.py`、`mps.py` | 结果转换/兼容门面 | 算法内部诊断或短期门面 | 长期结果契约必须由 Core；门面退出条件是 Runtime 只经获批 Engine Contract 调用 |
@@ -141,7 +142,7 @@
 6. **跨层结果和公共类型**：Simulation 可产生内部数值 diagnostics，但稳定请求、结果、
    Evidence、Failure 和序列化 schema 均由 Core 唯一拥有。
 
-优先迁移热点是 `simulation/mps_execution.py` 剩余的 noise lowering/单轨迹随机流边界，以及三个分布式 backend
+优先迁移热点是 `simulation/mps_execution.py` 的 legacy noise lowering 入口，以及三个分布式 backend
 中的 process-group/数值核交织。不能简单搬文件；必须先有 Core 契约和替换测试。
 
 ## 7. 第一个可替换切片

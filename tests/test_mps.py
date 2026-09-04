@@ -607,6 +607,28 @@ def test_noisy_mps_trajectory_bit_flip_matches_density_path():
     assert torch.allclose(mps.expectation_z(0), torch.ones(1, 1), atol=1e-6)
 
 
+def test_noisy_mps_wrapper_passes_lowered_ir_and_explicit_rng(monkeypatch):
+    import flagquantum.simulation.mps_execution as mps_execution
+
+    expected = object()
+    calls = []
+
+    def replacement(lowered_ir, state, *, generator):
+        calls.append((lowered_ir, state, generator))
+        return expected
+
+    monkeypatch.setattr(mps_execution, "run_local_noisy_mps_trajectory", replacement)
+    circuit = fq.Circuit(1).x(0)
+    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+    generator = torch.Generator().manual_seed(11)
+
+    assert fq.run_noisy_mps_trajectory(circuit, model, generator=generator) is expected
+    assert isinstance(calls[0][0], fq.CircuitIR)
+    assert any(item.metadata.get("is_channel") for item in calls[0][0])
+    assert calls[0][1].n_wires == 1
+    assert calls[0][2] is generator
+
+
 def test_noisy_mps_trajectory_amplitude_damping():
     circuit = fq.Circuit(1)
     circuit.x(0)

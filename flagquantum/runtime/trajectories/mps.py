@@ -19,6 +19,29 @@ from .rng import derive_trajectory_seed, trajectory_generator
 from .statistics import TensorWelford
 
 
+def run_single_mps_trajectory_runtime(
+    lowered_ir: Any,
+    *,
+    generator: torch.Generator | None,
+    seed: int | None,
+    trajectory_id: int,
+    device: torch.device | str,
+    trajectory_executor: Callable[..., Any],
+    executor_options: dict[str, Any],
+) -> Any:
+    """Resolve one trajectory random stream and invoke Simulation."""
+
+    if generator is not None and seed is not None:
+        raise ValueError("pass either generator or seed, not both")
+    if seed is not None:
+        generator = trajectory_generator(seed, trajectory_id, device=device)
+    return trajectory_executor(
+        lowered_ir,
+        generator=generator,
+        **executor_options,
+    )
+
+
 def run_noisy_mps_runtime(
     circuit_or_ir: Any,
     noise_model: Any | None = None,

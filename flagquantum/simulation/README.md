@@ -21,10 +21,12 @@ density-matrix measurements. Runtime owns noise lowering and execution-plan
 dispatch through `runtime/noise_registry.py`.
 
 `mps_local.py` owns the single-device, noiseless MPS instruction loop.
-`mps_execution.py` preserves the public wrapper and currently contains the
-separate adaptive and single noisy-trajectory numerical paths. Multi-trajectory
-ownership, random streams, convergence, retry, checkpoint/restart, and rank
-result merging belong to `runtime/trajectories/mps.py`.
+`mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory
+and accepts an initialized MPS plus an explicit random generator.
+`mps_execution.py` preserves the public wrappers and adapts legacy Circuit
+inputs. Multi-trajectory ownership, random streams, convergence, retry,
+checkpoint/restart, and rank result merging belong to
+`runtime/trajectories/mps.py`.
 
 `tensor_local.py` owns local tensor-network plan construction and the numerical
 state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,
@@ -50,7 +52,8 @@ For a local density-matrix change, start in `density_matrix.py` and run:
 python -m pytest tests/test_noise.py -k density_matrix -q
 ```
 
-For the local MPS loop, start in `mps_local.py` and run:
+For the local noiseless MPS loop, start in `mps_local.py`; for one lowered noisy
+trajectory, start in `mps_noisy.py`. Run:
 
 ```bash
 python -m pytest tests/test_mps.py -q

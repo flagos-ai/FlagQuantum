@@ -14,6 +14,7 @@ from .mps_models import (
     MPSConfig,
     MPSMonteCarloResult,
 )
+from .mps_noisy import run_local_noisy_mps_trajectory
 from .mps_state import MPSState
 
 
@@ -173,52 +174,69 @@ def run_noisy_mps_trajectory(
     max_bond: int | None = None,
     cutoff: float = 0.0,
 ) -> MPSState:
-    """Execute a noisy circuit as one sampled MPS quantum trajectory."""
+    """Prepare and execute one sampled MPS quantum trajectory."""
 
     from ..compilation.noise import lower_noise_model
-    from ..runtime.trajectories import trajectory_generator
+    from ..runtime.trajectories.mps import run_single_mps_trajectory_runtime
 
-    if generator is not None and seed is not None:
-        raise ValueError("pass either generator or seed, not both")
     effective_device = (
         device if not hasattr(circuit_or_ir, "device") else circuit_or_ir.device
     )
-    if seed is not None:
-        generator = trajectory_generator(
-            seed,
-            trajectory_id,
-            device=effective_device,
-        )
-
     lowered = lower_noise_model(circuit_or_ir, noise_model)
+    return run_single_mps_trajectory_runtime(
+        lowered,
+        generator=generator,
+        seed=seed,
+        trajectory_id=trajectory_id,
+        device=effective_device,
+        trajectory_executor=_execute_lowered_noisy_mps_trajectory,
+        executor_options={
+            "source": circuit_or_ir,
+            "bsz": bsz,
+            "device": effective_device,
+            "dtype": dtype,
+            "max_bond": max_bond,
+            "cutoff": cutoff,
+        },
+    )
+
+
+def _execute_lowered_noisy_mps_trajectory(
+    lowered: CircuitIR,
+    *,
+    source: Any,
+    generator: torch.Generator | None,
+    bsz: int,
+    device: torch.device | str,
+    dtype: torch.dtype | None,
+    max_bond: int | None,
+    cutoff: float,
+) -> MPSState:
+    """Initialize MPS storage and enter the lowered numerical loop."""
+
     config = MPSConfig(max_bond=max_bond, cutoff=cutoff)
     if (
-        hasattr(circuit_or_ir, "initial_state")
-        and getattr(circuit_or_ir, "_inputs", None) is not None
+        hasattr(source, "initial_state")
+        and getattr(source, "_inputs", None) is not None
     ):
         mps = MPSState.from_statevector(
-            circuit_or_ir.initial_state(),
+            source.initial_state(),
             lowered.n_wires,
             config=config,
         )
     else:
         mps = MPSState.zero(
             lowered.n_wires,
-            bsz=bsz if not hasattr(circuit_or_ir, "bsz") else circuit_or_ir.bsz,
-            device=effective_device,
-            dtype=dtype if not hasattr(circuit_or_ir, "dtype") else circuit_or_ir.dtype,
+            bsz=bsz if not hasattr(source, "bsz") else source.bsz,
+            device=device,
+            dtype=dtype if not hasattr(source, "dtype") else source.dtype,
             config=config,
         )
-    for instruction in lowered:
-        if instruction.metadata.get("is_channel"):
-            mps.apply_channel_trajectory(
-                instruction.matrix,
-                instruction.wires,
-                generator=generator,
-            )
-        else:
-            mps.apply_instruction(instruction)
-    return mps
+    return run_local_noisy_mps_trajectory(
+        lowered,
+        mps,
+        generator=generator,
+    )
 
 
 def run_noisy_mps(

@@ -16,6 +16,10 @@ are supplied by Simulation; Runtime schedules them and records their outcomes.
 - Change checkpoint schema or persistence in `checkpoint.py`.
 - Change noisy MPS scheduling, recovery, or rank merging in `mps.py`.
 
+`mps.py` also resolves a trajectory seed into an explicit generator before it
+invokes the Simulation callback. Noise lowering and MPS numerical evolution do
+not belong here.
+
 Run:
 
 ```bash
