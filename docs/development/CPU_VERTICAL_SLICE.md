@@ -113,3 +113,12 @@ This move added no new public type or compatibility layer. Existing noisy-plan
 types and their builder remain with the transitional execution-plan product in
 `flagquantum/compilation` until an approved contract migration can preserve the
 protected `ExecutionPlan` schema and identity behavior.
+
+## Calibration policy subtraction
+
+The unused world-size selector was removed from the transitional compilation
+package. Runtime already owns world-size and execution selection, and no
+consumer had ever exercised the duplicate calibration path. The remaining
+performance adapter exists only for the current
+`ExecutionPlan.calibrated_cost()` behavior; moving or removing that method
+requires a separate protected-contract decision.

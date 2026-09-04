@@ -11,3 +11,8 @@ Do not recreate those implementations here. Start in `models.py`,
 `execution_plan_builder.py`, or `execution_plan_contract.py` only when changing
 the remaining plan product, and run the CPU vertical-slice, noise, and
 execution-plan contract tests.
+
+`performance_calibration.py` exists only to preserve the current
+`ExecutionPlan.calibrated_cost()` behavior. World-size, backend, and execution
+selection calibration belongs in `flagquantum/runtime/planner`; do not add
+selection policy to this adapter.

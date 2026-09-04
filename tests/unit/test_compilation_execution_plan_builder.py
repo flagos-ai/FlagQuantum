@@ -62,3 +62,30 @@ def test_execution_plan_builder_assigns_distributed_product_contract() -> None:
     assert plan.user_tier == "production_distributed"
     assert plan.usability_contract == "single_api_distributed_scale_out"
     assert plan.runtime_config == {"schema": "test"}
+
+
+def test_execution_plan_calibrated_cost_preserves_plan_product_behavior() -> None:
+    plan = build_execution_plan(
+        ir=_ir(),
+        analysis=_analysis(),
+        state_bytes=64,
+        recommended_mode="statevector",
+        world_size=1,
+        state_mode="statevector",
+        runtime_config={"schema": "test"},
+    )
+
+    cost = plan.calibrated_cost(
+        {
+            "performance_gate": {"passed": True},
+            "cost_model_calibration": {
+                "seconds_per_work_unit": 0.25,
+                "relative_uncertainty": 0.1,
+                "source_benchmark": "cpu-golden-path",
+            },
+        }
+    )
+
+    assert cost.estimated_seconds == pytest.approx(0.75)
+    assert cost.estimated_work_units == 3
+    assert cost.source_benchmark == "cpu-golden-path"
