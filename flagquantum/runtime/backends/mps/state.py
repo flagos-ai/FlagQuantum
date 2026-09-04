@@ -487,9 +487,6 @@ def initialize_reverse_mps_state(
     )
 
 
-# Private compatibility alias for historical internal callers.
-_initial_ownership = initial_mps_ownership
-
 __all__ = (
     "MPSPartition",
     "RankOwnedMPSState",

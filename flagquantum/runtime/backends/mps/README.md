@@ -14,11 +14,16 @@ evaluation live in `simulation/mps_reverse.py`. Import these numerical owners
 directly; local observable contractions live in
 `simulation/mps_observables.py`. Do not recreate Runtime aliases or a second
 implementation.
+Canonicalization sweep order, ownership, transfers, and metrics remain in
+`canonicalization.py`; its QR, transfer absorption, residual, and norm formulas
+live in `simulation/mps_canonicalization.py`.
 
 ## Ten-minute change path
 
 - Change rank ownership or communication order in `state.py`,
   `distribution.py`, or `communication.py`.
+- Change canonicalization sweep ownership or transport in `canonicalization.py`;
+  change its tensor math in `simulation/mps_canonicalization.py`.
 - Change forward ownership, communication, lifecycle, or evidence in
   `forward.py`; change reverse lifecycle in `reverse.py` or
   `reverse_replay.py`. Their local instruction buckets call

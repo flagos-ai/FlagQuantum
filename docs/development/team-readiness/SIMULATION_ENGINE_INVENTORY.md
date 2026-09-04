@@ -60,7 +60,7 @@
 | 分布式状态向量 | `runtime/backends/statevector/forward.py`、`reverse_adjoint.py`、`triton.py`、`local_execution.py` 的数值部分 | 同目录 planning/models/environment/forward_executor/training/checkpointing/gradient_reduction | 真正 amplitude/qubit-address sharding 与 Runtime 生命周期高度混合 |
 | Split real/imag 与 Double-Single | `runtime/backends/statevector/split_real_imag*.py`、`double_single_device_gates.py` | 同文件中的平台身份、精度计划、conformance/result | 实验路径；不得成为首切片默认实现或被描述为等价 FP64 |
 | 本地 MPS | `simulation/mps_local.py` 的无噪声指令循环；`mps_noisy.py` 的已降低单轨迹数值循环；`mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `mps_execution.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并；`mps.py` 门面 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
-| 分布式 MPS | `simulation/mps_rank_local.py`、`mps_site_kernels.py`、`mps_compiled_layers.py`、`mps_factorization.py`、`mps_reverse.py`、`mps_observables.py` 及 reverse 尚未拆出的数值段 | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向准备与反向回放的批量门收缩、反向 pair 分解与截断子空间投影、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
+| 分布式 MPS | `simulation/mps_rank_local.py`、`mps_site_kernels.py`、`mps_compiled_layers.py`、`mps_factorization.py`、`mps_canonicalization.py`、`mps_reverse.py`、`mps_observables.py` 及 reverse 尚未拆出的数值段 | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
 | 本地张量网络 | `simulation/tensor_local.py` 的计划构建与数值状态入口；`tensor_observables.py` 的观测量计划与 MPO；`tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容门面与振幅入口、`tensor_path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
 | 分布式张量网络 | `runtime/backends/tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` 的数值段 | distributed_dag/execution/redistribution/multi_axis/partial_mesh/joint_planning/checkpoint/rematerialization/memory_evidence | sliced、sharded 与通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | `simulation/noise.py` 兼容门面、Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime |
@@ -216,3 +216,18 @@ Protocol、注册表或导出；因此它证明替换方向可行，但还没有
 分支限制为请求组织和结果投影。执行循环已完成物理归位；后续只迁移有明确收益的 helper 和
 生命周期状态。任何迁移都必须保持 `fq.Circuit`、`run`、`plan` 和 `ExecutionResult` 的
 受保护签名、默认值、失败阶段与序列化语义不变。
+
+## 10. MPS 边界收口审计（2026-09-04）
+
+本轮已将编译层执行、反向分解、反向 bucket 数值核和 canonicalization 数值核归入
+`simulation/`。Runtime 仅保留 rank/site 所有权、扫描与通信顺序、梯度 collective、
+checkpoint 生命周期和证据汇总。规范化路径已用两进程真实通信测试证明迁移前后全局态一致。
+
+Runtime 中剩余的 tensor 拼接、reshape 和 stack 主要用于通信打包、梯度 bucket 与分布式
+结果组装，不因使用张量操作而自动属于数值算法；只有改变 MPS 数学语义的实现才应继续迁入
+Simulation。已删除本轮确认无消费者的私有兼容别名，不因文件较大而机械拆分模块。
+
+目前保留两类已登记的反向依赖：`simulation/mps_execution.py` 对轨迹 Runtime 的受保护旧入口，
+以及 `simulation/noise.py` 对噪声注册表的兼容访问。它们必须通过正式 API 迁移和替换测试退出，
+不得在本轮以破坏兼容性的方式强拆。除这两类登记项外，本轮未发现新的 Simulation→Runtime
+依赖。MPS 数值边界已达到可停止继续横向抽象的条件；后续优先推进最小纵向链路和目录归位。

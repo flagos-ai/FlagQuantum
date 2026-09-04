@@ -48,7 +48,6 @@ from .reverse_planning import (
     build_mps_parameter_layout,
     cached_mps_gradient_buckets,
     cached_mps_reverse_segments,
-    discover_trainable_tensors,
     plan_mps_canonicalization_bonds,
     plan_mps_gradient_buckets,
     plan_mps_reverse_segments,
@@ -60,14 +59,10 @@ from .reverse_transport import (
     all_reduce_reverse_layer_records,
     begin_reverse_layer_halo_prefetch,
     broadcast_reverse_record,
-    decode_reverse_record,
-    encode_reverse_record,
     finish_reverse_layer_halo_prefetch,
     receive_reverse_tensor,
-    receive_reverse_tensor_batch,
     receive_static_reverse_tensor,
     send_reverse_tensor,
-    send_reverse_tensor_batch,
     send_static_reverse_tensor,
     static_shape_generation,
 )
@@ -89,15 +84,12 @@ _rank_owned_initial_tensors = normalize_rank_owned_initial_tensors
 _broadcast_record = broadcast_reverse_record
 _all_reduce_layer_records = all_reduce_reverse_layer_records
 _begin_layer_halo_prefetch = begin_reverse_layer_halo_prefetch
-_decode_record = decode_reverse_record
-_encode_record = encode_reverse_record
 _finish_layer_halo_prefetch = finish_reverse_layer_halo_prefetch
 _fused_z_zz_mse_and_adjoints = mps_fused_z_zz_mse_and_adjoints
 _gradient_bucket_layout = plan_mps_gradient_buckets
 _cached_gradient_bucket_layout = cached_mps_gradient_buckets
 _heisenberg_mpo_energy_and_adjoints = mps_heisenberg_energy_and_adjoints
 _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
-_leaf_tensors = discover_trainable_tensors
 _parameter_layout = build_mps_parameter_layout
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
@@ -105,13 +97,11 @@ _parse_z_zz_terms = parse_mps_z_zz_terms
 _planned_canonicalization_bonds = plan_mps_canonicalization_bonds
 _qr_forward = mps_qr_forward
 _recv = receive_reverse_tensor
-_recv_batch = receive_reverse_tensor_batch
 _recv_static = receive_static_reverse_tensor
 _record = build_mps_reverse_tape_record
 _reverse_execution_segments = plan_mps_reverse_segments
 _cached_reverse_execution_segments = cached_mps_reverse_segments
 _send = send_reverse_tensor
-_send_batch = send_reverse_tensor_batch
 _send_static = send_static_reverse_tensor
 _shape_generation = static_shape_generation
 _site_sharded_z_zz_scan = mps_site_sharded_z_zz_scan

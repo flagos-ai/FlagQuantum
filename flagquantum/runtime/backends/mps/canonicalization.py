@@ -8,7 +8,16 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from .communication import _recv_tensor_p2p, _send_tensor_p2p, _tensor_nbytes
+from ....simulation.mps_canonicalization import (
+    absorb_left_canonical_transfer,
+    absorb_right_canonical_transfer,
+    factor_left_canonical_site,
+    factor_right_canonical_site,
+    local_mixed_canonical_residual,
+    mps_center_norms,
+)
+from ....simulation.mps_rank_local import tensor_nbytes
+from .communication import _recv_tensor_p2p, _send_tensor_p2p
 
 
 @dataclass(frozen=True)
@@ -29,45 +38,31 @@ def _reference(state: Any) -> torch.Tensor:
     return next(iter(state.local_tensors.values()))
 
 
-def _deterministic_qr(matrix: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    """QR with a non-negative real diagonal convention for rank-stable gauges."""
-
-    q, r = torch.linalg.qr(matrix, mode="reduced")
-    diagonal = torch.diagonal(r, dim1=-2, dim2=-1)
-    magnitude = diagonal.abs()
-    phase = torch.where(magnitude > 0, diagonal / magnitude, torch.ones_like(diagonal))
-    q = q * phase.unsqueeze(-2)
-    r = phase.conj().unsqueeze(-1) * r
-    return q, r
-
-
 def _left_step(state: Any, wire: int) -> tuple[int, int, int]:
     left_owner, right_owner = _owner(state, wire), _owner(state, wire + 1)
     messages = communicated = temporary = 0
     if state.rank == left_owner:
         tensor = state.local_tensors[wire]
-        bsz, left_dim, physical_dim, right_dim = tensor.shape
-        matrix = tensor.reshape(bsz, left_dim * physical_dim, right_dim)
-        q, transfer = _deterministic_qr(matrix)
-        state.local_tensors[wire] = q.reshape(bsz, left_dim, physical_dim, q.shape[-1])
-        temporary = _tensor_nbytes(q) + _tensor_nbytes(transfer)
+        canonical, transfer = factor_left_canonical_site(tensor)
+        state.local_tensors[wire] = canonical
+        temporary = tensor_nbytes(canonical) + tensor_nbytes(transfer)
         if left_owner == right_owner:
             right = state.local_tensors[wire + 1]
-            updated = torch.einsum("bij,bjsk->bisk", transfer, right)
+            updated = absorb_left_canonical_transfer(transfer, right)
             state.local_tensors[wire + 1] = updated
-            temporary += _tensor_nbytes(updated)
+            temporary += tensor_nbytes(updated)
         else:
             _send_tensor_p2p(transfer.unsqueeze(-1), dst=right_owner)
             messages = 1
-            communicated = _tensor_nbytes(transfer)
+            communicated = tensor_nbytes(transfer)
     elif state.rank == right_owner:
         right = state.local_tensors[wire + 1]
         transfer = _recv_tensor_p2p(src=left_owner, reference=right).squeeze(-1)
-        updated = torch.einsum("bij,bjsk->bisk", transfer, right)
+        updated = absorb_left_canonical_transfer(transfer, right)
         state.local_tensors[wire + 1] = updated
         messages = 1
-        communicated = _tensor_nbytes(transfer)
-        temporary = _tensor_nbytes(transfer) + _tensor_nbytes(updated)
+        communicated = tensor_nbytes(transfer)
+        temporary = tensor_nbytes(transfer) + tensor_nbytes(updated)
     return messages, communicated, temporary
 
 
@@ -76,53 +71,31 @@ def _right_step(state: Any, wire: int) -> tuple[int, int, int]:
     messages = communicated = temporary = 0
     if state.rank == right_owner:
         tensor = state.local_tensors[wire]
-        bsz, left_dim, physical_dim, right_dim = tensor.shape
-        matrix_t = tensor.reshape(bsz, left_dim, physical_dim * right_dim).transpose(
-            -2, -1
-        )
-        q, r = _deterministic_qr(matrix_t)
-        right = q.transpose(-2, -1)
-        transfer = r.transpose(-2, -1)
-        state.local_tensors[wire] = right.reshape(
-            bsz, right.shape[1], physical_dim, right_dim
-        )
-        temporary = _tensor_nbytes(q) + _tensor_nbytes(r)
+        transfer, canonical = factor_right_canonical_site(tensor)
+        state.local_tensors[wire] = canonical
+        temporary = tensor_nbytes(canonical) + tensor_nbytes(transfer)
         if left_owner == right_owner:
             left = state.local_tensors[wire - 1]
-            updated = torch.einsum("blpa,bac->blpc", left, transfer)
+            updated = absorb_right_canonical_transfer(left, transfer)
             state.local_tensors[wire - 1] = updated
-            temporary += _tensor_nbytes(updated)
+            temporary += tensor_nbytes(updated)
         else:
             _send_tensor_p2p(transfer.unsqueeze(-1), dst=left_owner)
             messages = 1
-            communicated = _tensor_nbytes(transfer)
+            communicated = tensor_nbytes(transfer)
     elif state.rank == left_owner:
         left = state.local_tensors[wire - 1]
         transfer = _recv_tensor_p2p(src=right_owner, reference=left).squeeze(-1)
-        updated = torch.einsum("blpa,bac->blpc", left, transfer)
+        updated = absorb_right_canonical_transfer(left, transfer)
         state.local_tensors[wire - 1] = updated
         messages = 1
-        communicated = _tensor_nbytes(transfer)
-        temporary = _tensor_nbytes(transfer) + _tensor_nbytes(updated)
+        communicated = tensor_nbytes(transfer)
+        temporary = tensor_nbytes(transfer) + tensor_nbytes(updated)
     return messages, communicated, temporary
 
 
 def _local_mixed_residual(state: Any, center: int) -> float:
-    residual = torch.zeros((), dtype=torch.float64, device=_reference(state).device)
-    for wire, tensor in state.local_tensors.items():
-        if wire == center:
-            continue
-        for batch_tensor in tensor:
-            if wire < center:
-                matrix = batch_tensor.reshape(-1, batch_tensor.shape[-1])
-                gram = matrix.mH @ matrix
-            else:
-                matrix = batch_tensor.reshape(batch_tensor.shape[0], -1)
-                gram = matrix @ matrix.mH
-            eye = torch.eye(gram.shape[0], dtype=gram.dtype, device=gram.device)
-            residual = torch.maximum(
-                residual, torch.max(torch.abs(gram - eye)).double()
-            )
+    residual = local_mixed_canonical_residual(state.local_tensors, center)
     dist.all_reduce(residual, op=dist.ReduceOp.MAX)
     return float(residual.cpu())
 
@@ -160,10 +133,7 @@ def canonicalize_rank_owned_mps(
     dist.all_gather(gathered, counters)
     center_owner = _owner(state, target)
     if state.rank == center_owner:
-        center_tensor = state.local_tensors[target]
-        norms = torch.sum(
-            torch.abs(center_tensor.reshape(center_tensor.shape[0], -1)) ** 2, dim=1
-        )
+        norms = mps_center_norms(state.local_tensors[target])
     else:
         norms = torch.empty(state.bsz, dtype=torch.float64, device=device)
     norms = norms.to(dtype=torch.float64)
@@ -180,6 +150,5 @@ def canonicalize_rank_owned_mps(
 
 __all__ = [
     "MPSCanonicalizationMetrics",
-    "_deterministic_qr",
     "canonicalize_rank_owned_mps",
 ]
