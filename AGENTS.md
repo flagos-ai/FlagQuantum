@@ -129,6 +129,17 @@ requirements.
     demonstrated by replacing at least one implementation without modifying its
     consumers and by passing the corresponding contract and conformance tests.
 
+11. **Prefer deliberate code over generated volume.** FlagQuantum must remain
+    simple without becoming simplistic. Code is not valuable because it is
+    longer, more generic, or more heavily layered. Before review, remove
+    speculative scaffolding, pass-through wrappers, duplicated validation,
+    repeated representations, commentary that merely restates code, and tests
+    that only enumerate implementation details. A new manager, registry,
+    factory, protocol, helper layer, or intermediate object requires a distinct
+    current responsibility or a second concrete use, not a hypothetical future
+    need. Preserve necessary scientific rigor, failure semantics, and evidence;
+    reduce cognitive load rather than correctness.
+
 ## Human Maintainability Guardrails
 
 Architecture must remain approachable to contributors who do not understand
@@ -175,6 +186,12 @@ evidence internals.
    boundary is not complete until a contributor unfamiliar with its internal
    implementation can independently make, test, and explain one representative
    small change using only the domain README and referenced golden path.
+
+9. **Review for subtraction before addition.** Every non-trivial change must be
+   reviewed for code and concepts that can be removed or reused. Passing tests
+   is necessary but does not justify redundant abstractions or machine-like
+   boilerplate. Reviewers must reject code whose structure cannot be explained
+   in terms of current product behavior and domain ownership.
 
 ## Source Documents
 
