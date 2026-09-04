@@ -27,15 +27,15 @@ from ....simulation.double_single_device_gates import (
     P4_PARAMETER_GATES,
     encode_device_double_single_matrix,
 )
+from ....simulation.double_single_statevector import (
+    apply_double_single_gate,
+    normalize_double_single_state,
+)
 from .split_real_imag import (
     _normalized_observables,
     _parameter_occurrences,
     _PauliTerm,
     _validate_p1_execution_scope,
-)
-from .split_real_imag_double_single import (
-    _apply_gate_double_single,
-    _normalize_state,
 )
 
 P4_EXECUTOR = "split_real_imag_statevector_p4_device_double_single"
@@ -338,12 +338,12 @@ def _execute_p4_statevector(
             shift_direction=shift_direction if shifted else 0,
         )
         host_ingestion = host_ingestion or instruction_host_ingestion
-        state = _apply_gate_double_single(
+        state = apply_double_single_gate(
             state, matrix, instruction.wires, n_wires=ir.n_wires
         )
         gate_number = index + 1
         if renormalize_every and gate_number % renormalize_every == 0:
-            state = _normalize_state(state)
+            state = normalize_double_single_state(state)
             normalization_count += 1
         if state.real.high.device.type != resolved_device.type:
             raise RuntimeError("P4 statevector escaped the requested logical device")
@@ -412,7 +412,7 @@ def _term_expectation(
             bindings={},
             device=state.device,
         )
-        transformed = _apply_gate_double_single(
+        transformed = apply_double_single_gate(
             transformed, matrix, (wire,), n_wires=n_wires
         )
     products = state.state.real.multiply(transformed.real).add(

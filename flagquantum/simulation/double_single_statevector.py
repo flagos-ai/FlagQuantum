@@ -1,0 +1,157 @@
+"""Pure Double-Single statevector gate application and normalization."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+
+import torch
+
+from ..numerics.double_single import (
+    DoubleSingleComplexTensor,
+    DoubleSingleTensor,
+    double_single_sum,
+)
+
+
+def _component_view(
+    value: torch.Tensor,
+    *,
+    logical_shape: tuple[int, ...],
+    permutation: tuple[int, ...],
+    gate_dimension: int,
+) -> torch.Tensor:
+    return value.reshape(logical_shape).permute(permutation).reshape(-1, gate_dimension)
+
+
+def _restore_component(
+    value: torch.Tensor,
+    *,
+    logical_shape: tuple[int, ...],
+    inverse: tuple[int, ...],
+) -> torch.Tensor:
+    return value.reshape(logical_shape).permute(inverse).reshape(-1)
+
+
+def _view_state(
+    state: DoubleSingleComplexTensor,
+    *,
+    logical_shape: tuple[int, ...],
+    permutation: tuple[int, ...],
+    gate_dimension: int,
+) -> DoubleSingleComplexTensor:
+    def view(value: torch.Tensor) -> torch.Tensor:
+        return _component_view(
+            value,
+            logical_shape=logical_shape,
+            permutation=permutation,
+            gate_dimension=gate_dimension,
+        )
+
+    return DoubleSingleComplexTensor(
+        DoubleSingleTensor(view(state.real.high), view(state.real.low)),
+        DoubleSingleTensor(view(state.imag.high), view(state.imag.low)),
+    )
+
+
+def _complex_column(
+    value: DoubleSingleComplexTensor, index: int
+) -> DoubleSingleComplexTensor:
+    return DoubleSingleComplexTensor(
+        DoubleSingleTensor(value.real.high[..., index], value.real.low[..., index]),
+        DoubleSingleTensor(value.imag.high[..., index], value.imag.low[..., index]),
+    )
+
+
+def _broadcast_matrix_entry(
+    matrix: DoubleSingleComplexTensor,
+    row: int,
+    column: int,
+    like: torch.Tensor,
+) -> DoubleSingleComplexTensor:
+    def word(value: torch.Tensor) -> torch.Tensor:
+        return value[row, column].expand_as(like)
+
+    return DoubleSingleComplexTensor(
+        DoubleSingleTensor(word(matrix.real.high), word(matrix.real.low)),
+        DoubleSingleTensor(word(matrix.imag.high), word(matrix.imag.low)),
+    )
+
+
+def apply_double_single_gate(
+    state: DoubleSingleComplexTensor,
+    matrix: DoubleSingleComplexTensor,
+    wires: Sequence[int],
+    *,
+    n_wires: int,
+) -> DoubleSingleComplexTensor:
+    """Apply one Double-Single gate matrix to a flat statevector."""
+
+    wires = tuple(int(wire) for wire in wires)
+    remaining = tuple(wire for wire in range(n_wires) if wire not in wires)
+    permutation = remaining + wires
+    inverse = tuple(permutation.index(wire) for wire in range(n_wires))
+    gate_dimension = 2 ** len(wires)
+    logical_shape = (2,) * n_wires
+    values = _view_state(
+        state,
+        logical_shape=logical_shape,
+        permutation=permutation,
+        gate_dimension=gate_dimension,
+    )
+    rows = []
+    for row in range(gate_dimension):
+        accumulator = DoubleSingleComplexTensor(
+            DoubleSingleTensor.zeros_like(values.real.high[..., 0]),
+            DoubleSingleTensor.zeros_like(values.imag.high[..., 0]),
+        )
+        for column in range(gate_dimension):
+            amplitude = _complex_column(values, column)
+            factor = _broadcast_matrix_entry(matrix, row, column, amplitude.real.high)
+            accumulator = accumulator.add(factor.multiply(amplitude))
+        rows.append(accumulator)
+
+    def stack(component: str, word: str) -> torch.Tensor:
+        return torch.stack(
+            [getattr(getattr(value, component), word) for value in rows], dim=-1
+        )
+
+    updated = DoubleSingleComplexTensor(
+        DoubleSingleTensor(stack("real", "high"), stack("real", "low")),
+        DoubleSingleTensor(stack("imag", "high"), stack("imag", "low")),
+    )
+
+    def restore(value: torch.Tensor) -> torch.Tensor:
+        return _restore_component(value, logical_shape=logical_shape, inverse=inverse)
+
+    return DoubleSingleComplexTensor(
+        DoubleSingleTensor(restore(updated.real.high), restore(updated.real.low)),
+        DoubleSingleTensor(restore(updated.imag.high), restore(updated.imag.low)),
+    )
+
+
+def _scale_state(
+    state: DoubleSingleComplexTensor, factor: DoubleSingleTensor
+) -> DoubleSingleComplexTensor:
+    def expand(value: torch.Tensor, like: torch.Tensor) -> torch.Tensor:
+        return value.expand_as(like)
+
+    scalar = DoubleSingleComplexTensor(
+        DoubleSingleTensor(
+            expand(factor.high, state.real.high),
+            expand(factor.low, state.real.low),
+        ),
+        DoubleSingleTensor.zeros_like(state.imag.high),
+    )
+    return state.multiply(scalar)
+
+
+def normalize_double_single_state(
+    state: DoubleSingleComplexTensor,
+) -> DoubleSingleComplexTensor:
+    """Normalize a Double-Single statevector without changing representation."""
+
+    norm_squared = double_single_sum(state.abs_squared())
+    return _scale_state(state, norm_squared.reciprocal_sqrt())
+
+
+__all__ = ("apply_double_single_gate", "normalize_double_single_state")

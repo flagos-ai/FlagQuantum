@@ -35,6 +35,10 @@ from ....numerics.double_single import (
 )
 from ....ops.matrices import GATE_MAT_DICT
 from ....providers.platform import get_platform_runtime, resolve_platform_device
+from ....simulation.double_single_statevector import (
+    apply_double_single_gate,
+    normalize_double_single_state,
+)
 from .split_real_imag import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
     _normalized_observables,
@@ -386,143 +390,6 @@ def _encode_matrix(
     ).to(device)
 
 
-def _component_view(
-    value: torch.Tensor,
-    *,
-    logical_shape: tuple[int, ...],
-    permutation: tuple[int, ...],
-    gate_dimension: int,
-) -> torch.Tensor:
-    return value.reshape(logical_shape).permute(permutation).reshape(-1, gate_dimension)
-
-
-def _restore_component(
-    value: torch.Tensor,
-    *,
-    logical_shape: tuple[int, ...],
-    inverse: tuple[int, ...],
-) -> torch.Tensor:
-    return value.reshape(logical_shape).permute(inverse).reshape(-1)
-
-
-def _view_state(
-    state: DoubleSingleComplexTensor,
-    *,
-    logical_shape: tuple[int, ...],
-    permutation: tuple[int, ...],
-    gate_dimension: int,
-) -> DoubleSingleComplexTensor:
-    def view(value: torch.Tensor) -> torch.Tensor:
-        return _component_view(
-            value,
-            logical_shape=logical_shape,
-            permutation=permutation,
-            gate_dimension=gate_dimension,
-        )
-
-    return DoubleSingleComplexTensor(
-        DoubleSingleTensor(view(state.real.high), view(state.real.low)),
-        DoubleSingleTensor(view(state.imag.high), view(state.imag.low)),
-    )
-
-
-def _complex_column(
-    value: DoubleSingleComplexTensor, index: int
-) -> DoubleSingleComplexTensor:
-    return DoubleSingleComplexTensor(
-        DoubleSingleTensor(value.real.high[..., index], value.real.low[..., index]),
-        DoubleSingleTensor(value.imag.high[..., index], value.imag.low[..., index]),
-    )
-
-
-def _broadcast_matrix_entry(
-    matrix: DoubleSingleComplexTensor,
-    row: int,
-    column: int,
-    like: torch.Tensor,
-) -> DoubleSingleComplexTensor:
-    def word(value: torch.Tensor) -> torch.Tensor:
-        return value[row, column].expand_as(like)
-
-    return DoubleSingleComplexTensor(
-        DoubleSingleTensor(word(matrix.real.high), word(matrix.real.low)),
-        DoubleSingleTensor(word(matrix.imag.high), word(matrix.imag.low)),
-    )
-
-
-def _apply_gate_double_single(
-    state: DoubleSingleComplexTensor,
-    matrix: DoubleSingleComplexTensor,
-    wires: Sequence[int],
-    *,
-    n_wires: int,
-) -> DoubleSingleComplexTensor:
-    wires = tuple(int(wire) for wire in wires)
-    remaining = tuple(wire for wire in range(n_wires) if wire not in wires)
-    permutation = remaining + wires
-    inverse = tuple(permutation.index(wire) for wire in range(n_wires))
-    gate_dimension = 2 ** len(wires)
-    logical_shape = (2,) * n_wires
-    values = _view_state(
-        state,
-        logical_shape=logical_shape,
-        permutation=permutation,
-        gate_dimension=gate_dimension,
-    )
-    rows = []
-    for row in range(gate_dimension):
-        accumulator = DoubleSingleComplexTensor(
-            DoubleSingleTensor.zeros_like(values.real.high[..., 0]),
-            DoubleSingleTensor.zeros_like(values.imag.high[..., 0]),
-        )
-        for column in range(gate_dimension):
-            amplitude = _complex_column(values, column)
-            factor = _broadcast_matrix_entry(matrix, row, column, amplitude.real.high)
-            accumulator = accumulator.add(factor.multiply(amplitude))
-        rows.append(accumulator)
-
-    def stack(component: str, word: str) -> torch.Tensor:
-        return torch.stack(
-            [getattr(getattr(value, component), word) for value in rows], dim=-1
-        )
-
-    updated = DoubleSingleComplexTensor(
-        DoubleSingleTensor(stack("real", "high"), stack("real", "low")),
-        DoubleSingleTensor(stack("imag", "high"), stack("imag", "low")),
-    )
-
-    def restore(value: torch.Tensor) -> torch.Tensor:
-        return _restore_component(value, logical_shape=logical_shape, inverse=inverse)
-
-    return DoubleSingleComplexTensor(
-        DoubleSingleTensor(restore(updated.real.high), restore(updated.real.low)),
-        DoubleSingleTensor(restore(updated.imag.high), restore(updated.imag.low)),
-    )
-
-
-def _scale_state(
-    state: DoubleSingleComplexTensor, factor: DoubleSingleTensor
-) -> DoubleSingleComplexTensor:
-    def expand(value: torch.Tensor, like: torch.Tensor) -> torch.Tensor:
-        return value.expand_as(like)
-
-    scalar = DoubleSingleComplexTensor(
-        DoubleSingleTensor(
-            expand(factor.high, state.real.high),
-            expand(factor.low, state.real.low),
-        ),
-        DoubleSingleTensor.zeros_like(state.imag.high),
-    )
-    return state.multiply(scalar)
-
-
-def _normalize_state(
-    state: DoubleSingleComplexTensor,
-) -> DoubleSingleComplexTensor:
-    norm_squared = double_single_sum(state.abs_squared())
-    return _scale_state(state, norm_squared.reciprocal_sqrt())
-
-
 def _normalized_p3_bindings(
     parameter_bindings: Mapping[str | Parameter, Any],
 ) -> dict[str, torch.Tensor]:
@@ -632,14 +499,14 @@ def _execute_bound_p3_statevector(
     )
     normalization_count = 0
     for index, instruction in enumerate(ir.instructions, start=1):
-        state = _apply_gate_double_single(
+        state = apply_double_single_gate(
             state,
             _encode_matrix(instruction, device=resolved_device),
             instruction.wires,
             n_wires=ir.n_wires,
         )
         if renormalize_every and index % renormalize_every == 0:
-            state = _normalize_state(state)
+            state = normalize_double_single_state(state)
             normalization_count += 1
         if state.real.high.device.type != resolved_device.type:
             raise RuntimeError("P3 statevector escaped the requested logical device")
@@ -699,7 +566,7 @@ def _term_expectation(
     transformed = state.state
     for wire, name in term.ops:
         instruction = Instruction(name=name, wires=(wire,))
-        transformed = _apply_gate_double_single(
+        transformed = apply_double_single_gate(
             transformed,
             _encode_matrix(instruction, device=state.device),
             (wire,),
