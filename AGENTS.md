@@ -129,6 +129,53 @@ requirements.
     demonstrated by replacing at least one implementation without modifying its
     consumers and by passing the corresponding contract and conformance tests.
 
+## Human Maintainability Guardrails
+
+Architecture must remain approachable to contributors who do not understand
+every internal contract. Machine-verifiable rigor must not force ordinary
+feature developers to manipulate orchestration, identity, provenance, or
+evidence internals.
+
+1. **Keep ordinary changes within one primary domain.** An ordinary feature or
+   fix should normally modify the internal implementation of only one primary
+   domain. Cross-domain delivery must be split into an approved contract change
+   followed by domain-owned implementation changes. If one ordinary
+   implementation repeatedly requires changes across four or more domains,
+   treat it as an architecture defect and stop for boundary review.
+
+2. **Maintain one ten-minute golden path per domain.** Each migrated domain must
+   provide a small, executable example that a new contributor can understand,
+   run, modify, and test within approximately ten minutes.
+
+3. **Keep internal machinery out of public APIs.** Public interfaces must not
+   require users to construct or understand internal fingerprints, provenance
+   records, legality attestations, capability snapshot identities, scheduler
+   objects, or evidence internals.
+
+4. **Require justification for every new contract type.** Do not introduce a
+   new contract, identity, verdict, registry, or intermediate representation
+   unless the proposal demonstrates why an existing authoritative type cannot
+   express the verified requirement.
+
+5. **Split large modules without multiplying public concepts.** Once behavior
+   and boundaries are stable, divide oversized internal modules by
+   responsibility. Internal refactoring must not create additional public
+   abstractions merely to reduce file size.
+
+6. **Preserve scenario-oriented tests.** Contract, determinism, and tamper
+   tests must be accompanied by readable tests that demonstrate how a user or
+   provider completes a real workflow.
+
+7. **Document every migrated domain locally.** Each target domain directory
+   must contain a concise README describing what the domain owns, what it must
+   not own, its allowed dependencies, its public entry points, and the shortest
+   path for making and testing a typical change.
+
+8. **Include contributor usability in architecture acceptance.** A migrated
+   boundary is not complete until a contributor unfamiliar with its internal
+   implementation can independently make, test, and explain one representative
+   small change using only the domain README and referenced golden path.
+
 ## Source Documents
 
 Before changing distributed runtime, planners, benchmark claims, or quantum AI
