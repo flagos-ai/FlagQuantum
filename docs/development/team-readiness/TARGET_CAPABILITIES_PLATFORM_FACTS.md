@@ -16,8 +16,9 @@
 `CapabilityResponse`、方法存在、环境变量或厂商 metadata 直接提升为硬件支持。首版
 Platform→Core 投影必须同时保留 `support_status`、`fact_exposure`、`evidence_level` 三条正交
 轴；缺失字段输出 `unknown/not_exposed` 和 blocker，而不是补成 `false`、零、空拓扑或
-“未发生回退”。本切片只提交映射提案和 test-only fake 特征测试，没有新增生产 Provider
-合同、第二套注册体系或受保护 Core/API 修改。
+“未发生回退”。本轮新增的是 Platform-owned CPU 窄适配
+`cpu_platform_to_target_capability_snapshot`；它只接收注入式 probe、时间和 evidence，
+不新增 Provider 注册体系、不改变现有 Platform API/default 行为，也不触碰受保护 Core/API。
 
 代码路径分类为 `single_device_fast_path` 的 discovery 特征映射。引用的分片和通信材料仅说明
 已有证据边界，不形成新的硬件或可扩展性证据。
@@ -41,7 +42,7 @@ kernel、通信或无回退结论。
 | --- | --- | --- | --- |
 | `observed` | 生命周期探测、内存 API 数值、绑定 workload 的 operator/route probe | `verified` 或 `unsupported` | 正/负结论都必须绑定实际 scope；观测到失败不能写成 unknown |
 | `declared` | provider JSON-safe metadata、backend dtype 候选、外部 attestation 声明 | 默认 `unmeasured` | 声明不能因 provider available 而晋级 verified |
-| `not_exposed` | CPU 内存、当前 PlatformRuntime 的 dtype/topology/P2P/collective/kernel residency/fallback 字段 | `unknown` | 值保持 null 并附 blocker；不得补 false、0 或空集合 |
+| `not_exposed` | CPU 内存、当前 PlatformRuntime 的 dtype/topology/P2P/collective/kernel residency/fallback 字段 | `unknown` | Core nullable-fact 修复后，CPU adapter 生成 `value=null`、`unknown/not_exposed` 和非空 blocker；不得补 false、0 或空集合 |
 | `unknown` | 来源不明、不可序列化 SDK 对象、冲突或无法归因的 route 值 | `unknown` | 丢弃 vendor object，只保留可移植 blocker |
 | `not_applicable` | 例如 snapshot 明确限定 `world_size=1` 时该 scope 的 collective 事实 | `unknown` | 必须有 applicability reason；不能替代 unsupported 或 unmeasured |
 
@@ -104,6 +105,8 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 | 来源 | 可证明 | 不可证明 |
 | --- | --- | --- |
 | `tests/unit/test_platform_runtime.py` | CPU 生命周期、CUDA discovery fake、FlagOS lazy/public API 适配和厂商名不参与分类 | 真实 CUDA、FlagOS 或国产硬件执行 |
+| `flagquantum/runtime/platforms/cpu_target_capabilities.py` | 注入式 CPU device/count/memory/precision 观察到 Core v1 snapshot；独立 CPU identity/scope；TTL/evidence 传递；缺失事实 blocker | 不发现 CUDA/FlagOS/QPU；不产生 requirements、fallback 或性能/硬件声明 |
+| `tests/team/platform/test_cpu_target_capabilities.py` | CPU adapter 的 source/evidence round-trip、unavailable/missing/negative probe、TTL/scope 和默认行为不变 | 任何硬件能力；fake probe 不是真实硬件证据 |
 | `tests/team/platform/test_target_capability_facts.py` | 候选投影的三轴分离；缺 SDK 字段保持 unknown；声明不晋级；对象不泄漏 | 任何硬件能力；test-only fixture 不是 Core 合同 |
 | `runtime/operator_probes.py` + `CapabilityEvidence` | 特定 provider/device/profile/operator/dtype 的 forward/backward probe | 未探测算子、通信、拓扑、物理 route 或生产等级 |
 | `artifacts/flagos_cuda_reference_a800_20260824.json` | NVIDIA A800 上单 `flagos:0` CUDA-backed Torch-FL 参考路径 | 国产卡、原生 FlagOS 硬件、无 host fallback |
@@ -116,6 +119,32 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 `a800-node-0` 与 `a800-node-1` 是 NVIDIA A800 节点。会话中可用性或临时运行不能替代签入、
 带 digest 和 revision 的审核 artifact；即使在这两节点成功，也只能形成 NVIDIA CUDA 范围的
 证据，不能形成国产硬件或 FlagOS 证据。
+
+## CPU Platform 窄适配实现
+
+`flagquantum.runtime.platforms.cpu_target_capabilities` 是当前唯一实现切片。调用者注入
+`CPUCapabilityProbe`，其 `observe()` 返回 `CPUCapabilityObservation`，同时提供独立的
+`target_id`、`provider_version`、`target_revision`、`environment_id`、probe `source_ref` 和
+静态 `target_class_source_ref`。适配器
+固定 `target_class=local_runtime`、`provider=pytorch_cpu`，并用实际 `device_ids` 建立 scope；
+同时生成 `target.class=local_runtime` 的权威静态声明 fact，使 Compiler 与 CPU candidate 可匹配。
+
+- `available=true` 且设备数量/ID 经 probe 观察时，`device.kind`、`device.count` 为
+  `verified/observed`；这些 observed facts 及内存、显式 precision probe 结果必须由至少
+  `observable` 级 probe evidence 支撑。纯静态 `target.class` 可由 `basic` evidence 支撑。
+- `available=false, device_count=0` 生成 `device.count=0` 的
+  `unsupported/observed` fact 和 `cpu_unavailable` blocker；它不会被替换成 CPU 之外的目标。
+- 内存或 precision 缺失时不填 0、空字符串或伪造 dtype。由于 Core v1 当前 typed fact value
+  nullable，生成 `value=null`、`unknown/not_exposed` 与非空 blocker；Core matcher 会按
+  fact status fail closed。
+- probe 明确给出 `unsupported`/`unmeasured` 的 precision 时保留原状态和非空 blocker；
+  adapter 不把 declared、Python dtype、`BackendCapabilities` 或 provider identity 升成 verified。
+- 精度 `verified` 仅接受 `observed` exposure；`verified/declared` 会在 probe value object 层拒绝。
+- `captured_at` 与正 TTL 由调用者注入，evidence refs 原样以 Core `EvidenceReference` 传入；
+  adapter 不制造 evidence digest，不把 `stream/event` handle 放入 snapshot。
+
+该适配器只生产 `TargetCapabilitySnapshot`，不生产 `CapabilityRequirement`，不选择目标，
+不实现 Runtime fallback，不影响 `get_platform_runtime()`、平台 registry 或默认 backend。
 
 ## Platform→Core 最小投影提案
 
@@ -156,8 +185,9 @@ PlatformCapabilitySnapshotCandidate
 1. Platform identity 只作为 identity，不触发 capability promotion。
 2. provider metadata 只能作为 JSON-safe `declared/basic` 输入；对象、callable、live handle 和
    未知自由字段不进入 Core snapshot。
-3. SDK 字段缺失输出 `value=null`、`support_status=unknown`、
-   `fact_exposure=not_exposed` 和具体 blocker。
+3. SDK 字段缺失在候选层输出 `value=null`、`support_status=unknown`、
+   `fact_exposure=not_exposed` 和具体 blocker；顶层 blocker 只保留整张 snapshot 不可用的
+   全局问题。Core matcher 对 nullable non-verified fact 失败关闭。
 4. `available=true` 只验证环境可用；不传播到 dtype、kernel、通信或 fallback。
 5. `unsupported` 需要一次适用且权威的负向探测；未运行探测只能是 `unmeasured` 或 `unknown`。
 6. `not_applicable` 必须携带 applicability reason；不能用它隐藏未实现或未测能力。
