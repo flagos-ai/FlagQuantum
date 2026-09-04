@@ -203,31 +203,22 @@ the current optimizer, invalid/unsupported fail-closed behavior without partial
 artifacts, and the source/pipeline/target/emission identity chain. They are evidence
 for the candidate slice, not authorization to switch it on.
 
-## Human-maintainability notes for the legality slice
+## Human-maintainability notes for the next slice
 
-**Primary domain:** Compiler. This change is confined to the private
-`_compiler` implementation and shared Compiler tests; it adds no Runtime, Core,
-Provider, Simulation, public API, or default-dispatch responsibility.
+**Primary domain:** Compiler. The first migration candidate remains the static
+canonicalization path behind `compilation.compiler.simple_compile`; this
+inventory does not authorize changing the default dispatch or public API.
 
 **Readable scenario:**
-`tests/internal_ir/test_compiler_target_legality_verdict.py::test_core_success_cannot_override_gate_parameter_legality_failure`
-reads as a provider workflow: a static requirement needs the full RX parameter
-domain, the available target advertises a narrower domain, Core's conservative
-projection happens to match, and the unchanged legacy Compiler comparator still
-rejects the target. The ten-minute static compilation path remains documented in
-`flagquantum/_compiler/README.md` and exercised by
-`tests/team/compiler/test_static_pipeline_characterization.py`.
+`tests/team/compiler/test_static_pipeline_characterization.py` is the existing
+ten-minute path. It demonstrates deterministic cache behavior, semantic
+equivalence with `simple_compile`, invalid/unsupported input failure without
+partial artifacts, and source/pipeline/target/emission identity binding.
 
-**Why a new verdict type is necessary:** no existing authoritative type can
-express the complete verified requirement. Core `RequirementSet` and
-`CapabilityMatchResult` intentionally omit legacy gate-parameter coverage,
-ancilla-policy ordering, deferred fields, and the original typed comparator
-issues. `CapabilityComparison` preserves those issues but has no projection
-identity, loss-accounting identity, or required/available semantic fingerprints;
-`CompilerRequirementProjection` binds only the required side. The frozen
-`CompilerLegalityVerdict` is therefore the smallest Compiler-owned combination
-of the unchanged comparison, both semantic identities, and explicit loss
-evidence. It remains internal and carries no Runtime execution authority.
+No new legality contract is retained in this round. Existing target capability
+coverage stays expressed by `CompilerRequirementProjection.compare_available()`
+and its authoritative `CapabilityComparison` result. This keeps the inventory
+focused on the current Compiler behavior and the smallest CPU migration slice.
 
 ## Core contract proposal
 
