@@ -203,6 +203,23 @@ the current optimizer, invalid/unsupported fail-closed behavior without partial
 artifacts, and the source/pipeline/target/emission identity chain. They are evidence
 for the candidate slice, not authorization to switch it on.
 
+## Human-maintainability notes for the next slice
+
+**Primary domain:** Compiler. The first migration candidate remains the static
+canonicalization path behind `compilation.compiler.simple_compile`; this
+inventory does not authorize changing the default dispatch or public API.
+
+**Readable scenario:**
+`tests/team/compiler/test_static_pipeline_characterization.py` is the existing
+ten-minute path. It demonstrates deterministic cache behavior, semantic
+equivalence with `simple_compile`, invalid/unsupported input failure without
+partial artifacts, and source/pipeline/target/emission identity binding.
+
+No new legality contract is retained in this round. Existing target capability
+coverage stays expressed by `CompilerRequirementProjection.compare_available()`
+and its authoritative `CapabilityComparison` result. This keeps the inventory
+focused on the current Compiler behavior and the smallest CPU migration slice.
+
 ## Core contract proposal
 
 No protected Core file is changed by this work. The Core/integration teams should
