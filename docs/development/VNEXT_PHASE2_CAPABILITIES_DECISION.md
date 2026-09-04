@@ -100,3 +100,20 @@ provider/hardware 接入，也不构成国产硬件、FlagCX、多节点、QPU�
 6. 各延后域逐项提交 contract proposal；真实硬件能力另走认证路径。
 
 机器可读授权：`contracts/target-capabilities-v1-implementation-authorization.json`。
+
+## Phase 2 集成收口状态（2026-09-04）
+
+上述顺序的内部最小闭环已在集成提交 `0f63c3b4` 完成：Core contract/matcher、Compiler adapter、
+CPU Platform producer、Runtime policy seam，以及 synthetic Execution 第二 producer replacement
+conformance 均已合入并通过总控定向验证。Runtime 合入后为 `121 passed`，第二 producer 修复后为
+`118 passed`；两次均通过 architecture、team scope、Ruff 与 diff check。
+
+这里的“完成”只表示本裁决批准的内部边界闭环完成。Runtime seam 不在默认执行路径，内部 decision
+record 不是稳定 Execution Request/Result/Evidence；synthetic producer 不访问网络、provider SDK 或
+真实硬件。公共 API、默认 backend/fallback、plan/result、actual execution evidence、真实 provider/
+hardware 和所有延后域仍未授权。
+
+下一阶段应先偿还 Runtime candidate provenance/非 CPU fallback 可信绑定、Compiler legacy comparator
+共判接线和剩余确定性/CPU full-rematch 测试债务；之后再单独评审 execution observation/evidence
+proposal 与真实国产 Platform adapter 的认证前置工作。本状态记录不自动启动这些任务，也不修改本
+裁决的机器授权边界。

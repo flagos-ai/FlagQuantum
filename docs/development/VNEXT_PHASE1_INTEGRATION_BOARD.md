@@ -93,16 +93,17 @@ Phase 1 完成了三个相互依赖的最小切片：
 
 ## 7. Phase 2 当前状态（2026-09-04）
 
-本节是对 Runtime 后续提交的集成准入约束，不表示 Runtime matching、fallback 或 decision
-record 已经成为产品能力。当前审查基线为集成提交 `c30316b9`。
+本节记录 TargetCapabilities Phase 2 内部最小切片的集成结果，不表示 Runtime matching、
+fallback、decision record 或 synthetic producer 已经成为公共、默认或生产能力。收口审查基线为
+集成提交 `0f63c3b4`。
 
-| 顺序 | Phase 2 切片 | 集成提交 | 当前结论 |
-| ---: | --- | --- | --- |
-| 1 | Core `TargetCapabilities` v1 值对象、canonical identity 与纯 matcher | `d7fad5e4`，含后续 nullable-fact 修正 `2083dd2e`、`35f1adb0` | 已合入；保持内部、无 policy、无 fallback |
-| 2 | Compiler `_compiler.TargetCapabilities` 损失记账 adapter | `1a501d8a` | 已合入；未覆盖字段仍须旧 comparator 判定，不得仅凭 Core matcher 放行 |
-| 3 | CPU Platform capability snapshot adapter | `c30316b9` | 已合入；只生产独立 CPU snapshot，不发现目标、不选择 backend、不授权 fallback |
-| 4 | Runtime TargetCapabilities matching seam | — | 待 Runtime 提交并按下列清单验收；尚未实现或进入默认路径 |
-| 5 | 第二个独立 Platform/remote producer 替换 conformance | — | 待 matching seam 通过后实施，不得用 Runtime 私有 snapshot 类型代替 |
+| 顺序 | Phase 2 切片 | 团队提交 | 集成提交 | 当前结论 |
+| ---: | --- | --- | --- | --- |
+| 1 | Core `TargetCapabilities` v1 值对象、canonical identity 与纯 matcher | `69816f42`，后续修正至 `34580bcd` | `d7fad5e4`、`2083dd2e`、`35f1adb0` | 已合入；保持内部、无 policy、无 fallback |
+| 2 | Compiler `_compiler.TargetCapabilities` 损失记账 adapter | `8c3e367e` | `1a501d8a` | 已合入；未覆盖字段仍须旧 comparator 判定，不得仅凭 Core matcher 放行 |
+| 3 | CPU Platform capability snapshot adapter | `38e8bf61` | `c30316b9` | 已合入；只生产独立 CPU snapshot，不发现目标、不选择 backend、不授权 fallback |
+| 4 | Runtime TargetCapabilities matching seam | `935adb25`（实现系列始于 `4c8732e9`） | `b6403927` | 已合入并验证；仅为未接管默认路径的内部 policy seam |
+| 5 | synthetic Execution 第二 producer replacement conformance | `110ce4a1`（实现系列始于 `6f87da7d`） | `0f63c3b4` | 已合入并验证；只证明同一 Runtime consumer 可替换 producer，不代表真实 remote/QPU |
 
 ARCH-003/004/005/007 仍为 **Proposed**。现有 Phase 2 机器授权只允许内部
 TargetCapabilities v1、窄 adapter 和 Runtime matching seam；它不批准新的公共
@@ -111,97 +112,103 @@ Execution Request、Execution Result/Evidence、稳定 plan 字段、默认 back
 
 ## 8. Runtime TargetCapabilities matching seam 逐项验收清单
 
+清单中的 `[x]` 表示当前内部切片有实现与测试证据；`[ ]` 表示仍延后或证据不完整。勾选不改变
+capability maturity，也不产生公共、默认、硬件或生产声明。
+
 ### 8.1 输入权威与范围
 
-- [ ] Runtime 直接消费 Core `RequirementSet`、`TargetCapabilitySnapshot` 和纯 matcher 结果；不复制、
+- [x] Runtime 直接消费 Core `RequirementSet`、`TargetCapabilitySnapshot` 和纯 matcher 结果；不复制、
   re-export、子类化或私建平行 capability 契约。
 - [ ] Compiler 投影的 `requires_legacy_comparator` 和每条 loss 均被保留；只要该标记为真，旧
-  `_compiler` comparator 未通过就不得选择候选。
-- [ ] Runtime policy 只消费 requirement、snapshot、受控资源信息和显式授权；不得用用户期望、
+  `_compiler` comparator 未通过就不得选择候选。当前 seam 尚未接入 Compiler projection，此项作为
+  必要技术债延后。
+- [x] Runtime policy seam 只消费 requirement、snapshot 和显式授权；不得用用户期望、
   `world_size`、环境变量、Simulation 估算或 backend registry 布尔值补写平台事实。
-- [ ] v1 延后域和未知 extension 没有登记 matcher handler 时失败关闭；不得为了接入动态、拓扑、
+- [x] v1 延后域和未知 extension 没有登记 matcher handler 时由 Core matcher 失败关闭；不得为了接入动态、拓扑、
   通信、checkpoint 或 realtime 而扩张本切片的公共契约。
 
 ### 8.2 Mandatory fail-closed 与 preference 排序
 
-- [ ] 每个候选先由 Core matcher 完整验证 identity、scope、freshness、证据引用和所有 mandatory
+- [x] 每个候选先由 Core matcher 完整验证 identity、scope、freshness、证据引用和所有 mandatory
   谓词；missing、stale、scope/identity mismatch、`unknown`、`unmeasured`、`unsupported`、
   `not_exposed`、不被接受的 exposure、证据不足和未知 extension 均使该候选不可执行。
-- [ ] Runtime policy 不得覆盖 mandatory blocker，不得以成本更低、目标优先级更高或仅有一个候选
+- [x] Runtime policy 不得覆盖 mandatory blocker，不得以成本更低、目标优先级更高或仅有一个候选
   为由放行。
-- [ ] preference 只对已经满足全部 mandatory 的候选排序；未满足 preference 只降低排序，不生成
+- [x] preference 只对已经满足全部 mandatory 的候选排序；未满足 preference 只降低排序，不生成
   fallback 授权，也不能补偿任何 mandatory 失败。
-- [ ] 若所有候选均失败，返回聚合后的 typed blockers；不得选择“最接近”的候选或静默进入现有
+- [x] 若所有候选均失败，返回聚合后的 typed blockers；不得选择“最接近”的候选或静默进入现有
   默认 backend。
 
 ### 8.3 候选顺序确定性
 
-- [ ] 同一 `RequirementSet`、同一组 snapshot、同一 policy 输入和同一评估时间产生相同的候选顺序、
+- [x] 同一 `RequirementSet`、同一组 snapshot、同一 policy 输入和同一评估时间产生相同的候选顺序、
   选择结果和 decision identity。
-- [ ] 排序键使用版本化、显式的确定性字段：先可执行性，再 preference 满足度，再受控 policy
+- [x] 排序键使用版本化、显式的确定性字段：先可执行性，再 preference 满足度，再受控 policy
   priority，最后以稳定 target/snapshot identity 打破平局；禁止依赖 dict/set 顺序、并发完成顺序、
   discovery timing、对象地址或进程 hash seed。
-- [ ] 输入 snapshot 顺序置换、重复发现去重和相同分数平局均有负向/变形测试；重复 identity 但语义
-  不同必须失败，而不是后写覆盖。
+- [x] 输入 snapshot 顺序置换、重复 candidate/snapshot/target identity 和相同分数平局已有负向或
+  变形测试；重复 identity 但语义不同失败，不采用后写覆盖。独立子进程 hash-seed 测试仍列在
+  8.8 的补证项，不影响当前显式排序键结论。
 
 ### 8.4 CPU 独立候选与完整重匹配
 
-- [ ] 显式请求 CPU 时，CPU 作为普通独立候选参与匹配；从非 CPU 候选转向 CPU 时，只有
+- [x] 显式请求 CPU 时，CPU 作为普通独立候选参与匹配；从非 CPU 候选转向 CPU 时，只有
   `fallback_authorizations.cpu=true` 才允许创建该 fallback 候选。
-- [ ] CPU 候选使用自己的 target identity、scope、freshness、facts、evidence refs 和 blockers，
-  对所有仍适用 mandatory 谓词以及必需的旧 Compiler comparator 做完整重匹配。
-- [ ] 不复用原候选的 memory、precision、device count、route、evidence、租约或 matcher 成功；CPU
+- [x] CPU 候选使用自己的 target identity、scope、freshness、facts、evidence refs 和 blockers，
+  对所有 Core mandatory 谓词做完整重匹配。旧 Compiler comparator 共判仍按 8.1 延后。
+- [x] 不复用原候选的 memory、precision、device count、route、evidence、租约或 matcher 成功；CPU
   memory/precision 为 nullable unknown 时，对相应 mandatory requirement 必须失败关闭。
-- [ ] 设备解析失败、候选为空、probe 不可用或 CPU 在本机可用，都不能把 CPU 变成隐式 resolver
+- [x] 设备解析失败、候选为空、probe 不可用或 CPU 在本机可用，都不能把 CPU 变成隐式 resolver
   默认值。
 
 ### 8.5 Fallback 分轴授权
 
-- [ ] `backend`、`device`、`cpu`、`precision`、`algorithm`、`approximation` 六轴分别读取明确授权，
+- [x] `backend`、`device`、`cpu`、`precision`、`algorithm`、`approximation` 六轴分别读取明确授权，
   缺省均为 false；一个轴的授权不得推出另一个轴。
-- [ ] 每次 fallback 都创建具有自身 snapshot/约束的替代候选并完整重匹配；不得原地修改已失败候选、
+- [x] 每次 fallback 都以具有自身 snapshot/约束的显式替代候选完整重匹配；不得原地修改已失败候选、
   删除 mandatory requirement 或把 preference 改成授权。
-- [ ] Runtime policy、provider 声明和历史宽泛 `allow_backend_fallback` 不得推导 CPU、precision、
+- [x] Runtime policy、provider 声明和历史宽泛 `allow_backend_fallback` 不得推导 CPU、precision、
   algorithm 或 approximation 授权。
-- [ ] 实际 fallback 必须在内部 decision/attempt evidence 中可见并降低不再成立的 claim ceiling；若
-  需要改变稳定 plan/result 字段、identity 或异常行为，必须停止并提交独立 API Change Proposal。
+- [ ] 已选择的 fallback 已进入内部 decision record，但 attempt evidence 与 claim-ceiling 关联尚未
+  实现；若需要改变稳定 plan/result 字段、identity 或异常行为，必须停止并提交独立 API Change
+  Proposal。
 
 ### 8.6 Typed blocker 与 decision identity
 
-- [ ] blocker 保留 Core typed code、message、capability name 及来源上下文；Runtime 聚合使用稳定排序
-  和确定性去重，不将 blocker 降为自由字符串、布尔失败或吞入日志。
-- [ ] 每个被评估候选保留其 snapshot identity 与 blockers；被拒候选的失败证据不得被最终成功候选
+- [ ] blocker 已保留 Core typed code、message、capability name 及来源上下文，并按确定候选顺序聚合；
+  独立的 blocker canonical dedupe 规则尚未冻结。不得将 blocker 降为自由字符串、布尔失败或吞入日志。
+- [x] 每个被评估候选保留其 snapshot identity 与 blockers；被拒候选的失败证据不得被最终成功候选
   覆盖，preference miss 也不得误报为 fatal blocker。
-- [ ] 内部 decision record 至少绑定 `requirement_set_id`、有序候选 snapshot identities、选中
-  snapshot/target identity、评估时间、policy/逐轴 fallback 授权 identity、matcher blockers、排序键
-  版本及实际采用的 fallback 轴。
-- [ ] decision identity 由上述语义字段 canonical 计算；显示文本、运行时对象、凭据、vendor handle
+- [ ] 内部 decision record 已绑定 `requirement_set_id`、有序候选 snapshot identities、选中
+  snapshot/target identity、评估时间、逐轴 fallback 授权 identity、matcher blockers、排序键版本及
+  实际采用的 fallback 轴；独立 policy/candidate provenance identity 尚未冻结，列为必要技术债。
+- [x] decision identity 由上述语义字段 canonical 计算；显示文本、运行时对象、凭据、vendor handle
   和无序容器不得参与，任何 requirement、snapshot、policy 授权或候选顺序变化都必须改变 identity。
-- [ ] 本切片的 decision record 只能是内部 seam；ARCH-004/005 获批前，不得声称它是公共
+- [x] 本切片的 decision record 只存在于内部 seam；ARCH-004/005 获批前，不得声称它是公共
   Execution Request/Result/Evidence 契约，也不得修改现有 plan/result identity。
 
 ### 8.7 公共 API、默认路径与分层保护
 
-- [ ] `flagquantum` 根导出、稳定签名/default/Literal、序列化 schema、异常类别和失败阶段完全不变。
-- [ ] 现有 `fq.run`、`fq.plan`、默认 backend/device 选择及 local CPU/single-device fast path 行为保持
+- [x] `flagquantum` 根导出、稳定签名/default/Literal、序列化 schema、异常类别和失败阶段完全不变。
+- [x] 现有 `fq.run`、`fq.plan`、默认 backend/device 选择及 local CPU/single-device fast path 行为保持
   golden/兼容测试不变；新 seam 在单独批准前不接管默认路径。
-- [ ] Runtime 不重写 Simulation 的算法约束或成本模型，不把估算当可用容量；Simulation 也不读取
+- [x] 本切片未接入 Simulation，也不重写其算法约束或成本模型，不把估算当可用容量；Simulation 也不读取
   环境或选择物理 target。分层是所有权边界，不是阻断类型化信息交换。
-- [ ] Runtime/Core/Compiler/Platform 的生产文件若超出各自 owner 或触及受保护 surface，提交必须拆回
+- [x] 本轮各实现提交通过 team scope 和 architecture 检查；Runtime/Core/Compiler/Platform 的生产文件若超出各自 owner 或触及受保护 surface，仍必须拆回
   对应团队或先走 Integration/API proposal，不得把跨层改动夹带在 Runtime 切片中。
 
 ### 8.8 Runtime 提交必须提供的测试证据
 
-- [ ] mandatory 状态、exposure、evidence、stale、scope、identity 与 unknown-extension 的参数化负向
-  测试，证明 policy 无法越过 Core matcher。
-- [ ] preference 仅排序、全候选失败、平局及输入置换/hash-seed 下候选顺序和 decision identity
-  确定性测试。
-- [ ] CPU 独立 full-rematch 的正向与负向测试，至少覆盖 device count、memory、native/effective
-  precision、CPU 未授权、只有 backend 授权以及 unavailable CPU。
-- [ ] 六个 fallback 轴的默认禁止和两两隔离测试；每个获授权 fallback 仍须证明替代候选全量匹配。
-- [ ] Compiler loss-accounting/legacy comparator 共判测试，以及替换 CPU producer 为第二个 contract
-  fake 后 Runtime consumer 无需修改的 conformance 测试。
-- [ ] Stable API snapshot、`fq.run/plan` 默认路径和 local fast path 回归测试；任何 accelerator、QPU、
+- [x] mandatory 状态、exposure、evidence、stale、scope、identity 与 unknown-extension 的 Core/Runtime
+  负向测试证明 policy 无法越过 Core matcher。
+- [ ] preference 仅排序、全候选失败、平局、输入置换和 decision identity 已覆盖；独立子进程
+  hash-seed 测试仍需补充，属于确定性防回归技术债。
+- [ ] CPU 独立 full-rematch 已覆盖 memory、身份、未授权 CPU、只有 backend 授权和 unavailable/missing
+  facts；device-count 与 native/effective precision 的专项负向矩阵仍需补证。
+- [x] 六个 fallback 轴的默认禁止和隔离测试已覆盖；获授权候选仍经过同一个 Core 全量匹配入口。
+- [ ] synthetic 第二 producer 已证明替换 CPU producer 时 Runtime consumer 无需修改；Compiler
+  loss-accounting/legacy comparator 尚未接入 Runtime seam，前半项仍延后。
+- [x] Stable API、`fq.run/plan` 默认路径和 local fast path 回归边界保持；任何 accelerator、QPU、
   多节点或 scalability 表述都必须保持未验证，不能由本切片测试提升。
 
 ## 9. 当前规范缺口与准入裁决
@@ -211,7 +218,51 @@ Execution Request、Execution Result/Evidence、稳定 plan 字段、默认 back
    稳定 plan/result；若实现需要这种变化，当前切片必须暂停并转为 API Change Proposal。
 2. Compiler adapter 对 gate parameter domains 与 ancilla policy 等字段仍是有损投影，并明确要求旧
    comparator。因此 Runtime 不能把 Core matcher 的 `executable=true` 等同于完整 Compiler 合法性。
-3. 当前只有 CPU Platform producer 已通过实现验证，尚不满足“两个独立 producer 可替换而消费者不
-   修改”的架构完成条件。第二 producer 是 Runtime seam 通过后的准入项，不得提前宣称边界已完成。
+3. CPU Platform producer 与 synthetic Execution producer 已通过同一 Runtime consumer 的替换
+   conformance，满足本阶段最小“两个 producer”边界证明；synthetic fixture 不是网络、真实 provider、
+   QPU 或硬件证据，不能据此提升 capability maturity。
 4. dynamic、checkpoint、realtime、完整 topology/communication、gradient/optimizer distribution
    仍在 v1 延后域；本清单只规定失败关闭和 extension 门槛，不授权这些能力或其发布声明。
+
+## 10. Phase 2 最小闭环与独立验证
+
+Phase 2 的内部最小闭环已经形成：Core contract 与纯 matcher → Compiler loss-accounted adapter →
+CPU Platform producer → Runtime policy seam → synthetic Execution 第二 producer replacement
+conformance。闭环只证明内部类型、匹配、排序、fallback 授权、decision identity 和 producer
+替换边界可以协作；它没有接管公共 API 或默认执行路径，也没有产生实际 execution observation。
+
+总控独立验证记录：
+
+- Runtime 合入 `b6403927` 后，定向联合集合 `121 passed`；architecture、team scope、Ruff 和 diff
+  check 均通过；
+- synthetic 第二 producer 修复并合入 `0f63c3b4` 后，定向联合集合 `118 passed`；architecture、
+  team scope、Ruff 和 diff check 均通过。
+
+真实 provider/hardware、公共 API、默认路径、执行结果/evidence、claim promotion，以及 v1 deferred
+domains 均未获本闭环授权。`synthetic_qpu` 只是匿名测试值，不能描述为 QPU 接入或远程执行能力。
+
+## 11. 下一阶段建议（不自动启动）
+
+### 11.1 必要技术债
+
+1. **Runtime candidate provenance 与非 CPU fallback 可信绑定**：让 candidate 的来源、相对原请求的
+   变化和每个 fallback 轴由可验证 diff/adapter provenance 支撑，不能永久信任调用者自报的
+   `fallback_axes`；同时冻结聚合 blocker 和 policy identity 的最小内部语义。
+2. **Compiler legality 共判接线**：在不改变默认路径的前提下，让 Runtime seam 消费 Compiler
+   projection 的 loss record，并在 `requires_legacy_comparator=true` 时强制旧 comparator 通过。
+3. **验收矩阵补证**：补充独立 hash-seed、CPU device-count、native/effective precision full-rematch
+   负向测试。以上均是已批准 seam 的完整性债务，不是新产品能力。
+
+### 11.2 未来功能与契约工作
+
+4. **Execution observation/evidence proposal**：先收敛 attempt identity、actual target/path、fallback、
+   precision、distribution 与 claim ceiling 的旁路 envelope；ARCH-004/005 仍为 Proposed，获批前不改
+   稳定 plan/result。
+5. **真实国产 Platform adapter 的认证前置工作**：先定义厂商无关 probe、物理设备身份、原生精度、
+   kernel residency、route/no-fallback、证据 digest 与认证环境；A800 或 synthetic 结果不能替代国产
+   硬件材料。真实 adapter、远程任务和能力声明须另行授权。
+6. dynamic、checkpoint/realtime、完整 topology/communication 和训练分布语义继续按独立 proposal
+   排队，不并入 TargetCapabilities v1。
+
+推荐顺序为 1 → 2 → 3 → 4 → 5；第 6 项按真实用例和证据成熟度逐域启动。本看板只给出排序，
+不自动创建或授权任何下一阶段实现任务。
