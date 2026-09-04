@@ -157,6 +157,23 @@ def build_local_tensor_network(
     return plan
 
 
+def ensure_local_tensor_network_plan(
+    plan_or_circuit: TensorNetworkContractionPlan | Any,
+) -> TensorNetworkContractionPlan:
+    """Return an existing plan or build one with the caller's local settings."""
+
+    if isinstance(plan_or_circuit, TensorNetworkContractionPlan):
+        return plan_or_circuit
+    if isinstance(plan_or_circuit, Circuit):
+        return build_local_tensor_network(
+            plan_or_circuit,
+            bsz=plan_or_circuit.bsz,
+            device=plan_or_circuit.device,
+            dtype=plan_or_circuit.dtype,
+        )
+    return build_local_tensor_network(plan_or_circuit)
+
+
 def run_local_tensor_network(
     circuit_or_ir: Any,
     *,

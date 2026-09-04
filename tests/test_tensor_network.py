@@ -10,6 +10,7 @@ import flagquantum.compilation.planner as fqxp
 import flagquantum.runtime.distributed.tensor_network_execution as fqxd
 import flagquantum.simulation.tensor as tensor_runtime
 import flagquantum.simulation.tensor_execution as tensor_execution
+import flagquantum.simulation.tensor_observables as tensor_observables
 from flagquantum.compilation import build_tn_working_set_calibration
 from flagquantum.runtime.backends.tensor_network import (
     DistributedTNWorkingSetPolicy,
@@ -32,16 +33,16 @@ def test_tensor_network_bell_state_matches_statevector():
 
 
 def test_hamiltonian_mpo_compression_is_reused_for_static_observable(monkeypatch):
-    tensor_execution._PAULI_MPO_CORE_CACHE.clear()
+    tensor_observables._PAULI_MPO_CORE_CACHE.clear()
     calls = 0
-    original = tensor_execution._compress_pauli_sum_mpo
+    original = tensor_observables._compress_pauli_sum_mpo
 
     def counted(*args, **kwargs):
         nonlocal calls
         calls += 1
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(tensor_execution, "_compress_pauli_sum_mpo", counted)
+    monkeypatch.setattr(tensor_observables, "_compress_pauli_sum_mpo", counted)
     target = fq.Hamiltonian(
         [fq.pauli_term(-1.0, "ZZ", (0, 1)), fq.pauli_term(-0.7, "X", (0,))]
     )
@@ -119,6 +120,23 @@ def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
             },
         )
     ]
+
+
+def test_tensor_network_observable_wrapper_delegates_plan_builder(monkeypatch):
+    expected = object()
+    calls = []
+
+    def replacement(plan_or_circuit, **axes):
+        calls.append((plan_or_circuit, axes))
+        return expected
+
+    monkeypatch.setattr(
+        tensor_execution, "_build_tensor_network_expectation", replacement
+    )
+    circuit = fq.Circuit(2).h(0)
+
+    assert fq.build_tensor_network_expectation(circuit, x=(0,), z=(1,)) is expected
+    assert calls == [(circuit, {"x": (0,), "y": None, "z": (1,)})]
 
 
 def test_tensor_network_alias_and_top_level_runner():
