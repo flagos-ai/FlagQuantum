@@ -229,13 +229,16 @@ class SplitRealImagPrecisionGradientResult:
 def _double_single_term_expectation(
     state: SplitRealImagStatevectorResult, term: _PauliTerm, *, n_wires: int
 ) -> DoubleSingleTensor:
-    from .split_real_imag import _apply_gate_pair, _fixed_matrix
+    from ....simulation.split_real_imag_statevector import (
+        apply_gate_pair,
+        fixed_matrix_pair,
+    )
 
     transformed_real = state.real
     transformed_imag = state.imag
     for wire, name in term.ops:
-        matrix_real, matrix_imag = _fixed_matrix(name, device=state.device)
-        transformed_real, transformed_imag = _apply_gate_pair(
+        matrix_real, matrix_imag = fixed_matrix_pair(name, device=state.device)
+        transformed_real, transformed_imag = apply_gate_pair(
             transformed_real,
             transformed_imag,
             matrix_real,

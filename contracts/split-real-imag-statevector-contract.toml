@@ -2,6 +2,7 @@
 schema = "flagquantum_split_real_imag_statevector_contract_v1"
 maturity = "experimental"
 implementation = "flagquantum.runtime.backends.statevector.split_real_imag"
+gate_implementation = "flagquantum.simulation.split_real_imag_statevector"
 operator_profile = "split_real_imag_statevector_p0"
 representation = "split_real_imag"
 storage_dtype = "float32"

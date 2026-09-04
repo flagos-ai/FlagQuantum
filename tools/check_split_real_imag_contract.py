@@ -16,6 +16,7 @@ except ModuleNotFoundError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "split-real-imag-statevector-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum/runtime/backends/statevector/split_real_imag.py"
+KERNEL = ROOT / "flagquantum/simulation/split_real_imag_statevector.py"
 PROFILE = ROOT / "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json"
 
 
@@ -38,6 +39,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "schema": "flagquantum_split_real_imag_statevector_contract_v1",
         "maturity": "experimental",
         "implementation": "flagquantum.runtime.backends.statevector.split_real_imag",
+        "gate_implementation": "flagquantum.simulation.split_real_imag_statevector",
         "operator_profile": "split_real_imag_statevector_p0",
         "representation": "split_real_imag",
         "storage_dtype": "float32",
@@ -73,11 +75,14 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     if not required_unsupported <= unsupported:
         errors.append("split real/imag fail-closed scope drifted")
 
-    tree = ast.parse(IMPLEMENTATION.read_text(encoding="utf-8"))
+    implementation_source = IMPLEMENTATION.read_text(encoding="utf-8")
+    kernel_source = KERNEL.read_text(encoding="utf-8")
+    tree = ast.parse(implementation_source)
+    kernel_tree = ast.parse(kernel_source)
     gates_node = next(
         (
             node
-            for node in tree.body
+            for node in kernel_tree.body
             if isinstance(node, ast.Assign)
             and any(
                 isinstance(target, ast.Name)
@@ -95,11 +100,11 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append("split real/imag supported gates drifted from contract")
 
     executor_names = {
-        "_instruction_matrix_pair",
-        "_apply_gate_pair",
+        "instruction_matrix_pair",
+        "apply_gate_pair",
         "execute_split_real_imag_statevector",
     }
-    for node in tree.body:
+    for node in (*tree.body, *kernel_tree.body):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         if node.name not in executor_names:
@@ -114,7 +119,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append(
                 f"{node.name} materializes complex tensors: {sorted(forbidden)}"
             )
-    source = IMPLEMENTATION.read_text(encoding="utf-8")
+    source = implementation_source + kernel_source
     if "torch.cuda" in source or "torch_fl" in source:
         errors.append("split executor must remain platform-neutral")
 

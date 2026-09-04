@@ -28,6 +28,10 @@ normalization numerics used by its P3 and P4 executors.
 Runtime retains precision authorization, platform selection, execution evidence,
 and conformance reporting.
 
+`split_real_imag_statevector.py` owns P0/P1's FP32 real/imag gate matrices and
+flat-state gate application. Runtime retains parameter binding, preflight,
+platform selection, observables, result construction, and conformance reporting.
+
 `mps_local.py` owns the single-device, noiseless MPS instruction loop.
 `mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory
 and accepts an initialized MPS plus an explicit random generator.
