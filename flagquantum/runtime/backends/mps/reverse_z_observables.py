@@ -8,10 +8,8 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
-from ....simulation.mps_site_kernels import (
-    environment_transfer,
-    environment_transfer_channels,
-)
+from ....simulation.mps_observables import mps_z_zz_local_scan
+from ....simulation.mps_reverse import mps_vjp
 from .reverse_observables import (
     SiteShardedZZScanResult,
     mps_expectation_and_adjoints,
@@ -93,11 +91,6 @@ def mps_site_sharded_z_zz_scan(
         else:
             zz_terms.setdefault(wires[1], []).append(index)
 
-    def transfer_channels(channels: torch.Tensor, tensor: torch.Tensor) -> torch.Tensor:
-        return environment_transfer_channels(
-            channels, tensor, compiled=compiled_observables
-        )
-
     local_inputs = local_outputs = local_variables = None
     carry = None
     with record_function("flagquantum::mps::left_environment_scan"):
@@ -122,31 +115,14 @@ def mps_site_sharded_z_zz_scan(
                     .requires_grad_(compute_objective_adjoint)
                     for wire in state.ownership[owner]
                 )
-                norm, previous_z, *channel_values = inputs
-                channels = torch.stack(channel_values)
-                for wire, tensor in zip(state.ownership[owner], variables):
-                    next_norm = environment_transfer(
-                        norm, tensor, z=False, compiled=compiled_observables
-                    )
-                    next_z = environment_transfer(
-                        norm, tensor, z=True, compiled=compiled_observables
-                    )
-                    next_channels = transfer_channels(channels, tensor)
-                    channel_list = list(next_channels.unbind(0))
-                    for index in z_terms.get(wire, ()):
-                        channel_list[index] = next_z
-                    if wire in zz_terms:
-                        next_zz = environment_transfer(
-                            previous_z, tensor, z=True, compiled=compiled_observables
-                        )
-                        for index in zz_terms[wire]:
-                            channel_list[index] = next_zz
-                    norm, previous_z, channels = (
-                        next_norm,
-                        next_z,
-                        torch.stack(channel_list),
-                    )
-                outputs = (norm, previous_z) + tuple(channels.unbind(0))
+                outputs = mps_z_zz_local_scan(
+                    inputs,
+                    variables,
+                    state.ownership[owner],
+                    z_terms,
+                    zz_terms,
+                    compiled=compiled_observables,
+                )
                 local_inputs, local_outputs, local_variables = (
                     inputs,
                     outputs,
@@ -198,19 +174,20 @@ def mps_site_sharded_z_zz_scan(
                 if owner == state.world_size - 1:
                     assert differentiable_values is not None
                     objective = (differentiable_values - targets).square().mean()
-                    derivatives = torch.autograd.grad(
-                        objective,
-                        local_inputs + local_variables,
-                        allow_unused=True,
+                    derivatives = mps_vjp(
+                        (objective,),
+                        local_inputs,
+                        local_variables,
+                        (torch.ones_like(objective),),
                     )
                     loss = objective.detach()
                 else:
                     assert output_grads is not None
-                    derivatives = torch.autograd.grad(
+                    derivatives = mps_vjp(
                         local_outputs,
-                        local_inputs + local_variables,
-                        grad_outputs=output_grads,
-                        allow_unused=True,
+                        local_inputs,
+                        local_variables,
+                        output_grads,
                     )
                 input_grads = tuple(
                     torch.zeros_like(value) if grad is None else grad
@@ -331,32 +308,15 @@ def site_sharded_z_zz_objective_pipeline(
                 state.local_tensors[wire].detach().requires_grad_(True)
                 for wire in state.ownership[state.rank]
             )
-            norm, previous_z, *channel_values = inputs
-            channels = torch.stack(channel_values)
             with record_function(f"flagquantum::mps::pipeline_forward_slot_{slot}"):
-                for wire, tensor in zip(state.ownership[state.rank], variables):
-                    next_norm = environment_transfer(
-                        norm, tensor, z=False, compiled=compiled_observables
-                    )
-                    next_z = environment_transfer(
-                        norm, tensor, z=True, compiled=compiled_observables
-                    )
-                    next_channels = environment_transfer_channels(
-                        channels, tensor, compiled=compiled_observables
-                    )
-                    channel_list = list(next_channels.unbind(0))
-                    for index in z_terms.get(wire, ()):
-                        channel_list[index] = next_z
-                    for index in zz_terms.get(wire, ()):
-                        channel_list[index] = environment_transfer(
-                            previous_z, tensor, z=True, compiled=compiled_observables
-                        )
-                    norm, previous_z, channels = (
-                        next_norm,
-                        next_z,
-                        torch.stack(channel_list),
-                    )
-            outputs = (norm, previous_z) + tuple(channels.unbind(0))
+                outputs = mps_z_zz_local_scan(
+                    inputs,
+                    variables,
+                    state.ownership[state.rank],
+                    z_terms,
+                    zz_terms,
+                    compiled=compiled_observables,
+                )
             local_graphs.append((state, targets, inputs, outputs, variables))
             if state.rank < state.world_size - 1:
                 _send(
@@ -377,8 +337,11 @@ def site_sharded_z_zz_objective_pipeline(
                     [torch.real(channel[:, 0, 0]) for channel in outputs[2:]], dim=-1
                 )
                 objective = (values - targets).square().mean()
-                derivatives = torch.autograd.grad(
-                    objective, inputs + variables, allow_unused=True
+                derivatives = mps_vjp(
+                    (objective,),
+                    inputs,
+                    variables,
+                    (torch.ones_like(objective),),
                 )
                 loss = objective.detach()
             else:
@@ -386,11 +349,11 @@ def site_sharded_z_zz_objective_pipeline(
                     reference, source=state.rank + 1, sequence=4_500_000 + slot
                 )
                 with record_function(f"flagquantum::mps::pipeline_reverse_slot_{slot}"):
-                    derivatives = torch.autograd.grad(
+                    derivatives = mps_vjp(
                         outputs,
-                        inputs + variables,
-                        grad_outputs=tuple(received.unbind(0)),
-                        allow_unused=True,
+                        inputs,
+                        variables,
+                        tuple(received.unbind(0)),
                     )
                 loss = torch.zeros(
                     (), dtype=reference.real.dtype, device=reference.device

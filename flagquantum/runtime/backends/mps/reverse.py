@@ -13,6 +13,7 @@ from ....simulation.mps import (
     _split_pair_matrix,
     _split_pair_matrix_bucket,
 )
+from ....simulation.mps_observables import transfer_mps_operator_environment
 from ....simulation.mps_site_kernels import (
     apply_rxx_contraction_bucket,
     apply_ry_bucket,
@@ -45,7 +46,6 @@ from .reverse_observables import (
     mps_heisenberg_energy_and_adjoints,
     parse_mps_heisenberg_terms,
     parse_mps_z_zz_terms,
-    transfer_mps_operator_environment,
 )
 from .reverse_planning import (
     build_mps_parameter_layout,

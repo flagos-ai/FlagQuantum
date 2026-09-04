@@ -41,6 +41,8 @@ and tensor sizing.
 `mps_site_kernels.py` owns eager/compiled site kernels and their bounded
 compile cache. `mps_factorization.py` owns QR/SVD numerical routines, and
 `mps_reverse.py` owns rank-local adjoint projection and VJP evaluation.
+`mps_observables.py` owns local Pauli-environment, Z/ZZ-channel, and
+Heisenberg-MPO scans.
 Distributed ownership, transport ordering, memory budgets, microbatch
 selection, checkpointing, and evidence remain in Runtime.
 
@@ -80,12 +82,13 @@ python -m pytest tests/test_tensor_network.py -q
 For rank-local distributed-MPS math, start in `mps_rank_local.py`; for compiled
 site behavior, start in `mps_site_kernels.py`; for QR/SVD behavior, start in
 `mps_factorization.py`; for local VJP behavior, start in `mps_reverse.py`.
-Run:
+For observable contraction math, start in `mps_observables.py`. Run:
 
 ```bash
 python -m pytest tests/unit/test_mps_site_kernels.py \
   tests/unit/test_issue105_dynamic_bond_compile_cache.py \
   tests/unit/test_mps_reverse_numerics.py \
+  tests/unit/test_mps_observable_numerics.py \
   tests/unit/test_issue052_mps_training.py -q
 ```
 

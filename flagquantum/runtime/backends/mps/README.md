@@ -9,7 +9,9 @@ in `simulation/mps_rank_local.py`, compiled site kernels live in
 `simulation/mps_site_kernels.py`, and QR/SVD math lives in
 `simulation/mps_factorization.py`. Rank-local adjoint projection and VJP
 evaluation live in `simulation/mps_reverse.py`. Import these numerical owners
-directly; do not recreate Runtime aliases or a second implementation.
+directly; local observable contractions live in
+`simulation/mps_observables.py`. Do not recreate Runtime aliases or a second
+implementation.
 
 ## Ten-minute change path
 
@@ -20,6 +22,9 @@ directly; do not recreate Runtime aliases or a second implementation.
   `reverse_replay.py`.
 - Change rank-local adjoint projection or VJP evaluation in
   `simulation/mps_reverse.py`.
+- Change local observable environment or MPO contraction math in
+  `simulation/mps_observables.py`; change cross-rank scans and pipelines in
+  `reverse_observables.py` or `reverse_z_observables.py`.
 - Change memory admission or microbatch policy in `factorization.py`.
 - Change numerical tensor behavior in the corresponding Simulation module,
   not here.

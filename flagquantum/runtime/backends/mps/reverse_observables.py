@@ -10,6 +10,13 @@ import torch.distributed as dist
 from torch.profiler import record_function
 
 from ....ops.matrices import GATE_MAT_DICT
+from ....simulation.mps_observables import (
+    mps_heisenberg_local_scan,
+    mps_local_observable_adjoint,
+    transfer_mps_operator_environment,
+    transfer_mps_operator_right_environment,
+)
+from ....simulation.mps_reverse import mps_vjp
 from .reverse_transport import (
     receive_reverse_tensor,
     receive_static_reverse_tensor,
@@ -33,22 +40,6 @@ class SiteShardedZZScanResult:
     reverse_scans: int
     forward_messages: int
     reverse_messages: int
-
-
-def transfer_mps_operator_environment(
-    environment: torch.Tensor,
-    tensor: torch.Tensor,
-    operator: torch.Tensor,
-) -> torch.Tensor:
-    """Advance a batched MPS environment through one explicit operator."""
-
-    return torch.einsum(
-        "bij,bipr,pq,bjqs->brs",
-        environment,
-        tensor.conj(),
-        operator,
-        tensor,
-    )
 
 
 def mps_expectation_and_adjoints(
@@ -88,12 +79,10 @@ def mps_expectation_and_adjoints(
                     operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
                         device=tensor.device, dtype=tensor.dtype
                     )
-                    env = torch.einsum(
-                        "bij,bipr,pq,bjqs->brs",
+                    env = transfer_mps_operator_environment(
                         env,
-                        tensor.conj(),
-                        operator,
                         tensor,
+                        operator,
                     )
             if owner < state.world_size - 1:
                 sequence = 2_000_000 + owner
@@ -154,11 +143,9 @@ def mps_expectation_and_adjoints(
                     operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
                         device=tensor.device, dtype=tensor.dtype
                     )
-                    right = torch.einsum(
-                        "bipr,pq,bjqs,brs->bij",
-                        tensor.conj(),
-                        operator,
+                    right = transfer_mps_operator_right_environment(
                         tensor,
+                        operator,
                         right,
                     )
             if owner > 0:
@@ -179,22 +166,16 @@ def mps_expectation_and_adjoints(
     with record_function("flagquantum::mps::objective_adjoint"):
         for wire in sorted(local_adjoint_wires):
             tensor = state.local_tensors[wire]
-            variable = tensor.detach().requires_grad_(True)
             operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
                 device=tensor.device, dtype=tensor.dtype
             )
-            local_values = torch.real(
-                torch.einsum(
-                    "bij,bipr,pq,bjqs,brs->b",
-                    left_envs[wire],
-                    variable.conj(),
-                    operator,
-                    variable,
-                    right_envs[wire],
-                )
+            adjoints[wire] = mps_local_observable_adjoint(
+                tensor,
+                left_envs[wire],
+                right_envs[wire],
+                operator,
+                weights,
             )
-            scalar = torch.sum(weights * local_values)
-            adjoints[wire] = torch.autograd.grad(scalar, variable)[0].detach()
     return value, adjoints
 
 
@@ -230,47 +211,12 @@ def mps_heisenberg_energy_and_adjoints(
                     state.local_tensors[wire].detach().requires_grad_(True)
                     for wire in state.ownership[owner]
                 )
-                norm, open_x, open_y, open_z, energy = inputs
-                for wire, tensor in zip(state.ownership[owner], variables):
-                    operators = {
-                        name: GATE_MAT_DICT[name].to(tensor.device, tensor.dtype)
-                        for name in ("i", "x", "y", "z")
-                    }
-                    next_norm = transfer_mps_operator_environment(
-                        norm, tensor, operators["i"]
-                    )
-                    next_x = transfer_mps_operator_environment(
-                        norm, tensor, operators["x"]
-                    )
-                    next_y = transfer_mps_operator_environment(
-                        norm, tensor, operators["y"]
-                    )
-                    next_z = transfer_mps_operator_environment(
-                        norm, tensor, operators["z"]
-                    )
-                    next_energy = transfer_mps_operator_environment(
-                        energy, tensor, operators["i"]
-                    )
-                    next_energy = next_energy + field_z[wire] * next_z
-                    if wire > 0:
-                        for coupling, opened, axis in (
-                            (coupling_x, open_x, "x"),
-                            (coupling_y, open_y, "y"),
-                            (coupling_z, open_z, "z"),
-                        ):
-                            next_energy = next_energy + coupling[
-                                wire - 1
-                            ] * transfer_mps_operator_environment(
-                                opened, tensor, operators[axis]
-                            )
-                    norm, open_x, open_y, open_z, energy = (
-                        next_norm,
-                        next_x,
-                        next_y,
-                        next_z,
-                        next_energy,
-                    )
-                outputs = (norm, open_x, open_y, open_z, energy)
+                outputs = mps_heisenberg_local_scan(
+                    inputs,
+                    variables,
+                    state.ownership[owner],
+                    coefficients,
+                )
                 local_inputs, local_outputs, local_variables = (
                     inputs,
                     outputs,
@@ -307,19 +253,20 @@ def mps_heisenberg_energy_and_adjoints(
             if state.rank == owner:
                 if owner == state.world_size - 1:
                     objective = torch.real(local_outputs[-1][:, 0, 0]).mean()
-                    derivatives = torch.autograd.grad(
-                        objective,
-                        local_inputs + local_variables,
-                        allow_unused=True,
+                    derivatives = mps_vjp(
+                        (objective,),
+                        local_inputs,
+                        local_variables,
+                        (torch.ones_like(objective),),
                     )
                     value = objective.detach()
                 else:
                     assert output_grads is not None
-                    derivatives = torch.autograd.grad(
+                    derivatives = mps_vjp(
                         local_outputs,
-                        local_inputs + local_variables,
-                        grad_outputs=output_grads,
-                        allow_unused=True,
+                        local_inputs,
+                        local_variables,
+                        output_grads,
                     )
                 input_grads = tuple(
                     torch.zeros_like(item) if gradient is None else gradient
@@ -455,5 +402,4 @@ __all__ = (
     "mps_heisenberg_energy_and_adjoints",
     "parse_mps_heisenberg_terms",
     "parse_mps_z_zz_terms",
-    "transfer_mps_operator_environment",
 )
