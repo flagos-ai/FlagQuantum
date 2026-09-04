@@ -13,6 +13,13 @@ AUTHORIZATION = (
     ROOT / "contracts/ir-phase1-batch-f-performance-remediation-authorization.json"
 )
 ATTESTATION = ROOT / "contracts/ir-phase1-batch-f-performance-remediation.json"
+SUCCESS_CACHE_AUTHORIZATION = (
+    ROOT / "contracts/ir-phase1-import-success-cache-successor-authorization.json"
+)
+SUCCESS_CACHE_ATTESTATION = (
+    ROOT
+    / "tests/fixtures/internal_ir/phase1_import_success_cache_successor_candidate.json"
+)
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -34,8 +41,9 @@ def test_performance_remediation_binds_authorization_and_original_blocker() -> N
         _sha256(ROOT / authorization["batch_f_authorization"]["path"])
         == authorization["batch_f_authorization"]["sha256"]
     )
-    assert _sha256(ROOT / authorization["blocker"]["path"]) == (
-        authorization["blocker"]["sha256"]
+    assert (
+        _sha256(ROOT / authorization["blocker"]["path"])
+        == (authorization["blocker"]["sha256"])
     )
     assert authorization["approved_change"]["budget_change_allowed"] is False
 
@@ -47,17 +55,32 @@ def test_successor_preserves_history_and_binds_current_importer() -> None:
         "flagquantum/_compiler/importers/circuit_ir.py"
     ]
 
-    assert _sha256(ROOT / attestation["authorization"]["path"]) == (
-        attestation["authorization"]["sha256"]
+    assert (
+        _sha256(ROOT / attestation["authorization"]["path"])
+        == (attestation["authorization"]["sha256"])
     )
     assert _sha256(ROOT / historical["path"]) == historical["sha256"]
     assert historical["mutated"] is False
     assert successor["previous_sha256"] == (
         "3f8d18cccb05e5bf267d58aba3fbff3baa3579257c92da131f358fb71e606770"
     )
-    assert _sha256(ROOT / "flagquantum/_compiler/importers/circuit_ir.py") == (
-        successor["current_sha256"]
-    )
+    importer = ROOT / "flagquantum/_compiler/importers/circuit_ir.py"
+    actual_hash = _sha256(importer)
+    if actual_hash == successor["current_sha256"]:
+        assert not SUCCESS_CACHE_ATTESTATION.exists()
+    else:
+        authorization = _load(SUCCESS_CACHE_AUTHORIZATION)
+        attestation = _load(SUCCESS_CACHE_ATTESTATION)
+        implementation = attestation["implementation"]
+        assert (
+            _sha256(SUCCESS_CACHE_AUTHORIZATION)
+            == (attestation["authorization"]["sha256"])
+        )
+        assert authorization["status"] == "approved_pending_compiler_successor"
+        assert implementation["path"] == str(importer.relative_to(ROOT))
+        assert implementation["predecessor_sha256"] == successor["current_sha256"]
+        assert implementation["successor_sha256"] == actual_hash
+        assert implementation["successor_sha256_mode"] == "exact"
     assert successor["semantic_output_change"] is False
 
 

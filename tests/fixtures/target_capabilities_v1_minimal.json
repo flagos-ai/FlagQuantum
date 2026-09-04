@@ -1,0 +1,49 @@
+{
+  "blockers": [],
+  "captured_at": "2026-09-03T00:00:00Z",
+  "evidence_refs": [
+    {
+      "evidence_id": "probe-1",
+      "level": "observable",
+      "scope": {
+        "device_ids": ["cpu:0"],
+        "dtype": "complex128",
+        "kernel": "statevector",
+        "node_count": 1,
+        "workload_id": "fixture",
+        "world_size": 1
+      },
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "extensions": {},
+  "facts": [
+    {
+      "blockers": [],
+      "fact_exposure": "observed",
+      "name": "device.count",
+      "source": {"kind": "probe", "ref": "probe-1"},
+      "support_status": "verified",
+      "value": 4
+    }
+  ],
+  "schema_version": "1.0",
+  "scope": {
+    "device_ids": ["cpu:0"],
+    "dtype": "complex128",
+    "kernel": "statevector",
+    "node_count": 1,
+    "workload_id": "fixture",
+    "world_size": 1
+  },
+  "snapshot_id": "f1dd4c16165217478ba5c671b7f8fbe52de44edf0977d7f62ede19e3267c8052",
+  "target_identity": {
+    "environment_id": "test-environment",
+    "provider": "flagquantum",
+    "provider_version": "0.0",
+    "target_class": "local_runtime",
+    "target_id": "cpu-local",
+    "target_revision": "test"
+  },
+  "valid_until": "2026-09-04T00:00:00Z"
+}

@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0",
+  "authorization": "target-capabilities-v1-minimal-core-and-adapters",
+  "status": "authorized_internal_minimal_implementation",
+  "date": "2026-09-03",
+  "architecture_decision": "docs/architecture/decisions/ARCH_003_CAPABILITY_REQUIREMENT_DISCOVERY_EVIDENCE.md",
+  "decision_record": "docs/development/VNEXT_PHASE2_CAPABILITIES_DECISION.md",
+  "canonical_types": {
+    "capability_requirement": {
+      "role": "single_predicate",
+      "fields": ["name", "operator", "value", "strength", "source", "minimum_evidence_level", "accepted_exposures"]
+    },
+    "requirement_set": {
+      "role": "immutable_predicate_and_authorization_collection",
+      "fields": ["schema_version", "requirement_set_id", "requirements", "fallback_authorizations", "extensions"]
+    },
+    "target_capability_snapshot": {
+      "role": "time_and_scope_bounded_target_facts",
+      "fields": ["schema_version", "snapshot_id", "target_identity", "scope", "captured_at", "valid_until", "facts", "evidence_refs", "blockers", "extensions"]
+    }
+  },
+  "no_fourth_capability_type": true,
+  "platform_candidate_disposition": "adapter_input_only",
+  "fact_fields": ["name", "value", "support_status", "fact_exposure", "source", "blockers"],
+  "fact_source_fields": ["kind", "ref"],
+  "target_identity_fields": ["target_id", "target_class", "provider", "provider_version", "target_revision", "environment_id"],
+  "scope_fields": ["device_ids", "dtype", "kernel", "workload_id", "world_size", "node_count"],
+  "evidence_reference_fields": ["evidence_id", "sha256", "level", "scope"],
+  "enums": {
+    "support_status": ["unknown", "unmeasured", "unsupported", "verified"],
+    "fact_exposure": ["observed", "declared", "not_exposed", "unknown", "not_applicable"],
+    "evidence_level": ["basic", "observable", "certification"],
+    "requirement_strength": ["mandatory", "preference"],
+    "requirement_source": ["user", "compiler", "runtime_protocol"],
+    "comparison_operator": ["equals", "at_least", "at_most", "contains_all", "covers"]
+  },
+  "v1_capability_names": [
+    "target.class",
+    "device.kind",
+    "device.count",
+    "memory.available_bytes",
+    "qubits.logical_capacity",
+    "qubits.physical_capacity",
+    "gates.native",
+    "measurements.results",
+    "artifacts.profiles",
+    "limits.maximum_shots",
+    "limits.maximum_program_operations",
+    "ancillas.policy",
+    "ancillas.maximum_compiler",
+    "precision.native_dtype",
+    "precision.effective_dtype",
+    "precision.storage_dtype",
+    "precision.parameter_dtype",
+    "precision.accumulator_dtype",
+    "precision.software_mechanism"
+  ],
+  "precision_axes": ["native_dtype", "effective_dtype", "storage_dtype", "parameter_dtype", "accumulator_dtype", "software_mechanism"],
+  "precision_rules": {
+    "software_mechanism_is_separate_axis": true,
+    "software_extension_may_satisfy_effective_precision": true,
+    "software_extension_may_satisfy_native_precision": false,
+    "double_single_is_native_fp64_or_complex128": false
+  },
+  "capability_validation_profiles": {
+    "authoritative_static_declaration_allowed": [
+      "target.class",
+      "qubits.logical_capacity",
+      "qubits.physical_capacity",
+      "gates.native",
+      "measurements.results",
+      "artifacts.profiles",
+      "limits.maximum_shots",
+      "limits.maximum_program_operations",
+      "ancillas.policy",
+      "ancillas.maximum_compiler"
+    ],
+    "observed_required": [
+      "device.kind",
+      "device.count",
+      "memory.available_bytes",
+      "precision.native_dtype",
+      "precision.effective_dtype",
+      "precision.storage_dtype",
+      "precision.parameter_dtype",
+      "precision.accumulator_dtype",
+      "precision.software_mechanism"
+    ]
+  },
+  "fallback_authorization_axes": ["backend", "device", "cpu", "precision", "algorithm", "approximation"],
+  "fallback_rules": {
+    "default": "forbidden",
+    "axes_do_not_imply_each_other": true,
+    "cpu_is_independent_candidate": true,
+    "replacement_candidate_requires_own_snapshot": true,
+    "replacement_candidate_requires_full_rematch": true,
+    "fallback_requires_plan_result_and_evidence_disclosure": true
+  },
+  "matching_rules": {
+    "mandatory_failure_rejects_candidate": true,
+    "preference_only_ranks_executable_candidates": true,
+    "missing_fact_fails_closed": true,
+    "unknown_fails_closed": true,
+    "unmeasured_fails_closed": true,
+    "unsupported_fails_closed": true,
+    "not_exposed_fails_closed": true,
+    "unknown_extension_handler_fails_closed": true,
+    "snapshot_requires_valid_until": true,
+    "stale_snapshot_fails_closed": true,
+    "minimum_evidence_is_monotonic": true
+  },
+  "evidence_aggregation": {
+    "required_threshold": "strongest_applicable_mandatory_requirement_or_claim_gate",
+    "available_ceiling": "weakest_indispensable_evidence_reference",
+    "passes_when": "available_ceiling_at_least_required_threshold_and_every_fact_check_passes",
+    "verified_declared_allowed_only_by_named_validation_profile": true,
+    "bare_declaration_defaults_to": "unmeasured_declared",
+    "runtime_fact_exposure_required_for": [
+      "capacity",
+      "latency",
+      "physical_route",
+      "absence_of_fallback"
+    ],
+    "runtime_fact_required_exposure": "observed"
+  },
+  "ownership": {
+    "compiler_target_legality": "compiler",
+    "platform_discovery": "platform_provider_or_execution_provider",
+    "runtime_matching_and_policy": "runtime",
+    "simulation_candidates_and_cost_hints": "simulation",
+    "execution_evidence": "runtime_and_executing_provider",
+    "claim_eligibility": "audit_and_release"
+  },
+  "extensions": {
+    "only_extension_point": "extensions",
+    "namespace_form": "registered_reverse_dns",
+    "requires_owner_version_handler_tests_and_exit_condition": true,
+    "unknown_snapshot_extensions_may_round_trip": true,
+    "unknown_snapshot_extensions_may_satisfy_core_requirement": false,
+    "unknown_extensions_may_raise_claim_ceiling": false
+  },
+  "deferred_from_v1": [
+    "dynamic_control_and_mid_circuit_operations",
+    "checkpoint_and_restart",
+    "realtime_sessions_and_latency",
+    "full_topology_placement_and_links",
+    "p2p_collectives_and_physical_communication_routes",
+    "calibration_lifecycle",
+    "gradient_and_optimizer_distribution",
+    "general_workload_predicate_language"
+  ],
+  "authorized_next_implementation": [
+    "internal_core_value_objects",
+    "strict_json_serialization",
+    "canonical_sha256_identity",
+    "pure_fail_closed_comparator",
+    "contract_fakes_and_conformance_tests",
+    "compiler_target_capabilities_adapter",
+    "cpu_platform_adapter",
+    "runtime_backend_adapter",
+    "deployment_and_execution_provider_adapters"
+  ],
+  "implementation_order": [
+    "core_values_serialization_identity_and_fakes",
+    "core_pure_comparator",
+    "compiler_target_capabilities_loss_accounted_adapter",
+    "cpu_platform_adapter",
+    "runtime_matching_and_independent_cpu_candidate",
+    "second_producer_replacement_conformance",
+    "separate_proposals_for_deferred_domains"
+  ],
+  "not_authorized": [
+    "product_implementation_changes_in_this_decision_commit",
+    "stable_core_or_root_exports",
+    "existing_public_schema_or_fingerprint_changes",
+    "existing_plan_or_result_changes",
+    "default_backend_or_fallback_changes",
+    "failure_stage_changes",
+    "capability_maturity_promotion",
+    "real_provider_network_or_hardware_integration",
+    "domestic_hardware_verification_claim",
+    "qpu_production_or_scalability_claim"
+  ],
+  "legacy_contract_policy": {
+    "modify_historical_contracts": false,
+    "modify_compiler_target_capabilities_v1": false,
+    "modify_compiler_semantic_fingerprint": false,
+    "unexpressible_adapter_fields": "retain_legacy_authority_and_emit_blocker"
+  }
+}
