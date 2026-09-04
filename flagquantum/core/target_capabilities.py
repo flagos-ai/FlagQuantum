@@ -583,17 +583,25 @@ class CapabilityFact:
             raise CapabilityContractError(
                 "fact.blockers must contain CapabilityBlocker values"
             )
+        unavailable_exposure = fact_exposure in {
+            FactExposure.UNKNOWN,
+            FactExposure.NOT_EXPOSED,
+            FactExposure.NOT_APPLICABLE,
+        }
+        if unavailable_exposure and support_status is SupportStatus.VERIFIED:
+            raise CapabilityContractError(
+                f"verified facts cannot use {fact_exposure.value} exposure"
+            )
+        if unavailable_exposure and not blockers:
+            raise CapabilityContractError(
+                f"{fact_exposure.value} facts require a blocker"
+            )
         if self.support_status is not SupportStatus.VERIFIED and not blockers:
             raise CapabilityContractError(
                 "non-verified facts require at least one blocker"
             )
         if self.support_status is SupportStatus.VERIFIED and blockers:
             raise CapabilityContractError("verified facts must not contain blockers")
-        # Non-verified facts (including null facts with an unavailable
-        # exposure) already require a blocker above.  Keep the historical
-        # verified-fact rule intact: a verified fact cannot carry a blocker.
-        if self.fact_exposure is FactExposure.NOT_APPLICABLE and not blockers:
-            raise CapabilityContractError("not_applicable facts require a blocker")
         object.__setattr__(self, "blockers", tuple(sorted(blockers, key=_blocker_key)))
 
     def to_dict(self) -> dict[str, Any]:

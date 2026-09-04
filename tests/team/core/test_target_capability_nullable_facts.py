@@ -141,6 +141,22 @@ def test_verified_null_is_rejected_but_verified_value_remains_non_nullable() -> 
 
 
 @pytest.mark.parametrize(
+    "exposure",
+    [FactExposure.UNKNOWN, FactExposure.NOT_EXPOSED, FactExposure.NOT_APPLICABLE],
+)
+def test_verified_unavailable_exposure_is_rejected_as_contradictory(
+    exposure: FactExposure,
+) -> None:
+    with pytest.raises(CapabilityContractError, match="verified facts cannot use"):
+        _fact(
+            value=4,
+            status=SupportStatus.VERIFIED,
+            exposure=exposure,
+            blockers=(_BLOCKER,),
+        )
+
+
+@pytest.mark.parametrize(
     ("status", "exposure"),
     [
         (SupportStatus.UNKNOWN, FactExposure.OBSERVED),
@@ -194,7 +210,9 @@ def test_nullable_fact_round_trip_and_snapshot_identity_are_deterministic() -> N
 def test_unavailable_exposure_null_uses_non_verified_blocker_rule(
     exposure: FactExposure,
 ) -> None:
-    with pytest.raises(CapabilityContractError, match="non-verified facts require"):
+    with pytest.raises(
+        CapabilityContractError, match=f"{exposure.value} facts require"
+    ):
         _fact(
             value=None,
             status=SupportStatus.UNKNOWN,
