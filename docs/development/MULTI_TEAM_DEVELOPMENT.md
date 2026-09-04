@@ -271,4 +271,7 @@ git tag -a vnext-phase0-integrated -m "FlagQuantum vNext phase 0 integrated base
     可在约十分钟内理解、运行、修改并测试的黄金路径；
 11. 公共 API 未暴露内部指纹、来源记录、合法性证明、能力快照标识、调度对象或
     证据内部结构；
-12. 工作区只包含本任务修改。
+12. 交付前已完成“先做减法”自审，删除无当前用例的脚手架、透传包装、重复校验、
+    重复表示、复述代码的注释和只枚举实现细节的测试；新增 manager、registry、
+    factory、protocol、helper 层或中间对象已说明当前独立职责或第二个具体用例；
+13. 工作区只包含本任务修改。
