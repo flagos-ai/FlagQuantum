@@ -25,7 +25,7 @@ Compiler、Runtime 和 Deployment 能力，其中 `flagquantum.agent.capabilitie
 | --- | --- | --- | --- | --- |
 | capabilities | `flagquantum.agent.capabilities` | `capabilities(refresh=False)` | 返回 `flagquantum_agent_capabilities_v1`；单个后端探测失败降为该后端的不可用记录 | 已有；经 `runtime.backend_registry` 间接耦合 Runtime 内部 |
 | validate | `flagquantum.agent.validate` | `validate_program(program)` | 接受序列化 `CircuitIR` 或 circuit `ProgramArtifact`，返回结构化 `ValidationReport`；坏 schema/Artifact 直接拒绝 | 已有，确定性 |
-| plan | `flagquantum.compilation.planner.plan_runtime_selection`，由 `flagquantum.agent.preflight_execution` 适配 | `plan_execution(program, options=None)` | 返回 `AgentExecutionPlan` 字典；预期规划异常成为 `EXECUTION_PLANNING_FAILED` blocker | 已有，确定性，不执行 Kernel |
+| plan | `flagquantum.runtime.planner.plan_runtime_selection`，由 `flagquantum.agent.preflight_execution` 适配 | `plan_execution(program, options=None)` | 返回 `AgentExecutionPlan` 字典；预期规划异常成为 `EXECUTION_PLANNING_FAILED` blocker | 已有，确定性，不执行 Kernel |
 | preflight | `flagquantum.agent.preflight_execution`、`preflight_deployment` | execution preflight 与 plan 合并；deployment preflight 未暴露 | execution 已有；deployment 仅存在于旧 Agent 门面 |
 | execute | Stable Core 的 `fq.run` | 无 | 本地 SDK 可执行并返回 `ExecutionResult`；应用服务没有 execute 方法 | 缺口；不得由 MCP 网关绕过服务直接补齐 |
 | explain | `RuntimeSelectionPlan.summary()` 和结构化 blocker | 无独立方法 | plan 内容可供解释，但没有版本化 explain 请求/响应 | 缺口；不得把 LLM 文本当作权威解释 |
@@ -54,7 +54,7 @@ manifest 中构造稳定集合；缺失项按字典序返回
 | Simulation 内部实现 | 无 | 无 | 无 | 通过；未导入 `simulation` 或数值 Kernel |
 | Runtime 内部模块 | 无 | 无 | `agent.capabilities -> runtime.backend_registry` | 未完全收敛；属于能力发现适配债务 |
 | 具体设备/厂商 SDK | 无 | 无 | Runtime backend 探测可在其自身边界加载可选实现 | 通过直接边界；厂商对象未进入服务输入/输出 |
-| Compiler | 无内部 `_compiler` 导入 | 无 | `agent.preflight_execution -> compilation.planner` | 可接受的现有规划门面；最终应由正式公共规划契约替代 |
+| Runtime | 无内部 `_compiler` 导入 | 无 | `agent.preflight_execution -> runtime.planner` | 确定性规划门面；最终应由正式公共规划契约替代 |
 | Deployment | 无 | 无 | `agent.preflight_deployment -> deployment` | 仅旧 Agent 门面存在，未暴露为当前应用服务方法 |
 
 `tests/team/agent/test_agent_service_boundaries.py` 对以上直接禁止导入做 AST 特征检查，覆盖

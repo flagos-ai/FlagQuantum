@@ -17,10 +17,10 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.runtime.distributed.tensor_network_execution as fqxd
-from flagquantum.compilation import load_tn_working_set_calibration
 from flagquantum.runtime.distributed.tensor_network_execution import (
     _persistent_plan_key,
 )
+from flagquantum.runtime.planner import load_tn_working_set_calibration
 from flagquantum.simulation.tensor_contraction import (
     _build_slicing_plan,
     _cost_for_sliced_labels,

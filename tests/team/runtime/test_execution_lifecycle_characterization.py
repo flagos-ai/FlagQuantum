@@ -45,7 +45,7 @@ def test_validated_plan_executes_once_without_replanning_or_recompiling(
     def forbidden(*args: object, **kwargs: object) -> None:
         raise AssertionError("an execution attempt must consume its supplied plan")
 
-    monkeypatch.setattr("flagquantum.compilation.planner.plan", forbidden)
+    monkeypatch.setattr("flagquantum.runtime.planner.plan", forbidden)
     monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
 
     result = fq.run(plan)

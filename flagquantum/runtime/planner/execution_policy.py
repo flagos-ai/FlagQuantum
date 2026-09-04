@@ -1,4 +1,4 @@
-"""Pure execution-mode policy helpers for backend-neutral plans."""
+"""Pure Runtime execution-mode policy helpers."""
 
 from __future__ import annotations
 

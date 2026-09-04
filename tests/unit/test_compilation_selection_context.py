@@ -1,7 +1,7 @@
 import pytest
 
 from flagquantum.compilation.models import CircuitAnalysis
-from flagquantum.compilation.selection_context import (
+from flagquantum.runtime.planner.selection_context import (
     build_runtime_selection_context,
 )
 

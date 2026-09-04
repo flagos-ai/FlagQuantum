@@ -1,14 +1,21 @@
-"""Native execution planning for FlagQuantum IR."""
+"""Authoritative Runtime planning and backend-selection entry points."""
 
 from __future__ import annotations
 
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Sequence
 
-from ..compiler import compile_for_backend, schedule_layers
-from ..core.ir import CircuitIR, MeasurementNode
-from ..errors import CapabilityError, ValidationError
-from .backend_selection import OutputTarget, select_backend_by_cost
+from ...compilation.execution_plan_builder import build_execution_plan
+from ...compilation.models import CircuitAnalysis, ExecutionPlan, LayerPlan
+from ...compiler import compile_for_backend, schedule_layers
+from ...core.ir import CircuitIR, MeasurementNode
+from ...errors import CapabilityError, ValidationError
+from .backend_selection import (
+    BackendCost,
+    BackendSelection,
+    OutputTarget,
+    select_backend_by_cost,
+)
 from .candidates import (
     CandidateBuildContext,
     RuntimeCandidate,
@@ -20,7 +27,6 @@ from .estimates import (
     estimate_state_bytes,
     estimate_tensor_network_bytes,
 )
-from .execution_plan_builder import build_execution_plan
 from .execution_policy import (
     estimate_execution_state_bytes,
     normalize_execution_state_mode,
@@ -30,7 +36,18 @@ from .metadata_projection import (
     _jax_mps_runtime_metadata_from_training_summary,
     _jax_statevector_runtime_metadata_from_training_summary,
 )
-from .models import CircuitAnalysis, ExecutionPlan, LayerPlan, RuntimeSelectionPlan
+from .models import RuntimeSelectionPlan
+from .noise_calibration import (
+    NOISE_SELECTOR_CALIBRATION_SCHEMA,
+    NoiseSelectorCalibration,
+    NoiseSelectorCalibrationRecord,
+    load_noise_selector_calibration,
+)
+from .noise_selection import (
+    NoiseBackendCandidate,
+    NoiseExecutionSelection,
+    plan_noise_execution_selection,
+)
 from .providers import (
     add_distributed_candidates,
     add_local_state_candidates,
@@ -39,13 +56,17 @@ from .providers import (
 )
 from .selection_context import build_runtime_selection_context
 from .selection_result import finalize_runtime_selection
-from .tn_calibration import TNWorkingSetCalibration
+from .tn_calibration import (
+    TNWorkingSetCalibration,
+    build_tn_working_set_calibration,
+    load_tn_working_set_calibration,
+)
 from .training_preflight import collect_distributed_training_preflight
 
 if TYPE_CHECKING:
-    from ..circuit import Circuit
-    from ..noise import NoiseModel
-    from ..runtime.options import ExecutionOptions
+    from ...circuit import Circuit
+    from ...noise import NoiseModel
+    from ..options import ExecutionOptions
 
 
 def analyze(ir: CircuitIR) -> CircuitAnalysis:
@@ -324,8 +345,6 @@ def select_execution_mode(
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     if noise_model is not None:
-        from .noise import plan_noise_execution_selection
-
         return plan_noise_execution_selection(
             ir,
             noise_model,
@@ -397,7 +416,7 @@ def plan_advanced(
     """
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
-    from ..core.runtime_config import get_runtime_config
+    from ...core.runtime_config import get_runtime_config
 
     selected_config = config or get_runtime_config()
     ir = compile_for_backend(
@@ -408,7 +427,7 @@ def plan_advanced(
         config=selected_config,
     )
     if noise_model is not None:
-        from .noise import lower_noise_model
+        from ...compilation.noise import lower_noise_model
 
         ir = lower_noise_model(ir, noise_model)
     analysis = analyze(ir)
@@ -468,11 +487,11 @@ def plan(
 ) -> ExecutionPlan:
     """Build an execution plan from the stable, backend-neutral options."""
 
-    from ..runtime.distributed.backend_policy import (
+    from ..distributed.backend_policy import (
         resolve_distributed_backend_policy,
     )
-    from ..runtime.options import ExecutionOptions
-    from ..runtime.options_resolver import (
+    from ..options import ExecutionOptions
+    from ..options_resolver import (
         circuit_execution_constraints,
         resolve_execution_options,
     )
@@ -492,7 +511,7 @@ def plan(
             raise TypeError("measurements must contain MeasurementNode instances")
         source_ir = replace(source_ir, measurements=tuple(measurements))
     if noise_model is not None:
-        from ..noise import NoiseModel
+        from ...noise import NoiseModel
 
         if not isinstance(noise_model, NoiseModel):
             raise TypeError(
@@ -522,7 +541,7 @@ def plan(
         raise ValidationError(
             "stable noisy execution supports mode='auto' or mode='density_matrix'"
         )
-    from ..core.runtime_config import get_runtime_config
+    from ...core.runtime_config import get_runtime_config
 
     selected_config = runtime_config or get_runtime_config()
     selected_config = selected_config.with_overrides(
@@ -571,7 +590,7 @@ def plan(
         config=selected_config,
     )
     if noise_model is not None:
-        from .noise import build_noisy_execution_plan
+        from ...compilation.noise import build_noisy_execution_plan
 
         internal_plan = replace(
             internal_plan,
@@ -583,7 +602,7 @@ def plan(
                 noise_model_identity=noise_model.identity,
             ),
         )
-    from .execution_plan_contract import attach_execution_contract
+    from ...compilation.execution_plan_contract import attach_execution_contract
 
     return attach_execution_contract(
         internal_plan,
@@ -606,7 +625,7 @@ def plan_for_backend(
 ) -> ExecutionPlan:
     """Build an execution plan after normalizing backend policy."""
 
-    from ..runtime.planner_adapter import backend_execution_options
+    from ..planner_adapter import backend_execution_options
 
     backend_options = backend_execution_options(
         mode=mode,
@@ -644,19 +663,31 @@ def plan_for_backend(
 
 
 __all__ = [
+    "BackendCost",
+    "BackendSelection",
+    "NOISE_SELECTOR_CALIBRATION_SCHEMA",
     "LayerPlan",
     "CircuitAnalysis",
     "ExecutionPlan",
+    "NoiseBackendCandidate",
+    "NoiseExecutionSelection",
+    "NoiseSelectorCalibration",
+    "NoiseSelectorCalibrationRecord",
+    "OutputTarget",
     "RuntimeCandidate",
     "RuntimeSelectionPlan",
     "analyze",
+    "build_tn_working_set_calibration",
     "estimate_density_bytes",
     "estimate_mps_bytes",
     "estimate_tensor_network_bytes",
     "estimate_state_bytes",
+    "load_noise_selector_calibration",
+    "load_tn_working_set_calibration",
     "plan",
     "plan_advanced",
     "plan_for_backend",
+    "plan_noise_execution_selection",
     "plan_runtime_selection",
     "select_backend_by_cost",
     "select_execution_mode",

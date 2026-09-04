@@ -1,4 +1,4 @@
-"""Optional JAX training preflight used by runtime selection."""
+"""Optional training preflight used by Runtime selection."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def collect_distributed_training_preflight(
     statevector_blockers: tuple[str, ...] = ()
     statevector_claim_allowed = False
     try:
-        from ..runtime.planner_adapter import plan_jax_statevector_training
+        from ..planner_adapter import plan_jax_statevector_training
 
         training = plan_jax_statevector_training(
             ir,
@@ -76,7 +76,7 @@ def collect_distributed_training_preflight(
     mps_summary: Mapping[str, Any] | None = None
     mps_blockers: tuple[str, ...] = ()
     try:
-        from ..runtime.planner_adapter import plan_jax_mps_training
+        from ..planner_adapter import plan_jax_mps_training
 
         training = plan_jax_mps_training(
             ir,

@@ -101,7 +101,7 @@ plugins, benchmarks, or serialized artifacts.
   audit, Statevector, MPS, tensor-network, and JAX boundaries are available.
 - Root API, `Circuit`, maintained models, and experimental Statevector exports
   resolve through the canonical runtime.
-- `flagquantum.compilation.planner` uses the narrow
+- `flagquantum.runtime.planner` uses the narrow
   `flagquantum.runtime.planner_adapter` seam and cannot import execution
   implementations.
 - `flagquantum.api` remains the frozen v1 compatibility aggregator and resolves

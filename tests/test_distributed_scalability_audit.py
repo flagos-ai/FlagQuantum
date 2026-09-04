@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-import flagquantum.compilation.planner as fqxp
+import flagquantum.runtime.planner as fqxp
 from benchmarks.audit_results import _json_files, audit_paths
 from flagquantum.runtime.audit.engine import evaluate_mps_backward_readiness
 

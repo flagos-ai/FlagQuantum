@@ -178,6 +178,34 @@ def architecture_errors() -> tuple[str, ...]:
                 f"{removed_compiler_path.relative_to(ROOT).as_posix()}: migrated "
                 "compiler authority must not return; use flagquantum/compiler"
             )
+    for removed_runtime_planning_name in (
+        "backend_selection.py",
+        "candidate_plans.py",
+        "candidates.py",
+        "estimates.py",
+        "execution_policy.py",
+        "metadata_projection.py",
+        "planner.py",
+        "providers.py",
+        "selection_context.py",
+        "selection_result.py",
+        "tn_calibration.py",
+        "topology.py",
+        "training_preflight.py",
+    ):
+        removed_path = PACKAGE / "compilation" / removed_runtime_planning_name
+        if removed_path.exists():
+            errors.append(
+                f"{removed_path.relative_to(ROOT).as_posix()}: Runtime planning "
+                "authority must not return; use flagquantum/runtime/planner"
+            )
+    for removed_noise_planning_name in ("calibration.py", "selection.py"):
+        removed_path = PACKAGE / "compilation" / "noise" / removed_noise_planning_name
+        if removed_path.exists():
+            errors.append(
+                f"{removed_path.relative_to(ROOT).as_posix()}: noisy Runtime "
+                "selection policy must not return; use flagquantum/runtime/planner"
+            )
 
     for directory in ("flagquantum", "tests", *MAINTAINED_ENTRYPOINTS):
         for path in (ROOT / directory).rglob("*"):

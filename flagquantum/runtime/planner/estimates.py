@@ -1,4 +1,4 @@
-"""Backend-neutral memory estimates used by runtime planning."""
+"""Runtime-owned memory estimates used by execution planning."""
 
 from __future__ import annotations
 

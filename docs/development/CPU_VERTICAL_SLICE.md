@@ -6,7 +6,7 @@ Status: implemented on the integration branch.
 
 ```text
 fq.run(program, options=options)
-  -> Compiler builds an immutable ExecutionPlan
+  -> Runtime Planner asks Compiler to transform the program and builds ExecutionPlan
   -> Runtime validates and executes that exact plan
   -> CPU Platform Provider resolves the requested device
   -> Simulation executes the compiled CircuitIR
@@ -85,7 +85,17 @@ The `_compiler` research implementation remains frozen and off the default path
 until a bounded concern can replace the stable implementation under the same
 consumer-facing conformance tests.
 
-Execution-plan models, serialization, resource estimates, and backend/mode
-selection remain temporarily under `flagquantum/compilation`; moving them into
-Compiler would be the wrong boundary. Their next migration must separate
-Runtime policy from Core-owned plan products rather than rename the directory.
+## Runtime planning authority migration
+
+Backend and execution-mode selection, resource estimates, candidate evidence,
+topology policy, noisy-backend selection, and backend calibration now live in
+`flagquantum/runtime/planner`. The CPU path calls this Runtime-owned planner,
+which invokes `flagquantum.compiler` only when program transformation is needed.
+
+This migration reused the existing public planning functions and selection
+types, added no manager, registry, compatibility facade, or duplicate policy,
+and deleted their former `compilation` modules. Architecture checks prevent the
+old paths from returning. `flagquantum/compilation` temporarily retains the
+stable `ExecutionPlan` product, serialization, assembly, contract attachment,
+performance calibration, and noise lowering; these are the next bounded seams,
+not authorization for new planning policy in that package.

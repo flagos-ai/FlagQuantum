@@ -1,4 +1,4 @@
-"""Cost-aware selection between dense, MPS, and tensor-network simulation."""
+"""Runtime cost selection between dense, MPS, and tensor-network simulation."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from math import ceil
 from typing import Any, Literal
 
-from ..core.ir import CircuitIR
+from ...core.ir import CircuitIR
 from .estimates import estimate_mps_bytes, estimate_state_bytes
 from .tn_calibration import TNWorkingSetCalibration
 

@@ -20,14 +20,14 @@ Runtime 的权威职责是：基于 requirement、snapshot、资源租约与显�
 | --- | --- | --- | --- |
 | 用户执行意图 | `runtime/options.py::ExecutionOptions` | mode、backend、device、target、batch、precision、shots、seed、memory limit、gradients、approximation、backend fallback | `precision` 混合了存储 dtype、有效精度和原生精度；没有单独 CPU fallback、动态电路、恢复或实时要求 |
 | 选项归并 | `runtime/options_resolver.py` | defaults → config → program constraints → runtime policy → call | IR dtype 被投影为 precision，但来源和约束强度没有进入匹配证据 |
-| 公共规划入口 | `flagquantum/api.py`、`compilation/planner.py::plan`、`runtime/execution.py` | 解析 options、world size、backend，并调用 compilation planner | 规划、环境推断和执行组织尚未形成明确的 requirement/snapshot seam |
+| 公共规划入口 | `flagquantum/api.py`、`runtime/planner::plan`、`runtime/execution.py` | 解析 options、world size、backend，并调用 Runtime planner | 规划、环境推断和执行组织尚未形成明确的 requirement/snapshot seam |
 | 执行计划环境 | `compilation/execution_plan_contract.py` | backend、device kind、precision、world size、distribution semantics、gradients、approximation | 仅由 `world_size > 1` 推断 `sharded_across_ranks`；缺少实际 device count、memory、topology、communication、shots/dynamic、checkpoint/realtime |
 | 后端发现 | `runtime/backend_registry.py` | devices、dtypes、autograd、distributed、statevector/density/MPS、preferred device、accelerator memory | 多数是布尔值或静态声明；没有 unknown/unmeasured/not_exposed；PyTorch 的宽泛声明容易被误读为目标事实；`flagos` 路径有设备支持绕过 |
 | 编译目标能力 | `_compiler/target_capabilities.py` | gates、results、formats、topology、dynamic/timing/pulse、shot/program limits 等 | required 与 available 使用同一类型；`False`、`None` 和缺失无法表达事实状态与暴露状态 |
 | 能力比较 | `_compiler/capability_comparison.py` | 对上述对象做 required/available 比较 | 比较逻辑本身偏 fail-closed，但类型无法区分“未知、未测、不支持、未暴露” |
 | 设备与 dtype 检查 | `runtime/backend_registry.py::backend_execution_options`、`compilation/execution_plan_contract.py::validate_plan_environment` | device、dtype、mode、world size | Compiler 层反向导入 Runtime discovery；当前 dtype 检查只覆盖声明集合，不说明 native/software mechanism |
 | 分布式策略 | `runtime/distributed/backend_policy.py` | profile、JAX/Torch backend、local/effective world size、torchrun/GPU policy | 环境变量和进程组只能说明当前编排状态，不能证明物理 topology、通信能力或真正分片；development LocalTensor 是模拟事实 |
-| 内存与候选成本 | `compilation/backend_selection.py`、`compilation/candidates.py`、`compilation/candidate_plans.py` | statevector/MPS/TN 估算、候选 costs、memory/communication/gradient plans | 工作负载估算与可用设备内存容易混淆；按 world size 除内存不能证明资源已分配或通信可行 |
+| 内存与候选成本 | `runtime/planner/backend_selection.py`、`candidates.py`、`candidate_plans.py` | statevector/MPS/TN 估算、候选 costs、memory/communication/gradient plans | 工作负载估算与可用设备内存容易混淆；按 world size 除内存不能证明资源已分配或通信可行 |
 | 动态电路 | `runtime/dynamic_conformance.py`、`runtime/dynamic/deployment.py` | mid-circuit measurement/reset、feed-forward、结果返回、provider dynamic support | 当前是局部 conformance/deployment 检查，尚未并入统一 RequirementSet/Snapshot 匹配 |
 | shots/trajectory | `ExecutionOptions.shots`、`runtime/trajectories/**` | shots、trajectory ownership、failure、statistics、checkpoint | shots 是 workload requirement；trajectory 完成情况是 attempt evidence，不能写入 target capability |
 | 训练与精度 | `runtime/training_state.py::PrecisionPolicy`、各训练 engine | complex/parameter/accumulator dtype、mixed/full、downcast、梯度与 optimizer state | 执行 options 和训练 precision policy 有两套表达；software-expanded precision 尚无统一 mechanism 字段 |
@@ -78,7 +78,7 @@ Runtime 的权威职责是：基于 requirement、snapshot、资源租约与显�
 | checkpoint/restart | 是否必须 checkpoint、频率/一致性、格式版本、restart topology/dtype compatibility、恢复次数 | storage/atomicity/format/compatibility 事实；本地 helper 存在不等于目标可恢复 | checkpoint identity、commit、base attempt、恢复结果/失败 |
 | realtime/session | session lifecycle、最大端到端/控制延迟、持续时间、资源独占 | session capability 与匹配 workload 的 latency measurement；未测 latency 失败关闭 | session/lease identity、实际延迟分布、超时、重连/降级 |
 
-`compilation/backend_selection.py` 的 `estimated_memory_bytes`、结构分数和候选
+`runtime/planner/backend_selection.py` 的 `estimated_memory_bytes`、结构分数和候选
 `available` 只表达算法候选在给定假设下是否可行；它们不是上述 snapshot 的平台容量事实。
 同理，execution plan 中的 `world_size` 是要求/决定，不能证明设备已分配或实际发生 sharding。
 

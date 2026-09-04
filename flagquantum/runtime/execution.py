@@ -8,8 +8,7 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
-from ..compilation.planner import ExecutionPlan, select_execution_mode
-from ..compilation.planner import plan_advanced as build_plan
+from ..compilation.models import ExecutionPlan
 from ..compiler import compile_for_backend
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
@@ -37,6 +36,8 @@ from .backends.statevector import (
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
+from .planner import plan_advanced as build_plan
+from .planner import select_execution_mode
 
 if TYPE_CHECKING:
     from ..circuit import Circuit
@@ -1004,7 +1005,7 @@ def run(
         if noise_model is not None:
             raise TypeError("noise_model must be None when executing an ExecutionPlan")
         return execute_plan(program_or_plan)
-    from ..compilation.planner import plan
+    from .planner import plan
 
     return execute_plan(
         plan(

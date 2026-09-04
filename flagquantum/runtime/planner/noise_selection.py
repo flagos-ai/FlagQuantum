@@ -1,4 +1,4 @@
-"""Auditable backend selection for noisy simulation."""
+"""Auditable Runtime backend selection for noisy simulation."""
 
 from __future__ import annotations
 
@@ -6,10 +6,13 @@ from dataclasses import dataclass
 from math import ceil, isfinite, log, sqrt
 from typing import Any, Mapping
 
+from ...compilation.noise import lower_noise_model
 from ...core.ir import ensure_circuit_ir
-from ..estimates import estimate_density_bytes, estimate_mps_bytes, estimate_state_bytes
-from .calibration import NoiseSelectorCalibration, load_noise_selector_calibration
-from .lowering import lower_noise_model
+from .estimates import estimate_density_bytes, estimate_mps_bytes, estimate_state_bytes
+from .noise_calibration import (
+    NoiseSelectorCalibration,
+    load_noise_selector_calibration,
+)
 
 
 @dataclass(frozen=True)

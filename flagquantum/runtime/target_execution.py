@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ..compilation.backend_selection import BackendSelection, select_backend_by_cost
+from .planner.backend_selection import BackendSelection, select_backend_by_cost
 
 
 @dataclass(frozen=True)

@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.compilation.planner as fqxp
+import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler.routing import (
     CouplingMap,
     estimate_routing_cost,

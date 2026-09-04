@@ -6,16 +6,16 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.backends.tensor_network as fqbtn
-import flagquantum.compilation.planner as fqxp
 import flagquantum.runtime.distributed.tensor_network_execution as fqxd
+import flagquantum.runtime.planner as fqxp
 import flagquantum.simulation.tensor as tensor_runtime
 import flagquantum.simulation.tensor_execution as tensor_execution
 import flagquantum.simulation.tensor_observables as tensor_observables
-from flagquantum.compilation import build_tn_working_set_calibration
 from flagquantum.runtime.backends.tensor_network import (
     DistributedTNWorkingSetPolicy,
 )
 from flagquantum.runtime.distributed import tensor_network_execution as distributed_tn
+from flagquantum.runtime.planner import build_tn_working_set_calibration
 
 
 def test_tensor_network_bell_state_matches_statevector():

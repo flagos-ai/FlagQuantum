@@ -84,7 +84,7 @@ def test_run_plan_does_not_replan_or_recompile(monkeypatch: pytest.MonkeyPatch) 
     def forbidden(*args, **kwargs):
         raise AssertionError("planner/compiler must not run for fq.run(plan)")
 
-    monkeypatch.setattr("flagquantum.compilation.planner.plan", forbidden)
+    monkeypatch.setattr("flagquantum.runtime.planner.plan", forbidden)
     monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
 
     result = fq.run(plan)

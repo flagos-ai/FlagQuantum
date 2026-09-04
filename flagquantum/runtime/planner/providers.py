@@ -1,4 +1,4 @@
-"""Runtime candidate providers grouped by state representation."""
+"""Runtime candidate builders grouped by state representation."""
 
 from __future__ import annotations
 

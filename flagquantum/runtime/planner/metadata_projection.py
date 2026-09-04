@@ -1,4 +1,4 @@
-"""Project JAX training preflight summaries into runtime metadata."""
+"""Project training preflight summaries into Runtime metadata."""
 
 from __future__ import annotations
 

@@ -7,8 +7,8 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
-import flagquantum.compilation.planner as fqxp
 import flagquantum.noise as fqn
+import flagquantum.runtime.planner as fqxp
 from flagquantum.runtime.execution import run_advanced
 
 

@@ -1,4 +1,4 @@
-"""Typed plan assembly for runtime candidates."""
+"""Typed evidence-plan assembly for Runtime candidates."""
 
 from __future__ import annotations
 

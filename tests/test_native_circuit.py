@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
-import flagquantum.compilation.planner as fqxp
+import flagquantum.runtime.planner as fqxp
 from flagquantum.ops.matrices import GATE_MAT_DICT
 from flagquantum.simulation.statevector_ops import _apply_matrix, _gate_matrix
 

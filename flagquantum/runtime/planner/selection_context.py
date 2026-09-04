@@ -1,16 +1,16 @@
-"""Normalized inputs and resource estimates for runtime selection."""
+"""Normalized inputs and resource estimates for Runtime selection."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .candidate_plans import CircuitAnalysisView
 from .estimates import (
     estimate_density_bytes,
     estimate_mps_bytes,
     estimate_state_bytes,
     estimate_tensor_network_bytes,
 )
-from .models import CircuitAnalysis
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class RuntimeSelectionContext:
 
 
 def build_runtime_selection_context(
-    analysis: CircuitAnalysis,
+    analysis: CircuitAnalysisView,
     *,
     bsz: int,
     world_size: int,

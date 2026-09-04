@@ -1,16 +1,17 @@
-"""Final ranking and result assembly for runtime selection."""
+"""Final ranking and result assembly for Runtime selection."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
+from .candidate_plans import CircuitAnalysisView
 from .candidates import RuntimeCandidate
-from .models import CircuitAnalysis, RuntimeSelectionPlan
+from .models import RuntimeSelectionPlan
 
 
 def finalize_runtime_selection(
     *,
-    analysis: CircuitAnalysis,
+    analysis: CircuitAnalysisView,
     candidates: Sequence[RuntimeCandidate],
     objective: str,
     prefer_distributed: bool,

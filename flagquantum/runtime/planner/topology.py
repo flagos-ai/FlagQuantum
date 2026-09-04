@@ -1,4 +1,4 @@
-"""Rank placement and ownership planning helpers."""
+"""Runtime rank placement and ownership planning helpers."""
 
 from __future__ import annotations
 

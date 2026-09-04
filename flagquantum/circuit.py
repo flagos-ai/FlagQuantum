@@ -30,7 +30,7 @@ from .ops.matrices import GATE_MAT_DICT
 from .simulation.statevector_ops import _apply_matrix, _bits_from_indices
 
 if TYPE_CHECKING:
-    from .compilation.planner import ExecutionPlan
+    from .compilation.models import ExecutionPlan
     from .noise import NoiseModel
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
@@ -472,7 +472,7 @@ class Circuit:
         return schedule_layers(self.to_ir())
 
     def analysis(self):
-        from .compilation.planner import analyze
+        from .runtime.planner import analyze
 
         return analyze(self.to_ir())
 
@@ -485,7 +485,7 @@ class Circuit:
     ) -> ExecutionPlan:
         """Plan this circuit using stable backend-neutral execution options."""
 
-        from .compilation.planner import plan
+        from .runtime.planner import plan
 
         return plan(
             self,
@@ -497,7 +497,7 @@ class Circuit:
     def runtime_plan(self, **options: Any):
         """Explain the best local, JAX, or distributed runtime for this circuit."""
 
-        from .compilation.planner import plan_runtime_selection
+        from .runtime.planner import plan_runtime_selection
 
         options.setdefault("bsz", self.bsz)
         return plan_runtime_selection(self.to_ir(), **options)

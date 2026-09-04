@@ -1,10 +1,11 @@
 # Transitional compilation planning
 
 This directory retains the existing execution-plan model, serialization,
-resource estimates, backend/mode selection, and noise-planning code while those
-responsibilities are separated between Runtime and Core.
+assembly helpers, performance-calibration adapter, and noise-lowering/planning
+code while those products are separated between Runtime, Core, and Compiler.
 
-Program optimization, instruction scheduling, backend lowering, coupling maps,
-and topology routing are authoritative in `flagquantum/compiler`. Do not add a
-second implementation here. Start in `planner.py` for the remaining stable
-planning path and run the CPU vertical-slice and execution-plan contract tests.
+Program transformation is authoritative in `flagquantum/compiler`; backend and
+execution-mode selection is authoritative in `flagquantum/runtime/planner`.
+Do not recreate either implementation here. Start in `models.py` or
+`execution_plan_contract.py` only when changing the remaining plan product, and
+run the CPU vertical-slice and execution-plan contract tests.

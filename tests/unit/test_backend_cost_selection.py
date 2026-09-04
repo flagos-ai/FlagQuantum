@@ -3,8 +3,8 @@ import json
 import pytest
 
 import flagquantum as fq
-import flagquantum.compilation.planner as fqxp
-from flagquantum.compilation import (
+import flagquantum.runtime.planner as fqxp
+from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,
     load_tn_working_set_calibration,
 )

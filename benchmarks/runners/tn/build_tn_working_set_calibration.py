@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from flagquantum.compilation.tn_calibration import (
+from flagquantum.runtime.planner.tn_calibration import (
     build_tn_working_set_calibration,
 )
 

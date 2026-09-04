@@ -185,16 +185,17 @@ flagquantum/noise/
 ```text
 flagquantum/compilation/noise/
 ├── __init__.py
-├── analysis.py
 ├── lowering.py
-├── selection.py
-├── planning.py
-└── estimates.py
+└── planning.py
 ```
 
 `lowering.py` 是将 `CircuitIR + NoiseModel` 转换为带 ChannelInstruction 的
 IR 的唯一入口。它只能依赖 core、noise domain 和 ops schema，不允许依赖
 Circuit、runtime、simulation 或具体 backend。
+
+噪声后端选择与设备校准属于执行策略，权威入口位于
+`flagquantum/runtime/planner/noise_selection.py` 和
+`noise_calibration.py`。
 
 ### 3.3 Density matrix 数值实现
 

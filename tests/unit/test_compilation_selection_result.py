@@ -1,8 +1,8 @@
 import pytest
 
-from flagquantum.compilation.candidates import RuntimeCandidate
 from flagquantum.compilation.models import CircuitAnalysis
-from flagquantum.compilation.selection_result import finalize_runtime_selection
+from flagquantum.runtime.planner.candidates import RuntimeCandidate
+from flagquantum.runtime.planner.selection_result import finalize_runtime_selection
 
 pytestmark = pytest.mark.unit
 

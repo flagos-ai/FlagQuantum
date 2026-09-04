@@ -1,6 +1,6 @@
 import pytest
 
-from flagquantum.compilation.execution_policy import (
+from flagquantum.runtime.planner.execution_policy import (
     normalize_execution_state_mode,
     recommend_execution_mode,
 )

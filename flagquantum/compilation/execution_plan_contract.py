@@ -152,9 +152,9 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     program = CircuitIR.from_dict(normalized["program"])
     decision = normalized["decision"]
 
+    from ..runtime.planner import analyze
     from .execution_plan_builder import build_layer_plans
     from .models import ExecutionPlan
-    from .planner import analyze
 
     planned_program = program
     if normalized["extensions"]:

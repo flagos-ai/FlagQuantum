@@ -43,7 +43,7 @@ Provider 的暂管区域。
 
 | 入口 | 当前责任与事实 | 边界判断 |
 | --- | --- | --- |
-| `fq.plan()` / `flagquantum.compilation.planner.plan()` | 生成稳定 `ExecutionPlan`，附带程序、选项、环境、编译器指纹和最终决策 | 属于 Compiler 服务；Runtime 应只消费结果 |
+| `fq.plan()` / `flagquantum.runtime.planner.plan()` | 生成稳定 `ExecutionPlan`，附带程序、选项、环境、编译器指纹和最终决策 | Runtime 已拥有执行规划策略；共享计划产物仍由 `compilation` 暂管 |
 | `flagquantum.runtime.execution.run()` | 对程序输入先调用 `plan()`，对计划输入直接进入 `execute_plan()` | 便捷编排入口混合了“请求编译”和“执行尝试” |
 | `run_native()` / `run_distributed()` | 兼容入口内部调用 `compile_for_backend()`、`select_execution_mode()`、`plan_advanced()` | 历史耦合；最终应接收可执行计划或显式调用 Compiler 服务端口 |
 | `flagquantum.runtime.planning` | 导出 observable grouping 与 hybrid parallel 规划 | Runtime 自有的执行组织规划，不应包含编译变换 |

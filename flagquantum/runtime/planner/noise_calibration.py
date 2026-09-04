@@ -1,4 +1,4 @@
-"""Versioned performance calibration for noisy backend selection."""
+"""Versioned performance calibration for Runtime noisy-backend selection."""
 
 from __future__ import annotations
 

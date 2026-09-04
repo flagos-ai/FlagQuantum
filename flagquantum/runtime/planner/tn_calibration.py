@@ -1,4 +1,4 @@
-"""Versioned tensor-network working-set calibration records."""
+"""Versioned Runtime tensor-network working-set calibration records."""
 
 from __future__ import annotations
 

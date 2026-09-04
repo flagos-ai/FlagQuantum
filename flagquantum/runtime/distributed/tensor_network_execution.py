@@ -20,7 +20,6 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...compilation.tn_calibration import TNWorkingSetCalibration
 from ...simulation.mps_rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
@@ -47,6 +46,7 @@ from ..backends.jax import plan_jax_distributed_quantum_backend
 from ..backends.tensor_network.joint_planning import (
     DistributedTNWorkingSetPolicy,
 )
+from ..planner.tn_calibration import TNWorkingSetCalibration
 from .models import (
     DistributedSliceTask,
     DistributedTensorNetworkState,

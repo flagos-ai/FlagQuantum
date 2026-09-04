@@ -58,32 +58,9 @@ from .algorithms import (
     zz_chain_hamiltonian,
 )
 from .circuit import Circuit, expectation
-from .compilation import planner
 from .compilation.noise import (
-    NOISE_SELECTOR_CALIBRATION_SCHEMA,
-    NoiseBackendCandidate,
-    NoiseExecutionSelection,
-    NoiseSelectorCalibration,
-    NoiseSelectorCalibrationRecord,
     channel_instruction,
-    load_noise_selector_calibration,
     lower_noise_model,
-    plan_noise_execution_selection,
-)
-from .compilation.planner import (
-    ExecutionPlan,
-    RuntimeCandidate,
-    RuntimeSelectionPlan,
-    analyze,
-    estimate_density_bytes,
-    estimate_mps_bytes,
-    estimate_state_bytes,
-    estimate_tensor_network_bytes,
-    plan,
-    plan_for_backend,
-    plan_runtime_selection,
-    select_backend_by_cost,
-    select_execution_mode,
 )
 from .compiler import CouplingMap, compile_for_backend, route_to_topology
 from .core.ir import (
@@ -156,6 +133,7 @@ from .noise import (
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
 )
+from .runtime import planner
 from .runtime.backends.statevector import (
     BatchedStatevectorTrajectoryResult,
     merge_noisy_statevector_results,
@@ -350,6 +328,28 @@ from .runtime.compatibility import (
     validate_production_mps_workload,
 )
 from .runtime.noise_registry import noisy_density_matrix
+from .runtime.planner import (
+    NOISE_SELECTOR_CALIBRATION_SCHEMA,
+    ExecutionPlan,
+    NoiseBackendCandidate,
+    NoiseExecutionSelection,
+    NoiseSelectorCalibration,
+    NoiseSelectorCalibrationRecord,
+    RuntimeCandidate,
+    RuntimeSelectionPlan,
+    analyze,
+    estimate_density_bytes,
+    estimate_mps_bytes,
+    estimate_state_bytes,
+    estimate_tensor_network_bytes,
+    load_noise_selector_calibration,
+    plan,
+    plan_for_backend,
+    plan_noise_execution_selection,
+    plan_runtime_selection,
+    select_backend_by_cost,
+    select_execution_mode,
+)
 from .runtime.result import MeasurementResult
 from .runtime.target_execution import TargetExecutionResult, run_target
 from .simulation import graph, linalg, mps, tensor

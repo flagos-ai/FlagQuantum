@@ -1,4 +1,4 @@
-"""Typed runtime-selection candidate models."""
+"""Typed Runtime-selection candidate models."""
 
 from __future__ import annotations
 

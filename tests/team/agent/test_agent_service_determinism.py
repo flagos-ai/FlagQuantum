@@ -119,7 +119,7 @@ def test_missing_artifact_capability_fails_closed_before_planning(
 def test_planning_failure_has_a_repeatable_structured_blocker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.compilation import planner
+    from flagquantum.runtime import planner
 
     def fail_planning(*args: object, **kwargs: object) -> None:
         raise RuntimeError("deterministic planner fixture failure")
