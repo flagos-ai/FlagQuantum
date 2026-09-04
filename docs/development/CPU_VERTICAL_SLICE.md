@@ -41,8 +41,29 @@ python -m pytest tests/integration/test_cpu_vertical_slice.py -q
 
 Start with `flagquantum/runtime/execution.py` for dispatch or result assembly,
 `flagquantum/simulation/statevector.py` for the numerical entry, and
-`flagquantum/runtime/platforms/pytorch.py` for CPU lifecycle behavior. Changes
+`flagquantum/providers/platform/pytorch.py` for CPU lifecycle behavior. Changes
 to one concern should normally remain in its owning domain.
 
 GPU, distributed execution, noise, MPS, tensor networks, training, QPU, and new
 public contracts are outside this slice.
+
+## First physical directory migration
+
+The proven path now resolves its CPU lifecycle through
+`flagquantum/providers/platform`. The complete pre-existing platform package
+was moved there as one unit so CPU, CUDA, and FlagOS still share one registry
+and one set of provider-local contracts. Every in-repository consumer moved in
+the same change, and the former `flagquantum/runtime/platforms` package was
+deleted rather than retained as a forwarding layer.
+
+The migration reused the existing `PlatformRuntime`, registry, Core capability
+values, Runtime plan/result types, and Simulation engine. It added only the
+target package marker, concise ownership documentation, and a vertical-slice
+test proving that a tampered plan fails before numerical execution. It removed
+the old directory and froze `extensions/sdk` as a separate extension lifecycle
+until replacement evidence justifies further convergence.
+
+This is directory ownership evidence, not a new CUDA, FlagOS, domestic-device,
+communication, or performance claim. Platform convergence remains in progress
+until its separately recorded replacement and hardware-evidence conditions are
+met.

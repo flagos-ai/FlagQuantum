@@ -102,7 +102,7 @@ def test_flagos_statevector_preflight_uses_platform_provider(monkeypatch) -> Non
         fake_preflight,
     )
     monkeypatch.setattr(
-        "flagquantum.runtime.platforms.get_platform_runtime",
+        "flagquantum.providers.platform.get_platform_runtime",
         lambda name: SimpleNamespace(
             identity=lambda: SimpleNamespace(provider="torch_fl")
         ),

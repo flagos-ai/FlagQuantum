@@ -6,10 +6,14 @@
 
 分支：`codex/vnext-team-platform-providers`
 
+目录进展（2026-09-04）：首条 CPU 纵向链路通过后，原
+`flagquantum/runtime/platforms` 已整体迁入 `flagquantum/providers/platform`，所有仓内
+调用方同步切换且旧包删除。本文其余能力结论不因物理迁移而升级。
+
 ## 结论
 
 当前仓库已有一条小而明确的平台边界：
-`flagquantum.runtime.platforms.PlatformRuntime` 负责设备发现、激活、同步、
+`flagquantum.providers.platform.PlatformRuntime` 负责设备发现、激活、同步、
 内存快照、流/事件、RNG 和运行时身份；内建实现只有 PyTorch CPU、PyTorch CUDA
 与懒加载的 Torch-FL FlagOS。扩展侧的唯一权威注册与生命周期机制仍是
 `flagquantum.extensions.sdk.ExtensionRegistry`。本轮没有新增 Provider 注册体系，
@@ -59,7 +63,7 @@
 
 ### 设备发现与生命周期
 
-`runtime/platforms/registry.py` 的固定内建表是当前平台发现入口。CPU/CUDA 不需要可选
+`providers/platform/registry.py` 的固定内建表是当前平台发现入口。CPU/CUDA 不需要可选
 依赖；FlagOS provider 在未激活时不会被全局发现流程导入。`resolve_platform_device()`
 在分配工作负载前检查平台可用性和显式设备下标，失败时抛出
 `PlatformUnavailableError`。扩展 SDK 另有 task-local、不可变的
@@ -123,7 +127,7 @@ CUDA/NCCL 与 FlagOS 分布式执行由 Runtime 拥有。FlagOS 身份记录刻�
 ## 厂商泄漏与边界债务
 
 没有发现 `torch_fl` 被 import 到用户 API、Simulation 或通用 Runtime；架构规则只允许
-`runtime/platforms/flagos.py` import 它。也没有发现 Torch-FL Python 对象进入
+`providers/platform/flagos.py` import 它。也没有发现 Torch-FL Python 对象进入
 `fq.Circuit`、FlagQuantum IR 或稳定结果对象。
 
 仍有以下需要后续收敛的边界债务：

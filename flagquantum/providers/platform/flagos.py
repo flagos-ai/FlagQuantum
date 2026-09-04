@@ -1,4 +1,4 @@
-"""Lazy Torch-FL integration for the FlagOS PyTorch device.
+"""Lazy Torch-FL Platform Provider for the FlagOS PyTorch device.
 
 Importing this module does not import ``torch_fl``. Activation happens only
 after a user explicitly requests the ``flagos`` platform.

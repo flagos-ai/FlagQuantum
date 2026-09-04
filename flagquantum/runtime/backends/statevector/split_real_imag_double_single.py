@@ -34,7 +34,7 @@ from ....numerics.double_single import (
     double_single_sum,
 )
 from ....ops.matrices import GATE_MAT_DICT
-from ...platforms import get_platform_runtime, resolve_platform_device
+from ....providers.platform import get_platform_runtime, resolve_platform_device
 from .split_real_imag import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
     _normalized_observables,

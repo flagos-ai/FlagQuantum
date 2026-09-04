@@ -185,8 +185,8 @@ def _preflight_flagos_statevector(
     device = resolve_device(requested_device)
     if device.type != "flagos":
         return None
+    from ..providers.platform import get_platform_runtime
     from .operator_probes import preflight_statevector_local_p0
-    from .platforms import get_platform_runtime
 
     platform = get_platform_runtime("flagos")
     report = preflight_statevector_local_p0(
@@ -569,7 +569,7 @@ def run_native(
         operator_preflight = _preflight_flagos_statevector(execution_ir, options)
         numerical_contracts = None
         if operator_preflight is not None:
-            from .platforms import get_platform_runtime
+            from ..providers.platform import get_platform_runtime
 
             numerical_contracts = _certify_flagos_statevector(
                 execution_ir,
@@ -1086,7 +1086,7 @@ def _normalize_execution_output(
         and execution_plan.world_size == 1
         and isinstance(result.state, torch.Tensor)
     ):
-        from .platforms import get_platform_runtime
+        from ..providers.platform import get_platform_runtime
 
         actual_device = result.state.device
         platform = get_platform_runtime(actual_device.type)

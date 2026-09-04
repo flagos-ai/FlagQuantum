@@ -27,7 +27,7 @@ from flagquantum.deployment.synthetic_remote_target_capabilities import (
     SyntheticRemoteCapabilityFixture,
     synthetic_remote_target_capability_snapshot,
 )
-from flagquantum.runtime.platforms.cpu_target_capabilities import (
+from flagquantum.providers.platform.cpu_target_capabilities import (
     CPUCapabilityObservation,
     CPUPrecisionObservation,
     cpu_platform_to_target_capability_snapshot,

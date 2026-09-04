@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import copy
+import json
+from dataclasses import replace
+
 import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.compilation.execution_plan_contract import (
+    ExecutionPlanContractError,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -43,3 +50,33 @@ def test_cpu_statevector_golden_path_is_compiled_executed_and_observable() -> No
     assert result.provenance["requested_device"] == "cpu"
     assert result.provenance["selected_device"] == "cpu"
     assert result.provenance["cpu_fallback_used"] is False
+
+
+def test_cpu_statevector_rejects_a_tampered_plan_before_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    plan = fq.plan(
+        fq.Circuit(1).h(0),
+        options=fq.ExecutionOptions(
+            mode="statevector",
+            backend="pytorch",
+            device="cpu",
+            allow_backend_fallback=False,
+        ),
+    )
+    payload = copy.deepcopy(plan.to_dict())
+    payload["decision"]["precision"] = "complex128"
+    tampered = replace(plan, _contract_payload_json=json.dumps(payload))
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("invalid plan reached numerical execution")
+
+    monkeypatch.setattr("flagquantum.runtime.execution.run_native", forbidden)
+
+    with pytest.raises(ExecutionPlanContractError) as captured:
+        fq.run(tampered)
+
+    assert captured.value.reason_code in {
+        "environment_incompatible",
+        "identity_mismatch",
+    }

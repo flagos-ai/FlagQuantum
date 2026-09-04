@@ -67,7 +67,7 @@ owns = [
 branch = "codex/vnext-team-platform-providers"
 worktree = "FlagQuantum-vNext-platform"
 owns = [
-    "flagquantum/runtime/platforms/**",
+    "flagquantum/providers/platform/**",
     "flagquantum/devices/**",
     "flagquantum/extensions/sdk/**",
 ]

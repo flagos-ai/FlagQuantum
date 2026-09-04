@@ -1,4 +1,4 @@
-"""Task-local-free registry for built-in and optional platform providers."""
+"""Authoritative registry for built-in and optional platform providers."""
 
 from __future__ import annotations
 

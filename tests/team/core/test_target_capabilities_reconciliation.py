@@ -17,9 +17,9 @@ from flagquantum._compiler.target_capabilities import (
 from flagquantum.core.contracts import CapabilityContract
 from flagquantum.deployment.cloud import CloudBackendProfile
 from flagquantum.extensions.sdk import CapabilityRequest, CapabilityResponse
+from flagquantum.providers.platform.contracts import MemorySnapshot, PlatformDevice
 from flagquantum.runtime.backend_registry import BackendCapabilities
 from flagquantum.runtime.capabilities import CapabilityEvidence
-from flagquantum.runtime.platforms.contracts import MemorySnapshot, PlatformDevice
 
 pytestmark = pytest.mark.unit
 

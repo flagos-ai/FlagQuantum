@@ -14,7 +14,7 @@
 Service 则接受完整执行请求。同时，原机器契约允许 Runtime 依赖 Compiler Contracts，
 可能使编译器内部类型成为运行时的长期依赖。
 
-当前代码仍存在 `_compiler`/`compilation`、`simulation`/`runtime/backends`、
+决策形成时，代码仍存在 `_compiler`/`compilation`、`simulation`/`runtime/backends`、
 `runtime/platforms`/`extensions/sdk` 等并行权威入口，迁移若无完成证据和退出条件，可能
 形成永久双轨结构。
 
@@ -71,8 +71,8 @@ Provider 只能消费或实现这些契约，不得复制定义。
 
 - 本决策当前只改变候选架构契约、文档和架构检查，不改变 Stable Core 公共 API；
 - 现有 Runtime→Compiler 导入暂时保留在有界清单中；
-- `runtime/platforms` 与 `extensions/sdk` 在新 Platform Provider Contract 获得批准和替换
-  证据前仍是当前权威入口；
+- 原 `runtime/platforms` 已随首条 CPU 纵向链路迁入 `providers/platform`；`extensions/sdk`
+  仍须在替换证据完成后收口，不能形成第二套平台注册权威；
 - 每次迁移只处理一条完整纵向路径，通过后才关闭对应旧入口。
 
 ## 验收

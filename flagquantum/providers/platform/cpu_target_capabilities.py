@@ -1,4 +1,4 @@
-"""Narrow CPU Platform-to-Core Target Capabilities v1 adapter.
+"""Narrow CPU Platform Provider-to-Core Target Capabilities v1 adapter.
 
 The adapter consumes an injected, provider-owned CPU probe.  It does not call
 the resolver, choose a backend, authorize fallback, or infer precision from

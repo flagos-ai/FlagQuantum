@@ -177,7 +177,7 @@ Simulation 与一个 QPU/remote provider 可互换，之后再讨论实现搬迁
 | 云/QPU execution provider | `deployment.cloud.QuantumProvider`、`ProviderTaskHandle`、`DeploymentResult` | 具体可用但返回字符串状态、内置异常和 Deployment 专用结果；不是 Core 契约。 |
 | sealed artifact runtime adapter | `_compiler.runtime_abi.RuntimeAdapter`、`ExecutionHandle`、`RuntimeCallStatus`、`RuntimeDiagnostic` | 私有且 provider-neutral，状态/身份设计可复用，但错误没有映射到 Core `FailureContract`。 |
 | Extension provider | `extensions.sdk.ProviderExtension`、`Extension*Error` | `flagquantum.extensions` 的受保护扩展协议；生命周期和 capability negotiation 与 execution provider 不同。 |
-| Platform provider | `runtime.platforms` contracts 与 `Platform*Error` | 平台层专用，必须与完整 execution provider 分开。 |
+| Platform provider | `providers.platform` contracts 与 `Platform*Error` | 平台层专用，必须与完整 execution provider 分开。 |
 | Compiler conformance metadata | `_compiler.provider_conformance.ProviderExtension` | 与公开 `extensions.sdk.ProviderExtension` **同名不同义**；前者只是 namespaced non-semantic metadata，应改名并最终留在 conformance 内部。 |
 
 公共错误基类位于 `flagquantum/errors.py`：`ValidationError`、`SerializationError`、

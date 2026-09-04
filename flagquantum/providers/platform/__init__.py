@@ -1,7 +1,7 @@
-"""Device-platform boundaries for FlagQuantum runtimes.
+"""Authoritative compute-platform provider boundary.
 
 Platform modules own device discovery and device-specific lifecycle operations.
-Representation runtimes should depend on this package instead of importing a
+Runtime and Simulation consumers depend on this package instead of importing a
 vendor runtime directly.
 """
 

@@ -15,7 +15,7 @@ from typing import Any, Mapping
 import pytest
 import torch
 
-from flagquantum.runtime.platforms import (
+from flagquantum.providers.platform import (
     MemorySnapshot,
     PlatformDevice,
     PlatformIdentity,

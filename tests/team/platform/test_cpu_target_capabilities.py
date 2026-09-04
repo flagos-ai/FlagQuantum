@@ -23,8 +23,8 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     match_target_capabilities,
 )
-from flagquantum.runtime.platforms import get_platform_runtime, list_platform_status
-from flagquantum.runtime.platforms.cpu_target_capabilities import (
+from flagquantum.providers.platform import get_platform_runtime, list_platform_status
+from flagquantum.providers.platform.cpu_target_capabilities import (
     CPUCapabilityObservation,
     CPUPrecisionObservation,
     cpu_platform_to_target_capability_snapshot,

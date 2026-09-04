@@ -49,7 +49,7 @@ def validate(*, device_name: str, checkpoints: tuple[int, ...]) -> dict[str, Any
         except ImportError as exc:
             raise RuntimeError("Torch-FL is required for flagos validation") from exc
     torch = importlib.import_module("torch")
-    platforms = importlib.import_module("flagquantum.runtime.platforms")
+    platforms = importlib.import_module("flagquantum.providers.platform")
     optimizer = importlib.import_module(
         "flagquantum.runtime.backends.statevector." "split_real_imag_autograd_optimizer"
     )

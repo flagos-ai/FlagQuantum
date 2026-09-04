@@ -23,7 +23,7 @@ from flagquantum.extensions import (
     ExtensionRegistry,
     extension_scope,
 )
-from flagquantum.runtime.platforms import (
+from flagquantum.providers.platform import (
     MemorySnapshot,
     PlatformRuntime,
     get_platform_runtime,

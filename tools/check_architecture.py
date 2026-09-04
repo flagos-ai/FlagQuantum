@@ -160,6 +160,14 @@ def architecture_errors() -> tuple[str, ...]:
         errors.append(
             "flagquantum/algorithms_stack: removed compatibility package must not return"
         )
+    removed_runtime_platforms = PACKAGE / "runtime" / "platforms"
+    if removed_runtime_platforms.exists() and any(
+        removed_runtime_platforms.glob("*.py")
+    ):
+        errors.append(
+            "flagquantum/runtime/platforms: migrated platform package must not return; "
+            "use flagquantum/providers/platform"
+        )
 
     for directory in ("flagquantum", "tests", *MAINTAINED_ENTRYPOINTS):
         for path in (ROOT / directory).rglob("*"):

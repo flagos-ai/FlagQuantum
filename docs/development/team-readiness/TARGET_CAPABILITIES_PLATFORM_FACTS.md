@@ -6,7 +6,7 @@
 
 ## 结论
 
-现有 `flagquantum.runtime.platforms.PlatformRuntime` 能真实观察的通用事实只有：provider
+现有 `flagquantum.providers.platform.PlatformRuntime` 能真实观察的通用事实只有：provider
 身份与版本、当前进程的 installed/activated/available、设备枚举与名称、部分设备总内存、
 部分 allocator 内存，以及 stream/event/RNG/synchronize 句柄能否被调用。它没有 dtype、
 原生双精度、Double-Single、kernel 驻留、拓扑、P2P、集合通信、节点间通信或 CPU fallback
@@ -105,7 +105,7 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 | 来源 | 可证明 | 不可证明 |
 | --- | --- | --- |
 | `tests/unit/test_platform_runtime.py` | CPU 生命周期、CUDA discovery fake、FlagOS lazy/public API 适配和厂商名不参与分类 | 真实 CUDA、FlagOS 或国产硬件执行 |
-| `flagquantum/runtime/platforms/cpu_target_capabilities.py` | 注入式 CPU device/count/memory/precision 观察到 Core v1 snapshot；独立 CPU identity/scope；TTL/evidence 传递；缺失事实 blocker | 不发现 CUDA/FlagOS/QPU；不产生 requirements、fallback 或性能/硬件声明 |
+| `flagquantum/providers/platform/cpu_target_capabilities.py` | 注入式 CPU device/count/memory/precision 观察到 Core v1 snapshot；独立 CPU identity/scope；TTL/evidence 传递；缺失事实 blocker | 不发现 CUDA/FlagOS/QPU；不产生 requirements、fallback 或性能/硬件声明 |
 | `tests/team/platform/test_cpu_target_capabilities.py` | CPU adapter 的 source/evidence round-trip、unavailable/missing/negative probe、TTL/scope 和默认行为不变 | 任何硬件能力；fake probe 不是真实硬件证据 |
 | `tests/team/platform/test_target_capability_facts.py` | 候选投影的三轴分离；缺 SDK 字段保持 unknown；声明不晋级；对象不泄漏 | 任何硬件能力；test-only fixture 不是 Core 合同 |
 | `runtime/operator_probes.py` + `CapabilityEvidence` | 特定 provider/device/profile/operator/dtype 的 forward/backward probe | 未探测算子、通信、拓扑、物理 route 或生产等级 |
@@ -122,7 +122,7 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 
 ## CPU Platform 窄适配实现
 
-`flagquantum.runtime.platforms.cpu_target_capabilities` 是当前唯一实现切片。调用者注入
+`flagquantum.providers.platform.cpu_target_capabilities` 是当前唯一实现切片。调用者注入
 `CPUCapabilityProbe`，其 `observe()` 返回 `CPUCapabilityObservation`，同时提供独立的
 `target_id`、`provider_version`、`target_revision`、`environment_id`、probe `source_ref` 和
 静态 `target_class_source_ref`。适配器

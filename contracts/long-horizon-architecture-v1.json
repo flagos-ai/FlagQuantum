@@ -69,12 +69,12 @@
       "name": "platform_provider_convergence",
       "owner": "platform-maintainers",
       "target_milestone": "vnext-phase-3",
-      "current_authority": ["flagquantum/runtime/platforms", "flagquantum/extensions/sdk"],
+      "current_authority": ["flagquantum/providers/platform", "flagquantum/extensions/sdk"],
       "target_authority": "flagquantum/providers/platform",
       "compatibility_adapter": "evolved PlatformRuntime and extension SDK contracts",
       "completion_evidence": "two platform implementations pass capability, precision, communication, fallback, and replacement tests",
       "retirement_condition": "no general-purpose module imports a concrete vendor runtime",
-      "status": "planned"
+      "status": "in_progress"
     },
     {
       "name": "execution_provider_convergence",

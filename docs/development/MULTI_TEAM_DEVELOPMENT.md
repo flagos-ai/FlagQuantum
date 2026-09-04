@@ -84,7 +84,7 @@ python tools/check_team_scope.py \
 
 - `runtime/**` 默认属于 Runtime；
 - `runtime/backends/**` 过渡期属于 Simulation；
-- `runtime/platforms/**` 过渡期属于 Platform；
+- `providers/platform/**` 属于 Platform；
 - `runtime/target_execution.py` 过渡期属于 Execution Provider；
 - `extensions/**` 默认属于 Ecosystem；
 - `extensions/sdk/**` 过渡期属于 Platform。

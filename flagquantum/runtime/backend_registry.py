@@ -17,7 +17,7 @@ from typing import Any, Mapping
 import torch
 
 from ..core.runtime_config import get_runtime_config
-from .platforms import discover_platform_devices, resolve_platform_device
+from ..providers.platform import discover_platform_devices, resolve_platform_device
 
 
 @dataclass(frozen=True)

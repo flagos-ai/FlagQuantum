@@ -50,7 +50,7 @@ def validate(*, device_name: str, depths: tuple[int, ...]) -> dict[str, Any]:
     # Torch-FL's CUDA distribution requires this import order.
     torch = importlib.import_module("torch")
     fq = importlib.import_module("flagquantum")
-    platforms = importlib.import_module("flagquantum.runtime.platforms")
+    platforms = importlib.import_module("flagquantum.providers.platform")
     split = importlib.import_module(
         "flagquantum.runtime.backends.statevector.split_real_imag"
     )

@@ -232,7 +232,7 @@ Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms
 | 核心契约 | `core`、部分 `_compiler` 和 `runtime/contracts.py` | `core` | 跨领域产物、能力、请求、结果和证据均由 Core 定义并通过序列化测试 | 重复私有契约没有调用者 |
 | 编译器收敛 | `_compiler`、`compilation` | `compiler` | 替换一条编译管线不修改 Runtime 和用户 API | 旧内部入口引用归零 |
 | 模拟算法抽离 | `simulation`、部分 `runtime/backends` | `simulation` | 真实引擎和契约假实现通过同一套一致性测试 | Runtime 下不再拥有数值算法 |
-| 计算平台收敛 | `runtime/platforms`、`extensions/sdk` | `providers/platform` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |
+| 计算平台收敛 | `providers/platform`、`extensions/sdk` | `providers/platform` | 两种平台通过能力、精度、通信、回退和替换测试 | 扩展生命周期收口，通用代码不再导入厂商 Runtime |
 | 执行目标收敛 | `runtime/backends`、`deployment` | `providers/execution` | 模拟与 QPU/远程服务共享结果契约 | 后端选择和结果解码只存在于 Provider 后方 |
 | 生态收敛 | `interop`、部分 `extensions` | `ecosystem` | 边界转换和往返一致性测试通过 | 外部框架对象不进入核心领域 |
 | Agent/网关分离 | `_agent_services`、`_gateways/mcp` | 主仓库 Agent Services；外部网关 | 无 MCP SDK 时本地路径通过，跨仓库契约测试通过 | 主仓库无生产 MCP 传输依赖 |

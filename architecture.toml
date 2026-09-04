@@ -13,10 +13,10 @@ root_init_line_ceiling = 140
 
 [accelerator_boundaries]
 torch_fl_import_allowed = [
-    "flagquantum/runtime/platforms/flagos.py",
+    "flagquantum/providers/platform/flagos.py",
 ]
 direct_cuda_allowed = [
-    "flagquantum/runtime/platforms/pytorch.py",
+    "flagquantum/providers/platform/pytorch.py",
 ]
 
 [interop_boundaries]

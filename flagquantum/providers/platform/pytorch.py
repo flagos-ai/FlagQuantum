@@ -1,4 +1,4 @@
-"""Built-in CPU and CUDA platform implementations."""
+"""Built-in PyTorch CPU and CUDA platform providers."""
 
 from __future__ import annotations
 

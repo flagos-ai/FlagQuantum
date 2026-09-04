@@ -1,4 +1,4 @@
-"""Small, vendor-neutral contracts for accelerator platform integrations."""
+"""Small, vendor-neutral contracts for compute-platform integrations."""
 
 from __future__ import annotations
 

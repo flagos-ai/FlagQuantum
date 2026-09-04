@@ -10,7 +10,7 @@ import torch
 from ....core.ir import ensure_circuit_ir
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import Parameter
-from ...platforms import get_platform_runtime, resolve_platform_device
+from ....providers.platform import get_platform_runtime, resolve_platform_device
 from .split_real_imag import _parameter_occurrences
 from .split_real_imag_device_double_single import (
     execute_split_real_imag_device_double_single_expectation,

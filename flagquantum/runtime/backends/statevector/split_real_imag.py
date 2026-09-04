@@ -16,7 +16,7 @@ from ....core.parameters import (
     parameter_names_in_value,
     value_to_tensor,
 )
-from ...platforms import get_platform_runtime, resolve_platform_device
+from ....providers.platform import get_platform_runtime, resolve_platform_device
 
 SPLIT_REAL_IMAG_SCHEMA = "flagquantum_split_real_imag_statevector_result_v1"
 SPLIT_REAL_IMAG_SUPPORTED_GATES = frozenset(
