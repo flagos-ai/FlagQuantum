@@ -20,6 +20,7 @@ from ..core.runtime_config import (
     runtime_config,
 )
 from ..devices import DistributedQuantumDevice
+from ..errors import ExecutionError
 from ..measurement import measure_allZ
 from ..ops import functional
 from ..runtime.backend_registry import resolve_device
@@ -584,18 +585,25 @@ def run_native(
                 "explicit numerical contract enforcement is currently available "
                 "only for local statevector execution through flagos"
             )
-        if coupling_map is None and hasattr(circuit_or_ir, "state"):
+        if (
+            provided_execution_plan is None
+            and coupling_map is None
+            and hasattr(circuit_or_ir, "state")
+        ):
             result = circuit_or_ir.state()
         else:
-            from ..circuit import Circuit
+            from ..simulation.statevector import run_local_statevector
 
-            circuit_options = dict(options)
-            circuit_options.pop("coupling_map", None)
-            circuit_options.pop("optimize", None)
-            circuit_options.pop("memory_limit_bytes", None)
-            circuit_options.pop("world_size", None)
-            circuit_options.pop("world_sz", None)
-            result = Circuit.from_ir(execution_ir, **circuit_options).state()
+            resolved_device = resolve_device(options.get("device"))
+            result = run_local_statevector(
+                execution_ir,
+                batch_size=int(options.get("bsz", 1)),
+                device=resolved_device,
+                dtype=(
+                    options.get("dtype")
+                    or getattr(torch, get_runtime_config().complex_dtype)
+                ),
+            )
         execution_plan = provided_execution_plan or build_plan(
             execution_ir, state_mode="statevector", **plan_options
         )
@@ -1062,6 +1070,43 @@ def _normalize_execution_output(
     from .result import normalize_execution_result
 
     result = normalize_execution_result(output, mode=mode, plan=execution_plan)
+    if (
+        mode == "statevector"
+        and execution_plan.world_size == 1
+        and isinstance(result.state, torch.Tensor)
+    ):
+        from .platforms import get_platform_runtime
+
+        actual_device = result.state.device
+        platform = get_platform_runtime(actual_device.type)
+        requested_device = str(
+            (execution_plan.runtime_config or {}).get("device", actual_device)
+        )
+        if requested_device.split(":", 1)[0] != actual_device.type:
+            raise ExecutionError(
+                "local statevector execution returned data on "
+                f"{actual_device} instead of planned device {requested_device}"
+            )
+        native_output = result.__dict__.get("_native_output")
+        result = replace(
+            result,
+            runtime={
+                **dict(result.runtime),
+                "execution_path": "local_statevector",
+                "simulation_engine": "pytorch_statevector",
+                "platform_provider": platform.identity().provider,
+                "device": str(actual_device),
+                "distribution_semantics": "single_device_fast_path",
+            },
+            provenance={
+                **dict(result.provenance),
+                "requested_device": requested_device,
+                "selected_device": str(actual_device),
+                "cpu_fallback_used": False,
+            },
+        )
+        if native_output is not None:
+            object.__setattr__(result, "_native_output", native_output)
     measurement_results = execute_measurements(
         output,
         requests,
