@@ -123,6 +123,7 @@ Provider 和 Remote Service Provider 不因此被迫依赖模拟算法。
 
 ```text
 flagquantum/
+├── __init__.py              # fq 公共门面；只组合稳定入口，不承载领域实现
 ├── core/                    # 后端无关的稳定语义
 │   ├── ir/
 │   ├── artifacts/
@@ -177,7 +178,50 @@ contracts/                   # 契约快照与架构策略；运行时类型由 
 docs/architecture/           # 架构总纲、ADR 和专题设计
 ```
 
-### 5.1 迁移台账
+### 5.1 公共门面与调用顺序
+
+`flagquantum/__init__.py` 是 `import flagquantum as fq` 的唯一公共门面。它可以组合
+Compiler 与 Runtime 的稳定入口，但不定义编译、调度、数值计算或厂商适配
+逻辑。普通开发者不得为了完成一次执行而手工构造内部指纹、证明或调度
+对象。
+
+Core 不是调用链上的首个“服务”，而是贯穿各阶段的共同语义。典型的
+本地或国产加速器模拟任务遵循：
+
+```text
+用户 / PyTorch / JAX
+  -> fq 公共门面
+  -> Ecosystem 边界转换（仅当输入是外部对象时）
+  -> Compiler（校验、优化、Lowering、目标合法性）
+  -> Runtime（能力匹配、目标选择、计划与执行生命周期）
+  -> Simulation Execution Provider（接收标准执行请求）
+  -> Simulation Engine（状态向量 / MPS / TN / 噪声 / 梯度）
+  -> Platform Provider（CPU / 国产 GPU/NPU / 通信）
+  -> ExecutionResult + ExecutionEvidence
+  -> Runtime
+  -> Ecosystem 结果转换（如需）
+  -> 用户
+```
+
+Execution Provider 回答“任务交给哪类目标以及如何提交和取回结果”；
+Platform Provider 回答“模拟引擎如何使用具体计算和通信设备”。Runtime
+通过 Execution Provider 管理执行，不直接调用具体 Platform Provider；
+Simulation Execution Provider 组合 Simulation Engine 与 Platform Provider。
+
+真实 QPU 任务不经过 Simulation Engine 或 Platform Provider：
+
+```text
+用户 -> fq 公共门面 -> Compiler -> Runtime
+     -> QPU Execution Provider -> 真实 QPU
+     -> ExecutionResult + ExecutionEvidence -> Runtime -> 用户
+```
+
+Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms 通过公共
+门面组合应用；Agent Services 通过 Compiler 和 Runtime 的公开契约执行确定性
+预检、解释和调用；Benchmarking 复用与用户相同的执行路径产生测评证据，
+不建立绕过能力、安全或证据检查的专用快速路径。
+
+### 5.2 迁移台账
 
 机器可读的完整台账位于 `contracts/long-horizon-architecture-v1.json`。任何迁移项必须同时
 声明责任团队、目标里程碑、当前权威位置、目标权威位置、适配器、完成证据、旧实现退出
