@@ -93,6 +93,34 @@ def test_persistent_distributed_plan_round_trip(tmp_path):
     assert distributed_tn._load_persistent_plan(path, expected_key=key) is None
 
 
+def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
+    expected = object()
+    calls = []
+
+    def replacement(circuit_or_ir, **options):
+        calls.append((circuit_or_ir, options))
+        return expected
+
+    monkeypatch.setattr(tensor_execution, "run_local_tensor_network", replacement)
+    circuit = fq.Circuit(2, dtype=torch.complex128).h(0)
+
+    assert fqb.run_tensor_network(circuit) is expected
+    assert calls == [
+        (
+            circuit,
+            {
+                "bsz": circuit.bsz,
+                "device": circuit.device,
+                "dtype": circuit.dtype,
+                "contraction_strategy": "greedy",
+                "max_intermediate_size": None,
+                "sliced_labels": None,
+                "dense_observable_wires": 0,
+            },
+        )
+    ]
+
+
 def test_tensor_network_alias_and_top_level_runner():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)

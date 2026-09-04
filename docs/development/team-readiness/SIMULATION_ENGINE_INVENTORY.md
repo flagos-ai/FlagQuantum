@@ -2,10 +2,10 @@
 
 状态：Simulation 团队交付候选（事实盘点与测试草案，不是公共契约）
 
-集成进展（2026-09-04）：本地状态向量执行循环已迁入
-`flagquantum/simulation/statevector.py`，布局、门作用和融合 helper 已迁入
-`flagquantum/simulation/statevector_ops.py`，`Circuit.state()` 仅保留稳定门面。初态与生命周期
-缓存仍暂由 `Circuit` 持有；后续迁移不得改变 `fq.Circuit`、Runtime 或结果契约。
+集成进展（2026-09-04）：本地状态向量、密度矩阵、无噪声 MPS 和张量网络计划构建已归入
+各自的 Simulation 实现。本地 TN 的计划构建与状态入口位于
+`flagquantum/simulation/tensor_local.py`，`tensor_execution.py` 保留兼容门面和观测量计划；
+初态与生命周期缓存仍暂由 `Circuit` 持有，迁移不得改变 `fq.Circuit`、Runtime 或结果契约。
 
 盘点日期：2026-09-03
 
@@ -60,7 +60,7 @@
 | Split real/imag 与 Double-Single | `runtime/backends/statevector/split_real_imag*.py`、`double_single_device_gates.py` | 同文件中的平台身份、精度计划、conformance/result | 实验路径；不得成为首切片默认实现或被描述为等价 FP64 |
 | 本地 MPS | `simulation/mps_local.py` 的无噪声指令循环；`mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `simulation/mps_execution.py` 的兼容入口、adaptive 与 noisy trajectory；`mps.py` 门面 | 单设备无噪声数值路径已独立且不依赖 Runtime；轨迹持久化、rank 与 checkpoint 生命周期仍待迁移 |
 | 分布式 MPS | `runtime/backends/mps/operations.py`、`factorization.py`、`site_kernels.py` 及 forward/reverse 的数值段 | state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 算法与 rank ownership、collective、持久恢复、生产门禁混合 |
-| 本地张量网络 | `simulation/tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py`、`tensor_path_search.py`、`tensor.py` | 收缩/反向与路径、设备、环境拓扑判断混合；能力仍为 experimental |
+| 本地张量网络 | `simulation/tensor_local.py` 的计划构建与数值状态入口；`tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容入口与观测量计划、`tensor_path_search.py`、`tensor.py` | 本地入口已独立且可替换；收缩路径、观测量和环境拓扑判断仍有混合，能力仍为 experimental |
 | 分布式张量网络 | `runtime/backends/tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` 的数值段 | distributed_dag/execution/redistribution/multi_axis/partial_mesh/joint_planning/checkpoint/rematerialization/memory_evidence | sliced、sharded 与通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | `simulation/noise.py` 兼容门面、Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`statevector/noisy.py`、`simulation/mps_state.py`/`mps_execution.py` | 语义由 `flagquantum/noise/`（Core 团队路径）拥有；lowering/选择由 `flagquantum/compilation/noise/` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只应拥有 channel/trajectory 数值演化，不应复制 NoiseModel 或选择策略 |
@@ -81,7 +81,8 @@
 | `mps_models.py`、`mps.py` | 结果转换/兼容门面 | 算法内部诊断或短期门面 | 长期结果契约必须由 Core；门面退出条件是 Runtime 只经获批 Engine Contract 调用 |
 | `tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py` | 纯数值算法 | 网络表示、局部/分片收缩、显式反向、Kahan 等数值方法 | 执行计划和持久记录需由 Runtime/Core 契约提供 |
 | `tensor_path_search.py` | 算法规划（混合） | contraction-order 搜索作为数值算法 | 设备/编译策略、全局资源预算决定属于 Runtime/Compiler 输入 |
-| `tensor_execution.py` | 执行适配（混合） | IR 到 contraction 数值调用 | 读取 `WORLD_SIZE`/`LOCAL_WORLD_SIZE`、节点判断、执行模式选择属于 Runtime |
+| `tensor_local.py` | 纯数值执行 | IR 到本地 contraction plan、状态入口和局部编译模板复用 | 无 Runtime/Provider 依赖；初态和程序缓存仍消费现有 Circuit 生命周期容器 |
+| `tensor_execution.py` | 兼容入口与观测量执行（混合） | 公开入口薄适配、Pauli/Hamiltonian 观测量计划和 contraction 调用 | MPO 压缩仍读取 `WORLD_SIZE`/`LOCAL_WORLD_SIZE`；环境拓扑判断应后续移出 |
 | `tensor_models.py`、`tensor.py` | 结果转换/兼容门面 | 算法内部结构 | 跨层结果与稳定类型应由 Core 提案定义 |
 | `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
 | `graph.py` | 非 Simulation：编译辅助 | 无长期归属 | 当前被 native compiler 使用，目标应归 Compiler；Simulation 不应成为编译图权威位置 |

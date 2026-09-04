@@ -25,6 +25,11 @@ dispatch through `runtime/noise_registry.py`.
 separate adaptive and noisy-trajectory paths; their checkpoint and rank
 lifecycle remain explicit migration debt, not part of the local golden path.
 
+`tensor_local.py` owns local tensor-network plan construction and the numerical
+state entry point. `tensor_execution.py` preserves the public wrapper and owns
+observable-plan assembly; distributed scheduling, rank lifecycle, and
+communication remain outside this local path.
+
 For the current migration slice, `Circuit` still owns the initial-state and
 lifecycle cache containers. Do not duplicate them here or add a second request
 or result model.
@@ -47,6 +52,13 @@ For the local MPS loop, start in `mps_local.py` and run:
 
 ```bash
 python -m pytest tests/test_mps.py -q
+```
+
+For local tensor-network plan construction or execution, start in
+`tensor_local.py` and run:
+
+```bash
+python -m pytest tests/test_tensor_network.py -q
 ```
 
 Keep ordinary numerical changes inside this directory. A change that also
