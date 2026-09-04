@@ -421,6 +421,12 @@ def plan_program(plan: ExecutionPlan) -> CircuitIR:
     )
 
 
+def plan_execution_program(plan: ExecutionPlan) -> CircuitIR:
+    """Restore the compiled instructions already carried by a plan."""
+
+    return _canonical_program(plan_program(plan), plan)
+
+
 def plan_decision(plan: ExecutionPlan) -> dict[str, object]:
     return _require_mapping("ExecutionPlan.decision", plan_to_dict(plan)["decision"])
 
@@ -668,6 +674,7 @@ __all__ = (
     "canonical_json",
     "execution_plan_contract",
     "plan_decision",
+    "plan_execution_program",
     "plan_from_dict",
     "plan_from_json",
     "plan_program",

@@ -7,6 +7,7 @@ import torch
 from ..compilation.execution_plan_contract import (
     ExecutionPlanContractError,
     plan_decision,
+    plan_execution_program,
     plan_noise_model,
     plan_program,
     validate_plan_environment,
@@ -25,6 +26,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
 
     validate_plan_environment(execution_plan)
     source_ir = plan_program(execution_plan)
+    execution_ir = plan_execution_program(execution_plan)
     noise_model = plan_noise_model(execution_plan)
     decision = plan_decision(execution_plan)
     requests = tuple(source_ir.measurements)
@@ -53,7 +55,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     )
     try:
         output, returned_plan = run_native(
-            source_ir,
+            execution_ir,
             noise_model=noise_model,
             mode=mode,
             return_plan=True,

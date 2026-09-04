@@ -627,7 +627,11 @@ def run_native(
     elif mode == "density_matrix":
         from .noise_registry import execute_noisy_plan
 
-        lowered = lower_noise_model(execution_ir, noise_model)
+        lowered = (
+            execution_ir
+            if provided_execution_plan is not None
+            else lower_noise_model(execution_ir, noise_model)
+        )
         execution_plan = provided_execution_plan or build_plan(
             lowered,
             state_mode="density_matrix",
@@ -890,7 +894,11 @@ def run_native(
         mps_options.pop("coupling_map", None)
         mps_options.pop("optimize", None)
         source = execution_ir if coupling_map is not None else circuit_or_ir
-        lowered = lower_noise_model(execution_ir, noise_model)
+        lowered = (
+            execution_ir
+            if provided_execution_plan is not None
+            else lower_noise_model(execution_ir, noise_model)
+        )
         result = run_lowered_noisy_mps_trajectory(
             lowered,
             source=source,
@@ -935,7 +943,11 @@ def run_native(
         mps_options.pop("coupling_map", None)
         mps_options.pop("optimize", None)
         source = execution_ir if coupling_map is not None else circuit_or_ir
-        lowered = lower_noise_model(execution_ir, noise_model)
+        lowered = (
+            execution_ir
+            if provided_execution_plan is not None
+            else lower_noise_model(execution_ir, noise_model)
+        )
         result = run_lowered_noisy_mps(
             lowered,
             source=source,

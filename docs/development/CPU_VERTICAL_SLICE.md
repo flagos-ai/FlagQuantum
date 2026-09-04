@@ -141,3 +141,12 @@ Layer reconstruction stays with `execution_plan_contract.py` because it is also
 required when restoring the protected serialized plan. The former
 `compilation/execution_plan_builder.py` was deleted, and Runtime gained no new
 Compiler or transitional-plan dependency edge.
+
+## Planned-program execution
+
+`fq.run(plan)` now restores the compiled or noise-lowered instructions already
+carried by `ExecutionPlan.layers` and passes that IR to the executor. The
+execution stage no longer repeats noise lowering for stable density-matrix
+plans, including plans restored from JSON. Direct `run_native` program entry
+points still compile or lower as needed; no serialized field or plan identity
+input changed.
