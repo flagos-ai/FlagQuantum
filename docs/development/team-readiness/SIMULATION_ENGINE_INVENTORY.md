@@ -58,7 +58,7 @@
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `runtime/backends/statevector/forward.py`、`reverse_adjoint.py`、`triton.py`、`local_execution.py` 的数值部分 | 同目录 planning/models/environment/forward_executor/training/checkpointing/gradient_reduction | 真正 amplitude/qubit-address sharding 与 Runtime 生命周期高度混合 |
 | Split real/imag 与 Double-Single | `runtime/backends/statevector/split_real_imag*.py`、`double_single_device_gates.py` | 同文件中的平台身份、精度计划、conformance/result | 实验路径；不得成为首切片默认实现或被描述为等价 FP64 |
-| 本地 MPS | `simulation/mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `simulation/mps_execution.py`、`mps.py` | 数值核心较完整，但含设备开关、轨迹持久化和执行策略 |
+| 本地 MPS | `simulation/mps_local.py` 的无噪声指令循环；`mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `simulation/mps_execution.py` 的兼容入口、adaptive 与 noisy trajectory；`mps.py` 门面 | 单设备无噪声数值路径已独立且不依赖 Runtime；轨迹持久化、rank 与 checkpoint 生命周期仍待迁移 |
 | 分布式 MPS | `runtime/backends/mps/operations.py`、`factorization.py`、`site_kernels.py` 及 forward/reverse 的数值段 | state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 算法与 rank ownership、collective、持久恢复、生产门禁混合 |
 | 本地张量网络 | `simulation/tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py`、`tensor_path_search.py`、`tensor.py` | 收缩/反向与路径、设备、环境拓扑判断混合；能力仍为 experimental |
 | 分布式张量网络 | `runtime/backends/tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` 的数值段 | distributed_dag/execution/redistribution/multi_axis/partial_mesh/joint_planning/checkpoint/rematerialization/memory_evidence | sliced、sharded 与通信计划交织；生产 transport 未认证 |
@@ -75,7 +75,8 @@
 | `small_statevector.py` | 纯数值算法 | 小规模精确演化与 Z 期望 | 常量缓存键含 device 合理；它不是通用执行契约 |
 | `mps_state.py`、`mps_factorization.py`、`mps_low_rank.py` | 纯数值算法 | MPS 状态、门作用、分解、截断和误差 | 环境变量控制 kernel/分解策略应由请求/Runtime 决策后显式传入；dense correctness fallback 必须可见 |
 | `static_mps.py`、`mps_brickwork.py`、`tebd.py`、`dense_island.py` | 数值算法 + Kernel 调用 | 固定形状图、TEBD、dense island、局部编译核 | 编译/缓存策略和能力选择需与 Runtime/Compiler 的决定区分 |
-| `mps_execution.py` | 执行适配（混合） | IR 到 MPS 数值步骤的薄适配 | trajectory rank/world、checkpoint 文件、resume、adaptive stop 生命周期应迁至 Runtime |
+| `mps_local.py` | 纯数值执行 | 已初始化 MPS 上的 IR 门作用、融合与 bucket kernel 调用 | 无 Runtime 生命周期所有权 |
+| `mps_execution.py` | 兼容入口与高级执行（混合） | Circuit/IR 到本地 MPS 初态的薄适配、单轨迹数值演化 | trajectory rank/world、checkpoint 文件、resume、adaptive stop 生命周期应迁至 Runtime |
 | `mps_planning_mixin.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
 | `mps_models.py`、`mps.py` | 结果转换/兼容门面 | 算法内部诊断或短期门面 | 长期结果契约必须由 Core；门面退出条件是 Runtime 只经获批 Engine Contract 调用 |
 | `tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py` | 纯数值算法 | 网络表示、局部/分片收缩、显式反向、Kahan 等数值方法 | 执行计划和持久记录需由 Runtime/Core 契约提供 |

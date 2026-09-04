@@ -8,6 +8,27 @@ import flagquantum.noise as fqn
 import flagquantum.simulation.mps as mps_runtime
 
 
+def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
+    import flagquantum.simulation.mps_execution as mps_execution
+
+    expected = object()
+    calls = []
+
+    def replacement(ir, state, **options):
+        calls.append((ir, state, options))
+        return expected
+
+    monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
+    monkeypatch.setattr(mps_execution, "run_local_mps", replacement)
+
+    assert fqb.run_mps(fq.Circuit(2).h(0)) is expected
+    assert len(calls) == 1
+    assert isinstance(calls[0][0], fq.CircuitIR)
+    assert calls[0][1].n_wires == 2
+    assert calls[0][2]["fuse_single_qubit"] is True
+    assert calls[0][2]["spatial_bucket"] is True
+
+
 def test_mps_bell_state_matches_statevector():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)

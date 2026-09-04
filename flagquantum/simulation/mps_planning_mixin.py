@@ -7,11 +7,7 @@ from typing import Any
 
 import torch
 
-_DENSE_Z_SUM_WEIGHT_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
-] = {}
-_MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
-from .mps_models import (  # noqa: E402
+from .mps_models import (
     MPSAdaptiveBondPlan,
     MPSBondProfile,
     MPSLocalRefinementPlan,

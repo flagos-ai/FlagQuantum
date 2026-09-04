@@ -10,25 +10,20 @@ import torch
 from ..core.ir import Instruction
 from ..ops.gate_matrix import gate_matrix
 from ..ops.matrices import GATE_MAT_DICT, get_global_precision
-from .real_imag_kernels import complex_einsum_pair
-from .statevector_ops import _apply_matrix, _bits_from_indices
-
-_DENSE_Z_SUM_WEIGHT_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
-] = {}
-_MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
-from .mps_factorization import (  # noqa: E402
+from .mps_factorization import (
     _discarded_weight,
     _select_rank,
     _split_pair_matrix,
     _split_pair_matrix_bucket,
     _z_sum_dense_weights,
 )
-from .mps_models import (  # noqa: E402
+from .mps_models import (
     MPSConfig,
     MPSTruncationRecord,
 )
-from .mps_planning_mixin import MPSPlanningMixin  # noqa: E402
+from .mps_planning_mixin import MPSPlanningMixin
+from .real_imag_kernels import complex_einsum_pair
+from .statevector_ops import _apply_matrix, _bits_from_indices
 
 
 class MPSState(MPSPlanningMixin):

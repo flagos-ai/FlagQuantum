@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import torch
 from torch.profiler import record_function
 
 _DENSE_Z_SUM_WEIGHT_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
 ] = {}
-_MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
 _SVD_FALLBACK_STATS = {
     "requested_driver_failures": 0,
     "gesvd_driver_fallbacks": 0,

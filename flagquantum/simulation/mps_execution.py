@@ -7,20 +7,14 @@ from typing import Any
 
 import torch
 
-from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ..ops.gate_matrix import gate_matrix
-
-_DENSE_Z_SUM_WEIGHT_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
-] = {}
-_MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
-from .mps_models import (  # noqa: E402
-    CompiledMPSProgram,
+from ..core.ir import CircuitIR, ensure_circuit_ir
+from .mps_local import run_local_mps
+from .mps_models import (
     MPSAdaptiveRunResult,
     MPSConfig,
     MPSMonteCarloResult,
 )
-from .mps_state import MPSState  # noqa: E402
+from .mps_state import MPSState
 
 
 def run_mps(
@@ -77,163 +71,23 @@ def run_mps(
     else:
         raise TypeError("run_mps expects a Circuit or CircuitIR.")
 
-    instructions = tuple(ir)
     binding_source = getattr(circuit_or_ir, "_parameter_bindings", None)
     parameter_bindings = None if binding_source is None else binding_source.values()
     program_cache = getattr(circuit_or_ir, "_backend_programs", None)
-    signature = (
-        mps.n_wires,
-        mps.bsz,
-        str(mps.device),
-        mps.dtype,
-        max_bond,
-        float(cutoff),
-        bool(fuse_single_qubit),
+    spatial_bucket = os.getenv("FQ_MPS_SPATIAL_BUCKET", "1").strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+    return run_local_mps(
+        ir,
+        mps,
+        parameter_bindings=parameter_bindings,
+        program_cache=program_cache,
+        fuse_single_qubit=fuse_single_qubit,
+        spatial_bucket=spatial_bucket,
     )
-    program_key = ("mps", signature)
-    program = None if program_cache is None else program_cache.get(program_key)
-    if program is None:
-        program = CompiledMPSProgram.compile(
-            instructions,
-            signature=signature,
-            fuse_single_qubit=fuse_single_qubit,
-        )
-        if program_cache is not None:
-            program_cache[program_key] = program
-    for operation in program.operations:
-        group = operation.instruction_indices
-        instruction = instructions[group[0]]
-        if operation.kind == "adjacent_two_bucket":
-            spatial_bucket_enabled = os.getenv(
-                "FQ_MPS_SPATIAL_BUCKET", "1"
-            ).strip().lower() not in {"0", "false", "off", "no"}
-            if not spatial_bucket_enabled:
-                for index in group:
-                    mps.apply_instruction(instructions[index], parameter_bindings)
-                continue
-            matrices = [
-                gate_matrix(
-                    instructions[index],
-                    bsz=mps.bsz,
-                    device=mps.device,
-                    dtype=mps.dtype,
-                    parameter_bindings=parameter_bindings,
-                )
-                for index in group
-            ]
-            mps.apply_two_bucket(
-                matrices,
-                [min(instructions[index].wires) for index in group],
-            )
-            continue
-        if len(group) == 1:
-            mps.apply_instruction(instruction, parameter_bindings)
-            continue
-        matrix = gate_matrix(
-            instruction,
-            bsz=mps.bsz,
-            device=mps.device,
-            dtype=mps.dtype,
-            parameter_bindings=parameter_bindings,
-        )
-        for index in group[1:]:
-            matrix = _compose_one_qubit_matrices(
-                gate_matrix(
-                    instructions[index],
-                    bsz=mps.bsz,
-                    device=mps.device,
-                    dtype=mps.dtype,
-                    parameter_bindings=parameter_bindings,
-                ),
-                matrix,
-                bsz=mps.bsz,
-            )
-        mps.apply_one(matrix, int(instruction.wires[0]))
-    return mps
-
-
-def _mps_instruction_schedule(
-    instructions: tuple[Instruction, ...], fuse_single_qubit: bool
-) -> tuple[tuple[int, ...], ...]:
-    key = (
-        bool(fuse_single_qubit),
-        tuple(
-            (
-                instruction.name,
-                instruction.wires,
-                tuple(sorted(instruction.params)),
-                instruction.matrix is not None,
-                bool(instruction.metadata.get("is_channel")),
-            )
-            for instruction in instructions
-        ),
-    )
-    cached = _MPS_INSTRUCTION_SCHEDULE_CACHE.get(key)
-    if cached is not None:
-        return cached
-
-    groups: list[tuple[int, ...]] = []
-    index = 0
-    while index < len(instructions):
-        instruction = instructions[index]
-        group = [index]
-        if fuse_single_qubit and _is_fusible_one_qubit_instruction(instruction):
-            wire = int(instruction.wires[0])
-            next_index = index + 1
-            while (
-                next_index < len(instructions)
-                and _is_fusible_one_qubit_instruction(instructions[next_index])
-                and int(instructions[next_index].wires[0]) == wire
-            ):
-                group.append(next_index)
-                next_index += 1
-        elif (
-            len(instruction.wires) == 2
-            and abs(instruction.wires[0] - instruction.wires[1]) == 1
-            and instruction.wires[0] < instruction.wires[1]
-        ):
-            occupied = set(instruction.wires)
-            next_index = index + 1
-            while next_index < len(instructions):
-                candidate = instructions[next_index]
-                if (
-                    len(candidate.wires) != 2
-                    or abs(candidate.wires[0] - candidate.wires[1]) != 1
-                    or candidate.wires[0] > candidate.wires[1]
-                    or occupied.intersection(candidate.wires)
-                ):
-                    break
-                group.append(next_index)
-                occupied.update(candidate.wires)
-                next_index += 1
-        groups.append(tuple(group))
-        index = group[-1] + 1
-    schedule = tuple(groups)
-    _MPS_INSTRUCTION_SCHEDULE_CACHE[key] = schedule
-    return schedule
-
-
-def _is_fusible_one_qubit_instruction(instruction: Instruction) -> bool:
-    return (
-        len(instruction.wires) == 1
-        and not instruction.metadata.get("is_channel")
-        and instruction.name not in {"measure", "reset"}
-    )
-
-
-def _compose_one_qubit_matrices(
-    new_matrix: torch.Tensor,
-    current_matrix: torch.Tensor,
-    *,
-    bsz: int,
-) -> torch.Tensor:
-    if new_matrix.ndim == 2 and current_matrix.ndim == 2:
-        return new_matrix @ current_matrix
-    if new_matrix.ndim == 2:
-        new_matrix = new_matrix.expand(int(bsz), -1, -1)
-    if current_matrix.ndim == 2:
-        current_matrix = current_matrix.expand(int(bsz), -1, -1)
-    return torch.bmm(new_matrix, current_matrix)
 
 
 def run_mps_adaptive(

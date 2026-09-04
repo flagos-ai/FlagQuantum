@@ -9,9 +9,6 @@ import torch
 
 from ..core.ir import Instruction
 
-_DENSE_Z_SUM_WEIGHT_CACHE: dict[
-    tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
-] = {}
 _MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
 
 
@@ -31,9 +28,70 @@ if TYPE_CHECKING:
 def _mps_instruction_schedule(
     instructions: tuple[Instruction, ...], fuse_single_qubit: bool
 ) -> tuple[tuple[int, ...], ...]:
-    from .mps_execution import _mps_instruction_schedule as schedule
+    key = (
+        bool(fuse_single_qubit),
+        tuple(
+            (
+                instruction.name,
+                instruction.wires,
+                tuple(sorted(instruction.params)),
+                instruction.matrix is not None,
+                bool(instruction.metadata.get("is_channel")),
+            )
+            for instruction in instructions
+        ),
+    )
+    cached = _MPS_INSTRUCTION_SCHEDULE_CACHE.get(key)
+    if cached is not None:
+        return cached
 
-    return schedule(instructions, fuse_single_qubit)
+    groups: list[tuple[int, ...]] = []
+    index = 0
+    while index < len(instructions):
+        instruction = instructions[index]
+        group = [index]
+        if fuse_single_qubit and _is_fusible_one_qubit_instruction(instruction):
+            wire = int(instruction.wires[0])
+            next_index = index + 1
+            while (
+                next_index < len(instructions)
+                and _is_fusible_one_qubit_instruction(instructions[next_index])
+                and int(instructions[next_index].wires[0]) == wire
+            ):
+                group.append(next_index)
+                next_index += 1
+        elif (
+            len(instruction.wires) == 2
+            and abs(instruction.wires[0] - instruction.wires[1]) == 1
+            and instruction.wires[0] < instruction.wires[1]
+        ):
+            occupied = set(instruction.wires)
+            next_index = index + 1
+            while next_index < len(instructions):
+                candidate = instructions[next_index]
+                if (
+                    len(candidate.wires) != 2
+                    or abs(candidate.wires[0] - candidate.wires[1]) != 1
+                    or candidate.wires[0] > candidate.wires[1]
+                    or occupied.intersection(candidate.wires)
+                ):
+                    break
+                group.append(next_index)
+                occupied.update(candidate.wires)
+                next_index += 1
+        groups.append(tuple(group))
+        index = group[-1] + 1
+    schedule = tuple(groups)
+    _MPS_INSTRUCTION_SCHEDULE_CACHE[key] = schedule
+    return schedule
+
+
+def _is_fusible_one_qubit_instruction(instruction: Instruction) -> bool:
+    return (
+        len(instruction.wires) == 1
+        and not instruction.metadata.get("is_channel")
+        and instruction.name not in {"measure", "reset"}
+    )
 
 
 @dataclass(frozen=True)

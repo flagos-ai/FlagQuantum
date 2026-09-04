@@ -20,6 +20,11 @@ Runtime enters through `run_local_statevector()`.
 density-matrix measurements. Runtime owns noise lowering and execution-plan
 dispatch through `runtime/noise_registry.py`.
 
+`mps_local.py` owns the single-device, noiseless MPS instruction loop.
+`mps_execution.py` preserves the public wrapper and currently contains the
+separate adaptive and noisy-trajectory paths; their checkpoint and rank
+lifecycle remain explicit migration debt, not part of the local golden path.
+
 For the current migration slice, `Circuit` still owns the initial-state and
 lifecycle cache containers. Do not duplicate them here or add a second request
 or result model.
@@ -36,6 +41,12 @@ For a local density-matrix change, start in `density_matrix.py` and run:
 
 ```bash
 python -m pytest tests/test_noise.py -k density_matrix -q
+```
+
+For the local MPS loop, start in `mps_local.py` and run:
+
+```bash
+python -m pytest tests/test_mps.py -q
 ```
 
 Keep ordinary numerical changes inside this directory. A change that also
