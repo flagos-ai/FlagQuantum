@@ -11,10 +11,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from .capability_comparison import CapabilityComparison, CapabilityDifference
-from .diagnostics import Diagnostic
+from .capability_comparison import CapabilityComparison
 from .target_capabilities import TargetCapabilities
 from .target_capabilities_adapter import (
     CompilerProjectionLoss,
@@ -68,7 +67,7 @@ def _comparison_payload(comparison: CapabilityComparison) -> dict[str, object]:
     }
 
 
-def _identity_payload(verdict: "CompilerLegalityVerdict") -> dict[str, object]:
+def _payload(verdict: "CompilerLegalityVerdict") -> dict[str, object]:
     return {
         "schema": verdict.schema,
         "scope": verdict.scope,
@@ -141,47 +140,15 @@ class CompilerLegalityVerdict:
             if not self.identity_valid:
                 raise ValueError("Compiler legality verdict identity is invalid")
         else:
-            object.__setattr__(self, "identity", _sha256(_identity_payload(self)))
+            object.__setattr__(self, "identity", _sha256(_payload(self)))
 
     @property
     def legacy_comparison_compatible(self) -> bool:
         return self.legacy_comparison.compatible
 
     @property
-    def projection_requirement_set_id(self) -> str:
-        """Explicit name for the Core projection identity binding."""
-
-        return self.requirement_set_id
-
-    @property
-    def available_semantic_fingerprint(self) -> str:
-        return self.available_legacy_semantic_fingerprint
-
-    @property
-    def required_semantic_fingerprint(self) -> str:
-        return self.required_legacy_semantic_fingerprint
-
-    @property
-    def legacy_differences(self) -> tuple[CapabilityDifference, ...]:
-        """The original typed issues, in the comparator's established order."""
-
-        return self.legacy_comparison.differences
-
-    @property
-    def issues(self) -> tuple[CapabilityDifference, ...]:
-        return self.legacy_differences
-
-    @property
-    def legacy_diagnostics(self) -> tuple[Diagnostic, ...]:
-        return self.legacy_comparison.diagnostics
-
-    @property
     def issue_paths(self) -> tuple[str, ...]:
         return tuple(item.field for item in self.legacy_comparison.differences)
-
-    @property
-    def canonical_identity(self) -> str:
-        return self.identity
 
     @property
     def identity_valid(self) -> bool:
@@ -189,7 +156,7 @@ class CompilerLegalityVerdict:
             return _sha256(
                 _loss_payload(self.losses)
             ) == self.loss_accounting_identity and (
-                _sha256(_identity_payload(self)) == self.identity
+                _sha256(_payload(self)) == self.identity
             )
         except (TypeError, ValueError, json.JSONDecodeError):
             return False
@@ -203,19 +170,7 @@ class CompilerLegalityVerdict:
 
     def to_dict(self) -> dict[str, object]:
         self.require_valid()
-        return {
-            "schema": self.schema,
-            "scope": self.scope,
-            "verdict": self.verdict,
-            "required_legacy_semantic_fingerprint": self.required_legacy_semantic_fingerprint,
-            "available_legacy_semantic_fingerprint": self.available_legacy_semantic_fingerprint,
-            "requirement_set_id": self.requirement_set_id,
-            "loss_accounting_identity": self.loss_accounting_identity,
-            "requires_legacy_comparator": self.requires_legacy_comparator,
-            "legacy_comparison": _comparison_payload(self.legacy_comparison),
-            "losses": _loss_payload(self.losses),
-            "identity": self.identity,
-        }
+        return {**_payload(self), "identity": self.identity}
 
 
 def evaluate_compiler_target_legality(
@@ -251,18 +206,7 @@ def evaluate_compiler_target_legality(
         losses=losses,
         identity="",
     )
-    identity = _sha256(_identity_payload(provisional))
-    return CompilerLegalityVerdict(
-        verdict=provisional.verdict,
-        required_legacy_semantic_fingerprint=provisional.required_legacy_semantic_fingerprint,
-        available_legacy_semantic_fingerprint=provisional.available_legacy_semantic_fingerprint,
-        requirement_set_id=provisional.requirement_set_id,
-        loss_accounting_identity=provisional.loss_accounting_identity,
-        requires_legacy_comparator=provisional.requires_legacy_comparator,
-        legacy_comparison=provisional.legacy_comparison,
-        losses=provisional.losses,
-        identity=identity,
-    )
+    return replace(provisional, identity=_sha256(_payload(provisional)))
 
 
 __all__ = [

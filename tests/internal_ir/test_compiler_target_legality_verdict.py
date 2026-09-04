@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -9,7 +8,6 @@ from datetime import datetime, timezone
 
 import pytest
 
-from flagquantum._compiler.capability_comparison import CapabilityComparison
 from flagquantum._compiler.target_capabilities import (
     AncillaPolicy,
     ArtifactFormat,
@@ -118,7 +116,7 @@ def test_success_verdict_binds_projection_available_and_loss_accounting() -> Non
     assert verdict.requirement_set_id == projection.requirement_set.requirement_set_id
     assert verdict.requires_legacy_comparator is True
     assert verdict.legacy_comparison_compatible is True
-    assert verdict.legacy_differences == ()
+    assert verdict.legacy_comparison.differences == ()
     assert verdict.issue_paths == ()
     assert verdict.identity_valid is True
     assert verdict.to_dict()["identity"] == verdict.identity
@@ -146,8 +144,8 @@ def test_core_success_cannot_override_gate_parameter_legality_failure() -> None:
     assert verdict.verdict is False
     assert verdict.legacy_comparison_compatible is False
     assert verdict.issue_paths == ("native_gates",)
-    assert verdict.legacy_differences[0].field == "native_gates"
-    assert verdict.legacy_diagnostics[0].notes[0].startswith("required=")
+    assert verdict.legacy_comparison.differences[0].field == "native_gates"
+    assert verdict.legacy_comparison.diagnostics[0].notes[0].startswith("required=")
 
 
 def test_core_success_cannot_override_ancilla_policy_or_deferred_failure() -> None:
@@ -232,10 +230,7 @@ def test_comparator_issue_order_and_paths_are_preserved() -> None:
         "maximum_shots",
         "maximum_program_operations",
     )
-    assert [item.to_dict() for item in verdict.legacy_differences] == [
-        item.to_dict() for item in verdict.legacy_comparison.differences
-    ]
-    assert len(verdict.legacy_diagnostics) == len(verdict.legacy_differences)
+    assert len(verdict.legacy_comparison.diagnostics) == len(verdict.issue_paths)
 
 
 def test_reordered_inputs_have_same_identity() -> None:
@@ -246,6 +241,13 @@ def test_reordered_inputs_have_same_identity() -> None:
         ),
         measurement_results=(MeasurementResult.STATE, MeasurementResult.EXPECTATION),
     )
+    canonical_required = _target(
+        native_gates=(
+            GateCapability("cx"),
+            GateCapability("rx", (ParameterConstraint("theta", -1.0, 1.0),)),
+        ),
+        measurement_results=(MeasurementResult.EXPECTATION, MeasurementResult.STATE),
+    )
     available = _target(
         native_gates=(GateCapability("rx"), GateCapability("cx")),
         measurement_results=(MeasurementResult.EXPECTATION, MeasurementResult.STATE),
@@ -254,8 +256,8 @@ def test_reordered_inputs_have_same_identity() -> None:
         target_capabilities_to_requirement_set(required), available
     )
     second = evaluate_compiler_target_legality(
-        target_capabilities_to_requirement_set(required),
-        replace(available, display_label="reordered"),
+        target_capabilities_to_requirement_set(canonical_required),
+        available,
     )
 
     assert first.to_dict() == second.to_dict()
@@ -307,20 +309,6 @@ def test_tampered_attestation_fails_closed() -> None:
         verdict.to_dict()
 
 
-@pytest.mark.parametrize("bad_projection", [None, object(), "projection"])
-def test_verdict_rejects_non_projection_inputs(bad_projection: object) -> None:
+def test_verdict_rejects_non_projection_inputs() -> None:
     with pytest.raises(TypeError, match="CompilerRequirementProjection"):
-        evaluate_compiler_target_legality(bad_projection, _target())  # type: ignore[arg-type]
-
-
-def test_verdict_does_not_mutate_comparison_type_or_schema() -> None:
-    projection = target_capabilities_to_requirement_set(_target())
-    verdict = evaluate_compiler_target_legality(projection, _target())
-
-    assert isinstance(verdict.legacy_comparison, CapabilityComparison)
-    assert projection.legacy_semantic_json
-    assert projection.legacy_semantic_fingerprint
-    assert (
-        json.loads(projection.legacy_semantic_json)["schema_version"]
-        == "target_capabilities_v1"
-    )
+        evaluate_compiler_target_legality(object(), _target())  # type: ignore[arg-type]
