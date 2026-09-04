@@ -282,9 +282,19 @@ def _canonical_timestamp(value: str, *, field_name: str) -> str:
 
 
 def _validate_capability_value(
-    name: str, value: Any, operator: ComparisonOperator
+    name: str,
+    value: Any,
+    operator: ComparisonOperator,
+    *,
+    allow_none: bool = False,
 ) -> Any:
     value = _freeze_json(value, path=f"capability[{name}]")
+    if value is None:
+        if allow_none:
+            return None
+        raise CapabilityContractError(
+            f"capability[{name}] value must be non-null for a requirement"
+        )
     numeric_names = {
         "device.count",
         "memory.available_bytes",
@@ -548,23 +558,24 @@ class CapabilityFact:
     def __post_init__(self) -> None:
         if self.name not in CAPABILITY_NAMES:
             raise CapabilityContractError(f"unknown v1 capability name {self.name!r}")
+        support_status = _enum(
+            SupportStatus, self.support_status, field_name="fact.support_status"
+        )
+        fact_exposure = _enum(
+            FactExposure, self.fact_exposure, field_name="fact.fact_exposure"
+        )
         object.__setattr__(
             self,
             "value",
             _validate_capability_value(
-                self.name, self.value, ComparisonOperator.EQUALS
+                self.name,
+                self.value,
+                ComparisonOperator.EQUALS,
+                allow_none=support_status is not SupportStatus.VERIFIED,
             ),
         )
-        object.__setattr__(
-            self,
-            "support_status",
-            _enum(SupportStatus, self.support_status, field_name="fact.support_status"),
-        )
-        object.__setattr__(
-            self,
-            "fact_exposure",
-            _enum(FactExposure, self.fact_exposure, field_name="fact.fact_exposure"),
-        )
+        object.__setattr__(self, "support_status", support_status)
+        object.__setattr__(self, "fact_exposure", fact_exposure)
         if not isinstance(self.source, FactSource):
             raise CapabilityContractError("fact.source must be a FactSource")
         blockers = tuple(self.blockers)
@@ -578,6 +589,9 @@ class CapabilityFact:
             )
         if self.support_status is SupportStatus.VERIFIED and blockers:
             raise CapabilityContractError("verified facts must not contain blockers")
+        # Non-verified facts (including null facts with an unavailable
+        # exposure) already require a blocker above.  Keep the historical
+        # verified-fact rule intact: a verified fact cannot carry a blocker.
         if self.fact_exposure is FactExposure.NOT_APPLICABLE and not blockers:
             raise CapabilityContractError("not_applicable facts require a blocker")
         object.__setattr__(self, "blockers", tuple(sorted(blockers, key=_blocker_key)))
