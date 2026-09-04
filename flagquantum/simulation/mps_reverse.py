@@ -6,6 +6,94 @@ from typing import Sequence
 
 import torch
 
+from .mps_factorization import _split_pair_matrix, _split_pair_matrix_bucket
+from .mps_models import MPSConfig
+
+
+def factor_mps_reverse_pair(
+    pair_matrix: torch.Tensor,
+    *,
+    left_dim: int,
+    right_dim: int,
+    config: MPSConfig,
+) -> tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    dict[str, float | int | str],
+]:
+    """Create the differentiable pair leaf and its MPS factorization."""
+
+    with torch.enable_grad():
+        pair_leaf = pair_matrix.detach().requires_grad_(True)
+        left, right, info = _split_pair_matrix(
+            pair_leaf,
+            left_dim=left_dim,
+            right_dim=right_dim,
+            config=config,
+        )
+    return pair_leaf, left, right, dict(info)
+
+
+def factor_mps_reverse_pair_bucket(
+    pair_matrices: torch.Tensor,
+    *,
+    left_dim: int,
+    right_dim: int,
+    config: MPSConfig,
+    batched_truncated_split: bool,
+) -> tuple[
+    tuple[
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        dict[str, float | int | str],
+    ],
+    ...,
+]:
+    """Factor a bucket while preserving the selected reverse gradient path."""
+
+    if pair_matrices.ndim != 4 or int(pair_matrices.shape[0]) < 1:
+        raise ValueError(
+            "reverse factorization bucket must have shape [pairs,batch,rows,columns]"
+        )
+    if not batched_truncated_split:
+        return tuple(
+            factor_mps_reverse_pair(
+                pair,
+                left_dim=left_dim,
+                right_dim=right_dim,
+                config=config,
+            )
+            for pair in pair_matrices
+        )
+
+    splits = _split_pair_matrix_bucket(
+        pair_matrices.detach(),
+        left_dim=left_dim,
+        right_dim=right_dim,
+        config=config,
+    )
+    outputs = []
+    for pair, (batched_left, _, raw_info) in zip(pair_matrices, splits):
+        after_left = batched_left.detach()
+        retained_rank = int(after_left.shape[-1])
+        retained_u = after_left.reshape(int(pair.shape[0]), left_dim * 2, retained_rank)
+        with torch.enable_grad():
+            pair_leaf = pair.detach().requires_grad_(True)
+            after_right = torch.matmul(
+                torch.conj(retained_u).transpose(-2, -1), pair_leaf
+            ).reshape(int(pair.shape[0]), retained_rank, 2, right_dim)
+        outputs.append(
+            (
+                pair_leaf,
+                after_left,
+                after_right,
+                {**raw_info, "gradient_method": "projected_stop_subspace"},
+            )
+        )
+    return tuple(outputs)
+
 
 def project_mps_adjoint(
     value: torch.Tensor,
@@ -55,4 +143,9 @@ def mps_vjp(
     )
 
 
-__all__ = ("mps_vjp", "project_mps_adjoint")
+__all__ = (
+    "factor_mps_reverse_pair",
+    "factor_mps_reverse_pair_bucket",
+    "mps_vjp",
+    "project_mps_adjoint",
+)

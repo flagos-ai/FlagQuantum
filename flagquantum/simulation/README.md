@@ -42,7 +42,8 @@ and tensor sizing.
 compile cache. `mps_compiled_layers.py` owns equal-shape instruction packing,
 batched contraction, and factorization. `mps_factorization.py` owns QR/SVD
 numerical routines, and
-`mps_reverse.py` owns rank-local adjoint projection and VJP evaluation.
+`mps_reverse.py` owns reverse pair factorization, truncated-subspace projection,
+rank-local adjoint projection, and VJP evaluation.
 `mps_observables.py` owns local Pauli-environment, Z/ZZ-channel, and
 Heisenberg-MPO scans.
 Distributed ownership, transport ordering, memory budgets, microbatch

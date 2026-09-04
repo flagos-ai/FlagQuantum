@@ -13,15 +13,15 @@ from ....simulation.mps_compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     contract_mps_two_site_bucket,
 )
-from ....simulation.mps_factorization import (
-    _split_pair_matrix,
-    _split_pair_matrix_bucket,
-)
 from ....simulation.mps_observables import transfer_mps_operator_environment
 from ....simulation.mps_rank_local import (
     apply_one_mps_tensor,
     instruction_matrix_for_mps,
     tensor_nbytes,
+)
+from ....simulation.mps_reverse import (
+    factor_mps_reverse_pair,
+    factor_mps_reverse_pair_bucket,
 )
 from ....simulation.mps_site_kernels import site_kernel_bucket_capacity
 from .errors import NonlocalMPSCompilationError
@@ -504,51 +504,25 @@ def execute_torch_distributed_mps_reverse(
                         and state.config.max_bond is not None
                         and int(state.config.max_bond) < full_rank
                     )
-                    batched_splits = (
-                        _split_pair_matrix_bucket(
-                            pair_matrices.detach(),
-                            left_dim=left_dim,
-                            right_dim=right_dim,
-                            config=state.config,
-                        )
-                        if use_batched_truncated_split
-                        else None
+                    factorizations = factor_mps_reverse_pair_bucket(
+                        pair_matrices,
+                        left_dim=left_dim,
+                        right_dim=right_dim,
+                        config=state.config,
+                        batched_truncated_split=use_batched_truncated_split,
                     )
-                    for position, (candidate_index, _, left_wire) in enumerate(chunk):
-                        pair_leaf = (
-                            pair_matrices[position].detach().requires_grad_(True)
-                        )
-                        if use_batched_truncated_split:
-                            assert batched_splits is not None
-                            batched_left, _, raw_info = batched_splits[position]
-                            after_left = batched_left.detach()
-                            retained_rank = int(after_left.shape[-1])
-                            retained_u = after_left.reshape(
-                                bsz, left_dim * 2, retained_rank
-                            )
-                            after_right = torch.matmul(
-                                torch.conj(retained_u).transpose(-2, -1), pair_leaf
-                            ).reshape(bsz, retained_rank, 2, right_dim)
-                            raw_info = {
-                                **raw_info,
-                                "gradient_method": "projected_stop_subspace",
-                            }
-                        else:
-                            # Preserve the exact identity-gauge path when no
-                            # truncation is required.
-                            with torch.enable_grad():
-                                after_left, after_right, raw_info = _split_pair_matrix(
-                                    pair_leaf,
-                                    left_dim=left_dim,
-                                    right_dim=right_dim,
-                                    config=state.config,
-                                )
-                        info = dict(raw_info)
+                    for (
+                        (candidate_index, _, left_wire),
+                        factorization,
+                        input_left,
+                        input_right,
+                    ) in zip(chunk, factorizations, before_left, before_right):
+                        pair_leaf, after_left, after_right, info = factorization
                         state.local_tensors[left_wire] = after_left.detach()
                         state.local_tensors[left_wire + 1] = after_right.detach()
                         precomputed_rxx[candidate_index] = (
-                            before_left[position],
-                            before_right[position],
+                            input_left,
+                            input_right,
                             after_left.detach(),
                             after_right.detach(),
                             info,
@@ -590,14 +564,14 @@ def execute_torch_distributed_mps_reverse(
                                 dtype=resolved_dtype,
                                 compiled=True,
                             )[0]
-                        with torch.enable_grad():
-                            pair_leaf = contracted.detach().requires_grad_(True)
-                            after_left, after_right, info = _split_pair_matrix(
-                                pair_leaf,
+                        pair_leaf, after_left, after_right, info = (
+                            factor_mps_reverse_pair(
+                                contracted,
                                 left_dim=int(before_left.shape[1]),
                                 right_dim=int(before_right.shape[-1]),
                                 config=state.config,
                             )
+                        )
                         saved_factorization = (pair_leaf, after_left, after_right)
                     else:
                         with torch.enable_grad():
@@ -767,15 +741,12 @@ def execute_torch_distributed_mps_reverse(
                             dtype=resolved_dtype,
                             compiled=compile_site_kernels,
                         )[0]
-                    with torch.enable_grad():
-                        pair_leaf = contracted.detach().requires_grad_(True)
-                        after_left, after_right, info = _split_pair_matrix(
-                            pair_leaf,
-                            left_dim=int(before_left.shape[1]),
-                            right_dim=int(before_right.shape[-1]),
-                            config=state.config,
-                        )
-                    info = dict(info)
+                    pair_leaf, after_left, after_right, info = factor_mps_reverse_pair(
+                        contracted,
+                        left_dim=int(before_left.shape[1]),
+                        right_dim=int(before_right.shape[-1]),
+                        config=state.config,
+                    )
                     saved_factorization = (pair_leaf, after_left, after_right)
                 else:
                     with torch.enable_grad():
