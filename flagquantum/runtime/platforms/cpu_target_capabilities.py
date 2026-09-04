@@ -66,6 +66,7 @@ class CPUPrecisionObservation:
         blockers = tuple(self.blockers)
         if any(not isinstance(item, CapabilityBlocker) for item in blockers):
             raise TypeError("CPU precision blockers must be CapabilityBlocker values")
+        object.__setattr__(self, "blockers", blockers)
         if self.support_status is SupportStatus.VERIFIED and blockers:
             raise ValueError("verified CPU precision facts cannot carry blockers")
         if self.support_status is SupportStatus.VERIFIED and (
@@ -101,6 +102,12 @@ class CPUCapabilityObservation:
                 "CPU probe memory_available_bytes must be a non-negative integer"
             )
         if self.device_ids is not None:
+            if isinstance(self.device_ids, (str, bytes)) or not isinstance(
+                self.device_ids, (list, tuple)
+            ):
+                raise ValueError(
+                    "CPU probe device_ids must be an array or tuple of strings"
+                )
             ids = tuple(self.device_ids)
             if any(not isinstance(item, str) or not item for item in ids):
                 raise ValueError("CPU probe device_ids must contain non-empty strings")

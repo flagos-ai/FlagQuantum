@@ -206,6 +206,41 @@ def test_verified_cpu_precision_must_be_observed() -> None:
         )
 
 
+def test_cpu_observation_rejects_string_device_ids() -> None:
+    with pytest.raises(ValueError, match="device_ids must be an array"):
+        CPUCapabilityObservation(
+            available=True,
+            device_count=1,
+            device_ids="cpu:0",  # type: ignore[arg-type]
+        )
+
+
+def test_cpu_precision_blockers_and_observation_collections_are_immutable() -> None:
+    blocker = CapabilityBlocker("probe_failed", "precision probe failed")
+    raw_blockers = [blocker]
+    precision = CPUPrecisionObservation(
+        "precision.native_dtype",
+        "float64",
+        support_status=SupportStatus.UNSUPPORTED,
+        fact_exposure=FactExposure.OBSERVED,
+        blockers=raw_blockers,  # type: ignore[arg-type]
+    )
+    raw_blockers.append(CapabilityBlocker("later", "must not leak"))
+
+    assert precision.blockers == (blocker,)
+    assert isinstance(precision.blockers, tuple)
+    observation = CPUCapabilityObservation(
+        available=True,
+        device_count=1,
+        device_ids=["cpu:0"],  # type: ignore[arg-type]
+        precision=[precision],  # type: ignore[arg-type]
+    )
+    assert observation.device_ids == ("cpu:0",)
+    assert observation.precision == (precision,)
+    assert isinstance(observation.device_ids, tuple)
+    assert isinstance(observation.precision, tuple)
+
+
 def test_cpu_adapter_rejects_unresolvable_probe_source() -> None:
     probe = _FakeCPUProbe(_available_probe().observation, source_ref="missing-evidence")
 
