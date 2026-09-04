@@ -1,8 +1,8 @@
 # Compiler convergence inventory
 
-Status: stable transformation authority migrated; planning convergence in progress
+Status: stable Compiler authority closed; protected product and private-candidate convergence remain
 
-Date: 2026-09-04
+Updated: 2026-09-05
 
 Path classification: `single_device_fast_path` and provider-free static compilation
 
@@ -10,17 +10,19 @@ Public API impact: none
 
 ## Decision
 
-Stable program transformation now has one authoritative package, while private
-research compilation and execution planning remain bounded migration work.
+Stable program transformation now has one authoritative package. Runtime owns
+planning and plan assembly. The remaining migration work is limited to protected
+cross-domain plan products and the separately gated private compiler candidate.
 
 - `flagquantum.compiler` is the factual authority for stable canonical
   optimization, instruction scheduling, backend lowering, coupling maps, and
   topology routing. The former public forwarding file and the corresponding
   `compilation.compiler`/`compilation.routing` modules were removed.
 - `flagquantum.runtime.planner` now owns stable/default execution selection,
-  estimates, backend calibration, and planning orchestration. The transitional
-  `flagquantum.compilation` package retains execution-plan models, serialization,
-  assembly, and calibration until shared products gain Core-owned contracts.
+  estimates, backend calibration, planning orchestration, and plan assembly. The
+  transitional `flagquantum.compilation` package retains only execution-plan
+  products, serialization/validation/reconstruction helpers, and the compatibility
+  calibration seam until shared products gain Core-owned contracts.
 - `flagquantum.compiler.noise` now owns stable noise-model lowering. The former
   `flagquantum.compilation.noise` package was deleted; noisy execution-plan
   models remain with the transitional plan product rather than Compiler.
@@ -31,7 +33,8 @@ research compilation and execution planning remain bounded migration work.
   artifacts. Its package `__init__` intentionally exports nothing and the default
   path does not import it.
 - The default CPU path now calls `flagquantum.compiler` directly for program
-  transformation and `flagquantum.compilation` only for transitional planning.
+  transformation and uses `flagquantum.compilation` only for the protected plan
+  product and its contract helpers.
   `_compiler` remains off the default path and must replace proven concerns rather
   than being copied wholesale into the stable package.
 
@@ -104,22 +107,23 @@ There are, however, architectural reverse dependencies outside that pair:
   the Compiler tree. They must be split during convergence rather than promoted as
   compiler APIs.
 
-## Runtime direct dependency list
+## Runtime dependency classification
 
-These are the concrete `flagquantum.runtime` imports that prevent replacing the
-current compilation implementation behind one narrow contract.
+Runtime's imports fall into two different categories. Calls through the public
+`flagquantum.compiler` facade are intentional service dependencies: Runtime supplies
+an input program and consumes a transformed program without owning the algorithm.
+They are not evidence that planning still belongs to Compiler. Imports from
+`flagquantum.compilation` are the remaining protected product seam and cannot move
+until the corresponding Core contract is approved.
 
-| Runtime consumer | Direct dependency from `flagquantum.compilation` | Coupling type |
+| Runtime consumer | Dependency | Classification |
 | --- | --- | --- |
-| `runtime/execution.py` | `compiler.compile_for_backend`; `compiler.lower_noise_model`; `ExecutionPlan`; `select_execution_mode`; `plan_advanced`; `plan`; noisy-plan construction | stable Compiler service calls plus transitional planning and type identity |
-| `runtime/plan_execution.py` | `ExecutionPlanContractError`, `plan_decision`, `plan_noise_model`, `plan_program`, `validate_plan_environment`; `ExecutionPlan` | protected plan schema, validation, and decoding |
-| `runtime/result.py` | `ExecutionPlan` under type checking | result type contract |
-| `runtime/backends/statevector/planning.py` | `compiler.schedule_layers` | concrete compiler scheduling algorithm |
-| `runtime/dynamic/routing.py` | `compiler.CouplingMap`, `compiler.route_to_topology` | concrete routing model and implementation |
-| `runtime/backends/statevector/noisy.py` | `lower_noise_model` | lowering implementation |
-| `runtime/noise_registry.py` | `EvolutionSemantics`, `NoisyExecutionPlan`, `StateRepresentation` | transitional execution-plan product types |
-| `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | planner calibration type |
-| `runtime/target_execution.py` | `BackendSelection`, `select_backend_by_cost` | backend policy type and algorithm |
+| `runtime/execution.py`, `runtime/planner`, `runtime/noise_registry.py` | stable compile and noise-lowering facade calls | intentional Compiler service calls |
+| `runtime/backends/statevector/planning.py` | stable layer scheduling facade | intentional service call retained by the raw-program compatibility entry point |
+| `runtime/backends/statevector/noisy.py` | stable noise-lowering facade | intentional service call retained by the raw-program compatibility entry point |
+| `runtime/dynamic/routing.py` | stable coupling-map and routing facade | intentional Compiler service call |
+| `runtime/planner` | `ExecutionPlan` products plus layer-building and contract attachment helpers | protected product seam; plan policy and assembly are Runtime-owned |
+| `runtime/execution.py`, `runtime/plan_execution.py`, `runtime/result.py`, `runtime/noise_registry.py` | `ExecutionPlan`, noisy-plan products, validation, decoding, and program reconstruction | protected product/schema seam pending a Core contract |
 
 No Runtime file directly imports `flagquantum._compiler`. That is an important
 preserved invariant and must remain true until the replacement contract is approved.
@@ -259,12 +263,17 @@ Types that should **not** move wholesale to Core:
 
 ## Exit conditions and blockers
 
-Compiler convergence is not complete until all of the following are true:
+The **stable Compiler authority move is complete**: transformation, scheduling,
+routing, and noise lowering have one facade; Runtime owns selection and plan
+assembly; and the CPU path executes a restored plan without recompiling it.
+
+The broader machine-readable `compiler_convergence` track correctly remains
+`in_progress`. It is not complete until all of the following are true:
 
 - Core contracts land first and both compiler implementations can consume them;
 - the static optimization slice passes shared replacement/conformance tests;
-- Runtime imports only a Core artifact/plan contract and a narrow Compiler facade,
-  not concrete pass, routing, lowering, selection, or serialization modules;
+- Runtime imports only a Core artifact/plan contract and the narrow Compiler facade,
+  not Compiler implementation modules or Compiler-owned product schemas;
 - Compiler no longer imports Runtime or Deployment implementations;
 - all supported compiler entry points delegate to the target facade;
 - legacy internal imports reach zero and the old implementation is deleted or
@@ -273,6 +282,7 @@ Compiler convergence is not complete until all of the following are true:
   remain protected throughout migration.
 
 Current blockers are the missing Core target/artifact/request contracts, the stable
-`ExecutionPlan` definition living in `compilation`, Runtime's direct-import list above,
-the domain-level Runtime/Compiler cycle in planner option resolution, and incomplete
-accepted-domain equivalence between `simple_compile` and the stricter private importer.
+`ExecutionPlan` definition living in `compilation`, and incomplete accepted-domain
+equivalence between `simple_compile` and the stricter private importer. Intentional
+Runtime calls through the stable Compiler facade are not blockers and must not be
+removed merely to reduce an import count.
