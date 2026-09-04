@@ -123,6 +123,7 @@ Provider 和 Remote Service Provider 不因此被迫依赖模拟算法。
 
 ```text
 flagquantum/
+├── __init__.py              # fq 公共门面；只组合稳定入口，不承载领域实现
 ├── core/                    # 后端无关的稳定语义
 │   ├── ir/
 │   ├── artifacts/
@@ -177,7 +178,50 @@ contracts/                   # 契约快照与架构策略；运行时类型由 
 docs/architecture/           # 架构总纲、ADR 和专题设计
 ```
 
-### 5.1 迁移台账
+### 5.1 公共门面与调用顺序
+
+`flagquantum/__init__.py` 是 `import flagquantum as fq` 的唯一公共门面。它可以组合
+Compiler 与 Runtime 的稳定入口，但不定义编译、调度、数值计算或厂商适配
+逻辑。普通开发者不得为了完成一次执行而手工构造内部指纹、证明或调度
+对象。
+
+Core 不是调用链上的首个“服务”，而是贯穿各阶段的共同语义。典型的
+本地或国产加速器模拟任务遵循：
+
+```text
+用户 / PyTorch / JAX
+  -> fq 公共门面
+  -> Ecosystem 边界转换（仅当输入是外部对象时）
+  -> Compiler（校验、优化、Lowering、目标合法性）
+  -> Runtime（能力匹配、目标选择、计划与执行生命周期）
+  -> Simulation Execution Provider（接收标准执行请求）
+  -> Simulation Engine（状态向量 / MPS / TN / 噪声 / 梯度）
+  -> Platform Provider（CPU / 国产 GPU/NPU / 通信）
+  -> ExecutionResult + ExecutionEvidence
+  -> Runtime
+  -> Ecosystem 结果转换（如需）
+  -> 用户
+```
+
+Execution Provider 回答“任务交给哪类目标以及如何提交和取回结果”；
+Platform Provider 回答“模拟引擎如何使用具体计算和通信设备”。Runtime
+通过 Execution Provider 管理执行，不直接调用具体 Platform Provider；
+Simulation Execution Provider 组合 Simulation Engine 与 Platform Provider。
+
+真实 QPU 任务不经过 Simulation Engine 或 Platform Provider：
+
+```text
+用户 -> fq 公共门面 -> Compiler -> Runtime
+     -> QPU Execution Provider -> 真实 QPU
+     -> ExecutionResult + ExecutionEvidence -> Runtime -> 用户
+```
+
+Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms 通过公共
+门面组合应用；Agent Services 通过 Compiler 和 Runtime 的公开契约执行确定性
+预检、解释和调用；Benchmarking 复用与用户相同的执行路径产生测评证据，
+不建立绕过能力、安全或证据检查的专用快速路径。
+
+### 5.2 迁移台账
 
 机器可读的完整台账位于 `contracts/long-horizon-architecture-v1.json`。任何迁移项必须同时
 声明责任团队、目标里程碑、当前权威位置、目标权威位置、适配器、完成证据、旧实现退出
@@ -487,6 +531,19 @@ declared -> prototyped -> validated -> production
 5. 契约测试、一致性测试和架构依赖检查通过；
 6. 不支持能力、降级和回退可以被机器识别；
 7. 文档明确当前成熟度，不把目标态描述为已实现。
+8. 普通功能修改原则上只涉及一个主领域的内部实现；若同一类修改反复需要
+   穿越四个及以上领域，必须停止扩大实现并进行边界评审；
+9. 迁移后的每个领域均有简短 README 和一条可执行的“十分钟黄金路径”，说明
+   职责、禁止事项、允许依赖、公开入口和最小修改方式；
+10. 公共 API 不要求使用者构造或理解内部指纹、来源记录、合法性证明、能力
+    快照标识、调度对象或证据内部结构；
+11. 除契约、确定性和防篡改测试外，保留可读的场景测试；新开发者能仅依据
+    领域 README 和黄金路径，独立完成、测试并解释一项代表性小修改。
+
+新增契约、identity、verdict、registry 或中间表示时，提案必须说明现有权威
+类型为何无法表达已验证需求。超大内部模块只在行为和边界稳定后按职责拆分，
+不得仅为缩短文件而增加新的公共概念。“十分钟”是人工可用性验收目标，
+不得伪造为无法反映真实贡献者体验的 CI 通过项。
 
 ## 16. 架构决策治理
 
