@@ -7,8 +7,9 @@ production gates, profiling, and Runtime-facing result records.
 It does not own tensor algebra or numerical kernels. Rank-local gate math lives
 in `simulation/mps_rank_local.py`, compiled site kernels live in
 `simulation/mps_site_kernels.py`, and QR/SVD math lives in
-`simulation/mps_factorization.py`. Import these numerical owners directly;
-do not recreate Runtime aliases or a second implementation.
+`simulation/mps_factorization.py`. Rank-local adjoint projection and VJP
+evaluation live in `simulation/mps_reverse.py`. Import these numerical owners
+directly; do not recreate Runtime aliases or a second implementation.
 
 ## Ten-minute change path
 
@@ -17,6 +18,8 @@ do not recreate Runtime aliases or a second implementation.
 - Change forward ownership, communication, lifecycle, or evidence in
   `forward.py`; change reverse lifecycle in `reverse.py` or
   `reverse_replay.py`.
+- Change rank-local adjoint projection or VJP evaluation in
+  `simulation/mps_reverse.py`.
 - Change memory admission or microbatch policy in `factorization.py`.
 - Change numerical tensor behavior in the corresponding Simulation module,
   not here.

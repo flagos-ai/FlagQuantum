@@ -9,6 +9,7 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....simulation.mps_reverse import mps_vjp as _mps_vjp
 from ....simulation.mps_site_kernels import (
     apply_rxx_contraction_bucket,
     apply_ry_bucket,
@@ -53,33 +54,6 @@ def build_mps_reverse_backward(
     _send_static = send_static_reverse_tensor
 
     def backward(result: TorchDistributedMPSGradientResult) -> None:
-        def match_adjoint(value: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-            """Project a stale bond adjoint onto the current output shape.
-
-            Truncated forward splits can change a bond dimension between two
-            recorded operations.  The reverse tape is intentionally
-            approximate in that mode, so a downstream adjoint may carry the
-            pre-truncation bond extent.  Autograd requires an exact shape;
-            retain the overlapping Schmidt coordinates and zero-pad the rest.
-            This is the same projection used by the truncation VJP and keeps
-            approximate-gradient training alive instead of failing with a
-            shape mismatch.
-            """
-            if tuple(value.shape) == tuple(target.shape):
-                return value
-            if value.ndim != target.ndim or value.shape[0] != target.shape[0]:
-                raise MPSReverseContractError(
-                    "MPS reverse adjoint rank/batch mismatch: "
-                    f"adjoint={tuple(value.shape)} output={tuple(target.shape)}"
-                )
-            projected = torch.zeros_like(target)
-            slices = tuple(
-                slice(0, min(int(source), int(destination)))
-                for source, destination in zip(value.shape, target.shape)
-            )
-            projected[slices] = value[slices]
-            return projected
-
         def finite(
             value: torch.Tensor | None,
             *,
@@ -166,20 +140,11 @@ def build_mps_reverse_backward(
                             )
                         )
                         try:
-                            derivatives = torch.autograd.grad(
-                                outputs,
-                                segment_inputs + active,
-                                grad_outputs=torch.stack(
-                                    [
-                                        match_adjoint(
-                                            adjoints[record.wires[0]],
-                                            outputs[index],
-                                        )
-                                        for index, record in enumerate(segment)
-                                    ]
-                                ),
-                                allow_unused=True,
-                                retain_graph=True,
+                            derivatives = _mps_vjp(
+                                tuple(outputs.unbind(0)),
+                                segment_inputs,
+                                active,
+                                tuple(adjoints[record.wires[0]] for record in segment),
                             )
                         except Exception as error:
                             operation_ids = ",".join(
@@ -287,22 +252,17 @@ def build_mps_reverse_backward(
                     outputs = (left, right)
                 else:
                     outputs = _qr_forward(inputs[0], inputs[1])
-                differentiable = tuple(
-                    (output, match_adjoint(output_adjoint, output))
-                    for output, output_adjoint in zip(outputs, output_adjoints)
-                    if output.requires_grad
-                )
-                if not differentiable:
-                    raise MPSReverseContractError(
-                        f"local VJP has no differentiable output at {record.operation_id}"
+                try:
+                    derivatives = _mps_vjp(
+                        outputs,
+                        inputs,
+                        active,
+                        output_adjoints,
                     )
-                derivatives = torch.autograd.grad(
-                    tuple(value[0] for value in differentiable),
-                    inputs + active,
-                    grad_outputs=tuple(value[1] for value in differentiable),
-                    allow_unused=True,
-                    retain_graph=True,
-                )
+                except Exception as error:
+                    raise MPSReverseContractError(
+                        f"local MPS VJP failed at {record.operation_id}: {error}"
+                    ) from error
                 if payload.factorization_pair is not None:
                     # The result is single-use. Drop the saved split graph as
                     # soon as its pair adjoint has been consumed so the next
