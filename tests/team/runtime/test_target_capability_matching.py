@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from itertools import combinations
+from pathlib import Path
 
 import pytest
 
@@ -27,16 +33,50 @@ from flagquantum.core.target_capabilities import (
 )
 from flagquantum.runtime import target_capability_matching as seam
 from flagquantum.runtime.target_capability_matching import (
+    CandidateProvenance,
     FallbackAxis,
+    RouteIntent,
     RuntimeDecisionBlockerCode,
     TargetCapabilityCandidate,
-    match_target_capability_candidates,
+)
+from flagquantum.runtime.target_capability_matching import (
+    match_target_capability_candidates as _raw_match_target_capability_candidates,
 )
 
 pytestmark = pytest.mark.unit
 
 _CAPTURED_AT = datetime(2026, 9, 4, 8, 0, tzinfo=timezone.utc)
 _EVALUATED_AT = _CAPTURED_AT + timedelta(minutes=1)
+_ROUTE_INTENT = RouteIntent(
+    backend="test-backend",
+    device="cuda",
+    cpu=False,
+    precision="float64",
+    algorithm="exact",
+    approximation="exact",
+)
+_CPU_ROUTE_INTENT = RouteIntent(
+    backend="test-backend",
+    device="cpu",
+    cpu=True,
+    precision="float64",
+    algorithm="exact",
+    approximation="exact",
+)
+
+
+def match_target_capability_candidates(requirements, candidates, **kwargs):
+    """Keep legacy test calls explicit about the shared original intent."""
+
+    if "route_intent" not in kwargs:
+        explicit_cpu = any(
+            item.name == "device.kind"
+            and item.value == "cpu"
+            and item.strength is RequirementStrength.MANDATORY
+            for item in requirements.requirements
+        )
+        kwargs["route_intent"] = _CPU_ROUTE_INTENT if explicit_cpu else _ROUTE_INTENT
+    return _raw_match_target_capability_candidates(requirements, candidates, **kwargs)
 
 
 def _require(
@@ -154,19 +194,58 @@ def _candidate(
     preference_rank: int = 0,
     fallback_axes: frozenset[FallbackAxis] = frozenset(),
     is_cpu_candidate: bool = False,
+    provenance: CandidateProvenance | None = None,
+    route_intent: RouteIntent = _ROUTE_INTENT,
     **snapshot_kwargs: object,
 ) -> TargetCapabilityCandidate:
+    effective_kind = (
+        "rocm" if FallbackAxis.DEVICE in fallback_axes and kind == "cuda" else kind
+    )
+    snapshot = _snapshot(
+        candidate_id,
+        kind=effective_kind,
+        memory=memory,
+        **snapshot_kwargs,
+    )
+    if provenance is None:
+        axes = set(fallback_axes)
+        if effective_kind == "cpu" and FallbackAxis.CPU in axes:
+            axes.add(FallbackAxis.DEVICE)
+        provenance = CandidateProvenance(
+            intent_id=route_intent.intent_id,
+            backend=(
+                "fallback-backend"
+                if FallbackAxis.BACKEND in axes
+                else route_intent.backend
+            ),
+            device=(
+                effective_kind
+                if FallbackAxis.DEVICE in axes or effective_kind == "cpu"
+                else route_intent.device
+            ),
+            cpu=(effective_kind == "cpu"),
+            precision=(
+                "float32" if FallbackAxis.PRECISION in axes else route_intent.precision
+            ),
+            algorithm=(
+                "approximate"
+                if FallbackAxis.ALGORITHM in axes
+                else route_intent.algorithm
+            ),
+            approximation=(
+                "approximate"
+                if FallbackAxis.APPROXIMATION in axes
+                else route_intent.approximation
+            ),
+        )
+        fallback_axes = frozenset(axes)
     return TargetCapabilityCandidate(
         candidate_id=candidate_id,
-        snapshot=_snapshot(
-            candidate_id,
-            kind=kind,
-            memory=memory,
-            **snapshot_kwargs,
-        ),
+        snapshot=snapshot,
         preference_rank=preference_rank,
         fallback_axes=fallback_axes,
         is_cpu_candidate=is_cpu_candidate,
+        provenance=provenance,
     )
 
 
@@ -211,7 +290,7 @@ def test_cpu_is_an_explicit_candidate_and_is_fully_rematched() -> None:
             operator=ComparisonOperator.AT_LEAST,
         ),
         _require("device.count", 1, operator=ComparisonOperator.AT_LEAST),
-        authorizations=FallbackAuthorizations(cpu=True),
+        authorizations=FallbackAuthorizations(cpu=True, device=True),
     )
     primary = _candidate("primary", memory=1 * 1024**3)
     cpu = _candidate(
@@ -236,7 +315,10 @@ def test_cpu_is_an_explicit_candidate_and_is_fully_rematched() -> None:
     )
     assert decision.fallback_record.snapshot_id == cpu.snapshot.snapshot_id
     assert decision.fallback_record.target_identity == cpu.snapshot.target_identity
-    assert decision.fallback_record.fallback_axes == (FallbackAxis.CPU,)
+    assert decision.fallback_record.fallback_axes == (
+        FallbackAxis.CPU,
+        FallbackAxis.DEVICE,
+    )
     assert decision.fallback_record.core_blockers == ()
     assert decision.fallback_record.decision_id == decision.decision_id
     assert (
@@ -292,8 +374,8 @@ def test_verified_cpu_snapshot_requires_declared_cpu_fallback_axis(
 
     assert decision.selected is None
     assert any(
-        blocker.code is RuntimeDecisionBlockerCode.CPU_CANDIDATE_REQUIRED
-        and blocker.fallback_axes == (FallbackAxis.CPU,)
+        blocker.code is RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED
+        and blocker.fallback_axes == (FallbackAxis.CPU, FallbackAxis.DEVICE)
         for blocker in decision.blockers
     )
 
@@ -305,6 +387,7 @@ def test_explicit_cpu_requirement_allows_normal_cpu_without_fallback_authorizati
         "cpu",
         kind="cpu",
         include_device_kind=True,
+        route_intent=_CPU_ROUTE_INTENT,
     )
     decision = match_target_capability_candidates(
         _requirements(
@@ -313,6 +396,7 @@ def test_explicit_cpu_requirement_allows_normal_cpu_without_fallback_authorizati
         ),
         (cpu,),
         evaluated_at=_EVALUATED_AT,
+        route_intent=_CPU_ROUTE_INTENT,
     )
 
     assert decision.executable is True
@@ -475,7 +559,10 @@ def test_cpu_candidate_does_not_rewrite_a_mandatory_device_requirement() -> None
 def test_fallback_axes_are_independent_and_authorized_per_axis(
     axis: FallbackAxis,
 ) -> None:
-    authorizations = FallbackAuthorizations(**{axis.value: True})
+    authorization_values = {axis.value: True}
+    if axis is FallbackAxis.CPU:
+        authorization_values[FallbackAxis.DEVICE.value] = True
+    authorizations = FallbackAuthorizations(**authorization_values)
     candidate = _candidate(
         f"fallback-{axis.value}",
         kind="cpu" if axis is FallbackAxis.CPU else "cuda",
@@ -495,7 +582,10 @@ def test_fallback_axes_are_independent_and_authorized_per_axis(
 
     assert decision.executable is True
     assert decision.fallback_record is not None
-    assert decision.fallback_record.fallback_axes == (axis,)
+    expected_axes = (
+        (FallbackAxis.CPU, FallbackAxis.DEVICE) if axis is FallbackAxis.CPU else (axis,)
+    )
+    assert decision.fallback_record.fallback_axes == expected_axes
 
 
 def test_backend_authorization_does_not_imply_cpu_or_precision() -> None:
@@ -521,7 +611,7 @@ def test_backend_authorization_does_not_imply_cpu_or_precision() -> None:
         for item in decision.blockers
         if item.code is RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED
     )
-    assert blocker.fallback_axes == (FallbackAxis.CPU,)
+    assert blocker.fallback_axes == (FallbackAxis.CPU, FallbackAxis.DEVICE)
 
 
 def test_multiple_changed_axes_require_all_authorizations() -> None:
@@ -600,7 +690,7 @@ def test_failed_preferred_candidate_cannot_select_unauthorized_cpu_fallback() ->
     assert decision.selected is None
     assert any(
         blocker.code is RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED
-        and blocker.fallback_axes == (FallbackAxis.CPU,)
+        and blocker.fallback_axes == (FallbackAxis.CPU, FallbackAxis.DEVICE)
         for blocker in decision.blockers
     )
     assert any(
@@ -668,24 +758,12 @@ def test_decision_identity_binds_time_and_fallback_authorization() -> None:
     )
     backend_axis = match_target_capability_candidates(
         axis_requirements,
-        (
-            TargetCapabilityCandidate(
-                "candidate",
-                candidate.snapshot,
-                fallback_axes=frozenset({FallbackAxis.BACKEND}),
-            ),
-        ),
+        (_candidate("candidate", fallback_axes=frozenset({FallbackAxis.BACKEND})),),
         evaluated_at=_EVALUATED_AT,
     )
     precision_axis = match_target_capability_candidates(
         axis_requirements,
-        (
-            TargetCapabilityCandidate(
-                "candidate",
-                candidate.snapshot,
-                fallback_axes=frozenset({FallbackAxis.PRECISION}),
-            ),
-        ),
+        (_candidate("candidate", fallback_axes=frozenset({FallbackAxis.PRECISION})),),
         evaluated_at=_EVALUATED_AT,
     )
 
@@ -864,6 +942,162 @@ def test_core_unmeasured_and_weak_evidence_blockers_are_not_reinterpreted() -> N
     }
     assert "fact_unmeasured" in codes
     assert "insufficient_evidence" in codes
+
+
+def test_fallback_axes_are_computed_and_caller_reports_cannot_lie() -> None:
+    requirements = _requirements(
+        _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+        authorizations=FallbackAuthorizations(backend=True),
+    )
+    underreported_base = _candidate(
+        "underreported", fallback_axes=frozenset({FallbackAxis.BACKEND})
+    )
+    underreported = replace(underreported_base, fallback_axes=frozenset())
+    equivalent = _candidate("equivalent")
+    overreported = replace(equivalent, fallback_axes=frozenset({FallbackAxis.BACKEND}))
+
+    for candidate in (underreported, overreported):
+        decision = match_target_capability_candidates(
+            requirements, (candidate,), evaluated_at=_EVALUATED_AT
+        )
+        assert decision.selected is None
+        assert any(
+            blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_AXIS_MISMATCH
+            for blocker in decision.blockers
+        )
+
+
+def test_non_cpu_axis_pairs_require_each_independent_authorization() -> None:
+    axes = tuple(axis for axis in FallbackAxis if axis is not FallbackAxis.CPU)
+    for first_axis, second_axis in combinations(axes, 2):
+        candidate = _candidate(
+            f"pair-{first_axis.value}-{second_axis.value}",
+            fallback_axes=frozenset({first_axis, second_axis}),
+        )
+        decision = match_target_capability_candidates(
+            _requirements(
+                _require(
+                    "memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST
+                ),
+                authorizations=FallbackAuthorizations(**{first_axis.value: True}),
+            ),
+            (candidate,),
+            evaluated_at=_EVALUATED_AT,
+        )
+        assert decision.selected is None
+        unauthorized = next(
+            blocker
+            for blocker in decision.blockers
+            if blocker.code is RuntimeDecisionBlockerCode.FALLBACK_AXIS_UNAUTHORIZED
+        )
+        assert unauthorized.fallback_axes == (second_axis,)
+
+
+def test_missing_or_unbound_provenance_fails_closed() -> None:
+    candidate = _candidate("missing-provenance")
+    missing = replace(candidate, provenance=None)
+    tampered = replace(
+        candidate,
+        provenance=replace(candidate.provenance, provenance_id="tampered"),
+    )
+    for item, expected in (
+        (missing, RuntimeDecisionBlockerCode.CANDIDATE_PROVENANCE_REQUIRED),
+        (tampered, RuntimeDecisionBlockerCode.PROVENANCE_IDENTITY_MISMATCH),
+    ):
+        decision = match_target_capability_candidates(
+            _requirements(
+                _require(
+                    "memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST
+                )
+            ),
+            (item,),
+            evaluated_at=_EVALUATED_AT,
+        )
+        assert decision.selected is None
+        assert any(blocker.code is expected for blocker in decision.blockers)
+
+
+def test_missing_route_intent_fails_closed_even_with_candidate_provenance() -> None:
+    decision = _raw_match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (_candidate("missing-intent"),),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.ROUTE_INTENT_REQUIRED
+        for blocker in decision.blockers
+    )
+
+
+def test_snapshot_device_declaration_must_match_provenance() -> None:
+    candidate = _candidate(
+        "device-conflict",
+        provenance=CandidateProvenance(
+            intent_id=_ROUTE_INTENT.intent_id,
+            backend=_ROUTE_INTENT.backend,
+            device="other-device-kind",
+            cpu=False,
+            precision=_ROUTE_INTENT.precision,
+            algorithm=_ROUTE_INTENT.algorithm,
+            approximation=_ROUTE_INTENT.approximation,
+        ),
+    )
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH
+        for blocker in decision.blockers
+    )
+
+
+def test_equivalent_provenance_has_no_fallback_record() -> None:
+    candidate = _candidate("equivalent")
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert decision.executable is True
+    assert decision.selected is not None
+    assert decision.selected.computed_fallback_axes == frozenset()
+    assert decision.fallback_record is None
+
+
+def test_decision_identity_is_independent_of_python_hash_seed() -> None:
+    root = Path(__file__).resolve().parents[3]
+    script = (
+        "from tests.team.runtime.test_target_capability_matching import "
+        "_candidate, _requirements, _require, _EVALUATED_AT, "
+        "ComparisonOperator, match_target_capability_candidates; "
+        "print(match_target_capability_candidates(_requirements(_require('memory.available_bytes', 1, "
+        "operator=ComparisonOperator.AT_LEAST)), (_candidate('seed'),), "
+        "evaluated_at=_EVALUATED_AT).decision_id)"
+    )
+    values = []
+    for seed in ("1", "987"):
+        environment = os.environ.copy()
+        environment["PYTHONHASHSEED"] = seed
+        environment["PYTHONPATH"] = str(root)
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=environment,
+        )
+        values.append(result.stdout.strip())
+    assert values[0] == values[1]
 
 
 def test_default_runtime_plan_path_is_not_imported_or_changed() -> None:
