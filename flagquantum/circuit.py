@@ -310,12 +310,12 @@ class Circuit:
     probability = probabilities
 
     def density_matrix(self) -> torch.Tensor:
-        from .runtime.backends.density_matrix import density_matrix
+        from .simulation.density_matrix import density_matrix
 
         return density_matrix(self)
 
     def noisy_density_matrix(self, noise_model=None) -> torch.Tensor:
-        from .runtime.backends.density_matrix import noisy_density_matrix
+        from .runtime.noise_registry import noisy_density_matrix
 
         return noisy_density_matrix(self, noise_model)
 

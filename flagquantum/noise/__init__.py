@@ -52,7 +52,7 @@ __all__ = (
 def __getattr__(name: str) -> Any:
     if name == "noisy_density_matrix":
         return getattr(
-            import_module("flagquantum.runtime.backends.density_matrix.execution"),
+            import_module("flagquantum.runtime.noise_registry"),
             name,
         )
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

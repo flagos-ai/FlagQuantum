@@ -196,20 +196,16 @@ flagquantum/compilation/noise/
 IR 的唯一入口。它只能依赖 core、noise domain 和 ops schema，不允许依赖
 Circuit、runtime、simulation 或具体 backend。
 
-### 3.3 Density matrix 后端
+### 3.3 Density matrix 数值实现
 
 ```text
-flagquantum/runtime/backends/density_matrix/
-├── __init__.py
-├── models.py
-├── kernels.py
-├── execution.py
-├── measurements.py
-└── gradients.py
+flagquantum/simulation/density_matrix.py
 ```
 
-现有 `expand_operator`、`apply_unitary_density`、`apply_kraus_density`、
-`density_matrix_from_ir` 和 density expectation 最终迁移至此。
+`expand_operator`、`apply_unitary_density`、`apply_kraus_density`、
+`density_matrix_from_ir` 和 density expectation 均由 Simulation 所有。
+噪声 lowering、执行计划校验和 executor 分派由 `runtime/noise_registry.py`
+负责，数值实现不依赖 Runtime。
 
 ### 3.4 共享 trajectory 运行时
 

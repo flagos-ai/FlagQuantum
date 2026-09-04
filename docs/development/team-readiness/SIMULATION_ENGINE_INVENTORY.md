@@ -62,7 +62,7 @@
 | 分布式 MPS | `runtime/backends/mps/operations.py`、`factorization.py`、`site_kernels.py` 及 forward/reverse 的数值段 | state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 算法与 rank ownership、collective、持久恢复、生产门禁混合 |
 | 本地张量网络 | `simulation/tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py`、`tensor_path_search.py`、`tensor.py` | 收缩/反向与路径、设备、环境拓扑判断混合；能力仍为 experimental |
 | 分布式张量网络 | `runtime/backends/tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` 的数值段 | distributed_dag/execution/redistribution/multi_axis/partial_mesh/joint_planning/checkpoint/rematerialization/memory_evidence | sliced、sharded 与通信计划交织；生产 transport 未认证 |
-| 密度矩阵 | `runtime/backends/density_matrix/kernels.py`、`measurements.py` | `density_matrix/execution.py`、`simulation/noise.py` 兼容门面、Runtime noise registry | 数值边界小而清晰，但能力 experimental，且不是稳定主路径首选 |
+| 密度矩阵 | `simulation/density_matrix.py` | `simulation/noise.py` 兼容门面、Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`statevector/noisy.py`、`simulation/mps_state.py`/`mps_execution.py` | 语义由 `flagquantum/noise/`（Core 团队路径）拥有；lowering/选择由 `flagquantum/compilation/noise/` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只应拥有 channel/trajectory 数值演化，不应复制 NoiseModel 或选择策略 |
 | 轨迹 | statevector 分支在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps_execution.py`/`mps_state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
 | 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作及 Triton autograd 在 `simulation/`；显式 sharded adjoint/reverse 在各 backend；JAX pullback/VJP 在 `runtime/backends/jax/` | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
@@ -90,9 +90,8 @@
 
 | 路径 | 主分类 | Simulation 应拥有 | Runtime/Provider 应拥有 |
 | --- | --- | --- | --- |
-| `density_matrix/kernels.py` | 纯数值算法 | density 构造、算子展开、unitary/Kraus 演化 | 无 |
-| `density_matrix/measurements.py` | 结果转换 | density 上的数值测量 | 稳定 MeasurementResult 投影由 Runtime/Core |
-| `density_matrix/execution.py` | 执行适配 | 薄 IR 指令数值循环可进入 Engine | plan 验证、选项过滤和 lowering 调用由 Runtime/Compiler |
+| `simulation/density_matrix.py` | 纯数值算法 | density 构造、算子展开、unitary/Kraus 演化、IR 数值循环和 density 测量 | 无；稳定结果投影仍由 Runtime/Core 负责 |
+| `runtime/noise_registry.py` 的 density adapter | 执行适配 | 无数值实现 | plan 验证、选项过滤、lowering 调用和 executor 分派 |
 | `statevector/triton.py`、`double_single_device_gates.py`、`split_real_imag*.py` | 数值算法 + Kernel 调用（混合） | 状态演化、精度扩展、expectation/VJP | 设备身份、provider evidence、精度/回退授权、conformance 汇总由 Platform/Runtime |
 | `statevector/forward.py`、`reverse_adjoint.py` | 数值算法（高度混合） | shard-local 门、cross-shard 数学、adjoint/VJP | process group、collective 生命周期、rank/topology、环境开关、通信 evidence |
 | `statevector/reverse.py`、`gradient_reduction.py` | Kernel/执行适配（混合） | autograd bridge 与局部梯度数学 | process group、bucket policy、all-reduce、ownership/evidence |

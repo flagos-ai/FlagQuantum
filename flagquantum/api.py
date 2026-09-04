@@ -155,15 +155,6 @@ from .noise import (
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
 )
-from .runtime.backends.density_matrix import (
-    apply_kraus_density,
-    apply_unitary_density,
-    density_matrix,
-    density_matrix_from_ir,
-    expand_operator,
-    expectation_z_density,
-    noisy_density_matrix,
-)
 from .runtime.backends.statevector import (
     BatchedStatevectorTrajectoryResult,
     merge_noisy_statevector_results,
@@ -357,9 +348,18 @@ from .runtime.compatibility import (
     validate_flaggems_ops,
     validate_production_mps_workload,
 )
+from .runtime.noise_registry import noisy_density_matrix
 from .runtime.result import MeasurementResult
 from .runtime.target_execution import TargetExecutionResult, run_target
 from .simulation import graph, linalg, mps, tensor
+from .simulation.density_matrix import (
+    apply_kraus_density,
+    apply_unitary_density,
+    density_matrix,
+    density_matrix_from_ir,
+    expand_operator,
+    expectation_z_density,
+)
 from .simulation.linalg import expm, random_unitary
 from .simulation.mps import (
     MPSAdaptiveBondPlan,

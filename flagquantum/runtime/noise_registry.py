@@ -6,12 +6,16 @@ from collections.abc import Callable, Mapping
 from threading import RLock
 from typing import Any
 
+import torch
+
 from ..compilation.noise import (
     EvolutionSemantics,
     NoisyExecutionPlan,
     StateRepresentation,
+    lower_noise_model,
 )
 from ..core.ir import CircuitIR
+from ..noise import NoiseModel
 
 NoiseExecutor = Callable[
     [CircuitIR, NoisyExecutionPlan, Mapping[str, Any]],
@@ -21,6 +25,37 @@ NoiseExecutor = Callable[
 _EXECUTORS: dict[tuple[str, str], NoiseExecutor] = {}
 _LOCK = RLock()
 _BUILTINS_READY = False
+
+
+def _execute_density_plan(
+    ir: CircuitIR,
+    plan: NoisyExecutionPlan,
+    options: Mapping[str, Any],
+) -> torch.Tensor:
+    if plan.representation != "density_matrix" or plan.evolution != "exact_channel":
+        raise ValueError("density executor requires density_matrix exact_channel plan")
+    supported = {"bsz", "device", "dtype"}
+    density_options = {key: value for key, value in options.items() if key in supported}
+
+    from ..simulation.density_matrix import density_matrix_from_ir
+
+    return density_matrix_from_ir(ir, **density_options)
+
+
+def noisy_density_matrix(
+    circuit_or_ir: Any,
+    noise_model: NoiseModel | None = None,
+    *,
+    bsz: int = 1,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype | None = None,
+) -> torch.Tensor:
+    """Lower optional noise and run the local exact density simulation."""
+
+    from ..simulation.density_matrix import density_matrix_from_ir
+
+    lowered = lower_noise_model(circuit_or_ir, noise_model)
+    return density_matrix_from_ir(lowered, bsz=bsz, device=device, dtype=dtype)
 
 
 def register_noise_executor(
@@ -46,11 +81,9 @@ def _ensure_builtin_executors() -> None:
     with _LOCK:
         if _BUILTINS_READY:
             return
-        from .backends.density_matrix.execution import execute_density_plan
-
         key = ("density_matrix", "exact_channel")
         if key not in _EXECUTORS:
-            _EXECUTORS[key] = execute_density_plan
+            _EXECUTORS[key] = _execute_density_plan
         _BUILTINS_READY = True
 
 
@@ -80,6 +113,7 @@ def execute_noisy_plan(
 __all__ = (
     "NoiseExecutor",
     "execute_noisy_plan",
+    "noisy_density_matrix",
     "register_noise_executor",
     "resolve_noise_executor",
 )

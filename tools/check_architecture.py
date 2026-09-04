@@ -255,10 +255,7 @@ def architecture_errors() -> tuple[str, ...]:
 
         if relative.startswith("flagquantum/runtime/"):
             imports_compiler = any(
-                any(
-                    part in {"_compiler", "compilation"}
-                    for part in module.split(".")
-                )
+                any(part in {"_compiler", "compilation"} for part in module.split("."))
                 for module, _ in imports
             )
             if imports_compiler:
@@ -301,14 +298,6 @@ def architecture_errors() -> tuple[str, ...]:
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(
                         f"{relative}: noise compilation imports forbidden layer {module}"
-                    )
-
-        if relative.startswith("flagquantum/runtime/backends/density_matrix/"):
-            forbidden = tuple(boundaries["density_backend_forbidden"])
-            for module, _ in imports:
-                if any(part in module.split(".") for part in forbidden):
-                    errors.append(
-                        f"{relative}: density backend imports forbidden layer {module}"
                     )
 
         if relative.startswith("flagquantum/runtime/trajectories/"):

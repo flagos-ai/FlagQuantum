@@ -1,8 +1,8 @@
 """Compatibility facade for native noise and density-matrix execution.
 
 New code should import noise semantics from :mod:`flagquantum.noise`, lowering
-from :mod:`flagquantum.compilation.noise`, and execution from
-:mod:`flagquantum.runtime.backends.density_matrix`.
+from :mod:`flagquantum.compilation.noise`, and numerical execution from
+:mod:`flagquantum.simulation.density_matrix`.
 """
 
 from ..compilation.noise import channel_instruction, lower_noise_model
@@ -26,14 +26,14 @@ from ..noise import (
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
 )
-from ..runtime.backends.density_matrix import (
+from ..runtime.noise_registry import noisy_density_matrix
+from .density_matrix import (
     apply_kraus_density,
     apply_unitary_density,
     density_matrix,
     density_matrix_from_ir,
     expand_operator,
     expectation_z_density,
-    noisy_density_matrix,
 )
 
 __all__ = (

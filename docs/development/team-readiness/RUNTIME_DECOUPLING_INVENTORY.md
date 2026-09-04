@@ -138,7 +138,6 @@ Provider 的暂管区域。
 
 | `architecture.toml` 登记路径 | 实际依赖 | 主要分类 | 目标替代方式 |
 | --- | --- | --- | --- |
-| `runtime/backends/density_matrix/execution.py` | `lower_noise_model()`；类型 `NoisyExecutionPlan` | 噪声历史耦合（同时含编译服务与共享契约） | Simulation 执行器只接收已 lowering 的 channel IR 和 Core-owned `NoiseExecutionPlanContract`；兼容入口在边界外调用 Compiler noise-lowering service |
 | `runtime/backends/statevector/noisy.py` | `lower_noise_model()` | 噪声历史耦合（编译服务调用） | 轨迹执行器接收已 lowering IR；由 Compiler 服务生成，Simulation 不直接导入 Compiler |
 | `runtime/backends/statevector/planning.py` | `schedule_layers()` | 错误的内部实现调用 | Compiler 在 executable plan 中提供稳定 layer/dependency schedule；Simulation/Runtime 不重跑 Compiler 调度算法 |
 | `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | 共享数据契约 | 将版本化校准记录的最小只读契约置于 Core；校准构建仍由 Compiler/benchmark owning service 完成，Runtime 只验证适用范围并消费记录 |

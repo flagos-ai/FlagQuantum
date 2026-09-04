@@ -606,8 +606,8 @@ def test_two_qubit_mps_trajectory_samples_kraus_branches():
 
 
 def test_noise_semantics_have_one_canonical_public_identity():
+    import flagquantum.simulation.density_matrix as density_backend
     from flagquantum.compilation import noise as noise_compilation
-    from flagquantum.runtime.backends import density_matrix as density_backend
     from flagquantum.simulation import noise as legacy_noise
 
     assert fq.noise.NoiseModel is fqn.NoiseModel
@@ -619,6 +619,24 @@ def test_noise_semantics_have_one_canonical_public_identity():
     assert legacy_noise.density_matrix_from_ir is density_backend.density_matrix_from_ir
     assert fq.lower_noise_model is noise_compilation.lower_noise_model
     assert fq.density_matrix_from_ir is density_backend.density_matrix_from_ir
+
+
+def test_noisy_density_runtime_delegates_numerics_to_simulation(monkeypatch):
+    import flagquantum.simulation.density_matrix as density_backend
+
+    expected = torch.eye(2, dtype=torch.complex64).reshape(1, 2, 2)
+    calls = []
+
+    def replacement(ir, **options):
+        calls.append((ir, options))
+        return expected
+
+    monkeypatch.setattr(density_backend, "density_matrix_from_ir", replacement)
+
+    assert fqn.noisy_density_matrix(fq.Circuit(1)) is expected
+    assert len(calls) == 1
+    assert isinstance(calls[0][0], fq.CircuitIR)
+    assert calls[0][1] == {"bsz": 1, "device": "cpu", "dtype": None}
 
 
 def test_structured_noisy_execution_plan_separates_evolution_semantics():

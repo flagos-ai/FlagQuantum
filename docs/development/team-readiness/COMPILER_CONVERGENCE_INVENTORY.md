@@ -110,7 +110,6 @@ current compilation implementation behind one narrow contract.
 | `runtime/result.py` | `ExecutionPlan` under type checking | result type contract |
 | `runtime/backends/statevector/planning.py` | `schedule_layers` | concrete compiler scheduling algorithm |
 | `runtime/dynamic/routing.py` | `CouplingMap`, `route_to_topology` | concrete routing model and implementation |
-| `runtime/backends/density_matrix/execution.py` | `lower_noise_model`; `NoisyExecutionPlan` under type checking | lowering and plan type |
 | `runtime/backends/statevector/noisy.py` | `lower_noise_model` | lowering implementation |
 | `runtime/noise_registry.py` | `EvolutionSemantics`, `NoisyExecutionPlan`, `StateRepresentation` | compiler-owned execution contract types |
 | `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | planner calibration type |

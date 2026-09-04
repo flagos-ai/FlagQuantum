@@ -5,7 +5,6 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
 noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
 compilation_noise_forbidden = ["circuit", "deployment", "runtime", "simulation"]
-density_backend_forbidden = ["circuit", "deployment", "simulation"]
 trajectory_runtime_forbidden = ["circuit", "simulation", "backends", "deployment"]
 simulation_forbidden = ["runtime", "deployment"]
 executor_policy_forbidden = ["audit", "release_policy"]
@@ -53,7 +52,6 @@ agent_services_forbidden = [
 # Existing target-architecture debt. New Runtime -> Compiler imports are blocked;
 # remove entries as contracts move into Core.
 runtime_compiler_import_allowed = [
-    "flagquantum/runtime/backends/density_matrix/execution.py",
     "flagquantum/runtime/backends/statevector/noisy.py",
     "flagquantum/runtime/backends/statevector/planning.py",
     "flagquantum/runtime/distributed/tensor_network_execution.py",
