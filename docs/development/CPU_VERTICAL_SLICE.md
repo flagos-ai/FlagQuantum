@@ -130,3 +130,14 @@ The single-use `compilation/contract_adapter.py` was folded into
 and contract projection. `ExecutionPlan.to_contract()` retains its signature,
 return type, lossy audit semantics, and deterministic identity. The removed
 adapter path is guarded against reintroduction.
+
+## Runtime plan assembly migration
+
+Final stable and noisy plan assembly now lives in `runtime/planner`, beside the
+policy decisions it consumes. It remains in the existing planner entry module
+so the migration does not spread transitional plan-product dependencies into a
+new Runtime file.
+Layer reconstruction stays with `execution_plan_contract.py` because it is also
+required when restoring the protected serialized plan. The former
+`compilation/execution_plan_builder.py` was deleted, and Runtime gained no new
+Compiler or transitional-plan dependency edge.

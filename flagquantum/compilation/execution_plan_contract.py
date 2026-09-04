@@ -20,7 +20,7 @@ from ..version import __version__
 if TYPE_CHECKING:
     from ..runtime.options import ExecutionOptions
     from ..runtime.options_resolver import ResolvedExecutionOptions
-    from .models import ExecutionPlan
+    from .models import ExecutionPlan, LayerPlan
 
 EXECUTION_PLAN_SCHEMA = "flagquantum.execution_plan"
 EXECUTION_PLAN_VERSION = "1.0"
@@ -80,6 +80,24 @@ def canonical_json(payload: object, *, indent: int | None = None) -> str:
 
 def canonical_hash(payload: object) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def build_layer_plans(ir: CircuitIR) -> tuple[LayerPlan, ...]:
+    """Rebuild the immutable layer description carried by a plan product."""
+
+    from ..compiler import schedule_layers
+    from .models import LayerPlan
+
+    return tuple(
+        LayerPlan(
+            index=index,
+            instructions=tuple(layer),
+            wires=tuple(
+                sorted({wire for instruction in layer for wire in instruction.wires})
+            ),
+        )
+        for index, layer in enumerate(schedule_layers(ir))
+    )
 
 
 def execution_plan_contract(plan: ExecutionPlan) -> RuntimePlanContract:
@@ -191,7 +209,6 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     decision = normalized["decision"]
 
     from ..runtime.planner import analyze
-    from .execution_plan_builder import build_layer_plans
     from .models import ExecutionPlan
 
     planned_program = program
@@ -224,7 +241,7 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         _contract_payload_json=canonical_json(normalized),
     )
     if normalized["extensions"]:
-        from .execution_plan_builder import build_noisy_execution_plan
+        from ..runtime.planner import build_noisy_execution_plan
 
         extension = normalized["extensions"][0]
         plan = replace(
@@ -646,6 +663,7 @@ __all__ = (
     "EXECUTION_PLAN_VERSION",
     "ExecutionPlanContractError",
     "attach_execution_contract",
+    "build_layer_plans",
     "canonical_hash",
     "canonical_json",
     "execution_plan_contract",

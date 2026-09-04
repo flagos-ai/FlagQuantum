@@ -184,6 +184,12 @@ def architecture_errors() -> tuple[str, ...]:
             "flagquantum/compilation/contract_adapter.py: merged single-use plan "
             "projection must not return; use execution_plan_contract.py"
         )
+    removed_plan_builder = PACKAGE / "compilation" / "execution_plan_builder.py"
+    if removed_plan_builder.exists():
+        errors.append(
+            "flagquantum/compilation/execution_plan_builder.py: Runtime plan "
+            "assembly must not return; use runtime/planner"
+        )
     for removed_runtime_planning_name in (
         "backend_selection.py",
         "candidate_plans.py",

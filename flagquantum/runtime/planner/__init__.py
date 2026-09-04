@@ -3,13 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
-from ...compilation.execution_plan_builder import (
-    build_execution_plan,
-    build_noisy_execution_plan,
+from ...compilation.execution_plan_contract import build_layer_plans
+from ...compilation.models import (
+    CircuitAnalysis,
+    EvolutionSemantics,
+    ExecutionPlan,
+    LayerPlan,
+    MemoryPlan,
+    NoiseErrorBudget,
+    NoisyExecutionPlan,
+    ParallelPlan,
+    StateRepresentation,
+    TrajectoryPlan,
 )
-from ...compilation.models import CircuitAnalysis, ExecutionPlan, LayerPlan
 from ...compiler import compile_for_backend, lower_noise_model, schedule_layers
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
@@ -106,6 +114,89 @@ def analyze(ir: CircuitIR) -> CircuitAnalysis:
         multi_qubit_gates=multi_qubit_gates,
         channel_count=channel_count,
         has_noise=channel_count > 0,
+    )
+
+
+def build_execution_plan(
+    *,
+    ir: CircuitIR,
+    analysis: CircuitAnalysis,
+    state_bytes: int,
+    recommended_mode: str,
+    world_size: int,
+    state_mode: str,
+    runtime_config: Mapping[str, Any],
+) -> ExecutionPlan:
+    """Assemble the stable plan product from resolved Runtime policy."""
+
+    distributed = world_size > 1
+    routing_plan = dict(ir.metadata.get("routing", {}) or {})
+    strategy_selection = ir.metadata.get("routing_strategy_selection")
+    if strategy_selection:
+        routing_plan["strategy_selection"] = strategy_selection
+    return ExecutionPlan(
+        analysis=analysis,
+        layers=build_layer_plans(ir),
+        state_bytes=state_bytes,
+        recommended_mode=recommended_mode,
+        world_size=int(world_size),
+        shardable_wires=tuple(range(max(0, ir.n_wires - 1))),
+        state_mode=state_mode,
+        user_tier=("production_distributed" if distributed else "single_device"),
+        usability_contract=(
+            "single_api_distributed_scale_out"
+            if distributed
+            else "single_api_fast_path"
+        ),
+        runtime_config=runtime_config,
+        routing_plan=routing_plan,
+    )
+
+
+def build_noisy_execution_plan(
+    execution_plan: ExecutionPlan,
+    *,
+    representation: StateRepresentation,
+    evolution: EvolutionSemantics,
+    trajectories: int | None = None,
+    seed: int | None = None,
+    min_trajectories: int = 1,
+    target_standard_error: float | None = None,
+    cutoff: float = 0.0,
+    memory_limit_bytes: int | None = None,
+    estimated_memory_bytes: int | None = None,
+    noise_model_identity: str | None = None,
+) -> NoisyExecutionPlan:
+    """Project an execution plan into the noisy Runtime plan product."""
+
+    trajectory = (
+        TrajectoryPlan(
+            count=trajectories,
+            seed=seed,
+            min_count=min_trajectories,
+            target_standard_error=target_standard_error,
+        )
+        if evolution == "quantum_trajectory" and trajectories is not None
+        else None
+    )
+    return NoisyExecutionPlan(
+        representation=representation,
+        evolution=evolution,
+        trajectory=trajectory,
+        parallel=ParallelPlan(world_size=execution_plan.world_size),
+        error_budget=NoiseErrorBudget(
+            sampling_error_enabled=evolution == "quantum_trajectory",
+            truncation_cutoff=cutoff,
+        ),
+        memory=MemoryPlan(
+            estimated_bytes=(
+                execution_plan.state_bytes
+                if estimated_memory_bytes is None
+                else int(estimated_memory_bytes)
+            ),
+            limit_bytes=memory_limit_bytes,
+        ),
+        noise_model_identity=noise_model_identity,
     )
 
 
@@ -676,6 +767,8 @@ __all__ = [
     "RuntimeCandidate",
     "RuntimeSelectionPlan",
     "analyze",
+    "build_execution_plan",
+    "build_noisy_execution_plan",
     "build_tn_working_set_calibration",
     "estimate_density_bytes",
     "estimate_mps_bytes",

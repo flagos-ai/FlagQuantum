@@ -640,7 +640,7 @@ def test_noisy_density_runtime_delegates_numerics_to_simulation(monkeypatch):
 
 
 def test_structured_noisy_execution_plan_separates_evolution_semantics():
-    from flagquantum.compilation.execution_plan_builder import (
+    from flagquantum.runtime.planner import (
         build_noisy_execution_plan,
     )
 
@@ -661,7 +661,7 @@ def test_structured_noisy_execution_plan_separates_evolution_semantics():
 
 
 def test_quantum_trajectory_plan_requires_sampling_controls():
-    from flagquantum.compilation.execution_plan_builder import (
+    from flagquantum.runtime.planner import (
         build_noisy_execution_plan,
     )
 
@@ -689,11 +689,11 @@ def test_quantum_trajectory_plan_requires_sampling_controls():
 
 
 def test_density_noise_executor_is_resolved_through_registry():
-    from flagquantum.compilation.execution_plan_builder import (
-        build_noisy_execution_plan,
-    )
     from flagquantum.compiler import lower_noise_model
     from flagquantum.runtime.noise_registry import execute_noisy_plan
+    from flagquantum.runtime.planner import (
+        build_noisy_execution_plan,
+    )
 
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))

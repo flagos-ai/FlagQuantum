@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
-from ..compilation.execution_plan_builder import build_noisy_execution_plan
 from ..compilation.models import ExecutionPlan
 from ..compiler import compile_for_backend, lower_noise_model
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
@@ -37,8 +36,8 @@ from .backends.statevector import (
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
+from .planner import build_noisy_execution_plan, select_execution_mode
 from .planner import plan_advanced as build_plan
-from .planner import select_execution_mode
 
 if TYPE_CHECKING:
     from ..circuit import Circuit

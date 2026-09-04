@@ -1,11 +1,9 @@
 import pytest
 
-from flagquantum.compilation.execution_plan_builder import (
-    build_execution_plan,
-    build_layer_plans,
-)
+from flagquantum.compilation.execution_plan_contract import build_layer_plans
 from flagquantum.compilation.models import CircuitAnalysis
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.runtime.planner import build_execution_plan
 
 pytestmark = pytest.mark.unit
 
