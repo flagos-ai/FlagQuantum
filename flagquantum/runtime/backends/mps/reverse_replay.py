@@ -9,15 +9,11 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....simulation.mps_compiled_layers import (
+    apply_mps_one_site_bucket,
+    contract_mps_two_site_bucket,
+)
 from ....simulation.mps_reverse import mps_vjp as _mps_vjp
-from ....simulation.mps_site_kernels import (
-    apply_rxx_contraction_bucket,
-    apply_ry_bucket,
-)
-from .communication import (
-    _apply_one_mps_tensor,
-    _instruction_matrix_for_mps,
-)
 from .errors import MPSReverseContractError
 from .factorization import apply_mps_pair_forward, apply_mps_qr_forward
 from .records import MPSReverseTapeRecord, TorchDistributedMPSGradientResult
@@ -104,44 +100,24 @@ def build_mps_reverse_backward(
                         )
                     )
                     active = tuple(parameters[index] for index in active_indices)
-                    matrices = []
-                    for record in segment:
-                        payload = payloads[record.forward_sequence]
-                        matrix = _instruction_matrix_for_mps(
-                            payload.instruction,
-                            bsz=bsz,
-                            device=resolved_device,
-                            dtype=resolved_dtype,
-                        )
-                        matrices.append(
-                            matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
-                        )
-                    stacked_inputs = torch.stack(segment_inputs)
-                    stacked_matrices = torch.stack(matrices)
-                    all_ry = all(
-                        payloads[record.forward_sequence].instruction.name == "ry"
+                    segment_instructions = tuple(
+                        payloads[record.forward_sequence].instruction
                         for record in segment
                     )
                     with record_function(
                         "flagquantum::mps::fused_local_reverse_segment"
                     ):
-                        outputs = (
-                            apply_ry_bucket(
-                                stacked_inputs,
-                                stacked_matrices,
-                                compiled=compile_site_kernels,
-                            )
-                            if all_ry
-                            else torch.stack(
-                                [
-                                    _apply_one_mps_tensor(value, matrix)
-                                    for value, matrix in zip(segment_inputs, matrices)
-                                ]
-                            )
+                        outputs = apply_mps_one_site_bucket(
+                            segment_instructions,
+                            segment_inputs,
+                            bsz=bsz,
+                            device=resolved_device,
+                            dtype=resolved_dtype,
+                            compile_ry=compile_site_kernels,
                         )
                         try:
                             derivatives = _mps_vjp(
-                                tuple(outputs.unbind(0)),
+                                outputs,
                                 segment_inputs,
                                 active,
                                 tuple(adjoints[record.wires[0]] for record in segment),
@@ -199,13 +175,14 @@ def build_mps_reverse_backward(
                 )
                 active = tuple(parameters[index] for index in record.parameter_indices)
                 if payload.kind == "one_site":
-                    matrix = _instruction_matrix_for_mps(
-                        payload.instruction,
+                    outputs = apply_mps_one_site_bucket(
+                        (payload.instruction,),
+                        (inputs[0],),
                         bsz=bsz,
                         device=resolved_device,
                         dtype=resolved_dtype,
+                        compile_ry=compile_site_kernels,
                     )
-                    outputs = (_apply_one_mps_tensor(inputs[0], matrix),)
                 elif (
                     payload.kind == "two_site"
                     and payload.factorization_pair is not None
@@ -229,18 +206,13 @@ def build_mps_reverse_backward(
                         grad_outputs=tuple(value[1] for value in saved_differentiable),
                         allow_unused=False,
                     )[0]
-                    matrix = _instruction_matrix_for_mps(
-                        payload.instruction,
+                    pair = contract_mps_two_site_bucket(
+                        (payload.instruction,),
+                        (inputs[0],),
+                        (inputs[1],),
                         bsz=bsz,
                         device=resolved_device,
                         dtype=resolved_dtype,
-                    )
-                    if matrix.ndim == 2:
-                        matrix = matrix.expand(bsz, -1, -1)
-                    pair = apply_rxx_contraction_bucket(
-                        inputs[0].unsqueeze(0),
-                        inputs[1].unsqueeze(0),
-                        matrix.unsqueeze(0),
                         compiled=compile_site_kernels,
                     )[0]
                     outputs = (pair,)

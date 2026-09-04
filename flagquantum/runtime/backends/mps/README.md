@@ -20,7 +20,8 @@ implementation.
   `distribution.py`, or `communication.py`.
 - Change forward ownership, communication, lifecycle, or evidence in
   `forward.py`; change reverse lifecycle in `reverse.py` or
-  `reverse_replay.py`.
+  `reverse_replay.py`. Their local instruction buckets call
+  `simulation/mps_compiled_layers.py` rather than owning tensor contraction.
 - Change rank-local adjoint projection or VJP evaluation in
   `simulation/mps_reverse.py`.
 - Change local observable environment or MPO contraction math in

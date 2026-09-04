@@ -4,6 +4,7 @@ from flagquantum.core.ir import Instruction
 from flagquantum.simulation.mps_compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     apply_compiled_mps_two_site_bucket,
+    apply_mps_one_site_bucket,
 )
 from flagquantum.simulation.mps_models import MPSConfig
 from flagquantum.simulation.mps_rank_local import apply_rank_local_mps_instruction
@@ -42,6 +43,31 @@ def test_compiled_one_site_bucket_matches_independent_rank_local_steps() -> None
         )
         torch.testing.assert_close(output, expected)
         assert split is None
+
+
+def test_mixed_one_site_bucket_matches_independent_rank_local_steps() -> None:
+    instructions = (Instruction("x", (0,)), Instruction("h", (2,)))
+    tensors = (_site(0), _site(1))
+
+    actual = apply_mps_one_site_bucket(
+        instructions,
+        tensors,
+        bsz=1,
+        device="cpu",
+        dtype=torch.complex128,
+        compile_ry=True,
+    )
+
+    for instruction, tensor, output in zip(instructions, tensors, actual):
+        (expected,), _ = apply_rank_local_mps_instruction(
+            instruction,
+            (tensor,),
+            MPSConfig(),
+            bsz=1,
+            device="cpu",
+            dtype=torch.complex128,
+        )
+        torch.testing.assert_close(output, expected)
 
 
 def test_compiled_two_site_bucket_matches_independent_rank_local_steps() -> None:

@@ -9,21 +9,21 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import Instruction, ensure_circuit_ir
-from ....simulation.mps import (
+from ....simulation.mps_compiled_layers import (
+    apply_compiled_mps_one_site_bucket,
+    contract_mps_two_site_bucket,
+)
+from ....simulation.mps_factorization import (
     _split_pair_matrix,
     _split_pair_matrix_bucket,
 )
 from ....simulation.mps_observables import transfer_mps_operator_environment
-from ....simulation.mps_site_kernels import (
-    apply_rxx_contraction_bucket,
-    apply_ry_bucket,
-    site_kernel_bucket_capacity,
+from ....simulation.mps_rank_local import (
+    apply_one_mps_tensor,
+    instruction_matrix_for_mps,
+    tensor_nbytes,
 )
-from .communication import (
-    _apply_one_mps_tensor,
-    _instruction_matrix_for_mps,
-    _tensor_nbytes,
-)
+from ....simulation.mps_site_kernels import site_kernel_bucket_capacity
 from .errors import NonlocalMPSCompilationError
 from .factorization import (
     apply_mps_pair_forward,
@@ -315,7 +315,7 @@ def execute_torch_distributed_mps_reverse(
             for candidate_index, _, wire in layer:
                 owner = state.owner(wire)
                 checkpoint_budget.reserve(
-                    _tensor_nbytes(state.local_tensors[wire]) if rank == owner else 0
+                    tensor_nbytes(state.local_tensors[wire]) if rank == owner else 0
                 )
                 reserved_ry.add(candidate_index)
             buckets: dict[
@@ -326,7 +326,7 @@ def execute_torch_distributed_mps_reverse(
                 candidate_index, candidate, wire = item
                 if state.owner(wire) != rank:
                     continue
-                matrix = _instruction_matrix_for_mps(
+                matrix = instruction_matrix_for_mps(
                     candidate, bsz=bsz, device=resolved_device, dtype=resolved_dtype
                 )
                 if matrix.ndim == 2:
@@ -335,7 +335,7 @@ def execute_torch_distributed_mps_reverse(
                 buckets.setdefault(key, []).append(item)
             for bucket in buckets.values():
                 _, sample_candidate, sample_wire = bucket[0]
-                sample_matrix = _instruction_matrix_for_mps(
+                sample_matrix = instruction_matrix_for_mps(
                     sample_candidate,
                     bsz=bsz,
                     device=resolved_device,
@@ -348,26 +348,17 @@ def execute_torch_distributed_mps_reverse(
                 )
                 for start in range(0, len(bucket), capacity):
                     chunk = bucket[start : start + capacity]
-                    before = torch.stack(
-                        [
-                            state.local_tensors[wire].detach().clone()
-                            for _, _, wire in chunk
-                        ]
+                    before = tuple(
+                        state.local_tensors[wire].detach().clone()
+                        for _, _, wire in chunk
                     )
-                    matrices = []
-                    for _, candidate, _ in chunk:
-                        matrix = _instruction_matrix_for_mps(
-                            candidate,
+                    with torch.no_grad():
+                        after = apply_compiled_mps_one_site_bucket(
+                            tuple(candidate for _, candidate, _ in chunk),
+                            before,
                             bsz=bsz,
                             device=resolved_device,
                             dtype=resolved_dtype,
-                        )
-                        matrices.append(
-                            matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
-                        )
-                    with torch.no_grad():
-                        after = apply_ry_bucket(
-                            before, torch.stack(matrices), compiled=True
                         )
                     for position, (candidate_index, _, wire) in enumerate(chunk):
                         state.local_tensors[wire] = after[position].detach()
@@ -456,7 +447,7 @@ def execute_torch_distributed_mps_reverse(
                 candidate_index, candidate, left_wire = item
                 if state.owner(left_wire) != rank or state.owner(left_wire + 1) != rank:
                     continue
-                matrix = _instruction_matrix_for_mps(
+                matrix = instruction_matrix_for_mps(
                     candidate, bsz=bsz, device=resolved_device, dtype=resolved_dtype
                 )
                 if matrix.ndim == 2:
@@ -469,7 +460,7 @@ def execute_torch_distributed_mps_reverse(
                 buckets.setdefault(key, []).append(item)
             for bucket in buckets.values():
                 _, sample_candidate, sample_wire = bucket[0]
-                sample_matrix = _instruction_matrix_for_mps(
+                sample_matrix = instruction_matrix_for_mps(
                     sample_candidate,
                     bsz=bsz,
                     device=resolved_device,
@@ -484,38 +475,26 @@ def execute_torch_distributed_mps_reverse(
                 )
                 for start in range(0, len(bucket), capacity):
                     chunk = bucket[start : start + capacity]
-                    before_left = torch.stack(
-                        [
-                            state.local_tensors[wire].detach().clone()
-                            for _, _, wire in chunk
-                        ]
+                    before_left = tuple(
+                        state.local_tensors[wire].detach().clone()
+                        for _, _, wire in chunk
                     )
-                    before_right = torch.stack(
-                        [
-                            state.local_tensors[wire + 1].detach().clone()
-                            for _, _, wire in chunk
-                        ]
+                    before_right = tuple(
+                        state.local_tensors[wire + 1].detach().clone()
+                        for _, _, wire in chunk
                     )
-                    matrices = []
-                    for _, candidate, _ in chunk:
-                        matrix = _instruction_matrix_for_mps(
-                            candidate,
+                    with torch.no_grad():
+                        pair_matrices = contract_mps_two_site_bucket(
+                            tuple(candidate for _, candidate, _ in chunk),
+                            before_left,
+                            before_right,
                             bsz=bsz,
                             device=resolved_device,
                             dtype=resolved_dtype,
-                        )
-                        matrices.append(
-                            matrix.expand(bsz, -1, -1) if matrix.ndim == 2 else matrix
-                        )
-                    with torch.no_grad():
-                        pair_matrices = apply_rxx_contraction_bucket(
-                            before_left,
-                            before_right,
-                            torch.stack(matrices),
                             compiled=True,
                         )
-                    left_dim = int(before_left.shape[2])
-                    right_dim = int(before_right.shape[-1])
+                    left_dim = int(before_left[0].shape[1])
+                    right_dim = int(before_right[0].shape[-1])
                     full_rank = min(
                         int(pair_matrices.shape[-2]),
                         int(pair_matrices.shape[-1]),
@@ -601,19 +580,14 @@ def execute_torch_distributed_mps_reverse(
                     )
                     saved_factorization = None
                     if candidate_index in selected_factorizations:
-                        matrix = _instruction_matrix_for_mps(
-                            candidate,
-                            bsz=bsz,
-                            device=resolved_device,
-                            dtype=resolved_dtype,
-                        )
-                        if matrix.ndim == 2:
-                            matrix = matrix.expand(bsz, -1, -1)
                         with torch.no_grad():
-                            contracted = apply_rxx_contraction_bucket(
-                                before_left.unsqueeze(0),
-                                before_right.unsqueeze(0),
-                                matrix.unsqueeze(0),
+                            contracted = contract_mps_two_site_bucket(
+                                (candidate,),
+                                (before_left,),
+                                (before_right,),
+                                bsz=bsz,
+                                device=resolved_device,
+                                dtype=resolved_dtype,
                                 compiled=True,
                             )[0]
                         with torch.enable_grad():
@@ -683,7 +657,7 @@ def execute_torch_distributed_mps_reverse(
             owner = state.owner(wires[0])
             shape = global_shapes[wires[0]]
             prospective = (
-                _tensor_nbytes(state.local_tensors[wires[0]]) if rank == owner else 0
+                tensor_nbytes(state.local_tensors[wires[0]]) if rank == owner else 0
             )
             if instruction_index not in reserved_ry:
                 checkpoint_budget.reserve(prospective)
@@ -692,14 +666,14 @@ def execute_torch_distributed_mps_reverse(
                     before, after = precomputed_ry.pop(instruction_index)
                 else:
                     before = state.local_tensors[wires[0]].detach().clone()
-                    matrix = _instruction_matrix_for_mps(
+                    matrix = instruction_matrix_for_mps(
                         instruction,
                         bsz=bsz,
                         device=resolved_device,
                         dtype=resolved_dtype,
                     )
                     with torch.no_grad():
-                        after = _apply_one_mps_tensor(before, matrix)
+                        after = apply_one_mps_tensor(before, matrix)
                     state.local_tensors[wires[0]] = after
                 payloads[len(records)] = _ReversePayload(
                     "one_site", (before,), instruction
@@ -746,9 +720,9 @@ def execute_torch_distributed_mps_reverse(
         prospective = 0
         optional = 0
         if rank == left_owner:
-            prospective = _tensor_nbytes(
-                state.local_tensors[left_wire]
-            ) + _tensor_nbytes(halo)
+            prospective = tensor_nbytes(state.local_tensors[left_wire]) + tensor_nbytes(
+                halo
+            )
             if (
                 save_exact_factorizations
                 and instruction_index not in reserved_rxx
@@ -783,19 +757,14 @@ def execute_torch_distributed_mps_reverse(
                 if instruction_index in selected_factorizations and wires == tuple(
                     sorted(wires)
                 ):
-                    matrix = _instruction_matrix_for_mps(
-                        instruction,
-                        bsz=bsz,
-                        device=resolved_device,
-                        dtype=resolved_dtype,
-                    )
-                    if matrix.ndim == 2:
-                        matrix = matrix.expand(bsz, -1, -1)
                     with torch.no_grad():
-                        contracted = apply_rxx_contraction_bucket(
-                            before_left.unsqueeze(0),
-                            before_right.unsqueeze(0),
-                            matrix.unsqueeze(0),
+                        contracted = contract_mps_two_site_bucket(
+                            (instruction,),
+                            (before_left,),
+                            (before_right,),
+                            bsz=bsz,
+                            device=resolved_device,
+                            dtype=resolved_dtype,
                             compiled=compile_site_kernels,
                         )[0]
                     with torch.enable_grad():
@@ -924,9 +893,9 @@ def execute_torch_distributed_mps_reverse(
         metadata = None
         prospective = 0
         if rank == left_owner:
-            prospective = _tensor_nbytes(
-                state.local_tensors[left_wire]
-            ) + _tensor_nbytes(halo)
+            prospective = tensor_nbytes(state.local_tensors[left_wire]) + tensor_nbytes(
+                halo
+            )
         checkpoint_budget.reserve(prospective)
         if rank == left_owner:
             before_left = state.local_tensors[left_wire].detach().clone()

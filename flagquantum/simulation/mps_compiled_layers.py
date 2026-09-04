@@ -9,7 +9,7 @@ import torch
 from ..core.ir import Instruction
 from .mps_factorization import _split_pair_matrix, _split_pair_matrix_bucket
 from .mps_models import MPSConfig
-from .mps_rank_local import instruction_matrix_for_mps
+from .mps_rank_local import apply_one_mps_tensor, instruction_matrix_for_mps
 from .mps_site_kernels import apply_rxx_contraction_bucket, apply_ry_bucket
 
 
@@ -43,18 +43,77 @@ def apply_compiled_mps_one_site_bucket(
 ) -> tuple[torch.Tensor, ...]:
     """Apply one equal-shape bucket of independent one-site instructions."""
 
+    if any(instruction.name != "ry" for instruction in instructions):
+        raise ValueError("compiled one-site MPS buckets support only RY instructions")
+    return apply_mps_one_site_bucket(
+        instructions,
+        tensors,
+        bsz=bsz,
+        device=device,
+        dtype=dtype,
+        compile_ry=compiled,
+    )
+
+
+def apply_mps_one_site_bucket(
+    instructions: Sequence[Instruction],
+    tensors: Sequence[torch.Tensor],
+    *,
+    bsz: int,
+    device: torch.device | str,
+    dtype: torch.dtype,
+    compile_ry: bool,
+) -> tuple[torch.Tensor, ...]:
+    """Apply independent one-site instructions, compiling homogeneous RY buckets."""
+
     if not instructions or len(instructions) != len(tensors):
         raise ValueError(
             "one-site instructions and tensors must be non-empty and equal"
         )
-    packed = torch.stack(tuple(tensors))
     matrices = _packed_instruction_matrices(
         instructions,
         bsz=bsz,
         device=device,
         dtype=dtype,
     )
-    return tuple(apply_ry_bucket(packed, matrices, compiled=compiled).unbind(0))
+    if all(instruction.name == "ry" for instruction in instructions):
+        packed = torch.stack(tuple(tensors))
+        return tuple(apply_ry_bucket(packed, matrices, compiled=compile_ry).unbind(0))
+    return tuple(
+        apply_one_mps_tensor(tensor, matrix)
+        for tensor, matrix in zip(tensors, matrices.unbind(0))
+    )
+
+
+def contract_mps_two_site_bucket(
+    instructions: Sequence[Instruction],
+    left_tensors: Sequence[torch.Tensor],
+    right_tensors: Sequence[torch.Tensor],
+    *,
+    bsz: int,
+    device: torch.device | str,
+    dtype: torch.dtype,
+    compiled: bool,
+) -> torch.Tensor:
+    """Contract independent equal-shape two-site instructions without splitting."""
+
+    size = len(instructions)
+    if size == 0 or len(left_tensors) != size or len(right_tensors) != size:
+        raise ValueError(
+            "two-site instructions and tensor pairs must be non-empty and equal"
+        )
+    matrices = _packed_instruction_matrices(
+        instructions,
+        bsz=bsz,
+        device=device,
+        dtype=dtype,
+    )
+    return apply_rxx_contraction_bucket(
+        torch.stack(tuple(left_tensors)),
+        torch.stack(tuple(right_tensors)),
+        matrices,
+        compiled=compiled,
+    )
 
 
 def apply_compiled_mps_two_site_bucket(
@@ -72,39 +131,29 @@ def apply_compiled_mps_two_site_bucket(
 ) -> tuple[tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]], ...]:
     """Contract and factorize one equal-shape bucket of two-site instructions."""
 
-    size = len(instructions)
-    if size == 0 or len(left_tensors) != size or len(right_tensors) != size:
-        raise ValueError(
-            "two-site instructions and tensor pairs must be non-empty and equal"
-        )
-    lefts = torch.stack(tuple(left_tensors))
-    rights = torch.stack(tuple(right_tensors))
-    matrices = _packed_instruction_matrices(
+    pairs = contract_mps_two_site_bucket(
         instructions,
+        left_tensors,
+        right_tensors,
         bsz=bsz,
         device=device,
         dtype=dtype,
-    )
-    pairs = apply_rxx_contraction_bucket(
-        lefts,
-        rights,
-        matrices,
         compiled=compiled,
     )
     if isolate_factorizations:
         return tuple(
             _split_pair_matrix(
                 pair,
-                left_dim=lefts.shape[2],
-                right_dim=rights.shape[-1],
+                left_dim=left_tensors[0].shape[1],
+                right_dim=right_tensors[0].shape[-1],
                 config=config,
             )
             for pair in pairs
         )
     return _split_pair_matrix_bucket(
         pairs,
-        left_dim=lefts.shape[2],
-        right_dim=rights.shape[-1],
+        left_dim=left_tensors[0].shape[1],
+        right_dim=right_tensors[0].shape[-1],
         config=config,
         svd_driver=svd_driver,
     )
@@ -113,4 +162,6 @@ def apply_compiled_mps_two_site_bucket(
 __all__ = (
     "apply_compiled_mps_one_site_bucket",
     "apply_compiled_mps_two_site_bucket",
+    "apply_mps_one_site_bucket",
+    "contract_mps_two_site_bucket",
 )
