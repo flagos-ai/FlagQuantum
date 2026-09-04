@@ -14,6 +14,10 @@ SUCCESSOR = ROOT / "contracts/ir-phase1-batch-f-performance-remediation.json"
 REMEDIATION_SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
 )
+SUCCESS_CACHE_ATTESTATION = (
+    ROOT
+    / "tests/fixtures/internal_ir/phase1_import_success_cache_successor_candidate.json"
+)
 
 
 def _candidate() -> dict[str, object]:
@@ -46,6 +50,20 @@ def test_batch_c_candidate_binds_authorization_and_artifacts() -> None:
                 assert amendment["successor_sha256"] == actual_hash
                 continue
             amendment = successors[relative_path]
+            if (
+                relative_path == "flagquantum/_compiler/importers/circuit_ir.py"
+                and actual_hash != amendment["current_sha256"]
+            ):
+                successor_attestation = json.loads(
+                    SUCCESS_CACHE_ATTESTATION.read_text(encoding="utf-8")
+                )
+                implementation = successor_attestation["implementation"]
+                assert (
+                    implementation["predecessor_sha256"] == amendment["current_sha256"]
+                )
+                assert implementation["successor_sha256"] == actual_hash
+                assert implementation["successor_sha256_mode"] == "exact"
+                continue
             assert amendment["previous_sha256"] == expected_hash
             assert amendment["current_sha256"] == actual_hash
             assert amendment["semantic_output_change"] is False

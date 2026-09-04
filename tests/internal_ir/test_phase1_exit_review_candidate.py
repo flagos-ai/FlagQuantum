@@ -14,6 +14,13 @@ SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-authorized-artifact-successor.js
 REMEDIATION_SUCCESSOR = (
     ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
 )
+SUCCESS_CACHE_AUTHORIZATION = (
+    ROOT / "contracts/ir-phase1-import-success-cache-successor-authorization.json"
+)
+SUCCESS_CACHE_ATTESTATION = (
+    ROOT
+    / "tests/fixtures/internal_ir/phase1_import_success_cache_successor_candidate.json"
+)
 
 
 def _candidate() -> dict[str, object]:
@@ -27,6 +34,19 @@ def _sha256(path: Path) -> str:
 def _assert_artifact_binding(relative_path: str, expected_hash: str) -> None:
     actual_hash = _sha256(ROOT / relative_path)
     if actual_hash == expected_hash:
+        return
+    authorization = json.loads(SUCCESS_CACHE_AUTHORIZATION.read_text(encoding="utf-8"))
+    harness_transition = authorization["test_harness_transitions"].get(relative_path)
+    if harness_transition is not None:
+        assert harness_transition["predecessor_sha256"] == expected_hash
+        assert harness_transition["successor_sha256"] == actual_hash
+        return
+    if relative_path == "flagquantum/_compiler/importers/circuit_ir.py":
+        attestation = json.loads(SUCCESS_CACHE_ATTESTATION.read_text(encoding="utf-8"))
+        implementation = attestation["implementation"]
+        assert implementation["predecessor_sha256"] == expected_hash
+        assert implementation["successor_sha256"] == actual_hash
+        assert implementation["successor_sha256_mode"] == "exact"
         return
     remediation = json.loads(REMEDIATION_SUCCESSOR.read_text(encoding="utf-8"))
     remediation_candidate = remediation["candidates"].get(
@@ -67,14 +87,16 @@ def test_phase1_exit_candidate_binds_public_contract_corpus_and_budget() -> None
     corpus = candidate["corpus"]
     performance = candidate["performance"]
 
-    assert _sha256(ROOT / public["stable_api_manifest"]["path"]) == (
-        public["stable_api_manifest"]["sha256"]
+    assert (
+        _sha256(ROOT / public["stable_api_manifest"]["path"])
+        == (public["stable_api_manifest"]["sha256"])
     )
     assert _sha256(ROOT / public["baseline"]["path"]) == (public["baseline"]["sha256"])
     assert _sha256(ROOT / corpus["path"]) == corpus["sha256"]
     assert _sha256(ROOT / performance["budget_path"]) == (performance["budget_sha256"])
-    assert _sha256(ROOT / performance["successor_attestation"]["path"]) == (
-        performance["successor_attestation"]["sha256"]
+    assert (
+        _sha256(ROOT / performance["successor_attestation"]["path"])
+        == (performance["successor_attestation"]["sha256"])
     )
     assert public["root_exports_added"] == []
     assert public["default_run_plan_path_changed"] is False
