@@ -377,3 +377,104 @@ def _jax_diag4(a: Any, b: Any, c: Any, d: Any) -> Any:
             jnp.stack((zero, zero, zero, d)),
         )
     ).astype(_jax_complex_dtype())
+
+
+def _jax_instruction_matrix(instruction: Any) -> Any:
+    name = instruction.name
+    if name == "rx":
+        return _jax_rx(_jax_scalar_param(instruction.params["theta"]))
+    if name == "ry":
+        return _jax_ry(_jax_scalar_param(instruction.params["theta"]))
+    if name == "rz":
+        return _jax_rz(_jax_scalar_param(instruction.params["theta"]))
+    if name in {"phase", "u1"}:
+        return _jax_phase(_jax_scalar_param(instruction.params["theta"]))
+    if name == "u2":
+        return _jax_u2(
+            _jax_scalar_param(instruction.params["phi"]),
+            _jax_scalar_param(instruction.params["lbd"]),
+        )
+    if name == "u3":
+        return _jax_u3(
+            _jax_scalar_param(instruction.params["theta"]),
+            _jax_scalar_param(instruction.params["phi"]),
+            _jax_scalar_param(instruction.params["lbd"]),
+        )
+    if name == "h":
+        return _jax_h()
+    if name == "x":
+        return _jax_x()
+    if name == "y":
+        return _jax_y()
+    if name == "z":
+        return _jax_z()
+    if name == "s":
+        return _jax_s()
+    if name == "sdg":
+        return _jax_sdg()
+    if name == "t":
+        return _jax_t()
+    if name == "tdg":
+        return _jax_tdg()
+    if name == "sx":
+        return _jax_sx()
+    if name == "sxdg":
+        return _jax_sxdg()
+    if name == "cx":
+        return _jax_cx()
+    if name == "cz":
+        return _jax_cz()
+    if name == "cy":
+        return _jax_cy()
+    if name == "swap":
+        return _jax_swap()
+    if name == "crx":
+        return _jax_controlled(_jax_rx(_jax_scalar_param(instruction.params["theta"])))
+    if name == "cry":
+        return _jax_controlled(_jax_ry(_jax_scalar_param(instruction.params["theta"])))
+    if name == "crz":
+        return _jax_controlled(_jax_rz(_jax_scalar_param(instruction.params["theta"])))
+    if name == "cphase":
+        return _jax_cphase(_jax_scalar_param(instruction.params["theta"]))
+    if name == "rxx":
+        return _jax_rxx(_jax_scalar_param(instruction.params["theta"]))
+    if name == "ryy":
+        return _jax_ryy(_jax_scalar_param(instruction.params["theta"]))
+    if name == "rzz":
+        return _jax_rzz(_jax_scalar_param(instruction.params["theta"]))
+    raise NotImplementedError(f"JAX quantum kernel does not support gate {name!r} yet.")
+
+
+def _apply_jax_instruction(
+    state: Any,
+    instruction: Any,
+    n_wires: int,
+    parameters: Any,
+    matmul_precision: str | None = "highest",
+) -> Any:
+    wires = tuple(int(wire) for wire in instruction.wires)
+    matrix = _jax_instruction_matrix(instruction)
+    del parameters
+    return _jax_apply_matrix(state, matrix, wires, n_wires, matmul_precision)
+
+
+def _jax_statevector_from_circuit(
+    circuit: Any,
+    n_wires: int,
+    parameters: Any,
+    *,
+    matmul_precision: str | None = "highest",
+) -> Any:
+    import jax.numpy as jnp
+
+    state = jnp.zeros((2 ** int(n_wires),), dtype=_jax_complex_dtype())
+    state = state.at[0].set(1.0 + 0.0j)
+    for instruction in circuit.to_ir():
+        state = _apply_jax_instruction(
+            state,
+            instruction,
+            int(n_wires),
+            parameters,
+            matmul_precision,
+        )
+    return state

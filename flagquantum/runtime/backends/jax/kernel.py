@@ -9,6 +9,18 @@ from typing import Any
 
 import torch
 
+from ....simulation.jax_gate_primitives import (
+    _jax_complex_dtype,
+    _jax_hamiltonian_expectation,
+    _jax_instruction_matrix,
+    _jax_pauli_matrix,
+    _jax_real_dtype,
+    _jax_statevector_from_circuit,
+    _jax_z_sum,
+    _jax_z_values,
+    _set_active_jax_compute_dtype,
+)
+
 TorchCircuitBuilder = Callable[..., Any]
 
 
@@ -298,107 +310,6 @@ class _JAXParameterProxy:
         return self.parameters.reshape(*shape)
 
 
-def _jax_statevector_from_circuit(
-    circuit: Any,
-    n_wires: int,
-    parameters: Any,
-    *,
-    matmul_precision: str | None = "highest",
-) -> Any:
-    import jax.numpy as jnp
-
-    state = jnp.zeros((2 ** int(n_wires),), dtype=_jax_complex_dtype())
-    state = state.at[0].set(1.0 + 0.0j)
-    for instruction in circuit.to_ir():
-        state = _apply_jax_instruction(
-            state,
-            instruction,
-            int(n_wires),
-            parameters,
-            matmul_precision,
-        )
-    return state
-
-
-def _jax_instruction_matrix(instruction: Any) -> Any:
-    name = instruction.name
-    if name == "rx":
-        return _jax_rx(_jax_scalar_param(instruction.params["theta"]))
-    if name == "ry":
-        return _jax_ry(_jax_scalar_param(instruction.params["theta"]))
-    if name == "rz":
-        return _jax_rz(_jax_scalar_param(instruction.params["theta"]))
-    if name in {"phase", "u1"}:
-        return _jax_phase(_jax_scalar_param(instruction.params["theta"]))
-    if name == "u2":
-        return _jax_u2(
-            _jax_scalar_param(instruction.params["phi"]),
-            _jax_scalar_param(instruction.params["lbd"]),
-        )
-    if name == "u3":
-        return _jax_u3(
-            _jax_scalar_param(instruction.params["theta"]),
-            _jax_scalar_param(instruction.params["phi"]),
-            _jax_scalar_param(instruction.params["lbd"]),
-        )
-    if name == "h":
-        return _jax_h()
-    if name == "x":
-        return _jax_x()
-    if name == "y":
-        return _jax_y()
-    if name == "z":
-        return _jax_z()
-    if name == "s":
-        return _jax_s()
-    if name == "sdg":
-        return _jax_sdg()
-    if name == "t":
-        return _jax_t()
-    if name == "tdg":
-        return _jax_tdg()
-    if name == "sx":
-        return _jax_sx()
-    if name == "sxdg":
-        return _jax_sxdg()
-    if name == "cx":
-        return _jax_cx()
-    if name == "cz":
-        return _jax_cz()
-    if name == "cy":
-        return _jax_cy()
-    if name == "swap":
-        return _jax_swap()
-    if name == "crx":
-        return _jax_controlled(_jax_rx(_jax_scalar_param(instruction.params["theta"])))
-    if name == "cry":
-        return _jax_controlled(_jax_ry(_jax_scalar_param(instruction.params["theta"])))
-    if name == "crz":
-        return _jax_controlled(_jax_rz(_jax_scalar_param(instruction.params["theta"])))
-    if name == "cphase":
-        return _jax_cphase(_jax_scalar_param(instruction.params["theta"]))
-    if name == "rxx":
-        return _jax_rxx(_jax_scalar_param(instruction.params["theta"]))
-    if name == "ryy":
-        return _jax_ryy(_jax_scalar_param(instruction.params["theta"]))
-    if name == "rzz":
-        return _jax_rzz(_jax_scalar_param(instruction.params["theta"]))
-    raise NotImplementedError(f"JAX quantum kernel does not support gate {name!r} yet.")
-
-
-def _apply_jax_instruction(
-    state: Any,
-    instruction: Any,
-    n_wires: int,
-    parameters: Any,
-    matmul_precision: str | None = "highest",
-) -> Any:
-    wires = tuple(int(wire) for wire in instruction.wires)
-    matrix = _jax_instruction_matrix(instruction)
-    del parameters
-    return _jax_apply_matrix(state, matrix, wires, n_wires, matmul_precision)
-
-
 from .mps_kernel import (  # noqa: E402
     _is_zz_z_chain_hamiltonian,
     _jax_mps_from_circuit,
@@ -668,44 +579,6 @@ def _jax_einsum_reorder(
         + "".join(mapping[label] for label in output_labels)
     )
     return jnp.einsum(equation, tensor, precision=matmul_precision)
-
-
-from ....simulation.jax_gate_primitives import (  # noqa: E402
-    _jax_apply_matrix,
-    _jax_complex_dtype,
-    _jax_controlled,
-    _jax_cphase,
-    _jax_cx,
-    _jax_cy,
-    _jax_cz,
-    _jax_h,
-    _jax_hamiltonian_expectation,
-    _jax_pauli_matrix,
-    _jax_phase,
-    _jax_real_dtype,
-    _jax_rx,
-    _jax_rxx,
-    _jax_ry,
-    _jax_ryy,
-    _jax_rz,
-    _jax_rzz,
-    _jax_s,
-    _jax_scalar_param,
-    _jax_sdg,
-    _jax_swap,
-    _jax_sx,
-    _jax_sxdg,
-    _jax_t,
-    _jax_tdg,
-    _jax_u2,
-    _jax_u3,
-    _jax_x,
-    _jax_y,
-    _jax_z,
-    _jax_z_sum,
-    _jax_z_values,
-    _set_active_jax_compute_dtype,
-)
 
 
 def __getattr__(name: str) -> Any:

@@ -18,12 +18,10 @@ _ACTIVE_JAX_COMPUTE_DTYPE: ContextVar[str] = ContextVar(
 from ....simulation.jax_gate_primitives import (  # noqa: E402
     _jax_complex_dtype,
     _jax_cx,
+    _jax_instruction_matrix,
     _jax_pauli_matrix,
     _jax_real_dtype,
     _jax_swap,
-)
-from .kernel import (  # noqa: E402
-    _jax_instruction_matrix,
 )
 
 
