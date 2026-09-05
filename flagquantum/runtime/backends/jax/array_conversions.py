@@ -48,7 +48,7 @@ def _parameterized_gate_matrix_as_jax(
     matrix = _jax_instruction_matrix(instruction).astype(
         _jax_complex_dtype(complex_bytes)
     )
-    diagonal_gates = {
+    parameterized_diagonal_gates = {
         "z",
         "s",
         "sdg",
@@ -62,7 +62,7 @@ def _parameterized_gate_matrix_as_jax(
         "cphase",
         "rzz",
     }
-    return matrix, str(instruction.name).lower() in diagonal_gates
+    return matrix, str(instruction.name).lower() in parameterized_diagonal_gates
 
 
 def _jax_parameter_array_from_input(parameters: Any, *, complex_bytes: int) -> Any:

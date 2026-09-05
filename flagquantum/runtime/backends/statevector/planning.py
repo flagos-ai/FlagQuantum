@@ -21,7 +21,7 @@ from .models import (
     StatevectorTraceReport,
 )
 
-_DIAGONAL_GATES = {
+_COMMUNICATION_LOCAL_DIAGONAL_GATES = {
     "z",
     "s",
     "sdg",
@@ -88,7 +88,7 @@ def _gate_communication(
         return "local", "local", (), 0
     if not power_two_world:
         return "distributed", "indexed_all_to_all", touched, per_rank_state_bytes * 2
-    if not touched or name in _DIAGONAL_GATES:
+    if not touched or name in _COMMUNICATION_LOCAL_DIAGONAL_GATES:
         return "local", "local", touched, 0
     if len(wires) == 1:
         return "distributed", "pair_exchange", touched, per_rank_state_bytes * 2

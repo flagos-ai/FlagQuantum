@@ -47,6 +47,12 @@ compatibility exports can keep their behavior while orchestration remains in
 Runtime and a concrete second consumer needs a Runtime-neutral numerical entry.
 Distributed forward dispatch also consumes Simulation's diagonal-gate
 classification directly; Runtime must not maintain a second execution copy.
+The planner's narrower `communication-local` set is a conservative scheduling
+policy, not a copy of the numerical classification. Likewise, JAX conversion
+classifies only parameterized matrices after construction. Keep these names and
+scopes explicit; widening the planner set changes plan and communication
+evidence and therefore requires dedicated behavioral tests rather than a
+mechanical deduplication.
 
 ## Non-responsibilities
 
