@@ -561,6 +561,23 @@ def _basis_indices_for_wires(
     return basis
 
 
+def _wire_mask(n_wires: int, wire: int) -> int:
+    """Return the global statevector bit mask for one logical wire."""
+
+    return 1 << (int(n_wires) - int(wire) - 1)
+
+
+def _basis_offset(n_wires: int, wires: Sequence[int], basis_index: int) -> int:
+    """Expand a compact gate-basis index into a global statevector offset."""
+
+    wires = tuple(int(wire) for wire in wires)
+    offset = 0
+    for position, wire in enumerate(wires):
+        if (int(basis_index) >> (len(wires) - position - 1)) & 1:
+            offset |= _wire_mask(n_wires, wire)
+    return offset
+
+
 def _apply_diagonal_gate_eager(
     amplitudes: torch.Tensor,
     diagonal: torch.Tensor,
@@ -643,15 +660,11 @@ def _apply_local_gate_eager(
     out = torch.empty_like(amplitudes) if output is None else output
     output_bytes = out.numel() * out.element_size()
 
-    def basis_offset(basis: int) -> int:
-        offset = 0
-        for position, wire in enumerate(wires):
-            if (basis >> (len(wires) - position - 1)) & 1:
-                offset |= 1 << (n_wires - wire - 1 - rank_bits)
-        return offset
-
     local_offsets = torch.tensor(
-        [basis_offset(basis) for basis in range(gate_dim)],
+        [
+            _basis_offset(n_wires, wires, basis) >> rank_bits
+            for basis in range(gate_dim)
+        ],
         dtype=torch.long,
         device=out.device,
     )

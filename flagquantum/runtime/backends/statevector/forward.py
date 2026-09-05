@@ -16,8 +16,10 @@ from ....simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
     _basis_indices_for_wires,
+    _basis_offset,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
+    _wire_mask,
     _zero_basis_local_indices,
 )
 from ...distributed.identity import DistributedIdentity
@@ -28,7 +30,6 @@ from .kernel_dispatch import (
     KernelDispatchEvidence,
     select_triton_kernel,
 )
-from .local_execution import _basis_offset, _wire_mask
 from .models import (
     DistributedStatevectorPlan,
     StatevectorShardState,

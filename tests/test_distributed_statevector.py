@@ -19,10 +19,7 @@ def test_static_gate_basis_owner_matches_tensor_index_mapping(world_size):
         _basis_owner_rank,
         _owner_and_local,
     )
-    from flagquantum.runtime.backends.statevector.local_execution import (
-        _basis_offset,
-        _wire_mask,
-    )
+    from flagquantum.simulation.statevector_ops import _basis_offset, _wire_mask
 
     plan = fq.plan_distributed_statevector(fq.Circuit(6), world_size=world_size)
     wire_sets = (

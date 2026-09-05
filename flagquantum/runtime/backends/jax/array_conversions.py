@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence
 from ....simulation.jax_statevector import (
     jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
 )
+from ....simulation.statevector_ops import _basis_offset, _wire_mask
 from .runtime_environment import (
     _jax_complex_dtype,
     _jax_real_dtype,
@@ -101,8 +102,6 @@ def _apply_gate_to_jax_shards(
     plan: Any,
     diagonal: bool,
 ) -> tuple[JAXStatevectorShardState, ...]:
-    from ..statevector.local_execution import _basis_offset, _wire_mask
-
     _, jnp = _require_jax()
     shards = tuple(shards)
     if not shards:

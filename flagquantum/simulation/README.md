@@ -16,9 +16,9 @@ dense Z/Pauli observables, computational-basis sampling, and the numerical body
 behind the public dense `expectation(...)` helper;
 `statevector_ops.py` owns its private layouts, gate application, gate-matrix
 composition, fusion, and tensor operations, including basis-bit extraction,
-compressed-to-local index expansion, and the rank-local PyTorch eager gate,
-diagonal-gate, rank-pair, and gate-basis block combination kernels. Neither file
-is a new public API.
+global gate-basis offset expansion, compressed-to-local index expansion, and
+the rank-local PyTorch eager gate, diagonal-gate, rank-pair, and gate-basis
+block combination kernels. Neither file is a new public API.
 `triton_kernels/statevector_gates.py` owns flat CUDA statevector kernels,
 including buffered and transpose-fused one-qubit gates, CNOT segments, and
 control-one packing/scattering used around cross-shard CX transport. Runtime

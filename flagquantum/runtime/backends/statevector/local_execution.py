@@ -11,7 +11,9 @@ from ....core.ir import ensure_circuit_ir
 from ....simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_gate_basis_vectors_eager,
+    _basis_offset,
     _instruction_matrix,
+    _wire_mask,
 )
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
@@ -120,19 +122,6 @@ def initialize_statevector_shard(
         amplitudes=amplitudes,
         global_indices=global_indices,
     )
-
-
-def _wire_mask(n_wires: int, wire: int) -> int:
-    return 1 << (int(n_wires) - int(wire) - 1)
-
-
-def _basis_offset(n_wires: int, wires: Sequence[int], basis_index: int) -> int:
-    offset = 0
-    width = len(tuple(wires))
-    for pos, wire in enumerate(tuple(wires)):
-        if (int(basis_index) >> (width - pos - 1)) & 1:
-            offset |= _wire_mask(n_wires, int(wire))
-    return offset
 
 
 def apply_gate_to_statevector_shard(

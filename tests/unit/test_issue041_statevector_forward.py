@@ -23,9 +23,11 @@ from flagquantum.simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
     _basis_indices_for_wires,
+    _basis_offset,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
     _instruction_matrix,
+    _wire_mask,
     _zero_basis_local_indices,
 )
 
@@ -61,6 +63,16 @@ def test_basis_bit_extraction_preserves_requested_wire_order():
     basis = _basis_indices_for_wires(torch.arange(8), n_wires=3, wires=(2, 0))
 
     torch.testing.assert_close(basis, torch.tensor([0, 2, 0, 2, 1, 3, 1, 3]))
+
+
+def test_gate_basis_offsets_are_owned_by_simulation_and_preserve_wire_order():
+    assert _wire_mask(4, 1) == 4
+    assert tuple(_basis_offset(4, (1, 3), basis) for basis in range(4)) == (
+        0,
+        1,
+        4,
+        5,
+    )
 
 
 def test_local_eager_gate_kernel_is_directly_usable_without_runtime_models():
