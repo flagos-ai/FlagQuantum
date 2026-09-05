@@ -2887,7 +2887,7 @@ def test_minimal_mps_measured_runtime_evidence_fails_closed(
     target = memory[0] if section == "memory" else events[0]
     target.pop(field)
 
-    malformed = jax_distributed._summarize_minimal_mps_measured_runtime_evidence(
+    malformed = mps_evidence._summarize_minimal_mps_measured_runtime_evidence(
         memory,
         events,
         execution_scope="development_cpu",
