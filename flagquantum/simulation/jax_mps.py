@@ -405,3 +405,28 @@ def jax_mps_zz_z_chain_expectation_padded_scan(
         )(stacked[:-1], stacked[1:], left_envs[:-2], right_envs[2:])
         total = total + jnp.sum(zz_coefficient_array * zz_values)
     return total
+
+
+def jax_mps_hamiltonian_expectation(
+    tensors: Sequence[Any],
+    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
+    matmul_precision: str | None,
+) -> Any:
+    import jax.numpy as jnp
+
+    parsed = parse_zz_z_chain_hamiltonian(terms, len(tensors))
+    if parsed is not None:
+        return jax_mps_zz_z_chain_expectation_padded_scan(
+            tensors, parsed, matmul_precision
+        )
+
+    total = jnp.zeros((), dtype=_jax_real_dtype())
+    for coefficient, ops in terms:
+        total = total + jnp.asarray(
+            coefficient, dtype=_jax_real_dtype()
+        ) * jax_mps_pauli_string_expectation(
+            tensors,
+            ops,
+            matmul_precision,
+        )
+    return total

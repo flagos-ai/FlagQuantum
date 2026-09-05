@@ -25,12 +25,8 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert kernel._jax_mps_z_values is jax_mps.jax_mps_z_values
     assert kernel._jax_mps_z_sum is jax_mps.jax_mps_z_sum
     assert (
-        mps_kernel._jax_mps_pauli_string_expectation
-        is jax_mps.jax_mps_pauli_string_expectation
-    )
-    assert (
-        mps_kernel._jax_mps_zz_z_chain_expectation_padded_scan
-        is jax_mps.jax_mps_zz_z_chain_expectation_padded_scan
+        kernel._jax_mps_hamiltonian_expectation
+        is jax_mps.jax_mps_hamiltonian_expectation
     )
 
 

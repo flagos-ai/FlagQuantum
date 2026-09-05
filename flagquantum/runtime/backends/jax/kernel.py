@@ -24,6 +24,9 @@ from ....simulation.jax_mps import (
     is_zz_z_chain_hamiltonian as _is_zz_z_chain_hamiltonian,
 )
 from ....simulation.jax_mps import (
+    jax_mps_hamiltonian_expectation as _jax_mps_hamiltonian_expectation,
+)
+from ....simulation.jax_mps import (
     jax_mps_z_sum as _jax_mps_z_sum,
 )
 from ....simulation.jax_mps import (
@@ -319,10 +322,7 @@ class _JAXParameterProxy:
         return self.parameters.reshape(*shape)
 
 
-from .mps_kernel import (  # noqa: E402
-    _jax_mps_from_circuit,
-    _jax_mps_hamiltonian_expectation,
-)
+from .mps_kernel import _jax_mps_from_circuit  # noqa: E402
 
 
 def _jax_tensor_network_statevector_from_circuit(

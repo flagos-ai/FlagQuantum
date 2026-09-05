@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from contextvars import ContextVar
 from typing import Any
 
@@ -20,7 +20,6 @@ from ....simulation.jax_gate_primitives import (  # noqa: E402
     _jax_cx,
     _jax_instruction_matrix,
     _jax_pauli_matrix,
-    _jax_real_dtype,
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_one as _jax_mps_apply_one,
@@ -29,19 +28,10 @@ from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
 )
 from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_pauli_string_expectation as _jax_mps_pauli_string_expectation,
-)
-from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_split_pair as _jax_mps_split_pair,
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_to_statevector as _jax_mps_to_statevector,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_zz_z_chain_expectation_padded_scan as _jax_mps_zz_z_chain_expectation_padded_scan,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    parse_zz_z_chain_hamiltonian as _parse_zz_z_chain_hamiltonian,
 )
 
 
@@ -386,40 +376,3 @@ def _jax_mps_statevector_from_circuit(
         matmul_precision=matmul_precision,
     )
     return _jax_mps_to_statevector(tensors, matmul_precision)
-
-
-def _jax_mps_zz_z_chain_expectation(
-    tensors: Sequence[Any],
-    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    matmul_precision: str | None,
-) -> Any | None:
-    parsed = _parse_zz_z_chain_hamiltonian(terms, len(tensors))
-    if parsed is None:
-        return None
-
-    return _jax_mps_zz_z_chain_expectation_padded_scan(
-        tensors, parsed, matmul_precision
-    )
-
-
-def _jax_mps_hamiltonian_expectation(
-    tensors: Sequence[Any],
-    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    fast_value = _jax_mps_zz_z_chain_expectation(tensors, terms, matmul_precision)
-    if fast_value is not None:
-        return fast_value
-
-    total = jnp.zeros((), dtype=_jax_real_dtype())
-    for coefficient, ops in terms:
-        total = total + jnp.asarray(
-            coefficient, dtype=_jax_real_dtype()
-        ) * _jax_mps_pauli_string_expectation(
-            tensors,
-            ops,
-            matmul_precision,
-        )
-    return total
