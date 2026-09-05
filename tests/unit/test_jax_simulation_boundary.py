@@ -129,6 +129,10 @@ def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
         is jax_tensor_network._jax_einsum_reorder
     )
     assert (
+        tensor_network_contraction.jax_slice_tensor_by_labels
+        is jax_tensor_network.jax_slice_tensor_by_labels
+    )
+    assert (
         tensor_network_gradients._jax_pauli_matrix
         is jax_gate_primitives._jax_pauli_matrix
     )

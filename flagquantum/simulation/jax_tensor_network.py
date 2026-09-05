@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from .jax_gate_primitives import (
@@ -186,6 +186,26 @@ def jax_tensor_network_loss_from_output(
         weights = 1.0 - 2.0 * bits.astype(probabilities.real.dtype)
         total = total + jnp.sum(probabilities * weights.reshape(1, -1))
     return total
+
+
+def jax_slice_tensor_by_labels(
+    tensor: Any,
+    labels: Iterable[int],
+    assignments: Mapping[int, int],
+) -> tuple[Any, tuple[int, ...]]:
+    """Select assigned tensor-network labels and return the remaining labels."""
+
+    import jax.numpy as jnp
+
+    remaining = [int(label) for label in labels]
+    for label, value in assignments.items():
+        normalized = int(label)
+        if normalized not in remaining:
+            continue
+        axis = remaining.index(normalized)
+        tensor = jnp.take(tensor, int(value), axis=axis)
+        remaining.pop(axis)
+    return tensor, tuple(remaining)
 
 
 def jax_contract_nodes_greedy(

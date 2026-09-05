@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence
 from ....simulation.jax_tensor_network import (
     _jax_einsum_by_labels,
     _jax_einsum_reorder,
+    jax_slice_tensor_by_labels,
 )
 from .common import product_int as _product
 from .runtime_environment import (
@@ -152,21 +153,17 @@ def _jax_tn_slice_nodes(
     nodes: Sequence[JAXTensorNetworkNode],
     assignments: Mapping[int, int],
 ) -> tuple[JAXTensorNetworkNode, ...]:
-    _, jnp = _require_jax()
     sliced = []
     for node in nodes:
-        tensor = node.tensor
-        labels = list(node.labels)
-        for label, value in assignments.items():
-            if int(label) not in labels:
-                continue
-            axis = labels.index(int(label))
-            tensor = jnp.take(tensor, int(value), axis=axis)
-            labels.pop(axis)
+        tensor, labels = jax_slice_tensor_by_labels(
+            node.tensor,
+            node.labels,
+            assignments,
+        )
         sliced.append(
             JAXTensorNetworkNode(
                 tensor=tensor,
-                labels=tuple(labels),
+                labels=labels,
                 name=node.name,
                 metadata=node.metadata,
             )
