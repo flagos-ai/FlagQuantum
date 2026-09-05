@@ -42,46 +42,6 @@ from .statevector_gradient_records import _statevector_plan
 from .tensor_network_planning import _tensor_network_plan
 
 
-def _jax_contract_tensor_slices_by_backend(
-    nodes: Sequence[JAXTensorNetworkNode],
-    output_labels: Sequence[int],
-    tasks: Sequence[tuple[int, tuple[tuple[int, int], ...]]],
-    *,
-    world_size: int,
-    compute_backend: str,
-    collective_backend: str,
-) -> tuple[tuple[Any, ...], Any, str, str]:
-    compute_backend = str(compute_backend)
-    if compute_backend == "shard_map":
-        raise RuntimeError(
-            "JAX shard_map tensor-network slice compute requires a production mesh and named axis resources; "
-            "use compute_backend='pmap' for device-local sliced compute or 'local_simulated' for CPU development."
-        )
-    if compute_backend == "pmap":
-        if collective_backend not in {"auto", "pmap", "local_simulated"}:
-            raise ValueError(
-                "compute_backend='pmap' supports collective_backend='auto', 'pmap', or 'local_simulated'."
-            )
-        return _jax_contract_tensor_slices_with_pmap(
-            nodes,
-            output_labels,
-            tasks,
-            world_size=world_size,
-        )
-    partials = tuple(
-        _jax_contract_assigned_tensor_slices(
-            nodes,
-            output_labels,
-            tuple(task for task in tasks if int(task[0]) == rank),
-        )
-        for rank in range(max(1, int(world_size)))
-    )
-    reduced, collective_execution = _jax_reduce_rank_partials(
-        partials, collective_backend=collective_backend
-    )
-    return partials, reduced, "local_simulated_slice_compute", collective_execution
-
-
 def plan_jax_distributed_quantum_backend(
     circuit_or_ir: Any,
     *,
