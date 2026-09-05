@@ -626,7 +626,9 @@ def _vectorized_local_cx_gate(
 ) -> tuple[StatevectorShardState, int]:
     """Apply a fully local CNOT with no basis-index or matrix temporaries."""
 
-    from .triton import apply_complex64_local_cx_inplace
+    from ....simulation.triton_kernels.statevector_gates import (
+        apply_complex64_local_cx_inplace,
+    )
 
     control, target = (int(wire) for wire in wires)
     rank_bits = len(plan.sharded_wires)

@@ -49,6 +49,27 @@ def test_control_one_pack_unpack_matches_index_reference() -> None:
     torch.testing.assert_close(output, expected)
 
 
+def test_local_cx_inplace_matches_index_reference() -> None:
+    _require_cuda()
+    from flagquantum.simulation.triton_kernels.statevector_gates import (
+        apply_complex64_local_cx_inplace,
+    )
+
+    state = torch.arange(16, device="cuda").reshape(1, 16).to(torch.complex64)
+    expected = state.clone()
+    indices = torch.arange(16, device="cuda")
+    zero = indices[((indices >> 2) & 1).bool() & ~((indices >> 0) & 1).bool()]
+    one = zero | 1
+    expected[:, zero], expected[:, one] = state[:, one], state[:, zero]
+
+    actual = state.clone()
+    apply_complex64_local_cx_inplace(
+        actual, control_bit_position=2, target_bit_position=0
+    )
+
+    torch.testing.assert_close(actual, expected)
+
+
 def test_constant_ry_rz_triton_path_with_cx_matches_cpu() -> None:
     _require_cuda()
     cpu = fq.Circuit(5, device="cpu", dtype=torch.complex64)

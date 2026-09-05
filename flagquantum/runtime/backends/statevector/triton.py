@@ -211,76 +211,6 @@ def apply_complex64_transpose_1q_inplace(
     return state
 
 
-@triton.jit(do_not_specialize=["control_bit_position", "target_bit_position"])
-def _complex64_local_cx_kernel(
-    state_parts,
-    pair_count,
-    batch_count,
-    state_batch_stride,
-    control_bit_position,
-    target_bit_position,
-    BLOCK_PAIRS: tl.constexpr,  # noqa: N803
-):
-    linear = tl.program_id(0) * BLOCK_PAIRS + tl.arange(0, BLOCK_PAIRS)
-    total_pairs = pair_count * batch_count
-    valid = linear < total_pairs
-    batch = linear // pair_count
-    pair = linear - batch * pair_count
-    low_mask = (1 << target_bit_position) - 1
-    low = pair & low_mask
-    index0 = ((pair - low) << 1) | low
-    active = valid & (((index0 >> control_bit_position) & 1) == 1)
-    index0 = batch * state_batch_stride + index0
-    index1 = index0 + (1 << target_bit_position)
-    zero_real = tl.load(state_parts + 2 * index0, mask=active, other=0.0)
-    zero_imag = tl.load(state_parts + 2 * index0 + 1, mask=active, other=0.0)
-    one_real = tl.load(state_parts + 2 * index1, mask=active, other=0.0)
-    one_imag = tl.load(state_parts + 2 * index1 + 1, mask=active, other=0.0)
-    tl.store(state_parts + 2 * index0, one_real, mask=active)
-    tl.store(state_parts + 2 * index0 + 1, one_imag, mask=active)
-    tl.store(state_parts + 2 * index1, zero_real, mask=active)
-    tl.store(state_parts + 2 * index1 + 1, zero_imag, mask=active)
-
-
-def apply_complex64_local_cx_inplace(
-    state: torch.Tensor,
-    *,
-    control_bit_position: int,
-    target_bit_position: int,
-) -> torch.Tensor:
-    """Apply a local CNOT as an in-place conditional amplitude permutation."""
-
-    if (
-        state.device.type != "cuda"
-        or state.dtype != torch.complex64
-        or state.ndim != 2
-        or not state.is_contiguous()
-    ):
-        raise ValueError("Triton local CX requires contiguous CUDA complex64 [B, N]")
-    local_bits = state.shape[1].bit_length() - 1
-    if (
-        not 0 <= control_bit_position < local_bits
-        or not 0 <= target_bit_position < local_bits
-        or control_bit_position == target_bit_position
-    ):
-        raise ValueError("control and target must be distinct local address bits")
-    pair_count = state.shape[1] // 2
-    block_pairs = 256
-    grid = (triton.cdiv(pair_count * state.shape[0], block_pairs),)
-    _complex64_local_cx_kernel[grid](
-        torch.view_as_real(state),
-        pair_count,
-        state.shape[0],
-        state.stride(0),
-        int(control_bit_position),
-        int(target_bit_position),
-        BLOCK_PAIRS=block_pairs,
-        num_warps=8,
-        num_stages=2,
-    )
-    return state
-
-
 @triton.jit
 def _complex64_local_cx_segment_kernel(
     state_parts,
@@ -742,7 +672,6 @@ def fused_complex64_sharded_1q_vjp_adjoint(
 
 __all__ = [
     "apply_complex64_local_1q",
-    "apply_complex64_local_cx_inplace",
     "apply_complex64_local_cx_segment",
     "fused_complex64_local_1q_vjp_adjoint",
     "fused_complex64_local_1q_reversible_vjp",
