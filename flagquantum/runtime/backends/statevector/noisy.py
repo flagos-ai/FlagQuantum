@@ -11,7 +11,6 @@ import torch
 from ....circuit import Circuit
 from ....compiler import lower_noise_model
 from ....noise import NoiseModel
-from ....ops.matrices import GATE_MAT_DICT
 from ....simulation.noisy_statevector import (
     run_noisy_trajectory_batch,
 )
@@ -133,14 +132,13 @@ def _execute_trajectory_batch(
     device: torch.device | str,
     ir: Any,
     noise_model: NoiseModel,
-    pauli_matrices: dict[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
     generators = [
         trajectory_generator(seed, trajectory_id, device=device)
         for trajectory_id in ids
     ]
     state, expectation, pauli_events, amplitude_events, generic_events = (
-        run_noisy_trajectory_batch(initial, ir, generators, pauli_matrices)
+        run_noisy_trajectory_batch(initial, ir, generators)
     )
     expectation = noise_model.apply_readout_expectation_z(expectation)
     return state, expectation, pauli_events, amplitude_events, generic_events
@@ -336,11 +334,6 @@ def run_noisy_statevector(
             checkpoint_path,
         )
 
-    pauli_matrices = {
-        name: torch.as_tensor(matrix, device=selected_device, dtype=selected_dtype)
-        for name, matrix in GATE_MAT_DICT.items()
-        if name in {"i", "x", "y", "z"}
-    }
     for start in range(0, len(trajectory_ids), trajectory_batch_size):
         ids = trajectory_ids[start : start + trajectory_batch_size]
         successful_states: list[torch.Tensor] = []
@@ -355,7 +348,6 @@ def run_noisy_statevector(
                     device=selected_device,
                     ir=ir,
                     noise_model=noise_model,
-                    pauli_matrices=pauli_matrices,
                 )
             )
             successful_states.extend(state)
@@ -378,7 +370,6 @@ def run_noisy_statevector(
                             device=selected_device,
                             ir=ir,
                             noise_model=noise_model,
-                            pauli_matrices=pauli_matrices,
                         )
                     )
                 except Exception as error:

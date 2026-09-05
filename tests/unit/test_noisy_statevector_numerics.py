@@ -52,14 +52,11 @@ def test_lowered_trajectory_batch_runs_without_runtime_lifecycle() -> None:
     circuit = Circuit(1).x(0)
     ir = lower_noise_model(circuit, NoiseModel().add("x", bit_flip_channel(1.0)))
     initial = torch.tensor([[1.0, 0.0]], dtype=torch.complex64)
-    identity = torch.eye(2, dtype=torch.complex64)
-    x = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex64)
 
     state, expectation, pauli, amplitude, generic = run_noisy_trajectory_batch(
         initial,
         ir,
         _generators(2),
-        {"i": identity, "x": x},
     )
 
     torch.testing.assert_close(

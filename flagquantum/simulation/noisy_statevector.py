@@ -6,6 +6,7 @@ import torch
 
 from ..core.ir import CircuitIR
 from ..ops.gate_matrix import gate_matrix
+from ..ops.matrices import GATE_MAT_DICT
 
 
 def apply_matrix_batched(
@@ -151,7 +152,6 @@ def run_noisy_trajectory_batch(
     initial: torch.Tensor,
     ir: CircuitIR,
     generators: list[torch.Generator],
-    pauli_matrices: dict[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
     """Evolve one batch of already-lowered noisy trajectories."""
 
@@ -160,6 +160,11 @@ def run_noisy_trajectory_batch(
     pauli_events = 0
     amplitude_events = 0
     generic_events = 0
+    pauli_matrices = {
+        name: torch.as_tensor(matrix, device=initial.device, dtype=initial.dtype)
+        for name, matrix in GATE_MAT_DICT.items()
+        if name in {"i", "x", "y", "z"}
+    }
     for instruction in ir.instructions:
         if not instruction.metadata.get("is_channel"):
             matrix = gate_matrix(
