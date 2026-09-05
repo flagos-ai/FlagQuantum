@@ -70,6 +70,12 @@ checkpoint/restart, and rank result merging belong to
 `runtime/trajectories/mps.py`. The primary `run_native` path lowers noise once
 before entering the lowered MPS entry points; only protected direct legacy
 calls still perform lowering in the compatibility wrapper.
+The Runtime imports in `mps_execution.py` serve the protected
+`run_noisy_mps`/merge compatibility surface; `mps_models.py` imports trajectory
+result types only during type checking because the protected
+`MPSMonteCarloResult` still names them. Do not replace these with `Any`, mirror
+types, or a second lifecycle implementation. Their exit requires an approved
+public API migration for the wrapper functions and result type.
 
 `tensor_local.py` owns local tensor-network plan construction and the numerical
 state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,

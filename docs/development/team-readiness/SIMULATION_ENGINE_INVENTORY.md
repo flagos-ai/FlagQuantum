@@ -256,7 +256,10 @@ Runtime 中剩余的 tensor 拼接、reshape 和 stack 主要用于通信打包�
 结果组装，不因使用张量操作而自动属于数值算法；只有改变 MPS 数学语义的实现才应继续迁入
 Simulation。已删除本轮确认无消费者的私有兼容别名，不因文件较大而机械拆分模块。
 
-目前仅保留 `simulation/mps_execution.py` 对轨迹 Runtime 的受保护旧入口。
+目前仅保留 MPS 受保护兼容面相关的反向依赖：`simulation/mps_execution.py` 调用轨迹
+Runtime，`simulation/mps_models.py` 仅在类型检查时引用 Runtime trajectory result 类型。
+前者支撑受保护的 `run_noisy_mps`/merge 入口，后者受 `MPSMonteCarloResult` 的既有合格名约束；
+不得以 `Any`、镜像类型或第二套生命周期实现绕开。
 `simulation/noise.py` 已在 manifest 和身份测试切换到规范路径后删除，对应架构白名单同步退出。
 除此以外，本轮未发现新的 Simulation→Runtime 依赖。MPS 数值边界已达到可停止继续横向
 抽象的条件；后续优先推进最小纵向链路和目录归位。
@@ -268,7 +271,7 @@ Simulation。已删除本轮确认无消费者的私有兼容别名，不因文�
 1. 真实本地 Engine 与 contract fake 运行同一套 conformance，Runtime 消费者无需修改；
 2. `runtime/backends/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
 3. 分布式 TN reverse 中不依赖 task ownership、checkpoint 或 process group 的数学移至 Simulation；
-4. 已登记的 `simulation/mps_execution.py`→Runtime 兼容依赖有获批的退出路径；`simulation/noise.py` 反向依赖已经退出；
+4. 已登记的 `simulation/mps_execution.py`→Runtime 兼容调用和 `simulation/mps_models.py` 类型引用须经公共 API 迁移退出；`simulation/noise.py` 反向依赖已经退出；
 5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
 
 当前第 5 项对 Statevector 切片成立，第 1--4 项尚未全部成立。因此本轮只更新事实台账，
