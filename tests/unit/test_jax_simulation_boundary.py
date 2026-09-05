@@ -11,6 +11,7 @@ from flagquantum.runtime.backends.jax import (
     mps_pullbacks,
     statevector_gradient_records,
     statevector_kernels,
+    tensor_network_gradients,
 )
 from flagquantum.simulation import (
     jax_gate_primitives,
@@ -114,6 +115,10 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
 
 
 def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
+    assert (
+        tensor_network_gradients._jax_tn_loss_from_output
+        is jax_tensor_network.jax_tensor_network_loss_from_output
+    )
     assert (
         kernel._jax_tensor_network_z_values
         is jax_tensor_network.jax_tensor_network_z_values

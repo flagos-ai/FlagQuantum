@@ -11,7 +11,6 @@ from .common import node_count as _node_count
 from .runtime_environment import (
     _jax_complex_dtype,
     _jnp_device_put,
-    _require_jax,
     _require_torch,
     _resolve_collective_backend,
     _resolve_jax_device,
@@ -188,34 +187,3 @@ def run_jax_sharded_tensor_network(
         collective_backend=resolved_collective_backend,
         collective_execution=collective_execution,
     )
-
-
-def _jax_tn_loss_from_output(
-    output: Any,
-    *,
-    n_wires: int,
-    bsz: int,
-    observable: str,
-    observable_wires: Sequence[int] | None,
-) -> Any:
-    _, jnp = _require_jax()
-    state = output.reshape(int(bsz), 2 ** int(n_wires))
-    if str(observable) == "state_norm":
-        return jnp.real(jnp.sum(jnp.conj(state) * state))
-    if str(observable) != "z_sum":
-        raise ValueError(
-            "JAX sliced TN reverse mode currently supports observable='z_sum' or 'state_norm'."
-        )
-    wires = (
-        tuple(range(int(n_wires)))
-        if observable_wires is None
-        else tuple(int(wire) for wire in observable_wires)
-    )
-    probs = jnp.abs(state) ** 2
-    indices = jnp.arange(2 ** int(n_wires))
-    total = jnp.zeros((), dtype=probs.real.dtype)
-    for wire in wires:
-        bits = (indices >> (int(n_wires) - 1 - int(wire))) & 1
-        weights = 1.0 - 2.0 * bits.astype(probs.real.dtype)
-        total = total + jnp.sum(probs * weights.reshape(1, -1))
-    return total

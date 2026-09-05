@@ -153,6 +153,41 @@ def jax_tensor_network_hamiltonian_expectation(
     return total
 
 
+def jax_tensor_network_loss_from_output(
+    output: Any,
+    *,
+    n_wires: int,
+    bsz: int,
+    observable: str,
+    observable_wires: Iterable[int] | None,
+) -> Any:
+    """Evaluate a supported loss from a contracted statevector-shaped output."""
+
+    import jax.numpy as jnp
+
+    state = output.reshape(int(bsz), 2 ** int(n_wires))
+    if str(observable) == "state_norm":
+        return jnp.real(jnp.sum(jnp.conj(state) * state))
+    if str(observable) != "z_sum":
+        raise ValueError(
+            "JAX sliced TN reverse mode currently supports "
+            "observable='z_sum' or 'state_norm'."
+        )
+    wires = (
+        tuple(range(int(n_wires)))
+        if observable_wires is None
+        else tuple(int(wire) for wire in observable_wires)
+    )
+    probabilities = jnp.abs(state) ** 2
+    indices = jnp.arange(2 ** int(n_wires))
+    total = jnp.zeros((), dtype=probabilities.real.dtype)
+    for wire in wires:
+        bits = (indices >> (int(n_wires) - 1 - int(wire))) & 1
+        weights = 1.0 - 2.0 * bits.astype(probabilities.real.dtype)
+        total = total + jnp.sum(probabilities * weights.reshape(1, -1))
+    return total
+
+
 def jax_contract_nodes_greedy(
     nodes: list[tuple[Any, tuple[int, ...]]],
     output_labels: tuple[int, ...],

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Sequence
 
+from ....simulation.jax_tensor_network import (
+    jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
+)
 from ...distributed.backend_policy import DistributedBackendPolicy
 from .array_conversions import (
     _jax_nodes_from_torch_nodes,
@@ -27,10 +30,7 @@ from .tensor_network_contraction import (
     _jax_contract_tensor_slices_by_backend,
     _pauli_ops_from_term,
 )
-from .tensor_network_execution import (
-    _jax_tn_loss_from_output,
-    _resolve_tn_compute_backend,
-)
+from .tensor_network_execution import _resolve_tn_compute_backend
 from .tensor_network_planning import _tn_tasks
 from .tensor_network_records import (
     JAXSlicedTensorNetworkGradientResult,
