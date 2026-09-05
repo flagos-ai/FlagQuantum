@@ -6,6 +6,7 @@ from typing import Any, Callable, Sequence
 
 from ....simulation.jax_statevector import (
     jax_apply_local_statevector_gate,
+    jax_combine_pair_exchanged_statevector,
     jax_gate_basis_in_for_delta_and_local_input,
     jax_local_positions_for_gate_input,
     jax_rank_mask_for_touched_delta,
@@ -168,7 +169,7 @@ def _jax_apply_pair_exchange_statevector_instruction(
     plan: Any,
     complex_bytes: int,
 ) -> Any:
-    jax, jnp = _require_jax()
+    jax, _ = _require_jax()
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
@@ -196,11 +197,14 @@ def _jax_apply_pair_exchange_statevector_instruction(
     rank_mask = 1 << (len(sharded_wires) - bit_index - 1)
     perm = tuple((rank, rank ^ rank_mask) for rank in range(int(plan.world_size)))
     partner = jax.lax.ppermute(amplitudes, axis_name="fq_rank", perm=perm)
-    bit = ((global_indices >> (int(plan.n_wires) - 1 - wire)) & 1).astype(jnp.bool_)
-    current_is_zero = bit.reshape(1, -1) == 0
-    updated_zero = matrix[0, 0] * amplitudes + matrix[0, 1] * partner
-    updated_one = matrix[1, 0] * partner + matrix[1, 1] * amplitudes
-    return jnp.where(current_is_zero, updated_zero, updated_one)
+    return jax_combine_pair_exchanged_statevector(
+        amplitudes,
+        partner,
+        global_indices,
+        matrix,
+        n_wires=int(plan.n_wires),
+        wire=wire,
+    )
 
 
 def _jax_pmap_statevector_parameter_loss(

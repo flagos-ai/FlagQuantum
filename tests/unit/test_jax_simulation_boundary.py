@@ -56,6 +56,10 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
         statevector_kernels.jax_gate_basis_in_for_delta_and_local_input
         is jax_statevector.jax_gate_basis_in_for_delta_and_local_input
     )
+    assert (
+        statevector_kernels.jax_combine_pair_exchanged_statevector
+        is jax_statevector.jax_combine_pair_exchanged_statevector
+    )
 
 
 def test_runtime_reuses_simulation_owned_jax_mps_operations():

@@ -190,6 +190,26 @@ def jax_apply_local_statevector_gate(
     )
 
 
+def jax_combine_pair_exchanged_statevector(
+    amplitudes: Any,
+    partner_amplitudes: Any,
+    global_indices: Any,
+    matrix: Any,
+    *,
+    n_wires: int,
+    wire: int,
+) -> Any:
+    """Combine local and exchanged amplitudes for a one-wire gate."""
+
+    import jax.numpy as jnp
+
+    bit = ((global_indices >> (int(n_wires) - 1 - int(wire))) & 1).astype(jnp.bool_)
+    current_is_zero = bit.reshape(1, -1) == 0
+    updated_zero = matrix[0, 0] * amplitudes + matrix[0, 1] * partner_amplitudes
+    updated_one = matrix[1, 0] * partner_amplitudes + matrix[1, 1] * amplitudes
+    return jnp.where(current_is_zero, updated_zero, updated_one)
+
+
 def jax_sharded_statevector_rank_loss(
     amplitudes: Any,
     global_indices: Any,
