@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 from .jax_gate_primitives import (
@@ -31,6 +31,72 @@ def jax_mps_initial_open_boundary_tensors(n_wires: int) -> list[Any]:
     tensor = jnp.zeros((1, 2, 1), dtype=_jax_complex_dtype())
     tensor = tensor.at[0, 0, 0].set(1.0 + 0.0j)
     return [tensor for _ in range(int(n_wires))]
+
+
+def jax_mps_site_transfer(environment: Any, tensor: Any) -> Any:
+    """Transfer an MPS norm environment across one site."""
+
+    import jax.numpy as jnp
+
+    return jnp.einsum("bij,bipr,bjps->brs", environment, jnp.conj(tensor), tensor)
+
+
+def jax_mps_site_observable_transfer(
+    environment: Any,
+    tensor: Any,
+    operator: Any,
+) -> Any:
+    """Transfer an MPS observable environment across one site."""
+
+    import jax.numpy as jnp
+
+    return jnp.einsum(
+        "bij,bipr,pq,bjqs->brs",
+        environment,
+        jnp.conj(tensor),
+        operator,
+        tensor,
+    )
+
+
+def jax_sharded_mps_z_sum(
+    rank_tensors: Mapping[int, Mapping[int, Any]],
+    *,
+    n_wires: int,
+    batch_size: int,
+    dtype: Any,
+    observable_wires: Sequence[int] | None,
+) -> Any:
+    """Evaluate a Z sum after collecting rank-owned MPS site tensors."""
+
+    import jax.numpy as jnp
+
+    z_operator = _jax_pauli_matrix("z", dtype=dtype)
+    environment = jnp.ones((int(batch_size), 1, 1), dtype=dtype)
+    accumulated = jnp.zeros((int(batch_size), 1, 1), dtype=dtype)
+    target_wires = (
+        set(range(int(n_wires)))
+        if observable_wires is None
+        else {int(wire) for wire in observable_wires}
+    )
+    tensors_by_wire: dict[int, Any] = {}
+    for tensors in rank_tensors.values():
+        tensors_by_wire.update({int(wire): tensor for wire, tensor in tensors.items()})
+    missing = tuple(wire for wire in range(int(n_wires)) if wire not in tensors_by_wire)
+    if missing:
+        raise RuntimeError(f"Missing MPS site tensors for wires {missing}.")
+    for wire in range(int(n_wires)):
+        tensor = tensors_by_wire[wire]
+        next_accumulated = jax_mps_site_transfer(accumulated, tensor)
+        if wire in target_wires:
+            next_accumulated = next_accumulated + jax_mps_site_observable_transfer(
+                environment,
+                tensor,
+                z_operator,
+            )
+        environment = jax_mps_site_transfer(environment, tensor)
+        accumulated = next_accumulated
+    return jnp.real(jnp.sum(accumulated.reshape((int(batch_size), -1))[:, 0]))
 
 
 def jax_mps_project_open_boundaries(tensors: Any) -> Any:

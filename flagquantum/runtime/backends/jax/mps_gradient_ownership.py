@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Sequence
 
+from ....simulation.jax_mps import jax_sharded_mps_z_sum
 from .mps_training_records import JAXShardedMPSParameterFlowPlan
 from .runtime_environment import (
     _jax_complex_dtype,
@@ -272,16 +273,6 @@ def _execute_local_mps_parameter_gradient_ownership(
     }
 
 
-def _jax_mps_site_transfer(env: Any, tensor: Any) -> Any:
-    _, jnp = _require_jax()
-    return jnp.einsum("bij,bipr,bjps->brs", env, jnp.conj(tensor), tensor)
-
-
-def _jax_mps_site_observable_transfer(env: Any, tensor: Any, op: Any) -> Any:
-    _, jnp = _require_jax()
-    return jnp.einsum("bij,bipr,pq,bjqs->brs", env, jnp.conj(tensor), op, tensor)
-
-
 def _jax_sharded_mps_z_sum_from_rank_tensors(
     rank_tensors: Mapping[int, Mapping[int, Any]],
     *,
@@ -290,27 +281,10 @@ def _jax_sharded_mps_z_sum_from_rank_tensors(
     complex_bytes: int,
     observable_wires: Sequence[int] | None,
 ) -> Any:
-    _, jnp = _require_jax()
-    dtype = _jax_complex_dtype(complex_bytes)
-    z_op = jnp.asarray([[1, 0], [0, -1]], dtype=dtype)
-    env = jnp.ones((int(bsz), 1, 1), dtype=dtype)
-    acc = jnp.zeros((int(bsz), 1, 1), dtype=dtype)
-    target_wires = (
-        set(range(int(n_wires)))
-        if observable_wires is None
-        else {int(wire) for wire in observable_wires}
+    return jax_sharded_mps_z_sum(
+        rank_tensors,
+        n_wires=int(n_wires),
+        batch_size=int(bsz),
+        dtype=_jax_complex_dtype(complex_bytes),
+        observable_wires=observable_wires,
     )
-    tensors_by_wire: dict[int, Any] = {}
-    for tensors in rank_tensors.values():
-        tensors_by_wire.update({int(wire): tensor for wire, tensor in tensors.items()})
-    missing = tuple(wire for wire in range(int(n_wires)) if wire not in tensors_by_wire)
-    if missing:
-        raise RuntimeError(f"Missing MPS site tensors for wires {missing}.")
-    for wire in range(int(n_wires)):
-        tensor = tensors_by_wire[wire]
-        acc_next = _jax_mps_site_transfer(acc, tensor)
-        if wire in target_wires:
-            acc_next = acc_next + _jax_mps_site_observable_transfer(env, tensor, z_op)
-        env = _jax_mps_site_transfer(env, tensor)
-        acc = acc_next
-    return jnp.real(jnp.sum(acc.reshape((int(bsz), -1))[:, 0]))
