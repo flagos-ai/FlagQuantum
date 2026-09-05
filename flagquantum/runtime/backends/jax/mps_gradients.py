@@ -1,41 +1,38 @@
-# ruff: noqa: F401, F821
 """MPS parameter gradients, backend blockers, and parameter-flow planning."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
+from ...distributed.backend_policy import DistributedBackendPolicy
+from .backend_dispatch import plan_jax_distributed_quantum_backend
+from .mps_boundary_exchange import _execute_local_mps_boundary_adjoint_exchange
+from .mps_execution import _jax_parameterized_mps_rank_tensors
 from .mps_gradient_ownership import (
     _execute_local_mps_parameter_gradient_ownership,
     _jax_sharded_mps_z_sum_from_rank_tensors,
 )
+from .mps_gradient_result import JAXShardedMPSParameterGradientResult
+from .mps_kernels import _rank_shards_from_jax_mps_tensors
 from .mps_planning import (
     _mps_pmap_backward_blockers,
     plan_jax_sharded_mps_parameter_flow,
 )
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .planning_core import _as_ir
+from .runtime_environment import (
+    _jax_real_dtype,
+    _require_jax,
+    _require_jax_production_backward_ready,
+    _require_torch,
+    _resolve_jax_backward_backend,
+    _resolve_jax_device,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
+from .tensor_network_contraction import (
+    _jax_parameter_array_from_input,
+    _torch_parameters_for_static_build,
 )
 
 
