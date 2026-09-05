@@ -9,6 +9,7 @@ from flagquantum.simulation.tensor_stages import (
     compile_contraction_stages,
     einsum_pair_by_labels,
     einsum_pair_by_labels_with_fallback,
+    einsum_pair_pullback,
     execute_contraction_stages,
     execute_pair_steps,
     kahan_add,
@@ -71,6 +72,30 @@ def test_pair_fallback_is_owned_by_simulation(monkeypatch):
 
     assert used_fallback is True
     assert torch.equal(result, left.tensor @ right.tensor)
+
+
+def test_pair_pullback_is_owned_by_simulation():
+    torch.manual_seed(17)
+    left = torch.randn(2, 3, dtype=torch.complex64, requires_grad=True)
+    right = torch.randn(3, 4, dtype=torch.complex64, requires_grad=True)
+    output_cotangent = torch.randn(2, 4, dtype=torch.complex64)
+    expected_left, expected_right = torch.autograd.grad(
+        left @ right,
+        (left, right),
+        grad_outputs=output_cotangent,
+    )
+
+    actual_left, actual_right = einsum_pair_pullback(
+        output_cotangent,
+        (0, 2),
+        left,
+        (0, 1),
+        right,
+        (1, 2),
+    )
+
+    torch.testing.assert_close(actual_left, expected_left)
+    torch.testing.assert_close(actual_right, expected_right)
 
 
 def test_kahan_accumulation_is_owned_by_simulation():

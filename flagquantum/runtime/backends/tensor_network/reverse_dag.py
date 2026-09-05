@@ -14,6 +14,7 @@ from ....simulation.real_imag_kernels import complex_einsum_pair
 from ....simulation.tensor_stages import (
     batched_pair_equation,
     einsum_pair_by_labels,
+    einsum_pair_pullback,
     pair_equation,
 )
 from .distributed_dag import DistributedTNContractionDAG
@@ -772,18 +773,12 @@ def execute_checkpointed_tn_reverse_dag(
         left, right = materialize_pair(left_id, right_id)
         if left is None or right is None:
             raise RuntimeError("TN rematerialization did not produce both operands")
-        left_cot = einsum_pair_by_labels(
+        left_cot, right_cot = einsum_pair_pullback(
             output_cot,
             record.output_labels,
-            right.conj(),
-            record.right_labels,
+            left,
             record.left_labels,
-        )
-        right_cot = einsum_pair_by_labels(
-            left.conj(),
-            record.left_labels,
-            output_cot,
-            record.output_labels,
+            right,
             record.right_labels,
         )
         accumulated += _accumulate_cotangent(cotangents, left_id, left_cot)
@@ -1012,18 +1007,12 @@ def execute_explicit_tn_reverse_dag(
         if retained_cotangents is not None:
             retained_cotangents[record.output_value_id] = output_cot
         left_id, right_id = record.input_value_ids
-        left_cot = einsum_pair_by_labels(
+        left_cot, right_cot = einsum_pair_pullback(
             output_cot,
             record.output_labels,
-            tape[right_id].conj(),
-            record.right_labels,
+            tape[left_id],
             record.left_labels,
-        )
-        right_cot = einsum_pair_by_labels(
-            tape[left_id].conj(),
-            record.left_labels,
-            output_cot,
-            record.output_labels,
+            tape[right_id],
             record.right_labels,
         )
         accumulated += _accumulate_cotangent(cotangents, left_id, left_cot)

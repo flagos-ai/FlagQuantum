@@ -120,6 +120,33 @@ def einsum_pair_by_labels(
     return complex_einsum_pair(equation, left_tensor, right_tensor)
 
 
+def einsum_pair_pullback(
+    output_cotangent: torch.Tensor,
+    output_labels: Sequence[int],
+    left_tensor: torch.Tensor,
+    left_labels: Sequence[int],
+    right_tensor: torch.Tensor,
+    right_labels: Sequence[int],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return both input cotangents for one complex pair contraction."""
+
+    left_cotangent = einsum_pair_by_labels(
+        output_cotangent,
+        output_labels,
+        right_tensor.conj(),
+        right_labels,
+        left_labels,
+    )
+    right_cotangent = einsum_pair_by_labels(
+        left_tensor.conj(),
+        left_labels,
+        output_cotangent,
+        output_labels,
+        right_labels,
+    )
+    return left_cotangent, right_cotangent
+
+
 def einsum_pair_by_labels_with_fallback(
     left_tensor: torch.Tensor,
     left_labels: Sequence[int],
