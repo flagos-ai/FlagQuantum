@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from importlib import import_module
 from typing import Any
 
 import torch
@@ -329,18 +328,6 @@ class _JAXParameterProxy:
 
 
 from .mps_kernel import _jax_mps_from_circuit  # noqa: E402
-
-
-def __getattr__(name: str) -> Any:
-    """Preserve private compatibility probes after kernel decomposition."""
-    for module_name in (
-        "flagquantum.runtime.backends.jax.mps_kernel",
-        "flagquantum.simulation.jax_gate_primitives",
-    ):
-        module = import_module(module_name)
-        if hasattr(module, name):
-            return getattr(module, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def compile_quantum_kernel(
