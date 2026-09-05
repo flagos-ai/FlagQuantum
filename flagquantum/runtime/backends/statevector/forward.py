@@ -13,6 +13,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
+    _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
 )
 from ....simulation.statevector_ops import (
@@ -33,7 +34,6 @@ from .kernel_dispatch import (
 from .state import (
     DistributedStatevectorPlan,
     StatevectorShardState,
-    _basis_indices_for_wires,
     _basis_offset,
     _wire_mask,
     initialize_statevector_shard,  # noqa: F401 - compatibility monkeypatch seam
@@ -669,14 +669,15 @@ def _vectorized_local_diagonal_gate(
     for start in range(0, local_count, chunk_amplitudes):
         end = min(local_count, start + chunk_amplitudes)
         global_indices = _storage_global_indices(shard_state, start, end, plan=plan)
-        basis = _basis_indices_for_wires(
-            global_indices, n_wires=plan.n_wires, wires=wires
+        _, factor_bytes = _apply_diagonal_gate_eager(
+            shard_state.amplitudes[:, start:end],
+            diagonal,
+            global_indices,
+            wires,
+            n_wires=plan.n_wires,
+            output=out[:, start:end],
         )
-        factors = (
-            diagonal[basis].unsqueeze(0) if diagonal.ndim == 1 else diagonal[:, basis]
-        )
-        out[:, start:end] = shard_state.amplitudes[:, start:end] * factors
-        peak = max(peak, output_bytes + factors.numel() * factors.element_size())
+        peak = max(peak, output_bytes + factor_bytes)
     return (
         StatevectorShardState(
             rank=shard_state.rank,

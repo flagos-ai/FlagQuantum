@@ -21,6 +21,7 @@ from flagquantum.runtime.backends.statevector.local_execution import (
     _instruction_matrix,
 )
 from flagquantum.simulation.statevector_ops import (
+    _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
 )
 from flagquantum.simulation.statevector_ops import (
@@ -74,6 +75,24 @@ def test_local_eager_gate_kernel_is_directly_usable_without_runtime_models():
         evolved, torch.tensor([[0, 1, 0, 0]], dtype=torch.complex64)
     )
     assert peak_bytes >= evolved.numel() * evolved.element_size()
+
+
+def test_diagonal_eager_gate_kernel_is_usable_without_runtime_models():
+    amplitudes = torch.ones((1, 4), dtype=torch.complex64)
+    diagonal = torch.tensor([1, 1j], dtype=torch.complex64)
+
+    evolved, scratch_bytes = _apply_diagonal_gate_eager(
+        amplitudes,
+        diagonal,
+        torch.arange(4),
+        (1,),
+        n_wires=2,
+    )
+
+    torch.testing.assert_close(
+        evolved, torch.tensor([[1, 1j, 1, 1j]], dtype=torch.complex64)
+    )
+    assert scratch_bytes == evolved.numel() * evolved.element_size()
 
 
 def test_flagos_exchange_uses_provider_neutral_wait():

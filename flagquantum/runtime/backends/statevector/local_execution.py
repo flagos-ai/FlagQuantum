@@ -10,6 +10,7 @@ import torch.distributed as dist
 
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....ops.gate_matrix import gate_matrix
+from ....simulation.statevector_ops import _basis_indices_for_wires
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
@@ -145,17 +146,6 @@ def _basis_offset(n_wires: int, wires: Sequence[int], basis_index: int) -> int:
         if (int(basis_index) >> (width - pos - 1)) & 1:
             offset |= _wire_mask(n_wires, int(wire))
     return offset
-
-
-def _basis_indices_for_wires(
-    global_indices: torch.Tensor, *, n_wires: int, wires: Sequence[int]
-) -> torch.Tensor:
-    basis = torch.zeros_like(global_indices, dtype=torch.long)
-    width = len(tuple(wires))
-    for pos, wire in enumerate(tuple(wires)):
-        bit = (global_indices >> (int(n_wires) - int(wire) - 1)) & 1
-        basis = basis | (bit.to(dtype=torch.long) << (width - pos - 1))
-    return basis
 
 
 def apply_gate_to_statevector_shard(

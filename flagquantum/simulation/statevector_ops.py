@@ -525,6 +525,37 @@ def _zero_basis_local_indices(
     return indices
 
 
+def _basis_indices_for_wires(
+    global_indices: torch.Tensor, *, n_wires: int, wires: Sequence[int]
+) -> torch.Tensor:
+    """Extract the selected wire bits as compact basis indices."""
+
+    wires = tuple(int(wire) for wire in wires)
+    basis = torch.zeros_like(global_indices, dtype=torch.long)
+    for position, wire in enumerate(wires):
+        bit = (global_indices >> (n_wires - wire - 1)) & 1
+        basis |= bit.to(dtype=torch.long) << (len(wires) - position - 1)
+    return basis
+
+
+def _apply_diagonal_gate_eager(
+    amplitudes: torch.Tensor,
+    diagonal: torch.Tensor,
+    global_indices: torch.Tensor,
+    wires: Sequence[int],
+    *,
+    n_wires: int,
+    output: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, int]:
+    """Apply diagonal entries to amplitudes selected by global basis indices."""
+
+    basis = _basis_indices_for_wires(global_indices, n_wires=n_wires, wires=wires)
+    factors = diagonal[basis].unsqueeze(0) if diagonal.ndim == 1 else diagonal[:, basis]
+    out = torch.empty_like(amplitudes) if output is None else output
+    out.copy_(amplitudes * factors)
+    return out, factors.numel() * factors.element_size()
+
+
 def _apply_local_gate_eager(
     amplitudes: torch.Tensor,
     matrix: torch.Tensor,
