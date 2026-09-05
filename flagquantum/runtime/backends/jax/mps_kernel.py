@@ -4,15 +4,9 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
-from contextvars import ContextVar
 from typing import Any
 
 TorchCircuitBuilder = Callable[..., Any]
-
-
-_ACTIVE_JAX_COMPUTE_DTYPE: ContextVar[str] = ContextVar(
-    "flagquantum_jax_compute_dtype", default="complex64"
-)
 
 
 from ....simulation.jax_gate_primitives import (  # noqa: E402

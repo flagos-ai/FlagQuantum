@@ -133,6 +133,17 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 
 `__init__.py` 和各 facade 仅是导出/兼容层，不建立新的算法权威位置。
 
+### JAX Runtime 数值边界收口审计（2026-09-05）
+
+剩余 JAX Runtime 数值调用按职责处理，不以“清零 `jnp` 调用”为目标：collective、
+设备放置、结果整形和证据探针属于执行语义，继续留在 Runtime；参数化张量网络的节点
+记录组装依赖 Runtime 记录，暂不为搬迁而引入 node factory。单行零值分配或矩阵组合仅在
+形成重复算法权威时下沉，不拆成细碎公共函数。当前仍需收口的实质算法是
+`mps_gradient_ownership.py` 中跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算。
+
+本轮同时删除 `mps_kernel.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
+上下文继续以 `simulation/jax_gate_primitives.py` 中的实现为唯一权威。
+
 ## 6. Simulation 不应拥有的逻辑
 
 本次扫描未发现凭据、API token 或 secret 的实现进入两个目录；这是应保持的负面事实。
