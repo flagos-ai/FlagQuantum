@@ -12,12 +12,12 @@ import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....simulation.statevector_ops import _compose_gate_matrices
 from ...distributed.flagos_runtime import current_flagos_device
 from ...distributed.identity import build_distributed_identity
 from .forward import (
     StatevectorExchangeWorkspace,
     TorchDistributedStatevectorResult,
-    _compose_gate_matrices,
     _cross_shard_cx_packing_enabled,
     _is_diagonal_instruction,
     _ket_checkpoint_mode,

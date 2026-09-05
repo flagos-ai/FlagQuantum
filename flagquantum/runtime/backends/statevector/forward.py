@@ -12,6 +12,9 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
+from ....simulation.statevector_ops import (
+    _compose_gate_matrices as _compose_gate_matrices,
+)
 from ...distributed.identity import DistributedIdentity
 from .environment import get, get_bool, mode
 from .errors import FullStateMaterializationError
@@ -722,17 +725,6 @@ def _vectorized_local_diagonal_gate(
         ),
         peak,
     )
-
-
-def _compose_gate_matrices(matrices: Sequence[torch.Tensor]) -> torch.Tensor:
-    """Compose gate matrices in circuit execution order with batch broadcasting."""
-
-    if not matrices:
-        raise ValueError("at least one gate matrix is required")
-    combined = matrices[0]
-    for matrix in matrices[1:]:
-        combined = matrix @ combined
-    return combined
 
 
 def _vectorized_pair_exchange_gate(

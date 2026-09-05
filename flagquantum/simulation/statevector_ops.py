@@ -492,6 +492,17 @@ def _fused_gate_matrix(
     return combined
 
 
+def _compose_gate_matrices(matrices: Sequence[torch.Tensor]) -> torch.Tensor:
+    """Compose matrices in circuit execution order with batch broadcasting."""
+
+    if not matrices:
+        raise ValueError("at least one gate matrix is required")
+    combined = matrices[0]
+    for matrix in matrices[1:]:
+        combined = matrix @ combined
+    return combined
+
+
 def _batched_rx_ry_rz_matrices(angles: torch.Tensor) -> torch.Tensor:
     """Build RX->RY->RZ matrices for many regions with one tensor graph."""
 
