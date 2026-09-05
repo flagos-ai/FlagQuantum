@@ -101,7 +101,7 @@
 | `statevector/triton.py`、`split_real_imag*.py` | 数值算法 + Kernel 调用（混合） | 状态演化、精度扩展、expectation/VJP | 设备身份、provider evidence、精度/回退授权、conformance 汇总由 Platform/Runtime；Double-Single 门矩阵生成已移至 `simulation/double_single_*_gates.py` |
 | `statevector/forward.py`、`reverse_adjoint.py` | 数值算法（高度混合） | shard-local 门、cross-shard 数学、adjoint/VJP | process group、collective 生命周期、rank/topology、环境开关、通信 evidence |
 | `statevector/reverse.py`、`gradient_reduction.py` | Kernel/执行适配（混合） | autograd bridge 与局部梯度数学 | process group、bucket policy、all-reduce、ownership/evidence |
-| `statevector/local_execution.py` | 执行适配（混合） | shard 数值 reference kernel | backend policy、模拟 rank 编排、真实 transport、结果报告 |
+| `statevector/local_execution.py` | 执行适配（混合） | shard 数值 reference kernel | backend policy、模拟 rank 编排、真实 transport、结果报告；当前数值函数直接依赖 Runtime 的 plan、shard ownership 和 state records，在最小 Simulation Contract 获批前不得强迁或复制这些类型 |
 | `statevector/planning.py`、`models.py`、`environment.py`、`layout.py`、`kernel_dispatch.py` | 资源或通信编排 | 仅算法约束/代价模型输入 | Runtime plan/topology/policy/环境；Platform kernel capability；Core-owned records |
 | `statevector/forward_executor.py`、`training.py`、`checkpointing.py` | 资源/生命周期编排 | 无训练生命周期所有权 | 执行循环、故障协调、优化器、检查点/恢复、进度与超时 |
 | `statevector/noisy.py` | 数值算法 + Runtime 编排 | batched gate/Kraus 采样、归一化、观测量 | trajectory ownership、collective 汇总、检查点、失败处理、自适应停止 |
@@ -196,6 +196,13 @@ Protocol、注册表或导出；因此它证明替换方向可行，但还没有
 建议区分稳定、可序列化的请求/结果信封与进程内 tensor payload handle，并由 Core/API 所有者
 决定生命周期、设备驻留和 DLPack 表达。获批前不要在 `simulation` 下添加私有 Protocol 来
 绕过跨团队顺序。
+
+对 `statevector/local_execution.py` 的边界审计确认：当前 shard 初始化、局部门作用和跨 shard
+reference kernel 均以 `DistributedStatevectorPlan`、`StatevectorShardState` 及其所有权记录为
+直接输入或输出。现阶段下沉会让 Simulation 依赖 Runtime，或产生第二套 plan/shard 类型；两者
+都不可接受。因此该文件暂按混合执行适配保留，只有在上述最小契约明确算法 payload 与 Runtime
+所有权记录的转换边界后才重新评估。真实 transport、dry-run、backend policy 和结果报告无论
+如何都继续归 Runtime。
 
 ## 9. 数值一致性风险与后续门禁
 
