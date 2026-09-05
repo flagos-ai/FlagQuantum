@@ -285,3 +285,53 @@ def is_zz_z_chain_hamiltonian(
     n_wires: int,
 ) -> bool:
     return parse_zz_z_chain_hamiltonian(terms, n_wires) is not None
+
+
+def jax_mps_single_pauli_with_envs(
+    tensor: Any,
+    left_env: Any,
+    right_env: Any,
+    pauli: str,
+    matmul_precision: str | None,
+) -> Any:
+    import jax.numpy as jnp
+
+    op = _jax_pauli_matrix(pauli)
+    return jnp.real(
+        jnp.einsum(
+            "ij,ipr,pq,jqs,rs->",
+            left_env,
+            jnp.conj(tensor),
+            op,
+            tensor,
+            right_env,
+            precision=matmul_precision,
+        )
+    )
+
+
+def jax_mps_adjacent_zz_with_envs(
+    left_tensor: Any,
+    right_tensor: Any,
+    left_env: Any,
+    right_env: Any,
+    matmul_precision: str | None,
+) -> Any:
+    import jax.numpy as jnp
+
+    z_op = _jax_pauli_matrix("z")
+    theta = jnp.einsum(
+        "ipr,rqs->ipqs", left_tensor, right_tensor, precision=matmul_precision
+    )
+    return jnp.real(
+        jnp.einsum(
+            "ij,ipqr,pa,qb,jabs,rs->",
+            left_env,
+            jnp.conj(theta),
+            z_op,
+            z_op,
+            theta,
+            right_env,
+            precision=matmul_precision,
+        )
+    )

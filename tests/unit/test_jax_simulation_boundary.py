@@ -29,6 +29,14 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
         mps_kernel._jax_mps_pauli_string_expectation
         is jax_mps.jax_mps_pauli_string_expectation
     )
+    assert (
+        mps_kernel._jax_mps_single_pauli_with_envs
+        is jax_mps.jax_mps_single_pauli_with_envs
+    )
+    assert (
+        mps_kernel._jax_mps_adjacent_zz_with_envs
+        is jax_mps.jax_mps_adjacent_zz_with_envs
+    )
 
 
 def test_zz_z_chain_parser_accepts_and_accumulates_supported_terms():

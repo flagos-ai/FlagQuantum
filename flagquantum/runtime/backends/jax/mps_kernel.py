@@ -23,6 +23,9 @@ from ....simulation.jax_gate_primitives import (  # noqa: E402
     _jax_real_dtype,
 )
 from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_adjacent_zz_with_envs as _jax_mps_adjacent_zz_with_envs,
+)
+from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_one as _jax_mps_apply_one,
 )
 from ....simulation.jax_mps import (  # noqa: E402
@@ -30,6 +33,9 @@ from ....simulation.jax_mps import (  # noqa: E402
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_pauli_string_expectation as _jax_mps_pauli_string_expectation,
+)
+from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_single_pauli_with_envs as _jax_mps_single_pauli_with_envs,
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_split_pair as _jax_mps_split_pair,
@@ -389,56 +395,6 @@ def _jax_mps_statevector_from_circuit(
         matmul_precision=matmul_precision,
     )
     return _jax_mps_to_statevector(tensors, matmul_precision)
-
-
-def _jax_mps_single_pauli_with_envs(
-    tensor: Any,
-    left_env: Any,
-    right_env: Any,
-    pauli: str,
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    op = _jax_pauli_matrix(pauli)
-    return jnp.real(
-        jnp.einsum(
-            "ij,ipr,pq,jqs,rs->",
-            left_env,
-            jnp.conj(tensor),
-            op,
-            tensor,
-            right_env,
-            precision=matmul_precision,
-        )
-    )
-
-
-def _jax_mps_adjacent_zz_with_envs(
-    left_tensor: Any,
-    right_tensor: Any,
-    left_env: Any,
-    right_env: Any,
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    z_op = _jax_pauli_matrix("z")
-    theta = jnp.einsum(
-        "ipr,rqs->ipqs", left_tensor, right_tensor, precision=matmul_precision
-    )
-    return jnp.real(
-        jnp.einsum(
-            "ij,ipqr,pa,qb,jabs,rs->",
-            left_env,
-            jnp.conj(theta),
-            z_op,
-            z_op,
-            theta,
-            right_env,
-            precision=matmul_precision,
-        )
-    )
 
 
 def _jax_mps_zz_z_chain_expectation(
