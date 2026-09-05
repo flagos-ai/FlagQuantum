@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from ....simulation.jax_tensor_network import (
+    _jax_einsum_by_labels,
+    _jax_einsum_reorder,
+)
 from .common import product_int as _product
 from .runtime_environment import (
     _jax_available_local_devices,
     _require_jax,
 )
 from .tensor_network_records import JAXTensorNetworkNode
-
-_JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def _jax_tn_label_dims(nodes: Sequence[JAXTensorNetworkNode]) -> dict[int, int]:
@@ -123,23 +125,14 @@ def _jax_tn_einsum_pair_by_labels(
     right_labels: Sequence[int],
     output_labels: Sequence[int],
 ) -> Any:
-    _, jnp = _require_jax()
-    labels = tuple(
-        dict.fromkeys(tuple(left_labels) + tuple(right_labels) + tuple(output_labels))
+    return _jax_einsum_by_labels(
+        left_tensor,
+        tuple(int(label) for label in left_labels),
+        right_tensor,
+        tuple(int(label) for label in right_labels),
+        tuple(int(label) for label in output_labels),
+        None,
     )
-    if len(labels) > len(_JAX_EINSUM_CHARS):
-        raise ValueError(
-            "Pair contraction rank exceeds local JAX einsum label capacity."
-        )
-    mapping = {label: _JAX_EINSUM_CHARS[index] for index, label in enumerate(labels)}
-    equation = (
-        "".join(mapping[label] for label in left_labels)
-        + ","
-        + "".join(mapping[label] for label in right_labels)
-        + "->"
-        + "".join(mapping[label] for label in output_labels)
-    )
-    return jnp.einsum(equation, left_tensor, right_tensor)
 
 
 def _jax_tn_reorder_by_labels(
@@ -147,21 +140,12 @@ def _jax_tn_reorder_by_labels(
     labels: Sequence[int],
     output_labels: Sequence[int],
 ) -> Any:
-    _, jnp = _require_jax()
-    all_labels = tuple(dict.fromkeys(tuple(labels) + tuple(output_labels)))
-    if len(all_labels) > len(_JAX_EINSUM_CHARS):
-        raise ValueError(
-            "Final contraction rank exceeds local JAX einsum label capacity."
-        )
-    mapping = {
-        label: _JAX_EINSUM_CHARS[index] for index, label in enumerate(all_labels)
-    }
-    equation = (
-        "".join(mapping[label] for label in labels)
-        + "->"
-        + "".join(mapping[label] for label in output_labels)
+    return _jax_einsum_reorder(
+        tensor,
+        tuple(int(label) for label in labels),
+        tuple(int(label) for label in output_labels),
+        None,
     )
-    return jnp.einsum(equation, tensor)
 
 
 def _jax_tn_slice_nodes(

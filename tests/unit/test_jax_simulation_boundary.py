@@ -11,6 +11,7 @@ from flagquantum.runtime.backends.jax import (
     mps_pullbacks,
     statevector_gradient_records,
     statevector_kernels,
+    tensor_network_contraction,
     tensor_network_gradients,
 )
 from flagquantum.simulation import (
@@ -119,6 +120,14 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
 
 
 def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
+    assert (
+        tensor_network_contraction._jax_einsum_by_labels
+        is jax_tensor_network._jax_einsum_by_labels
+    )
+    assert (
+        tensor_network_contraction._jax_einsum_reorder
+        is jax_tensor_network._jax_einsum_reorder
+    )
     assert (
         tensor_network_gradients._jax_pauli_matrix
         is jax_gate_primitives._jax_pauli_matrix
