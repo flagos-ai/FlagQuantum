@@ -3,6 +3,7 @@
 import pytest
 
 from flagquantum.runtime.backends.jax import (
+    array_conversions,
     kernel,
     mps_canonicalization,
     mps_execution,
@@ -34,6 +35,14 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
     assert (
         statevector_kernels._jax_sharded_statevector_rank_loss_from_local_amplitudes
         is jax_statevector.jax_sharded_statevector_rank_loss
+    )
+    assert (
+        array_conversions._jax_basis_indices_for_wires
+        is jax_statevector.jax_basis_indices_for_wires
+    )
+    assert (
+        statevector_kernels.jax_apply_local_statevector_gate
+        is jax_statevector.jax_apply_local_statevector_gate
     )
 
 

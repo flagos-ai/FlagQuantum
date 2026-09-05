@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from ....simulation.jax_statevector import (
+    jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
+)
 from .runtime_environment import (
     _jax_complex_dtype,
     _jax_real_dtype,
@@ -13,18 +16,6 @@ from .runtime_environment import (
 )
 from .statevector_records import JAXStatevectorShardState
 from .tensor_network_records import JAXTensorNetworkNode
-
-
-def _jax_basis_indices_for_wires(
-    global_indices: Any, *, n_wires: int, wires: Sequence[int]
-) -> Any:
-    _, jnp = _require_jax()
-    basis = jnp.zeros_like(global_indices)
-    width = len(tuple(wires))
-    for pos, wire in enumerate(tuple(wires)):
-        bit = (global_indices >> (int(n_wires) - int(wire) - 1)) & 1
-        basis = basis | (bit << (width - pos - 1))
-    return basis
 
 
 def _gate_matrix_as_jax(
@@ -197,39 +188,6 @@ def _apply_gate_to_jax_shards(
             global_indices_tuple=shard.global_indices_tuple,
         )
         for shard_index, shard in enumerate(shards)
-    )
-
-
-def _jax_apply_matrix_to_batched_local_state(
-    state: Any,
-    matrix: Any,
-    wires: Sequence[int],
-    *,
-    n_local_wires: int,
-) -> Any:
-    _, jnp = _require_jax()
-    wires = tuple(int(wire) for wire in wires)
-    k = len(wires)
-    dim = 2**k
-    if tuple(matrix.shape[-2:]) != (dim, dim):
-        raise ValueError(f"Gate on {k} local wires requires matrix shape {(dim, dim)}.")
-    rest = tuple(wire for wire in range(int(n_local_wires)) if wire not in wires)
-    perm = (0,) + tuple(wire + 1 for wire in wires + rest)
-    inv_perm = [0] * (int(n_local_wires) + 1)
-    for index, axis in enumerate(perm):
-        inv_perm[axis] = index
-    tensor = state.reshape((state.shape[0],) + (2,) * int(n_local_wires)).transpose(
-        perm
-    )
-    flat = tensor.reshape(state.shape[0], dim, -1)
-    if matrix.ndim == 2:
-        out = jnp.einsum("ij,bjk->bik", matrix, flat, precision="highest")
-    else:
-        out = jnp.einsum("bij,bjk->bik", matrix, flat, precision="highest")
-    return (
-        out.reshape((state.shape[0],) + (2,) * int(n_local_wires))
-        .transpose(tuple(inv_perm))
-        .reshape(state.shape)
     )
 
 

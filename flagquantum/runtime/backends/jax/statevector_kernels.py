@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import Any, Callable, Sequence
 
 from ....simulation.jax_statevector import (
+    jax_apply_local_statevector_gate,
+)
+from ....simulation.jax_statevector import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
 )
 from .array_conversions import (
-    _jax_apply_matrix_to_batched_local_state,
     _jax_basis_indices_for_wires,
     _jax_gate_basis_in_for_delta_and_local_input,
     _jax_local_positions_for_gate_input,
@@ -69,34 +71,19 @@ def _jax_apply_local_statevector_instruction(
     plan: Any,
     complex_bytes: int,
 ) -> Any:
-    _, jnp = _require_jax()
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
     wires = tuple(int(wire) for wire in instruction.wires)
-    if diagonal:
-        factors = jnp.diagonal(matrix)[
-            _jax_basis_indices_for_wires(
-                global_indices, n_wires=plan.n_wires, wires=wires
-            )
-        ].reshape(1, -1)
-        return amplitudes * factors
-    sharded_wires = set(int(wire) for wire in plan.sharded_wires)
-    if any(wire in sharded_wires for wire in wires):
-        raise RuntimeError(
-            f"Non-diagonal gate {instruction.name!r} touches sharded wires {tuple(sorted(sharded_wires & set(wires)))} "
-            "and requires pair-exchange/all-to-all transport."
-        )
-    local_wires = tuple(
-        wire for wire in range(int(plan.n_wires)) if wire not in sharded_wires
-    )
-    local_map = {wire: index for index, wire in enumerate(local_wires)}
-    mapped_wires = tuple(local_map[wire] for wire in wires)
-    return _jax_apply_matrix_to_batched_local_state(
+    return jax_apply_local_statevector_gate(
         amplitudes,
+        global_indices,
         matrix,
-        mapped_wires,
-        n_local_wires=len(local_wires),
+        wires,
+        n_wires=int(plan.n_wires),
+        sharded_wires=tuple(int(wire) for wire in plan.sharded_wires),
+        diagonal=diagonal,
+        gate_name=str(instruction.name),
     )
 
 
