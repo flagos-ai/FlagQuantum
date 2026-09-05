@@ -28,6 +28,12 @@ from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
 )
 from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_initial_padded_stack as _jax_mps_initial_padded_stack,
+)
+from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_project_open_boundaries as _jax_mps_project_open_boundaries,
+)
+from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_split_pair as _jax_mps_split_pair,
 )
 from ....simulation.jax_mps import (  # noqa: E402
@@ -192,34 +198,6 @@ def _parse_nearest_cx_layers(
             index += 1
         layers.append(jnp.stack(local))
     return layers, _jax_cx()
-
-
-def _jax_mps_initial_padded_stack(n_wires: int, bond_dim: int) -> Any:
-    import jax.numpy as jnp
-
-    tensor = jnp.zeros((int(bond_dim), 2, int(bond_dim)), dtype=_jax_complex_dtype())
-    tensor = tensor.at[0, 0, 0].set(1.0 + 0.0j)
-    return jnp.broadcast_to(
-        tensor, (int(n_wires), int(bond_dim), 2, int(bond_dim))
-    ).copy()
-
-
-def _jax_mps_project_open_boundaries(tensors: Any) -> Any:
-    import jax.numpy as jnp
-
-    left_mask = (
-        jnp.zeros((tensors.shape[1], 1, 1), dtype=tensors.dtype)
-        .at[0, 0, 0]
-        .set(1.0 + 0.0j)
-    )
-    right_mask = (
-        jnp.zeros((1, 1, tensors.shape[3]), dtype=tensors.dtype)
-        .at[0, 0, 0]
-        .set(1.0 + 0.0j)
-    )
-    tensors = tensors.at[0].set(tensors[0] * left_mask)
-    tensors = tensors.at[-1].set(tensors[-1] * right_mask)
-    return tensors
 
 
 def _jax_mps_apply_local_stack(

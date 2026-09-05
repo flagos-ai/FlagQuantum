@@ -22,6 +22,13 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert mps_kernel._jax_mps_apply_one is jax_mps.jax_mps_apply_one
     assert mps_kernel._jax_mps_split_pair is jax_mps.jax_mps_split_pair
     assert mps_kernel._jax_mps_to_statevector is jax_mps.jax_mps_to_statevector
+    assert (
+        mps_kernel._jax_mps_initial_padded_stack is jax_mps.jax_mps_initial_padded_stack
+    )
+    assert (
+        mps_kernel._jax_mps_project_open_boundaries
+        is jax_mps.jax_mps_project_open_boundaries
+    )
     assert kernel._jax_mps_z_values is jax_mps.jax_mps_z_values
     assert kernel._jax_mps_z_sum is jax_mps.jax_mps_z_sum
     assert (
