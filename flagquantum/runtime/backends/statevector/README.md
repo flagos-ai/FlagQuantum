@@ -30,6 +30,22 @@ checkpoint, or evidence objects as public API.
 `noisy.py` and the `split_real_imag*` modules are specialized execution paths.
 They are not the default local CPU vertical slice.
 
+## Local execution stopping point
+
+`local_execution.py` is not a second numerical-kernel authority. Its shard
+initialization and global-index construction interpret Runtime-owned plan and
+ownership records; its gate helpers adapt those records to the tensor kernels
+in `simulation.statevector_ops`; its local simulator, dry run, launch spec, and
+transport probe assemble Runtime-owned results and evidence. The shared wire
+mask, gate-basis offset, diagonal application, and basis-vector update math live
+only in Simulation.
+
+Do not move this file wholesale into Simulation: that would force Simulation to
+import Runtime plans, policies, and result models or require duplicate mirror
+contracts. A later physical split is justified only when the protected root
+compatibility exports can keep their behavior while orchestration remains in
+Runtime and a concrete second consumer needs a Runtime-neutral numerical entry.
+
 ## Non-responsibilities
 
 This package does not own:
