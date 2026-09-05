@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import torch
 
@@ -154,4 +154,32 @@ def normalize_double_single_state(
     return _scale_state(state, norm_squared.reciprocal_sqrt())
 
 
-__all__ = ("apply_double_single_gate", "normalize_double_single_state")
+def double_single_pauli_term_expectation(
+    state: DoubleSingleComplexTensor,
+    ops: Sequence[tuple[int, str]],
+    coefficient: DoubleSingleTensor,
+    *,
+    n_wires: int,
+    matrix_for_op: Callable[[int, str], DoubleSingleComplexTensor],
+) -> DoubleSingleTensor:
+    """Evaluate one real-coefficient Pauli term in Double-Single arithmetic."""
+
+    transformed = state
+    for wire, name in ops:
+        transformed = apply_double_single_gate(
+            transformed,
+            matrix_for_op(wire, name),
+            (wire,),
+            n_wires=n_wires,
+        )
+    products = state.real.multiply(transformed.real).add(
+        state.imag.multiply(transformed.imag)
+    )
+    return double_single_sum(products).multiply(coefficient)
+
+
+__all__ = (
+    "apply_double_single_gate",
+    "double_single_pauli_term_expectation",
+    "normalize_double_single_state",
+)
