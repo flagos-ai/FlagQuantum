@@ -16,6 +16,11 @@ private layouts, gate application, fusion, and tensor operations. Neither file
 is a new public API. `Circuit.state()` remains the stable user facade and
 Runtime enters through `run_local_statevector()`.
 
+`statevector_adjoint.py` owns local adjoint numerical primitives that do not
+depend on shard ownership or communication: supported rotation derivatives and
+the real-valued complex inner product. Runtime retains shard indexing, chunk
+policy, rematerialization, collectives, communication, and backward evidence.
+
 `density_matrix.py` owns local exact density evolution, Kraus application, and
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.

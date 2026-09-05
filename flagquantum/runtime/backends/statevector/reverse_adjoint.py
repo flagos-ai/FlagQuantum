@@ -11,6 +11,12 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....simulation.statevector_adjoint import (
+    analytic_rotation_derivative as _analytic_rotation_derivative,
+)
+from ....simulation.statevector_adjoint import (
+    real_conjugate_inner_sum as _real_conjugate_inner_sum,
+)
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
@@ -98,24 +104,6 @@ def _bind_parameters(
     return replace(ir, instructions=tuple(instructions))
 
 
-def _analytic_rotation_derivative(
-    instruction: Instruction,
-    matrix: torch.Tensor,
-) -> torch.Tensor | None:
-    """Return dR/dtheta from the Pauli generator for standard rotations."""
-
-    generators = {
-        "rx": ((0, 1), (1, 0)),
-        "ry": ((0, -1j), (1j, 0)),
-        "rz": ((1, 0), (0, -1)),
-    }
-    values = generators.get(instruction.name)
-    if values is None or tuple(instruction.params) != ("theta",):
-        return None
-    generator = torch.tensor(values, dtype=matrix.dtype, device=matrix.device)
-    return (-0.5j) * (generator @ matrix)
-
-
 def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
     """Use the shared shard-index representation policy for reverse states."""
     return bool(use_compact_global_indices(plan, rank))
@@ -157,17 +145,6 @@ def _local_expectation_z_adjoint(
                 2 * shard_state.amplitudes[:, start:end] * signs.reshape(1, -1)
             )
     return adjoint
-
-
-def _real_conjugate_inner_sum(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
-    """Return ``Re(sum(conj(left) * right))`` without a conjugate kernel.
-
-    The decomposition is mathematically exact for complex tensors and avoids
-    relying on provider-specific ``torch.conj`` implementations.  It remains
-    device-resident and preserves the input real dtype.
-    """
-
-    return torch.sum(left.real * right.real + left.imag * right.imag)
 
 
 def _apply_one_gate(

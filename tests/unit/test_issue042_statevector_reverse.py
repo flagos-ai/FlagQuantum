@@ -26,12 +26,17 @@ from flagquantum.runtime.backends.statevector.reverse_adjoint import (
     _compact_reverse_global_indices,
     _real_conjugate_inner_sum,
 )
+from flagquantum.simulation.statevector_adjoint import (
+    analytic_rotation_derivative,
+    real_conjugate_inner_sum,
+)
 
 pytestmark = pytest.mark.unit
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_real_conjugate_inner_sum_matches_complex_definition(dtype):
+    assert _real_conjugate_inner_sum is real_conjugate_inner_sum
     left = torch.tensor(
         [[0.25 + 0.5j, -0.75 + 0.125j], [0.33 - 0.2j, -0.4 - 0.6j]],
         dtype=dtype,
@@ -41,7 +46,7 @@ def test_real_conjugate_inner_sum_matches_complex_definition(dtype):
         dtype=dtype,
     )
     expected = torch.real(torch.sum(torch.conj(left) * right))
-    actual = _real_conjugate_inner_sum(left, right)
+    actual = real_conjugate_inner_sum(left, right)
     torch.testing.assert_close(actual, expected)
     assert actual.dtype == left.real.dtype
 
@@ -85,6 +90,7 @@ def test_compact_index_policy_is_shared_by_forward_and_reverse():
 @pytest.mark.parametrize("gate_name", ("rx", "ry", "rz"))
 @pytest.mark.parametrize("dtype", (torch.float32, torch.float64))
 def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, dtype):
+    assert _analytic_rotation_derivative is analytic_rotation_derivative
     theta = torch.tensor(0.37, dtype=dtype, requires_grad=True)
     circuit = fq.Circuit(1)
     getattr(circuit, gate_name)(0, theta)
@@ -105,7 +111,7 @@ def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, dtype
     _, reference = torch.autograd.functional.jvp(
         matrix_at, (theta,), (torch.ones_like(theta),)
     )
-    actual = _analytic_rotation_derivative(instruction, matrix)
+    actual = analytic_rotation_derivative(instruction, matrix)
     assert actual is not None
     assert torch.allclose(actual, reference, atol=2e-7, rtol=2e-6)
 
