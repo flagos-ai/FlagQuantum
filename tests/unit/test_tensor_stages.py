@@ -8,6 +8,7 @@ from flagquantum.simulation.tensor_models import PairContractionStep, TensorNetw
 from flagquantum.simulation.tensor_stages import (
     compile_contraction_stages,
     einsum_pair_by_labels,
+    einsum_pair_by_labels_with_fallback,
     execute_contraction_stages,
     execute_pair_steps,
 )
@@ -47,3 +48,25 @@ def test_pair_steps_and_compiled_stages_match_matmul():
     stage_result = execute_contraction_stages(nodes, stage_plan)
     assert stage_result.labels == (0, 2)
     assert torch.equal(stage_result.tensor, expected)
+
+
+def test_pair_fallback_is_owned_by_simulation(monkeypatch):
+    def reject_fused_layout(*args, **kwargs):
+        raise ValueError("layout-aware fused BMM supports at most 8 axes per group")
+
+    monkeypatch.setattr(
+        "flagquantum.simulation.tensor_stages.einsum_pair_by_labels",
+        reject_fused_layout,
+    )
+    left, right = _matrix_nodes()
+
+    result, used_fallback = einsum_pair_by_labels_with_fallback(
+        left.tensor,
+        left.labels,
+        right.tensor,
+        right.labels,
+        (0, 2),
+    )
+
+    assert used_fallback is True
+    assert torch.equal(result, left.tensor @ right.tensor)

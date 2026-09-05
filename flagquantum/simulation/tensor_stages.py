@@ -104,6 +104,48 @@ def einsum_pair_by_labels(
     return complex_einsum_pair(equation, left_tensor, right_tensor)
 
 
+def einsum_pair_by_labels_with_fallback(
+    left_tensor: torch.Tensor,
+    left_labels: Sequence[int],
+    right_tensor: torch.Tensor,
+    right_labels: Sequence[int],
+    output_labels: Sequence[int],
+) -> tuple[torch.Tensor, bool]:
+    """Contract a pair and report use of the high-rank native fallback."""
+
+    normalized_left = tuple(int(label) for label in left_labels)
+    normalized_right = tuple(int(label) for label in right_labels)
+    normalized_output = tuple(int(label) for label in output_labels)
+    try:
+        return (
+            einsum_pair_by_labels(
+                left_tensor,
+                normalized_left,
+                right_tensor,
+                normalized_right,
+                normalized_output,
+            ),
+            False,
+        )
+    except ValueError as error:
+        if "supports at most 8 axes per group" not in str(error):
+            raise
+    unique = tuple(dict.fromkeys(normalized_left + normalized_right))
+    remap = {label: index for index, label in enumerate(unique)}
+    if len(remap) > 52:
+        raise ValueError("high-rank TN einsum fallback exceeds 52 unique labels")
+    return (
+        torch.einsum(
+            left_tensor,
+            [remap[label] for label in normalized_left],
+            right_tensor,
+            [remap[label] for label in normalized_right],
+            [remap[label] for label in normalized_output],
+        ),
+        True,
+    )
+
+
 def batched_pair_equation(equation: str) -> str:
     """Add a free batch label to a two-input einsum equation."""
 

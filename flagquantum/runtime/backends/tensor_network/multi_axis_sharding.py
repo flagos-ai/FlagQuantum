@@ -12,7 +12,7 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_stages import einsum_pair_by_labels
+from ....simulation.tensor_stages import einsum_pair_by_labels_with_fallback
 from .distributed_dag import (
     DistributedTNContractionDAG,
     DistributedTNValueLayout,
@@ -525,7 +525,7 @@ def execute_multi_axis_tn_target_cone(
             raise RuntimeError(
                 "multi-axis TN shard label contracts before the target operation"
             )
-        output, used_fallback = _contract_pair_with_high_rank_fallback(
+        output, used_fallback = einsum_pair_by_labels_with_fallback(
             local_values[left_id],
             left_layout.labels,
             local_values[right_id],
@@ -623,7 +623,7 @@ def execute_multi_axis_contracted_pair(
         raise ValueError(
             "multi-axis contracted labels must be shared inputs absent from output"
         )
-    value, used_fallback = _contract_pair_with_high_rank_fallback(
+    value, used_fallback = einsum_pair_by_labels_with_fallback(
         left_local,
         tuple(int(label) for label in left_labels),
         right_local,
@@ -643,48 +643,6 @@ def execute_multi_axis_contracted_pair(
         collective_count=1,
         collective_bytes=value.numel() * value.element_size(),
         high_rank_einsum_fallback_count=int(used_fallback),
-    )
-
-
-def _contract_pair_with_high_rank_fallback(
-    left: torch.Tensor,
-    left_labels: Sequence[int],
-    right: torch.Tensor,
-    right_labels: Sequence[int],
-    output_labels: Sequence[int],
-) -> tuple[torch.Tensor, bool]:
-    """Use native fusion when supported and explicit einsum for high-rank layouts."""
-
-    normalized_left = tuple(int(label) for label in left_labels)
-    normalized_right = tuple(int(label) for label in right_labels)
-    normalized_output = tuple(int(label) for label in output_labels)
-    try:
-        return (
-            einsum_pair_by_labels(
-                left,
-                normalized_left,
-                right,
-                normalized_right,
-                normalized_output,
-            ),
-            False,
-        )
-    except ValueError as error:
-        if "supports at most 8 axes per group" not in str(error):
-            raise
-    unique = tuple(dict.fromkeys(normalized_left + normalized_right))
-    remap = {label: index for index, label in enumerate(unique)}
-    if len(remap) > 52:
-        raise ValueError("high-rank TN einsum fallback exceeds 52 unique labels")
-    return (
-        torch.einsum(
-            left,
-            [remap[label] for label in normalized_left],
-            right,
-            [remap[label] for label in normalized_right],
-            [remap[label] for label in normalized_output],
-        ),
-        True,
     )
 
 
