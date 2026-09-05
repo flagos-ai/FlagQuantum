@@ -11,7 +11,6 @@ from flagquantum.runtime.backends.statevector.gradient_reduction import (
     AsyncGradientReducer,
 )
 from flagquantum.runtime.backends.statevector.local_execution import (
-    _instruction_matrix,
     _rank_global_indices,
     use_compact_global_indices,
 )
@@ -31,6 +30,7 @@ from flagquantum.simulation.statevector_adjoint import (
     z_expectation_adjoint_chunk,
     z_expectation_chunk,
 )
+from flagquantum.simulation.statevector_ops import _instruction_matrix
 
 pytestmark = pytest.mark.unit
 

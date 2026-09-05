@@ -23,6 +23,7 @@ from ....simulation.statevector_adjoint import (
 from ....simulation.statevector_adjoint import (
     z_expectation_chunk as _z_expectation_chunk,
 )
+from ....simulation.statevector_ops import _instruction_matrix
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
@@ -44,7 +45,6 @@ from .layout import (
     plan_persistent_statevector_layout,
 )
 from .local_execution import (
-    _instruction_matrix,
     initialize_statevector_shard,
     use_compact_global_indices,
 )

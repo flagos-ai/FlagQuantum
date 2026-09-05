@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from numbers import Number
 from typing import Sequence
 
 import torch
@@ -51,6 +52,28 @@ class _StatevectorFusedGateStep:
 class _StatevectorCXSequenceStep:
     controls: tuple[int, ...]
     targets: tuple[int, ...]
+
+
+def _instruction_matrix(
+    instruction: Instruction, *, device: torch.device, dtype: torch.dtype
+) -> torch.Tensor:
+    constant_parameters = instruction.matrix is None and all(
+        isinstance(value, Number) for value in instruction.params.values()
+    )
+    construction_device = torch.device("cpu") if constant_parameters else device
+    matrix = _gate_matrix(
+        instruction,
+        bsz=1,
+        device=construction_device,
+        dtype=dtype,
+    ).to(device=device, dtype=dtype)
+    if matrix.ndim == 3:
+        if matrix.shape[0] != 1:
+            raise ValueError(
+                "Local distributed simulator currently expects scalar gate parameters."
+            )
+        matrix = matrix[0]
+    return matrix
 
 
 def _triton_single_qubit_loop_enabled() -> bool:

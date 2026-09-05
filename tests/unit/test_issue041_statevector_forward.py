@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.simulation.statevector_ops as statevector_ops
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR, Instruction
 from flagquantum.runtime.backends.statevector.forward import (
     FullStateMaterializationError,
@@ -18,15 +19,13 @@ from flagquantum.runtime.backends.statevector.forward import (
 from flagquantum.runtime.backends.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
-from flagquantum.runtime.backends.statevector.local_execution import (
-    _instruction_matrix,
-)
 from flagquantum.simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
     _basis_indices_for_wires,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
+    _instruction_matrix,
     _zero_basis_local_indices,
 )
 
@@ -233,15 +232,13 @@ def test_single_rank_parameterized_gates_preserve_complex128_precision():
 def test_constant_gate_matrix_is_constructed_on_cpu_before_device_transfer(
     monkeypatch,
 ):
-    import flagquantum.runtime.backends.statevector.local_execution as local_execution
-
     observed = {}
 
     def recording_gate_matrix(instruction, *, bsz, device, dtype):
         observed["device"] = torch.device(device)
         return torch.eye(2, dtype=dtype, device=device)
 
-    monkeypatch.setattr(local_execution, "gate_matrix", recording_gate_matrix)
+    monkeypatch.setattr(statevector_ops, "_gate_matrix", recording_gate_matrix)
     matrix = _instruction_matrix(
         Instruction("rx", (0,), {"theta": 0.2}),
         device=torch.device("meta"),
@@ -254,8 +251,6 @@ def test_constant_gate_matrix_is_constructed_on_cpu_before_device_transfer(
 
 
 def test_tensor_parameter_matrix_preserves_device_autograd_path(monkeypatch):
-    import flagquantum.runtime.backends.statevector.local_execution as local_execution
-
     observed = {}
     theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
 
@@ -263,7 +258,7 @@ def test_tensor_parameter_matrix_preserves_device_autograd_path(monkeypatch):
         observed["device"] = torch.device(device)
         return torch.eye(2, dtype=dtype, device=device)
 
-    monkeypatch.setattr(local_execution, "gate_matrix", recording_gate_matrix)
+    monkeypatch.setattr(statevector_ops, "_gate_matrix", recording_gate_matrix)
     _instruction_matrix(
         Instruction("rx", (0,), {"theta": theta}),
         device=torch.device("meta"),

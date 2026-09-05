@@ -48,9 +48,9 @@ def test_diagonal_gate_on_sharded_wire_stays_rank_local():
         _vectorized_local_diagonal_gate,
     )
     from flagquantum.runtime.backends.statevector.local_execution import (
-        _instruction_matrix,
         initialize_statevector_shard,
     )
+    from flagquantum.simulation.statevector_ops import _instruction_matrix
 
     generator = torch.Generator().manual_seed(4401)
     dense = torch.randn(1, 32, dtype=torch.complex64, generator=generator)

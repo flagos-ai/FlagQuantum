@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from numbers import Number
 from typing import Any, Mapping, Sequence
 
 import torch
 import torch.distributed as dist
 
-from ....core.ir import Instruction, ensure_circuit_ir
-from ....ops.gate_matrix import gate_matrix
-from ....simulation.statevector_ops import _basis_indices_for_wires
+from ....core.ir import ensure_circuit_ir
+from ....simulation.statevector_ops import _basis_indices_for_wires, _instruction_matrix
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
@@ -199,28 +197,6 @@ def apply_gate_to_statevector_shard(
         amplitudes=out,
         global_indices=shard_state.global_indices,
     )
-
-
-def _instruction_matrix(
-    instruction: Instruction, *, device: torch.device, dtype: torch.dtype
-) -> torch.Tensor:
-    constant_parameters = instruction.matrix is None and all(
-        isinstance(value, Number) for value in instruction.params.values()
-    )
-    construction_device = torch.device("cpu") if constant_parameters else device
-    matrix = gate_matrix(
-        instruction,
-        bsz=1,
-        device=construction_device,
-        dtype=dtype,
-    ).to(device=device, dtype=dtype)
-    if matrix.ndim == 3:
-        if matrix.shape[0] != 1:
-            raise ValueError(
-                "Local distributed simulator currently expects scalar gate parameters."
-            )
-        matrix = matrix[0]
-    return matrix
 
 
 def _reconstruct_from_shards(
