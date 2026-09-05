@@ -9,6 +9,7 @@ from ....simulation.jax_statevector import (
     jax_apply_local_statevector_gate,
     jax_combine_pair_exchanged_statevector,
     jax_rank_mask_for_touched_delta,
+    jax_sharded_statevector_loss,
 )
 from ....simulation.jax_statevector import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
@@ -33,34 +34,13 @@ def _jax_sharded_statevector_loss_from_shards(
     observable: str,
     observable_wires: Sequence[int] | None,
 ) -> Any:
-    _, jnp = _require_jax()
-    normalized = str(observable)
-    if normalized == "state_norm":
-        total = jnp.zeros(
-            (), dtype=jnp.real(shards[0].amplitudes).dtype if shards else jnp.float32
-        )
-        for shard in shards:
-            total = total + jnp.sum(jnp.abs(shard.amplitudes) ** 2)
-        return jnp.real(total)
-    if normalized not in {"z", "z_sum"}:
-        raise ValueError(
-            "JAX sharded statevector parameter gradients currently support observable='z_sum', 'z', or 'state_norm'."
-        )
-    wires = (
-        tuple(range(int(n_wires)))
-        if observable_wires is None
-        else tuple(int(wire) for wire in observable_wires)
+    return jax_sharded_statevector_loss(
+        tuple(shard.amplitudes for shard in shards),
+        tuple(shard.global_indices for shard in shards),
+        n_wires=int(n_wires),
+        observable=observable,
+        observable_wires=observable_wires,
     )
-    total = jnp.zeros(
-        (), dtype=jnp.real(shards[0].amplitudes).dtype if shards else jnp.float32
-    )
-    for shard in shards:
-        probs = jnp.abs(shard.amplitudes) ** 2
-        for wire in wires:
-            bit = (shard.global_indices >> (int(n_wires) - 1 - int(wire))) & 1
-            signs = 1.0 - 2.0 * bit.astype(probs.real.dtype)
-            total = total + jnp.sum(probs * signs.reshape(1, -1))
-    return jnp.real(total)
 
 
 def _jax_apply_local_statevector_instruction(

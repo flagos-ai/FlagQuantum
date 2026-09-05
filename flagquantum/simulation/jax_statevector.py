@@ -287,3 +287,51 @@ def jax_sharded_statevector_rank_loss(
         signs = 1.0 - 2.0 * bit.astype(probabilities.real.dtype)
         total = total + jnp.sum(probabilities * signs.reshape(1, -1))
     return jnp.real(total)
+
+
+def jax_sharded_statevector_loss(
+    amplitudes_by_shard: Sequence[Any],
+    global_indices_by_shard: Sequence[Any],
+    *,
+    n_wires: int,
+    observable: str,
+    observable_wires: Sequence[int] | None,
+) -> Any:
+    """Evaluate an observable over an in-process collection of statevector shards."""
+
+    import jax.numpy as jnp
+
+    amplitudes_by_shard = tuple(amplitudes_by_shard)
+    global_indices_by_shard = tuple(global_indices_by_shard)
+    if len(amplitudes_by_shard) != len(global_indices_by_shard):
+        raise ValueError("Shard amplitudes and global indices must have equal lengths.")
+    normalized = str(observable)
+    total = jnp.zeros(
+        (),
+        dtype=(
+            jnp.real(amplitudes_by_shard[0]).dtype
+            if amplitudes_by_shard
+            else jnp.float32
+        ),
+    )
+    if normalized == "state_norm":
+        for amplitudes in amplitudes_by_shard:
+            total = total + jnp.sum(jnp.abs(amplitudes) ** 2)
+        return jnp.real(total)
+    if normalized not in {"z", "z_sum"}:
+        raise ValueError(
+            "JAX sharded statevector parameter gradients currently support "
+            "observable='z_sum', 'z', or 'state_norm'."
+        )
+    wires = (
+        tuple(range(int(n_wires)))
+        if observable_wires is None
+        else tuple(int(wire) for wire in observable_wires)
+    )
+    for amplitudes, global_indices in zip(amplitudes_by_shard, global_indices_by_shard):
+        probabilities = jnp.abs(amplitudes) ** 2
+        for wire in wires:
+            bit = (global_indices >> (int(n_wires) - 1 - int(wire))) & 1
+            signs = 1.0 - 2.0 * bit.astype(probabilities.real.dtype)
+            total = total + jnp.sum(probabilities * signs.reshape(1, -1))
+    return jnp.real(total)

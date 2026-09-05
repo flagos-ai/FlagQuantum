@@ -37,6 +37,10 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
         is jax_statevector.jax_sharded_statevector_rank_loss
     )
     assert (
+        statevector_kernels.jax_sharded_statevector_loss
+        is jax_statevector.jax_sharded_statevector_loss
+    )
+    assert (
         array_conversions._jax_basis_indices_for_wires
         is jax_statevector.jax_basis_indices_for_wires
     )
