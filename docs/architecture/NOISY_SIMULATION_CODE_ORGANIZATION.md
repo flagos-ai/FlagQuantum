@@ -3,7 +3,7 @@
 ## 1. 结论
 
 FlagQuantum 当前顶层分层方向合理，但复杂度已经接近需要主动治理的阶段。
-Noise 版本不能继续把功能直接堆入 `simulation/noise.py`、
+Noise 版本不能重新把功能堆入单一 Simulation 门面、
 `runtime/execution.py` 和现有 planner，否则会复制 TN 已经出现的模块膨胀和
 内部接口扩散。
 
@@ -38,9 +38,9 @@ docs/               能力、架构和 claim boundary
 
 ### 2.2 P0：高层 Circuit 反向进入底层执行
 
-当前 `simulation/noise.py` 和 `simulation/mps_execution.py` 导入
-`circuit._gate_matrix`。运行时 TN/MPS 后端还会导入 simulation 模块中的
-私有 kernel。
+历史 `simulation/noise.py` 反向依赖已经退出；当前仍需治理
+`simulation/mps_execution.py` 对高层路径的依赖。运行时 TN/MPS 后端还会导入
+simulation 模块中的私有 kernel。
 
 这形成错误的依赖方向：
 
@@ -131,7 +131,7 @@ Noise 开发期间应冻结以下增长：
 
 ### 2.6 P2：现有 Noise 模块混合多层职责
 
-`simulation/noise.py` 同时包含：
+历史 `simulation/noise.py` 曾同时包含：
 
 - Noise domain model；
 - 通道工厂；
@@ -293,8 +293,8 @@ SV 共用该实现，消除 Noise/MPS 到 Circuit 的反向依赖。
 
 ### A2：建立 Noise domain package
 
-先迁移模型与通道工厂，不迁移执行。`simulation/noise.py` 保留兼容导出和明确
-移除版本。
+模型、通道工厂、lowering 与 density-matrix 数值实现已迁至各自权威目录；
+`simulation/noise.py` 兼容门面已在规范路径替换验证后删除。
 
 ### A3：建立结构化 NoisyExecutionPlan
 

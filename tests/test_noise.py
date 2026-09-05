@@ -608,15 +608,10 @@ def test_two_qubit_mps_trajectory_samples_kraus_branches():
 def test_noise_semantics_have_one_canonical_public_identity():
     import flagquantum.compiler as noise_compiler
     import flagquantum.simulation.density_matrix as density_backend
-    from flagquantum.simulation import noise as legacy_noise
 
     assert fq.noise.NoiseModel is fqn.NoiseModel
     assert fq.noise.NoiseRule is fq.NoiseRule
     assert fq.noise.KrausChannel is fq.KrausChannel
-    assert legacy_noise.NoiseModel is fqn.NoiseModel
-    assert legacy_noise.KrausChannel is fq.KrausChannel
-    assert legacy_noise.lower_noise_model is noise_compiler.lower_noise_model
-    assert legacy_noise.density_matrix_from_ir is density_backend.density_matrix_from_ir
     assert fq.lower_noise_model is noise_compiler.lower_noise_model
     assert fq.density_matrix_from_ir is density_backend.density_matrix_from_ir
 

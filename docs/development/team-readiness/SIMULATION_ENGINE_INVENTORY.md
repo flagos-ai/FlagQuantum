@@ -72,7 +72,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | 分布式 MPS | `simulation/mps_rank_local.py`、`mps_site_kernels.py`、`mps_compiled_layers.py`、`mps_factorization.py`、`mps_canonicalization.py`、`mps_reverse.py`、`mps_observables.py` 及 reverse 尚未拆出的数值段 | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
 | 本地张量网络 | `simulation/tensor_local.py` 的计划构建与数值状态入口；`tensor_observables.py` 的观测量计划与 MPO；`tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容门面与振幅入口、`tensor_path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
 | 分布式张量网络 | `simulation/tensor_stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/backends/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
-| 密度矩阵 | `simulation/density_matrix.py` | `simulation/noise.py` 兼容门面、Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime |
+| 密度矩阵 | `simulation/density_matrix.py` | Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime；旧 `simulation.noise` 门面已退出 |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps_state.py`/`mps_execution.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
 | 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/noisy_statevector.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps_execution.py`/`mps_state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
 | 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作、Triton autograd 和已拆出的 JAX MPS pullback 在 `simulation/`；其余显式 sharded adjoint/reverse 仍在各 backend | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
@@ -99,7 +99,6 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_models.py`、`tensor.py` | 结果转换/兼容门面 | 算法内部结构 | 跨层结果与稳定类型应由 Core 提案定义 |
 | `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
 | `graph.py` | 受保护兼容工具 | 当前仅由根 API 兼容导出，无 Compiler 调用方 | 不复制到 Compiler，不形成第二权威；只有出现具体 Compiler 消费者并批准公共 API 迁移后才归位 |
-| `noise.py` | 结果转换/兼容门面 | 无新语义 | 当前仅剩兼容身份测试和 lowering manifest 的历史路径字符串，无生产调用方；先将 manifest 指向 `simulation.density_matrix`，再以规范路径替换兼容测试并删除门面及架构白名单 |
 
 ## 5. `runtime/backends` 代码归属矩阵
 
@@ -257,10 +256,10 @@ Runtime 中剩余的 tensor 拼接、reshape 和 stack 主要用于通信打包�
 结果组装，不因使用张量操作而自动属于数值算法；只有改变 MPS 数学语义的实现才应继续迁入
 Simulation。已删除本轮确认无消费者的私有兼容别名，不因文件较大而机械拆分模块。
 
-目前保留两类已登记的反向依赖：`simulation/mps_execution.py` 对轨迹 Runtime 的受保护旧入口，
-以及 `simulation/noise.py` 对噪声注册表的兼容访问。它们必须通过正式 API 迁移和替换测试退出，
-不得在本轮以破坏兼容性的方式强拆。除这两类登记项外，本轮未发现新的 Simulation→Runtime
-依赖。MPS 数值边界已达到可停止继续横向抽象的条件；后续优先推进最小纵向链路和目录归位。
+目前仅保留 `simulation/mps_execution.py` 对轨迹 Runtime 的受保护旧入口。
+`simulation/noise.py` 已在 manifest 和身份测试切换到规范路径后删除，对应架构白名单同步退出。
+除此以外，本轮未发现新的 Simulation→Runtime 依赖。MPS 数值边界已达到可停止继续横向
+抽象的条件；后续优先推进最小纵向链路和目录归位。
 
 ## 11. 退出条件复核（2026-09-05）
 
@@ -269,7 +268,7 @@ Simulation。已删除本轮确认无消费者的私有兼容别名，不因文�
 1. 真实本地 Engine 与 contract fake 运行同一套 conformance，Runtime 消费者无需修改；
 2. `runtime/backends/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
 3. 分布式 TN reverse 中不依赖 task ownership、checkpoint 或 process group 的数学移至 Simulation；
-4. 已登记的 `simulation/mps_execution.py`→Runtime 和 `simulation/noise.py`→Runtime 兼容依赖有获批的退出路径；
+4. 已登记的 `simulation/mps_execution.py`→Runtime 兼容依赖有获批的退出路径；`simulation/noise.py` 反向依赖已经退出；
 5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
 
 当前第 5 项对 Statevector 切片成立，第 1--4 项尚未全部成立。因此本轮只更新事实台账，

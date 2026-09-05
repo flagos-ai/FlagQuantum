@@ -31,7 +31,6 @@ pennylane_import_allowed_prefixes = [
 runtime_import_allowed = [
     "flagquantum/simulation/mps_execution.py",
     "flagquantum/simulation/mps_models.py",
-    "flagquantum/simulation/noise.py",
 ]
 
 [northbound_boundaries]
