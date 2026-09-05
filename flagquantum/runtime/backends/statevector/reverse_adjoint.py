@@ -160,7 +160,6 @@ def _apply_one_gate(
     shard_state: Any,
     *,
     instruction: Instruction,
-    gate_plan: Any,
     plan: Any,
     dtype: torch.dtype,
     process_group: Any | None = None,
@@ -175,85 +174,16 @@ def _apply_one_gate(
         matrix = _instruction_matrix(
             instruction, device=shard_state.amplitudes.device, dtype=dtype
         )
-    if _is_diagonal_instruction(instruction.name):
-        state, scratch = _vectorized_local_diagonal_gate(
-            shard_state,
-            matrix,
-            instruction.wires,
-            plan=plan,
-            chunk_amplitudes=_reverse_chunk_amplitudes(),
-            output=output,
-        )
-        if evidence is not None:
-            evidence.peak_scratch_bytes = max(evidence.peak_scratch_bytes, scratch)
-        return state
-    touched = any(wire in plan.sharded_wires for wire in instruction.wires)
-    if not touched or plan.world_size == 1:
-        if (
-            _triton_local_cx_enabled()
-            and instruction.name == "cx"
-            and shard_state.amplitudes.device.type == "cuda"
-            and shard_state.amplitudes.dtype == torch.complex64
-        ):
-            state, scratch = _vectorized_local_cx_gate(
-                shard_state,
-                instruction.wires,
-                plan=plan,
-                output=output,
-            )
-        else:
-            state, scratch = _vectorized_local_gate(
-                shard_state,
-                matrix,
-                instruction.wires,
-                plan=plan,
-                chunk_amplitudes=_reverse_chunk_amplitudes(),
-                output=output,
-            )
-        if evidence is not None:
-            evidence.peak_scratch_bytes = max(evidence.peak_scratch_bytes, scratch)
-        return state
-    if (
-        _reverse_cross_shard_cx_packing_enabled()
-        and instruction.name == "cx"
-        and sum(wire in plan.sharded_wires for wire in instruction.wires) == 1
-    ):
-        state, count, byte_count, scratch = _vectorized_cross_shard_cx(
-            shard_state,
-            instruction.wires,
-            plan=plan,
-            chunk_amplitudes=_reverse_chunk_amplitudes(),
-            process_group=process_group,
-            workspace=workspace,
-            output=output,
-        )
-    elif len(instruction.wires) == 1 and instruction.wires[0] in plan.sharded_wires:
-        state, count, byte_count, scratch = _vectorized_pair_exchange_gate(
-            shard_state,
-            matrix,
-            instruction.wires[0],
-            plan=plan,
-            chunk_amplitudes=_reverse_chunk_amplitudes(),
-            process_group=process_group,
-            workspace=workspace,
-            output=output,
-        )
-    else:
-        state, count, byte_count, scratch = _vectorized_subgroup_exchange_gate(
-            shard_state,
-            matrix,
-            instruction.wires,
-            plan=plan,
-            chunk_amplitudes=_reverse_chunk_amplitudes(),
-            process_group=process_group,
-            workspace=workspace,
-            output=output,
-        )
-    if evidence is not None:
-        evidence.communication_count += count
-        evidence.communication_bytes += byte_count
-        evidence.peak_scratch_bytes = max(evidence.peak_scratch_bytes, scratch)
-    return state
+    return _apply_matrix_gate(
+        shard_state,
+        matrix=matrix,
+        instruction=instruction,
+        plan=plan,
+        process_group=process_group,
+        evidence=evidence,
+        workspace=workspace,
+        output=output,
+    )
 
 
 def _apply_matrix_gate(
@@ -261,7 +191,6 @@ def _apply_matrix_gate(
     *,
     matrix: torch.Tensor,
     instruction: Instruction,
-    gate_plan: Any,
     plan: Any,
     process_group: Any | None = None,
     evidence: BackwardExecutionEvidence | None = None,
@@ -609,7 +538,6 @@ def _explicit_sharded_adjoint(
                 state = _apply_one_gate(
                     state,
                     instruction=bound.instructions[index],
-                    gate_plan=plan.gate_plans[index],
                     plan=plan,
                     dtype=dtype,
                     process_group=process_group,
@@ -633,7 +561,6 @@ def _explicit_sharded_adjoint(
                 state = _apply_one_gate(
                     state,
                     instruction=bound.instructions[index],
-                    gate_plan=plan.gate_plans[index],
                     plan=plan,
                     dtype=dtype,
                     process_group=process_group,
@@ -926,7 +853,6 @@ def _explicit_sharded_adjoint(
                 ),
                 matrix=inverse_matrix,
                 instruction=execution_instruction,
-                gate_plan=plan.gate_plans[index],
                 plan=plan,
                 process_group=process_group,
                 evidence=evidence,
@@ -1050,7 +976,6 @@ def _explicit_sharded_adjoint(
                         replace(before, amplitudes=before.amplitudes.detach()),
                         matrix=derivative_matrix,
                         instruction=execution_instruction,
-                        gate_plan=plan.gate_plans[index],
                         plan=plan,
                         process_group=process_group,
                         evidence=evidence,
@@ -1092,7 +1017,6 @@ def _explicit_sharded_adjoint(
                 adjoint_state,
                 matrix=original_matrix.mH,
                 instruction=execution_instruction,
-                gate_plan=plan.gate_plans[index],
                 plan=plan,
                 process_group=process_group,
                 evidence=evidence,
