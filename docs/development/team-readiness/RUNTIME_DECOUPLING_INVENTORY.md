@@ -139,7 +139,7 @@ Provider 的暂管区域。
 | `architecture.toml` 登记路径 | 实际依赖 | 主要分类 | 目标替代方式 |
 | --- | --- | --- | --- |
 | `runtime/backends/statevector/noisy.py` | `lower_noise_model()` | 噪声历史耦合（编译服务调用） | 轨迹执行器接收已 lowering IR；由 Compiler 服务生成，Simulation 不直接导入 Compiler |
-| `runtime/backends/statevector/planning.py` | `schedule_layers()` | 错误的内部实现调用 | Compiler 在 executable plan 中提供稳定 layer/dependency schedule；Simulation/Runtime 不重跑 Compiler 调度算法 |
+| `runtime/backends/statevector/planning.py` | `schedule_layers()` | 公共 raw-program 规划入口保留的编译服务调用 | 当前入口直接接收 Circuit/IR，继续通过 Compiler facade 获得 layer schedule；只有经批准的 executable-plan 契约能够携带该结果后，计划执行路径才可改为直接消费，Runtime 不复制调度算法 |
 | `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | 共享数据契约 | 将版本化校准记录的最小只读契约置于 Core；校准构建仍由 Compiler/benchmark owning service 完成，Runtime 只验证适用范围并消费记录 |
 | `runtime/dynamic/routing.py` | `CouplingMap`、`route_to_topology()` | 路由历史耦合（共享契约 + 编译服务） | Core 提供 topology/coupling 数据契约；Compiler routing service 接收动态 IR 并返回已路由 IR，Runtime 只执行 |
 | `runtime/execution.py` | `ExecutionPlan`、`compile_for_backend()`、`select_execution_mode()`、`plan_advanced()`、`plan()`；noise plan/lowering helpers | 编译服务调用（复合） | 把便捷的 program→plan 调用收束到一个 Compiler service port；attempt path 只接收 Core-owned executable plan view。自动模式、编译、噪声 lowering 均在尝试开始前完成 |
