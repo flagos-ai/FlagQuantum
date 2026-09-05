@@ -1,35 +1,47 @@
-# ruff: noqa: F401, F821
 """Sharded statevector execution and parameter-gradient entrypoints."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
+from ...distributed.backend_policy import DistributedBackendPolicy
+from .array_conversions import (
+    _apply_gate_to_jax_shards,
+    _gate_matrix_as_jax,
+    _parameterized_gate_matrix_as_jax,
 )
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .backend_dispatch import plan_jax_distributed_quantum_backend
+from .planning_core import _as_ir
+from .runtime_environment import (
+    _jax_complex_dtype,
+    _jax_device_count_summary,
+    _jax_real_dtype,
+    _jnp_device_put,
+    _require_jax,
+    _require_jax_production_backward_ready,
+    _require_torch,
+    _resolve_jax_backward_backend,
+    _resolve_jax_device,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
+    _torch_complex_dtype,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
+from .statevector_gradient_records import (
+    JAXShardedStatevectorParameterGradientResult,
+    _initialize_jax_statevector_shard,
 )
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
+from .statevector_kernels import (
+    _jax_pmap_statevector_parameter_loss,
+    _jax_shard_map_statevector_parameter_loss,
+    _jax_sharded_statevector_loss_from_shards,
+    _statevector_shard_map_backward_blockers,
 )
-from .statevector_kernels import _statevector_shard_map_backward_blockers
+from .statevector_records import JAXShardedStatevectorResult, JAXStatevectorShardState
+from .tensor_network_contraction import (
+    _jax_parameter_array_from_input,
+    _torch_parameters_for_static_build,
+)
 
 
 def run_jax_sharded_statevector(
