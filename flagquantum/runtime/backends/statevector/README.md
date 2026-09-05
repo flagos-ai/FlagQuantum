@@ -68,6 +68,15 @@ primitives. This is the P3/P4 stopping point: keep the adapters separate because
 their host-ingestion claims differ, and do not move their contracts, provider
 checks, or evidence records into Simulation merely to remove Runtime code.
 
+`split_real_imag_autograd.py` and
+`split_real_imag_autograd_optimizer.py` form the P5 Runtime boundary. They own
+the PyTorch autograd bridge, parameter ownership and ordering, delivered
+gradient precision, learning-rate validation, optimizer-step state, and
+training/conformance evidence. P4 supplies the explicit numerical gradient and
+the optimizer composes established Double-Single arithmetic. The single SGD
+update expression is not a separate Simulation kernel: do not add a helper or
+optimizer abstraction until a second concrete consumer requires one.
+
 ## Local execution stopping point
 
 `local_execution.py` is not a second numerical-kernel authority. Its shard
