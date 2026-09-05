@@ -153,6 +153,13 @@ Runtime shard/plan 类型。
 不得为消除 Runtime 中的 `jnp` 调用而复制节点记录或新增 node factory；只有不依赖
 Runtime 计划、任务、记录、策略和 collective，且具有独立复用价值的数值操作才继续下沉。
 
+JAX MPS 反向路径复核确认，参数局部 VJP、边界 RXX adjoint 以及 QR/SVD
+canonicalization/truncation pullback 已由 `simulation/jax_mps_pullbacks.py` 统一负责。
+`mps_backward.py`、`mps_pullbacks.py` 和 `mps_canonicalization.py` 剩余逻辑属于受限 rank
+协议：设备放置、参数所有权、collective 交换、截断策略、优化器生命周期和证据记录。
+其中少量解析解校验与张量 shape 用于验证协议证据，不是第二套通用 MPS 数值权威；在没有
+第二条脱离 Runtime 策略和记录的生产路径复用前，不继续拆成细碎 helper。该路径已到停止点。
+
 本轮同时删除 `mps_kernel.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
 上下文继续以 `simulation/jax_gate_primitives.py` 中的实现为唯一权威。
 

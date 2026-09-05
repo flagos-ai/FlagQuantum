@@ -12,6 +12,17 @@ nearest-neighbor CX fast-path decision, start with `mps_kernel.py`. The latter
 may recognize and lower circuit structure, but delegates tensor initialization,
 updates, contraction, and observable evaluation to Simulation.
 
+For MPS differentiation, local parameter VJPs, boundary-gate adjoints, and
+QR/SVD pullbacks live in `simulation/jax_mps_pullbacks.py`. The Runtime modules
+`mps_backward.py`, `mps_pullbacks.py`, and `mps_canonicalization.py` retain the
+constrained rank protocol, device placement, parameter ownership, collective
+exchange, truncation policy, optimizer lifecycle, and evidence records. This
+is the MPS backward stopping point: the small analytic checks and tensor shapes
+inside those protocol executors are evidence construction, not a second
+general MPS implementation. Do not extract them into generic helpers unless a
+second production numerical path consumes the same operation independently of
+Runtime policy and records.
+
 For sharded statevectors, `statevector_kernels.py` is a Runtime transport
 adapter, despite its historical name. It converts instructions and Runtime
 plans, selects local, pair-exchange, all-to-all, `pmap`, or `shard_map`
