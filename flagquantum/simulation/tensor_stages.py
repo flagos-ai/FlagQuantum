@@ -147,6 +147,32 @@ def einsum_pair_pullback(
     return left_cotangent, right_cotangent
 
 
+def einsum_pair_pullback_by_equations(
+    left_equation: str,
+    right_equation: str,
+    output_cotangent: torch.Tensor,
+    left_tensor: torch.Tensor,
+    right_tensor: torch.Tensor,
+    *,
+    compile_cuda: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Execute a precompiled pair-contraction pullback, including batches."""
+
+    left_cotangent = complex_einsum_pair(
+        left_equation,
+        output_cotangent,
+        right_tensor.conj(),
+        compile_cuda=compile_cuda,
+    )
+    right_cotangent = complex_einsum_pair(
+        right_equation,
+        left_tensor.conj(),
+        output_cotangent,
+        compile_cuda=compile_cuda,
+    )
+    return left_cotangent, right_cotangent
+
+
 def einsum_pair_by_labels_with_fallback(
     left_tensor: torch.Tensor,
     left_labels: Sequence[int],

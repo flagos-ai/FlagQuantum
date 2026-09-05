@@ -10,6 +10,7 @@ from flagquantum.simulation.tensor_stages import (
     einsum_pair_by_labels,
     einsum_pair_by_labels_with_fallback,
     einsum_pair_pullback,
+    einsum_pair_pullback_by_equations,
     execute_contraction_stages,
     execute_pair_steps,
     kahan_add,
@@ -92,6 +93,29 @@ def test_pair_pullback_is_owned_by_simulation():
         (0, 1),
         right,
         (1, 2),
+    )
+
+    torch.testing.assert_close(actual_left, expected_left)
+    torch.testing.assert_close(actual_right, expected_right)
+
+
+def test_batched_compiled_pair_pullback_is_owned_by_simulation():
+    torch.manual_seed(23)
+    left = torch.randn(2, 3, 4, dtype=torch.complex64, requires_grad=True)
+    right = torch.randn(2, 4, 5, dtype=torch.complex64, requires_grad=True)
+    output_cotangent = torch.randn(2, 3, 5, dtype=torch.complex64)
+    expected_left, expected_right = torch.autograd.grad(
+        torch.einsum("bij,bjk->bik", left, right),
+        (left, right),
+        grad_outputs=output_cotangent,
+    )
+
+    actual_left, actual_right = einsum_pair_pullback_by_equations(
+        "bik,bjk->bij",
+        "bij,bik->bjk",
+        output_cotangent,
+        left,
+        right,
     )
 
     torch.testing.assert_close(actual_left, expected_left)

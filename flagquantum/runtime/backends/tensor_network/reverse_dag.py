@@ -15,6 +15,7 @@ from ....simulation.tensor_stages import (
     batched_pair_equation,
     einsum_pair_by_labels,
     einsum_pair_pullback,
+    einsum_pair_pullback_by_equations,
     pair_equation,
 )
 from .distributed_dag import DistributedTNContractionDAG
@@ -908,16 +909,12 @@ def execute_compiled_tn_reverse_dag(
                 record = active[0]
                 output_cot = cotangents.pop(record.output_value_id)
                 left_id, right_id = record.input_value_ids
-                left_cot = complex_einsum_pair(
+                left_cot, right_cot = einsum_pair_pullback_by_equations(
                     bucket.left_equation,
-                    output_cot,
-                    tape[right_id].conj(),
-                    compile_cuda=False,
-                )
-                right_cot = complex_einsum_pair(
                     bucket.right_equation,
-                    tape[left_id].conj(),
                     output_cot,
+                    tape[left_id],
+                    tape[right_id],
                     compile_cuda=False,
                 )
                 accumulated += _accumulate_cotangent(cotangents, left_id, left_cot)
@@ -928,20 +925,17 @@ def execute_compiled_tn_reverse_dag(
                 [cotangents.pop(record.output_value_id) for record in active]
             )
             right_values = torch.stack(
-                [tape[record.input_value_ids[1]].conj() for record in active]
+                [tape[record.input_value_ids[1]] for record in active]
             )
             left_values = torch.stack(
-                [tape[record.input_value_ids[0]].conj() for record in active]
+                [tape[record.input_value_ids[0]] for record in active]
             )
-            left_cots = complex_einsum_pair(
+            left_cots, right_cots = einsum_pair_pullback_by_equations(
                 bucket.left_batched_equation,
-                output_cots,
-                right_values,
-            )
-            right_cots = complex_einsum_pair(
                 bucket.right_batched_equation,
-                left_values,
                 output_cots,
+                left_values,
+                right_values,
             )
             for position, record in enumerate(active):
                 left_id, right_id = record.input_value_ids
