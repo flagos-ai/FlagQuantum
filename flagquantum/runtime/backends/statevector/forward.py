@@ -1142,63 +1142,6 @@ def _vectorized_subgroup_exchange_gate(
     )
 
 
-def _apply_distributed_gate_collective(
-    shard_state: StatevectorShardState,
-    matrix: torch.Tensor,
-    wires: Sequence[int],
-    *,
-    plan: DistributedStatevectorPlan,
-    process_group: Any | None = None,
-) -> tuple[StatevectorShardState, int, int, int]:
-    wires = tuple(int(wire) for wire in wires)
-    gate_dim = 2 ** len(wires)
-    matrix = matrix.to(
-        device=shard_state.amplitudes.device, dtype=shard_state.amplitudes.dtype
-    )
-    positions = {
-        int(index): offset
-        for offset, index in enumerate(
-            shard_state.global_indices.detach().cpu().tolist()
-        )
-    }
-    out = shard_state.amplitudes.clone()
-    masks = tuple(_wire_mask(plan.n_wires, wire) for wire in wires)
-    offsets = tuple(
-        _basis_offset(plan.n_wires, wires, basis) for basis in range(gate_dim)
-    )
-    collective_count = communicated_bytes = 0
-    output_bytes = out.numel() * out.element_size()
-    peak_scratch_bytes = output_bytes + 2 * plan.bsz * gate_dim * out.element_size()
-    for base in range(plan.total_amplitudes):
-        if any(base & mask for mask in masks):
-            continue
-        group = tuple(base | offset for offset in offsets)
-        values = torch.zeros((plan.bsz, gate_dim), dtype=out.dtype, device=out.device)
-        for basis, global_index in enumerate(group):
-            local_index = positions.get(global_index)
-            if local_index is not None:
-                values[:, basis] = shard_state.amplitudes[:, local_index]
-        dist.all_reduce(values, op=dist.ReduceOp.SUM, group=process_group)
-        collective_count += 1
-        communicated_bytes += values.numel() * values.element_size()
-        updated = values @ matrix.transpose(-2, -1)
-        for basis, global_index in enumerate(group):
-            local_index = positions.get(global_index)
-            if local_index is not None:
-                out[:, local_index] = updated[:, basis]
-    return (
-        StatevectorShardState(
-            rank=shard_state.rank,
-            shard=shard_state.shard,
-            amplitudes=out,
-            global_indices=shard_state.global_indices,
-        ),
-        collective_count,
-        communicated_bytes,
-        peak_scratch_bytes,
-    )
-
-
 def execute_torch_distributed_statevector(
     *args: Any, **kwargs: Any
 ) -> TorchDistributedStatevectorResult:
