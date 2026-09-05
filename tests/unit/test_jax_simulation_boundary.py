@@ -8,12 +8,14 @@ from flagquantum.runtime.backends.jax import (
     mps_execution,
     mps_kernel,
     mps_pullbacks,
+    statevector_kernels,
 )
 from flagquantum.simulation import (
     jax_gate_primitives,
     jax_mps,
     jax_mps_batched,
     jax_mps_pullbacks,
+    jax_statevector,
     jax_tensor_network,
 )
 
@@ -28,6 +30,10 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
     assert (
         kernel._set_active_jax_compute_dtype
         is jax_gate_primitives._set_active_jax_compute_dtype
+    )
+    assert (
+        statevector_kernels._jax_sharded_statevector_rank_loss_from_local_amplitudes
+        is jax_statevector.jax_sharded_statevector_rank_loss
     )
 
 

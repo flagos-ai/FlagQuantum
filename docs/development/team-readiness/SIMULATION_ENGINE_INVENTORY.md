@@ -12,8 +12,9 @@
 adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 `simulation/statevector_adjoint.py` 统一持有；本地分片调试路径仅处理索引、所有权和
 结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_stages.py`；JAX 的 dtype、
-门矩阵、状态作用与局部观测量原语已归 `simulation/jax_gate_primitives.py`。但其余 JAX
-量子数值核仍位于 `runtime/backends/`，且真实 Engine 与 contract fake 尚未运行同一套 conformance。
+门矩阵、状态作用、分片局部 observable/loss、MPS 批量更新和 pullback 已归
+`simulation/jax_*.py`。但其余 JAX 量子数值核仍位于 `runtime/backends/`，且真实 Engine
+与 contract fake 尚未运行同一套 conformance。
 因此 `simulation_extraction` 必须保持 `in_progress`，不得以目录数量或单一 CPU 测试代替退出条件。
 
 首次盘点日期：2026-09-03；最近复核日期：2026-09-05
@@ -74,7 +75,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | 密度矩阵 | `simulation/density_matrix.py` | `simulation/noise.py` 兼容门面、Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps_state.py`/`mps_execution.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
 | 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/noisy_statevector.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps_execution.py`/`mps_state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
-| 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作及 Triton autograd 在 `simulation/`；显式 sharded adjoint/reverse 在各 backend；JAX pullback/VJP 在 `runtime/backends/jax/` | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
+| 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作、Triton autograd 和已拆出的 JAX MPS pullback 在 `simulation/`；其余显式 sharded adjoint/reverse 仍在各 backend | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
 
 ## 4. `simulation` 代码归属矩阵
 
@@ -122,7 +123,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_network/distributed_execution.py`、`distributed_sliced_reverse.py`、`redistribution.py`、`partial_mesh.py` | 通信/执行适配（混合） | 局部 contraction 调用 | process group、P2P/all-to-all、rank 生命周期与聚合 |
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
-| `simulation/jax_gate_primitives.py` | 纯数值算法 | JAX dtype、指令矩阵、statevector 本地执行与局部 observable kernel | 无 Runtime/Platform 依赖；由 Runtime kernel、MPS kernel 和转换路径共同复用 |
+| `simulation/jax_gate_primitives.py`、`simulation/jax_statevector.py` | 纯数值算法 | JAX dtype、指令矩阵、statevector 本地执行与分片局部 observable/loss kernel | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、pmap/shard-map、collective 和执行证据 |
 | `simulation/jax_mps.py`、`simulation/jax_mps_batched.py`、`simulation/jax_mps_pullbacks.py` | 纯数值算法 | JAX MPS 单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
 | `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、contraction | backend/device 是否选择 JAX 由 Runtime/Platform |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |

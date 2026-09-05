@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Callable, Sequence
 
+from ....simulation.jax_statevector import (
+    jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
+)
 from .array_conversions import (
     _jax_apply_matrix_to_batched_local_state,
     _jax_basis_indices_for_wires,
@@ -207,36 +210,6 @@ def _jax_apply_pair_exchange_statevector_instruction(
     updated_zero = matrix[0, 0] * amplitudes + matrix[0, 1] * partner
     updated_one = matrix[1, 0] * partner + matrix[1, 1] * amplitudes
     return jnp.where(current_is_zero, updated_zero, updated_one)
-
-
-def _jax_sharded_statevector_rank_loss_from_local_amplitudes(
-    amplitudes: Any,
-    global_indices: Any,
-    *,
-    n_wires: int,
-    observable: str,
-    observable_wires: Sequence[int] | None,
-) -> Any:
-    _, jnp = _require_jax()
-    normalized = str(observable)
-    if normalized == "state_norm":
-        return jnp.real(jnp.sum(jnp.abs(amplitudes) ** 2))
-    if normalized not in {"z", "z_sum"}:
-        raise ValueError(
-            "JAX pmap sharded statevector gradients currently support observable='z_sum', 'z', or 'state_norm'."
-        )
-    wires = (
-        tuple(range(int(n_wires)))
-        if observable_wires is None
-        else tuple(int(wire) for wire in observable_wires)
-    )
-    probs = jnp.abs(amplitudes) ** 2
-    total = jnp.zeros((), dtype=probs.real.dtype)
-    for wire in wires:
-        bit = (global_indices >> (int(n_wires) - 1 - int(wire))) & 1
-        signs = 1.0 - 2.0 * bit.astype(probs.real.dtype)
-        total = total + jnp.sum(probs * signs.reshape(1, -1))
-    return jnp.real(total)
 
 
 def _jax_pmap_statevector_parameter_loss(
