@@ -13,7 +13,6 @@ from ..compilation.models import (
     NoisyExecutionPlan,
     StateRepresentation,
 )
-from ..compiler import lower_noise_model
 from ..core.ir import CircuitIR
 from ..noise import NoiseModel
 
@@ -52,6 +51,7 @@ def noisy_density_matrix(
 ) -> torch.Tensor:
     """Lower optional noise and run the local exact density simulation."""
 
+    from ..compiler import lower_noise_model
     from ..simulation.density_matrix import density_matrix_from_ir
 
     lowered = lower_noise_model(circuit_or_ir, noise_model)

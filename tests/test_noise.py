@@ -683,7 +683,7 @@ def test_quantum_trajectory_plan_requires_sampling_controls():
     assert plan.error_budget.sampling_error_enabled is True
 
 
-def test_density_noise_executor_is_resolved_through_registry():
+def test_density_noise_executor_is_resolved_through_registry(monkeypatch):
     from flagquantum.compiler import lower_noise_model
     from flagquantum.runtime.noise_registry import execute_noisy_plan
     from flagquantum.runtime.planner import (
@@ -699,6 +699,11 @@ def test_density_noise_executor_is_resolved_through_registry():
         representation="density_matrix",
         evolution="exact_channel",
     )
+
+    def reject_lowering(*args, **kwargs):
+        raise AssertionError("planned density execution must not lower noise again")
+
+    monkeypatch.setattr("flagquantum.compiler.lower_noise_model", reject_lowering)
 
     rho = execute_noisy_plan(lowered, noisy_plan)
 

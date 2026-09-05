@@ -105,7 +105,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | 路径 | 主分类 | Simulation 应拥有 | Runtime/Provider 应拥有 |
 | --- | --- | --- | --- |
 | `simulation/density_matrix.py` | 纯数值算法 | density 构造、算子展开、unitary/Kraus 演化、IR 数值循环和 density 测量 | 无；稳定结果投影仍由 Runtime/Core 负责 |
-| `runtime/noise_registry.py` 的 density adapter | 执行适配 | 无数值实现 | plan 验证、选项过滤、lowering 调用和 executor 分派 |
+| `runtime/noise_registry.py` 的 density adapter | 执行适配 | 无数值实现 | 计划执行仅验证并分派已 lowering IR；直接兼容入口按调用请求 Compiler lowering |
 | `statevector/split_real_imag*.py` | 数值算法 + Kernel 调用（混合） | 状态演化、精度扩展、expectation/VJP；状态向量 adjoint/VJP Triton kernel 已归 `simulation/triton_kernels/statevector_adjoint.py` | 设备身份、provider evidence、精度/回退授权、conformance 汇总由 Platform/Runtime；Double-Single 门矩阵生成已移至 `simulation/double_single_*_gates.py` |
 | `statevector/forward.py`、`reverse_adjoint.py` | 分布式执行适配 | 无 Runtime 类型依赖的 rank-local eager 普通门、对角门、rank-pair、gate-basis block 合并、旋转门导数与复内积已归 Simulation | process group、collective 生命周期、rank/topology、owner 与全局索引解析、chunk policy、Triton 路由、环境开关和通信 evidence；local expectation 分块遍历依赖这些 Runtime 语义，不强迁 |
 | `statevector/reverse.py`、`gradient_reduction.py` | Kernel/执行适配（混合） | autograd bridge 与局部梯度数学 | process group、bucket policy、all-reduce、ownership/evidence |
