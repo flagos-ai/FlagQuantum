@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Sequence
 
 from ...distributed.backend_policy import DistributedBackendPolicy
 from .array_conversions import _jax_nodes_from_torch_nodes
 from .backend_dispatch import plan_jax_distributed_quantum_backend
 from .common import node_count as _node_count
 from .runtime_environment import (
-    _jax_array_nbytes,
     _jax_complex_dtype,
     _jnp_device_put,
     _require_jax,
@@ -24,26 +22,10 @@ from .runtime_environment import (
 )
 from .tensor_network_contraction import _jax_contract_tensor_slices_by_backend
 from .tensor_network_planning import _tn_tasks
-from .tensor_network_records import JAXShardedTensorNetworkResult
-
-
-@dataclass
-class JAXTNSliceRankState:
-    """Rank-local tensor-network slice tasks and partial contraction result."""
-
-    rank: int
-    tasks: tuple[Mapping[str, Any], ...]
-    partial: Any
-
-    def summary(self) -> dict[str, Any]:
-        return {
-            "rank": self.rank,
-            "slice_task_count": len(self.tasks),
-            "slice_tasks": self.tasks,
-            "partial_shape": tuple(int(dim) for dim in self.partial.shape),
-            "partial_bytes": _jax_array_nbytes(self.partial),
-            "dtype": str(self.partial.dtype),
-        }
+from .tensor_network_records import (
+    JAXShardedTensorNetworkResult,
+    JAXTNSliceRankState,
+)
 
 
 def _jax_tn_task_summary(
@@ -55,23 +37,6 @@ def _jax_tn_task_summary(
         "rank": int(rank),
         "assignments": tuple((int(label), int(value)) for label, value in assignments),
     }
-
-
-def _jax_reduced_tn_output_to_torch_state(
-    output: Any,
-    *,
-    n_wires: int,
-    bsz: int,
-    complex_bytes: int,
-) -> Any:
-    import numpy as np
-
-    torch = _require_torch()
-    dtype = _torch_complex_dtype(complex_bytes)
-    state = torch.as_tensor(
-        np.asarray(output).copy(), dtype=dtype, device=torch.device("cpu")
-    )
-    return state.reshape(int(bsz), 2 ** int(n_wires))
 
 
 def _resolve_tn_compute_backend(

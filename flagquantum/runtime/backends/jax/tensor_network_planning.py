@@ -217,6 +217,14 @@ def _tn_tasks(
     return tuple(tasks)
 
 
+def _tasks_by_rank_from_slicing(slicing: Any, world_size: int) -> tuple[int, ...]:
+    tasks = _tn_tasks(slicing.sliced_labels, slicing.slice_shape, int(world_size))
+    return tuple(
+        sum(1 for rank, _ in tasks if int(rank) == target)
+        for target in range(int(world_size))
+    )
+
+
 def _tensor_network_plan(
     ir: CircuitIR,
     *,

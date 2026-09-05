@@ -11,7 +11,6 @@ from .runtime_environment import (
     _require_jax,
     _require_torch,
 )
-from .tensor_network_planning import _tn_tasks
 from .tensor_network_records import JAXTensorNetworkNode
 
 _JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -250,14 +249,6 @@ def _jax_contract_assigned_tensor_slices(
         subnodes = _jax_tn_slice_nodes(nodes, dict(assignments))
         partial = partial + _jax_contract_nodes_greedy(subnodes, output_labels)
     return partial
-
-
-def _tasks_by_rank_from_slicing(slicing: Any, world_size: int) -> tuple[int, ...]:
-    tasks = _tn_tasks(slicing.sliced_labels, slicing.slice_shape, int(world_size))
-    return tuple(
-        sum(1 for rank, _ in tasks if int(rank) == target)
-        for target in range(int(world_size))
-    )
 
 
 def _jax_reduce_rank_partials(

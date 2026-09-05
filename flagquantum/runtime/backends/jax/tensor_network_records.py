@@ -1,34 +1,22 @@
-# ruff: noqa: F401, F821
 """Tensor-network node, execution, and gradient result records."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Mapping
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
+from ...distributed.backend_policy import DistributedBackendPolicy
 from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
+from .planning_core import JAXDistributedQuantumPlan
 from .release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
+from .runtime_environment import (
+    _jax_array_nbytes,
+    _require_torch,
+    _torch_complex_dtype,
 )
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
-)
+from .tensor_network_planning import _tasks_by_rank_from_slicing
 
 
 @dataclass(frozen=True)
@@ -39,6 +27,42 @@ class JAXTensorNetworkNode:
     labels: tuple[int, ...]
     name: str = ""
     metadata: Mapping[str, Any] | None = None
+
+
+@dataclass
+class JAXTNSliceRankState:
+    """Rank-local tensor-network slice tasks and partial contraction result."""
+
+    rank: int
+    tasks: tuple[Mapping[str, Any], ...]
+    partial: Any
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "rank": self.rank,
+            "slice_task_count": len(self.tasks),
+            "slice_tasks": self.tasks,
+            "partial_shape": tuple(int(dim) for dim in self.partial.shape),
+            "partial_bytes": _jax_array_nbytes(self.partial),
+            "dtype": str(self.partial.dtype),
+        }
+
+
+def _jax_reduced_tn_output_to_torch_state(
+    output: Any,
+    *,
+    n_wires: int,
+    bsz: int,
+    complex_bytes: int,
+) -> Any:
+    import numpy as np
+
+    torch = _require_torch()
+    dtype = _torch_complex_dtype(complex_bytes)
+    state = torch.as_tensor(
+        np.asarray(output).copy(), dtype=dtype, device=torch.device("cpu")
+    )
+    return state.reshape(int(bsz), 2 ** int(n_wires))
 
 
 @dataclass
