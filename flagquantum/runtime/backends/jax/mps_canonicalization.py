@@ -1,34 +1,17 @@
-# ruff: noqa: F401, F821
 """MPS canonicalization, truncation, optimizer pullbacks, and protocol."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
 from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
-)
+from .mps_backward import _execute_minimal_mps_sharded_backward
+from .mps_evidence import _summarize_minimal_mps_measured_runtime_evidence
+from .mps_pullbacks import _execute_minimal_mps_boundary_gate_adjoint_pullback
 from .release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
-)
+from .runtime_environment import _require_jax
 
 
 def _execute_minimal_mps_canonicalization_truncation_pullback(
