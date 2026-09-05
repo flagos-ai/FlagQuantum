@@ -1,32 +1,12 @@
-"""Statevector runtime environment configuration with compatibility aliases."""
+"""Statevector runtime environment configuration."""
 
 from __future__ import annotations
 
 import os
 
-_ALIASES = {
-    "FQ_SV_PERSISTENT_LAYOUT": "FQ_STATEVECTOR_PERSISTENT_WIRE_LAYOUT",
-    "FQ_SV_TRITON_LOCAL_CX": "FQ_STATEVECTOR_TRITON_LOCAL_CX",
-    "FQ_SV_TRITON_CX_SEGMENT": "FQ_STATEVECTOR_TRITON_CX_SEGMENT",
-    "FQ_SV_LOCAL_FUSION": "FQ_STATEVECTOR_LOCAL_BLOCK_FUSION",
-    "FQ_SV_LOCAL_FUSION_WIDTH": "FQ_STATEVECTOR_LOCAL_BLOCK_FUSION_WIDTH",
-    "FQ_SV_INTER_NODE_CHECKPOINTS": "FQ_STATEVECTOR_INTER_NODE_KET_CHECKPOINTS",
-    "FQ_SV_CROSS_SHARD_CX_PACK": "FQ_STATEVECTOR_CROSS_SHARD_CX_PACK",
-}
-
-
-def get(name: str, default: str) -> str:
-    """Read canonical name first, then its pre-1.0 compatibility alias."""
-
-    value = os.getenv(name)
-    if value is not None:
-        return value
-    legacy = _ALIASES.get(name)
-    return os.getenv(legacy, default) if legacy else default
-
 
 def get_bool(name: str, default: bool) -> bool:
-    return get(name, "1" if default else "0").strip().lower() in {
+    return os.getenv(name, "1" if default else "0").strip().lower() in {
         "1",
         "true",
         "on",
@@ -41,4 +21,4 @@ def mode() -> str:
     return value
 
 
-__all__ = ("get", "get_bool", "mode")
+__all__ = ("get_bool", "mode")

@@ -21,7 +21,7 @@ from ....simulation.statevector_ops import (
     _zero_basis_local_indices,
 )
 from ...distributed.identity import DistributedIdentity
-from .environment import get, get_bool, mode
+from .environment import get_bool, mode
 from .errors import FullStateMaterializationError
 from .kernel_dispatch import (
     KernelDecision,
@@ -67,7 +67,7 @@ def _triton_local_1q_decision(*, supported: bool = True) -> KernelDecision:
 def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
     return select_triton_kernel(
         "local_cx",
-        requested=get_bool("FQ_SV_TRITON_LOCAL_CX", True),
+        requested=get_bool("FQ_STATEVECTOR_TRITON_LOCAL_CX", True),
         supported=supported,
     )
 
@@ -77,7 +77,7 @@ def _triton_local_cx_enabled() -> bool:
 
 
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
-    raw = get("FQ_SV_TRITON_CX_SEGMENT", "")
+    raw = os.getenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
     if not raw:
         raw = None
     if raw is None:

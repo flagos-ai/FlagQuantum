@@ -35,7 +35,7 @@ from benchmarks.sc27_metadata import (  # noqa: E402
     tensor_bytes,
     topology_snapshot,
 )
-from flagquantum.runtime.backends.statevector.forward import (  # noqa: E402
+from flagquantum.runtime.backends.statevector.forward_executor import (  # noqa: E402
     execute_torch_distributed_statevector,
 )
 from flagquantum.runtime.backends.statevector.reverse import (  # noqa: E402
@@ -267,7 +267,7 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
     os.environ["FQ_STATEVECTOR_TOPOLOGY_AWARE_RANK_BITS"] = (
         "0" if args.disable_topology_aware_rank_bits else "1"
     )
-    os.environ["FQ_SV_PERSISTENT_LAYOUT"] = (
+    os.environ["FQ_STATEVECTOR_PERSISTENT_WIRE_LAYOUT"] = (
         "0" if args.disable_persistent_layout else "1"
     )
     os.environ["FQ_STATEVECTOR_GRADIENT_REDUCTION_OVERLAP"] = (

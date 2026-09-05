@@ -77,7 +77,7 @@ def _reverse_exchange_workspace_enabled() -> bool:
 def _persistent_wire_layout_enabled() -> bool:
     # Optimized distributed path is the default.  Users can explicitly opt out
     # with FQ_STATEVECTOR_PERSISTENT_WIRE_LAYOUT=0 for debugging/comparison.
-    return get_bool("FQ_SV_PERSISTENT_LAYOUT", True)
+    return get_bool("FQ_STATEVECTOR_PERSISTENT_WIRE_LAYOUT", True)
 
 
 def _persistent_inplace_local_enabled() -> bool:
