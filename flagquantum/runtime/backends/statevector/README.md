@@ -48,6 +48,16 @@ in `simulation.split_real_imag_statevector`. This is the P1 stopping point: do
 not move Runtime result types into Simulation or create a parallel observable
 contract merely to shorten the adapter.
 
+`split_real_imag_precision.py` is the P2 Runtime adapter. It owns authorization
+of the fixed precision plan and certified accuracy envelope, parameter-shift
+scheduling, result records, host-side report reconstruction, and conformance
+comparison. It composes the established Double-Single value type and reduction
+primitives; Pauli-term tensor mathematics remains in
+`simulation.split_real_imag_statevector`. This is the P2 stopping point: do not
+move precision contracts, result schemas, reference comparisons, or
+conformance reports into Simulation, and do not duplicate the Double-Single
+term kernel in Runtime.
+
 ## Local execution stopping point
 
 `local_execution.py` is not a second numerical-kernel authority. Its shard
