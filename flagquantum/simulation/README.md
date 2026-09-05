@@ -79,6 +79,8 @@ JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
 `jax_mps.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
 swap routing math, MPS-to-statevector contraction, and observable transfer
 environments, including Z and Pauli-string expectations.
+It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
+Hamiltonian path.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.

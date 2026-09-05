@@ -43,6 +43,9 @@ from ....simulation.jax_mps import (  # noqa: E402
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_transfer_identity_right as _jax_mps_transfer_identity_right,
 )
+from ....simulation.jax_mps import (  # noqa: E402
+    parse_zz_z_chain_hamiltonian as _parse_zz_z_chain_hamiltonian,
+)
 
 
 def _jax_mps_from_circuit(
@@ -386,52 +389,6 @@ def _jax_mps_statevector_from_circuit(
         matmul_precision=matmul_precision,
     )
     return _jax_mps_to_statevector(tensors, matmul_precision)
-
-
-def _parse_zz_z_chain_hamiltonian(
-    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    n_wires: int,
-) -> tuple[dict[str, tuple[float, ...]], tuple[float, ...], float] | None:
-    local_coeffs = {
-        name: [0.0 for _ in range(int(n_wires))] for name in ("x", "y", "z")
-    }
-    zz_coeffs = [0.0 for _ in range(max(0, int(n_wires) - 1))]
-    constant = 0.0
-    for coefficient, ops in terms:
-        normalized = tuple(
-            (int(wire), str(name).lower())
-            for wire, name in ops
-            if str(name).lower() != "i"
-        )
-        if not normalized:
-            constant += float(coefficient)
-            continue
-        if len(normalized) == 1 and normalized[0][1] in local_coeffs:
-            wire = normalized[0][0]
-            if wire < 0 or wire >= int(n_wires):
-                return None
-            local_coeffs[normalized[0][1]][wire] += float(coefficient)
-            continue
-        if len(normalized) == 2 and normalized[0][1] == "z" and normalized[1][1] == "z":
-            left = min(normalized[0][0], normalized[1][0])
-            right = max(normalized[0][0], normalized[1][0])
-            if left < 0 or right >= int(n_wires) or right != left + 1:
-                return None
-            zz_coeffs[left] += float(coefficient)
-            continue
-        return None
-    return (
-        {name: tuple(coefficients) for name, coefficients in local_coeffs.items()},
-        tuple(zz_coeffs),
-        constant,
-    )
-
-
-def _is_zz_z_chain_hamiltonian(
-    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    n_wires: int,
-) -> bool:
-    return _parse_zz_z_chain_hamiltonian(terms, n_wires) is not None
 
 
 def _jax_mps_single_pauli_with_envs(

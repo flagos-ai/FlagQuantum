@@ -29,3 +29,34 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
         mps_kernel._jax_mps_pauli_string_expectation
         is jax_mps.jax_mps_pauli_string_expectation
     )
+
+
+def test_zz_z_chain_parser_accepts_and_accumulates_supported_terms():
+    terms = (
+        (1.5, ()),
+        (2.0, ((0, "X"),)),
+        (-0.5, ((1, "z"),)),
+        (0.25, ((1, "Z"), (0, "Z"))),
+        (0.75, ((0, "z"), (1, "z"))),
+    )
+
+    parsed = jax_mps.parse_zz_z_chain_hamiltonian(terms, 3)
+
+    assert parsed == (
+        {"x": (2.0, 0.0, 0.0), "y": (0.0, 0.0, 0.0), "z": (0.0, -0.5, 0.0)},
+        (1.0, 0.0),
+        1.5,
+    )
+    assert jax_mps.is_zz_z_chain_hamiltonian(terms, 3) is True
+
+
+@pytest.mark.parametrize(
+    "terms",
+    (
+        ((1.0, ((0, "z"), (2, "z"))),),
+        ((1.0, ((0, "x"), (1, "x"))),),
+        ((1.0, ((3, "z"),)),),
+    ),
+)
+def test_zz_z_chain_parser_rejects_unsupported_terms(terms):
+    assert jax_mps.parse_zz_z_chain_hamiltonian(terms, 3) is None

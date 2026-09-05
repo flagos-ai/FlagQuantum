@@ -239,3 +239,49 @@ def jax_mps_pauli_string_expectation(
         if normalized != "i":
             op_map[int(wire)] = _jax_pauli_matrix(normalized)
     return jax_mps_expectation_product_ops(tensors, op_map, matmul_precision)
+
+
+def parse_zz_z_chain_hamiltonian(
+    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
+    n_wires: int,
+) -> tuple[dict[str, tuple[float, ...]], tuple[float, ...], float] | None:
+    local_coeffs = {
+        name: [0.0 for _ in range(int(n_wires))] for name in ("x", "y", "z")
+    }
+    zz_coeffs = [0.0 for _ in range(max(0, int(n_wires) - 1))]
+    constant = 0.0
+    for coefficient, ops in terms:
+        normalized = tuple(
+            (int(wire), str(name).lower())
+            for wire, name in ops
+            if str(name).lower() != "i"
+        )
+        if not normalized:
+            constant += float(coefficient)
+            continue
+        if len(normalized) == 1 and normalized[0][1] in local_coeffs:
+            wire = normalized[0][0]
+            if wire < 0 or wire >= int(n_wires):
+                return None
+            local_coeffs[normalized[0][1]][wire] += float(coefficient)
+            continue
+        if len(normalized) == 2 and normalized[0][1] == "z" and normalized[1][1] == "z":
+            left = min(normalized[0][0], normalized[1][0])
+            right = max(normalized[0][0], normalized[1][0])
+            if left < 0 or right >= int(n_wires) or right != left + 1:
+                return None
+            zz_coeffs[left] += float(coefficient)
+            continue
+        return None
+    return (
+        {name: tuple(coefficients) for name, coefficients in local_coeffs.items()},
+        tuple(zz_coeffs),
+        constant,
+    )
+
+
+def is_zz_z_chain_hamiltonian(
+    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
+    n_wires: int,
+) -> bool:
+    return parse_zz_z_chain_hamiltonian(terms, n_wires) is not None
