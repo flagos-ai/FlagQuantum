@@ -78,8 +78,9 @@ statevector execution, gate application, and observable kernels. Runtime retains
 JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
 `jax_mps.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
 swap routing math, MPS-to-statevector contraction, and observable transfer
-environments, including Z and Pauli-string expectations. It also owns padded
-MPS initialization, open-boundary projection, and padded-layer application.
+environments, including Z and Pauli-string expectations. It also owns
+open-boundary and padded MPS initialization, open-boundary projection, and
+padded-layer application.
 It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
 Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
 The padded environment scan and generic Hamiltonian evaluation are also

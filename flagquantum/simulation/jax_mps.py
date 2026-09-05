@@ -23,6 +23,16 @@ def jax_mps_initial_padded_stack(n_wires: int, bond_dim: int) -> Any:
     ).copy()
 
 
+def jax_mps_initial_open_boundary_tensors(n_wires: int) -> list[Any]:
+    """Create an open-boundary MPS representation of the all-zero state."""
+
+    import jax.numpy as jnp
+
+    tensor = jnp.zeros((1, 2, 1), dtype=_jax_complex_dtype())
+    tensor = tensor.at[0, 0, 0].set(1.0 + 0.0j)
+    return [tensor for _ in range(int(n_wires))]
+
+
 def jax_mps_project_open_boundaries(tensors: Any) -> Any:
     import jax.numpy as jnp
 

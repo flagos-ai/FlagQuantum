@@ -16,7 +16,6 @@ _ACTIVE_JAX_COMPUTE_DTYPE: ContextVar[str] = ContextVar(
 
 
 from ....simulation.jax_gate_primitives import (  # noqa: E402
-    _jax_complex_dtype,
     _jax_cx,
     _jax_instruction_matrix,
     _jax_pauli_matrix,
@@ -32,6 +31,9 @@ from ....simulation.jax_mps import (  # noqa: E402
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
+)
+from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_initial_open_boundary_tensors as _jax_mps_initial_open_boundary_tensors,
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_initial_padded_stack as _jax_mps_initial_padded_stack,
@@ -63,11 +65,7 @@ def _jax_mps_from_circuit(
     if structured is not None:
         return structured
 
-    tensors = []
-    for _ in range(int(n_wires)):
-        tensor = jnp.zeros((1, 2, 1), dtype=_jax_complex_dtype())
-        tensor = tensor.at[0, 0, 0].set(1.0 + 0.0j)
-        tensors.append(tensor)
+    tensors = _jax_mps_initial_open_boundary_tensors(int(n_wires))
     pending_one_qubit: list[Any | None] = [None for _ in range(int(n_wires))]
 
     def flush_wire(wire: int) -> None:
