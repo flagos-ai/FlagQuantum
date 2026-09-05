@@ -19,8 +19,10 @@ from ....core.numerics import (
 from ....core.parameters import Parameter
 from ....numerics.double_single import (
     DoubleSingleTensor,
-    double_single_dot,
     double_single_sum,
+)
+from ....simulation.split_real_imag_statevector import (
+    double_single_pauli_term_expectation,
 )
 from .split_real_imag import (
     SplitRealImagStatevectorResult,
@@ -226,33 +228,6 @@ class SplitRealImagPrecisionGradientResult:
         return summary
 
 
-def _double_single_term_expectation(
-    state: SplitRealImagStatevectorResult, term: _PauliTerm, *, n_wires: int
-) -> DoubleSingleTensor:
-    from ....simulation.split_real_imag_statevector import (
-        apply_gate_pair,
-        fixed_matrix_pair,
-    )
-
-    transformed_real = state.real
-    transformed_imag = state.imag
-    for wire, name in term.ops:
-        matrix_real, matrix_imag = fixed_matrix_pair(name, device=state.device)
-        transformed_real, transformed_imag = apply_gate_pair(
-            transformed_real,
-            transformed_imag,
-            matrix_real,
-            matrix_imag,
-            (wire,),
-            n_wires=n_wires,
-        )
-    base = double_single_dot(state.real, transformed_real).add(
-        double_single_dot(state.imag, transformed_imag)
-    )
-    coefficient = term.coefficient.to(device=state.device, dtype=torch.float32)
-    return base.multiply(DoubleSingleTensor.from_float32(coefficient))
-
-
 def _expectation_from_bound_p2_ir(
     ir: CircuitIR,
     terms: Sequence[_PauliTerm],
@@ -270,7 +245,13 @@ def _expectation_from_bound_p2_ir(
         executor=P2_EXECUTOR,
     )
     values = tuple(
-        _double_single_term_expectation(state, term, n_wires=ir.n_wires)
+        double_single_pauli_term_expectation(
+            state.real,
+            state.imag,
+            term.ops,
+            term.coefficient,
+            n_wires=ir.n_wires,
+        )
         for term in terms
     )
     term_values = DoubleSingleTensor(

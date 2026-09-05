@@ -10,6 +10,7 @@ import torch
 
 from ..core.ir import CircuitIR, Instruction
 from ..core.parameters import value_to_tensor
+from ..numerics.double_single import DoubleSingleTensor, double_single_dot
 
 SPLIT_REAL_IMAG_SUPPORTED_GATES = frozenset(
     {
@@ -279,6 +280,35 @@ def pauli_term_expectation(
     return weight * overlap
 
 
+def double_single_pauli_term_expectation(
+    real: torch.Tensor,
+    imag: torch.Tensor,
+    ops: Sequence[tuple[int, str]],
+    coefficient: Any,
+    *,
+    n_wires: int,
+) -> DoubleSingleTensor:
+    """Evaluate one Pauli term with Double-Single overlap reduction."""
+
+    transformed_real = real
+    transformed_imag = imag
+    for wire, name in ops:
+        matrix_real, matrix_imag = fixed_matrix_pair(name, device=real.device)
+        transformed_real, transformed_imag = apply_gate_pair(
+            transformed_real,
+            transformed_imag,
+            matrix_real,
+            matrix_imag,
+            (wire,),
+            n_wires=n_wires,
+        )
+    overlap = double_single_dot(real, transformed_real).add(
+        double_single_dot(imag, transformed_imag)
+    )
+    weight = torch.as_tensor(coefficient, device=real.device, dtype=torch.float32)
+    return overlap.multiply(DoubleSingleTensor.from_float32(weight))
+
+
 def run_split_real_imag_statevector(
     ir: CircuitIR, *, device: torch.device
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -304,6 +334,7 @@ def run_split_real_imag_statevector(
 __all__ = (
     "SPLIT_REAL_IMAG_SUPPORTED_GATES",
     "apply_gate_pair",
+    "double_single_pauli_term_expectation",
     "fixed_matrix_pair",
     "instruction_matrix_pair",
     "pauli_term_expectation",

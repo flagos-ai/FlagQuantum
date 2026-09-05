@@ -13,6 +13,7 @@ from flagquantum.runtime.operator_probes import (
     preflight_split_real_imag_statevector_p0,
 )
 from flagquantum.simulation.split_real_imag_statevector import (
+    double_single_pauli_term_expectation,
     pauli_term_expectation,
     run_split_real_imag_statevector,
 )
@@ -77,6 +78,24 @@ def test_simulation_pauli_term_kernel_uses_split_tensors_directly() -> None:
     )
 
     torch.testing.assert_close(value, torch.tensor(0.5), atol=2e-6, rtol=2e-6)
+
+
+def test_simulation_double_single_pauli_reduction_uses_split_tensors() -> None:
+    real, imag = run_split_real_imag_statevector(
+        Circuit(1).h(0).to_ir(), device=torch.device("cpu")
+    )
+
+    value = double_single_pauli_term_expectation(
+        real,
+        imag,
+        ((0, "x"),),
+        0.5,
+        n_wires=1,
+    )
+
+    torch.testing.assert_close(
+        value.to_float64(), torch.tensor(0.5, dtype=torch.float64)
+    )
 
 
 @pytest.mark.parametrize("name", sorted(SPLIT_REAL_IMAG_SUPPORTED_GATES))
