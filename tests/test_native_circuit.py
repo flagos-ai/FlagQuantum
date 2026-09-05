@@ -43,15 +43,10 @@ def test_native_bell_state():
     assert torch.allclose(circuit.expectation_z(), torch.zeros(1, 2), atol=1e-6)
 
 
-def test_statevector_gate_composition_follows_execution_order():
-    from flagquantum.runtime.backends.statevector.forward import (
-        _compose_gate_matrices as runtime_compose_gate_matrices,
-    )
-
+def test_simulation_gate_composition_follows_execution_order():
     x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64)
     z = torch.tensor([[1, 0], [0, -1]], dtype=torch.complex64)
 
-    assert runtime_compose_gate_matrices is _compose_gate_matrices
     torch.testing.assert_close(_compose_gate_matrices((x, z)), z @ x)
 
 

@@ -13,7 +13,6 @@ from flagquantum.runtime.backends.statevector.forward import (
     _independent_tensor_bytes,
     _triton_local_cx_segment_enabled,
     _wait_for_exchange,
-    _zero_basis_local_indices,
     communication_aware_wire_layout,
 )
 from flagquantum.runtime.backends.statevector.forward_executor import (
@@ -28,9 +27,7 @@ from flagquantum.simulation.statevector_ops import (
     _basis_indices_for_wires,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
-)
-from flagquantum.simulation.statevector_ops import (
-    _zero_basis_local_indices as simulation_zero_basis_local_indices,
+    _zero_basis_local_indices,
 )
 
 pytestmark = pytest.mark.unit
@@ -49,9 +46,7 @@ class _ExchangeRequest:
 
 
 def test_zero_basis_indices_are_owned_by_simulation_and_preserve_wire_order():
-    assert _zero_basis_local_indices is simulation_zero_basis_local_indices
-
-    indices = simulation_zero_basis_local_indices(
+    indices = _zero_basis_local_indices(
         0,
         4,
         (1, 3),

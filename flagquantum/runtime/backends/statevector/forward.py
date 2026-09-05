@@ -18,12 +18,7 @@ from ....simulation.statevector_ops import (
     _basis_indices_for_wires,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
-)
-from ....simulation.statevector_ops import (
-    _compose_gate_matrices as _compose_gate_matrices,
-)
-from ....simulation.statevector_ops import (
-    _zero_basis_local_indices as _zero_basis_local_indices,
+    _zero_basis_local_indices,
 )
 from ...distributed.identity import DistributedIdentity
 from .environment import get, get_bool, mode
