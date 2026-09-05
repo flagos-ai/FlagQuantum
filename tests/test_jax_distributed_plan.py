@@ -6,6 +6,7 @@ import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 import flagquantum.runtime.planner as fqxp
 from flagquantum.runtime.backends.jax import (
     mps_boundary_exchange,
+    mps_evidence,
     runtime_environment,
     statevector_execution,
 )
@@ -2419,7 +2420,7 @@ def test_mps_accelerator_backward_evidence_rejects_multi_process_probe(monkeypat
             return 2
 
     monkeypatch.setattr(
-        jax_distributed,
+        mps_evidence,
         "_require_jax",
         lambda: (MultiProcessJAX(), object()),
     )
@@ -2428,16 +2429,16 @@ def test_mps_accelerator_backward_evidence_rejects_multi_process_probe(monkeypat
         RuntimeError,
         match="supports single-node local JAX devices only",
     ):
-        jax_distributed._collect_jax_mps_accelerator_backward_evidence()
+        mps_evidence._collect_jax_mps_accelerator_backward_evidence()
 
 
 def test_mps_accelerator_backward_evidence_collector_remains_internal_api():
-    assert hasattr(jax_distributed, "_collect_jax_mps_accelerator_backward_evidence")
+    assert hasattr(mps_evidence, "_collect_jax_mps_accelerator_backward_evidence")
     assert not hasattr(fq, "_collect_jax_mps_accelerator_backward_evidence")
 
 
 def test_mps_accelerator_probe_classification_is_development_only():
-    classification = jax_distributed._mps_accelerator_probe_classification()
+    classification = mps_evidence._mps_accelerator_probe_classification()
 
     assert classification == {
         "claim_evidence_type": "development_smoke",
@@ -2457,7 +2458,7 @@ def test_mps_accelerator_backward_evidence_rejects_cpu_only_devices(monkeypatch)
             return (CPUDevice(),)
 
     monkeypatch.setattr(
-        jax_distributed,
+        mps_evidence,
         "_require_jax",
         lambda: (CPUOnlyJAX(), object()),
     )
@@ -2466,7 +2467,7 @@ def test_mps_accelerator_backward_evidence_rejects_cpu_only_devices(monkeypatch)
         RuntimeError,
         match="requires at least two local non-CPU JAX devices",
     ):
-        jax_distributed._collect_jax_mps_accelerator_backward_evidence()
+        mps_evidence._collect_jax_mps_accelerator_backward_evidence()
 
 
 def test_minimal_mps_sharded_backward_skeleton_executes_without_full_replay():
