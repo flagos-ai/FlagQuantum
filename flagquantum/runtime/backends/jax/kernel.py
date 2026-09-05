@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from contextvars import ContextVar
 from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
@@ -11,35 +10,6 @@ from typing import Any
 import torch
 
 TorchCircuitBuilder = Callable[..., Any]
-
-
-_ACTIVE_JAX_COMPUTE_DTYPE: ContextVar[str] = ContextVar(
-    "flagquantum_jax_compute_dtype", default="complex64"
-)
-
-
-def _set_active_jax_compute_dtype(compute_dtype: str) -> str:
-    previous = _ACTIVE_JAX_COMPUTE_DTYPE.get()
-    _ACTIVE_JAX_COMPUTE_DTYPE.set(str(compute_dtype))
-    return previous
-
-
-def _jax_complex_dtype() -> Any:
-    import jax.numpy as jnp
-
-    return (
-        jnp.complex128
-        if _ACTIVE_JAX_COMPUTE_DTYPE.get() == "complex128"
-        else jnp.complex64
-    )
-
-
-def _jax_real_dtype() -> Any:
-    import jax.numpy as jnp
-
-    return (
-        jnp.float64 if _ACTIVE_JAX_COMPUTE_DTYPE.get() == "complex128" else jnp.float32
-    )
 
 
 def _torch_to_jax(parameters: torch.Tensor) -> Any:
@@ -700,8 +670,9 @@ def _jax_einsum_reorder(
     return jnp.einsum(equation, tensor, precision=matmul_precision)
 
 
-from .gate_primitives import (  # noqa: E402
+from ....simulation.jax_gate_primitives import (  # noqa: E402
     _jax_apply_matrix,
+    _jax_complex_dtype,
     _jax_controlled,
     _jax_cphase,
     _jax_cx,
@@ -711,6 +682,7 @@ from .gate_primitives import (  # noqa: E402
     _jax_hamiltonian_expectation,
     _jax_pauli_matrix,
     _jax_phase,
+    _jax_real_dtype,
     _jax_rx,
     _jax_rxx,
     _jax_ry,
@@ -732,6 +704,7 @@ from .gate_primitives import (  # noqa: E402
     _jax_z,
     _jax_z_sum,
     _jax_z_values,
+    _set_active_jax_compute_dtype,
 )
 
 
@@ -739,7 +712,7 @@ def __getattr__(name: str) -> Any:
     """Preserve private compatibility probes after kernel decomposition."""
     for module_name in (
         "flagquantum.runtime.backends.jax.mps_kernel",
-        "flagquantum.runtime.backends.jax.gate_primitives",
+        "flagquantum.simulation.jax_gate_primitives",
     ):
         module = import_module(module_name)
         if hasattr(module, name):

@@ -14,10 +14,28 @@ _ACTIVE_JAX_COMPUTE_DTYPE: ContextVar[str] = ContextVar(
 )
 
 
-from .kernel import (  # noqa: E402
-    _jax_complex_dtype,
-    _jax_real_dtype,
-)
+def _set_active_jax_compute_dtype(compute_dtype: str) -> str:
+    previous = _ACTIVE_JAX_COMPUTE_DTYPE.get()
+    _ACTIVE_JAX_COMPUTE_DTYPE.set(str(compute_dtype))
+    return previous
+
+
+def _jax_complex_dtype() -> Any:
+    import jax.numpy as jnp
+
+    return (
+        jnp.complex128
+        if _ACTIVE_JAX_COMPUTE_DTYPE.get() == "complex128"
+        else jnp.complex64
+    )
+
+
+def _jax_real_dtype() -> Any:
+    import jax.numpy as jnp
+
+    return (
+        jnp.float64 if _ACTIVE_JAX_COMPUTE_DTYPE.get() == "complex128" else jnp.float32
+    )
 
 
 def _jax_scalar_param(value: Any) -> Any:

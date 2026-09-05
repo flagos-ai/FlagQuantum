@@ -11,9 +11,9 @@
 复核进展（2026-09-05）：Statevector 的门矩阵作用、对角门数值作用、基态块合并和
 adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 `simulation/statevector_adjoint.py` 统一持有；本地分片调试路径仅处理索引、所有权和
-结果组装。TN 的高秩 contraction 回退与 Kahan 补偿累加已归
-`simulation/tensor_stages.py`。但 JAX 量子数值核、分布式 TN 反向数学仍位于
-`runtime/backends/`，且真实 Engine 与 contract fake 尚未运行同一套 conformance。
+结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_stages.py`；JAX 的 dtype、
+门矩阵、状态作用与局部观测量原语已归 `simulation/jax_gate_primitives.py`。但其余 JAX
+量子数值核仍位于 `runtime/backends/`，且真实 Engine 与 contract fake 尚未运行同一套 conformance。
 因此 `simulation_extraction` 必须保持 `in_progress`，不得以目录数量或单一 CPU 测试代替退出条件。
 
 首次盘点日期：2026-09-03；最近复核日期：2026-09-05
@@ -122,7 +122,8 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_network/distributed_execution.py`、`distributed_sliced_reverse.py`、`redistribution.py`、`partial_mesh.py` | 通信/执行适配（混合） | 局部 contraction 调用 | process group、P2P/all-to-all、rank 生命周期与聚合 |
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
-| `jax/gate_primitives.py`、`kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | JAX quantum kernel、VJP/pullback、contraction | backend/device 是否选择 JAX 由 Runtime/Platform |
+| `simulation/jax_gate_primitives.py` | 纯数值算法 | JAX dtype、门矩阵、statevector 门作用与局部 observable kernel | 无 Runtime/Platform 依赖；由 Runtime kernel 和 MPS kernel 共同复用 |
+| `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、contraction | backend/device 是否选择 JAX 由 Runtime/Platform |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
 | `jax/*execution.py`、`backend_dispatch.py`、`statevector_training.py`、`mps_gradients.py`、`tensor_network_gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
 | `jax/*planning.py`、`planning_core.py`、`runtime_environment.py`、`transport.py` | 资源或通信编排 | 算法约束/代价输入 | Runtime/Platform topology、environment、transport 和 device lifecycle |
