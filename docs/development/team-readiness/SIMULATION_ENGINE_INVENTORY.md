@@ -13,8 +13,8 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 `simulation/statevector_adjoint.py` 统一持有；本地分片调试路径仅处理索引、所有权和
 结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_stages.py`；JAX 的 dtype、
 门矩阵、状态作用、分片局部 observable/loss、MPS 批量更新和 pullback 已归
-`simulation/jax_*.py`。但其余 JAX 量子数值核仍位于 `runtime/backends/`，且真实 Engine
-与 contract fake 尚未运行同一套 conformance。
+`simulation/jax_*.py`。剩余候选集中在仍与分布式 MPS/TN 记录和调度交织的路径，且真实
+Engine 与 contract fake 尚未运行同一套 conformance。
 因此 `simulation_extraction` 必须保持 `in_progress`，不得以目录数量或单一 CPU 测试代替退出条件。
 
 首次盘点日期：2026-09-03；最近复核日期：2026-09-05
@@ -140,6 +140,11 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 形成重复算法权威时下沉，不拆成细碎公共函数。审计识别出的实质算法
 `mps_gradient_ownership.py` 跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算已迁入
 `simulation/jax_mps.py`，Runtime 仅保留 rank 张量记录到数值参数的适配。
+
+Statevector 复核确认 `statevector_kernels.py` 只剩指令/计划适配、collective 置换与
+`pmap`/`shard_map` 编排；初态、局部门、pair 合并、all-to-all delta 和 observable/loss
+数学均已委托 `simulation/jax_statevector.py`。该路径已到停止点，不为移动文件而复制
+Runtime shard/plan 类型。
 
 本轮同时删除 `mps_kernel.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
 上下文继续以 `simulation/jax_gate_primitives.py` 中的实现为唯一权威。
