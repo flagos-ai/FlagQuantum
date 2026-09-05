@@ -159,6 +159,14 @@ and contract projection. `ExecutionPlan.to_contract()` retains its signature,
 return type, lossy audit semantics, and deterministic identity. The removed
 adapter path is guarded against reintroduction.
 
+The remaining `flagquantum/compilation` package has now been audited down to
+three source modules: the protected plan/noisy-plan products, their protected
+serialization and identity implementation, and the single calibration adapter
+behind `ExecutionPlan.calibrated_cost()`. None is independently dead. This is a
+deliberate stopping point rather than unfinished file shuffling; further
+physical relocation requires the approved public-plan migration and matching
+serialization and consumer conformance evidence.
+
 ## Runtime plan assembly migration
 
 Final stable and noisy plan assembly now lives in `runtime/planner`, beside the
