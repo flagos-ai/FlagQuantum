@@ -25,7 +25,6 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
         mps_kernel._jax_mps_apply_adjacent_chain_scan
         is jax_mps.jax_mps_apply_adjacent_chain_scan
     )
-    assert mps_kernel._jax_mps_to_statevector is jax_mps.jax_mps_to_statevector
     assert (
         mps_kernel._jax_mps_initial_padded_stack is jax_mps.jax_mps_initial_padded_stack
     )

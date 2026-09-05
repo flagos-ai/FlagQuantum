@@ -39,9 +39,6 @@ from ....simulation.jax_mps import (  # noqa: E402
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_project_open_boundaries as _jax_mps_project_open_boundaries,
 )
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_to_statevector as _jax_mps_to_statevector,
-)
 
 
 def _jax_mps_from_circuit(
@@ -201,23 +198,3 @@ def _parse_nearest_cx_layers(
             index += 1
         layers.append(jnp.stack(local))
     return layers, _jax_cx()
-
-
-def _jax_mps_statevector_from_circuit(
-    circuit: Any,
-    n_wires: int,
-    parameters: Any,
-    *,
-    max_bond: int | None = None,
-    cutoff: float = 0.0,
-    matmul_precision: str | None = "highest",
-) -> Any:
-    tensors = _jax_mps_from_circuit(
-        circuit,
-        n_wires,
-        parameters,
-        max_bond=max_bond,
-        cutoff=cutoff,
-        matmul_precision=matmul_precision,
-    )
-    return _jax_mps_to_statevector(tensors, matmul_precision)
