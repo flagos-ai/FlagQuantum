@@ -1,4 +1,4 @@
-"""Portable single-device statevector execution using split FP32 storage."""
+"""Runtime policy, results, and conformance for split FP32 statevectors."""
 
 from __future__ import annotations
 

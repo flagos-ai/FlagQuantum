@@ -40,6 +40,14 @@ remaining lifecycle code into Simulation or split it into pass-through helper
 objects. The direct raw-program entry retains Compiler lowering only for its
 existing compatibility behavior.
 
+`split_real_imag.py` is the P0/P1 Runtime adapter. It owns accepted-scope
+validation, parameter binding and shift scheduling, observable parsing,
+platform preflight, precision/result records, and conformance reporting. The
+FP32 real/imag gate matrices, state evolution, and Pauli-term expectation live
+in `simulation.split_real_imag_statevector`. This is the P1 stopping point: do
+not move Runtime result types into Simulation or create a parallel observable
+contract merely to shorten the adapter.
+
 ## Local execution stopping point
 
 `local_execution.py` is not a second numerical-kernel authority. Its shard
