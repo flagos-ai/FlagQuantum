@@ -3,7 +3,7 @@
 import pytest
 
 from flagquantum.runtime.backends.jax import kernel, mps_kernel
-from flagquantum.simulation import jax_gate_primitives, jax_mps
+from flagquantum.simulation import jax_gate_primitives, jax_mps, jax_tensor_network
 
 pytestmark = pytest.mark.unit
 
@@ -37,6 +37,13 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert (
         kernel._jax_mps_hamiltonian_expectation
         is jax_mps.jax_mps_hamiltonian_expectation
+    )
+
+
+def test_runtime_reuses_simulation_owned_jax_tensor_network_contraction():
+    assert (
+        kernel._jax_contract_nodes_greedy
+        is jax_tensor_network.jax_contract_nodes_greedy
     )
 
 

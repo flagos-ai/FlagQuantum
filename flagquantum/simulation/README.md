@@ -84,6 +84,8 @@ It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
 Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
 The padded environment scan and generic Hamiltonian evaluation are also
 Simulation-owned.
+`jax_tensor_network.py` owns the dependency-light local JAX contraction kernel;
+Runtime retains circuit lowering, backend selection, and execution policy.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.
