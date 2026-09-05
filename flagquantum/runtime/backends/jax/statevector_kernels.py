@@ -6,15 +6,15 @@ from typing import Any, Callable, Sequence
 
 from ....simulation.jax_statevector import (
     jax_apply_local_statevector_gate,
+    jax_gate_basis_in_for_delta_and_local_input,
+    jax_local_positions_for_gate_input,
+    jax_rank_mask_for_touched_delta,
 )
 from ....simulation.jax_statevector import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
 )
 from .array_conversions import (
     _jax_basis_indices_for_wires,
-    _jax_gate_basis_in_for_delta_and_local_input,
-    _jax_local_positions_for_gate_input,
-    _jax_rank_mask_for_touched_delta,
     _parameterized_gate_matrix_as_jax,
 )
 from .planning_core import _jax_global_indices_by_rank_for_plan
@@ -120,7 +120,11 @@ def _jax_apply_all_to_all_statevector_instruction(
     )
     updated = jnp.zeros_like(amplitudes)
     for delta_code in range(2 ** len(touched)):
-        rank_mask = _jax_rank_mask_for_touched_delta(plan, touched, delta_code)
+        rank_mask = jax_rank_mask_for_touched_delta(
+            sharded_wires,
+            touched,
+            delta_code,
+        )
         if rank_mask:
             perm = tuple(
                 (rank, rank ^ rank_mask) for rank in range(int(plan.world_size))
@@ -131,7 +135,7 @@ def _jax_apply_all_to_all_statevector_instruction(
         else:
             source_amplitudes = amplitudes
         for local_input_basis in range(2 ** len(local_gate_wires)):
-            source_positions = _jax_local_positions_for_gate_input(
+            source_positions = jax_local_positions_for_gate_input(
                 global_indices,
                 n_wires=int(plan.n_wires),
                 local_wires=local_wires,
@@ -139,7 +143,7 @@ def _jax_apply_all_to_all_statevector_instruction(
                 local_input_basis=local_input_basis,
             )
             source_values = jnp.take(source_amplitudes, source_positions, axis=1)
-            basis_in = _jax_gate_basis_in_for_delta_and_local_input(
+            basis_in = jax_gate_basis_in_for_delta_and_local_input(
                 global_indices,
                 n_wires=int(plan.n_wires),
                 wires=wires,

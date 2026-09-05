@@ -44,6 +44,18 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
         statevector_kernels.jax_apply_local_statevector_gate
         is jax_statevector.jax_apply_local_statevector_gate
     )
+    assert (
+        statevector_kernels.jax_rank_mask_for_touched_delta
+        is jax_statevector.jax_rank_mask_for_touched_delta
+    )
+    assert (
+        statevector_kernels.jax_local_positions_for_gate_input
+        is jax_statevector.jax_local_positions_for_gate_input
+    )
+    assert (
+        statevector_kernels.jax_gate_basis_in_for_delta_and_local_input
+        is jax_statevector.jax_gate_basis_in_for_delta_and_local_input
+    )
 
 
 def test_runtime_reuses_simulation_owned_jax_mps_operations():
@@ -99,6 +111,23 @@ def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
     assert (
         kernel._jax_tensor_network_hamiltonian_expectation
         is jax_tensor_network.jax_tensor_network_hamiltonian_expectation
+    )
+
+
+def test_statevector_rank_mask_uses_sharded_wire_order():
+    sharded_wires = (0, 3, 5)
+
+    assert (
+        jax_statevector.jax_rank_mask_for_touched_delta(sharded_wires, (0, 5), 0b01)
+        == 0b001
+    )
+    assert (
+        jax_statevector.jax_rank_mask_for_touched_delta(sharded_wires, (0, 5), 0b10)
+        == 0b100
+    )
+    assert (
+        jax_statevector.jax_rank_mask_for_touched_delta(sharded_wires, (0, 5), 0b11)
+        == 0b101
     )
 
 

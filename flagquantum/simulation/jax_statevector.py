@@ -24,6 +24,88 @@ def jax_basis_indices_for_wires(
     return basis
 
 
+def jax_rank_mask_for_touched_delta(
+    sharded_wires: Sequence[int],
+    touched_sharded_wires: Sequence[int],
+    delta_code: int,
+) -> int:
+    """Translate touched sharded-wire deltas into an xor rank mask."""
+
+    sharded_wires = tuple(int(wire) for wire in sharded_wires)
+    touched = tuple(int(wire) for wire in touched_sharded_wires)
+    rank_mask = 0
+    for offset, wire in enumerate(touched):
+        delta_bit = (int(delta_code) >> (len(touched) - offset - 1)) & 1
+        if not delta_bit:
+            continue
+        bit_index = sharded_wires.index(wire)
+        rank_mask |= 1 << (len(sharded_wires) - bit_index - 1)
+    return int(rank_mask)
+
+
+def jax_local_positions_for_gate_input(
+    global_indices: Any,
+    *,
+    n_wires: int,
+    local_wires: Sequence[int],
+    local_gate_wires: Sequence[int],
+    local_input_basis: int,
+) -> Any:
+    """Map one local gate-input basis to positions in a rank-local shard."""
+
+    import jax.numpy as jnp
+
+    local_wires = tuple(int(wire) for wire in local_wires)
+    local_gate_wires = tuple(int(wire) for wire in local_gate_wires)
+    local_gate_positions = {wire: index for index, wire in enumerate(local_gate_wires)}
+    positions = jnp.zeros_like(global_indices)
+    for wire in local_wires:
+        gate_position = local_gate_positions.get(wire)
+        if gate_position is None:
+            bit = (global_indices >> (int(n_wires) - wire - 1)) & 1
+        else:
+            bit = (
+                int(local_input_basis) >> (len(local_gate_wires) - gate_position - 1)
+            ) & 1
+        positions = (positions << 1) | bit
+    return positions
+
+
+def jax_gate_basis_in_for_delta_and_local_input(
+    global_indices: Any,
+    *,
+    n_wires: int,
+    wires: Sequence[int],
+    touched_sharded_wires: Sequence[int],
+    local_gate_wires: Sequence[int],
+    delta_code: int,
+    local_input_basis: int,
+) -> Any:
+    """Construct input basis indices for one cross-rank gate contribution."""
+
+    import jax.numpy as jnp
+
+    wires = tuple(int(wire) for wire in wires)
+    touched = tuple(int(wire) for wire in touched_sharded_wires)
+    local_gate_wires = tuple(int(wire) for wire in local_gate_wires)
+    touched_positions = {wire: index for index, wire in enumerate(touched)}
+    local_gate_positions = {wire: index for index, wire in enumerate(local_gate_wires)}
+    basis = jnp.zeros_like(global_indices)
+    for wire_position, wire in enumerate(wires):
+        if wire in touched_positions:
+            output_bit = (global_indices >> (int(n_wires) - wire - 1)) & 1
+            delta_position = touched_positions[wire]
+            delta_bit = (int(delta_code) >> (len(touched) - delta_position - 1)) & 1
+            bit = output_bit ^ delta_bit
+        else:
+            local_position = local_gate_positions[wire]
+            bit = (
+                int(local_input_basis) >> (len(local_gate_wires) - local_position - 1)
+            ) & 1
+        basis = basis | (bit << (len(wires) - wire_position - 1))
+    return basis
+
+
 def jax_apply_matrix_to_batched_local_state(
     state: Any,
     matrix: Any,
