@@ -1,0 +1,89 @@
+# Statevector Runtime
+
+This package owns statevector execution planning and orchestration. It supports
+the local CPU reference path and the distributed execution path while keeping
+the public user entry points at `fq.Circuit`, `fq.plan`, and `fq.run`.
+
+The package is internal. Do not expose its planning, sharding, communication,
+checkpoint, or evidence objects as public API.
+
+## Responsibilities
+
+- `models.py`: immutable execution records and evidence.
+- `planning.py`: topology, sharding, memory, communication, and fusion plans.
+- `local_execution.py`: local CPU execution used to validate distributed
+  semantics, including rank-local state and index handling.
+- `forward.py`: communication-aware forward primitives, workspace handling,
+  and gate-dispatch orchestration.
+- `forward_executor.py`: the authoritative distributed forward execution loop.
+- `layout.py`: logical-to-physical wire layout and swap scheduling.
+- `checkpointing.py`: checkpoint policy and checkpoint selection.
+- `reverse.py`: the public reverse-mode boundary, validation, and evidence.
+- `reverse_adjoint.py`: adjoint replay, communication, and backward
+  orchestration.
+- `gradient_reduction.py`: distributed gradient-reduction lifecycle.
+- `training.py`: distributed optimizer and training lifecycle.
+- `kernel_dispatch.py`: kernel selection decisions and their evidence.
+- `environment.py` and `errors.py`: runtime configuration parsing and
+  statevector-specific failures.
+
+`noisy.py` and the `split_real_imag*` modules are specialized execution paths.
+They are not the default local CPU vertical slice.
+
+## Non-responsibilities
+
+This package does not own:
+
+- Core circuit or IR semantics and stable public APIs;
+- compiler lowering, optimization, or scheduling semantics;
+- numerical gate, expectation, or adjoint kernels, which belong in
+  `flagquantum/simulation/`;
+- provider and platform identity, capability discovery, or fallback policy;
+- benchmark baselines or release-performance claims.
+
+Runtime decides when and where work runs, how ranks communicate, and what
+execution evidence is returned. Simulation computes the numerical result.
+Simulation must not import Runtime. Unsupported execution and CPU fallback
+must be explicit; silent fallback is forbidden.
+
+## Ten-minute change path
+
+Start with the smallest authoritative file:
+
+| Change | Start here |
+| --- | --- |
+| Topology, sharding, memory, or communication plan | `planning.py` |
+| Rank-local indexing or local CPU reference execution | `local_execution.py` |
+| Distributed forward loop | `forward_executor.py` |
+| Forward communication primitive or workspace | `forward.py` |
+| Wire placement or swap scheduling | `layout.py` |
+| Checkpoint or reverse-mode policy and result | `checkpointing.py`, `reverse.py` |
+| Adjoint replay or backward communication | `reverse_adjoint.py` |
+| Gradient collectives | `gradient_reduction.py` |
+| Distributed training lifecycle | `training.py` |
+| Numerical kernel or precision implementation | `flagquantum/simulation/` |
+
+A normal feature should principally change one domain. If a change repeatedly
+requires edits across Core, Compiler, Runtime, Simulation, and Providers,
+recheck the boundary before adding another cross-layer object.
+
+## Verification
+
+For every change, keep the local CPU vertical slice green:
+
+```bash
+python -m pytest tests/integration/test_cpu_vertical_slice.py -q
+```
+
+For forward or reverse execution changes, also run:
+
+```bash
+python -m pytest \
+  tests/unit/test_issue041_statevector_forward.py \
+  tests/unit/test_issue042_statevector_reverse.py -q
+```
+
+Use `tests/test_distributed_statevector.py` for planning and rank-index changes,
+and `tests/unit/test_issue043_statevector_training.py` for training changes.
+CUDA and `torchrun` tests are required when the affected path and test
+environment support them; they do not replace the local CPU checks.
