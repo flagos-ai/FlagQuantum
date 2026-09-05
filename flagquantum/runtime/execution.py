@@ -919,25 +919,28 @@ def run_native(
             source=source,
             **mps_options,
         )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            **plan_options,
-        )
-        execution_plan = replace(
-            execution_plan,
-            noisy_execution_plan=build_noisy_execution_plan(
+        if provided_execution_plan is not None:
+            execution_plan = provided_execution_plan
+        else:
+            execution_plan = build_plan(
+                execution_ir,
+                noise_model=noise_model,
+                state_mode="mps",
+                **plan_options,
+            )
+            execution_plan = replace(
                 execution_plan,
-                representation="mps",
-                evolution="quantum_trajectory",
-                trajectories=1,
-                seed=options.get("seed"),
-                cutoff=float(options.get("cutoff", 0.0)),
-                memory_limit_bytes=options.get("memory_limit_bytes"),
-                noise_model_identity=getattr(noise_model, "identity", None),
-            ),
-        )
+                noisy_execution_plan=build_noisy_execution_plan(
+                    execution_plan,
+                    representation="mps",
+                    evolution="quantum_trajectory",
+                    trajectories=1,
+                    seed=options.get("seed"),
+                    cutoff=float(options.get("cutoff", 0.0)),
+                    memory_limit_bytes=options.get("memory_limit_bytes"),
+                    noise_model_identity=getattr(noise_model, "identity", None),
+                ),
+            )
     elif mode == "noisy_mps":
         from ..simulation.mps_execution import run_lowered_noisy_mps
 
@@ -969,27 +972,30 @@ def run_native(
             noise_model=noise_model,
             **mps_options,
         )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            **plan_options,
-        )
-        execution_plan = replace(
-            execution_plan,
-            noisy_execution_plan=build_noisy_execution_plan(
+        if provided_execution_plan is not None:
+            execution_plan = provided_execution_plan
+        else:
+            execution_plan = build_plan(
+                execution_ir,
+                noise_model=noise_model,
+                state_mode="mps",
+                **plan_options,
+            )
+            execution_plan = replace(
                 execution_plan,
-                representation="mps",
-                evolution="quantum_trajectory",
-                trajectories=int(options.get("trajectories", 32)),
-                seed=options.get("seed"),
-                min_trajectories=int(options.get("min_trajectories", 1)),
-                target_standard_error=options.get("target_standard_error"),
-                cutoff=float(options.get("cutoff", 0.0)),
-                memory_limit_bytes=options.get("memory_limit_bytes"),
-                noise_model_identity=getattr(noise_model, "identity", None),
-            ),
-        )
+                noisy_execution_plan=build_noisy_execution_plan(
+                    execution_plan,
+                    representation="mps",
+                    evolution="quantum_trajectory",
+                    trajectories=int(options.get("trajectories", 32)),
+                    seed=options.get("seed"),
+                    min_trajectories=int(options.get("min_trajectories", 1)),
+                    target_standard_error=options.get("target_standard_error"),
+                    cutoff=float(options.get("cutoff", 0.0)),
+                    memory_limit_bytes=options.get("memory_limit_bytes"),
+                    noise_model_identity=getattr(noise_model, "identity", None),
+                ),
+            )
     else:
         raise ValueError(
             "mode must be 'auto', 'statevector', 'distributed_statevector', 'density_matrix', 'mps', 'adaptive_mps', 'distributed_mps', 'jax_sharded_mps', 'tensor_network', 'distributed_tensor_network', 'jax_sharded_tensor_network', 'jax_sharded_tn', 'distributed_tn', 'tn', 'noisy_statevector', 'mps_trajectory', or 'noisy_mps'."

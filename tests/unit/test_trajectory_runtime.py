@@ -66,6 +66,55 @@ def test_run_native_uses_lowered_mps_entrypoints(monkeypatch):
     assert sampled.n_trajectories == 2
 
 
+@pytest.mark.parametrize(
+    ("mode", "options"),
+    (
+        ("mps_trajectory", {}),
+        ("noisy_mps", {"trajectories": 2, "seed": 5}),
+    ),
+)
+def test_planned_mps_noise_execution_preserves_lowering_and_plan_identity(
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+    options: dict[str, int],
+):
+    circuit = fq.Circuit(1).x(0)
+    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    expected, plan = fqb.run_native(
+        circuit,
+        noise_model=noise_model,
+        mode=mode,
+        return_plan=True,
+        dtype=torch.complex64,
+        **options,
+    )
+    lowered = fq.lower_noise_model(circuit, noise_model)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("planned MPS noise execution must not lower noise again")
+
+    monkeypatch.setattr("flagquantum.runtime.execution.lower_noise_model", forbidden)
+    actual, returned_plan = fqb.run_native(
+        lowered,
+        noise_model=noise_model,
+        mode=mode,
+        return_plan=True,
+        _execution_plan=plan,
+        dtype=torch.complex64,
+        **options,
+    )
+
+    assert returned_plan is plan
+    if mode == "mps_trajectory":
+        torch.testing.assert_close(actual.expectation_z(0), expected.expectation_z(0))
+    else:
+        torch.testing.assert_close(
+            actual.expectation_z_mean,
+            expected.expectation_z_mean,
+        )
+        assert actual.n_trajectories == expected.n_trajectories
+
+
 def test_trajectory_ownership_preserves_global_ids_across_world_sizes():
     expected = tuple(range(17))
 

@@ -253,11 +253,12 @@ def _execute_lowered_noisy_mps_trajectory(
             config=config,
         )
     else:
+        source_dtype = getattr(source, "dtype", None)
         mps = MPSState.zero(
             lowered.n_wires,
             bsz=bsz if not hasattr(source, "bsz") else source.bsz,
             device=device,
-            dtype=dtype if not hasattr(source, "dtype") else source.dtype,
+            dtype=source_dtype if isinstance(source_dtype, torch.dtype) else dtype,
             config=config,
         )
     return run_local_noisy_mps_trajectory(
