@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from ....core.ir import CircuitIR
+from ....simulation.jax_statevector import jax_initial_statevector_shard
 from ...distributed.backend_policy import DistributedBackendPolicy
 from .common import node_count as _node_count
 from .planning_core import JAXDistributedQuantumPlan
@@ -440,11 +441,11 @@ def _initialize_jax_statevector_shard(
     global_indices = _jnp_device_put(
         jnp.asarray(indices_tuple, dtype=index_dtype), device
     )
-    amplitudes = jnp.zeros((plan.bsz, len(indices_tuple)), dtype=dtype)
-    if 0 in indices_tuple:
-        amplitudes = amplitudes.at[:, indices_tuple.index(0)].set(
-            jnp.asarray(1.0 + 0.0j, dtype=dtype)
-        )
+    amplitudes = jax_initial_statevector_shard(
+        global_indices,
+        batch_size=int(plan.bsz),
+        dtype=dtype,
+    )
     amplitudes = _jnp_device_put(amplitudes, device)
     return JAXStatevectorShardState(
         rank=int(rank),

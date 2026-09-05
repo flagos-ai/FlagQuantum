@@ -24,6 +24,28 @@ def jax_basis_indices_for_wires(
     return basis
 
 
+def jax_initial_statevector_shard(
+    global_indices: Any,
+    *,
+    batch_size: int,
+    dtype: Any,
+) -> Any:
+    """Create a batched rank-local shard of the global zero state."""
+
+    import jax.numpy as jnp
+
+    amplitudes = jnp.zeros(
+        (int(batch_size), int(global_indices.shape[0])),
+        dtype=dtype,
+    )
+    initial = jnp.where(
+        global_indices == 0,
+        jnp.asarray(1.0 + 0.0j, dtype=amplitudes.dtype),
+        jnp.asarray(0.0 + 0.0j, dtype=amplitudes.dtype),
+    )
+    return amplitudes.at[:, :].set(initial.reshape(1, -1))
+
+
 def jax_rank_mask_for_touched_delta(
     sharded_wires: Sequence[int],
     touched_sharded_wires: Sequence[int],

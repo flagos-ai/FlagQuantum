@@ -8,6 +8,7 @@ from ....simulation.jax_statevector import (
     jax_accumulate_all_to_all_statevector_delta,
     jax_apply_local_statevector_gate,
     jax_combine_pair_exchanged_statevector,
+    jax_initial_statevector_shard,
     jax_rank_mask_for_touched_delta,
     jax_sharded_statevector_loss,
 )
@@ -207,16 +208,11 @@ def _jax_pmap_statevector_parameter_loss(
         try:
             local_circuit = circuit_builder(_JAXParameterProxy(params))
             local_instructions = tuple(local_circuit.to_ir().instructions)
-            amplitudes = jnp.zeros(
-                (int(plan.bsz), int(local_size)),
+            amplitudes = jax_initial_statevector_shard(
+                global_indices,
+                batch_size=int(plan.bsz),
                 dtype=_jax_complex_dtype(complex_bytes),
             )
-            initial = jnp.where(
-                global_indices == 0,
-                jnp.asarray(1.0 + 0.0j, dtype=amplitudes.dtype),
-                jnp.asarray(0.0 + 0.0j, dtype=amplitudes.dtype),
-            )
-            amplitudes = amplitudes.at[:, :].set(initial.reshape(1, -1))
             for instruction in local_instructions:
                 amplitudes = _jax_apply_pair_exchange_statevector_instruction(
                     amplitudes,
@@ -347,16 +343,11 @@ def _jax_shard_map_statevector_parameter_loss(
         try:
             local_circuit = circuit_builder(_JAXParameterProxy(params))
             local_instructions = tuple(local_circuit.to_ir().instructions)
-            amplitudes = jnp.zeros(
-                (int(plan.bsz), int(local_size)),
+            amplitudes = jax_initial_statevector_shard(
+                global_indices,
+                batch_size=int(plan.bsz),
                 dtype=_jax_complex_dtype(complex_bytes),
             )
-            initial = jnp.where(
-                global_indices == 0,
-                jnp.asarray(1.0 + 0.0j, dtype=amplitudes.dtype),
-                jnp.asarray(0.0 + 0.0j, dtype=amplitudes.dtype),
-            )
-            amplitudes = amplitudes.at[:, :].set(initial.reshape(1, -1))
             for instruction in local_instructions:
                 amplitudes = _jax_apply_pair_exchange_statevector_instruction(
                     amplitudes,

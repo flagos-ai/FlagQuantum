@@ -9,6 +9,7 @@ from flagquantum.runtime.backends.jax import (
     mps_execution,
     mps_kernel,
     mps_pullbacks,
+    statevector_gradient_records,
     statevector_kernels,
 )
 from flagquantum.simulation import (
@@ -47,6 +48,14 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
     assert (
         statevector_kernels.jax_apply_local_statevector_gate
         is jax_statevector.jax_apply_local_statevector_gate
+    )
+    assert (
+        statevector_kernels.jax_initial_statevector_shard
+        is jax_statevector.jax_initial_statevector_shard
+    )
+    assert (
+        statevector_gradient_records.jax_initial_statevector_shard
+        is jax_statevector.jax_initial_statevector_shard
     )
     assert (
         statevector_kernels.jax_rank_mask_for_touched_delta
