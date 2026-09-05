@@ -1,8 +1,7 @@
 """Local statevector numerical execution.
 
-Simulation owns the numerical loop. ``Circuit`` remains a thin public facade
-and temporarily owns its lifecycle caches while the directory migration is in
-progress.
+Simulation owns the numerical loop and cache contents. ``Circuit`` remains the
+thin public facade and owns cache containers and mutation-time invalidation.
 """
 
 from __future__ import annotations

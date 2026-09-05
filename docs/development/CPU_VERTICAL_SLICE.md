@@ -45,9 +45,14 @@ wrappers merely to make `Circuit` contain no tensor operations. Future work in
 this area must remove a real duplicate numerical authority, enable an
 implementation replacement, or close a demonstrated cross-domain leak.
 
-For this physical migration, Simulation constructs the initial state while
-`Circuit` still owns its lifecycle cache containers; moving those containers is
-separate work and must not create a second public execution contract.
+Simulation constructs the initial state and owns the algorithms that populate
+statevector caches. `Circuit` deliberately retains the cache containers and
+mutation-time invalidation: circuit construction, dynamic instructions, and
+reusable module binding all invalidate the same execution state. Moving those
+containers would spread a new cache-owner abstraction across Core, Runtime,
+Simulation, and Benchmarking without changing product behavior. Revisit this
+decision only when a second circuit implementation needs the same lifecycle or
+the current container prevents implementation replacement.
 
 The result reports the selected device, platform provider, simulation engine,
 and `single_device_fast_path` semantics. An explicit CPU request reports
