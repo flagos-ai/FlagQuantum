@@ -287,7 +287,7 @@ _EXPORTS = {
         "execute_torch_distributed_statevector",
     ),
     "initialize_statevector_shard": (
-        "flagquantum.runtime.backends.statevector.forward",
+        "flagquantum.runtime.backends.statevector.local_execution",
         "initialize_statevector_shard",
     ),
     "plan_distributed_statevector": (

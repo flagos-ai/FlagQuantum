@@ -34,11 +34,7 @@ from .kernel_dispatch import (
     select_triton_kernel,
     triton_available,
 )
-from .local_execution import (
-    _basis_offset,
-    _wire_mask,
-    initialize_statevector_shard,  # noqa: F401 - compatibility monkeypatch seam
-)
+from .local_execution import _basis_offset, _wire_mask
 from .models import (
     DistributedStatevectorPlan,
     StatevectorShardState,
