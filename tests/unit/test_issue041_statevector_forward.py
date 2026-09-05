@@ -132,6 +132,23 @@ def test_gate_basis_block_combination_is_usable_without_runtime_models():
     assert scratch_bytes == 4 * updated.numel() * updated.element_size()
 
 
+def test_gate_basis_block_combination_supports_batched_matrices():
+    vectors = torch.tensor([[1, 3], [2, 4]], dtype=torch.complex64)
+    matrices = torch.tensor(
+        [[[2, 3], [5, 7]], [[11, 13], [17, 19]]], dtype=torch.complex64
+    )
+    basis_inputs = tuple(
+        vectors[:, basis : basis + 1].expand(-1, 2) for basis in range(2)
+    )
+
+    updated, _ = _combine_gate_basis_blocks_eager(
+        basis_inputs, matrices, torch.arange(2)
+    )
+
+    expected = torch.bmm(matrices, vectors.unsqueeze(-1)).squeeze(-1)
+    torch.testing.assert_close(updated, expected)
+
+
 def test_flagos_exchange_uses_provider_neutral_wait():
     flagos_request = _ExchangeRequest()
     cuda_request = _ExchangeRequest()

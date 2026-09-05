@@ -601,11 +601,28 @@ def _combine_gate_basis_blocks_eager(
 ) -> tuple[torch.Tensor, int]:
     """Combine already-located input blocks for each gate basis state."""
 
-    updated = basis_inputs[0] * matrix[output_basis, 0].reshape(1, -1)
+    def coefficients(basis: int) -> torch.Tensor:
+        if matrix.ndim == 2:
+            return matrix[output_basis, basis].reshape(1, -1)
+        if matrix.ndim == 3:
+            return matrix[:, output_basis, basis]
+        raise ValueError("gate matrix must have rank 2 or 3")
+
+    updated = basis_inputs[0] * coefficients(0)
     for basis, input_values in enumerate(basis_inputs[1:], start=1):
-        coefficients = matrix[output_basis, basis].reshape(1, -1)
-        updated = updated + input_values * coefficients
+        updated = updated + input_values * coefficients(basis)
     return updated, 4 * updated.numel() * updated.element_size()
+
+
+def _apply_gate_basis_vectors_eager(
+    values: torch.Tensor,
+    matrix: torch.Tensor,
+) -> tuple[torch.Tensor, int]:
+    """Apply a gate matrix to already-grouped basis vectors."""
+
+    updated = values @ matrix.transpose(-2, -1)
+    scratch_bytes = (values.numel() + updated.numel()) * values.element_size()
+    return updated, scratch_bytes
 
 
 def _apply_local_gate_eager(
@@ -658,12 +675,9 @@ def _apply_local_gate_eager(
         ):
             raise ValueError("local gate requires cross-shard amplitudes")
         values = amplitudes[:, local_required]
-        updated = values @ matrix.transpose(-2, -1)
+        updated, working_bytes = _apply_gate_basis_vectors_eager(values, matrix)
         out[:, local_required] = updated
-        peak = max(
-            peak,
-            output_bytes + (values.numel() + updated.numel()) * values.element_size(),
-        )
+        peak = max(peak, output_bytes + working_bytes)
     return out, peak
 
 

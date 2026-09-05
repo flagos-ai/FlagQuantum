@@ -8,7 +8,11 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
-from ....simulation.statevector_ops import _basis_indices_for_wires, _instruction_matrix
+from ....simulation.statevector_ops import (
+    _apply_diagonal_gate_eager,
+    _apply_gate_basis_vectors_eager,
+    _instruction_matrix,
+)
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
@@ -156,17 +160,22 @@ def apply_gate_to_statevector_shard(
         device=shard_state.amplitudes.device, dtype=shard_state.amplitudes.dtype
     )
     shard = shard_state.shard
-    if torch.count_nonzero(matrix - torch.diag(torch.diagonal(matrix))) == 0:
-        basis_indices = _basis_indices_for_wires(
+    diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
+    diagonal_matrix = (
+        torch.diag(diagonal) if matrix.ndim == 2 else torch.diag_embed(diagonal)
+    )
+    if torch.count_nonzero(matrix - diagonal_matrix) == 0:
+        amplitudes, _ = _apply_diagonal_gate_eager(
+            shard_state.amplitudes,
+            diagonal,
             shard_state.global_indices,
+            wires,
             n_wires=plan.n_wires,
-            wires=wires,
         )
-        factors = torch.diagonal(matrix)[basis_indices].reshape(1, -1)
         return StatevectorShardState(
             rank=shard_state.rank,
             shard=shard,
-            amplitudes=shard_state.amplitudes * factors,
+            amplitudes=amplitudes,
             global_indices=shard_state.global_indices,
         )
     out = shard_state.amplitudes.clone()
@@ -190,7 +199,8 @@ def apply_gate_to_statevector_shard(
             )
         local_indices = tuple(position_by_global[index] for index in global_indices)
         vector = shard_state.amplitudes[:, local_indices]
-        out[:, local_indices] = vector @ matrix.transpose(-2, -1)
+        updated, _ = _apply_gate_basis_vectors_eager(vector, matrix)
+        out[:, local_indices] = updated
     return StatevectorShardState(
         rank=shard_state.rank,
         shard=shard,
@@ -289,7 +299,7 @@ def apply_gate_to_statevector_shards(
                 ],
                 dim=-1,
             )
-            updated = vector @ matrix.transpose(-2, -1)
+            updated, _ = _apply_gate_basis_vectors_eager(vector, matrix)
             for basis_index, (shard_index, local_index) in enumerate(locations):
                 out_amplitudes[shard_index][:, local_index] = updated[:, basis_index]
 
