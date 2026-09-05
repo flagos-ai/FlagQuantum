@@ -15,6 +15,7 @@ from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
+    _combine_rank_pair_gate_eager,
 )
 from ....simulation.statevector_ops import (
     _compose_gate_matrices as _compose_gate_matrices,
@@ -782,8 +783,9 @@ def _vectorized_pair_exchange_gate(
         if pipelined and chunk_index + 1 < len(chunks):
             following = post(chunk_index + 1)
             workspace.pipeline_prefetch_count += 1
-        basis_zero, basis_one = (local, remote) if rank_basis == 0 else (remote, local)
-        updated = basis_zero * matrix[rank_basis, 0] + basis_one * matrix[rank_basis, 1]
+        updated, numeric_scratch_bytes = _combine_rank_pair_gate_eager(
+            local, remote, matrix, rank_basis=rank_basis
+        )
         out[:, start:end] = updated
         communication_count += 1
         sent_bytes = local.numel() * local.element_size()
@@ -795,7 +797,7 @@ def _vectorized_pair_exchange_gate(
             output_bytes
             + _independent_tensor_bytes(local, shard_state.amplitudes)
             + exchange_storage_bytes
-            + 3 * updated.numel() * updated.element_size(),
+            + numeric_scratch_bytes,
         )
         if chunk_index + 1 < len(chunks):
             current = following if following is not None else post(chunk_index + 1)

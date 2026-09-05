@@ -556,6 +556,21 @@ def _apply_diagonal_gate_eager(
     return out, factors.numel() * factors.element_size()
 
 
+def _combine_rank_pair_gate_eager(
+    local: torch.Tensor,
+    remote: torch.Tensor,
+    matrix: torch.Tensor,
+    *,
+    rank_basis: int,
+) -> tuple[torch.Tensor, int]:
+    """Combine one local and remote amplitude block for a sharded one-wire gate."""
+
+    basis_zero, basis_one = (local, remote) if rank_basis == 0 else (remote, local)
+    updated = basis_zero * matrix[rank_basis, 0] + basis_one * matrix[rank_basis, 1]
+    scratch_bytes = 3 * updated.numel() * updated.element_size()
+    return updated, scratch_bytes
+
+
 def _apply_local_gate_eager(
     amplitudes: torch.Tensor,
     matrix: torch.Tensor,

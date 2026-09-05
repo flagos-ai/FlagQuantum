@@ -99,7 +99,7 @@
 | `simulation/density_matrix.py` | 纯数值算法 | density 构造、算子展开、unitary/Kraus 演化、IR 数值循环和 density 测量 | 无；稳定结果投影仍由 Runtime/Core 负责 |
 | `runtime/noise_registry.py` 的 density adapter | 执行适配 | 无数值实现 | plan 验证、选项过滤、lowering 调用和 executor 分派 |
 | `statevector/triton.py`、`split_real_imag*.py` | 数值算法 + Kernel 调用（混合） | 状态演化、精度扩展、expectation/VJP | 设备身份、provider evidence、精度/回退授权、conformance 汇总由 Platform/Runtime；Double-Single 门矩阵生成已移至 `simulation/double_single_*_gates.py` |
-| `statevector/forward.py`、`reverse_adjoint.py` | 数值算法（高度混合） | 无 Runtime 类型依赖的 rank-local eager 普通门与对角门作用已归 `simulation/statevector_ops.py`；旋转门导数与复内积已归 `simulation/statevector_adjoint.py`；cross-shard 数学仍待解耦 | process group、collective 生命周期、rank/topology、全局索引生成与 chunk policy、Triton 路由、环境开关、通信 evidence；local expectation 仍依赖这些 Runtime 语义，暂不强迁 |
+| `statevector/forward.py`、`reverse_adjoint.py` | 数值算法（高度混合） | 无 Runtime 类型依赖的 rank-local eager 普通门、对角门与 rank-pair 合并数学已归 `simulation/statevector_ops.py`；旋转门导数与复内积已归 `simulation/statevector_adjoint.py`；其余 cross-shard 数学仍待解耦 | process group、collective 生命周期、rank/topology、全局索引生成与 chunk policy、Triton 路由、环境开关、通信 evidence；local expectation 仍依赖这些 Runtime 语义，暂不强迁 |
 | `statevector/reverse.py`、`gradient_reduction.py` | Kernel/执行适配（混合） | autograd bridge 与局部梯度数学 | process group、bucket policy、all-reduce、ownership/evidence |
 | `statevector/local_execution.py` | 执行适配（混合） | shard 数值 reference kernel | backend policy、模拟 rank 编排、真实 transport、结果报告；当前数值函数直接依赖 Runtime 的 plan、shard ownership 和 state records，在最小 Simulation Contract 获批前不得强迁或复制这些类型 |
 | `statevector/planning.py`、`models.py`、`environment.py`、`layout.py`、`kernel_dispatch.py` | 资源或通信编排 | 仅算法约束/代价模型输入 | Runtime plan/topology/policy/环境；Platform kernel capability；Core-owned records |

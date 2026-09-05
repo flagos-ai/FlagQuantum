@@ -14,8 +14,8 @@ semantics and may use PyTorch or isolated accelerator kernels.
 `statevector.py` owns the local execution loop and `statevector_ops.py` owns its
 private layouts, gate application, gate-matrix composition, fusion, and tensor
 operations, including compressed-to-local basis index expansion and the
-rank-local PyTorch eager gate and diagonal-gate kernels. Neither file is a new
-public API.
+rank-local PyTorch eager gate, diagonal-gate, and sharded rank-pair combination
+kernels. Neither file is a new public API.
 `Circuit.state()` remains the
 stable user facade and Runtime enters through `run_local_statevector()`.
 

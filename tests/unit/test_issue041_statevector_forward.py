@@ -23,6 +23,7 @@ from flagquantum.runtime.backends.statevector.local_execution import (
 from flagquantum.simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
+    _combine_rank_pair_gate_eager,
 )
 from flagquantum.simulation.statevector_ops import (
     _zero_basis_local_indices as simulation_zero_basis_local_indices,
@@ -93,6 +94,22 @@ def test_diagonal_eager_gate_kernel_is_usable_without_runtime_models():
         evolved, torch.tensor([[1, 1j, 1, 1j]], dtype=torch.complex64)
     )
     assert scratch_bytes == evolved.numel() * evolved.element_size()
+
+
+@pytest.mark.parametrize("rank_basis", (0, 1))
+def test_rank_pair_gate_kernel_is_usable_without_runtime_models(rank_basis):
+    local = torch.tensor([[1 + 2j, 3 + 4j]], dtype=torch.complex64)
+    remote = torch.tensor([[5 + 6j, 7 + 8j]], dtype=torch.complex64)
+    matrix = torch.tensor([[2, 3], [5, 7]], dtype=torch.complex64)
+    basis_zero, basis_one = (local, remote) if rank_basis == 0 else (remote, local)
+
+    updated, scratch_bytes = _combine_rank_pair_gate_eager(
+        local, remote, matrix, rank_basis=rank_basis
+    )
+
+    expected = basis_zero * matrix[rank_basis, 0] + basis_one * matrix[rank_basis, 1]
+    torch.testing.assert_close(updated, expected)
+    assert scratch_bytes == 3 * updated.numel() * updated.element_size()
 
 
 def test_flagos_exchange_uses_provider_neutral_wait():
