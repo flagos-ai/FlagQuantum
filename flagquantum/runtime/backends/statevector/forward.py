@@ -887,7 +887,7 @@ def _vectorized_cross_shard_cx(
         and out.is_contiguous()
     )
     if use_triton_pack:
-        from .triton import (
+        from ....simulation.triton_kernels.statevector_gates import (
             pack_complex64_control_one,
             unpack_complex64_control_one,
         )

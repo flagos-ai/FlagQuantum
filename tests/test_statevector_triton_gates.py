@@ -13,7 +13,7 @@ def _require_cuda() -> None:
 
 def test_control_one_pack_unpack_matches_index_reference() -> None:
     _require_cuda()
-    from flagquantum.runtime.backends.statevector.triton import (
+    from flagquantum.simulation.triton_kernels.statevector_gates import (
         pack_complex64_control_one,
         unpack_complex64_control_one,
     )

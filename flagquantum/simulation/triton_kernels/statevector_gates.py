@@ -7,6 +7,145 @@ import triton
 import triton.language as tl
 
 
+@triton.jit(do_not_specialize=["bit_position", "compressed_start"])
+def _complex64_control_one_pack_kernel(
+    state_parts,
+    packed_parts,
+    chunk_count,
+    batch_count,
+    state_batch_stride,
+    bit_position,
+    compressed_start,
+    BLOCK: tl.constexpr,  # noqa: N803
+):
+    linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
+    total = chunk_count * batch_count
+    mask = linear < total
+    batch = linear // chunk_count
+    compressed = compressed_start + linear - batch * chunk_count
+    low_mask = (1 << bit_position) - 1
+    low = compressed & low_mask
+    state_index = (
+        batch * state_batch_stride
+        + ((compressed - low) << 1)
+        + low
+        + (1 << bit_position)
+    )
+    real = tl.load(state_parts + 2 * state_index, mask=mask, other=0.0)
+    imag = tl.load(state_parts + 2 * state_index + 1, mask=mask, other=0.0)
+    tl.store(packed_parts + 2 * linear, real, mask=mask)
+    tl.store(packed_parts + 2 * linear + 1, imag, mask=mask)
+
+
+@triton.jit(do_not_specialize=["bit_position", "compressed_start"])
+def _complex64_control_one_unpack_kernel(
+    packed_parts,
+    output_parts,
+    chunk_count,
+    batch_count,
+    output_batch_stride,
+    bit_position,
+    compressed_start,
+    BLOCK: tl.constexpr,  # noqa: N803
+):
+    linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
+    total = chunk_count * batch_count
+    mask = linear < total
+    batch = linear // chunk_count
+    compressed = compressed_start + linear - batch * chunk_count
+    low_mask = (1 << bit_position) - 1
+    low = compressed & low_mask
+    output_index = (
+        batch * output_batch_stride
+        + ((compressed - low) << 1)
+        + low
+        + (1 << bit_position)
+    )
+    real = tl.load(packed_parts + 2 * linear, mask=mask, other=0.0)
+    imag = tl.load(packed_parts + 2 * linear + 1, mask=mask, other=0.0)
+    tl.store(output_parts + 2 * output_index, real, mask=mask)
+    tl.store(output_parts + 2 * output_index + 1, imag, mask=mask)
+
+
+def pack_complex64_control_one(
+    state: torch.Tensor,
+    *,
+    bit_position: int,
+    compressed_start: int,
+    compressed_end: int,
+) -> torch.Tensor:
+    """Pack the control-one subspace without materializing address indices."""
+
+    if (
+        state.device.type != "cuda"
+        or state.dtype != torch.complex64
+        or state.ndim != 2
+        or not state.is_contiguous()
+    ):
+        raise ValueError("Triton CX pack requires contiguous CUDA complex64 [B, N]")
+    chunk_count = compressed_end - compressed_start
+    if chunk_count <= 0 or not 0 <= bit_position < state.shape[1].bit_length() - 1:
+        raise ValueError("invalid Triton CX pack range or bit position")
+    packed = torch.empty(
+        (state.shape[0], chunk_count), dtype=state.dtype, device=state.device
+    )
+    block = 256
+    _complex64_control_one_pack_kernel[
+        (triton.cdiv(chunk_count * state.shape[0], block),)
+    ](
+        torch.view_as_real(state),
+        torch.view_as_real(packed),
+        chunk_count,
+        state.shape[0],
+        state.stride(0),
+        int(bit_position),
+        int(compressed_start),
+        BLOCK=block,
+        num_warps=8,
+        num_stages=2,
+    )
+    return packed
+
+
+def unpack_complex64_control_one(
+    packed: torch.Tensor,
+    output: torch.Tensor,
+    *,
+    bit_position: int,
+    compressed_start: int,
+) -> None:
+    """Scatter a packed control-one subspace without address-index tensors."""
+
+    if (
+        packed.device.type != "cuda"
+        or packed.dtype != torch.complex64
+        or packed.ndim != 2
+        or not packed.is_contiguous()
+        or output.device != packed.device
+        or output.dtype != packed.dtype
+        or output.ndim != 2
+        or not output.is_contiguous()
+        or output.shape[0] != packed.shape[0]
+    ):
+        raise ValueError("Triton CX unpack requires matching CUDA complex64 tensors")
+    chunk_count = packed.shape[1]
+    block = 256
+    _complex64_control_one_unpack_kernel[
+        (triton.cdiv(chunk_count * packed.shape[0], block),)
+    ](
+        torch.view_as_real(packed),
+        torch.view_as_real(output),
+        chunk_count,
+        packed.shape[0],
+        output.stride(0),
+        int(bit_position),
+        int(compressed_start),
+        BLOCK=block,
+        num_warps=8,
+        num_stages=2,
+    )
+
+
 @triton.jit
 def _single_qubit_matrix_kernel(
     state_parts,
@@ -414,4 +553,10 @@ def cx_sequence(
     )
 
 
-__all__ = ["cx_sequence", "ry_rz_pair", "single_qubit_matrix"]
+__all__ = [
+    "cx_sequence",
+    "pack_complex64_control_one",
+    "ry_rz_pair",
+    "single_qubit_matrix",
+    "unpack_complex64_control_one",
+]

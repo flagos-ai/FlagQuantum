@@ -16,6 +16,9 @@ private layouts, gate application, gate-matrix composition, fusion, and tensor
 operations, including basis-bit extraction, compressed-to-local index expansion,
 and the rank-local PyTorch eager gate, diagonal-gate, rank-pair, and gate-basis
 block combination kernels. Neither file is a new public API.
+`triton_kernels/statevector_gates.py` owns flat CUDA statevector kernels,
+including control-one packing and scattering used around cross-shard CX
+transport. Runtime decides when to use them and owns the transport itself.
 `Circuit.state()` remains the
 stable user facade and Runtime enters through `run_local_statevector()`.
 
