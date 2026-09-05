@@ -32,7 +32,6 @@ from .kernel_dispatch import (
     KernelDecision,
     KernelDispatchEvidence,
     select_triton_kernel,
-    triton_available,
 )
 from .local_execution import _basis_offset, _wire_mask
 from .models import (
@@ -80,10 +79,6 @@ def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
 
 def _triton_local_cx_enabled() -> bool:
     return _triton_local_cx_decision().accelerated
-
-
-def _triton_available() -> bool:
-    return triton_available()
 
 
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:

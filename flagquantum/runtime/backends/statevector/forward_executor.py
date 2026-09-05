@@ -23,7 +23,6 @@ from .forward import (
     _ket_checkpoint_mode,
     _local_block_fusion_enabled,
     _local_block_fusion_width,
-    _triton_available,
     _triton_local_cx_decision,
     _triton_local_cx_segment_enabled,
     _triton_transpose_1q_enabled,
@@ -35,7 +34,7 @@ from .forward import (
     _vectorized_subgroup_exchange_gate,
     communication_aware_wire_layout,
 )
-from .kernel_dispatch import KernelDispatchEvidence
+from .kernel_dispatch import KernelDispatchEvidence, triton_available
 from .layout import (
     distributed_swap_rank_local_bits,
     plan_persistent_statevector_layout,
@@ -184,7 +183,7 @@ def execute_torch_distributed_statevector(
         torch.empty_like(shard_state.amplitudes)
         if (
             local_compilation
-            and _triton_available()
+            and triton_available()
             and _triton_local_cx_segment_enabled(ir)
             and resolved_device.type == "cuda"
             and dtype == torch.complex64
