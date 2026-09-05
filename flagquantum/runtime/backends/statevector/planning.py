@@ -35,23 +35,6 @@ _DIAGONAL_GATES = {
     "cphase",
 }
 _TARGET_LAST_GATES = {"cx", "cnot", "cy", "crx", "cry", "crz"}
-_PARAM_ALIASES = {
-    "rx": ("theta",),
-    "ry": ("theta",),
-    "rz": ("theta",),
-    "phase": ("theta",),
-    "p": ("theta",),
-    "u1": ("theta",),
-    "u2": ("phi", "lbd"),
-    "u3": ("theta", "phi", "lbd"),
-    "crx": ("theta",),
-    "cry": ("theta",),
-    "crz": ("theta",),
-    "cphase": ("theta",),
-    "rxx": ("theta",),
-    "ryy": ("theta",),
-    "rzz": ("theta",),
-}
 
 
 def _is_power_of_two(value: int) -> bool:

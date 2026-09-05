@@ -9,38 +9,6 @@ from ...distributed.backend_policy import (
     DistributedBackendPolicy,
 )
 
-_DIAGONAL_GATES = {
-    "z",
-    "s",
-    "sdg",
-    "t",
-    "tdg",
-    "rz",
-    "phase",
-    "p",
-    "u1",
-    "cz",
-    "cphase",
-}
-_TARGET_LAST_GATES = {"cx", "cnot", "cy", "crx", "cry", "crz"}
-_PARAM_ALIASES = {
-    "rx": ("theta",),
-    "ry": ("theta",),
-    "rz": ("theta",),
-    "phase": ("theta",),
-    "p": ("theta",),
-    "u1": ("theta",),
-    "u2": ("phi", "lbd"),
-    "u3": ("theta", "phi", "lbd"),
-    "crx": ("theta",),
-    "cry": ("theta",),
-    "crz": ("theta",),
-    "cphase": ("theta",),
-    "rxx": ("theta",),
-    "ryy": ("theta",),
-    "rzz": ("theta",),
-}
-
 
 @dataclass(frozen=True)
 class StatevectorShard:

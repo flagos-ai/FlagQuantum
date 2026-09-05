@@ -33,21 +33,6 @@ from .planning import (
     trace_distributed_statevector_plan,
 )
 
-_DIAGONAL_GATES = {
-    "z",
-    "s",
-    "sdg",
-    "t",
-    "tdg",
-    "rz",
-    "phase",
-    "p",
-    "u1",
-    "cz",
-    "cphase",
-}
-_TARGET_LAST_GATES = {"cx", "cnot", "cy", "crx", "cry", "crz"}
-
 
 def _segment_by_index(
     execution_segments: Sequence[StatevectorExecutionSegment],
