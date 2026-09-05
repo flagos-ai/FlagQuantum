@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 import torch
 
@@ -28,9 +28,8 @@ from ....simulation.double_single_device_gates import (
     encode_device_double_single_matrix,
 )
 from ....simulation.double_single_statevector import (
-    apply_double_single_gate,
     double_single_pauli_term_expectation,
-    normalize_double_single_state,
+    run_double_single_statevector,
 )
 from .split_real_imag import (
     _normalized_observables,
@@ -310,44 +309,40 @@ def _execute_p4_statevector(
     renormalize_every: int,
     shifted_occurrence: tuple[int, str, int] | None = None,
 ) -> SplitRealImagDeviceDoubleSingleStatevectorResult:
-    if renormalize_every < 0:
-        raise ValueError("renormalize_every must be non-negative")
     resolved_device = resolve_platform_device(device)
     profile, profile_hash, evidence_ids, provider = _profile_identity(
         device=resolved_device, preflight=preflight
     )
-    high = torch.zeros(2**ir.n_wires, dtype=torch.float32, device=resolved_device)
-    high[0] = 1.0
-    zero = torch.zeros_like(high)
-    state = DoubleSingleComplexTensor(
-        DoubleSingleTensor(high, zero),
-        DoubleSingleTensor(torch.zeros_like(high), torch.zeros_like(high)),
-    )
-    normalization_count = 0
     host_ingestion = False
-    for index, instruction in enumerate(ir.instructions):
-        shifted = shifted_occurrence is not None and shifted_occurrence[:2] == (
-            index,
-            "theta",
-        )
-        shift_direction = shifted_occurrence[2] if shifted_occurrence is not None else 0
-        matrix, instruction_host_ingestion = encode_device_double_single_matrix(
-            instruction,
-            bindings=bindings,
-            device=resolved_device,
-            shift_parameter="theta" if shifted else None,
-            shift_direction=shift_direction if shifted else 0,
-        )
-        host_ingestion = host_ingestion or instruction_host_ingestion
-        state = apply_double_single_gate(
-            state, matrix, instruction.wires, n_wires=ir.n_wires
-        )
-        gate_number = index + 1
-        if renormalize_every and gate_number % renormalize_every == 0:
-            state = normalize_double_single_state(state)
-            normalization_count += 1
-        if state.real.high.device.type != resolved_device.type:
-            raise RuntimeError("P4 statevector escaped the requested logical device")
+
+    def encoded_gates() -> Iterator[tuple[DoubleSingleComplexTensor, Sequence[int]]]:
+        nonlocal host_ingestion
+        for index, instruction in enumerate(ir.instructions):
+            shifted = shifted_occurrence is not None and shifted_occurrence[:2] == (
+                index,
+                "theta",
+            )
+            shift_direction = (
+                shifted_occurrence[2] if shifted_occurrence is not None else 0
+            )
+            matrix, instruction_host_ingestion = encode_device_double_single_matrix(
+                instruction,
+                bindings=bindings,
+                device=resolved_device,
+                shift_parameter="theta" if shifted else None,
+                shift_direction=shift_direction if shifted else 0,
+            )
+            host_ingestion = host_ingestion or instruction_host_ingestion
+            yield matrix, instruction.wires
+
+    state, normalization_count = run_double_single_statevector(
+        encoded_gates(),
+        n_wires=ir.n_wires,
+        device=resolved_device,
+        renormalize_every=renormalize_every,
+    )
+    if state.real.high.device.type != resolved_device.type:
+        raise RuntimeError("P4 statevector escaped the requested logical device")
     return SplitRealImagDeviceDoubleSingleStatevectorResult(
         state=state,
         circuit_hash=ir.content_hash,

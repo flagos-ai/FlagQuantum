@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 import torch
 
@@ -154,6 +154,33 @@ def normalize_double_single_state(
     return _scale_state(state, norm_squared.reciprocal_sqrt())
 
 
+def run_double_single_statevector(
+    encoded_gates: Iterable[tuple[DoubleSingleComplexTensor, Sequence[int]]],
+    *,
+    n_wires: int,
+    device: torch.device,
+    renormalize_every: int,
+) -> tuple[DoubleSingleComplexTensor, int]:
+    """Evolve a zero state from lazily encoded Double-Single gates."""
+
+    if renormalize_every < 0:
+        raise ValueError("renormalize_every must be non-negative")
+    high = torch.zeros(2**n_wires, dtype=torch.float32, device=device)
+    high[0] = 1.0
+    zero = torch.zeros_like(high)
+    state = DoubleSingleComplexTensor(
+        DoubleSingleTensor(high, zero),
+        DoubleSingleTensor(torch.zeros_like(high), torch.zeros_like(high)),
+    )
+    normalization_count = 0
+    for gate_number, (matrix, wires) in enumerate(encoded_gates, start=1):
+        state = apply_double_single_gate(state, matrix, wires, n_wires=n_wires)
+        if renormalize_every and gate_number % renormalize_every == 0:
+            state = normalize_double_single_state(state)
+            normalization_count += 1
+    return state, normalization_count
+
+
 def double_single_pauli_term_expectation(
     state: DoubleSingleComplexTensor,
     ops: Sequence[tuple[int, str]],
@@ -182,4 +209,5 @@ __all__ = (
     "apply_double_single_gate",
     "double_single_pauli_term_expectation",
     "normalize_double_single_state",
+    "run_double_single_statevector",
 )

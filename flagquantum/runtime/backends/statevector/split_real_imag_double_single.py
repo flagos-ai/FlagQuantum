@@ -36,9 +36,8 @@ from ....numerics.double_single import (
 from ....providers.platform import get_platform_runtime, resolve_platform_device
 from ....simulation.double_single_host_gates import encode_host_double_single_matrix
 from ....simulation.double_single_statevector import (
-    apply_double_single_gate,
     double_single_pauli_term_expectation,
-    normalize_double_single_state,
+    run_double_single_statevector,
 )
 from .split_real_imag import (
     _normalized_observables,
@@ -387,33 +386,25 @@ def _execute_bound_p3_statevector(
     preflight: bool,
     renormalize_every: int,
 ) -> SplitRealImagDoubleSingleStatevectorResult:
-    if renormalize_every < 0:
-        raise ValueError("renormalize_every must be non-negative")
     resolved_device = resolve_platform_device(device)
     profile, profile_hash, evidence_ids, provider = _profile_identity(
         device=resolved_device, preflight=preflight
     )
-    amplitude_count = 2**ir.n_wires
-    high = torch.zeros(amplitude_count, dtype=torch.float32, device=resolved_device)
-    high[0] = 1.0
-    zero = torch.zeros_like(high)
-    state = DoubleSingleComplexTensor(
-        DoubleSingleTensor(high, zero),
-        DoubleSingleTensor(torch.zeros_like(high), torch.zeros_like(high)),
-    )
-    normalization_count = 0
-    for index, instruction in enumerate(ir.instructions, start=1):
-        state = apply_double_single_gate(
-            state,
+    encoded_gates = (
+        (
             encode_host_double_single_matrix(instruction, device=resolved_device),
             instruction.wires,
-            n_wires=ir.n_wires,
         )
-        if renormalize_every and index % renormalize_every == 0:
-            state = normalize_double_single_state(state)
-            normalization_count += 1
-        if state.real.high.device.type != resolved_device.type:
-            raise RuntimeError("P3 statevector escaped the requested logical device")
+        for instruction in ir.instructions
+    )
+    state, normalization_count = run_double_single_statevector(
+        encoded_gates,
+        n_wires=ir.n_wires,
+        device=resolved_device,
+        renormalize_every=renormalize_every,
+    )
+    if state.real.high.device.type != resolved_device.type:
+        raise RuntimeError("P3 statevector escaped the requested logical device")
     return SplitRealImagDoubleSingleStatevectorResult(
         state=state,
         circuit_hash=ir.content_hash,
