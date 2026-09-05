@@ -87,6 +87,10 @@ def test_run_plan_does_not_replan_or_recompile(monkeypatch: pytest.MonkeyPatch) 
 
     monkeypatch.setattr("flagquantum.runtime.planner.plan", forbidden)
     monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.execution.select_execution_mode", forbidden
+    )
+    monkeypatch.setattr("flagquantum.runtime.execution.build_plan", forbidden)
 
     result = fq.run(plan)
 
