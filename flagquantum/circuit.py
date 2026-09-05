@@ -25,7 +25,6 @@ from .core.parameters import (
 )
 from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
-from .ops.complex_ops import complex_conj, complex_mul
 from .ops.matrices import GATE_MAT_DICT
 
 if TYPE_CHECKING:
@@ -476,12 +475,9 @@ class Circuit:
 def expectation(*ops: tuple[Any, Sequence[int]], ket: torch.Tensor) -> torch.Tensor:
     """Compute a small dense expectation value with native PyTorch tensors."""
 
-    state = ket.reshape(1, -1) if ket.ndim == 1 else ket
-    n_wires = int(torch.log2(torch.tensor(state.shape[-1], dtype=torch.float32)).item())
-    circuit = Circuit(n_wires, bsz=state.shape[0], device=state.device, inputs=state)
-    for matrix, wires in ops:
-        circuit.any(*wires, unitary=matrix)
-    return complex_mul(complex_conj(state), circuit.state()).sum(dim=-1)
+    from .simulation.statevector import _expectation_from_operators
+
+    return _expectation_from_operators(*ops, ket=ket)
 
 
 _CONTROLLED_TWO_QUBIT_GATES = {

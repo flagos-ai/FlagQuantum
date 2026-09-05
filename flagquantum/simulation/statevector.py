@@ -8,7 +8,7 @@ progress.
 from __future__ import annotations
 
 from numbers import Number
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
@@ -546,6 +546,29 @@ def _sample_statevector(
         generator=generator,
     )
     return _bits_from_indices(samples, circuit.n_wires) if return_bits else samples
+
+
+def _expectation_from_operators(
+    *ops: tuple[Any, Sequence[int]],
+    ket: torch.Tensor,
+) -> torch.Tensor:
+    """Evaluate a dense operator product against an explicit statevector."""
+
+    from ..circuit import Circuit
+
+    input_state = ket.reshape(1, -1) if ket.ndim == 1 else ket
+    n_wires = int(
+        torch.log2(torch.tensor(input_state.shape[-1], dtype=torch.float32)).item()
+    )
+    circuit = Circuit(
+        n_wires,
+        bsz=input_state.shape[0],
+        device=input_state.device,
+        inputs=input_state,
+    )
+    for matrix, wires in ops:
+        circuit.any(*wires, unitary=matrix)
+    return complex_mul(complex_conj(input_state), state(circuit)).sum(dim=-1)
 
 
 def run_local_statevector(

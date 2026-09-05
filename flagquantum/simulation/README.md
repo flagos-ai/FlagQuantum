@@ -12,7 +12,8 @@ semantics and may use PyTorch or isolated accelerator kernels.
 ## Local statevector path
 
 `statevector.py` owns local initial-state construction, the execution loop,
-dense Z/Pauli observables, and computational-basis sampling;
+dense Z/Pauli observables, computational-basis sampling, and the numerical body
+behind the public dense `expectation(...)` helper;
 `statevector_ops.py` owns its private layouts, gate application, gate-matrix
 composition, fusion, and tensor operations, including basis-bit extraction,
 compressed-to-local index expansion, and the rank-local PyTorch eager gate,

@@ -23,10 +23,11 @@ device availability and identity. Compiler remains the only stage that changes
 the program.
 
 `simulation.statevector` now owns the local numerical loop and dense Z/Pauli
-observables. `Circuit.state()`, `Circuit.expectation_z()`, and
-`Circuit.expectation_ps()` are thin public facades; `Circuit.sample()` retains
-public format validation while Simulation owns multinomial and bit conversion
-numerics. Existing users and Runtime callers do not change.
+observables. `Circuit.state()`, `Circuit.expectation_z()`,
+`Circuit.expectation_ps()`, and the public `expectation(...)` helper are thin
+facades; `Circuit.sample()` retains public format validation while Simulation
+owns multinomial and bit conversion numerics. Existing users and Runtime
+callers do not change.
 For this physical migration, Simulation constructs the initial state while
 `Circuit` still owns its lifecycle cache containers; moving those containers is
 separate work and must not create a second public execution contract.
