@@ -252,6 +252,33 @@ def apply_gate_pair(
     )
 
 
+def pauli_term_expectation(
+    real: torch.Tensor,
+    imag: torch.Tensor,
+    ops: Sequence[tuple[int, str]],
+    coefficient: Any,
+    *,
+    n_wires: int,
+) -> torch.Tensor:
+    """Evaluate one real-coefficient Pauli term with split FP32 tensors."""
+
+    transformed_real = real
+    transformed_imag = imag
+    for wire, name in ops:
+        matrix_real, matrix_imag = fixed_matrix_pair(name, device=real.device)
+        transformed_real, transformed_imag = apply_gate_pair(
+            transformed_real,
+            transformed_imag,
+            matrix_real,
+            matrix_imag,
+            (wire,),
+            n_wires=n_wires,
+        )
+    overlap = torch.sum(real * transformed_real + imag * transformed_imag)
+    weight = torch.as_tensor(coefficient, device=real.device, dtype=torch.float32)
+    return weight * overlap
+
+
 def run_split_real_imag_statevector(
     ir: CircuitIR, *, device: torch.device
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -279,5 +306,6 @@ __all__ = (
     "apply_gate_pair",
     "fixed_matrix_pair",
     "instruction_matrix_pair",
+    "pauli_term_expectation",
     "run_split_real_imag_statevector",
 )

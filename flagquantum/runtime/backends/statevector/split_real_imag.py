@@ -19,13 +19,8 @@ from ....core.parameters import (
 from ....providers.platform import get_platform_runtime, resolve_platform_device
 from ....simulation.split_real_imag_statevector import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
+    pauli_term_expectation,
     run_split_real_imag_statevector,
-)
-from ....simulation.split_real_imag_statevector import (
-    apply_gate_pair as _apply_gate_pair,
-)
-from ....simulation.split_real_imag_statevector import (
-    fixed_matrix_pair as _fixed_matrix,
 )
 
 SPLIT_REAL_IMAG_SCHEMA = "flagquantum_split_real_imag_statevector_result_v1"
@@ -502,29 +497,6 @@ def _normalized_observables(
     return tuple(terms)
 
 
-def _pauli_term_expectation(
-    state: SplitRealImagStatevectorResult,
-    term: _PauliTerm,
-    *,
-    n_wires: int,
-) -> torch.Tensor:
-    transformed_real = state.real
-    transformed_imag = state.imag
-    for wire, name in term.ops:
-        matrix_real, matrix_imag = _fixed_matrix(name, device=state.device)
-        transformed_real, transformed_imag = _apply_gate_pair(
-            transformed_real,
-            transformed_imag,
-            matrix_real,
-            matrix_imag,
-            (wire,),
-            n_wires=n_wires,
-        )
-    base = torch.sum(state.real * transformed_real + state.imag * transformed_imag)
-    coefficient = term.coefficient.to(device=state.device, dtype=torch.float32)
-    return coefficient * base
-
-
 def _expectation_from_bound_p1_ir(
     ir: CircuitIR,
     terms: Sequence[_PauliTerm],
@@ -540,7 +512,16 @@ def _expectation_from_bound_p1_ir(
         executor="split_real_imag_statevector_p1",
     )
     term_values = torch.stack(
-        [_pauli_term_expectation(state, term, n_wires=ir.n_wires) for term in terms]
+        [
+            pauli_term_expectation(
+                state.real,
+                state.imag,
+                term.ops,
+                term.coefficient,
+                n_wires=ir.n_wires,
+            )
+            for term in terms
+        ]
     )
     return SplitRealImagExpectationResult(
         state=state,

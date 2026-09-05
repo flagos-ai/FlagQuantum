@@ -55,9 +55,9 @@ Runtime retains precision authorization, platform selection, execution evidence,
 and conformance reporting.
 
 `split_real_imag_statevector.py` owns P0/P1's FP32 real/imag gate matrices,
-gate application, and the local zero-state execution loop. Runtime retains
-parameter binding, preflight, platform selection, observables, result
-construction, and conformance reporting.
+gate application, Pauli-term expectation, and the local zero-state execution
+loop. Runtime retains parameter binding, preflight, platform selection,
+observable parsing, result construction, and conformance reporting.
 
 `mps_local.py` owns the single-device, noiseless MPS instruction loop.
 `mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory
