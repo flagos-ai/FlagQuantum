@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from .jax_gate_primitives import _jax_swap
+from .jax_gate_primitives import _jax_complex_dtype, _jax_pauli_matrix, _jax_swap
 
 
 def jax_mps_apply_one(tensor: Any, matrix: Any, matmul_precision: str | None) -> Any:
@@ -127,3 +127,53 @@ def jax_mps_to_statevector(
     for tensor in tensors[1:]:
         state = jnp.einsum("...l,lsr->...sr", state, tensor, precision=matmul_precision)
     return state.reshape(-1)
+
+
+def jax_mps_transfer_identity(
+    env: Any, tensor: Any, matmul_precision: str | None
+) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.einsum(
+        "ij,ipr,jps->rs", env, jnp.conj(tensor), tensor, precision=matmul_precision
+    )
+
+
+def jax_mps_transfer_op(
+    env: Any, tensor: Any, op: Any, matmul_precision: str | None
+) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.einsum(
+        "ij,ipr,pq,jqs->rs",
+        env,
+        jnp.conj(tensor),
+        op,
+        tensor,
+        precision=matmul_precision,
+    )
+
+
+def jax_mps_transfer_identity_right(
+    env: Any, tensor: Any, matmul_precision: str | None
+) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.einsum(
+        "ipr,rs,jps->ij", tensor, env, jnp.conj(tensor), precision=matmul_precision
+    )
+
+
+def jax_mps_expectation_product_ops(
+    tensors: Sequence[Any],
+    ops: dict[int, Any],
+    matmul_precision: str | None,
+) -> Any:
+    import jax.numpy as jnp
+
+    env = jnp.ones((1, 1), dtype=_jax_complex_dtype())
+    identity = _jax_pauli_matrix("i")
+    for wire, tensor in enumerate(tensors):
+        op = ops.get(int(wire), identity)
+        env = jax_mps_transfer_op(env, tensor, op, matmul_precision)
+    return jnp.real(env[0, 0])

@@ -29,10 +29,22 @@ from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
 )
 from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_expectation_product_ops as _jax_mps_expectation_product_ops,
+)
+from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_split_pair as _jax_mps_split_pair,
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_to_statevector as _jax_mps_to_statevector,
+)
+from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_transfer_identity as _jax_mps_transfer_identity,
+)
+from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_transfer_identity_right as _jax_mps_transfer_identity_right,
+)
+from ....simulation.jax_mps import (  # noqa: E402
+    jax_mps_transfer_op as _jax_mps_transfer_op,
 )
 
 
@@ -377,56 +389,6 @@ def _jax_mps_statevector_from_circuit(
         matmul_precision=matmul_precision,
     )
     return _jax_mps_to_statevector(tensors, matmul_precision)
-
-
-def _jax_mps_transfer_identity(
-    env: Any, tensor: Any, matmul_precision: str | None
-) -> Any:
-    import jax.numpy as jnp
-
-    return jnp.einsum(
-        "ij,ipr,jps->rs", env, jnp.conj(tensor), tensor, precision=matmul_precision
-    )
-
-
-def _jax_mps_transfer_op(
-    env: Any, tensor: Any, op: Any, matmul_precision: str | None
-) -> Any:
-    import jax.numpy as jnp
-
-    return jnp.einsum(
-        "ij,ipr,pq,jqs->rs",
-        env,
-        jnp.conj(tensor),
-        op,
-        tensor,
-        precision=matmul_precision,
-    )
-
-
-def _jax_mps_transfer_identity_right(
-    env: Any, tensor: Any, matmul_precision: str | None
-) -> Any:
-    import jax.numpy as jnp
-
-    return jnp.einsum(
-        "ipr,rs,jps->ij", tensor, env, jnp.conj(tensor), precision=matmul_precision
-    )
-
-
-def _jax_mps_expectation_product_ops(
-    tensors: Sequence[Any],
-    ops: dict[int, Any],
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    env = jnp.ones((1, 1), dtype=_jax_complex_dtype())
-    identity = _jax_pauli_matrix("i")
-    for wire, tensor in enumerate(tensors):
-        op = ops.get(int(wire), identity)
-        env = _jax_mps_transfer_op(env, tensor, op, matmul_precision)
-    return jnp.real(env[0, 0])
 
 
 def _jax_mps_z_values(

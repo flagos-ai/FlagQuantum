@@ -22,3 +22,9 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert mps_kernel._jax_mps_apply_one is jax_mps.jax_mps_apply_one
     assert mps_kernel._jax_mps_split_pair is jax_mps.jax_mps_split_pair
     assert mps_kernel._jax_mps_to_statevector is jax_mps.jax_mps_to_statevector
+    assert mps_kernel._jax_mps_transfer_identity is jax_mps.jax_mps_transfer_identity
+    assert mps_kernel._jax_mps_transfer_op is jax_mps.jax_mps_transfer_op
+    assert (
+        mps_kernel._jax_mps_expectation_product_ops
+        is jax_mps.jax_mps_expectation_product_ops
+    )
