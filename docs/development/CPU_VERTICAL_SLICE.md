@@ -22,8 +22,10 @@ Simulation owns the numerical statevector call. The CPU Platform Provider owns
 device availability and identity. Compiler remains the only stage that changes
 the program.
 
-`simulation.statevector` now owns the local numerical loop. `Circuit.state()`
-is a thin public facade, so existing users and Runtime callers do not change.
+`simulation.statevector` now owns the local numerical loop and dense Z/Pauli
+observables. `Circuit.state()`, `Circuit.expectation_z()`, and
+`Circuit.expectation_ps()` are thin public facades, so existing users and
+Runtime callers do not change.
 For this first physical migration, `Circuit` still owns the initial-state and
 lifecycle cache containers; moving those containers is separate work and must
 not create a second public execution contract.

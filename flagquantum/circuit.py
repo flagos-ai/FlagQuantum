@@ -27,7 +27,7 @@ from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
 from .ops.complex_ops import complex_conj, complex_mul
 from .ops.matrices import GATE_MAT_DICT
-from .simulation.statevector_ops import _apply_matrix, _bits_from_indices
+from .simulation.statevector_ops import _bits_from_indices
 
 if TYPE_CHECKING:
     from .compilation.models import ExecutionPlan
@@ -343,24 +343,11 @@ class Circuit:
         )
 
     def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
+        from .simulation.statevector import _expectation_z
+
         if wires is None:
             wires = range(self.n_wires)
-        wires = _normalize_wires(wires)
-        probs = self.probabilities()
-        key = (wires, str(probs.device), probs.dtype)
-        signs = self._statevector_z_signs.get(key)
-        if signs is None:
-            basis = torch.arange(
-                probs.shape[-1], dtype=torch.int64, device=probs.device
-            )
-            signs = torch.stack(
-                tuple(
-                    1 - 2 * ((basis >> (self.n_wires - 1 - wire)) & 1) for wire in wires
-                ),
-                dim=-1,
-            ).to(dtype=probs.dtype)
-            self._statevector_z_signs[key] = signs
-        return probs @ signs
+        return _expectation_z(self, _normalize_wires(wires))
 
     def expectation_ps(
         self,
@@ -369,37 +356,20 @@ class Circuit:
         x: Sequence[int] | None = None,
         y: Sequence[int] | None = None,
     ) -> torch.Tensor:
+        from .simulation.statevector import _expectation_pauli_string
+
         x_set = set(x or ())
         y_set = set(y or ())
         z_set = set(z or ())
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
             raise ValidationError("A wire can appear in only one of x, y, or z.")
 
-        state = self.state()
-        transformed = state
-        for wire in x or ():
-            transformed = _apply_matrix(
-                transformed,
-                GATE_MAT_DICT["x"].to(device=state.device, dtype=state.dtype),
-                (wire,),
-                self.n_wires,
-            )
-        for wire in y or ():
-            transformed = _apply_matrix(
-                transformed,
-                GATE_MAT_DICT["y"].to(device=state.device, dtype=state.dtype),
-                (wire,),
-                self.n_wires,
-            )
-        for wire in z or ():
-            transformed = _apply_matrix(
-                transformed,
-                GATE_MAT_DICT["z"].to(device=state.device, dtype=state.dtype),
-                (wire,),
-                self.n_wires,
-            )
-        value = complex_mul(complex_conj(state), transformed).sum(dim=-1)
-        return torch.real(value)
+        return _expectation_pauli_string(
+            self,
+            x=tuple(x or ()),
+            y=tuple(y or ()),
+            z=tuple(z or ()),
+        )
 
     def sample(
         self,

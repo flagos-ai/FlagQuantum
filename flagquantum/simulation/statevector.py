@@ -15,6 +15,8 @@ import torch
 from ..core.ir import CircuitIR, Instruction
 from ..core.operator_schema import canonical_opcode
 from ..core.runtime_config import runtime_config
+from ..ops.complex_ops import complex_conj, complex_mul
+from ..ops.matrices import GATE_MAT_DICT
 from .statevector_ops import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
@@ -456,6 +458,55 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 )
     circuit._state_cache = output
     return output
+
+
+def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
+    """Evaluate per-wire Z expectations for a local statevector circuit."""
+
+    probabilities = torch.abs(state(circuit)) ** 2
+    key = (wires, str(probabilities.device), probabilities.dtype)
+    signs = circuit._statevector_z_signs.get(key)
+    if signs is None:
+        basis = torch.arange(
+            probabilities.shape[-1],
+            dtype=torch.int64,
+            device=probabilities.device,
+        )
+        signs = torch.stack(
+            tuple(
+                1 - 2 * ((basis >> (circuit.n_wires - 1 - wire)) & 1) for wire in wires
+            ),
+            dim=-1,
+        ).to(dtype=probabilities.dtype)
+        circuit._statevector_z_signs[key] = signs
+    return probabilities @ signs
+
+
+def _expectation_pauli_string(
+    circuit: Circuit,
+    *,
+    x: tuple[int, ...],
+    y: tuple[int, ...],
+    z: tuple[int, ...],
+) -> torch.Tensor:
+    """Evaluate one X/Y/Z product observable for a local statevector circuit."""
+
+    current_state = state(circuit)
+    transformed = current_state
+    for name, wires in (("x", x), ("y", y), ("z", z)):
+        matrix = GATE_MAT_DICT[name].to(
+            device=current_state.device,
+            dtype=current_state.dtype,
+        )
+        for wire in wires:
+            transformed = _apply_matrix(
+                transformed,
+                matrix,
+                (wire,),
+                circuit.n_wires,
+            )
+    value = complex_mul(complex_conj(current_state), transformed).sum(dim=-1)
+    return torch.real(value)
 
 
 def run_local_statevector(

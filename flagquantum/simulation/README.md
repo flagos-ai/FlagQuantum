@@ -11,11 +11,12 @@ semantics and may use PyTorch or isolated accelerator kernels.
 
 ## Local statevector path
 
-`statevector.py` owns the local execution loop and `statevector_ops.py` owns its
-private layouts, gate application, gate-matrix composition, fusion, and tensor
-operations, including basis-bit extraction, compressed-to-local index expansion,
-and the rank-local PyTorch eager gate, diagonal-gate, rank-pair, and gate-basis
-block combination kernels. Neither file is a new public API.
+`statevector.py` owns the local execution loop and dense Z/Pauli observables;
+`statevector_ops.py` owns its private layouts, gate application, gate-matrix
+composition, fusion, and tensor operations, including basis-bit extraction,
+compressed-to-local index expansion, and the rank-local PyTorch eager gate,
+diagonal-gate, rank-pair, and gate-basis block combination kernels. Neither file
+is a new public API.
 `triton_kernels/statevector_gates.py` owns flat CUDA statevector kernels,
 including buffered and transpose-fused one-qubit gates, CNOT segments, and
 control-one packing/scattering used around cross-shard CX transport. Runtime
