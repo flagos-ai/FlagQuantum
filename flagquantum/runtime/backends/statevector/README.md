@@ -38,7 +38,10 @@ through `simulation.noisy_statevector`; all gate, channel, normalization,
 observable, and Pauli fast-path numerics are implemented there. Do not move the
 remaining lifecycle code into Simulation or split it into pass-through helper
 objects. The direct raw-program entry retains Compiler lowering only for its
-existing compatibility behavior.
+existing compatibility behavior. Planned execution calls the private lowered-IR
+entry directly, so it executes the channels sealed into the plan and never
+invokes Compiler lowering a second time. Keep the public wrapper signature
+unchanged until an approved compatibility migration can relocate it.
 
 `split_real_imag.py` is the P0/P1 Runtime adapter. It owns accepted-scope
 validation, parameter binding and shift scheduling, observable parsing,

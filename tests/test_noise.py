@@ -847,6 +847,44 @@ def test_auto_mode_selects_batched_statevector_when_trajectory_controls_fit():
     assert torch.allclose(result.expectation_z, torch.ones(1, 1), atol=1e-6)
 
 
+def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    circuit = fq.Circuit(1).x(0)
+    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    expected, plan = fqb.run_native(
+        circuit,
+        noise_model=model,
+        mode="noisy_statevector",
+        trajectories=4,
+        seed=7,
+        return_plan=True,
+    )
+    lowered = fq.lower_noise_model(circuit, model)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("planned noisy execution must not lower noise again")
+
+    monkeypatch.setattr(
+        "flagquantum.compiler.lower_noise_model",
+        forbidden,
+    )
+    actual, returned_plan = fqb.run_native(
+        lowered,
+        noise_model=model,
+        mode="noisy_statevector",
+        trajectories=4,
+        seed=7,
+        return_plan=True,
+        _execution_plan=plan,
+    )
+
+    assert returned_plan.state_mode == plan.state_mode
+    assert returned_plan.noisy_execution_plan == plan.noisy_execution_plan
+    assert torch.equal(actual.expectation_z, expected.expectation_z)
+    assert actual.trajectory_seeds == expected.trajectory_seeds
+
+
 def test_auto_mode_fails_when_every_noisy_candidate_exceeds_memory():
     circuit = fq.Circuit(2)
     circuit.x(0)

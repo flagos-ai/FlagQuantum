@@ -9,7 +9,7 @@ from typing import Any
 import torch
 
 from ....circuit import Circuit
-from ....compiler import lower_noise_model
+from ....core.ir import CircuitIR
 from ....noise import NoiseModel
 from ....simulation.noisy_statevector import (
     run_noisy_trajectory_batch,
@@ -172,8 +172,64 @@ def run_noisy_statevector(
     trajectory batch size does not change a seeded result.
     """
 
+    from ....compiler import lower_noise_model
+
+    initial_state = (
+        circuit_or_ir.initial_state() if isinstance(circuit_or_ir, Circuit) else None
+    )
+    return _run_lowered_noisy_statevector(
+        lower_noise_model(circuit_or_ir, noise_model),
+        noise_model,
+        trajectories=trajectories,
+        trajectory_batch_size=trajectory_batch_size,
+        seed=seed,
+        device=device,
+        dtype=dtype,
+        retain_trajectories=retain_trajectories,
+        rank=rank,
+        world_size=world_size,
+        collective=collective,
+        min_trajectories=min_trajectories,
+        target_standard_error=target_standard_error,
+        checkpoint_path=checkpoint_path,
+        resume=resume,
+        checkpoint_interval=checkpoint_interval,
+        max_batches_per_run=max_batches_per_run,
+        continue_on_error=continue_on_error,
+        retry_failed=retry_failed,
+        initial_state=initial_state,
+    )
+
+
+def _run_lowered_noisy_statevector(
+    ir: CircuitIR,
+    noise_model: NoiseModel,
+    *,
+    trajectories: int,
+    trajectory_batch_size: int = 32,
+    seed: int = 0,
+    device: torch.device | str | None = None,
+    dtype: torch.dtype | None = None,
+    retain_trajectories: bool = False,
+    rank: int | None = None,
+    world_size: int | None = None,
+    collective: bool | None = None,
+    min_trajectories: int = 1,
+    target_standard_error: float | None = None,
+    checkpoint_path: str | os.PathLike[str] | None = None,
+    resume: bool = False,
+    checkpoint_interval: int = 1,
+    max_batches_per_run: int | None = None,
+    continue_on_error: bool = False,
+    retry_failed: bool = True,
+    initial_state: torch.Tensor | None = None,
+) -> BatchedStatevectorTrajectoryResult:
+    """Execute an already-lowered noisy IR without invoking Compiler."""
+
     if not isinstance(noise_model, NoiseModel):
         raise TypeError("noise_model must be a NoiseModel")
+    if not isinstance(ir, CircuitIR):
+        raise TypeError("ir must be a CircuitIR")
     if trajectories <= 0:
         raise ValueError("trajectories must be positive")
     if trajectory_batch_size <= 0:
@@ -238,9 +294,8 @@ def run_noisy_statevector(
     )
     if not owned_ids:
         raise ValueError("each rank must own at least one trajectory")
-    ir = lower_noise_model(circuit_or_ir, noise_model)
-    if isinstance(circuit_or_ir, Circuit):
-        initial = circuit_or_ir.initial_state()
+    if initial_state is not None:
+        initial = initial_state
         selected_device = device or initial.device
         selected_dtype = dtype or initial.dtype
         initial = initial.to(device=selected_device, dtype=selected_dtype)

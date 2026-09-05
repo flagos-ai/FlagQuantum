@@ -835,6 +835,7 @@ def run_native(
         if noise_model is None:
             raise ValueError("noisy_statevector mode requires a noise_model")
         from .backends.statevector import run_noisy_statevector
+        from .backends.statevector.noisy import _run_lowered_noisy_statevector
 
         statevector_options = dict(options)
         statevector_options.pop("memory_limit_bytes", None)
@@ -842,10 +843,18 @@ def run_native(
             statevector_options["world_size"] = int(statevector_options.pop("world_sz"))
         statevector_options.pop("coupling_map", None)
         statevector_options.pop("optimize", None)
-        result = run_noisy_statevector(
-            execution_ir if coupling_map is not None else circuit_or_ir,
-            noise_model,
-            **statevector_options,
+        result = (
+            _run_lowered_noisy_statevector(
+                execution_ir,
+                noise_model,
+                **statevector_options,
+            )
+            if provided_execution_plan is not None
+            else run_noisy_statevector(
+                execution_ir if coupling_map is not None else circuit_or_ir,
+                noise_model,
+                **statevector_options,
+            )
         )
         execution_plan = provided_execution_plan or build_plan(
             execution_ir,
