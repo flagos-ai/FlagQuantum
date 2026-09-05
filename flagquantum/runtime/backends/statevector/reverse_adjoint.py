@@ -415,29 +415,6 @@ def _fused_sharded_1q_vjp_adjoint(
     return next_adjoint, gradient, communication_count, communication_bytes, peak
 
 
-def _all_reduce_packed_gradients(
-    gradients: list[torch.Tensor],
-    *,
-    process_group: Any | None,
-    evidence: BackwardExecutionEvidence,
-) -> None:
-    """Compatibility wrapper around asynchronous dtype-homogeneous buckets."""
-
-    reducer = AsyncGradientReducer(
-        gradients,
-        process_group=process_group,
-        evidence=evidence,
-        max_parameters=len(gradients) or 1,
-        max_bytes=sum(
-            gradient.numel() * gradient.element_size() for gradient in gradients
-        )
-        or 1,
-    )
-    for index in range(len(gradients)):
-        reducer.mark_ready(index, overlap_opportunity=False)
-    reducer.finish()
-
-
 def _explicit_sharded_adjoint(
     ir: CircuitIR,
     slots: tuple[tuple[int, str, int], ...],

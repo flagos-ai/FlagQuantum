@@ -11,20 +11,19 @@ from flagquantum.runtime.backends.statevector.gradient_reduction import (
     AsyncGradientReducer,
 )
 from flagquantum.runtime.backends.statevector.local_execution import (
+    _instruction_matrix,
     _rank_global_indices,
     use_compact_global_indices,
 )
 from flagquantum.runtime.backends.statevector.reverse import (
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
-    _all_reduce_packed_gradients,
-    _analytic_rotation_derivative,
     execute_torch_distributed_statevector_reverse,
     resolve_checkpoint_policy,
 )
 from flagquantum.runtime.backends.statevector.reverse_adjoint import (
+    _bind_parameters,
     _compact_reverse_global_indices,
-    _real_conjugate_inner_sum,
 )
 from flagquantum.simulation.statevector_adjoint import (
     analytic_rotation_derivative,
@@ -38,7 +37,6 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_real_conjugate_inner_sum_matches_complex_definition(dtype):
-    assert _real_conjugate_inner_sum is real_conjugate_inner_sum
     left = torch.tensor(
         [[0.25 + 0.5j, -0.75 + 0.125j], [0.33 - 0.2j, -0.4 - 0.6j]],
         dtype=dtype,
@@ -106,20 +104,15 @@ def test_compact_index_policy_is_shared_by_forward_and_reverse():
 @pytest.mark.parametrize("gate_name", ("rx", "ry", "rz"))
 @pytest.mark.parametrize("dtype", (torch.float32, torch.float64))
 def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, dtype):
-    assert _analytic_rotation_derivative is analytic_rotation_derivative
     theta = torch.tensor(0.37, dtype=dtype, requires_grad=True)
     circuit = fq.Circuit(1)
     getattr(circuit, gate_name)(0, theta)
     instruction = circuit.to_ir().instructions[0]
     complex_dtype = torch.complex64 if dtype == torch.float32 else torch.complex128
 
-    import flagquantum.runtime.backends.statevector.reverse as reverse
-
     def matrix_at(value):
-        rebound = reverse._bind_parameters(
-            circuit.to_ir(), ((0, "theta", 0),), (value,)
-        )
-        return reverse._instruction_matrix(
+        rebound = _bind_parameters(circuit.to_ir(), ((0, "theta", 0),), (value,))
+        return _instruction_matrix(
             rebound.instructions[0], device=theta.device, dtype=complex_dtype
         )
 
@@ -153,11 +146,18 @@ def test_parameter_gradients_are_all_reduced_in_dtype_packed_buckets(monkeypatch
     ]
     evidence = BackwardExecutionEvidence()
 
-    _all_reduce_packed_gradients(
+    reducer = AsyncGradientReducer(
         gradients,
         process_group=None,
         evidence=evidence,
+        max_parameters=len(gradients),
+        max_bytes=sum(
+            gradient.numel() * gradient.element_size() for gradient in gradients
+        ),
     )
+    for index in range(len(gradients)):
+        reducer.mark_ready(index, overlap_opportunity=False)
+    reducer.finish()
 
     assert len(calls) == 2
     torch.testing.assert_close(calls[0], torch.tensor([1.0, 2.0]))

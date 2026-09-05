@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from importlib import import_module
 from typing import Any
 
 import torch
@@ -361,15 +360,6 @@ from .reverse_adjoint import (  # noqa: E402
     _local_expectation_z,
     _parameter_layout,
 )
-
-
-def __getattr__(name: str) -> Any:
-    """Preserve private compatibility seams moved to ``reverse_adjoint``."""
-    module = import_module("flagquantum.runtime.backends.statevector.reverse_adjoint")
-    try:
-        return getattr(module, name)
-    except AttributeError as exc:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
 
 
 class _ShardedStatevectorExpectation(torch.autograd.Function):
