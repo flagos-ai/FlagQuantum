@@ -41,6 +41,142 @@ def jax_mps_project_open_boundaries(tensors: Any) -> Any:
     return tensors
 
 
+def jax_mps_apply_local_stack(
+    tensors: Any, matrices: Any, matmul_precision: str | None
+) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.einsum("wpq,wlqr->wlpr", matrices, tensors, precision=matmul_precision)
+
+
+def jax_mps_apply_two_adjacent_active(
+    left: Any,
+    right: Any,
+    matrix: Any,
+    *,
+    max_bond: int,
+    left_active: int,
+    shared_active: int,
+    right_active: int,
+    out_rank: int,
+    matmul_precision: str | None,
+) -> tuple[Any, Any]:
+    import jax.numpy as jnp
+
+    left = left[: int(left_active), :, : int(shared_active)]
+    right = right[: int(shared_active), :, : int(right_active)]
+    theta = jnp.einsum("lsm,mtr->lstr", left, right, precision=matmul_precision)
+    theta = theta.reshape(int(left_active), 4, int(right_active))
+    flat = theta.transpose(1, 0, 2).reshape(4, -1)
+    applied = jnp.matmul(matrix, flat, precision=matmul_precision)
+    theta = applied.reshape(4, int(left_active), int(right_active)).transpose(1, 0, 2)
+    theta = theta.reshape(int(left_active), 2, 2, int(right_active))
+    next_left, next_right = jax_mps_split_pair(
+        theta, max_bond=int(out_rank), cutoff=0.0
+    )
+    next_left = jnp.pad(
+        next_left,
+        (
+            (0, int(max_bond) - int(left_active)),
+            (0, 0),
+            (0, int(max_bond) - int(out_rank)),
+        ),
+    )
+    next_right = jnp.pad(
+        next_right,
+        (
+            (0, int(max_bond) - int(out_rank)),
+            (0, 0),
+            (0, int(max_bond) - int(right_active)),
+        ),
+    )
+    return next_left, next_right
+
+
+def jax_mps_apply_adjacent_chain_scan(
+    tensors: Any,
+    matrix: Any,
+    *,
+    max_bond: int,
+    layer_index: int,
+    matmul_precision: str | None,
+) -> Any:
+    import jax
+    import jax.numpy as jnp
+
+    n_wires = int(tensors.shape[0])
+    if n_wires <= 1:
+        return tensors
+
+    def rank_before(bond: int) -> int:
+        if int(layer_index) <= 0:
+            return 1
+        return min(
+            int(max_bond),
+            2 ** min(int(layer_index), int(bond) + 1, n_wires - 1 - int(bond)),
+        )
+
+    def rank_after(bond: int) -> int:
+        return min(
+            int(max_bond),
+            2 ** min(int(layer_index) + 1, int(bond) + 1, n_wires - 1 - int(bond)),
+        )
+
+    def spec(wire: int) -> tuple[int, int, int, int]:
+        left_active = 1 if int(wire) == 0 else rank_after(int(wire) - 1)
+        shared_active = rank_before(int(wire))
+        right_active = 1 if int(wire) == n_wires - 2 else rank_before(int(wire) + 1)
+        out_rank = rank_after(int(wire))
+        return left_active, shared_active, right_active, out_rank
+
+    def apply_one(
+        left_tensor: Any, right_tensor: Any, current_spec: tuple[int, int, int, int]
+    ) -> tuple[Any, Any]:
+        left_active, shared_active, right_active, out_rank = current_spec
+        return jax_mps_apply_two_adjacent_active(
+            left_tensor,
+            right_tensor,
+            matrix,
+            max_bond=int(max_bond),
+            left_active=left_active,
+            shared_active=shared_active,
+            right_active=right_active,
+            out_rank=out_rank,
+            matmul_precision=matmul_precision,
+        )
+
+    pieces = []
+    carry = tensors[0]
+    wire = 0
+    while wire < n_wires - 1:
+        current_spec = spec(wire)
+        run_end = wire + 1
+        if current_spec[0] == current_spec[3]:
+            while run_end < n_wires - 1 and spec(run_end) == current_spec:
+                run_end += 1
+        if run_end - wire > 1:
+
+            def step(left_tensor: Any, right_tensor: Any) -> tuple[Any, Any]:
+                next_left, next_right = apply_one(
+                    left_tensor, right_tensor, current_spec
+                )
+                return next_right, next_left
+
+            carry, completed = jax.lax.scan(
+                step, carry, tensors[wire + 1 : run_end + 1]
+            )
+            pieces.append(completed)
+            wire = run_end
+            continue
+
+        next_left, carry = apply_one(carry, tensors[wire + 1], current_spec)
+        pieces.append(next_left[None, :, :, :])
+        wire += 1
+
+    pieces.append(carry[None, :, :, :])
+    return jnp.concatenate(pieces, axis=0)
+
+
 def jax_mps_apply_one(tensor: Any, matrix: Any, matmul_precision: str | None) -> Any:
     import jax.numpy as jnp
 
