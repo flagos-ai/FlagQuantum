@@ -2,16 +2,18 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 import flagquantum.runtime.planner as fqxp
 from flagquantum.runtime.backends.jax import (
     mps_backward,
     mps_boundary_exchange,
     mps_canonicalization,
     mps_evidence,
+    mps_gradient_ownership,
+    mps_kernels,
     mps_pullbacks,
     runtime_environment,
     statevector_execution,
+    tensor_network_contraction,
 )
 from flagquantum.runtime.execution import run_advanced
 
@@ -1851,7 +1853,10 @@ def test_jax_sharded_mps_parameter_gradient_dependency_mapping_fails_closed(
 
 
 def test_jax_sharded_mps_parameter_gradient_ownership_helpers_remain_internal_api():
-    assert hasattr(jax_distributed, "_execute_local_mps_parameter_gradient_ownership")
+    assert hasattr(
+        mps_gradient_ownership,
+        "_execute_local_mps_parameter_gradient_ownership",
+    )
     assert not hasattr(fq, "_execute_local_mps_parameter_gradient_ownership")
 
 
@@ -2239,7 +2244,11 @@ def test_jax_sharded_tensor_network_pmap_collective_fails_closed_without_devices
     monkeypatch,
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
-    monkeypatch.setattr(jax_distributed, "_jax_available_local_devices", lambda: ())
+    monkeypatch.setattr(
+        tensor_network_contraction,
+        "_jax_available_local_devices",
+        lambda: (),
+    )
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
     sliced_label = _first_internal_tn_label(circuit)
@@ -2257,7 +2266,11 @@ def test_jax_sharded_tensor_network_pmap_compute_fails_closed_without_devices(
     monkeypatch,
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
-    monkeypatch.setattr(jax_distributed, "_jax_available_local_devices", lambda: ())
+    monkeypatch.setattr(
+        tensor_network_contraction,
+        "_jax_available_local_devices",
+        lambda: (),
+    )
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
     sliced_label = _first_internal_tn_label(circuit)
@@ -2362,7 +2375,11 @@ def test_jax_sliced_tensor_network_parameter_gradient_pmap_compute_fails_closed_
     monkeypatch,
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
-    monkeypatch.setattr(jax_distributed, "_jax_available_local_devices", lambda: ())
+    monkeypatch.setattr(
+        tensor_network_contraction,
+        "_jax_available_local_devices",
+        lambda: (),
+    )
     params = torch.tensor([0.2, -0.4], dtype=torch.float32)
 
     def build(theta):
@@ -2404,7 +2421,7 @@ def test_local_mps_fast_path_does_not_inherit_distributed_mps_readiness_metadata
 
 
 def test_mps_backward_resource_evidence_helper_remains_internal_api():
-    assert hasattr(jax_distributed, "_build_mps_backward_resource_evidence")
+    assert hasattr(mps_kernels, "_build_mps_backward_resource_evidence")
     assert not hasattr(fq, "_build_mps_backward_resource_evidence")
 
 
