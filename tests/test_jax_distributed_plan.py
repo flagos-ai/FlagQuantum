@@ -4,7 +4,11 @@ import torch
 import flagquantum as fq
 import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 import flagquantum.runtime.planner as fqxp
-from flagquantum.runtime.backends.jax import runtime_environment, statevector_execution
+from flagquantum.runtime.backends.jax import (
+    mps_boundary_exchange,
+    runtime_environment,
+    statevector_execution,
+)
 from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
@@ -2021,7 +2025,7 @@ def test_mps_boundary_adjoint_exchange_evidence_fails_closed(field, expected_blo
     else:
         records[0].pop(field)
 
-    evidence = jax_distributed._summarize_local_mps_boundary_adjoint_exchange(
+    evidence = mps_boundary_exchange._summarize_local_mps_boundary_adjoint_exchange(
         records,
         world_size=2,
         expected_boundary_edges=1,
@@ -2073,7 +2077,7 @@ def test_mps_boundary_adjoint_exchange_evidence_rejects_malformed_execution_meta
     records = [dict(record) for record in _valid_boundary_adjoint_exchange_records()]
     mutate(records[0])
 
-    evidence = jax_distributed._summarize_local_mps_boundary_adjoint_exchange(
+    evidence = mps_boundary_exchange._summarize_local_mps_boundary_adjoint_exchange(
         records,
         world_size=2,
         expected_boundary_edges=1,
@@ -2087,8 +2091,6 @@ def test_mps_boundary_adjoint_exchange_evidence_rejects_malformed_execution_meta
 
 
 def test_mps_boundary_adjoint_exchange_helpers_remain_internal_metadata_api():
-    assert hasattr(jax_distributed, "_execute_local_mps_boundary_adjoint_exchange")
-    assert hasattr(jax_distributed, "_summarize_local_mps_boundary_adjoint_exchange")
     assert not hasattr(fq, "_execute_local_mps_boundary_adjoint_exchange")
     assert not hasattr(fq, "_summarize_local_mps_boundary_adjoint_exchange")
 
