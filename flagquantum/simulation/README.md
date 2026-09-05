@@ -110,6 +110,11 @@ selection, checkpointing, and evidence remain in Runtime.
 Forward preparation and reverse replay both use the same compiled-layer
 numerics; Runtime does not rebuild instruction buckets into kernel calls.
 
+`graph.py` is a frozen compatibility utility exported through the protected
+root API. No Compiler implementation currently imports it. Do not copy it into
+Compiler or introduce a second graph authority; relocation requires an approved
+public API migration and a concrete Compiler consumer.
+
 For the current migration slice, `Circuit` still owns the initial-state and
 lifecycle cache containers. Do not duplicate them here or add a second request
 or result model.
