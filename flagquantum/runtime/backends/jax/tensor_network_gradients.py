@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Sequence
 
+from ....simulation.jax_gate_primitives import _jax_pauli_matrix
 from ....simulation.jax_tensor_network import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
@@ -96,21 +97,6 @@ def _jax_parameterized_tn_state_nodes(
     return nodes, current_labels, next_label
 
 
-def _jax_pauli_matrix_for_parameterized_tn(name: str, *, complex_bytes: int) -> Any:
-    _, jnp = _require_jax()
-    dtype = _jax_complex_dtype(complex_bytes)
-    normalized = str(name).lower()
-    if normalized == "i":
-        return jnp.eye(2, dtype=dtype)
-    if normalized == "x":
-        return jnp.asarray([[0, 1], [1, 0]], dtype=dtype)
-    if normalized == "y":
-        return jnp.asarray([[0, -1j], [1j, 0]], dtype=dtype)
-    if normalized == "z":
-        return jnp.asarray([[1, 0], [0, -1]], dtype=dtype)
-    raise ValueError(f"Unsupported Pauli operator {name!r}.")
-
-
 def _jax_parameterized_tn_expectation_nodes(
     circuit: Any,
     n_wires: int,
@@ -150,8 +136,9 @@ def _jax_parameterized_tn_expectation_nodes(
         )
     )
     for wire in range(int(n_wires)):
-        matrix = _jax_pauli_matrix_for_parameterized_tn(
-            ops.get(int(wire), "i"), complex_bytes=complex_bytes
+        matrix = _jax_pauli_matrix(
+            ops.get(int(wire), "i"),
+            dtype=_jax_complex_dtype(complex_bytes),
         )
         nodes.append(
             JAXTensorNetworkNode(

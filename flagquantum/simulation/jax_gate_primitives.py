@@ -128,18 +128,21 @@ def _jax_hamiltonian_expectation(
     return total
 
 
-def _jax_pauli_matrix(name: str) -> Any:
-    if name == "x":
-        return _jax_x()
-    if name == "y":
-        return _jax_y()
-    if name == "z":
-        return _jax_z()
-    if name == "i":
+def _jax_pauli_matrix(name: str, *, dtype: Any | None = None) -> Any:
+    normalized = str(name).lower()
+    if normalized == "x":
+        matrix = _jax_x()
+    elif normalized == "y":
+        matrix = _jax_y()
+    elif normalized == "z":
+        matrix = _jax_z()
+    elif normalized == "i":
         import jax.numpy as jnp
 
-        return jnp.eye(2, dtype=_jax_complex_dtype())
-    raise ValueError(f"Unsupported Pauli operator {name!r}.")
+        matrix = jnp.eye(2, dtype=_jax_complex_dtype())
+    else:
+        raise ValueError(f"Unsupported Pauli operator {name!r}.")
+    return matrix if dtype is None else matrix.astype(dtype)
 
 
 def _jax_rx(theta: Any) -> Any:
