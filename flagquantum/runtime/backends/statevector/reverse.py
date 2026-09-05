@@ -50,10 +50,6 @@ def _triton_vjp_adjoint_decision(*, supported: bool = True) -> KernelDecision:
     return select_triton_kernel("vjp_adjoint", requested=requested, supported=supported)
 
 
-def _triton_vjp_adjoint_enabled() -> bool:
-    return _triton_vjp_adjoint_decision().accelerated
-
-
 def _communication_aware_layout_enabled() -> bool:
     return os.getenv("FQ_STATEVECTOR_COMM_AWARE_LAYOUT", "1").strip().lower() not in {
         "0",
