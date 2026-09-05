@@ -4,6 +4,7 @@ import torch
 import flagquantum as fq
 import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 import flagquantum.runtime.planner as fqxp
+from flagquantum.runtime.backends.jax import runtime_environment, statevector_execution
 from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
@@ -754,7 +755,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_requires_d
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 1,
@@ -787,7 +788,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_requires_
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 1,
@@ -819,7 +820,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_requires_dev
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 1,
@@ -851,7 +852,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_preflight_accepts_multi
     monkeypatch,
 ):
     monkeypatch.setattr(
-        jax_distributed,
+        runtime_environment,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 1,
@@ -861,7 +862,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_preflight_accepts_multi
         },
     )
 
-    ready = jax_distributed._require_jax_production_backward_ready(
+    ready = runtime_environment._require_jax_production_backward_ready(
         mode="statevector",
         backend="pmap",
         world_size=4,
@@ -1176,7 +1177,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_multiprocess_fails
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 4,
@@ -1211,7 +1212,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_all_to_all_fails_c
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 4,
@@ -1324,7 +1325,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_requires_local_mes
 ):
     monkeypatch.setenv("KMP_DUPLICATE_LIB_OK", "TRUE")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 1,
@@ -1359,7 +1360,7 @@ def test_jax_sharded_statevector_parameter_gradient_production_auto_fails_closed
     monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "production")
     monkeypatch.setenv("FQ_JAX_DISTRIBUTED_BACKEND", "pmap")
     monkeypatch.setattr(
-        jax_distributed,
+        statevector_execution,
         "_jax_device_count_summary",
         lambda: {
             "local_device_count": 1,
