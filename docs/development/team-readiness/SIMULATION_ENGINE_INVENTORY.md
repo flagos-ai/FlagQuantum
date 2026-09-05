@@ -307,3 +307,15 @@ value id，并为显式反向保留完整 tape；后者消费本地 contraction 
 Runtime 保留 DAG、bucket 顺序和 tape 生命周期，Simulation 继续拥有实际 contraction 与
 pullback 数值原语。以后只有两条执行路径出现可独立复用的第二项数值行为时，才提取新的
 Simulation helper。
+
+## 13. 分布式 TN 反向边界复核（2026-09-05）
+
+`reverse_dag.py`、`sliced_reverse.py` 和 `distributed_sliced_reverse.py` 中的前向 pair
+contraction、反向 pair pullback、高秩 fallback 与 Kahan 累加均已调用
+`simulation/tensor_stages.py` 或 `simulation/real_imag_kernels.py` 的唯一数值实现。
+
+剩余 tensor stack、切片合并、cotangent map 累加以及有限性统计均直接表达 Runtime 的
+DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、collective 与证据结果，
+不构成可独立复用的数值算法。该路径已到停止点：不为减少 Runtime 中的 tensor 操作新增
+批处理包装、镜像记录或通用 executor；只有完全不依赖 Runtime DAG、任务、checkpoint、
+所有权、process group 和证据类型的第二个实际消费者出现时，才继续向 Simulation 下沉。
