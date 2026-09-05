@@ -45,6 +45,8 @@ import Runtime plans, policies, and result models or require duplicate mirror
 contracts. A later physical split is justified only when the protected root
 compatibility exports can keep their behavior while orchestration remains in
 Runtime and a concrete second consumer needs a Runtime-neutral numerical entry.
+Distributed forward dispatch also consumes Simulation's diagonal-gate
+classification directly; Runtime must not maintain a second execution copy.
 
 ## Non-responsibilities
 

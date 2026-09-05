@@ -13,6 +13,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
+    _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
     _basis_indices_for_wires,
@@ -35,15 +36,12 @@ from .models import (
     StatevectorShardState,
 )
 
-_DIAGONAL_INSTRUCTION_NAMES = frozenset(
-    {"z", "s", "sdg", "t", "tdg", "rz", "phase", "p", "u1", "cz", "cphase", "rzz"}
-)
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
 
 
 def _is_diagonal_instruction(name: str) -> bool:
-    return str(name).lower() in _DIAGONAL_INSTRUCTION_NAMES
+    return str(name).lower() in _DIAGONAL_STATEVECTOR_GATES
 
 
 def _runtime_index_validation_enabled() -> bool:
