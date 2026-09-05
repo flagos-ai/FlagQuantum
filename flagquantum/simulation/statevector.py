@@ -45,6 +45,25 @@ if TYPE_CHECKING:
     from ..circuit import Circuit
 
 
+def _initial_state(circuit: Circuit) -> torch.Tensor:
+    """Resolve or create a Circuit's local statevector input."""
+
+    if circuit._inputs is not None:
+        resolved = circuit._inputs.to(device=circuit.device, dtype=circuit.dtype)
+        return resolved.reshape(1, -1) if resolved.ndim == 1 else resolved
+    workspace = circuit._initial_state_workspace
+    if workspace is None:
+        workspace = torch.zeros(
+            circuit.bsz,
+            2**circuit.n_wires,
+            dtype=circuit.dtype,
+            device=circuit.device,
+        )
+        workspace[:, 0] = 1
+        circuit._initial_state_workspace = workspace
+    return workspace
+
+
 def _gate_parameters(
     circuit: Circuit,
     instruction: Instruction,

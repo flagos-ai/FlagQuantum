@@ -26,9 +26,9 @@ the program.
 observables. `Circuit.state()`, `Circuit.expectation_z()`, and
 `Circuit.expectation_ps()` are thin public facades, so existing users and
 Runtime callers do not change.
-For this first physical migration, `Circuit` still owns the initial-state and
-lifecycle cache containers; moving those containers is separate work and must
-not create a second public execution contract.
+For this physical migration, Simulation constructs the initial state while
+`Circuit` still owns its lifecycle cache containers; moving those containers is
+separate work and must not create a second public execution contract.
 
 The result reports the selected device, platform provider, simulation engine,
 and `single_device_fast_path` semantics. An explicit CPU request reports

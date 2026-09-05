@@ -281,21 +281,12 @@ class Circuit:
         return circuit
 
     def initial_state(self) -> torch.Tensor:
-        if self._inputs is not None:
-            state = self._inputs.to(device=self.device, dtype=self.dtype)
-            if state.ndim == 1:
-                state = state.reshape(1, -1)
-            return state
-        if self._initial_state_workspace is None:
-            state = torch.zeros(
-                self.bsz, 2**self.n_wires, dtype=self.dtype, device=self.device
-            )
-            state[:, 0] = 1
-            self._initial_state_workspace = state
+        from .simulation.statevector import _initial_state
+
         # Statevector/TN kernels are functional: they never mutate this leaf.
         # It is therefore safe to share it across autograd graphs and avoid a
         # zero-fill allocation on every training step.
-        return self._initial_state_workspace
+        return _initial_state(self)
 
     def state(self, *, refresh: bool = False) -> torch.Tensor:
         from .simulation.statevector import state
