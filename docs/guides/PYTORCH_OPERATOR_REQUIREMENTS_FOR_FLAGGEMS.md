@@ -112,7 +112,8 @@ TN 需求重点：
 
 主要文件：
 
-- `flagquantum/simulation/noise.py`
+- `flagquantum/noise/`
+- `flagquantum/simulation/density_matrix.py`
 
 热点算子：
 

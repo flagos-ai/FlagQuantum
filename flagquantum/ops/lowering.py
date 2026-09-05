@@ -194,7 +194,7 @@ def _builtin_registry() -> OperatorLoweringRegistry:
             elif schema.channel:
                 supported = backend == "pytorch"
                 strategy = "kraus"
-                implementation = "flagquantum.simulation.noise"
+                implementation = "flagquantum.simulation.density_matrix"
                 reason = (
                     "channel lowering not implemented for this backend"
                     if not supported
