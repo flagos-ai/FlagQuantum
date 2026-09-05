@@ -29,6 +29,7 @@ from ....simulation.double_single_device_gates import (
 )
 from ....simulation.double_single_statevector import (
     apply_double_single_gate,
+    double_single_pauli_term_expectation,
     normalize_double_single_state,
 )
 from .split_real_imag import (
@@ -405,21 +406,20 @@ def _term_expectation(
     *,
     n_wires: int,
 ) -> DoubleSingleTensor:
-    transformed = state.state
-    for wire, name in term.ops:
+    def matrix_for_op(wire: int, name: str) -> DoubleSingleComplexTensor:
         matrix, _ = encode_device_double_single_matrix(
             Instruction(name=name, wires=(wire,)),
             bindings={},
             device=state.device,
         )
-        transformed = apply_double_single_gate(
-            transformed, matrix, (wire,), n_wires=n_wires
-        )
-    products = state.state.real.multiply(transformed.real).add(
-        state.state.imag.multiply(transformed.imag)
-    )
-    return double_single_sum(products).multiply(
-        _coefficient_pair(term, device=state.device)
+        return matrix
+
+    return double_single_pauli_term_expectation(
+        state.state,
+        term.ops,
+        _coefficient_pair(term, device=state.device),
+        n_wires=n_wires,
+        matrix_for_op=matrix_for_op,
     )
 
 

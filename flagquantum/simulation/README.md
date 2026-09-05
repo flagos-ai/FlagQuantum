@@ -50,8 +50,8 @@ convergence, retry, checkpointing, collectives, and result assembly.
 `double_single_device_gates.py` separately owns P4's device-resident FP32
 gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
 `double_single_statevector.py` owns the shared gate application and state
-normalization numerics used by its P3 and P4 executors, plus P3's Pauli-term
-state transformation and overlap reduction.
+normalization numerics used by its P3 and P4 executors, plus their shared
+Pauli-term state transformation and overlap reduction.
 Runtime retains precision authorization, platform selection, execution evidence,
 and conformance reporting.
 
