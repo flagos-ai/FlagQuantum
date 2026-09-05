@@ -291,11 +291,11 @@ _EXPORTS = {
         "initialize_statevector_shard",
     ),
     "plan_distributed_statevector": (
-        "flagquantum.runtime.backends.statevector.state",
+        "flagquantum.runtime.backends.statevector.planning",
         "plan_distributed_statevector",
     ),
     "simulate_distributed_statevector_local": (
-        "flagquantum.runtime.backends.statevector.state",
+        "flagquantum.runtime.backends.statevector.local_execution",
         "simulate_distributed_statevector_local",
     ),
     "StatevectorCheckpointPolicy": (

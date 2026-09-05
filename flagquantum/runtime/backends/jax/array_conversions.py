@@ -46,7 +46,7 @@ def _jax_basis_indices_for_wires(
 def _gate_matrix_as_jax(
     instruction: Any, *, torch_dtype: Any, jax_dtype: Any
 ) -> tuple[Any, bool]:
-    from ..statevector.state import _instruction_matrix
+    from ..statevector.local_execution import _instruction_matrix
 
     torch = _require_torch()
     _, jnp = _require_jax()
@@ -97,7 +97,7 @@ def _apply_gate_to_jax_shards(
     plan: Any,
     diagonal: bool,
 ) -> tuple[JAXStatevectorShardState, ...]:
-    from ..statevector.state import _basis_offset, _wire_mask
+    from ..statevector.local_execution import _basis_offset, _wire_mask
 
     _, jnp = _require_jax()
     shards = tuple(shards)

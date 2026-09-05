@@ -26,9 +26,7 @@ from .kernel_dispatch import (
 from .layout import (
     schedule_statevector_dependency_dag,
 )
-from .state import (
-    plan_distributed_statevector,
-)
+from .planning import plan_distributed_statevector
 
 _DEFAULT_REVERSE_CHUNK_AMPLITUDES = 1 << 22
 

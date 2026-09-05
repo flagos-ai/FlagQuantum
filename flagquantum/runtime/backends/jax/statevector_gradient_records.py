@@ -376,7 +376,7 @@ def _statevector_plan(
     bsz: int,
     complex_bytes: int,
 ) -> JAXDistributedQuantumPlan:
-    from ..statevector.state import plan_distributed_statevector
+    from ..statevector.planning import plan_distributed_statevector
 
     state_plan = plan_distributed_statevector(
         ir,
@@ -437,7 +437,7 @@ def _statevector_plan(
 def _initialize_jax_statevector_shard(
     plan: Any, *, rank: int, dtype: Any, device: Any | None
 ) -> JAXStatevectorShardState:
-    from ..statevector.state import _rank_global_indices, _shard_by_rank
+    from ..statevector.local_execution import _rank_global_indices, _shard_by_rank
 
     jax, jnp = _require_jax()
     torch = _require_torch()

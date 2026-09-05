@@ -53,7 +53,7 @@ def run_jax_sharded_statevector(
     transport and sharded backward are reported as blockers until implemented.
     """
 
-    from ..statevector.state import plan_distributed_statevector
+    from ..statevector.planning import plan_distributed_statevector
 
     policy = _resolve_policy(
         distributed_backend_policy=distributed_backend_policy,
@@ -188,7 +188,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
 
     import numpy as np
 
-    from ..statevector.state import plan_distributed_statevector
+    from ..statevector.planning import plan_distributed_statevector
 
     torch = _require_torch()
     jax, jnp = _require_jax()

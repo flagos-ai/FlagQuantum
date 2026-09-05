@@ -34,12 +34,14 @@ from .kernel_dispatch import (
     select_triton_kernel,
     triton_available,
 )
-from .state import (
-    DistributedStatevectorPlan,
-    StatevectorShardState,
+from .local_execution import (
     _basis_offset,
     _wire_mask,
     initialize_statevector_shard,  # noqa: F401 - compatibility monkeypatch seam
+)
+from .models import (
+    DistributedStatevectorPlan,
+    StatevectorShardState,
 )
 
 _DIAGONAL_INSTRUCTION_NAMES = frozenset(

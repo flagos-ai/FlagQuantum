@@ -41,12 +41,12 @@ from .layout import (
     plan_persistent_statevector_layout,
     schedule_statevector_dependency_dag,
 )
-from .state import (
+from .local_execution import (
     _instruction_matrix,
     initialize_statevector_shard,
-    plan_distributed_statevector,
     use_compact_global_indices,
 )
+from .planning import plan_distributed_statevector
 
 
 def execute_torch_distributed_statevector(

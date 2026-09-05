@@ -43,12 +43,12 @@ from .layout import (
     distributed_swap_rank_local_bits,
     plan_persistent_statevector_layout,
 )
-from .state import (
+from .local_execution import (
     _instruction_matrix,
     initialize_statevector_shard,
-    plan_distributed_statevector,
     use_compact_global_indices,
 )
+from .planning import plan_distributed_statevector
 
 _DEFAULT_REVERSE_CHUNK_AMPLITUDES = 1 << 22
 

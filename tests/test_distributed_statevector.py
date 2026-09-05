@@ -19,7 +19,10 @@ def test_static_gate_basis_owner_matches_tensor_index_mapping(world_size):
         _basis_owner_rank,
         _owner_and_local,
     )
-    from flagquantum.runtime.backends.statevector.state import _basis_offset, _wire_mask
+    from flagquantum.runtime.backends.statevector.local_execution import (
+        _basis_offset,
+        _wire_mask,
+    )
 
     plan = fq.plan_distributed_statevector(fq.Circuit(6), world_size=world_size)
     wire_sets = (
@@ -44,7 +47,7 @@ def test_diagonal_gate_on_sharded_wire_stays_rank_local():
     from flagquantum.runtime.backends.statevector.forward import (
         _vectorized_local_diagonal_gate,
     )
-    from flagquantum.runtime.backends.statevector.state import (
+    from flagquantum.runtime.backends.statevector.local_execution import (
         _instruction_matrix,
         initialize_statevector_shard,
     )

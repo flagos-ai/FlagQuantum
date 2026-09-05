@@ -83,7 +83,7 @@ def plan_jax_sharded_statevector_training(
     quantum kernel and it never turns local simulation into a scalability claim.
     """
 
-    from ..statevector.state import plan_distributed_statevector
+    from ..statevector.planning import plan_distributed_statevector
 
     policy = _resolve_policy(
         distributed_backend_policy=distributed_backend_policy,
