@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any
 
-from .jax_gate_primitives import _jax_complex_dtype, _jax_pauli_matrix, _jax_swap
+from .jax_gate_primitives import (
+    _jax_complex_dtype,
+    _jax_pauli_matrix,
+    _jax_real_dtype,
+    _jax_swap,
+)
 
 
 def jax_mps_apply_one(tensor: Any, matrix: Any, matmul_precision: str | None) -> Any:
@@ -177,3 +182,60 @@ def jax_mps_expectation_product_ops(
         op = ops.get(int(wire), identity)
         env = jax_mps_transfer_op(env, tensor, op, matmul_precision)
     return jnp.real(env[0, 0])
+
+
+def jax_mps_z_values(
+    tensors: Sequence[Any], wires: Iterable[int], matmul_precision: str | None
+) -> Any:
+    import jax.numpy as jnp
+
+    z_op = _jax_pauli_matrix("z")
+    values = []
+    for wire in wires:
+        values.append(
+            jax_mps_expectation_product_ops(
+                tensors, {int(wire): z_op}, matmul_precision
+            )
+        )
+    return jnp.stack(values) if values else jnp.zeros((0,), dtype=_jax_real_dtype())
+
+
+def jax_mps_z_sum(
+    tensors: Sequence[Any], wires: Iterable[int], matmul_precision: str | None
+) -> Any:
+    import jax.numpy as jnp
+
+    targets = tuple(int(wire) for wire in wires)
+    if not targets:
+        return jnp.zeros((), dtype=_jax_real_dtype())
+    target_counts: dict[int, int] = {}
+    for wire in targets:
+        if wire < 0 or wire >= len(tensors):
+            raise ValueError("JAX MPS z_sum wire index out of range.")
+        target_counts[wire] = target_counts.get(wire, 0) + 1
+    env = jnp.ones((1, 1), dtype=_jax_complex_dtype())
+    acc = jnp.zeros((1, 1), dtype=_jax_complex_dtype())
+    z_op = _jax_pauli_matrix("z")
+    for wire, tensor in enumerate(tensors):
+        next_acc = jax_mps_transfer_identity(acc, tensor, matmul_precision)
+        count = target_counts.get(int(wire), 0)
+        if count:
+            next_acc = next_acc + count * jax_mps_transfer_op(
+                env, tensor, z_op, matmul_precision
+            )
+        env = jax_mps_transfer_identity(env, tensor, matmul_precision)
+        acc = next_acc
+    return jnp.real(acc[0, 0])
+
+
+def jax_mps_pauli_string_expectation(
+    tensors: Sequence[Any],
+    ops: tuple[tuple[int, str], ...],
+    matmul_precision: str | None,
+) -> Any:
+    op_map: dict[int, Any] = {}
+    for wire, name in ops:
+        normalized = str(name).lower()
+        if normalized != "i":
+            op_map[int(wire)] = _jax_pauli_matrix(normalized)
+    return jax_mps_expectation_product_ops(tensors, op_map, matmul_precision)

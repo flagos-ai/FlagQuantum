@@ -78,7 +78,7 @@ statevector execution, gate application, and observable kernels. Runtime retains
 JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
 `jax_mps.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
 swap routing math, MPS-to-statevector contraction, and observable transfer
-environments.
+environments, including Z and Pauli-string expectations.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.

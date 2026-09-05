@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 from contextvars import ContextVar
 from typing import Any
 
@@ -29,7 +29,7 @@ from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
 )
 from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_expectation_product_ops as _jax_mps_expectation_product_ops,
+    jax_mps_pauli_string_expectation as _jax_mps_pauli_string_expectation,
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_split_pair as _jax_mps_split_pair,
@@ -42,9 +42,6 @@ from ....simulation.jax_mps import (  # noqa: E402
 )
 from ....simulation.jax_mps import (  # noqa: E402
     jax_mps_transfer_identity_right as _jax_mps_transfer_identity_right,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_transfer_op as _jax_mps_transfer_op,
 )
 
 
@@ -389,63 +386,6 @@ def _jax_mps_statevector_from_circuit(
         matmul_precision=matmul_precision,
     )
     return _jax_mps_to_statevector(tensors, matmul_precision)
-
-
-def _jax_mps_z_values(
-    tensors: Sequence[Any], wires: Iterable[int], matmul_precision: str | None
-) -> Any:
-    import jax.numpy as jnp
-
-    z_op = _jax_pauli_matrix("z")
-    values = []
-    for wire in wires:
-        values.append(
-            _jax_mps_expectation_product_ops(
-                tensors, {int(wire): z_op}, matmul_precision
-            )
-        )
-    return jnp.stack(values) if values else jnp.zeros((0,), dtype=_jax_real_dtype())
-
-
-def _jax_mps_z_sum(
-    tensors: Sequence[Any], wires: Iterable[int], matmul_precision: str | None
-) -> Any:
-    import jax.numpy as jnp
-
-    targets = tuple(int(wire) for wire in wires)
-    if not targets:
-        return jnp.zeros((), dtype=_jax_real_dtype())
-    target_counts: dict[int, int] = {}
-    for wire in targets:
-        if wire < 0 or wire >= len(tensors):
-            raise ValueError("JAX MPS z_sum wire index out of range.")
-        target_counts[wire] = target_counts.get(wire, 0) + 1
-    env = jnp.ones((1, 1), dtype=_jax_complex_dtype())
-    acc = jnp.zeros((1, 1), dtype=_jax_complex_dtype())
-    z_op = _jax_pauli_matrix("z")
-    for wire, tensor in enumerate(tensors):
-        next_acc = _jax_mps_transfer_identity(acc, tensor, matmul_precision)
-        count = target_counts.get(int(wire), 0)
-        if count:
-            next_acc = next_acc + count * _jax_mps_transfer_op(
-                env, tensor, z_op, matmul_precision
-            )
-        env = _jax_mps_transfer_identity(env, tensor, matmul_precision)
-        acc = next_acc
-    return jnp.real(acc[0, 0])
-
-
-def _jax_mps_pauli_string_expectation(
-    tensors: Sequence[Any],
-    ops: tuple[tuple[int, str], ...],
-    matmul_precision: str | None,
-) -> Any:
-    op_map: dict[int, Any] = {}
-    for wire, name in ops:
-        normalized = str(name).lower()
-        if normalized != "i":
-            op_map[int(wire)] = _jax_pauli_matrix(normalized)
-    return _jax_mps_expectation_product_ops(tensors, op_map, matmul_precision)
 
 
 def _parse_zz_z_chain_hamiltonian(

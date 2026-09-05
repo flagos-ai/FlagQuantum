@@ -20,6 +20,12 @@ from ....simulation.jax_gate_primitives import (
     _jax_z_values,
     _set_active_jax_compute_dtype,
 )
+from ....simulation.jax_mps import (
+    jax_mps_z_sum as _jax_mps_z_sum,
+)
+from ....simulation.jax_mps import (
+    jax_mps_z_values as _jax_mps_z_values,
+)
 
 TorchCircuitBuilder = Callable[..., Any]
 
@@ -314,8 +320,6 @@ from .mps_kernel import (  # noqa: E402
     _is_zz_z_chain_hamiltonian,
     _jax_mps_from_circuit,
     _jax_mps_hamiltonian_expectation,
-    _jax_mps_z_sum,
-    _jax_mps_z_values,
 )
 
 
