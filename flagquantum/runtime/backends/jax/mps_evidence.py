@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from typing import Any, Mapping, Sequence
 
+from .common import communication_tier as _communication_tier
 from .release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
@@ -392,4 +393,232 @@ def _summarize_minimal_mps_measured_runtime_evidence(
             ),
         ),
         "blockers": blockers_out,
+    }
+
+
+def _build_mps_backward_resource_evidence(
+    rank_summaries: Sequence[Mapping[str, Any]],
+    boundary_protocols: Sequence[Mapping[str, Any]],
+    boundary_exchange_records: Sequence[Mapping[str, Any]],
+    parameter_gradient_bytes_by_rank: Sequence[int],
+    truncation_records: Sequence[Mapping[str, Any]],
+    *,
+    world_size: int,
+    local_world_size: int,
+    node_count: int,
+    execution_scope: str,
+    communication_executed: bool,
+) -> dict[str, Any]:
+    """Account for rank-owned MPS backward memory and boundary traffic."""
+
+    world_size = int(world_size)
+    summaries = {int(item.get("rank", -1)): dict(item) for item in rank_summaries}
+    memory_blockers = []
+    communication_blockers = []
+    if set(summaries) != set(range(world_size)):
+        memory_blockers.append("mps_backward_resource_rank_coverage_incomplete")
+    parameter_bytes = tuple(int(value) for value in parameter_gradient_bytes_by_rank)
+    if len(parameter_bytes) != world_size:
+        memory_blockers.append("mps_backward_parameter_gradient_memory_incomplete")
+        parameter_bytes = tuple(0 for _ in range(world_size))
+    boundary_buffers = [0 for _ in range(world_size)]
+    records_by_edge = {}
+    for value in boundary_exchange_records:
+        record = dict(value)
+        edge_id = str(record.get("boundary_edge_id", ""))
+        records_by_edge.setdefault(edge_id, []).append(record)
+        target = int(record.get("target_rank", -1))
+        if 0 <= target < world_size:
+            boundary_buffers[target] += int(record.get("local_memory_bytes", 0) or 0)
+
+    edges = []
+    intra_bytes = 0
+    inter_bytes = 0
+    for index, value in enumerate(boundary_protocols):
+        protocol = dict(value)
+        try:
+            left_rank = int(protocol["left_rank"])
+            right_rank = int(protocol["right_rank"])
+            left_wire = int(protocol["left_wire"])
+            right_wire = int(protocol["right_wire"])
+        except (KeyError, TypeError, ValueError):
+            communication_blockers.append(
+                f"mps_backward_communication_route_missing:edge_{index}"
+            )
+            continue
+        edge_id = f"edge_{index}:{left_wire}-{right_wire}"
+        records = tuple(records_by_edge.get(edge_id, ()))
+        tier = str(
+            protocol.get(
+                "tier",
+                _communication_tier(
+                    left_rank, right_rank, local_world_size=int(local_world_size)
+                ),
+            )
+        )
+        primitives = {
+            str(item.get("communication_primitive", ""))
+            for item in records
+            if item.get("communication_primitive")
+        }
+        edge_bytes = (
+            sum(int(item.get("communication_bytes", 0) or 0) for item in records)
+            if communication_executed
+            else int(protocol.get("estimated_transfer_bytes", 0) or 0)
+        )
+        primitive = (
+            next(iter(primitives), "unknown")
+            if communication_executed
+            else "planned_adjacent_rank_point_to_point"
+        )
+        if communication_executed and len(records) != 2:
+            communication_blockers.append(
+                f"mps_backward_communication_direction_coverage_incomplete:{edge_id}"
+            )
+        if communication_executed and len(primitives) != 1:
+            communication_blockers.append(
+                f"mps_backward_communication_primitive_missing:{edge_id}"
+            )
+        if tier not in {"intra_node", "inter_node"}:
+            communication_blockers.append(
+                f"mps_backward_communication_topology_tier_missing:{edge_id}"
+            )
+        if edge_bytes <= 0:
+            communication_blockers.append(
+                f"mps_backward_communication_bytes_missing:{edge_id}"
+            )
+        route = (
+            "topology_dependent"
+            if tier == "inter_node"
+            else (
+                "single_node_local_cpu"
+                if communication_executed
+                else "planned_intra_node_route"
+            )
+        )
+        if tier == "inter_node":
+            inter_bytes += edge_bytes
+        else:
+            intra_bytes += edge_bytes
+        edges.append(
+            {
+                "boundary_edge_id": edge_id,
+                "left_rank": left_rank,
+                "right_rank": right_rank,
+                "left_wire": left_wire,
+                "right_wire": right_wire,
+                "communication_bytes": edge_bytes,
+                "communication_primitive": primitive,
+                "topology_tier": tier,
+                "topology_route": route,
+                "topology_dependent": route == "topology_dependent",
+                "execution_status": (
+                    "executed" if communication_executed else "planned_not_executed"
+                ),
+            }
+        )
+    if len(edges) != len(boundary_protocols):
+        communication_blockers.append(
+            "mps_backward_communication_edge_coverage_incomplete"
+        )
+
+    truncation_bonds = {int(item.get("bond", -1)) for item in truncation_records}
+    rank_memory = []
+    vectors = {
+        name: []
+        for name in ("forward", "backward", "canonicalization", "truncation", "peak")
+    }
+    for rank in range(world_size):
+        summary = summaries.get(rank, {})
+        wires = tuple(int(wire) for wire in summary.get("wires", ()))
+        forward = int(summary.get("local_tensor_bytes", 0) or 0)
+        tensor_bytes = tuple(
+            int(value) for value in summary.get("tensor_bytes_by_wire", {}).values()
+        )
+        largest = max(tensor_bytes, default=forward)
+        backward = forward
+        canonicalization = 2 * largest
+        truncation = 2 * largest if truncation_bonds.intersection(wires) else 0
+        peak = (
+            forward
+            + backward
+            + boundary_buffers[rank]
+            + parameter_bytes[rank]
+            + canonicalization
+            + truncation
+        )
+        if forward <= 0:
+            memory_blockers.append(f"mps_forward_tensor_memory_missing:rank_{rank}")
+        vectors["forward"].append(forward)
+        vectors["backward"].append(backward)
+        vectors["canonicalization"].append(canonicalization)
+        vectors["truncation"].append(truncation)
+        vectors["peak"].append(peak)
+        rank_memory.append(
+            {
+                "rank": rank,
+                "site_range": wires,
+                "forward_tensor_bytes": forward,
+                "backward_adjoint_bytes": backward,
+                "boundary_gradient_buffer_bytes": boundary_buffers[rank],
+                "parameter_gradient_bytes": parameter_bytes[rank],
+                "canonicalization_temporary_bytes": canonicalization,
+                "truncation_temporary_bytes": truncation,
+                "estimated_peak_backward_bytes": peak,
+            }
+        )
+
+    memory_blockers = tuple(dict.fromkeys(memory_blockers))
+    communication_blockers = tuple(dict.fromkeys(communication_blockers))
+    memory_plan = {
+        "status": "blocked" if memory_blockers else "complete_estimate",
+        "rank_memory": tuple(rank_memory),
+        "forward_tensor_bytes_by_rank": tuple(vectors["forward"]),
+        "backward_adjoint_bytes_by_rank": tuple(vectors["backward"]),
+        "boundary_gradient_buffer_bytes_by_rank": tuple(boundary_buffers),
+        "canonicalization_temporary_bytes_by_rank": tuple(vectors["canonicalization"]),
+        "truncation_temporary_bytes_by_rank": tuple(vectors["truncation"]),
+        "per_rank_peak_bytes": tuple(vectors["peak"]),
+        "local_memory_bytes_by_rank": tuple(vectors["peak"]),
+        "communication_buffer_bytes": sum(boundary_buffers),
+        "execution_scope": execution_scope,
+        "blockers": memory_blockers,
+    }
+    communication_plan = {
+        "status": (
+            "blocked"
+            if communication_blockers
+            else (
+                "not_required"
+                if not boundary_protocols
+                else (
+                    "local_cpu_accounted"
+                    if communication_executed
+                    else "planned_not_executed"
+                )
+            )
+        ),
+        "boundary_edge_count": len(boundary_protocols),
+        "boundary_edges": tuple(edges),
+        "communication_bytes": intra_bytes + inter_bytes,
+        "estimated_transfer_bytes": intra_bytes + inter_bytes,
+        "intra_node_communication_bytes": intra_bytes,
+        "inter_node_communication_bytes": inter_bytes,
+        "local_world_size": int(local_world_size),
+        "node_count": int(node_count),
+        "execution_scope": execution_scope,
+        "blockers": communication_blockers,
+    }
+    blockers = tuple(dict.fromkeys((*memory_blockers, *communication_blockers)))
+    return {
+        "status": "blocked" if blockers else "complete",
+        "valid": not blockers,
+        "claim_evidence_type": (
+            "development_smoke" if communication_executed else "plan_preflight"
+        ),
+        "mps_backward_memory_plan": memory_plan,
+        "mps_backward_communication_plan": communication_plan,
+        "scalability_claim_allowed": False,
+        "release_gate_allowed": False,
+        "blockers": blockers,
     }
