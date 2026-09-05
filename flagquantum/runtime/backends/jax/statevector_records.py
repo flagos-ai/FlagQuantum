@@ -1,33 +1,19 @@
-# ruff: noqa: F401, F821
 """Statevector planning, shard-state, and execution result records."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Mapping, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
-)
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
+from ...distributed.backend_policy import DistributedBackendPolicy
+from .planning_core import JAXDistributedQuantumPlan
 from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
+)
+from .runtime_environment import (
+    _jax_array_device_name,
+    _require_torch,
+    _torch_complex_dtype,
 )
 
 
@@ -213,6 +199,24 @@ class JAXStatevectorShardState:
             "device": _jax_array_device_name(self.amplitudes),
             "dtype": str(self.amplitudes.dtype),
         }
+
+
+def _reconstruct_torch_state_from_jax_shards(
+    shards: Sequence[JAXStatevectorShardState], plan: Any
+) -> Any:
+    import numpy as np
+
+    torch = _require_torch()
+    dtype = _torch_complex_dtype(plan.complex_bytes)
+    state = torch.zeros(
+        (plan.bsz, plan.total_amplitudes), dtype=dtype, device=torch.device("cpu")
+    )
+    for shard in shards:
+        values = torch.as_tensor(
+            np.asarray(shard.amplitudes).copy(), dtype=dtype, device=torch.device("cpu")
+        )
+        state[:, list(shard.global_indices_tuple)] = values
+    return state
 
 
 @dataclass

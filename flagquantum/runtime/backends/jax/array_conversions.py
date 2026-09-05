@@ -9,7 +9,6 @@ from .runtime_environment import (
     _jnp_device_put,
     _require_jax,
     _require_torch,
-    _torch_complex_dtype,
 )
 from .statevector_records import JAXStatevectorShardState
 from .tensor_network_records import JAXTensorNetworkNode
@@ -274,24 +273,6 @@ def _jax_gate_basis_in_for_delta_and_local_input(
             ) & 1
         basis = basis | (bit << (len(wires) - wire_position - 1))
     return basis
-
-
-def _reconstruct_torch_state_from_jax_shards(
-    shards: Sequence[JAXStatevectorShardState], plan: Any
-) -> Any:
-    import numpy as np
-
-    torch = _require_torch()
-    dtype = _torch_complex_dtype(plan.complex_bytes)
-    state = torch.zeros(
-        (plan.bsz, plan.total_amplitudes), dtype=dtype, device=torch.device("cpu")
-    )
-    for shard in shards:
-        values = torch.as_tensor(
-            np.asarray(shard.amplitudes).copy(), dtype=dtype, device=torch.device("cpu")
-        )
-        state[:, list(shard.global_indices_tuple)] = values
-    return state
 
 
 def _select_jax_split_rank(values: Any, *, max_bond: int | None, cutoff: float) -> int:
