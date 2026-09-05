@@ -15,6 +15,7 @@ from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
+    _basis_indices_for_wires,
     _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
 )
@@ -1084,10 +1085,9 @@ def _vectorized_subgroup_exchange_gate(
         else:
             local_bases = None
             required = (global_out & clear_mask)[:, None] | offsets[None, :]
-        output_basis = torch.zeros_like(global_out)
-        for position, wire in enumerate(wires):
-            bit = (global_out >> (plan.n_wires - wire - 1)) & 1
-            output_basis |= bit << (len(wires) - position - 1)
+        output_basis = _basis_indices_for_wires(
+            global_out, n_wires=plan.n_wires, wires=wires
+        )
         basis_inputs = []
         for basis in range(gate_dim):
             if local_bases is not None:
