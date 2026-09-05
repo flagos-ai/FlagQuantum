@@ -870,9 +870,7 @@ def test_runtime_selection_projects_mps_evidence_status(
     monkeypatch,
     readiness_status,
 ):
-    from flagquantum.runtime.backends.jax import (
-        compatibility_surface as jax_distributed,
-    )
+    from flagquantum.runtime.backends.jax import mps_planning
 
     class _TrainingPlan:
         def summary(self):
@@ -925,7 +923,7 @@ def test_runtime_selection_projects_mps_evidence_status(
             }
 
     monkeypatch.setattr(
-        jax_distributed,
+        mps_planning,
         "plan_jax_sharded_mps_training",
         lambda *args, **kwargs: _TrainingPlan(),
     )
