@@ -123,7 +123,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
 | `simulation/jax_gate_primitives.py` | 纯数值算法 | JAX dtype、指令矩阵、statevector 本地执行与局部 observable kernel | 无 Runtime/Platform 依赖；由 Runtime kernel、MPS kernel 和转换路径共同复用 |
-| `simulation/jax_mps.py` | 纯数值算法 | JAX MPS 单/双站点更新、pair 分解、远程门 swap 路由、statevector 收缩与局部 observable | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、backend 和执行证据 |
+| `simulation/jax_mps.py`、`simulation/jax_mps_batched.py` | 纯数值算法 | JAX MPS 单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩与局部 observable | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、backend 和执行证据 |
 | `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、contraction | backend/device 是否选择 JAX 由 Runtime/Platform |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
 | `jax/*execution.py`、`backend_dispatch.py`、`statevector_training.py`、`mps_gradients.py`、`tensor_network_gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |

@@ -2421,7 +2421,8 @@ def test_local_mps_fast_path_does_not_inherit_distributed_mps_readiness_metadata
 
 
 def test_mps_backward_resource_evidence_helper_remains_internal_api():
-    assert hasattr(mps_kernels, "_build_mps_backward_resource_evidence")
+    assert hasattr(mps_evidence, "_build_mps_backward_resource_evidence")
+    assert not hasattr(mps_kernels, "_build_mps_backward_resource_evidence")
     assert not hasattr(fq, "_build_mps_backward_resource_evidence")
 
 

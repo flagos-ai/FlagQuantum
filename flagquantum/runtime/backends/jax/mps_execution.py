@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
+from ....simulation.jax_mps_batched import (
+    jax_mps_apply_one_batched as _apply_one_jax_mps_tensor,
+)
+from ....simulation.jax_mps_batched import (
+    jax_mps_apply_two_batched as _apply_two_jax_mps_tensors,
+)
 from ...distributed.backend_policy import DistributedBackendPolicy
 from .array_conversions import (
     _gate_matrix_as_jax,
@@ -13,8 +19,6 @@ from .array_conversions import (
 from .backend_dispatch import plan_jax_distributed_quantum_backend
 from .mps_canonicalization import _jax_mps_boundary_protocol
 from .mps_kernels import (
-    _apply_one_jax_mps_tensor,
-    _apply_two_jax_mps_tensors,
     _initialize_jax_mps_rank_tensors,
     _rank_shards_from_jax_mps_tensors,
 )

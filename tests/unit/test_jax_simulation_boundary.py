@@ -2,8 +2,13 @@
 
 import pytest
 
-from flagquantum.runtime.backends.jax import kernel, mps_kernel
-from flagquantum.simulation import jax_gate_primitives, jax_mps, jax_tensor_network
+from flagquantum.runtime.backends.jax import kernel, mps_execution, mps_kernel
+from flagquantum.simulation import (
+    jax_gate_primitives,
+    jax_mps,
+    jax_mps_batched,
+    jax_tensor_network,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -38,6 +43,14 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert (
         kernel._jax_mps_hamiltonian_expectation
         is jax_mps.jax_mps_hamiltonian_expectation
+    )
+    assert (
+        mps_execution._apply_one_jax_mps_tensor
+        is jax_mps_batched.jax_mps_apply_one_batched
+    )
+    assert (
+        mps_execution._apply_two_jax_mps_tensors
+        is jax_mps_batched.jax_mps_apply_two_batched
     )
 
 

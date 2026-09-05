@@ -1,10 +1,9 @@
-"""MPS tensor initialization, SVD splitting, reconstruction, and resources."""
+"""MPS rank initialization, shard packaging, and result reconstruction."""
 
 from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from .array_conversions import _split_pair_matrix_jax
 from .mps_training_records import JAXMPSRankShardState
 from .runtime_environment import (
     _jnp_device_put,
@@ -45,47 +44,6 @@ def _rank_shards_from_jax_mps_tensors(
             local_tensors=dict(rank_tensors.get(int(shard.rank), {})),
         )
         for shard in shard_plans
-    )
-
-
-def _apply_one_jax_mps_tensor(tensor: Any, matrix: Any) -> Any:
-    _, jnp = _require_jax()
-    matrix = jnp.asarray(matrix, dtype=tensor.dtype)
-    if matrix.ndim == 2:
-        return jnp.einsum("pq,blqr->blpr", matrix, tensor, precision="highest")
-    return jnp.einsum("bpq,blqr->blpr", matrix, tensor, precision="highest")
-
-
-def _apply_two_jax_mps_tensors(
-    left: Any,
-    right: Any,
-    matrix: Any,
-    *,
-    max_bond: int | None,
-    cutoff: float,
-    reverse: bool = False,
-) -> tuple[Any, Any, dict[str, Any]]:
-    _, jnp = _require_jax()
-    matrix = jnp.asarray(matrix, dtype=left.dtype)
-    theta = jnp.einsum("blsm,bmtr->blstr", left, right, precision="highest")
-    if reverse:
-        theta = jnp.swapaxes(theta, 2, 3)
-    theta = theta.reshape(left.shape[0], left.shape[1], 4, right.shape[3])
-    if matrix.ndim == 2:
-        theta = jnp.einsum("ij,bljr->blir", matrix, theta, precision="highest")
-    else:
-        theta = jnp.einsum("bij,bljr->blir", matrix, theta, precision="highest")
-    theta = theta.reshape(left.shape[0], left.shape[1], 2, 2, right.shape[3])
-    if reverse:
-        theta = jnp.swapaxes(theta, 2, 3)
-    bsz, left_dim, _, _, right_dim = theta.shape
-    pair_matrix = theta.reshape(bsz, left_dim * 2, 2 * right_dim)
-    return _split_pair_matrix_jax(
-        pair_matrix,
-        left_dim=int(left_dim),
-        right_dim=int(right_dim),
-        max_bond=max_bond,
-        cutoff=cutoff,
     )
 
 
