@@ -50,7 +50,10 @@ def test_double_single_sum_and_dot_survive_catastrophic_cancellation() -> None:
 
     left = torch.tensor([1e8, 1.0, 1e8], dtype=torch.float32)
     right = torch.tensor([1.0, 1.0, -1.0], dtype=torch.float32)
-    assert torch.dot(left, right).item() == 0.0
+    products = left * right
+    # Keep the naive FP32 baseline explicit; torch.dot may use a more accurate kernel.
+    naive_dot = (products[0] + products[1]) + products[2]
+    assert naive_dot.item() == 0.0
     assert double_single_dot(left, right).to_float64().item() == 1.0
 
 
