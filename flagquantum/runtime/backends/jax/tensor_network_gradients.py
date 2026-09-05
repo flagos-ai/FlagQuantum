@@ -1,33 +1,39 @@
-# ruff: noqa: F401, F821
 """Parameterized tensor-network construction and sliced reverse mode."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
 from typing import Any, Callable, Mapping, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
+from ...distributed.backend_policy import DistributedBackendPolicy
+from .array_conversions import _jax_nodes_from_torch_nodes
+from .backend_dispatch import plan_jax_distributed_quantum_backend
 from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .runtime_environment import (
+    _jax_complex_dtype,
+    _jax_real_dtype,
+    _require_jax,
+    _require_torch,
+    _resolve_collective_backend,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
+    _torch_complex_dtype,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
+from .tensor_network_contraction import (
+    _jax_contract_tensor_slices_by_backend,
+    _jax_parameter_array_from_input,
+    _pauli_ops_from_term,
+    _torch_parameters_for_static_build,
 )
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
+from .tensor_network_execution import (
+    _jax_tn_loss_from_output,
+    _resolve_tn_compute_backend,
+)
+from .tensor_network_planning import _tn_tasks
+from .tensor_network_records import (
+    JAXSlicedTensorNetworkGradientResult,
+    JAXSlicedTensorNetworkParameterGradientResult,
+    JAXTensorNetworkNode,
 )
 
 
