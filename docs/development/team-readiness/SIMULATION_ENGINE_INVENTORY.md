@@ -14,7 +14,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_stages.py`；JAX 的 dtype、
 门矩阵、状态作用、分片局部 observable/loss、MPS 批量更新和 pullback 已归
 `simulation/jax_*.py`。剩余候选集中在仍与分布式 MPS/TN 记录和调度交织的路径，且真实
-Engine 与 contract fake 尚未运行同一套 conformance。
+本地 Engine 与测试 fake 现已通过同一套首切片 conformance，但最终 Core Engine 契约尚未批准。
 因此 `simulation_extraction` 必须保持 `in_progress`，不得以目录数量或单一 CPU 测试代替退出条件。
 
 首次盘点日期：2026-09-03；最近复核日期：2026-09-05
@@ -214,10 +214,11 @@ canonicalization/truncation pullback 已由 `simulation/jax_mps_pullbacks.py` �
 - RY 期望梯度与解析值一致；
 - 自定义可微矩阵不丢失 autograd 图。
 
-`tests/team/simulation/test_statevector_engine_replacement_draft.py` 使用测试局部 fake，固定
-`run_native(..., mode="statevector")` 消费者在调用形式不变时可以接受另一个 `.state()`
-实现，并验证 fake 输出、计划 mode/world size 以及参数梯度所有权。测试没有向产品代码新增
-Protocol、注册表或导出；因此它证明替换方向可行，但还没有证明最终 Core 契约完成。
+`tests/team/simulation/test_statevector_engine_replacement_draft.py` 让真实
+`run_local_statevector()` 与测试局部 fake 通过同一个参数化 conformance，二者均经
+`run_native(..., mode="statevector")` 的同一消费者接缝执行。共同检查 batch、dtype、计划
+mode/world size 和参数梯度所有权，且替换实现不修改 Runtime 消费者。测试没有向产品代码新增
+Protocol、注册表或导出；因此首切片的实现替换证据已经成立，但还没有证明最终 Core 契约完成。
 
 ## 8. Core 契约提案（未实施）
 
@@ -293,8 +294,9 @@ Runtime，`simulation/mps_models.py` 仅在类型检查时引用 Runtime traject
 4. 已登记的 `simulation/mps_execution.py`→Runtime 兼容调用和 `simulation/mps_models.py` 类型引用须经公共 API 迁移退出；`simulation/noise.py` 反向依赖已经退出；
 5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
 
-当前第 5 项对 Statevector 切片成立，第 1--4 项尚未全部成立。因此本轮只更新事实台账，
-不修改机器可读状态。
+当前第 1 项已对本地 Statevector 首切片建立测试证据，第 2、3 项已达到各自审计停止点，
+第 5 项仍需随集成门禁持续复核；第 4 项涉及受保护公共 API 迁移，尚未获批。因此不修改
+机器可读状态。
 
 ## 12. TN 编译前向边界复核（2026-09-05）
 

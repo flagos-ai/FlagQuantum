@@ -12,6 +12,7 @@ import torch
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR
 from flagquantum.runtime.execution import run_native
+from flagquantum.simulation.statevector import run_local_statevector
 
 pytestmark = pytest.mark.integration
 
@@ -33,6 +34,43 @@ class _FakeLocalStatevectorProgram:
         return self.output
 
 
+@dataclass
+class _RealLocalStatevectorProgram:
+    """Test adapter exposing the real Simulation implementation at the same seam."""
+
+    ir: CircuitIR
+    batch_size: int
+    dtype: torch.dtype
+    calls: int = 0
+    device: str = "cpu"
+
+    def to_ir(self) -> CircuitIR:
+        return self.ir
+
+    def state(self) -> torch.Tensor:
+        self.calls += 1
+        return run_local_statevector(
+            self.ir,
+            batch_size=self.batch_size,
+            device=torch.device(self.device),
+            dtype=self.dtype,
+        )
+
+
+def _program_for(
+    implementation: str,
+    source: fq.Circuit,
+    expected: torch.Tensor,
+) -> _RealLocalStatevectorProgram | _FakeLocalStatevectorProgram:
+    if implementation == "real":
+        return _RealLocalStatevectorProgram(
+            source.to_ir(),
+            batch_size=source.bsz,
+            dtype=source.dtype,
+        )
+    return _FakeLocalStatevectorProgram(source.to_ir(), expected)
+
+
 def test_circuit_state_facade_delegates_to_simulation(monkeypatch):
     import flagquantum.simulation.statevector as statevector
 
@@ -50,37 +88,52 @@ def test_circuit_state_facade_delegates_to_simulation(monkeypatch):
     assert calls == [(circuit, True)]
 
 
-def test_runtime_consumer_can_replace_local_statevector_implementation():
-    source = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
+@pytest.mark.parametrize("implementation", ("real", "fake"))
+def test_runtime_consumer_runs_shared_local_statevector_conformance(
+    implementation: str,
+):
+    source = fq.Circuit(2, bsz=2, dtype=torch.complex128).h(0).cx(0, 1)
     replacement_output = torch.tensor(
         [[2**-0.5, 0.0, 0.0, -(2**-0.5)]], dtype=torch.complex128
+    ).expand(2, -1)
+    expected = (
+        torch.tensor([[2**-0.5, 0.0, 0.0, 2**-0.5]], dtype=torch.complex128).expand(
+            2, -1
+        )
+        if implementation == "real"
+        else replacement_output
     )
-    replacement = _FakeLocalStatevectorProgram(source.to_ir(), replacement_output)
+    program = _program_for(implementation, source, expected)
 
     actual, plan = run_native(
-        replacement,
+        program,
         mode="statevector",
         return_plan=True,
         optimize=False,
         device="cpu",
+        bsz=2,
+        dtype=torch.complex128,
     )
 
-    assert replacement.calls == 1
-    assert actual is replacement_output
+    assert program.calls == 1
+    torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)
+    assert actual.shape == (2, 4)
+    assert actual.dtype is torch.complex128
     assert plan.state_mode == "statevector"
     assert plan.world_size == 1
 
 
-def test_replacement_output_retains_parameter_gradient_ownership():
+@pytest.mark.parametrize("implementation", ("real", "fake"))
+def test_shared_conformance_retains_parameter_gradient_ownership(
+    implementation: str,
+):
     theta = torch.tensor(0.29, dtype=torch.float64, requires_grad=True)
     source = fq.Circuit(1, dtype=torch.complex128).ry(0, theta=theta)
     output = torch.stack((torch.cos(theta / 2), torch.sin(theta / 2))).reshape(1, 2)
-    replacement = _FakeLocalStatevectorProgram(
-        source.to_ir(), output.to(torch.complex128)
-    )
+    program = _program_for(implementation, source, output.to(torch.complex128))
 
     actual = run_native(
-        replacement,
+        program,
         mode="statevector",
         optimize=False,
         device="cpu",
