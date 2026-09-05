@@ -85,8 +85,8 @@ Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
 The padded environment scan and generic Hamiltonian evaluation are also
 Simulation-owned.
 `jax_tensor_network.py` owns dependency-light local JAX node construction,
-statevector and observable evaluation, and contraction; Runtime retains backend
-selection and execution policy.
+observable evaluation, and contraction; Runtime retains backend selection and
+execution policy.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.

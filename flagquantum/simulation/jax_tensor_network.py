@@ -15,24 +15,6 @@ from .jax_gate_primitives import (
 _JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def jax_tensor_network_statevector_from_circuit(
-    circuit: Any,
-    n_wires: int,
-    parameters: Any,
-    *,
-    matmul_precision: str | None = "highest",
-) -> Any:
-    del parameters
-    nodes, current_labels, _next_label = jax_tensor_network_nodes_from_circuit(
-        circuit,
-        n_wires,
-        start_label=0,
-        conjugate=False,
-    )
-    out = jax_contract_nodes_greedy(nodes, tuple(current_labels), matmul_precision)
-    return out.reshape(-1)
-
-
 def jax_tensor_network_nodes_from_circuit(
     circuit: Any,
     n_wires: int,

@@ -502,7 +502,7 @@ def test_jax_tensor_network_kernel_matches_native_tn_gradient():
 
 
 def test_jax_tensor_network_z_sum_does_not_materialize_statevector(monkeypatch):
-    from flagquantum.runtime import compatibility as hybrid
+    from flagquantum.runtime.backends.jax import kernel as jax_kernel_module
 
     params = torch.tensor([0.17, -0.31, 0.23], requires_grad=False)
 
@@ -519,9 +519,7 @@ def test_jax_tensor_network_z_sum_does_not_materialize_statevector(monkeypatch):
             "JAX tensor-network observable must not materialize a statevector"
         )
 
-    monkeypatch.setattr(
-        hybrid, "_jax_tensor_network_statevector_from_circuit", forbidden
-    )
+    monkeypatch.setattr(jax_kernel_module, "_jax_statevector_from_circuit", forbidden)
     kernel = fq.compile_quantum_kernel(
         build,
         params,
