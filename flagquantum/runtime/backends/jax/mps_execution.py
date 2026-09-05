@@ -1,33 +1,35 @@
-# ruff: noqa: F401, F821
 """Sharded MPS forward execution and parameterized tensor construction."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
+from ...distributed.backend_policy import DistributedBackendPolicy
+from .array_conversions import (
+    _gate_matrix_as_jax,
+    _jax_split_record,
+    _parameterized_gate_matrix_as_jax,
 )
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .backend_dispatch import plan_jax_distributed_quantum_backend
+from .mps_canonicalization import _jax_mps_boundary_protocol
+from .mps_kernels import (
+    _apply_one_jax_mps_tensor,
+    _apply_two_jax_mps_tensors,
+    _initialize_jax_mps_rank_tensors,
+    _rank_shards_from_jax_mps_tensors,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
+from .mps_result import JAXShardedMPSResult
+from .planning_core import _as_ir
+from .runtime_environment import (
+    _jax_array_nbytes,
+    _jax_complex_dtype,
+    _jnp_device_put,
+    _require_torch,
+    _resolve_jax_device,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
+    _torch_complex_dtype,
 )
 
 
