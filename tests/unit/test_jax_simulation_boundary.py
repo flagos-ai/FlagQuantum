@@ -40,18 +40,17 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     )
 
 
-def test_runtime_reuses_simulation_owned_jax_tensor_network_contraction():
+def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
     assert (
-        kernel._jax_tensor_network_nodes_from_circuit
-        is jax_tensor_network.jax_tensor_network_nodes_from_circuit
+        kernel._jax_tensor_network_z_values
+        is jax_tensor_network.jax_tensor_network_z_values
     )
     assert (
-        kernel._jax_tensor_network_statevector_from_circuit
-        is jax_tensor_network.jax_tensor_network_statevector_from_circuit
+        kernel._jax_tensor_network_z_sum is jax_tensor_network.jax_tensor_network_z_sum
     )
     assert (
-        kernel._jax_contract_nodes_greedy
-        is jax_tensor_network.jax_contract_nodes_greedy
+        kernel._jax_tensor_network_hamiltonian_expectation
+        is jax_tensor_network.jax_tensor_network_hamiltonian_expectation
     )
 
 

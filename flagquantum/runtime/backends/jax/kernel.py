@@ -11,7 +11,6 @@ import torch
 
 from ....simulation.jax_gate_primitives import (
     _jax_hamiltonian_expectation,
-    _jax_pauli_matrix,
     _jax_real_dtype,
     _jax_statevector_from_circuit,
     _jax_z_sum,
@@ -31,10 +30,13 @@ from ....simulation.jax_mps import (
     jax_mps_z_values as _jax_mps_z_values,
 )
 from ....simulation.jax_tensor_network import (
-    jax_contract_nodes_greedy as _jax_contract_nodes_greedy,
+    jax_tensor_network_hamiltonian_expectation as _jax_tensor_network_hamiltonian_expectation,
 )
 from ....simulation.jax_tensor_network import (
-    jax_tensor_network_nodes_from_circuit as _jax_tensor_network_nodes_from_circuit,
+    jax_tensor_network_z_sum as _jax_tensor_network_z_sum,
+)
+from ....simulation.jax_tensor_network import (
+    jax_tensor_network_z_values as _jax_tensor_network_z_values,
 )
 
 TorchCircuitBuilder = Callable[..., Any]
@@ -327,108 +329,6 @@ class _JAXParameterProxy:
 
 
 from .mps_kernel import _jax_mps_from_circuit  # noqa: E402
-
-
-def _jax_tensor_network_expectation_product_ops(
-    circuit: Any,
-    n_wires: int,
-    ops: dict[int, Any],
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    ket_nodes, ket_labels, next_label = _jax_tensor_network_nodes_from_circuit(
-        circuit,
-        n_wires,
-        start_label=0,
-        conjugate=False,
-    )
-    bra_nodes, bra_labels, _next_label = _jax_tensor_network_nodes_from_circuit(
-        circuit,
-        n_wires,
-        start_label=next_label,
-        conjugate=True,
-    )
-    identity = _jax_pauli_matrix("i")
-    op_nodes = []
-    for wire in range(int(n_wires)):
-        op = ops.get(int(wire), identity)
-        op_nodes.append((op, (int(bra_labels[wire]), int(ket_labels[wire]))))
-    value = _jax_contract_nodes_greedy(
-        bra_nodes + ket_nodes + op_nodes, tuple(), matmul_precision
-    )
-    return jnp.real(value.reshape(()))
-
-
-def _jax_tensor_network_z_values(
-    circuit: Any,
-    n_wires: int,
-    wires: Iterable[int],
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    z_op = _jax_pauli_matrix("z")
-    values = []
-    for wire in wires:
-        values.append(
-            _jax_tensor_network_expectation_product_ops(
-                circuit,
-                n_wires,
-                {int(wire): z_op},
-                matmul_precision,
-            )
-        )
-    return jnp.stack(values) if values else jnp.zeros((0,), dtype=_jax_real_dtype())
-
-
-def _jax_tensor_network_z_sum(
-    circuit: Any,
-    n_wires: int,
-    wires: Iterable[int],
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    values = _jax_tensor_network_z_values(circuit, n_wires, wires, matmul_precision)
-    return jnp.sum(values)
-
-
-def _jax_tensor_network_pauli_string_expectation(
-    circuit: Any,
-    n_wires: int,
-    ops: tuple[tuple[int, str], ...],
-    matmul_precision: str | None,
-) -> Any:
-    op_map = {}
-    for wire, name in ops:
-        normalized = str(name).lower()
-        if normalized != "i":
-            op_map[int(wire)] = _jax_pauli_matrix(normalized)
-    return _jax_tensor_network_expectation_product_ops(
-        circuit, n_wires, op_map, matmul_precision
-    )
-
-
-def _jax_tensor_network_hamiltonian_expectation(
-    circuit: Any,
-    n_wires: int,
-    terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    matmul_precision: str | None,
-) -> Any:
-    import jax.numpy as jnp
-
-    total = jnp.zeros((), dtype=_jax_real_dtype())
-    for coefficient, ops in terms:
-        total = total + jnp.asarray(
-            coefficient, dtype=_jax_real_dtype()
-        ) * _jax_tensor_network_pauli_string_expectation(
-            circuit,
-            n_wires,
-            ops,
-            matmul_precision,
-        )
-    return total
 
 
 def __getattr__(name: str) -> Any:
