@@ -42,6 +42,14 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
 
 def test_runtime_reuses_simulation_owned_jax_tensor_network_contraction():
     assert (
+        kernel._jax_tensor_network_nodes_from_circuit
+        is jax_tensor_network.jax_tensor_network_nodes_from_circuit
+    )
+    assert (
+        kernel._jax_tensor_network_statevector_from_circuit
+        is jax_tensor_network.jax_tensor_network_statevector_from_circuit
+    )
+    assert (
         kernel._jax_contract_nodes_greedy
         is jax_tensor_network.jax_contract_nodes_greedy
     )

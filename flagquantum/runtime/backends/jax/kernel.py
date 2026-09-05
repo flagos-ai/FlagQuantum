@@ -10,9 +10,7 @@ from typing import Any
 import torch
 
 from ....simulation.jax_gate_primitives import (
-    _jax_complex_dtype,
     _jax_hamiltonian_expectation,
-    _jax_instruction_matrix,
     _jax_pauli_matrix,
     _jax_real_dtype,
     _jax_statevector_from_circuit,
@@ -34,6 +32,9 @@ from ....simulation.jax_mps import (
 )
 from ....simulation.jax_tensor_network import (
     jax_contract_nodes_greedy as _jax_contract_nodes_greedy,
+)
+from ....simulation.jax_tensor_network import (
+    jax_tensor_network_nodes_from_circuit as _jax_tensor_network_nodes_from_circuit,
 )
 
 TorchCircuitBuilder = Callable[..., Any]
@@ -326,60 +327,6 @@ class _JAXParameterProxy:
 
 
 from .mps_kernel import _jax_mps_from_circuit  # noqa: E402
-
-
-def _jax_tensor_network_statevector_from_circuit(
-    circuit: Any,
-    n_wires: int,
-    parameters: Any,
-    *,
-    matmul_precision: str | None = "highest",
-) -> Any:
-    del parameters
-    nodes, current_labels, _next_label = _jax_tensor_network_nodes_from_circuit(
-        circuit,
-        n_wires,
-        start_label=0,
-        conjugate=False,
-    )
-    out = _jax_contract_nodes_greedy(nodes, tuple(current_labels), matmul_precision)
-    return out.reshape(-1)
-
-
-def _jax_tensor_network_nodes_from_circuit(
-    circuit: Any,
-    n_wires: int,
-    *,
-    start_label: int = 0,
-    conjugate: bool = False,
-) -> tuple[list[tuple[Any, tuple[int, ...]]], list[int], int]:
-    import jax.numpy as jnp
-
-    next_label = int(start_label)
-    current_labels = []
-    nodes: list[tuple[Any, tuple[int, ...]]] = []
-    zero = jnp.asarray([1.0 + 0.0j, 0.0 + 0.0j], dtype=_jax_complex_dtype())
-    for _wire in range(int(n_wires)):
-        label = next_label
-        next_label += 1
-        current_labels.append(label)
-        nodes.append((zero, (label,)))
-    for instruction in circuit.to_ir():
-        if instruction.metadata.get("is_channel"):
-            raise NotImplementedError(
-                "JAX tensor_network mode currently supports unitary circuit instructions."
-            )
-        wires = tuple(int(wire) for wire in instruction.wires)
-        matrix = _jax_instruction_matrix(instruction).reshape((2,) * (2 * len(wires)))
-        if conjugate:
-            matrix = jnp.conj(matrix)
-        input_labels = tuple(current_labels[wire] for wire in wires)
-        output_labels = tuple(range(next_label, next_label + len(wires)))
-        next_label += len(wires)
-        for wire, label in zip(wires, output_labels):
-            current_labels[wire] = label
-        nodes.append((matrix, output_labels + input_labels))
-    return nodes, current_labels, next_label
 
 
 def _jax_tensor_network_expectation_product_ops(
