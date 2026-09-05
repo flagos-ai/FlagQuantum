@@ -28,6 +28,23 @@ observables. `Circuit.state()`, `Circuit.expectation_z()`,
 facades; `Circuit.sample()` retains public format validation while Simulation
 owns multinomial and bit conversion numerics. Existing users and Runtime
 callers do not change.
+
+### Circuit facade stopping point
+
+The local statevector facade is intentionally complete at this boundary.
+`Circuit.probabilities()` remains a one-expression projection of the public
+state result; moving it would add only a pass-through helper.
+`Circuit.counts()` remains user-facing sampling presentation and format
+validation built on `Circuit.sample()`; the random draw and bit conversion
+numerics already belong to Simulation. Neither method should move unless a
+second concrete consumer needs a shared numerical implementation or an
+approved result contract changes their responsibility.
+
+This is a stopping rule, not unfinished migration: do not extract trivial
+wrappers merely to make `Circuit` contain no tensor operations. Future work in
+this area must remove a real duplicate numerical authority, enable an
+implementation replacement, or close a demonstrated cross-domain leak.
+
 For this physical migration, Simulation constructs the initial state while
 `Circuit` still owns its lifecycle cache containers; moving those containers is
 separate work and must not create a second public execution contract.
