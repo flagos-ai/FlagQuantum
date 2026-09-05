@@ -99,7 +99,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_models.py`、`tensor.py` | 结果转换/兼容门面 | 算法内部结构 | 跨层结果与稳定类型应由 Core 提案定义 |
 | `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
 | `graph.py` | 受保护兼容工具 | 当前仅由根 API 兼容导出，无 Compiler 调用方 | 不复制到 Compiler，不形成第二权威；只有出现具体 Compiler 消费者并批准公共 API 迁移后才归位 |
-| `noise.py` | 结果转换/兼容门面 | 无新语义 | NoiseModel 属 Core 路径、lowering 属 Compiler、执行入口属 Provider/Runtime；待调用归零后退出 |
+| `noise.py` | 结果转换/兼容门面 | 无新语义 | 当前仅剩兼容身份测试和 lowering manifest 的历史路径字符串，无生产调用方；先将 manifest 指向 `simulation.density_matrix`，再以规范路径替换兼容测试并删除门面及架构白名单 |
 
 ## 5. `runtime/backends` 代码归属矩阵
 
