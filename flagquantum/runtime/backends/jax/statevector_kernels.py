@@ -338,6 +338,33 @@ def _statevector_shard_map_backward_blockers(plan: Any) -> tuple[str, ...]:
     return tuple(blockers)
 
 
+def _statevector_pmap_backward_blockers(plan: Any) -> tuple[str, ...]:
+    blockers: list[str] = []
+    if int(plan.world_size) <= 1:
+        blockers.append("world_size_is_one")
+    shard_sizes = {int(shard.local_amplitudes) for shard in plan.shards}
+    if len(shard_sizes) != 1:
+        blockers.append("pmap_statevector_equal_shard_size_required")
+    if str(plan.distribution) != "qubit_address_sharded":
+        blockers.append(
+            f"pmap_statevector_qubit_address_sharding_required:{plan.distribution}"
+        )
+    unsupported = tuple(
+        {
+            str(gate_plan.communication)
+            for gate_plan in plan.gate_plans
+            if str(gate_plan.communication)
+            not in {"local", "pair_exchange", "all_to_all"}
+        }
+    )
+    if unsupported:
+        blockers.append(
+            "pmap_statevector_cross_rank_transport_pending:"
+            + ",".join(sorted(unsupported))
+        )
+    return tuple(blockers)
+
+
 def _jax_shard_map_statevector_parameter_loss(
     circuit_builder: Callable[[Any], Any],
     parameter_array: Any,

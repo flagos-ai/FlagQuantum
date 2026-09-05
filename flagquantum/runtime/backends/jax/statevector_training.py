@@ -1,35 +1,24 @@
-# ruff: noqa: F401, F821
 """Statevector training device checks and training-plan construction."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
+from ...distributed.backend_policy import DistributedBackendPolicy
+from .backend_dispatch import plan_jax_distributed_quantum_backend
+from .planning_core import _as_ir
+from .runtime_environment import (
+    _jax_device_count_summary,
+    _resolve_jax_backward_backend,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
 )
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .statevector_kernels import (
+    _statevector_pmap_backward_blockers,
+    _statevector_shard_map_backward_blockers,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
-)
-from .statevector_kernels import _statevector_shard_map_backward_blockers
+from .statevector_records import JAXShardedStatevectorTrainingPlan
 
 
 def _statevector_training_device_blockers(
