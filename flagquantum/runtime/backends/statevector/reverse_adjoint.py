@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
-from typing import Any, Sequence
+from typing import Any
 
 import torch
 import torch.distributed as dist
@@ -49,13 +49,10 @@ from .local_execution import (
     use_compact_global_indices,
 )
 from .planning import plan_distributed_statevector
-
-_DEFAULT_REVERSE_CHUNK_AMPLITUDES = 1 << 22
-
-
-from .reverse import (  # noqa: E402
+from .reverse import (
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
+    _bind_parameters,
     _fused_vjp_pipeline_enabled,
     _gradient_bucketing_enabled,
     _gradient_reduction_overlap_enabled,
@@ -66,48 +63,6 @@ from .reverse import (  # noqa: E402
     _reverse_exchange_workspace_enabled,
     _triton_vjp_adjoint_decision,
 )
-
-
-def _parameter_layout(
-    ir: CircuitIR,
-) -> tuple[tuple[torch.Tensor, ...], tuple[tuple[int, str, int], ...], tuple[int, ...]]:
-    parameters: list[torch.Tensor] = []
-    identities: dict[int, int] = {}
-    slots: list[tuple[int, str, int]] = []
-    occurrences: list[int] = []
-    for instruction_index, instruction in enumerate(ir.instructions):
-        for name, value in instruction.params.items():
-            if not isinstance(value, torch.Tensor) or not value.requires_grad:
-                continue
-            identity = id(value)
-            parameter_index = identities.get(identity)
-            if parameter_index is None:
-                parameter_index = len(parameters)
-                identities[identity] = parameter_index
-                parameters.append(value)
-                occurrences.append(0)
-            occurrences[parameter_index] += 1
-            slots.append((instruction_index, str(name), parameter_index))
-    if not parameters:
-        raise ValueError("sharded reverse mode requires at least one trainable tensor")
-    return tuple(parameters), tuple(slots), tuple(occurrences)
-
-
-def _bind_parameters(
-    ir: CircuitIR,
-    slots: Sequence[tuple[int, str, int]],
-    parameters: Sequence[torch.Tensor],
-) -> CircuitIR:
-    instructions = list(ir.instructions)
-    params_by_instruction: dict[int, dict[str, Any]] = {}
-    for instruction_index, name, parameter_index in slots:
-        params = params_by_instruction.setdefault(
-            instruction_index, dict(instructions[instruction_index].params)
-        )
-        params[name] = parameters[parameter_index]
-    for index, params in params_by_instruction.items():
-        instructions[index] = replace(instructions[index], params=params)
-    return replace(ir, instructions=tuple(instructions))
 
 
 def _compact_reverse_global_indices(plan: Any, rank: int) -> bool:
