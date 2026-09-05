@@ -27,9 +27,10 @@ and backward-pass evidence.
 stable user facade and Runtime enters through `run_local_statevector()`.
 
 `statevector_adjoint.py` owns local adjoint numerical primitives that do not
-depend on shard ownership or communication: supported rotation derivatives and
-the real-valued complex inner product. Runtime retains shard indexing, chunk
-policy, rematerialization, collectives, communication, and backward evidence.
+depend on shard ownership or communication: supported rotation derivatives,
+the real-valued complex inner product, and chunk-local Z expectation/adjoint
+math. Runtime retains shard indexing, chunk policy, rematerialization,
+collectives, communication, and backward evidence.
 
 `density_matrix.py` owns local exact density evolution, Kraus application, and
 density-matrix measurements. Compiler owns noise lowering; Runtime owns

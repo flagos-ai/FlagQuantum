@@ -31,4 +31,37 @@ def real_conjugate_inner_sum(left: torch.Tensor, right: torch.Tensor) -> torch.T
     return torch.sum(left.real * right.real + left.imag * right.imag)
 
 
-__all__ = ("analytic_rotation_derivative", "real_conjugate_inner_sum")
+def z_expectation_chunk(
+    amplitudes: torch.Tensor,
+    global_indices: torch.Tensor,
+    *,
+    n_wires: int,
+    wire: int,
+) -> torch.Tensor:
+    """Return one amplitude chunk's contribution to a Z expectation."""
+
+    bit = (global_indices >> (n_wires - wire - 1)) & 1
+    signs = (1 - 2 * bit).to(dtype=amplitudes.real.dtype)
+    return (amplitudes.abs().square() * signs.reshape(1, -1)).sum()
+
+
+def z_expectation_adjoint_chunk(
+    amplitudes: torch.Tensor,
+    global_indices: torch.Tensor,
+    *,
+    n_wires: int,
+    wire: int,
+) -> torch.Tensor:
+    """Return one amplitude chunk's derivative of a Z expectation."""
+
+    bit = (global_indices >> (n_wires - wire - 1)) & 1
+    signs = (1 - 2 * bit).to(dtype=amplitudes.real.dtype)
+    return 2 * amplitudes * signs.reshape(1, -1)
+
+
+__all__ = (
+    "analytic_rotation_derivative",
+    "real_conjugate_inner_sum",
+    "z_expectation_adjoint_chunk",
+    "z_expectation_chunk",
+)

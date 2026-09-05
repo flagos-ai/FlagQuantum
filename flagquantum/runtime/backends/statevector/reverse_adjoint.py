@@ -17,6 +17,12 @@ from ....simulation.statevector_adjoint import (
 from ....simulation.statevector_adjoint import (
     real_conjugate_inner_sum as _real_conjugate_inner_sum,
 )
+from ....simulation.statevector_adjoint import (
+    z_expectation_adjoint_chunk as _z_expectation_adjoint_chunk,
+)
+from ....simulation.statevector_adjoint import (
+    z_expectation_chunk as _z_expectation_chunk,
+)
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
@@ -121,10 +127,12 @@ def _local_expectation_z(
     for start in range(0, local_count, _reverse_chunk_amplitudes()):
         end = min(local_count, start + _reverse_chunk_amplitudes())
         indices = _storage_global_indices(shard_state, start, end, plan=plan)
-        bit = (indices >> (n_wires - wire - 1)) & 1
-        signs = (1 - 2 * bit).to(dtype=shard_state.amplitudes.real.dtype)
-        probabilities = shard_state.amplitudes[:, start:end].abs().square()
-        total = total + (probabilities * signs.reshape(1, -1)).sum()
+        total = total + _z_expectation_chunk(
+            shard_state.amplitudes[:, start:end],
+            indices,
+            n_wires=n_wires,
+            wire=wire,
+        )
     return total
 
 
@@ -139,10 +147,11 @@ def _local_expectation_z_adjoint(
         for start in range(0, local_count, _reverse_chunk_amplitudes()):
             end = min(local_count, start + _reverse_chunk_amplitudes())
             indices = _storage_global_indices(shard_state, start, end, plan=plan)
-            bit = (indices >> (n_wires - wire - 1)) & 1
-            signs = (1 - 2 * bit).to(dtype=shard_state.amplitudes.real.dtype)
-            adjoint[:, start:end] = (
-                2 * shard_state.amplitudes[:, start:end] * signs.reshape(1, -1)
+            adjoint[:, start:end] = _z_expectation_adjoint_chunk(
+                shard_state.amplitudes[:, start:end],
+                indices,
+                n_wires=n_wires,
+                wire=wire,
             )
     return adjoint
 

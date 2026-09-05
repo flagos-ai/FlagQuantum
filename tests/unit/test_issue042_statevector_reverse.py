@@ -29,6 +29,8 @@ from flagquantum.runtime.backends.statevector.reverse_adjoint import (
 from flagquantum.simulation.statevector_adjoint import (
     analytic_rotation_derivative,
     real_conjugate_inner_sum,
+    z_expectation_adjoint_chunk,
+    z_expectation_chunk,
 )
 
 pytestmark = pytest.mark.unit
@@ -49,6 +51,20 @@ def test_real_conjugate_inner_sum_matches_complex_definition(dtype):
     actual = real_conjugate_inner_sum(left, right)
     torch.testing.assert_close(actual, expected)
     assert actual.dtype == left.real.dtype
+
+
+def test_z_expectation_chunk_and_adjoint_share_wire_semantics():
+    amplitudes = torch.tensor([[0.5 + 0.5j, 0.5 - 0.5j]], dtype=torch.complex64)
+    indices = torch.tensor([0, 2])
+
+    expectation = z_expectation_chunk(amplitudes, indices, n_wires=2, wire=0)
+    adjoint = z_expectation_adjoint_chunk(amplitudes, indices, n_wires=2, wire=0)
+
+    torch.testing.assert_close(expectation, torch.tensor(0.0))
+    torch.testing.assert_close(
+        adjoint,
+        torch.tensor([[1.0 + 1.0j, -1.0 + 1.0j]], dtype=torch.complex64),
+    )
 
 
 def test_address_sharded_reverse_always_uses_compact_global_indices():
