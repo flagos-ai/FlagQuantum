@@ -27,6 +27,7 @@ from .statevector_ops import (
     _apply_single_qubit_fixed,
     _batched_rotation_sequence_matrices,
     _batched_rx_ry_rz_matrices,
+    _bits_from_indices,
     _compile_statevector_program,
     _fused_gate_matrix,
     _gate_matrix,
@@ -526,6 +527,25 @@ def _expectation_pauli_string(
             )
     value = complex_mul(complex_conj(current_state), transformed).sum(dim=-1)
     return torch.real(value)
+
+
+def _sample_statevector(
+    circuit: Circuit,
+    *,
+    shots: int,
+    generator: torch.Generator | None,
+    return_bits: bool,
+) -> torch.Tensor:
+    """Sample local statevector probabilities as indices or bitstrings."""
+
+    probabilities = torch.abs(state(circuit)) ** 2
+    samples = torch.multinomial(
+        probabilities,
+        num_samples=shots,
+        replacement=True,
+        generator=generator,
+    )
+    return _bits_from_indices(samples, circuit.n_wires) if return_bits else samples
 
 
 def run_local_statevector(

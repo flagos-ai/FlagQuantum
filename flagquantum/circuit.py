@@ -27,7 +27,6 @@ from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
 from .ops.complex_ops import complex_conj, complex_mul
 from .ops.matrices import GATE_MAT_DICT
-from .simulation.statevector_ops import _bits_from_indices
 
 if TYPE_CHECKING:
     from .compilation.models import ExecutionPlan
@@ -371,15 +370,16 @@ class Circuit:
     ) -> torch.Tensor:
         """Sample computational-basis bitstrings from the circuit state."""
 
-        probs = self.probabilities()
-        samples = torch.multinomial(
-            probs, num_samples=shots, replacement=True, generator=generator
-        )
-        if format == "index":
-            return samples
-        if format != "bits":
+        from .simulation.statevector import _sample_statevector
+
+        if format not in {"bits", "index"}:
             raise ValidationError("sample format must be 'bits' or 'index'.")
-        return _bits_from_indices(samples, self.n_wires)
+        return _sample_statevector(
+            self,
+            shots=shots,
+            generator=generator,
+            return_bits=format == "bits",
+        )
 
     def counts(
         self,
