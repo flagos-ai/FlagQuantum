@@ -8,6 +8,7 @@ from flagquantum.runtime.backends.jax import (
     mps_backward,
     mps_boundary_exchange,
     mps_evidence,
+    mps_pullbacks,
     runtime_environment,
     statevector_execution,
 )
@@ -2555,7 +2556,7 @@ def test_minimal_mps_sharded_backward_skeleton_rejects_unsupported_shape_or_back
 def test_mps_owner_rank_parameter_vjp_executes_one_and_same_shard_two_site_gates():
     parameters = torch.tensor([0.23, -0.41], dtype=torch.float64)
 
-    summary = jax_distributed._execute_minimal_mps_owner_rank_parameter_vjp(
+    summary = mps_pullbacks._execute_minimal_mps_owner_rank_parameter_vjp(
         parameters,
         gate_kinds=("one_site_ry", "same_shard_two_site_rxx"),
     )
@@ -2606,20 +2607,20 @@ def test_mps_owner_rank_parameter_vjp_executes_one_and_same_shard_two_site_gates
 
 def test_mps_owner_rank_parameter_vjp_rejects_boundary_crossing_gate():
     with pytest.raises(ValueError, match="boundary-crossing gates are unsupported"):
-        jax_distributed._execute_minimal_mps_owner_rank_parameter_vjp(
+        mps_pullbacks._execute_minimal_mps_owner_rank_parameter_vjp(
             [0.2, -0.4],
             gate_kinds=("one_site_ry", "boundary_two_site_rxx"),
         )
 
 
 def test_mps_owner_rank_parameter_vjp_helper_remains_internal_api():
-    assert hasattr(jax_distributed, "_execute_minimal_mps_owner_rank_parameter_vjp")
+    assert hasattr(mps_pullbacks, "_execute_minimal_mps_owner_rank_parameter_vjp")
     assert not hasattr(fq, "_execute_minimal_mps_owner_rank_parameter_vjp")
 
 
 def test_mps_boundary_gate_adjoint_pullback_executes_without_full_replay():
     theta = 0.37
-    summary = jax_distributed._execute_minimal_mps_boundary_gate_adjoint_pullback(theta)
+    summary = mps_pullbacks._execute_minimal_mps_boundary_gate_adjoint_pullback(theta)
 
     assert summary["boundary_gate_pullback_execution"] == "executed"
     theta_tensor = torch.tensor(theta, dtype=torch.float64)
@@ -2663,15 +2664,11 @@ def test_mps_boundary_gate_adjoint_pullback_executes_without_full_replay():
 )
 def test_mps_boundary_gate_adjoint_pullback_fails_closed(kwargs, message):
     with pytest.raises(ValueError, match=message):
-        jax_distributed._execute_minimal_mps_boundary_gate_adjoint_pullback(
-            0.2, **kwargs
-        )
+        mps_pullbacks._execute_minimal_mps_boundary_gate_adjoint_pullback(0.2, **kwargs)
 
 
 def test_mps_boundary_gate_adjoint_pullback_remains_internal_api():
-    assert hasattr(
-        jax_distributed, "_execute_minimal_mps_boundary_gate_adjoint_pullback"
-    )
+    assert hasattr(mps_pullbacks, "_execute_minimal_mps_boundary_gate_adjoint_pullback")
     assert not hasattr(fq, "_execute_minimal_mps_boundary_gate_adjoint_pullback")
 
 
