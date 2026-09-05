@@ -1,4 +1,4 @@
-"""Batched statevector quantum-trajectory execution."""
+"""Runtime lifecycle for batched statevector quantum trajectories."""
 
 from __future__ import annotations
 

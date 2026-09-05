@@ -30,6 +30,16 @@ checkpoint, or evidence objects as public API.
 `noisy.py` and the `split_real_imag*` modules are specialized execution paths.
 They are not the default local CPU vertical slice.
 
+`noisy.py` is the Runtime boundary for statevector trajectories. It owns input
+validation, global trajectory ownership and random streams, batching,
+checkpoint/restart, retry, online and collective statistics, readout-result
+processing, and result/evidence assembly. It invokes one already-lowered batch
+through `simulation.noisy_statevector`; all gate, channel, normalization,
+observable, and Pauli fast-path numerics are implemented there. Do not move the
+remaining lifecycle code into Simulation or split it into pass-through helper
+objects. The direct raw-program entry retains Compiler lowering only for its
+existing compatibility behavior.
+
 ## Local execution stopping point
 
 `local_execution.py` is not a second numerical-kernel authority. Its shard
