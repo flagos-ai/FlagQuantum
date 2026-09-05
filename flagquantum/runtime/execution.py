@@ -856,43 +856,49 @@ def run_native(
                 **statevector_options,
             )
         )
-        execution_plan = provided_execution_plan or build_plan(
-            execution_ir,
-            noise_model=noise_model,
-            state_mode="statevector",
-            **plan_options,
-        )
-        execution_plan = replace(
-            execution_plan,
-            noisy_execution_plan=build_noisy_execution_plan(
+        if provided_execution_plan is not None:
+            execution_plan = provided_execution_plan
+        else:
+            execution_plan = build_plan(
+                execution_ir,
+                noise_model=noise_model,
+                state_mode="statevector",
+                **plan_options,
+            )
+            execution_plan = replace(
                 execution_plan,
-                representation="statevector",
-                evolution="quantum_trajectory",
-                trajectories=int(options.get("trajectories", 32)),
-                seed=options.get("seed", 0),
-                min_trajectories=int(options.get("min_trajectories", 1)),
-                target_standard_error=options.get("target_standard_error"),
-                memory_limit_bytes=options.get("memory_limit_bytes"),
-                estimated_memory_bytes=(
-                    execution_plan.state_bytes
-                    * min(
-                        int(options.get("trajectories", 32)),
-                        int(options.get("trajectory_batch_size", 32)),
-                    )
-                    * (
-                        2
-                        + max(
-                            4 if noise_model.device_profile else 1,
-                            max(
-                                (len(rule.channel.kraus) for rule in noise_model.rules),
-                                default=1,
-                            ),
+                noisy_execution_plan=build_noisy_execution_plan(
+                    execution_plan,
+                    representation="statevector",
+                    evolution="quantum_trajectory",
+                    trajectories=int(options.get("trajectories", 32)),
+                    seed=options.get("seed", 0),
+                    min_trajectories=int(options.get("min_trajectories", 1)),
+                    target_standard_error=options.get("target_standard_error"),
+                    memory_limit_bytes=options.get("memory_limit_bytes"),
+                    estimated_memory_bytes=(
+                        execution_plan.state_bytes
+                        * min(
+                            int(options.get("trajectories", 32)),
+                            int(options.get("trajectory_batch_size", 32)),
                         )
-                    )
+                        * (
+                            2
+                            + max(
+                                4 if noise_model.device_profile else 1,
+                                max(
+                                    (
+                                        len(rule.channel.kraus)
+                                        for rule in noise_model.rules
+                                    ),
+                                    default=1,
+                                ),
+                            )
+                        )
+                    ),
+                    noise_model_identity=noise_model.identity,
                 ),
-                noise_model_identity=noise_model.identity,
-            ),
-        )
+            )
     elif mode == "mps_trajectory":
         from ..simulation.mps_execution import run_lowered_noisy_mps_trajectory
 

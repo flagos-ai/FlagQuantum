@@ -879,8 +879,7 @@ def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
         _execution_plan=plan,
     )
 
-    assert returned_plan.state_mode == plan.state_mode
-    assert returned_plan.noisy_execution_plan == plan.noisy_execution_plan
+    assert returned_plan is plan
     assert torch.equal(actual.expectation_z, expected.expectation_z)
     assert actual.trajectory_seeds == expected.trajectory_seeds
 
