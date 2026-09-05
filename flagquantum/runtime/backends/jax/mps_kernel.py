@@ -423,31 +423,3 @@ def _jax_mps_hamiltonian_expectation(
             matmul_precision,
         )
     return total
-
-
-def _jax_mps_from_statevector(
-    state: Any,
-    n_wires: int,
-    *,
-    max_bond: int | None,
-    cutoff: float,
-) -> list[Any]:
-    import jax.numpy as jnp
-
-    rest = state.reshape(1, 2 ** int(n_wires))
-    tensors = []
-    left_dim = 1
-    for _wire in range(int(n_wires) - 1):
-        rest = rest.reshape(left_dim * 2, -1)
-        u, s, vh = jnp.linalg.svd(rest, full_matrices=False)
-        full_rank = int(s.shape[0])
-        rank = full_rank if max_bond is None else min(int(max_bond), full_rank)
-        del cutoff
-        u = u[:, :rank]
-        s = s[:rank]
-        vh = vh[:rank, :]
-        tensors.append(u.reshape(left_dim, 2, rank))
-        rest = s[:, None] * vh
-        left_dim = rank
-    tensors.append(rest.reshape(left_dim, 2, 1))
-    return tensors
