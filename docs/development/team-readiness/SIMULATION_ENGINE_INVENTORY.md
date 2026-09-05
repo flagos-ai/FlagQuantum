@@ -70,7 +70,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | 本地 MPS | `simulation/mps_local.py` 的无噪声指令循环；`mps_noisy.py` 的已降低单轨迹数值循环；`mps_state.py`、`mps_factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps_brickwork.py` | `mps_execution.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并；`mps.py` 门面 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
 | 分布式 MPS | `simulation/mps_rank_local.py`、`mps_site_kernels.py`、`mps_compiled_layers.py`、`mps_factorization.py`、`mps_canonicalization.py`、`mps_reverse.py`、`mps_observables.py` 及 reverse 尚未拆出的数值段 | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
 | 本地张量网络 | `simulation/tensor_local.py` 的计划构建与数值状态入口；`tensor_observables.py` 的观测量计划与 MPO；`tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容门面与振幅入口、`tensor_path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
-| 分布式张量网络 | `simulation/tensor_stages.py` 的 pair contraction、高秩回退和补偿累加；`runtime/backends/tensor_network/reverse_dag.py` 等仍有未拆数学 | distributed_dag/execution/redistribution/multi_axis/partial_mesh/joint_planning/checkpoint/rematerialization/memory_evidence | 基础 contraction 已归位，sliced/sharded reverse 仍与任务所有权、checkpoint 及通信计划交织；生产 transport 未认证 |
+| 分布式张量网络 | `simulation/tensor_stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/backends/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | `simulation/noise.py` 兼容门面、Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps_state.py`/`mps_execution.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
 | 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/noisy_statevector.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps_execution.py`/`mps_state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
@@ -118,7 +118,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `mps/state.py`、`records.py` | 结果/所有权模型（混合） | 算法内部张量状态可留 | topology ownership、跨层记录应由 Runtime/Core 契约 |
 | `mps/communication.py`、`distribution.py`、`metadata_transport.py`、`reverse_transport.py` | 资源或通信编排 | 仅通信算子要求 | Runtime/Platform 实现 transport 和 process group |
 | `mps/training*.py`、`checkpointing.py`、`production.py`、`profiling.py`、`device_resolution.py` | 资源/生命周期/结果 | 局部 loss/gradient kernel 可下沉 Engine | 设备选择、参数广播、优化器、持久化、生产门禁、观测 |
-| `tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` | 数值算法（混合） | pair contraction、高秩 fallback 和 Kahan 累加已委托 Simulation；剩余 reverse math 需继续拆分 | task ownership、checkpoint plan、切片调度、跨 rank reduce/transport |
+| `tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` | 数值执行适配（混合） | pair contraction、单项/批量 pair pullback、高秩 fallback 和 Kahan 累加已委托 Simulation | DAG/bucket schedule、tape/cotangent 生命周期、checkpoint plan、切片调度、跨 rank reduce/transport |
 | `tensor_network/distributed_execution.py`、`distributed_sliced_reverse.py`、`redistribution.py`、`partial_mesh.py` | 通信/执行适配（混合） | 局部 contraction 调用 | process group、P2P/all-to-all、rank 生命周期与聚合 |
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
@@ -259,3 +259,15 @@ Simulation。已删除本轮确认无消费者的私有兼容别名，不因文�
 
 当前第 5 项对 Statevector 切片成立，第 1--4 项尚未全部成立。因此本轮只更新事实台账，
 不修改机器可读状态。
+
+## 12. TN 编译前向边界复核（2026-09-05）
+
+`execute_compiled_tn_forward_with_tape()` 与 Simulation 的本地
+`execute_contraction_stages()` 都会按 shape-compatible bucket 调用相同的
+`complex_einsum_pair()` 数值原语，但二者不构成重复执行权威：前者消费分布式 DAG 的稳定
+value id，并为显式反向保留完整 tape；后者消费本地 contraction plan，并在中间值用尽后释放。
+
+因此不通过对象转换复用整个本地 executor，也不增加仅转发 equation 和 tensor 的薄包装。
+Runtime 保留 DAG、bucket 顺序和 tape 生命周期，Simulation 继续拥有实际 contraction 与
+pullback 数值原语。以后只有两条执行路径出现可独立复用的第二项数值行为时，才提取新的
+Simulation helper。
