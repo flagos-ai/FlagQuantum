@@ -71,6 +71,8 @@ state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,
 MPO compression, and batched observable contraction. `tensor_execution.py`
 preserves the public wrappers and amplitude entry points; distributed
 scheduling, rank lifecycle, and communication remain outside these paths.
+`tensor_stages.py` owns pair-contraction execution, high-rank fallback, and
+compensated numerical accumulation used by sliced execution.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.

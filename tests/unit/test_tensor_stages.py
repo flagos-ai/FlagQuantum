@@ -11,6 +11,7 @@ from flagquantum.simulation.tensor_stages import (
     einsum_pair_by_labels_with_fallback,
     execute_contraction_stages,
     execute_pair_steps,
+    kahan_add,
 )
 
 pytestmark = pytest.mark.unit
@@ -70,3 +71,15 @@ def test_pair_fallback_is_owned_by_simulation(monkeypatch):
 
     assert used_fallback is True
     assert torch.equal(result, left.tensor @ right.tensor)
+
+
+def test_kahan_accumulation_is_owned_by_simulation():
+    values = (torch.tensor(1e8),) + (torch.tensor(3.0),) * 3
+    total = compensation = None
+    for value in values:
+        total, compensation = kahan_add(total, compensation, value)
+
+    naive = sum(values[1:], values[0])
+    reference = sum(value.double() for value in values)
+    assert total is not None
+    assert abs(total.double() - reference) < abs(naive.double() - reference)

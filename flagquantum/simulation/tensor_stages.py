@@ -18,6 +18,22 @@ from .tensor_models import (
 _LOCAL_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
+def kahan_add(
+    total: torch.Tensor | None,
+    compensation: torch.Tensor | None,
+    value: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Accumulate one tensor with Kahan compensation."""
+
+    if total is None:
+        return value, torch.zeros_like(value)
+    if compensation is None:
+        raise RuntimeError("Kahan compensation is unavailable")
+    corrected = value - compensation
+    updated = total + corrected
+    return updated, (updated - total) - corrected
+
+
 def execute_pair_steps(
     nodes: Sequence[TensorNetworkNode],
     output_labels: Sequence[int],

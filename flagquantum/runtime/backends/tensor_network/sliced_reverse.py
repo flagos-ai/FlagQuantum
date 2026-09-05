@@ -20,6 +20,7 @@ from ....simulation.tensor_models import (
     TensorNetworkSlicingPlan,
 )
 from ....simulation.tensor_path_search import _label_dims
+from ....simulation.tensor_stages import kahan_add
 from .distributed_dag import plan_distributed_tn_contraction_dag
 from .joint_planning import (
     _predict_rematerialization_peak,
@@ -233,20 +234,6 @@ def _predict_checkpoint_forward_peak(
     return peak
 
 
-def _kahan_add(
-    total: torch.Tensor | None,
-    compensation: torch.Tensor | None,
-    value: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    if total is None:
-        return value, torch.zeros_like(value)
-    if compensation is None:
-        raise RuntimeError("Kahan compensation is unavailable")
-    corrected = value - compensation
-    updated = total + corrected
-    return updated, (updated - total) - corrected
-
-
 def execute_sliced_tn_explicit_reverse(
     plan: TensorNetworkContractionPlan | TensorNetworkExpectationPlan,
     slicing: TensorNetworkSlicingPlan,
@@ -400,7 +387,7 @@ def execute_sliced_tn_explicit_reverse(
         )
         output = tape[dag.output_value_id]
         reduced_output = output if batch_size == 1 else output.sum(dim=0)
-        value_total, value_compensation = _kahan_add(
+        value_total, value_compensation = kahan_add(
             value_total, value_compensation, reduced_output
         )
         explicit = (
@@ -454,7 +441,7 @@ def execute_sliced_tn_explicit_reverse(
                 (
                     deferred_node_totals[node_index],
                     deferred_node_compensations[node_index],
-                ) = _kahan_add(
+                ) = kahan_add(
                     deferred_node_totals[node_index],
                     deferred_node_compensations[node_index],
                     source_cotangent,
@@ -474,7 +461,7 @@ def execute_sliced_tn_explicit_reverse(
             for index, gradient in enumerate(slice_gradients):
                 if gradient is None:
                     continue
-                gradient_totals[index], gradient_compensations[index] = _kahan_add(
+                gradient_totals[index], gradient_compensations[index] = kahan_add(
                     gradient_totals[index],
                     gradient_compensations[index],
                     gradient,
