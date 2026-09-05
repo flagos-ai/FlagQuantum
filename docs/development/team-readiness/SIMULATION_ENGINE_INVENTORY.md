@@ -146,6 +146,13 @@ Statevector 复核确认 `statevector_kernels.py` 只剩指令/计划适配、co
 数学均已委托 `simulation/jax_statevector.py`。该路径已到停止点，不为移动文件而复制
 Runtime shard/plan 类型。
 
+参数化张量网络复核确认，通用节点构造、标签切片、einsum 收缩以及输出 observable/loss
+数学已由 `simulation/jax_tensor_network.py` 统一负责；`tensor_network_gradients.py` 中
+剩余节点组装直接消费 Runtime 的 `JAXTensorNetworkNode`、切片任务、后端和 collective
+选择，并参与梯度生命周期与结果证据，因此继续属于 Runtime 适配。该路径已到停止点：
+不得为消除 Runtime 中的 `jnp` 调用而复制节点记录或新增 node factory；只有不依赖
+Runtime 计划、任务、记录、策略和 collective，且具有独立复用价值的数值操作才继续下沉。
+
 本轮同时删除 `mps_kernel.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
 上下文继续以 `simulation/jax_gate_primitives.py` 中的实现为唯一权威。
 
