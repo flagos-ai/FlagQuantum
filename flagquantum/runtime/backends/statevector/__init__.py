@@ -283,7 +283,7 @@ _EXPORTS = {
         "TorchDistributedStatevectorResult",
     ),
     "execute_torch_distributed_statevector": (
-        "flagquantum.runtime.backends.statevector.forward",
+        "flagquantum.runtime.backends.statevector.forward_executor",
         "execute_torch_distributed_statevector",
     ),
     "initialize_statevector_shard": (

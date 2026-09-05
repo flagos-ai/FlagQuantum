@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.backends.statevector.forward import (
+from flagquantum.runtime.backends.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
 from flagquantum.runtime.backends.statevector.layout import (

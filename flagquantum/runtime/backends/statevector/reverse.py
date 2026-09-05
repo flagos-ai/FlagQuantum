@@ -14,10 +14,8 @@ from ....core.ir import CircuitIR, ensure_circuit_ir
 from ...builder_compilation import detached_ir_snapshot
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .environment import get_bool
-from .forward import (
-    communication_aware_wire_layout,
-    execute_torch_distributed_statevector,
-)
+from .forward import communication_aware_wire_layout
+from .forward_executor import execute_torch_distributed_statevector
 from .kernel_dispatch import (
     KernelDecision,
     KernelDispatchEvidence,

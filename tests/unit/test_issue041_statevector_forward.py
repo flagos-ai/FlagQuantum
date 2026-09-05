@@ -15,6 +15,8 @@ from flagquantum.runtime.backends.statevector.forward import (
     _wait_for_exchange,
     _zero_basis_local_indices,
     communication_aware_wire_layout,
+)
+from flagquantum.runtime.backends.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
 from flagquantum.runtime.backends.statevector.local_execution import (
@@ -327,7 +329,7 @@ def test_unsupported_gate_fails_before_state_initialization(monkeypatch):
         raise AssertionError("state must not initialize")
 
     monkeypatch.setattr(
-        "flagquantum.runtime.backends.statevector.forward.initialize_statevector_shard",
+        "flagquantum.runtime.backends.statevector.forward_executor.initialize_statevector_shard",
         forbidden,
     )
     with pytest.raises((KeyError, ValueError)):
@@ -351,7 +353,7 @@ def test_pytorch_executor_import_does_not_initialize_optional_jax():
     import sys
 
     code = (
-        "import sys; import flagquantum.runtime.backends.statevector.forward; "
+        "import sys; import flagquantum.runtime.backends.statevector.forward_executor; "
         "assert 'jax' not in sys.modules and 'jaxlib' not in sys.modules"
     )
     subprocess.run([sys.executable, "-c", code], check=True)

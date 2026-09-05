@@ -1142,12 +1142,3 @@ def _vectorized_subgroup_exchange_gate(
         communication_bytes,
         peak,
     )
-
-
-def execute_torch_distributed_statevector(
-    *args: Any, **kwargs: Any
-) -> TorchDistributedStatevectorResult:
-    """Compatibility entrypoint delegated to the bounded executor module."""
-    from .forward_executor import execute_torch_distributed_statevector as execute
-
-    return execute(*args, **kwargs)
