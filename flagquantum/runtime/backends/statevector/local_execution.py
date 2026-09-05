@@ -15,6 +15,23 @@ from ...distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
 )
+from .models import (
+    DistributedStatevectorPlan,
+    LocalDistributedStatevectorResult,
+    StatevectorCorrectnessRunSpec,
+    StatevectorExecutionSegment,
+    StatevectorExecutorReport,
+    StatevectorRankResult,
+    StatevectorSegmentResult,
+    StatevectorShard,
+    StatevectorShardState,
+    StatevectorTransportEvent,
+    StatevectorTransportReport,
+)
+from .planning import (
+    plan_distributed_statevector,
+    trace_distributed_statevector_plan,
+)
 
 _DIAGONAL_GATES = {
     "z",
@@ -30,23 +47,6 @@ _DIAGONAL_GATES = {
     "cphase",
 }
 _TARGET_LAST_GATES = {"cx", "cnot", "cy", "crx", "cry", "crz"}
-from .models import (  # noqa: E402
-    DistributedStatevectorPlan,
-    LocalDistributedStatevectorResult,
-    StatevectorCorrectnessRunSpec,
-    StatevectorExecutionSegment,
-    StatevectorExecutorReport,
-    StatevectorRankResult,
-    StatevectorSegmentResult,
-    StatevectorShard,
-    StatevectorShardState,
-    StatevectorTransportEvent,
-    StatevectorTransportReport,
-)
-from .planning import (  # noqa: E402
-    plan_distributed_statevector,
-    trace_distributed_statevector_plan,
-)
 
 
 def _segment_by_index(

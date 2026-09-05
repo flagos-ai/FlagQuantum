@@ -7,6 +7,19 @@ from typing import Any, Sequence
 
 from ....compiler import schedule_layers
 from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from .models import (
+    DistributedStatevectorPlan,
+    StatevectorBufferPlan,
+    StatevectorCommunicationEdge,
+    StatevectorExecutionSegment,
+    StatevectorFusionBlock,
+    StatevectorGatePlan,
+    StatevectorPerformanceEstimate,
+    StatevectorRankTopology,
+    StatevectorShard,
+    StatevectorTraceEvent,
+    StatevectorTraceReport,
+)
 
 _DIAGONAL_GATES = {
     "z",
@@ -39,21 +52,6 @@ _PARAM_ALIASES = {
     "ryy": ("theta",),
     "rzz": ("theta",),
 }
-
-
-from .models import (  # noqa: E402
-    DistributedStatevectorPlan,
-    StatevectorBufferPlan,
-    StatevectorCommunicationEdge,
-    StatevectorExecutionSegment,
-    StatevectorFusionBlock,
-    StatevectorGatePlan,
-    StatevectorPerformanceEstimate,
-    StatevectorRankTopology,
-    StatevectorShard,
-    StatevectorTraceEvent,
-    StatevectorTraceReport,
-)
 
 
 def _is_power_of_two(value: int) -> bool:
