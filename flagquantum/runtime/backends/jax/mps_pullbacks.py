@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
+from ....simulation.jax_mps_pullbacks import (
+    jax_mps_boundary_rxx_pullback,
+    jax_mps_owner_local_vjp,
+)
 from .mps_backward import _execute_minimal_mps_sharded_backward
 from .mps_boundary_exchange import _summarize_local_mps_boundary_adjoint_exchange
 from .release_policy import (
@@ -50,36 +54,11 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
         zip(parameter_values, normalized_gate_kinds)
     ):
         theta_value = jnp.asarray(theta)
-        if gate_kind == "one_site_ry":
-
-            def local_score(value: Any) -> Any:
-                tensor = jnp.stack((jnp.cos(value / 2.0), jnp.sin(value / 2.0)))
-                return jnp.real(
-                    tensor[0] * jnp.conj(tensor[0]) - tensor[1] * jnp.conj(tensor[1])
-                )
-
-        else:
-
-            def local_score(value: Any) -> Any:
-                tensor = jnp.stack(
-                    (
-                        jnp.cos(value / 2.0),
-                        jnp.asarray(0.0j),
-                        jnp.asarray(0.0j),
-                        -1j * jnp.sin(value / 2.0),
-                    )
-                )
-                return jnp.real(
-                    tensor[0] * jnp.conj(tensor[0])
-                    + tensor[1] * jnp.conj(tensor[1])
-                    - tensor[2] * jnp.conj(tensor[2])
-                    - tensor[3] * jnp.conj(tensor[3])
-                )
-
-        _, pullback = jax.vjp(local_score, theta_value)
-        gradient = pullback(
-            jnp.asarray(received_cotangents[rank], dtype=theta_value.dtype)
-        )[0]
+        gradient = jax_mps_owner_local_vjp(
+            theta_value,
+            received_cotangents[rank],
+            gate_kind=gate_kind,
+        )
         gradients[rank] = float(jax.device_get(gradient))
         half_angle = theta / 2.0
         if gate_kind == "one_site_ry":
@@ -213,27 +192,8 @@ def _execute_minimal_mps_boundary_gate_adjoint_pullback(
         cpu_device,
     )
 
-    def boundary_score(value: Any, left: Any, right: Any) -> Any:
-        product = jnp.einsum("lpm,mqr->lpqr", left, right, precision="highest")
-        flat = product.reshape(4)
-        cosine = jnp.cos(value / 2.0)
-        sine = jnp.sin(value / 2.0)
-        gate = jnp.asarray(
-            (
-                (cosine, 0.0, 0.0, -1j * sine),
-                (0.0, cosine, -1j * sine, 0.0),
-                (0.0, -1j * sine, cosine, 0.0),
-                (-1j * sine, 0.0, 0.0, cosine),
-            ),
-            dtype=complex_dtype,
-        )
-        evolved = jnp.matmul(gate, flat, precision="highest")
-        probabilities = jnp.real(evolved * jnp.conj(evolved))
-        return probabilities[0] + probabilities[1] - probabilities[2] - probabilities[3]
-
-    value, pullback = jax.vjp(boundary_score, theta, left_site, right_site)
-    parameter_gradient, left_adjoint, right_adjoint = pullback(
-        jnp.asarray(1.0, dtype=value.dtype)
+    value, parameter_gradient, left_adjoint, right_adjoint = (
+        jax_mps_boundary_rxx_pullback(theta, left_site, right_site)
     )
     value_host = float(jax.device_get(value))
     gradient_host = float(jax.device_get(parameter_gradient))

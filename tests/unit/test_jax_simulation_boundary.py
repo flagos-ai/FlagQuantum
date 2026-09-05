@@ -2,11 +2,17 @@
 
 import pytest
 
-from flagquantum.runtime.backends.jax import kernel, mps_execution, mps_kernel
+from flagquantum.runtime.backends.jax import (
+    kernel,
+    mps_execution,
+    mps_kernel,
+    mps_pullbacks,
+)
 from flagquantum.simulation import (
     jax_gate_primitives,
     jax_mps,
     jax_mps_batched,
+    jax_mps_pullbacks,
     jax_tensor_network,
 )
 
@@ -51,6 +57,14 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert (
         mps_execution._apply_two_jax_mps_tensors
         is jax_mps_batched.jax_mps_apply_two_batched
+    )
+    assert (
+        mps_pullbacks.jax_mps_owner_local_vjp
+        is jax_mps_pullbacks.jax_mps_owner_local_vjp
+    )
+    assert (
+        mps_pullbacks.jax_mps_boundary_rxx_pullback
+        is jax_mps_pullbacks.jax_mps_boundary_rxx_pullback
     )
 
 
