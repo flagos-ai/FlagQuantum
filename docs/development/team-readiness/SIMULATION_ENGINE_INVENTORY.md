@@ -55,7 +55,7 @@
 
 | 能力 | 当前数值权威位置 | 编排/消费者位置 | 现状 |
 | --- | --- | --- | --- |
-| 本地状态向量 | `simulation/statevector.py` 的执行循环；`simulation/statevector_ops.py` 的布局、门作用、门矩阵组合和融合；`simulation/triton_kernels/statevector_gates.py` 等 CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用同一门矩阵组合函数 |
+| 本地状态向量 | `simulation/statevector.py` 的执行循环；`simulation/statevector_ops.py` 的布局、门作用、门矩阵组合、压缩基态索引展开和融合；`simulation/triton_kernels/statevector_gates.py` 等 CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用门矩阵组合与索引数值函数 |
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `runtime/backends/statevector/forward.py`、`reverse_adjoint.py`、`triton.py`、`local_execution.py` 的数值部分 | 同目录 planning/models/environment/forward_executor/training/checkpointing/gradient_reduction | 真正 amplitude/qubit-address sharding 与 Runtime 生命周期高度混合 |
 | Split real/imag 与 Double-Single | `simulation/split_real_imag_statevector.py` 的 P0/P1 门矩阵、门作用与零态执行循环；`simulation/double_single_host_gates.py` 与 `double_single_device_gates.py` 的隔离门矩阵生成；`simulation/double_single_statevector.py` 的门作用和归一化 | Runtime 文件中的参数绑定、平台身份、精度计划、observables、conformance/result | P0/P1 与 P3/P4 的基础数值 helper 已归 Simulation；主机/设备编码分文件保持 P4 来源审计；实验路径不得成为首切片默认实现或被描述为等价 FP64 |

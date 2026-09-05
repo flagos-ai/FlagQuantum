@@ -503,6 +503,28 @@ def _compose_gate_matrices(matrices: Sequence[torch.Tensor]) -> torch.Tensor:
     return combined
 
 
+def _zero_basis_local_indices(
+    compressed_start: int,
+    compressed_end: int,
+    wires: Sequence[int],
+    *,
+    n_wires: int,
+    rank_bits: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """Expand compressed indices with zero bits at the selected local wires."""
+
+    positions = sorted(n_wires - int(wire) - 1 - rank_bits for wire in wires)
+    indices = torch.arange(
+        compressed_start, compressed_end, dtype=torch.long, device=device
+    )
+    for position in positions:
+        low_mask = (1 << position) - 1
+        low = indices & low_mask
+        indices = ((indices - low) << 1) | low
+    return indices
+
+
 def _batched_rx_ry_rz_matrices(angles: torch.Tensor) -> torch.Tensor:
     """Build RX->RY->RZ matrices for many regions with one tensor graph."""
 

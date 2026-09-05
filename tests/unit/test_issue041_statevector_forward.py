@@ -13,11 +13,15 @@ from flagquantum.runtime.backends.statevector.forward import (
     _independent_tensor_bytes,
     _triton_local_cx_segment_enabled,
     _wait_for_exchange,
+    _zero_basis_local_indices,
     communication_aware_wire_layout,
     execute_torch_distributed_statevector,
 )
 from flagquantum.runtime.backends.statevector.local_execution import (
     _instruction_matrix,
+)
+from flagquantum.simulation.statevector_ops import (
+    _zero_basis_local_indices as simulation_zero_basis_local_indices,
 )
 
 pytestmark = pytest.mark.unit
@@ -33,6 +37,21 @@ class _ExchangeRequest:
 
     def wait(self):
         self.wait_calls += 1
+
+
+def test_zero_basis_indices_are_owned_by_simulation_and_preserve_wire_order():
+    assert _zero_basis_local_indices is simulation_zero_basis_local_indices
+
+    indices = simulation_zero_basis_local_indices(
+        0,
+        4,
+        (1, 3),
+        n_wires=4,
+        rank_bits=0,
+        device=torch.device("cpu"),
+    )
+
+    torch.testing.assert_close(indices, torch.tensor([0, 2, 8, 10]))
 
 
 def test_flagos_exchange_uses_provider_neutral_wait():

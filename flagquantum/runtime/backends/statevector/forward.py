@@ -15,6 +15,9 @@ from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
     _compose_gate_matrices as _compose_gate_matrices,
 )
+from ....simulation.statevector_ops import (
+    _zero_basis_local_indices as _zero_basis_local_indices,
+)
 from ...distributed.identity import DistributedIdentity
 from .environment import get, get_bool, mode
 from .errors import FullStateMaterializationError
@@ -546,28 +549,6 @@ def _wait_for_exchange(request: Any, device: torch.device) -> None:
     request.wait()
 
 
-def _zero_basis_local_indices(
-    compressed_start: int,
-    compressed_end: int,
-    wires: Sequence[int],
-    *,
-    plan: DistributedStatevectorPlan,
-    device: torch.device,
-) -> torch.Tensor:
-    """Build local indices whose selected wire bits are zero, without nonzero()."""
-
-    rank_bits = len(plan.sharded_wires)
-    positions = sorted(plan.n_wires - int(wire) - 1 - rank_bits for wire in wires)
-    indices = torch.arange(
-        compressed_start, compressed_end, dtype=torch.long, device=device
-    )
-    for position in positions:
-        low_mask = (1 << position) - 1
-        low = indices & low_mask
-        indices = ((indices - low) << 1) | low
-    return indices
-
-
 def _vectorized_local_gate(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
@@ -630,7 +611,12 @@ def _vectorized_local_gate(
     for start in range(0, basis_count, chunk_bases):
         end = min(basis_count, start + chunk_bases)
         bases = _zero_basis_local_indices(
-            start, end, wires, plan=plan, device=out.device
+            start,
+            end,
+            wires,
+            n_wires=plan.n_wires,
+            rank_bits=rank_bits,
+            device=out.device,
         )
         local_required = bases[:, None] | local_offsets[None, :]
         if _runtime_index_validation_enabled():
@@ -941,7 +927,12 @@ def _vectorized_cross_shard_cx(
             indices = None
         else:
             indices = _zero_basis_local_indices(
-                start, end, (control,), plan=plan, device=out.device
+                start,
+                end,
+                (control,),
+                n_wires=plan.n_wires,
+                rank_bits=rank_bits,
+                device=out.device,
             )
             indices |= control_mask
             local = shard_state.amplitudes[:, indices].contiguous()
