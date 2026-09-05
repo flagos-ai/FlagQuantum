@@ -1,7 +1,15 @@
 import pytest
 
 import flagquantum as fq
-from flagquantum.runtime.backends.jax import compatibility_surface as jax_distributed
+from flagquantum.runtime.backends.jax.mps_backward import (
+    _execute_minimal_mps_sharded_backward,
+)
+from flagquantum.runtime.backends.jax.mps_canonicalization import (
+    _execute_minimal_mps_sharded_optimizer_step,
+)
+from flagquantum.runtime.backends.jax.mps_evidence import (
+    _collect_jax_mps_accelerator_backward_evidence,
+)
 
 pytestmark = [
     pytest.mark.distributed,
@@ -36,9 +44,7 @@ def _require_mps_accelerators():
 def test_mps_accelerator_backward_evidence_uses_shared_fail_closed_contract():
     devices = _require_mps_accelerators()
 
-    summary = jax_distributed._collect_jax_mps_accelerator_backward_evidence(
-        world_size=len(devices)
-    )
+    summary = _collect_jax_mps_accelerator_backward_evidence(world_size=len(devices))
     evidence = summary["accelerator_backward_evidence"]
     contract = summary["distributed_evidence_contract"]
     gate = summary["mps_backward_readiness_gate"]
@@ -74,7 +80,7 @@ def test_mps_accelerator_backward_evidence_uses_shared_fail_closed_contract():
 def test_minimal_mps_sharded_backward_skeleton_runs_on_accelerators():
     _require_mps_accelerators()
 
-    summary = jax_distributed._execute_minimal_mps_sharded_backward(
+    summary = _execute_minimal_mps_sharded_backward(
         (0.2, -0.4),
         execution_backend="accelerator",
     )
@@ -96,7 +102,7 @@ def test_minimal_mps_sharded_backward_skeleton_runs_on_accelerators():
 def test_minimal_mps_sharded_optimizer_step_runs_on_owner_accelerators():
     _require_mps_accelerators()
 
-    summary = jax_distributed._execute_minimal_mps_sharded_optimizer_step(
+    summary = _execute_minimal_mps_sharded_optimizer_step(
         (0.2, -0.4),
         learning_rate=0.05,
         execution_backend="accelerator",
