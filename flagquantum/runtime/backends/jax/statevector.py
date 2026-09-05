@@ -1,10 +1,22 @@
-"""Independent statevector facade over the compatibility implementation."""
+"""Independent statevector facade over its authoritative implementation."""
 
 from __future__ import annotations
 
-from typing import Any
+from .statevector_execution import (
+    jax_sharded_statevector_parameter_value_and_grad,
+    run_jax_sharded_statevector,
+)
+from .statevector_gradient_records import (
+    JAXShardedStatevectorParameterGradientResult,
+)
+from .statevector_records import (
+    JAXShardedStatevectorResult,
+    JAXShardedStatevectorTrainingPlan,
+    JAXStatevectorShardState,
+)
+from .statevector_training import plan_jax_sharded_statevector_training
 
-_EXPORTS = {
+__all__ = (
     "JAXStatevectorShardState",
     "JAXShardedStatevectorResult",
     "JAXShardedStatevectorParameterGradientResult",
@@ -12,19 +24,4 @@ _EXPORTS = {
     "run_jax_sharded_statevector",
     "jax_sharded_statevector_parameter_value_and_grad",
     "plan_jax_sharded_statevector_training",
-}
-
-
-def __getattr__(name: str) -> Any:
-    if name not in _EXPORTS:
-        raise AttributeError(name)
-    from ._loader import resolve
-
-    return resolve(name, domain="statevector")
-
-
-def __dir__() -> list[str]:
-    return sorted(_EXPORTS)
-
-
-__all__ = sorted(_EXPORTS)
+)
