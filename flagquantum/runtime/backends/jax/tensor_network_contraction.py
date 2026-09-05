@@ -1,34 +1,22 @@
-# ruff: noqa: F401, F821
 """Greedy tensor-network contraction, slice reduction, and Pauli helpers."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
+from .backend_dispatch import _jax_available_local_devices
+from .runtime_environment import _jax_real_dtype, _require_jax, _require_torch
+from .tensor_network_execution import (
+    _jax_tn_choose_greedy_pair,
+    _jax_tn_einsum_pair_by_labels,
+    _jax_tn_label_counts,
+    _jax_tn_label_dims,
+    _jax_tn_reorder_by_labels,
+    _jax_tn_slice_nodes,
+    _jax_zero_for_tn_output,
 )
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
-)
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
-)
+from .tensor_network_planning import _tn_tasks
+from .tensor_network_records import JAXTensorNetworkNode
 
 
 def _jax_contract_nodes_greedy(
