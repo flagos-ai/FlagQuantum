@@ -7,10 +7,12 @@ pytest.importorskip("triton")
 
 from flagquantum.runtime.backends.statevector.layout import _local_bit_view
 from flagquantum.runtime.backends.statevector.triton import (
-    apply_complex64_local_1q,
     apply_complex64_transpose_1q_inplace,
     fused_complex64_local_1q_vjp_adjoint,
     fused_complex64_sharded_1q_vjp_adjoint,
+)
+from flagquantum.simulation.triton_kernels.statevector_gates import (
+    apply_complex64_local_1q,
 )
 
 pytestmark = [

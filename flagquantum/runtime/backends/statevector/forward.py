@@ -577,7 +577,9 @@ def _vectorized_local_gate(
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
     if triton_decision.accelerated:
-        from .triton import apply_complex64_local_1q
+        from ....simulation.triton_kernels.statevector_gates import (
+            apply_complex64_local_1q,
+        )
 
         bit_position = plan.n_wires - wires[0] - 1 - rank_bits
         amplitudes = apply_complex64_local_1q(

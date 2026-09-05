@@ -7,107 +7,6 @@ import triton
 import triton.language as tl
 
 
-@triton.jit(do_not_specialize=["bit_position"])
-def _complex64_local_1q_kernel(
-    state_parts,
-    matrix_parts,
-    output_parts,
-    pair_count,
-    batch_count,
-    state_batch_stride,
-    bit_position,
-    BLOCK_PAIRS: tl.constexpr,  # noqa: N803
-):
-    linear = tl.program_id(0) * BLOCK_PAIRS + tl.arange(0, BLOCK_PAIRS)
-    total_pairs = pair_count * batch_count
-    mask = linear < total_pairs
-    batch = linear // pair_count
-    pair = linear - batch * pair_count
-    low_mask = (1 << bit_position) - 1
-    low = pair & low_mask
-    base = ((pair - low) << 1) | low
-    index0 = batch * state_batch_stride + base
-    index1 = index0 + (1 << bit_position)
-
-    a_real = tl.load(state_parts + 2 * index0, mask=mask, other=0.0)
-    a_imag = tl.load(state_parts + 2 * index0 + 1, mask=mask, other=0.0)
-    b_real = tl.load(state_parts + 2 * index1, mask=mask, other=0.0)
-    b_imag = tl.load(state_parts + 2 * index1 + 1, mask=mask, other=0.0)
-
-    m00_real = tl.load(matrix_parts)
-    m00_imag = tl.load(matrix_parts + 1)
-    m01_real = tl.load(matrix_parts + 2)
-    m01_imag = tl.load(matrix_parts + 3)
-    m10_real = tl.load(matrix_parts + 4)
-    m10_imag = tl.load(matrix_parts + 5)
-    m11_real = tl.load(matrix_parts + 6)
-    m11_imag = tl.load(matrix_parts + 7)
-    out0_real = (
-        m00_real * a_real - m00_imag * a_imag + m01_real * b_real - m01_imag * b_imag
-    )
-    out0_imag = (
-        m00_real * a_imag + m00_imag * a_real + m01_real * b_imag + m01_imag * b_real
-    )
-    out1_real = (
-        m10_real * a_real - m10_imag * a_imag + m11_real * b_real - m11_imag * b_imag
-    )
-    out1_imag = (
-        m10_real * a_imag + m10_imag * a_real + m11_real * b_imag + m11_imag * b_real
-    )
-    tl.store(output_parts + 2 * index0, out0_real, mask=mask)
-    tl.store(output_parts + 2 * index0 + 1, out0_imag, mask=mask)
-    tl.store(output_parts + 2 * index1, out1_real, mask=mask)
-    tl.store(output_parts + 2 * index1 + 1, out1_imag, mask=mask)
-
-
-def apply_complex64_local_1q(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-    *,
-    bit_position: int,
-    output: torch.Tensor | None = None,
-) -> torch.Tensor:
-    """Apply an arbitrary 2x2 matrix without materializing basis indices."""
-
-    if (
-        state.device.type != "cuda"
-        or state.dtype != torch.complex64
-        or state.ndim != 2
-        or not state.is_contiguous()
-    ):
-        raise ValueError("Triton local 1q requires contiguous CUDA complex64 [B, N]")
-    if matrix.shape != (2, 2):
-        raise ValueError("Triton local 1q requires a 2x2 matrix")
-    if not 0 <= bit_position < (state.shape[1].bit_length() - 1):
-        raise ValueError("bit_position is outside the local state address")
-    matrix = matrix.to(device=state.device, dtype=state.dtype).contiguous()
-    output = torch.empty_like(state) if output is None else output
-    if (
-        output.shape != state.shape
-        or output.dtype != state.dtype
-        or output.device != state.device
-    ):
-        raise ValueError("Triton local 1q output must match the input state")
-    # Exact aliasing is safe: each program loads both amplitudes in its
-    # disjoint pair before writing either output.
-    pair_count = state.shape[1] // 2
-    block_pairs = 256
-    grid = (triton.cdiv(pair_count * state.shape[0], block_pairs),)
-    _complex64_local_1q_kernel[grid](
-        torch.view_as_real(state),
-        torch.view_as_real(matrix),
-        torch.view_as_real(output),
-        pair_count,
-        state.shape[0],
-        state.stride(0),
-        int(bit_position),
-        BLOCK_PAIRS=block_pairs,
-        num_warps=8,
-        num_stages=2,
-    )
-    return output
-
-
 @triton.jit(do_not_specialize=["bit_position", "exchanged_bit_value"])
 def _complex64_transpose_1q_kernel(
     state_parts,
@@ -597,7 +496,6 @@ def fused_complex64_sharded_1q_vjp_adjoint(
 
 
 __all__ = [
-    "apply_complex64_local_1q",
     "fused_complex64_local_1q_vjp_adjoint",
     "fused_complex64_local_1q_reversible_vjp",
     "fused_complex64_sharded_1q_vjp_adjoint",
