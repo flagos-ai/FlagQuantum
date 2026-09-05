@@ -4,6 +4,7 @@ import pytest
 
 from flagquantum.runtime.backends.jax import (
     kernel,
+    mps_canonicalization,
     mps_execution,
     mps_kernel,
     mps_pullbacks,
@@ -65,6 +66,10 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
     assert (
         mps_pullbacks.jax_mps_boundary_rxx_pullback
         is jax_mps_pullbacks.jax_mps_boundary_rxx_pullback
+    )
+    assert (
+        mps_canonicalization.jax_mps_canonicalization_pullback
+        is jax_mps_pullbacks.jax_mps_canonicalization_pullback
     )
 
 

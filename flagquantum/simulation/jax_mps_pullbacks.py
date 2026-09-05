@@ -78,3 +78,61 @@ def jax_mps_boundary_rxx_pullback(
         jnp.asarray(1.0, dtype=value.dtype)
     )
     return value, parameter_gradient, left_adjoint, right_adjoint
+
+
+def jax_mps_canonicalization_pullback(
+    parameter: Any,
+    *,
+    include_rank_one_truncation: bool = False,
+) -> tuple[Any, Any, Any, Any, Any | None]:
+    """Differentiate the constrained QR and optional rank-one SVD scores."""
+
+    import jax
+    import jax.numpy as jnp
+
+    weights = jnp.asarray(((1.0, -0.3), (0.2, 0.7)), dtype=jnp.float64)
+
+    def bond_matrix(value: Any) -> Any:
+        return jnp.asarray(
+            ((jnp.cos(value), 0.0), (0.0, 0.25 * jnp.sin(value))),
+            dtype=jnp.float64,
+        )
+
+    def canonicalized_score(value: Any) -> Any:
+        matrix = bond_matrix(value)
+        q_factor, r_factor = jnp.linalg.qr(matrix)
+        reconstructed = jnp.matmul(q_factor, r_factor, precision="highest")
+        return jnp.sum(weights * reconstructed)
+
+    def rank_one_truncated_score(value: Any) -> Any:
+        matrix = bond_matrix(value)
+        u_factor, singular, vh_factor = jnp.linalg.svd(matrix, full_matrices=False)
+        reconstructed = jnp.matmul(
+            u_factor[:, :1] * singular[:1],
+            vh_factor[:1, :],
+            precision="highest",
+        )
+        return jnp.sum(weights * reconstructed)
+
+    matrix = bond_matrix(parameter)
+    q_factor, r_factor = jnp.linalg.qr(matrix)
+    singular_values = jnp.linalg.svd(matrix, compute_uv=False)
+    canonical_value, canonical_pullback = jax.vjp(canonicalized_score, parameter)
+    canonical_gradient = canonical_pullback(
+        jnp.asarray(1.0, dtype=canonical_value.dtype)
+    )[0]
+    truncation_gradient = None
+    if include_rank_one_truncation:
+        truncated_value, truncated_pullback = jax.vjp(
+            rank_one_truncated_score, parameter
+        )
+        truncation_gradient = truncated_pullback(
+            jnp.asarray(1.0, dtype=truncated_value.dtype)
+        )[0]
+    return (
+        q_factor,
+        r_factor,
+        singular_values,
+        canonical_gradient,
+        truncation_gradient,
+    )

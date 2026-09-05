@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ....simulation.jax_mps_pullbacks import jax_mps_canonicalization_pullback
 from .common import communication_tier as _communication_tier
 from .mps_backward import _execute_minimal_mps_sharded_backward
 from .mps_evidence import _summarize_minimal_mps_measured_runtime_evidence
@@ -43,50 +44,23 @@ def _execute_minimal_mps_canonicalization_truncation_pullback(
         jnp.asarray(float(parameter_values.reshape(-1)[0]), dtype=jnp.float64),
         cpu_device,
     )
-    weights = jax.device_put(
-        jnp.asarray(((1.0, -0.3), (0.2, 0.7)), dtype=jnp.float64),
-        cpu_device,
+    (
+        q_factor,
+        r_factor,
+        singular_values,
+        canonical_gradient,
+        approximate_truncation_gradient,
+    ) = jax_mps_canonicalization_pullback(
+        theta,
+        include_rank_one_truncation=mode == "approximate",
     )
-
-    def bond_matrix(value: Any) -> Any:
-        return jnp.asarray(
-            ((jnp.cos(value), 0.0), (0.0, 0.25 * jnp.sin(value))),
-            dtype=jnp.float64,
-        )
-
-    def canonicalized_score(value: Any) -> Any:
-        matrix = bond_matrix(value)
-        q_factor, r_factor = jnp.linalg.qr(matrix)
-        reconstructed = jnp.matmul(q_factor, r_factor, precision="highest")
-        return jnp.sum(weights * reconstructed)
-
-    def rank_one_truncated_score(value: Any) -> Any:
-        matrix = bond_matrix(value)
-        u_factor, singular, vh_factor = jnp.linalg.svd(matrix, full_matrices=False)
-        reconstructed = jnp.matmul(
-            u_factor[:, :1] * singular[:1],
-            vh_factor[:1, :],
-            precision="highest",
-        )
-        return jnp.sum(weights * reconstructed)
-
-    matrix = bond_matrix(theta)
-    q_factor, r_factor = jnp.linalg.qr(matrix)
-    singular_values = jnp.linalg.svd(matrix, compute_uv=False)
     singular_values_host = np.asarray(jax.device_get(singular_values))
     discarded_weight = (
         float(singular_values_host[-1] ** 2) if mode == "approximate" else 0.0
     )
-    canonical_value, canonical_pullback = jax.vjp(canonicalized_score, theta)
-    canonical_gradient = canonical_pullback(
-        jnp.asarray(1.0, dtype=canonical_value.dtype)
-    )[0]
     truncation_gradient: Any | None = None
     if mode == "approximate":
-        truncated_value, truncated_pullback = jax.vjp(rank_one_truncated_score, theta)
-        truncation_gradient = truncated_pullback(
-            jnp.asarray(1.0, dtype=truncated_value.dtype)
-        )[0]
+        truncation_gradient = approximate_truncation_gradient
     elif mode == "exact":
         truncation_gradient = canonical_gradient
 
