@@ -21,6 +21,9 @@ from flagquantum.runtime.backends.statevector.local_execution import (
     _instruction_matrix,
 )
 from flagquantum.simulation.statevector_ops import (
+    _apply_local_gate_eager,
+)
+from flagquantum.simulation.statevector_ops import (
     _zero_basis_local_indices as simulation_zero_basis_local_indices,
 )
 
@@ -52,6 +55,25 @@ def test_zero_basis_indices_are_owned_by_simulation_and_preserve_wire_order():
     )
 
     torch.testing.assert_close(indices, torch.tensor([0, 2, 8, 10]))
+
+
+def test_local_eager_gate_kernel_is_directly_usable_without_runtime_models():
+    amplitudes = torch.tensor([[1, 0, 0, 0]], dtype=torch.complex64)
+    x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64)
+
+    evolved, peak_bytes = _apply_local_gate_eager(
+        amplitudes,
+        x,
+        (1,),
+        n_wires=2,
+        rank_bits=0,
+        chunk_amplitudes=2,
+    )
+
+    torch.testing.assert_close(
+        evolved, torch.tensor([[0, 1, 0, 0]], dtype=torch.complex64)
+    )
+    assert peak_bytes >= evolved.numel() * evolved.element_size()
 
 
 def test_flagos_exchange_uses_provider_neutral_wait():

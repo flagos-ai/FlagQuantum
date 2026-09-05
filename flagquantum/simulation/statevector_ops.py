@@ -525,6 +525,65 @@ def _zero_basis_local_indices(
     return indices
 
 
+def _apply_local_gate_eager(
+    amplitudes: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    *,
+    n_wires: int,
+    rank_bits: int,
+    chunk_amplitudes: int,
+    output: torch.Tensor | None = None,
+    validate_indices: bool = False,
+) -> tuple[torch.Tensor, int]:
+    """Apply a rank-local gate with PyTorch tensor operations."""
+
+    wires = tuple(int(wire) for wire in wires)
+    gate_dim = 2 ** len(wires)
+    out = torch.empty_like(amplitudes) if output is None else output
+    output_bytes = out.numel() * out.element_size()
+
+    def basis_offset(basis: int) -> int:
+        offset = 0
+        for position, wire in enumerate(wires):
+            if (basis >> (len(wires) - position - 1)) & 1:
+                offset |= 1 << (n_wires - wire - 1 - rank_bits)
+        return offset
+
+    local_offsets = torch.tensor(
+        [basis_offset(basis) for basis in range(gate_dim)],
+        dtype=torch.long,
+        device=out.device,
+    )
+    peak = 0
+    local_count = amplitudes.shape[-1]
+    chunk_bases = max(1, chunk_amplitudes // gate_dim)
+    basis_count = local_count >> len(wires)
+    for start in range(0, basis_count, chunk_bases):
+        end = min(basis_count, start + chunk_bases)
+        bases = _zero_basis_local_indices(
+            start,
+            end,
+            wires,
+            n_wires=n_wires,
+            rank_bits=rank_bits,
+            device=out.device,
+        )
+        local_required = bases[:, None] | local_offsets[None, :]
+        if validate_indices and (
+            int(local_required.min()) < 0 or int(local_required.max()) >= local_count
+        ):
+            raise ValueError("local gate requires cross-shard amplitudes")
+        values = amplitudes[:, local_required]
+        updated = values @ matrix.transpose(-2, -1)
+        out[:, local_required] = updated
+        peak = max(
+            peak,
+            output_bytes + (values.numel() + updated.numel()) * values.element_size(),
+        )
+    return out, peak
+
+
 def _batched_rx_ry_rz_matrices(angles: torch.Tensor) -> torch.Tensor:
     """Build RX->RY->RZ matrices for many regions with one tensor graph."""
 

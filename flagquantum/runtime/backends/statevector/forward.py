@@ -13,6 +13,9 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
+    _apply_local_gate_eager,
+)
+from ....simulation.statevector_ops import (
     _compose_gate_matrices as _compose_gate_matrices,
 )
 from ....simulation.statevector_ops import (
@@ -594,49 +597,21 @@ def _vectorized_local_gate(
             ),
             output_bytes,
         )
-    out = torch.empty_like(shard_state.amplitudes) if output is None else output
-    output_bytes = out.numel() * out.element_size()
-    local_offsets = torch.tensor(
-        [
-            _basis_offset(plan.n_wires, wires, basis) >> rank_bits
-            for basis in range(gate_dim)
-        ],
-        dtype=torch.long,
-        device=out.device,
+    amplitudes, peak = _apply_local_gate_eager(
+        shard_state.amplitudes,
+        matrix,
+        wires,
+        n_wires=plan.n_wires,
+        rank_bits=rank_bits,
+        chunk_amplitudes=chunk_amplitudes,
+        output=output,
+        validate_indices=_runtime_index_validation_enabled(),
     )
-    peak = 0
-    local_count = shard_state.shard.local_amplitudes
-    chunk_bases = max(1, chunk_amplitudes // gate_dim)
-    basis_count = local_count >> len(wires)
-    for start in range(0, basis_count, chunk_bases):
-        end = min(basis_count, start + chunk_bases)
-        bases = _zero_basis_local_indices(
-            start,
-            end,
-            wires,
-            n_wires=plan.n_wires,
-            rank_bits=rank_bits,
-            device=out.device,
-        )
-        local_required = bases[:, None] | local_offsets[None, :]
-        if _runtime_index_validation_enabled():
-            if (
-                int(local_required.min()) < 0
-                or int(local_required.max()) >= local_count
-            ):
-                raise ValueError("local gate requires cross-shard amplitudes")
-        values = shard_state.amplitudes[:, local_required]
-        updated = values @ matrix.transpose(-2, -1)
-        out[:, local_required] = updated
-        peak = max(
-            peak,
-            output_bytes + (values.numel() + updated.numel()) * values.element_size(),
-        )
     return (
         StatevectorShardState(
             rank=shard_state.rank,
             shard=shard_state.shard,
-            amplitudes=out,
+            amplitudes=amplitudes,
             global_indices=shard_state.global_indices,
         ),
         peak,
