@@ -32,6 +32,7 @@ from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
 from .runtime_environment import (
+    _jax_available_local_devices,
     _require_jax,
     _resolve_local_world_size,
     _resolve_policy,
@@ -39,11 +40,6 @@ from .runtime_environment import (
 )
 from .statevector_gradient_records import _statevector_plan
 from .tensor_network_planning import _tensor_network_plan
-
-
-def _jax_available_local_devices() -> tuple[Any, ...]:
-    jax, _ = _require_jax()
-    return tuple(jax.local_devices())
 
 
 def _jax_contract_tensor_slices_by_backend(

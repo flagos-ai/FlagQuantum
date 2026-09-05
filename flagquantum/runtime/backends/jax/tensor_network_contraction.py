@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from .backend_dispatch import _jax_available_local_devices
-from .runtime_environment import _jax_real_dtype, _require_jax, _require_torch
+from .runtime_environment import (
+    _jax_available_local_devices,
+    _jax_real_dtype,
+    _require_jax,
+    _require_torch,
+)
 from .tensor_network_execution import (
     _jax_tn_choose_greedy_pair,
     _jax_tn_einsum_pair_by_labels,

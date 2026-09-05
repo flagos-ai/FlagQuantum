@@ -101,6 +101,13 @@ def _require_jax() -> tuple[Any, Any]:
     return jax, jnp
 
 
+def _jax_available_local_devices() -> tuple[Any, ...]:
+    """Return the JAX devices visible to this process."""
+
+    jax, _ = _require_jax()
+    return tuple(jax.local_devices())
+
+
 def _env_optional_int(name: str) -> int | None:
     value = os.environ.get(name)
     if value is None or str(value).strip() == "":
