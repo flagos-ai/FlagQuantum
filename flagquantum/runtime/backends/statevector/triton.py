@@ -211,80 +211,6 @@ def apply_complex64_transpose_1q_inplace(
     return state
 
 
-@triton.jit
-def _complex64_local_cx_segment_kernel(
-    state_parts,
-    output_parts,
-    control_positions,
-    target_positions,
-    local_count,
-    total_count,
-    SEGMENT_LENGTH: tl.constexpr,  # noqa: N803
-    BLOCK: tl.constexpr,  # noqa: N803
-):
-    linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
-    valid = linear < total_count
-    batch = linear // local_count
-    destination = linear - batch * local_count
-    source = destination
-    for reverse_step in range(SEGMENT_LENGTH):
-        step = SEGMENT_LENGTH - reverse_step - 1
-        control = tl.load(control_positions + step)
-        target = tl.load(target_positions + step)
-        source ^= ((source >> control) & 1) << target
-    source += batch * local_count
-    value_real = tl.load(state_parts + 2 * source, mask=valid, other=0.0)
-    value_imag = tl.load(state_parts + 2 * source + 1, mask=valid, other=0.0)
-    tl.store(output_parts + 2 * linear, value_real, mask=valid)
-    tl.store(output_parts + 2 * linear + 1, value_imag, mask=valid)
-
-
-def apply_complex64_local_cx_segment(
-    state: torch.Tensor,
-    *,
-    control_bit_positions: tuple[int, ...],
-    target_bit_positions: tuple[int, ...],
-    output: torch.Tensor,
-) -> torch.Tensor:
-    """Apply a compiled sequence of local CNOTs in one out-of-place pass."""
-
-    if (
-        state.device.type != "cuda"
-        or state.dtype != torch.complex64
-        or state.ndim != 2
-        or not state.is_contiguous()
-        or output.shape != state.shape
-        or output.dtype != state.dtype
-        or output.device != state.device
-        or not output.is_contiguous()
-        or output.data_ptr() == state.data_ptr()
-    ):
-        raise ValueError("compiled CX segment requires distinct complex64 CUDA buffers")
-    if not control_bit_positions or len(control_bit_positions) != len(
-        target_bit_positions
-    ):
-        raise ValueError("compiled CX segment requires paired control/target bits")
-    controls = torch.tensor(
-        control_bit_positions, dtype=torch.int32, device=state.device
-    )
-    targets = torch.tensor(target_bit_positions, dtype=torch.int32, device=state.device)
-    total_count = state.numel()
-    block = 256
-    _complex64_local_cx_segment_kernel[(triton.cdiv(total_count, block),)](
-        torch.view_as_real(state),
-        torch.view_as_real(output),
-        controls,
-        targets,
-        state.shape[1],
-        total_count,
-        SEGMENT_LENGTH=len(control_bit_positions),
-        BLOCK=block,
-        num_warps=8,
-        num_stages=2,
-    )
-    return output
-
-
 @triton.jit(do_not_specialize=["bit_position"])
 def _complex64_local_1q_vjp_adjoint_kernel(
     before_parts,
@@ -672,7 +598,6 @@ def fused_complex64_sharded_1q_vjp_adjoint(
 
 __all__ = [
     "apply_complex64_local_1q",
-    "apply_complex64_local_cx_segment",
     "fused_complex64_local_1q_vjp_adjoint",
     "fused_complex64_local_1q_reversible_vjp",
     "fused_complex64_sharded_1q_vjp_adjoint",

@@ -836,7 +836,9 @@ def _explicit_sharded_adjoint(
                     break
                 segment_start = candidate_index
             if segment_start < index:
-                from .triton import apply_complex64_local_cx_segment
+                from ....simulation.triton_kernels.statevector_gates import (
+                    apply_complex64_local_cx_segment,
+                )
 
                 segment_wires = tuple(
                     tuple(persistent_mapping[int(wire)] for wire in item.wires)

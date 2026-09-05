@@ -287,7 +287,9 @@ def execute_torch_distributed_statevector(
                 segment_wires.append(mapped)
                 segment_cursor += 1
             if len(segment_wires) > 1:
-                from .triton import apply_complex64_local_cx_segment
+                from ....simulation.triton_kernels.statevector_gates import (
+                    apply_complex64_local_cx_segment,
+                )
 
                 rank_bits = len(plan.sharded_wires)
                 controls = tuple(
