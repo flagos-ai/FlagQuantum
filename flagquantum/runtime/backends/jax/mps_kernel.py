@@ -1,4 +1,4 @@
-"""Canonical JAX kernels exposed through the PyTorch interface."""
+"""Runtime-side circuit lowering for local JAX MPS execution."""
 
 from __future__ import annotations
 
@@ -130,8 +130,6 @@ def _jax_mps_from_nearest_cx_layers(
     if parsed is None or max_bond is None or float(cutoff) > 0.0:
         return None
 
-    import jax
-
     local_layers, two_qubit_matrix = parsed
     if not local_layers:
         return None
@@ -141,7 +139,6 @@ def _jax_mps_from_nearest_cx_layers(
     bond_dim = max(1, int(max_bond))
     tensors = _jax_mps_initial_padded_stack(int(n_wires), bond_dim)
 
-    del jax
     for layer_index, local_matrices in enumerate(local_layers):
         tensors = _jax_mps_apply_local_stack(tensors, local_matrices, matmul_precision)
         if int(n_wires) > 1:
