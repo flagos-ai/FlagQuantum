@@ -7,6 +7,7 @@ import flagquantum.runtime.planner as fqxp
 from flagquantum.runtime.backends.jax import (
     mps_backward,
     mps_boundary_exchange,
+    mps_canonicalization,
     mps_evidence,
     mps_pullbacks,
     runtime_environment,
@@ -2674,9 +2675,11 @@ def test_mps_boundary_gate_adjoint_pullback_remains_internal_api():
 
 def test_mps_canonicalization_and_exact_truncation_pullback_evidence():
     theta = 0.37
-    summary = jax_distributed._execute_minimal_mps_canonicalization_truncation_pullback(
-        theta,
-        truncation_mode="exact",
+    summary = (
+        mps_canonicalization._execute_minimal_mps_canonicalization_truncation_pullback(
+            theta,
+            truncation_mode="exact",
+        )
     )
 
     canonical = summary["canonicalization_backward_strategy"]
@@ -2703,10 +2706,12 @@ def test_mps_canonicalization_and_exact_truncation_pullback_evidence():
 
 
 def test_mps_approximate_truncation_reports_discarded_weight_and_fails_closed():
-    summary = jax_distributed._execute_minimal_mps_canonicalization_truncation_pullback(
-        0.71,
-        truncation_mode="approximate",
-        cutoff=1e-6,
+    summary = (
+        mps_canonicalization._execute_minimal_mps_canonicalization_truncation_pullback(
+            0.71,
+            truncation_mode="approximate",
+            cutoff=1e-6,
+        )
     )
 
     truncation = summary["truncation_gradient_metadata"]
@@ -2730,9 +2735,11 @@ def test_mps_approximate_truncation_reports_discarded_weight_and_fails_closed():
     ),
 )
 def test_mps_unsupported_truncation_pullback_is_explicitly_blocked(mode, blocker):
-    summary = jax_distributed._execute_minimal_mps_canonicalization_truncation_pullback(
-        0.4,
-        truncation_mode=mode,
+    summary = (
+        mps_canonicalization._execute_minimal_mps_canonicalization_truncation_pullback(
+            0.4,
+            truncation_mode=mode,
+        )
     )
 
     metadata = summary["truncation_gradient_metadata"]
@@ -2745,7 +2752,7 @@ def test_mps_unsupported_truncation_pullback_is_explicitly_blocked(mode, blocker
 
 def test_mps_canonicalization_truncation_helper_remains_internal_api():
     assert hasattr(
-        jax_distributed,
+        mps_canonicalization,
         "_execute_minimal_mps_canonicalization_truncation_pullback",
     )
     assert not hasattr(
@@ -2757,7 +2764,7 @@ def test_mps_canonicalization_truncation_helper_remains_internal_api():
 def test_minimal_mps_sharded_optimizer_step_preserves_owner_rank_semantics():
     parameters = torch.tensor([0.23, -0.41], dtype=torch.float64)
     learning_rate = 0.07
-    summary = jax_distributed._execute_minimal_mps_sharded_optimizer_step(
+    summary = mps_canonicalization._execute_minimal_mps_sharded_optimizer_step(
         parameters,
         learning_rate=learning_rate,
         execution_backend="cpu",
@@ -2809,7 +2816,7 @@ def test_minimal_mps_sharded_optimizer_step_rejects_invalid_learning_rate(
     learning_rate,
 ):
     with pytest.raises(ValueError, match="positive finite"):
-        jax_distributed._execute_minimal_mps_sharded_optimizer_step(
+        mps_canonicalization._execute_minimal_mps_sharded_optimizer_step(
             [0.2, -0.4],
             learning_rate=learning_rate,
             execution_backend="cpu",
@@ -2817,7 +2824,7 @@ def test_minimal_mps_sharded_optimizer_step_rejects_invalid_learning_rate(
 
 
 def test_minimal_mps_sharded_optimizer_step_remains_internal_api():
-    assert hasattr(jax_distributed, "_execute_minimal_mps_sharded_optimizer_step")
+    assert hasattr(mps_canonicalization, "_execute_minimal_mps_sharded_optimizer_step")
     assert not hasattr(fq, "_execute_minimal_mps_sharded_optimizer_step")
 
 
@@ -2851,7 +2858,7 @@ def test_minimal_mps_backward_reports_measured_runtime_resources():
 
 
 def test_minimal_mps_optimizer_measures_optimizer_state_and_peak_memory():
-    summary = jax_distributed._execute_minimal_mps_sharded_optimizer_step(
+    summary = mps_canonicalization._execute_minimal_mps_sharded_optimizer_step(
         [0.2, -0.4], execution_backend="cpu"
     )
     evidence = summary["mps_measured_runtime_evidence"]
