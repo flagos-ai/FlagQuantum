@@ -29,6 +29,7 @@ from .release_policy import (
 from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
+from .runtime_environment import _jax_array_nbytes
 
 
 @dataclass(frozen=True)
