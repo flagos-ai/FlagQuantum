@@ -5,6 +5,7 @@ import flagquantum as fq
 import flagquantum.runtime.backends.jax.compatibility_surface as jax_distributed
 import flagquantum.runtime.planner as fqxp
 from flagquantum.runtime.backends.jax import (
+    mps_backward,
     mps_boundary_exchange,
     mps_evidence,
     runtime_environment,
@@ -2473,7 +2474,7 @@ def test_mps_accelerator_backward_evidence_rejects_cpu_only_devices(monkeypatch)
 def test_minimal_mps_sharded_backward_skeleton_executes_without_full_replay():
     parameters = torch.tensor([0.2, -0.4], dtype=torch.float64)
 
-    summary = jax_distributed._execute_minimal_mps_sharded_backward(
+    summary = mps_backward._execute_minimal_mps_sharded_backward(
         parameters,
         execution_backend="cpu",
     )
@@ -2545,7 +2546,7 @@ def test_minimal_mps_sharded_backward_skeleton_rejects_unsupported_shape_or_back
     message,
 ):
     with pytest.raises((ValueError, RuntimeError), match=message):
-        jax_distributed._execute_minimal_mps_sharded_backward(
+        mps_backward._execute_minimal_mps_sharded_backward(
             parameters,
             execution_backend=execution_backend,
         )
@@ -2824,7 +2825,7 @@ def test_minimal_mps_sharded_optimizer_step_remains_internal_api():
 
 
 def test_minimal_mps_backward_reports_measured_runtime_resources():
-    summary = jax_distributed._execute_minimal_mps_sharded_backward(
+    summary = mps_backward._execute_minimal_mps_sharded_backward(
         [0.2, -0.4], execution_backend="cpu"
     )
     evidence = summary["mps_measured_runtime_evidence"]
@@ -2878,7 +2879,7 @@ def test_minimal_mps_optimizer_measures_optimizer_state_and_peak_memory():
 def test_minimal_mps_measured_runtime_evidence_fails_closed(
     section, field, blocker_fragment
 ):
-    summary = jax_distributed._execute_minimal_mps_sharded_backward(
+    summary = mps_backward._execute_minimal_mps_sharded_backward(
         [0.2, -0.4], execution_backend="cpu"
     )
     evidence = summary["mps_measured_runtime_evidence"]
