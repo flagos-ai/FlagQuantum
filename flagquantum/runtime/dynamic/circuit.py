@@ -18,12 +18,7 @@ class DynamicCircuit(Circuit):
         if any(wire < 0 or wire >= self.n_wires for wire in instruction.wires):
             raise ValidationError("dynamic instruction wire is outside the circuit")
         self._instructions.append(instruction)
-        self._state_cache = None
-        self._ir_cache = None
-        self._backend_programs.clear()
-        self._statevector_constant_parameters.clear()
-        self._statevector_cx_masks.clear()
-        self._statevector_fused_matrices.clear()
+        self._invalidate_execution_cache(instructions_changed=True)
         return self
 
     def measure(self, wire: int, *, classical_bit: int | None = None) -> DynamicCircuit:

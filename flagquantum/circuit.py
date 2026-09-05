@@ -115,6 +115,18 @@ class Circuit:
             "config": self.runtime_config,
         }
 
+    def _invalidate_execution_cache(self, *, instructions_changed: bool) -> None:
+        """Invalidate cached execution state after a circuit mutation."""
+
+        self._state_cache = None
+        if not instructions_changed:
+            return
+        self._ir_cache = None
+        self._backend_programs.clear()
+        self._statevector_constant_parameters.clear()
+        self._statevector_cx_masks.clear()
+        self._statevector_fused_matrices.clear()
+
     @property
     def n_qubits(self) -> int:
         """Number of public circuit qubits."""
@@ -152,12 +164,7 @@ class Circuit:
             matrix=matrix,
         )
         self._instructions.append(instruction)
-        self._state_cache = None
-        self._ir_cache = None
-        self._backend_programs.clear()
-        self._statevector_constant_parameters.clear()
-        self._statevector_cx_masks.clear()
-        self._statevector_fused_matrices.clear()
+        self._invalidate_execution_cache(instructions_changed=True)
         return self
 
     def any(self, *wires: int, unitary: Any, name: str = "any") -> "Circuit":

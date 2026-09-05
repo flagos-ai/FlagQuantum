@@ -300,7 +300,9 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         self._builder_bindings.bind(dynamic_values)
         # ``Circuit.state`` is the only value-dependent cache on this reusable
         # container. Instructions and their parameter maps stay immutable.
-        self._builder_bound_circuit._state_cache = None
+        self._builder_bound_circuit._invalidate_execution_cache(
+            instructions_changed=False
+        )
         return self._builder_bound_circuit
 
     def _compile_builder_program(

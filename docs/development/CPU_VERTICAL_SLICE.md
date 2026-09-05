@@ -48,11 +48,13 @@ implementation replacement, or close a demonstrated cross-domain leak.
 Simulation constructs the initial state and owns the algorithms that populate
 statevector caches. `Circuit` deliberately retains the cache containers and
 mutation-time invalidation: circuit construction, dynamic instructions, and
-reusable module binding all invalidate the same execution state. Moving those
-containers would spread a new cache-owner abstraction across Core, Runtime,
-Simulation, and Benchmarking without changing product behavior. Revisit this
-decision only when a second circuit implementation needs the same lifecycle or
-the current container prevents implementation replacement.
+reusable module binding use one private invalidation entry point. Instruction
+changes clear compiled representations and numerical caches; parameter rebinding
+clears only the value-dependent state. Moving the containers would spread a new
+cache-owner abstraction across Core, Runtime, Simulation, and Benchmarking
+without changing product behavior. Revisit this decision only when a second
+circuit implementation needs the same lifecycle or the current container
+prevents implementation replacement.
 
 The result reports the selected device, platform provider, simulation engine,
 and `single_device_fast_path` semantics. An explicit CPU request reports
