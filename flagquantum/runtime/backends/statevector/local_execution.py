@@ -213,21 +213,6 @@ def _reconstruct_from_shards(
     return state
 
 
-def _scatter_to_shards(
-    state: torch.Tensor,
-    shards: Sequence[StatevectorShardState],
-) -> tuple[StatevectorShardState, ...]:
-    return tuple(
-        StatevectorShardState(
-            rank=shard.rank,
-            shard=shard.shard,
-            amplitudes=state[:, shard.global_indices].clone(),
-            global_indices=shard.global_indices,
-        )
-        for shard in shards
-    )
-
-
 def apply_gate_to_statevector_shards(
     shards: Sequence[StatevectorShardState],
     matrix: torch.Tensor,
@@ -317,27 +302,6 @@ def apply_gate_to_statevector_shards(
         )
         for shard_index, shard in enumerate(shards)
     )
-
-
-def _apply_matrix_to_full_state(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-    wires: Sequence[int],
-    *,
-    n_wires: int,
-) -> torch.Tensor:
-    wires = tuple(int(wire) for wire in wires)
-    gate_dim = 2 ** len(wires)
-    out = state.clone()
-    masks = tuple(_wire_mask(n_wires, wire) for wire in wires)
-    offsets = tuple(_basis_offset(n_wires, wires, basis) for basis in range(gate_dim))
-    for base in range(2**n_wires):
-        if any(base & mask for mask in masks):
-            continue
-        indices = tuple(base | offset for offset in offsets)
-        vector = state[:, indices]
-        out[:, indices] = vector @ matrix.transpose(-2, -1)
-    return out
 
 
 def simulate_distributed_statevector_local(
