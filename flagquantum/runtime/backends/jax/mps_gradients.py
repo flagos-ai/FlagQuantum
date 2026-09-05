@@ -20,6 +20,10 @@ from .common import node_count as _node_count
 from .common import product_int as _product
 from .common import rank_for_wire as _rank_for_wire
 from .common import split_contiguous as _split_contiguous
+from .mps_gradient_ownership import (
+    _execute_local_mps_parameter_gradient_ownership,
+    _jax_sharded_mps_z_sum_from_rank_tensors,
+)
 from .mps_planning import (
     _mps_pmap_backward_blockers,
     plan_jax_sharded_mps_parameter_flow,
