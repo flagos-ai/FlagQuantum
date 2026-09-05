@@ -2,25 +2,206 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
+from .common import product_int as _product
 from .runtime_environment import (
     _jax_available_local_devices,
     _jax_real_dtype,
     _require_jax,
     _require_torch,
 )
-from .tensor_network_execution import (
-    _jax_tn_choose_greedy_pair,
-    _jax_tn_einsum_pair_by_labels,
-    _jax_tn_label_counts,
-    _jax_tn_label_dims,
-    _jax_tn_reorder_by_labels,
-    _jax_tn_slice_nodes,
-    _jax_zero_for_tn_output,
-)
 from .tensor_network_planning import _tn_tasks
 from .tensor_network_records import JAXTensorNetworkNode
+
+_JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def _jax_tn_label_dims(nodes: Sequence[JAXTensorNetworkNode]) -> dict[int, int]:
+    dims: dict[int, int] = {}
+    for node in nodes:
+        for label, dim in zip(node.labels, node.tensor.shape):
+            label = int(label)
+            dim = int(dim)
+            if label in dims and dims[label] != dim:
+                raise ValueError(
+                    f"Inconsistent dimension for tensor-network label {label}."
+                )
+            dims[label] = dim
+    return dims
+
+
+def _jax_tn_label_counts(nodes: Sequence[JAXTensorNetworkNode]) -> dict[int, int]:
+    counts: dict[int, int] = {}
+    for node in nodes:
+        for label in node.labels:
+            label = int(label)
+            counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def _jax_tn_pair_output_labels(
+    left: JAXTensorNetworkNode,
+    right: JAXTensorNetworkNode,
+    *,
+    label_counts: Mapping[int, int],
+    final_outputs: set[int],
+) -> tuple[int, ...]:
+    labels = tuple(dict.fromkeys(left.labels + right.labels))
+    return tuple(
+        label
+        for label in labels
+        if not (
+            label in left.labels
+            and label in right.labels
+            and label_counts.get(label, 0) == 2
+            and label not in final_outputs
+        )
+    )
+
+
+def _jax_tn_estimate_pair(
+    left: JAXTensorNetworkNode,
+    right: JAXTensorNetworkNode,
+    *,
+    dims: Mapping[int, int],
+    label_counts: Mapping[int, int],
+    final_outputs: set[int],
+) -> tuple[int, int, tuple[int, ...], tuple[int, ...]]:
+    output_labels = _jax_tn_pair_output_labels(
+        left,
+        right,
+        label_counts=label_counts,
+        final_outputs=final_outputs,
+    )
+    union_labels = tuple(dict.fromkeys(left.labels + right.labels))
+    cost = _product(dims[label] for label in union_labels)
+    intermediate_size = _product(dims[label] for label in output_labels)
+    contracted = tuple(label for label in union_labels if label not in output_labels)
+    return cost, intermediate_size, output_labels, contracted
+
+
+def _jax_tn_choose_greedy_pair(
+    nodes: Sequence[JAXTensorNetworkNode],
+    *,
+    dims: Mapping[int, int],
+    label_counts: Mapping[int, int],
+    final_outputs: set[int],
+) -> tuple[int, int, tuple[int, ...]]:
+    best_score: tuple[Any, ...] | None = None
+    best: tuple[int, int, tuple[int, ...]] | None = None
+    for left_idx in range(len(nodes)):
+        for right_idx in range(left_idx + 1, len(nodes)):
+            left = nodes[left_idx]
+            right = nodes[right_idx]
+            cost, intermediate, pair_outputs, contracted = _jax_tn_estimate_pair(
+                left,
+                right,
+                dims=dims,
+                label_counts=label_counts,
+                final_outputs=final_outputs,
+            )
+            shared = len(set(left.labels) & set(right.labels))
+            score = (
+                -len(contracted),
+                intermediate,
+                cost,
+                -shared,
+                left_idx,
+                right_idx,
+                pair_outputs,
+            )
+            if best_score is None or score < best_score:
+                best_score = score
+                best = (left_idx, right_idx, pair_outputs)
+    if best is None:
+        raise ValueError("Tensor network requires at least two nodes to contract.")
+    return best
+
+
+def _jax_tn_einsum_pair_by_labels(
+    left_tensor: Any,
+    left_labels: Sequence[int],
+    right_tensor: Any,
+    right_labels: Sequence[int],
+    output_labels: Sequence[int],
+) -> Any:
+    _, jnp = _require_jax()
+    labels = tuple(
+        dict.fromkeys(tuple(left_labels) + tuple(right_labels) + tuple(output_labels))
+    )
+    if len(labels) > len(_JAX_EINSUM_CHARS):
+        raise ValueError(
+            "Pair contraction rank exceeds local JAX einsum label capacity."
+        )
+    mapping = {label: _JAX_EINSUM_CHARS[index] for index, label in enumerate(labels)}
+    equation = (
+        "".join(mapping[label] for label in left_labels)
+        + ","
+        + "".join(mapping[label] for label in right_labels)
+        + "->"
+        + "".join(mapping[label] for label in output_labels)
+    )
+    return jnp.einsum(equation, left_tensor, right_tensor)
+
+
+def _jax_tn_reorder_by_labels(
+    tensor: Any,
+    labels: Sequence[int],
+    output_labels: Sequence[int],
+) -> Any:
+    _, jnp = _require_jax()
+    all_labels = tuple(dict.fromkeys(tuple(labels) + tuple(output_labels)))
+    if len(all_labels) > len(_JAX_EINSUM_CHARS):
+        raise ValueError(
+            "Final contraction rank exceeds local JAX einsum label capacity."
+        )
+    mapping = {
+        label: _JAX_EINSUM_CHARS[index] for index, label in enumerate(all_labels)
+    }
+    equation = (
+        "".join(mapping[label] for label in labels)
+        + "->"
+        + "".join(mapping[label] for label in output_labels)
+    )
+    return jnp.einsum(equation, tensor)
+
+
+def _jax_tn_slice_nodes(
+    nodes: Sequence[JAXTensorNetworkNode],
+    assignments: Mapping[int, int],
+) -> tuple[JAXTensorNetworkNode, ...]:
+    _, jnp = _require_jax()
+    sliced = []
+    for node in nodes:
+        tensor = node.tensor
+        labels = list(node.labels)
+        for label, value in assignments.items():
+            if int(label) not in labels:
+                continue
+            axis = labels.index(int(label))
+            tensor = jnp.take(tensor, int(value), axis=axis)
+            labels.pop(axis)
+        sliced.append(
+            JAXTensorNetworkNode(
+                tensor=tensor,
+                labels=tuple(labels),
+                name=node.name,
+                metadata=node.metadata,
+            )
+        )
+    return tuple(sliced)
+
+
+def _jax_zero_for_tn_output(
+    nodes: Sequence[JAXTensorNetworkNode], output_labels: Sequence[int]
+) -> Any:
+    _, jnp = _require_jax()
+    dims = _jax_tn_label_dims(nodes)
+    reference = nodes[0].tensor if nodes else jnp.empty((), dtype=jnp.complex64)
+    return jnp.zeros(
+        tuple(dims[int(label)] for label in output_labels), dtype=reference.dtype
+    )
 
 
 def _jax_contract_nodes_greedy(

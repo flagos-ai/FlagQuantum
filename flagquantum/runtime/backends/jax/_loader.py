@@ -54,9 +54,7 @@ _MODULES_BY_DOMAIN = {
     ),
     "transport": ("planning_core", "runtime_environment"),
 }
-_SYMBOLS: dict[str, Any] = {
-    "_JAX_EINSUM_CHARS": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-}
+_SYMBOLS: dict[str, Any] = {}
 _LOADED: dict[str, ModuleType] = {}
 
 
