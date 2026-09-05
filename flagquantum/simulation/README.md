@@ -20,6 +20,11 @@ Runtime enters through `run_local_statevector()`.
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.
 
+`noisy_statevector.py` owns batched gate application, Kraus sampling,
+amplitude-damping evolution, normalization, and Z-expectation numerics for the
+statevector trajectory backend. Runtime retains trajectory IDs and random-stream
+construction, convergence, retry, checkpointing, collectives, and result assembly.
+
 `double_single_host_gates.py` owns P3's explicit CPU reference encoding;
 `double_single_device_gates.py` separately owns P4's device-resident FP32
 gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
@@ -81,6 +86,12 @@ For a local density-matrix change, start in `density_matrix.py` and run:
 
 ```bash
 python -m pytest tests/test_noise.py -k density_matrix -q
+```
+
+For batched noisy-statevector numerics, start in `noisy_statevector.py` and run:
+
+```bash
+python -m pytest tests/unit/test_noisy_statevector_numerics.py tests/test_noise.py -q
 ```
 
 For the local noiseless MPS loop, start in `mps_local.py`; for one lowered noisy
