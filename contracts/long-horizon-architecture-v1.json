@@ -63,7 +63,7 @@
       "compatibility_adapter": "Runtime execution-provider adapter",
       "completion_evidence": "a real engine and a contract fake pass the same conformance suite without Runtime consumer changes",
       "retirement_condition": "numerical algorithm ownership under runtime/backends reaches zero",
-      "status": "planned"
+      "status": "in_progress"
     },
     {
       "name": "platform_provider_convergence",

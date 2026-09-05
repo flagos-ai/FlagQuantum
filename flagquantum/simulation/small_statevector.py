@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import torch
 
+from ..ops.complex_ops import complex_mul
+
 _CONSTANT_CACHE: dict[
     tuple[int, str, torch.dtype], tuple[torch.Tensor, torch.Tensor]
 ] = {}
@@ -54,13 +56,16 @@ def _apply_ry(state: torch.Tensor, angles: torch.Tensor, *, wire: int) -> torch.
 
 
 def _apply_rz(state: torch.Tensor, angles: torch.Tensor, *, wire: int) -> torch.Tensor:
-    negative = torch.exp(-0.5j * angles)
-    positive = negative.conj()
+    half_angles = 0.5 * angles
+    negative = torch.complex(torch.cos(-half_angles), torch.sin(-half_angles))
+    positive = torch.complex(torch.cos(half_angles), torch.sin(half_angles))
     while negative.ndim < state.ndim - 1:
         negative = negative.unsqueeze(-1)
         positive = positive.unsqueeze(-1)
     zero, one = state.unbind(dim=wire + 1)
-    return torch.stack((negative * zero, positive * one), dim=wire + 1)
+    return torch.stack(
+        (complex_mul(zero, negative), complex_mul(one, positive)), dim=wire + 1
+    )
 
 
 def small_data_reuploading_z(
