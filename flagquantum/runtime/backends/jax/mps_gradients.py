@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any, Callable, Sequence
 
 from ...distributed.backend_policy import DistributedBackendPolicy
+from .array_conversions import (
+    _jax_parameter_array_from_input,
+    _torch_parameters_for_static_build,
+)
 from .backend_dispatch import plan_jax_distributed_quantum_backend
 from .mps_boundary_exchange import _execute_local_mps_boundary_adjoint_exchange
 from .mps_execution import _jax_parameterized_mps_rank_tensors
@@ -29,10 +33,6 @@ from .runtime_environment import (
     _resolve_local_world_size,
     _resolve_policy,
     _resolve_world_size,
-)
-from .tensor_network_contraction import (
-    _jax_parameter_array_from_input,
-    _torch_parameters_for_static_build,
 )
 
 

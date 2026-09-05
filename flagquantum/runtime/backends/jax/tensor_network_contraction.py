@@ -7,9 +7,7 @@ from typing import Any, Mapping, Sequence
 from .common import product_int as _product
 from .runtime_environment import (
     _jax_available_local_devices,
-    _jax_real_dtype,
     _require_jax,
-    _require_torch,
 )
 from .tensor_network_records import JAXTensorNetworkNode
 
@@ -379,36 +377,6 @@ def _jax_contract_tensor_slices_by_backend(
         partials, collective_backend=collective_backend
     )
     return partials, reduced, "local_simulated_slice_compute", collective_execution
-
-
-def _jax_parameter_array_from_input(parameters: Any, *, complex_bytes: int) -> Any:
-    import numpy as np
-
-    jax, jnp = _require_jax()
-    torch = _require_torch()
-    real_dtype = _jax_real_dtype(complex_bytes)
-    if torch.is_tensor(parameters):
-        tensor = parameters.detach().contiguous()
-        try:
-            import jax.dlpack
-
-            return jnp.asarray(jax.dlpack.from_dlpack(tensor), dtype=real_dtype)
-        except Exception:
-            return jnp.asarray(np.asarray(tensor.cpu()).copy(), dtype=real_dtype)
-    del jax
-    return jnp.asarray(parameters, dtype=real_dtype)
-
-
-def _torch_parameters_for_static_build(parameters: Any, *, complex_bytes: int) -> Any:
-    import numpy as np
-
-    torch = _require_torch()
-    if torch.is_tensor(parameters):
-        return parameters.detach().cpu()
-    dtype = torch.float64 if int(complex_bytes) == 16 else torch.float32
-    return torch.as_tensor(
-        np.asarray(parameters).copy(), dtype=dtype, device=torch.device("cpu")
-    )
 
 
 def _pauli_ops_from_term(term_ops: Sequence[tuple[int, str]]) -> dict[int, str]:

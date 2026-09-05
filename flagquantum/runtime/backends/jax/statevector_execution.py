@@ -8,7 +8,9 @@ from ...distributed.backend_policy import DistributedBackendPolicy
 from .array_conversions import (
     _apply_gate_to_jax_shards,
     _gate_matrix_as_jax,
+    _jax_parameter_array_from_input,
     _parameterized_gate_matrix_as_jax,
+    _torch_parameters_for_static_build,
 )
 from .backend_dispatch import plan_jax_distributed_quantum_backend
 from .planning_core import _as_ir
@@ -39,10 +41,6 @@ from .statevector_kernels import (
     _statevector_shard_map_backward_blockers,
 )
 from .statevector_records import JAXShardedStatevectorResult, JAXStatevectorShardState
-from .tensor_network_contraction import (
-    _jax_parameter_array_from_input,
-    _torch_parameters_for_static_build,
-)
 
 
 def run_jax_sharded_statevector(

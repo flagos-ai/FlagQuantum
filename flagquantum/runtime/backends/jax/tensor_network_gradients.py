@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping, Sequence
 
 from ...distributed.backend_policy import DistributedBackendPolicy
-from .array_conversions import _jax_nodes_from_torch_nodes
+from .array_conversions import (
+    _jax_nodes_from_torch_nodes,
+    _jax_parameter_array_from_input,
+    _torch_parameters_for_static_build,
+)
 from .backend_dispatch import plan_jax_distributed_quantum_backend
 from .common import node_count as _node_count
 from .runtime_environment import (
@@ -21,9 +25,7 @@ from .runtime_environment import (
 )
 from .tensor_network_contraction import (
     _jax_contract_tensor_slices_by_backend,
-    _jax_parameter_array_from_input,
     _pauli_ops_from_term,
-    _torch_parameters_for_static_build,
 )
 from .tensor_network_execution import (
     _jax_tn_loss_from_output,
