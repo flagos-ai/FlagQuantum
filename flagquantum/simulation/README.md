@@ -76,6 +76,8 @@ fallback, and compensated numerical accumulation used by sliced execution.
 `jax_gate_primitives.py` owns JAX dtype selection, instruction matrices, local
 statevector execution, gate application, and observable kernels. Runtime retains
 JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
+`jax_mps.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
+swap routing math, and MPS-to-statevector contraction.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.

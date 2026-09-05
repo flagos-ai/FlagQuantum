@@ -2,8 +2,8 @@
 
 import pytest
 
-from flagquantum.runtime.backends.jax import kernel
-from flagquantum.simulation import jax_gate_primitives
+from flagquantum.runtime.backends.jax import kernel, mps_kernel
+from flagquantum.simulation import jax_gate_primitives, jax_mps
 
 pytestmark = pytest.mark.unit
 
@@ -16,3 +16,9 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
         kernel._jax_statevector_from_circuit
         is jax_gate_primitives._jax_statevector_from_circuit
     )
+
+
+def test_runtime_reuses_simulation_owned_jax_mps_operations():
+    assert mps_kernel._jax_mps_apply_one is jax_mps.jax_mps_apply_one
+    assert mps_kernel._jax_mps_split_pair is jax_mps.jax_mps_split_pair
+    assert mps_kernel._jax_mps_to_statevector is jax_mps.jax_mps_to_statevector

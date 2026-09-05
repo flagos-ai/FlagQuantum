@@ -1,0 +1,129 @@
+"""Dependency-light JAX MPS tensor operations."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Any
+
+from .jax_gate_primitives import _jax_swap
+
+
+def jax_mps_apply_one(tensor: Any, matrix: Any, matmul_precision: str | None) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.einsum("pq,lqr->lpr", matrix, tensor, precision=matmul_precision)
+
+
+def jax_mps_apply_two_remote(
+    tensors: list[Any],
+    matrix: Any,
+    wires: tuple[int, int],
+    *,
+    max_bond: int | None,
+    cutoff: float,
+    matmul_precision: str | None,
+) -> list[Any]:
+    first, second = int(wires[0]), int(wires[1])
+    left = min(first, second)
+    right = max(first, second)
+    for wire in range(right - 1, left, -1):
+        tensors = jax_mps_apply_two_adjacent(
+            tensors,
+            _jax_swap(),
+            wire,
+            reverse=False,
+            max_bond=max_bond,
+            cutoff=cutoff,
+            matmul_precision=matmul_precision,
+        )
+    tensors = jax_mps_apply_two_adjacent(
+        tensors,
+        matrix,
+        left,
+        reverse=first > second,
+        max_bond=max_bond,
+        cutoff=cutoff,
+        matmul_precision=matmul_precision,
+    )
+    for wire in range(left + 1, right):
+        tensors = jax_mps_apply_two_adjacent(
+            tensors,
+            _jax_swap(),
+            wire,
+            reverse=False,
+            max_bond=max_bond,
+            cutoff=cutoff,
+            matmul_precision=matmul_precision,
+        )
+    return tensors
+
+
+def jax_mps_apply_two_adjacent(
+    tensors: list[Any],
+    matrix: Any,
+    left_wire: int,
+    *,
+    reverse: bool,
+    max_bond: int | None,
+    cutoff: float,
+    matmul_precision: str | None,
+) -> list[Any]:
+    import jax.numpy as jnp
+
+    left = tensors[int(left_wire)]
+    right = tensors[int(left_wire) + 1]
+    theta = jnp.einsum("lsm,mtr->lstr", left, right, precision=matmul_precision)
+    if reverse:
+        theta = jnp.swapaxes(theta, 1, 2)
+    left_dim, _, _, right_dim = theta.shape
+    theta = theta.reshape(left_dim, 4, right_dim)
+    flat = theta.transpose(1, 0, 2).reshape(4, -1)
+    applied = jnp.matmul(matrix, flat, precision=matmul_precision)
+    theta = applied.reshape(4, left_dim, right_dim).transpose(1, 0, 2)
+    theta = theta.reshape(left_dim, 2, 2, right_dim)
+    if reverse:
+        theta = jnp.swapaxes(theta, 1, 2)
+    next_left, next_right = jax_mps_split_pair(theta, max_bond=max_bond, cutoff=cutoff)
+    out = list(tensors)
+    out[int(left_wire)] = next_left
+    out[int(left_wire) + 1] = next_right
+    return out
+
+
+def jax_mps_split_pair(
+    theta: Any, *, max_bond: int | None, cutoff: float
+) -> tuple[Any, Any]:
+    import jax.numpy as jnp
+
+    left_dim, _, _, right_dim = theta.shape
+    matrix = theta.reshape(left_dim * 2, 2 * right_dim)
+    full_rank = min(int(matrix.shape[0]), int(matrix.shape[1]))
+    exact = float(cutoff) <= 0.0 and (
+        max_bond is None or int(max_bond) >= int(full_rank)
+    )
+    if exact:
+        if int(matrix.shape[0]) <= int(matrix.shape[1]):
+            rank = int(matrix.shape[0])
+            eye = jnp.eye(rank, dtype=matrix.dtype)
+            return eye.reshape(left_dim, 2, rank), matrix.reshape(rank, 2, right_dim)
+        rank = int(matrix.shape[1])
+        eye = jnp.eye(rank, dtype=matrix.dtype)
+        return matrix.reshape(left_dim, 2, rank), eye.reshape(rank, 2, right_dim)
+
+    u, s, vh = jnp.linalg.svd(matrix, full_matrices=False)
+    rank = int(full_rank if max_bond is None else min(int(max_bond), int(full_rank)))
+    u = u[:, :rank]
+    s = s[:rank]
+    vh = vh[:rank, :]
+    return u.reshape(left_dim, 2, rank), (s[:, None] * vh).reshape(rank, 2, right_dim)
+
+
+def jax_mps_to_statevector(
+    tensors: Sequence[Any], matmul_precision: str | None = "highest"
+) -> Any:
+    import jax.numpy as jnp
+
+    state = tensors[0][0, :, :]
+    for tensor in tensors[1:]:
+        state = jnp.einsum("...l,lsr->...sr", state, tensor, precision=matmul_precision)
+    return state.reshape(-1)
