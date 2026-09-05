@@ -29,6 +29,7 @@ from .release_policy import (
 from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
+from .statevector_kernels import _statevector_shard_map_backward_blockers
 
 
 def run_jax_sharded_statevector(
@@ -413,32 +414,6 @@ def _statevector_pmap_backward_blockers(plan: Any) -> tuple[str, ...]:
     if unsupported:
         blockers.append(
             "pmap_statevector_cross_rank_transport_pending:"
-            + ",".join(sorted(unsupported))
-        )
-    return tuple(blockers)
-
-
-def _statevector_shard_map_backward_blockers(plan: Any) -> tuple[str, ...]:
-    blockers: list[str] = []
-    if int(plan.world_size) <= 1:
-        blockers.append("world_size_is_one")
-    shard_sizes = {int(shard.local_amplitudes) for shard in plan.shards}
-    if len(shard_sizes) != 1:
-        blockers.append("shard_map_statevector_equal_shard_size_required")
-    if str(plan.distribution) != "qubit_address_sharded":
-        blockers.append(
-            f"shard_map_statevector_qubit_address_sharding_required:{plan.distribution}"
-        )
-    unsupported = tuple(
-        {
-            str(gate_plan.communication)
-            for gate_plan in plan.gate_plans
-            if str(gate_plan.communication) not in {"local", "pair_exchange"}
-        }
-    )
-    if unsupported:
-        blockers.append(
-            "shard_map_statevector_multi_sharded_wire_transport_pending:"
             + ",".join(sorted(unsupported))
         )
     return tuple(blockers)

@@ -29,6 +29,7 @@ from .release_policy import (
 from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
+from .statevector_kernels import _statevector_shard_map_backward_blockers
 
 
 def _statevector_training_device_blockers(

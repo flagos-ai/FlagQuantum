@@ -1,34 +1,24 @@
-# ruff: noqa: F401, F821
 """Local, pair-exchange, all-to-all, pmap, and shard-map statevector kernels."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Sequence
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
+from .array_conversions import (
+    _jax_apply_matrix_to_batched_local_state,
+    _jax_basis_indices_for_wires,
+    _jax_gate_basis_in_for_delta_and_local_input,
+    _jax_local_positions_for_gate_input,
+    _jax_rank_mask_for_touched_delta,
+    _parameterized_gate_matrix_as_jax,
 )
-from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
-from .common import node_count as _node_count
-from .common import product_int as _product
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .planning_core import _jax_global_indices_by_rank_for_plan
+from .runtime_environment import (
+    _jax_complex_dtype,
+    _jax_pmap_device_assignment,
+    _require_jax,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
-)
+from .statevector_records import JAXStatevectorShardState
 
 
 def _jax_sharded_statevector_loss_from_shards(
@@ -320,6 +310,32 @@ def _jax_pmap_statevector_parameter_loss(
         replicated_parameters,
     )
     return totals[0]
+
+
+def _statevector_shard_map_backward_blockers(plan: Any) -> tuple[str, ...]:
+    blockers: list[str] = []
+    if int(plan.world_size) <= 1:
+        blockers.append("world_size_is_one")
+    shard_sizes = {int(shard.local_amplitudes) for shard in plan.shards}
+    if len(shard_sizes) != 1:
+        blockers.append("shard_map_statevector_equal_shard_size_required")
+    if str(plan.distribution) != "qubit_address_sharded":
+        blockers.append(
+            f"shard_map_statevector_qubit_address_sharding_required:{plan.distribution}"
+        )
+    unsupported = tuple(
+        {
+            str(gate_plan.communication)
+            for gate_plan in plan.gate_plans
+            if str(gate_plan.communication) not in {"local", "pair_exchange"}
+        }
+    )
+    if unsupported:
+        blockers.append(
+            "shard_map_statevector_multi_sharded_wire_transport_pending:"
+            + ",".join(sorted(unsupported))
+        )
+    return tuple(blockers)
 
 
 def _jax_shard_map_statevector_parameter_loss(
