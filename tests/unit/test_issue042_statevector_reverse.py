@@ -415,7 +415,7 @@ def test_custom_autograd_boundary_passes_double_precision_gradcheck():
 
 
 def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch):
-    import flagquantum.runtime.backends.statevector.reverse as reverse
+    import flagquantum.runtime.backends.statevector.reverse_adjoint as reverse_adjoint
 
     theta = torch.tensor(0.19, requires_grad=True)
     result = execute_torch_distributed_statevector_reverse(fq.Circuit(1).ry(0, theta))
@@ -423,7 +423,7 @@ def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch
     def fail(*args, **kwargs):
         raise RuntimeError("injected backward failure")
 
-    monkeypatch.setattr(reverse, "_explicit_sharded_adjoint", fail)
+    monkeypatch.setattr(reverse_adjoint, "_explicit_sharded_adjoint", fail)
     with pytest.raises(RuntimeError, match="injected backward failure"):
         result.backward()
     summary = result.summary()

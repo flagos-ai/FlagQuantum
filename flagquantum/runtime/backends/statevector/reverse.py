@@ -354,14 +354,6 @@ class TorchDistributedStatevectorGradientResult:
         }
 
 
-from .reverse_adjoint import (  # noqa: E402
-    _bind_parameters,
-    _explicit_sharded_adjoint,
-    _local_expectation_z,
-    _parameter_layout,
-)
-
-
 class _ShardedStatevectorExpectation(torch.autograd.Function):
     """Rematerializing custom-autograd boundary; no global state is saved."""
 
@@ -377,6 +369,8 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         evidence: BackwardExecutionEvidence,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
+        from .reverse_adjoint import _bind_parameters, _local_expectation_z
+
         ctx.slots = slots
         ctx.policy = policy
         ctx.observable_wire = observable_wire
@@ -423,6 +417,8 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[Any, ...]:
+        from .reverse_adjoint import _explicit_sharded_adjoint
+
         evidence = ctx.evidence
         evidence.status = "running"
         evidence.error = None
@@ -523,6 +519,8 @@ def execute_torch_distributed_statevector_reverse(
     process_group: Any | None = None,
 ) -> TorchDistributedStatevectorGradientResult:
     """Return a differentiable global Z expectation from rank-local shards."""
+
+    from .reverse_adjoint import _parameter_layout
 
     ir = ensure_circuit_ir(circuit_or_ir)
     if observable_wire < 0 or observable_wire >= ir.n_wires:
