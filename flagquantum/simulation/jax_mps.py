@@ -335,3 +335,73 @@ def jax_mps_adjacent_zz_with_envs(
             precision=matmul_precision,
         )
     )
+
+
+def jax_mps_zz_z_chain_expectation_padded_scan(
+    tensors: Sequence[Any],
+    parsed: tuple[dict[str, tuple[float, ...]], tuple[float, ...], float],
+    matmul_precision: str | None,
+) -> Any:
+    import jax
+    import jax.numpy as jnp
+
+    local_coeffs, zz_coeffs, constant = parsed
+    max_dim = max(max(int(tensor.shape[0]), int(tensor.shape[2])) for tensor in tensors)
+    padded_tensors = []
+    for tensor in tensors:
+        left_pad = max_dim - int(tensor.shape[0])
+        right_pad = max_dim - int(tensor.shape[2])
+        padded_tensors.append(jnp.pad(tensor, ((0, left_pad), (0, 0), (0, right_pad))))
+    stacked = jnp.stack(padded_tensors)
+    boundary = (
+        jnp.zeros((max_dim, max_dim), dtype=_jax_complex_dtype())
+        .at[0, 0]
+        .set(1.0 + 0.0j)
+    )
+
+    def left_step(env: Any, tensor: Any) -> tuple[Any, Any]:
+        next_env = jax_mps_transfer_identity(env, tensor, matmul_precision)
+        return next_env, next_env
+
+    def right_step(env: Any, tensor: Any) -> tuple[Any, Any]:
+        next_env = jax_mps_transfer_identity_right(env, tensor, matmul_precision)
+        return next_env, next_env
+
+    _, left_scanned = jax.lax.scan(left_step, boundary, stacked)
+    _, right_scanned_reversed = jax.lax.scan(right_step, boundary, stacked[::-1])
+    left_envs = jnp.concatenate((boundary[None, :, :], left_scanned), axis=0)
+    right_envs = jnp.concatenate(
+        (right_scanned_reversed[::-1], boundary[None, :, :]), axis=0
+    )
+
+    total = jnp.asarray(constant, dtype=_jax_real_dtype())
+    for pauli, coefficients in local_coeffs.items():
+        coefficient_array = jnp.asarray(coefficients, dtype=_jax_real_dtype())
+        if coefficients and any(
+            float(coefficient) != 0.0 for coefficient in coefficients
+        ):
+            local_values = jax.vmap(
+                lambda tensor, left_env, right_env: jax_mps_single_pauli_with_envs(
+                    tensor,
+                    left_env,
+                    right_env,
+                    pauli,
+                    matmul_precision,
+                )
+            )(stacked, left_envs[:-1], right_envs[1:])
+            total = total + jnp.sum(coefficient_array * local_values)
+    zz_coefficient_array = jnp.asarray(zz_coeffs, dtype=_jax_real_dtype())
+    if zz_coeffs and any(float(coefficient) != 0.0 for coefficient in zz_coeffs):
+        zz_values = jax.vmap(
+            lambda left_tensor, right_tensor, left_env, right_env: (
+                jax_mps_adjacent_zz_with_envs(
+                    left_tensor,
+                    right_tensor,
+                    left_env,
+                    right_env,
+                    matmul_precision,
+                )
+            )
+        )(stacked[:-1], stacked[1:], left_envs[:-2], right_envs[2:])
+        total = total + jnp.sum(zz_coefficient_array * zz_values)
+    return total

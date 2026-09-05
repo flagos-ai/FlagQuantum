@@ -81,6 +81,7 @@ swap routing math, MPS-to-statevector contraction, and observable transfer
 environments, including Z and Pauli-string expectations.
 It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
 Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
+The padded environment scan for that optimized path is also Simulation-owned.
 
 `mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.
