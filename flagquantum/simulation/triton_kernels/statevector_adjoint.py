@@ -1,4 +1,4 @@
-"""Triton kernels for rank-local exact-statevector operations."""
+"""Native Triton kernels for statevector adjoint and VJP operations."""
 
 from __future__ import annotations
 

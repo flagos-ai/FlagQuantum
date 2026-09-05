@@ -354,7 +354,9 @@ def _fused_sharded_1q_vjp_adjoint(
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
     """Exchange before/adjoint chunks once and fuse the sharded 1q reverse work."""
 
-    from .triton import fused_complex64_sharded_1q_vjp_adjoint
+    from ....simulation.triton_kernels.statevector_adjoint import (
+        fused_complex64_sharded_1q_vjp_adjoint,
+    )
 
     position = plan.sharded_wires.index(int(wire))
     rank_shift = len(plan.sharded_wires) - position - 1
@@ -749,7 +751,7 @@ def _explicit_sharded_adjoint(
             )
             if derivative_matrix is not None:
                 evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
-                from .triton import (
+                from ....simulation.triton_kernels.statevector_adjoint import (
                     fused_complex64_local_1q_reversible_vjp,
                 )
 
@@ -985,7 +987,7 @@ def _explicit_sharded_adjoint(
                 )
                 evidence.kernel_dispatch_evidence.record(vjp_decision)
                 if vjp_decision.accelerated:
-                    from .triton import (
+                    from ....simulation.triton_kernels.statevector_adjoint import (
                         fused_complex64_local_1q_vjp_adjoint,
                     )
 

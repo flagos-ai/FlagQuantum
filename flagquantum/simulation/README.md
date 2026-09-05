@@ -20,6 +20,9 @@ block combination kernels. Neither file is a new public API.
 including buffered and transpose-fused one-qubit gates, CNOT segments, and
 control-one packing/scattering used around cross-shard CX transport. Runtime
 decides when to use them and owns the transport itself.
+`triton_kernels/statevector_adjoint.py` owns local and sharded one-qubit
+adjoint/VJP CUDA kernels; Runtime retains replay, checkpointing, collectives,
+and backward-pass evidence.
 `Circuit.state()` remains the
 stable user facade and Runtime enters through `run_local_statevector()`.
 
