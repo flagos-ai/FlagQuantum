@@ -49,12 +49,8 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
         is jax_statevector.jax_rank_mask_for_touched_delta
     )
     assert (
-        statevector_kernels.jax_local_positions_for_gate_input
-        is jax_statevector.jax_local_positions_for_gate_input
-    )
-    assert (
-        statevector_kernels.jax_gate_basis_in_for_delta_and_local_input
-        is jax_statevector.jax_gate_basis_in_for_delta_and_local_input
+        statevector_kernels.jax_accumulate_all_to_all_statevector_delta
+        is jax_statevector.jax_accumulate_all_to_all_statevector_delta
     )
     assert (
         statevector_kernels.jax_combine_pair_exchanged_statevector

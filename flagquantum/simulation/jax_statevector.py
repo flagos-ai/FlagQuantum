@@ -106,6 +106,51 @@ def jax_gate_basis_in_for_delta_and_local_input(
     return basis
 
 
+def jax_accumulate_all_to_all_statevector_delta(
+    updated: Any,
+    source_amplitudes: Any,
+    global_indices: Any,
+    matrix: Any,
+    basis_out: Any,
+    *,
+    n_wires: int,
+    wires: Sequence[int],
+    touched_sharded_wires: Sequence[int],
+    local_wires: Sequence[int],
+    local_gate_wires: Sequence[int],
+    delta_code: int,
+) -> Any:
+    """Accumulate one exchanged-rank delta into an all-to-all gate result."""
+
+    import jax.numpy as jnp
+
+    local_gate_wires = tuple(int(wire) for wire in local_gate_wires)
+    for local_input_basis in range(2 ** len(local_gate_wires)):
+        source_positions = jax_local_positions_for_gate_input(
+            global_indices,
+            n_wires=int(n_wires),
+            local_wires=local_wires,
+            local_gate_wires=local_gate_wires,
+            local_input_basis=local_input_basis,
+        )
+        source_values = jnp.take(source_amplitudes, source_positions, axis=1)
+        basis_in = jax_gate_basis_in_for_delta_and_local_input(
+            global_indices,
+            n_wires=int(n_wires),
+            wires=wires,
+            touched_sharded_wires=touched_sharded_wires,
+            local_gate_wires=local_gate_wires,
+            delta_code=int(delta_code),
+            local_input_basis=local_input_basis,
+        )
+        if matrix.ndim == 2:
+            coefficient = matrix[basis_out, basis_in].reshape(1, -1)
+        else:
+            coefficient = matrix[:, basis_out, basis_in]
+        updated = updated + source_values * coefficient
+    return updated
+
+
 def jax_apply_matrix_to_batched_local_state(
     state: Any,
     matrix: Any,

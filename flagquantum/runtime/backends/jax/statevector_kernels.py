@@ -5,10 +5,9 @@ from __future__ import annotations
 from typing import Any, Callable, Sequence
 
 from ....simulation.jax_statevector import (
+    jax_accumulate_all_to_all_statevector_delta,
     jax_apply_local_statevector_gate,
     jax_combine_pair_exchanged_statevector,
-    jax_gate_basis_in_for_delta_and_local_input,
-    jax_local_positions_for_gate_input,
     jax_rank_mask_for_touched_delta,
 )
 from ....simulation.jax_statevector import (
@@ -135,29 +134,19 @@ def _jax_apply_all_to_all_statevector_instruction(
             )
         else:
             source_amplitudes = amplitudes
-        for local_input_basis in range(2 ** len(local_gate_wires)):
-            source_positions = jax_local_positions_for_gate_input(
-                global_indices,
-                n_wires=int(plan.n_wires),
-                local_wires=local_wires,
-                local_gate_wires=local_gate_wires,
-                local_input_basis=local_input_basis,
-            )
-            source_values = jnp.take(source_amplitudes, source_positions, axis=1)
-            basis_in = jax_gate_basis_in_for_delta_and_local_input(
-                global_indices,
-                n_wires=int(plan.n_wires),
-                wires=wires,
-                touched_sharded_wires=touched,
-                local_gate_wires=local_gate_wires,
-                delta_code=delta_code,
-                local_input_basis=local_input_basis,
-            )
-            if matrix.ndim == 2:
-                coeff = matrix[basis_out, basis_in].reshape(1, -1)
-            else:
-                coeff = matrix[:, basis_out, basis_in]
-            updated = updated + source_values * coeff
+        updated = jax_accumulate_all_to_all_statevector_delta(
+            updated,
+            source_amplitudes,
+            global_indices,
+            matrix,
+            basis_out,
+            n_wires=int(plan.n_wires),
+            wires=wires,
+            touched_sharded_wires=touched,
+            local_wires=local_wires,
+            local_gate_wires=local_gate_wires,
+            delta_code=delta_code,
+        )
     return updated
 
 
