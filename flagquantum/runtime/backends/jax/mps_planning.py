@@ -1,35 +1,256 @@
-# ruff: noqa: F401, F821
 """Sharded MPS training and representation planning."""
 
 from __future__ import annotations
 
-import os
-import time
-from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
+from ....core.ir import CircuitIR
+from ...distributed.backend_policy import DistributedBackendPolicy
 from .common import communication_tier as _communication_tier
-from .common import env_int as _env_int
 from .common import node_count as _node_count
-from .common import product_int as _product
 from .common import rank_for_wire as _rank_for_wire
 from .common import split_contiguous as _split_contiguous
-from .planning_core import JAXDistributedQuantumPlan
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
+from .mps_training_records import (
+    JAXShardedMPSParameterFlowPlan,
+    JAXShardedMPSParameterGateAssignment,
+    JAXShardedMPSTrainingPlan,
 )
-from .release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
+from .planning_core import JAXDistributedQuantumPlan, _as_ir
+from .runtime_environment import (
+    _jax_device_count_summary,
+    _resolve_jax_backward_backend,
+    _resolve_local_world_size,
+    _resolve_policy,
+    _resolve_world_size,
 )
-from .release_policy import (
-    attach_statevector_claimability as _attach_statevector_claimability,
-)
+
+
+def _mps_pmap_backward_blockers(
+    *, world_size: int, boundary_sync_count: int
+) -> tuple[str, ...]:
+    blockers: list[str] = []
+    if int(world_size) <= 1:
+        blockers.append("world_size_is_one")
+    blockers.append("pmap_mps_rank_environment_scan_pending")
+    if int(boundary_sync_count) > 0:
+        blockers.append("pmap_mps_boundary_tensor_transport_pending")
+    return tuple(blockers)
+
+
+def _mps_shard_map_backward_blockers(
+    *, world_size: int, boundary_sync_count: int
+) -> tuple[str, ...]:
+    blockers: list[str] = []
+    if int(world_size) <= 1:
+        blockers.append("world_size_is_one")
+    blockers.extend(
+        (
+            "shard_map_mps_global_array_layout_pending",
+            "shard_map_mps_rank_environment_scan_pending",
+        )
+    )
+    if int(boundary_sync_count) > 0:
+        blockers.append("shard_map_mps_boundary_tensor_transport_pending")
+    return tuple(blockers)
+
+
+def _mps_training_device_blockers(
+    *,
+    backend: str,
+    world_size: int,
+    inspect_devices: bool,
+    assume_devices_ready: bool,
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    if backend == "local_simulated":
+        return {}, ("local_simulated_backward_not_capacity_scaling",)
+    if not inspect_devices:
+        if assume_devices_ready:
+            return {"assumed_ready": True}, ()
+        return {}, ("production_device_preflight_required",)
+
+    device_summary = _jax_device_count_summary()
+    blockers: list[str] = []
+    if int(device_summary["global_device_count"]) < int(world_size):
+        blockers.append("insufficient_global_jax_devices")
+    if backend == "pmap":
+        if int(device_summary["local_device_count"]) <= 0:
+            blockers.append("pmap_requires_one_local_device_per_process")
+    elif backend == "shard_map":
+        if int(device_summary["process_count"]) > 1:
+            blockers.append("shard_map_mps_multiprocess_global_array_input_pending")
+        if int(device_summary["local_device_count"]) < int(world_size):
+            blockers.append("shard_map_requires_world_size_local_devices")
+    else:
+        blockers.append(f"unsupported_mps_backward_backend:{backend}")
+    return device_summary, tuple(blockers)
+
+
+def plan_jax_sharded_mps_parameter_flow(
+    circuit_or_ir: Any,
+    *,
+    world_size: int | None = None,
+    local_world_size: int | None = None,
+    distributed_backend_policy: DistributedBackendPolicy | None = None,
+    distributed_profile: str | None = None,
+    jax_backend: str | None = None,
+    torch_backend: str | None = None,
+) -> JAXShardedMPSParameterFlowPlan:
+    """Plan parameter ownership and gradient routes for sharded MPS backward."""
+
+    from ...distributed.engine import (
+        _boundary_sync_record,
+        _instruction_is_boundary_local,
+        _instruction_is_site_local,
+        _instruction_owner,
+        _mps_shards,
+    )
+    from ...distributed.engine import (
+        _rank_for_wire as _distributed_rank_for_wire,
+    )
+
+    policy = _resolve_policy(
+        distributed_backend_policy=distributed_backend_policy,
+        distributed_profile=distributed_profile,
+        jax_backend=jax_backend,
+        torch_backend=torch_backend,
+    )
+    resolved_world_size = _resolve_world_size(world_size, policy)
+    resolved_local_world_size = _resolve_local_world_size(
+        local_world_size,
+        world_size=resolved_world_size,
+        policy=policy,
+    )
+    ir = _as_ir(circuit_or_ir)
+    shard_plans = _mps_shards(ir.n_wires, resolved_world_size)
+    rank_counts = [0 for _ in range(int(resolved_world_size))]
+    assignments: list[JAXShardedMPSParameterGateAssignment] = []
+    boundary_edges: list[dict[str, Any]] = []
+    blockers: list[str] = []
+    if int(resolved_world_size) <= 1:
+        blockers.append("world_size_is_one")
+
+    for index, instruction in enumerate(ir):
+        parameter_names = tuple(str(name) for name in sorted(instruction.params))
+        if not parameter_names:
+            continue
+        wires = tuple(int(wire) for wire in instruction.wires)
+        touched_ranks = tuple(
+            sorted(
+                {int(_distributed_rank_for_wire(wire, shard_plans)) for wire in wires}
+            )
+        )
+        site_local = _instruction_is_site_local(instruction, shard_plans)
+        boundary_local = _instruction_is_boundary_local(instruction, shard_plans)
+        if site_local:
+            owner = int(_instruction_owner(instruction, shard_plans))
+            rank_counts[owner] += len(parameter_names)
+            assignments.append(
+                JAXShardedMPSParameterGateAssignment(
+                    instruction_index=index,
+                    name=str(instruction.name),
+                    wires=wires,
+                    parameter_names=parameter_names,
+                    owner_rank=owner,
+                    touched_ranks=touched_ranks,
+                    locality="site_local",
+                    gradient_route="rank_local_parameter_vjp",
+                    communication_tier="none",
+                )
+            )
+            continue
+        if boundary_local:
+            boundary = _boundary_sync_record(instruction, shard_plans)
+            owner = int(boundary.owner_rank)
+            rank_counts[owner] += len(parameter_names)
+            tier = _communication_tier(
+                boundary.left_rank,
+                boundary.right_rank,
+                local_world_size=resolved_local_world_size,
+            )
+            edge = {
+                "instruction_index": index,
+                "name": str(instruction.name),
+                "parameter_names": parameter_names,
+                "left_wire": int(boundary.left_wire),
+                "right_wire": int(boundary.right_wire),
+                "left_rank": int(boundary.left_rank),
+                "right_rank": int(boundary.right_rank),
+                "owner_rank": owner,
+                "tier": tier,
+                "required_backward_transport": "boundary_adjoint_tensor_exchange",
+            }
+            boundary_edges.append(edge)
+            assignments.append(
+                JAXShardedMPSParameterGateAssignment(
+                    instruction_index=index,
+                    name=str(instruction.name),
+                    wires=wires,
+                    parameter_names=parameter_names,
+                    owner_rank=owner,
+                    touched_ranks=touched_ranks,
+                    locality="boundary",
+                    gradient_route="boundary_parameter_vjp",
+                    communication_tier=tier,
+                    blockers=(
+                        "mps_boundary_parameter_pullback_pending",
+                        "mps_boundary_parameter_gradient_requires_executed_adjoint_route",
+                    ),
+                )
+            )
+            blockers.extend(
+                (
+                    "mps_boundary_parameter_pullback_pending",
+                    "mps_boundary_parameter_gradient_requires_executed_adjoint_route",
+                )
+            )
+            continue
+
+        assignments.append(
+            JAXShardedMPSParameterGateAssignment(
+                instruction_index=index,
+                name=str(instruction.name),
+                wires=wires,
+                parameter_names=parameter_names,
+                owner_rank=None,
+                touched_ranks=touched_ranks,
+                locality="unsupported",
+                gradient_route="unsupported_without_full_mps_replay",
+                communication_tier="unsupported",
+                blockers=("mps_parameter_flow_unsupported_nonlocal_gate",),
+            )
+        )
+        blockers.append("mps_parameter_flow_unsupported_nonlocal_gate")
+
+    return JAXShardedMPSParameterFlowPlan(
+        world_size=int(resolved_world_size),
+        local_world_size=int(resolved_local_world_size),
+        node_count=_node_count(resolved_world_size, resolved_local_world_size),
+        n_wires=int(ir.n_wires),
+        site_shard_ownership=tuple(
+            {
+                "rank": int(shard.rank),
+                "wires": tuple(int(wire) for wire in shard.wires),
+                "ownership_semantics": "mps_site_range",
+            }
+            for shard in shard_plans
+        ),
+        bond_shard_ownership=tuple(
+            {
+                "left_rank": int(shard.rank),
+                "right_rank": int(shard.rank + 1),
+                "left_wire": int(shard.right_boundary),
+                "right_wire": int(shard.right_boundary + 1),
+                "ownership_semantics": "adjacent_rank_boundary_bond",
+            }
+            for shard in shard_plans
+            if shard.right_boundary is not None
+            and int(shard.rank + 1) < int(resolved_world_size)
+        ),
+        assignments=tuple(assignments),
+        rank_parameter_counts=tuple(int(count) for count in rank_counts),
+        boundary_parameter_edges=tuple(boundary_edges),
+        blockers=tuple(dict.fromkeys(blockers)),
+    )
 
 
 def plan_jax_sharded_mps_training(
@@ -129,15 +350,14 @@ def plan_jax_sharded_mps_training(
         assume_devices_ready=assume_devices_ready,
     )
     blockers = tuple(dict.fromkeys((*static_blockers, *device_blockers)))
-    jax_plan = plan_jax_distributed_quantum_backend(
+    jax_plan = _mps_plan(
         ir,
-        mode="mps",
+        policy=policy,
         world_size=resolved_world_size,
         local_world_size=resolved_local_world_size,
         bsz=bsz,
         complex_bytes=complex_bytes,
         max_bond=max_bond,
-        distributed_backend_policy=policy,
     )
     jax_summary = jax_plan.summary()
     is_sharded = int(resolved_world_size) > 1
