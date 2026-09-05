@@ -72,10 +72,6 @@ def _triton_local_1q_decision(*, supported: bool = True) -> KernelDecision:
     return select_triton_kernel("local_1q", requested=requested, supported=supported)
 
 
-def _triton_local_1q_enabled() -> bool:
-    return _triton_local_1q_decision().accelerated
-
-
 def _triton_local_cx_decision(*, supported: bool = True) -> KernelDecision:
     return select_triton_kernel(
         "local_cx",
