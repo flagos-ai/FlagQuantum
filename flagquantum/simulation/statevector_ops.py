@@ -571,6 +571,20 @@ def _combine_rank_pair_gate_eager(
     return updated, scratch_bytes
 
 
+def _combine_gate_basis_blocks_eager(
+    basis_inputs: Sequence[torch.Tensor],
+    matrix: torch.Tensor,
+    output_basis: torch.Tensor,
+) -> tuple[torch.Tensor, int]:
+    """Combine already-located input blocks for each gate basis state."""
+
+    updated = basis_inputs[0] * matrix[output_basis, 0].reshape(1, -1)
+    for basis, input_values in enumerate(basis_inputs[1:], start=1):
+        coefficients = matrix[output_basis, basis].reshape(1, -1)
+        updated = updated + input_values * coefficients
+    return updated, 4 * updated.numel() * updated.element_size()
+
+
 def _apply_local_gate_eager(
     amplitudes: torch.Tensor,
     matrix: torch.Tensor,

@@ -23,6 +23,7 @@ from flagquantum.runtime.backends.statevector.local_execution import (
 from flagquantum.simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
+    _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
 )
 from flagquantum.simulation.statevector_ops import (
@@ -110,6 +111,22 @@ def test_rank_pair_gate_kernel_is_usable_without_runtime_models(rank_basis):
     expected = basis_zero * matrix[rank_basis, 0] + basis_one * matrix[rank_basis, 1]
     torch.testing.assert_close(updated, expected)
     assert scratch_bytes == 3 * updated.numel() * updated.element_size()
+
+
+def test_gate_basis_block_combination_is_usable_without_runtime_models():
+    basis_inputs = (
+        torch.tensor([[1, 2]], dtype=torch.complex64),
+        torch.tensor([[3, 4]], dtype=torch.complex64),
+    )
+    matrix = torch.tensor([[2, 3], [5, 7]], dtype=torch.complex64)
+    output_basis = torch.tensor([0, 1])
+
+    updated, scratch_bytes = _combine_gate_basis_blocks_eager(
+        basis_inputs, matrix, output_basis
+    )
+
+    torch.testing.assert_close(updated, torch.tensor([[11, 38]], dtype=torch.complex64))
+    assert scratch_bytes == 4 * updated.numel() * updated.element_size()
 
 
 def test_flagos_exchange_uses_provider_neutral_wait():

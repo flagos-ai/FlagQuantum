@@ -15,6 +15,7 @@ from ....core.ir import CircuitIR
 from ....simulation.statevector_ops import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
+    _combine_gate_basis_blocks_eager,
     _combine_rank_pair_gate_eager,
 )
 from ....simulation.statevector_ops import (
@@ -1087,7 +1088,7 @@ def _vectorized_subgroup_exchange_gate(
         for position, wire in enumerate(wires):
             bit = (global_out >> (plan.n_wires - wire - 1)) & 1
             output_basis |= bit << (len(wires) - position - 1)
-        updated_output = None
+        basis_inputs = []
         for basis in range(gate_dim):
             if local_bases is not None:
                 local_required = local_bases | local_offsets[basis]
@@ -1103,11 +1104,10 @@ def _vectorized_subgroup_exchange_gate(
                 raise ValueError(
                     "exchange chunk is not aligned to the gate's local wires"
                 )
-            input_values = sources[owner][:, local_required]
-            coefficients = matrix[output_basis, basis].reshape(1, -1)
-            term = input_values * coefficients
-            updated_output = term if updated_output is None else updated_output + term
-        assert updated_output is not None
+            basis_inputs.append(sources[owner][:, local_required])
+        updated_output, numeric_scratch_bytes = _combine_gate_basis_blocks_eager(
+            basis_inputs, matrix, output_basis
+        )
         out[:, start:end] = updated_output
         communication_count += len(peers)
         sent_bytes = local.numel() * local.element_size()
@@ -1125,7 +1125,7 @@ def _vectorized_subgroup_exchange_gate(
             output_bytes
             + _independent_tensor_bytes(local, shard_state.amplitudes)
             + sum(value.numel() * value.element_size() for value in received.values())
-            + 4 * updated_output.numel() * updated_output.element_size(),
+            + numeric_scratch_bytes,
         )
         if chunk_index + 1 < len(chunks):
             current = following if following is not None else post(chunk_index + 1)
