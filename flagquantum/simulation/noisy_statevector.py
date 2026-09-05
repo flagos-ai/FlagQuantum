@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import torch
 
+from ..core.ir import CircuitIR
+from ..ops.gate_matrix import gate_matrix
+
 
 def apply_matrix_batched(
     state: torch.Tensor,
@@ -144,10 +147,91 @@ def expectation_z(state: torch.Tensor, n_wires: int) -> torch.Tensor:
     return torch.matmul(torch.abs(state) ** 2, signs.to(dtype=state.real.dtype))
 
 
+def run_noisy_trajectory_batch(
+    initial: torch.Tensor,
+    ir: CircuitIR,
+    generators: list[torch.Generator],
+    pauli_matrices: dict[str, torch.Tensor],
+) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
+    """Evolve one batch of already-lowered noisy trajectories."""
+
+    circuit_batch = initial.shape[0]
+    state = initial.unsqueeze(0).expand(len(generators), -1, -1).clone()
+    pauli_events = 0
+    amplitude_events = 0
+    generic_events = 0
+    for instruction in ir.instructions:
+        if not instruction.metadata.get("is_channel"):
+            matrix = gate_matrix(
+                instruction,
+                bsz=circuit_batch,
+                device=initial.device,
+                dtype=initial.dtype,
+            )
+            state = apply_matrix_batched(state, matrix, instruction.wires, ir.n_wires)
+            continue
+        operators = tuple(
+            torch.as_tensor(operator, device=initial.device, dtype=initial.dtype)
+            for operator in instruction.matrix
+        )
+        if instruction.name in {"bit_flip", "phase_flip", "depolarizing"}:
+            probabilities = torch.tensor(
+                [
+                    float((torch.real(torch.trace(op.mH @ op)) / 2).item())
+                    for op in operators
+                ],
+                device=state.device,
+                dtype=state.real.dtype,
+            ).expand(state.shape[0], state.shape[1], -1)
+            choices = sample_rows(probabilities, generators)
+            names = (
+                ("i", "x")
+                if instruction.name == "bit_flip"
+                else (
+                    ("i", "z")
+                    if instruction.name == "phase_flip"
+                    else ("i", "x", "y", "z")
+                )
+            )
+            branches = torch.stack(
+                [
+                    apply_matrix_batched(
+                        state, pauli_matrices[name], instruction.wires, ir.n_wires
+                    )
+                    for name in names
+                ],
+                dim=2,
+            )
+            state = torch.gather(
+                branches,
+                2,
+                choices[..., None, None].expand(-1, -1, 1, state.shape[-1]),
+            ).squeeze(2)
+            pauli_events += state.shape[0] * circuit_batch
+        elif instruction.name == "amplitude_damping" and len(instruction.wires) == 1:
+            state = apply_amplitude_damping_batched(
+                state, operators, instruction.wires[0], ir.n_wires, generators
+            )
+            amplitude_events += state.shape[0] * circuit_batch
+        else:
+            state = apply_kraus_batched(
+                state, operators, instruction.wires, ir.n_wires, generators
+            )
+            generic_events += state.shape[0] * circuit_batch
+    return (
+        state,
+        expectation_z(state, ir.n_wires),
+        pauli_events,
+        amplitude_events,
+        generic_events,
+    )
+
+
 __all__ = (
     "apply_amplitude_damping_batched",
     "apply_kraus_batched",
     "apply_matrix_batched",
     "expectation_z",
+    "run_noisy_trajectory_batch",
     "sample_rows",
 )

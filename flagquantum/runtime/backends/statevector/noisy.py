@@ -11,17 +11,10 @@ import torch
 from ....circuit import Circuit
 from ....compiler import lower_noise_model
 from ....noise import NoiseModel
-from ....ops.gate_matrix import gate_matrix
 from ....ops.matrices import GATE_MAT_DICT
 from ....simulation.noisy_statevector import (
-    apply_amplitude_damping_batched as _apply_amplitude_damping_batched,
+    run_noisy_trajectory_batch,
 )
-from ....simulation.noisy_statevector import apply_kraus_batched as _apply_kraus_batched
-from ....simulation.noisy_statevector import (
-    apply_matrix_batched as _apply_matrix_batched,
-)
-from ....simulation.noisy_statevector import expectation_z as _expectation_z
-from ....simulation.noisy_statevector import sample_rows as _sample_rows
 from ...trajectories.ownership import owned_trajectory_ids
 from ...trajectories.result import TrajectoryFailure, TrajectoryStatistics
 from ...trajectories.rng import derive_trajectory_seed, trajectory_generator
@@ -139,7 +132,6 @@ def _execute_trajectory_batch(
     seed: int,
     device: torch.device | str,
     ir: Any,
-    circuit_batch: int,
     noise_model: NoiseModel,
     pauli_matrices: dict[str, torch.Tensor],
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
@@ -147,71 +139,10 @@ def _execute_trajectory_batch(
         trajectory_generator(seed, trajectory_id, device=device)
         for trajectory_id in ids
     ]
-    state = initial.unsqueeze(0).expand(len(ids), -1, -1).clone()
-    pauli_events = 0
-    amplitude_events = 0
-    generic_events = 0
-    for instruction in ir.instructions:
-        if not instruction.metadata.get("is_channel"):
-            matrix = gate_matrix(
-                instruction,
-                bsz=circuit_batch,
-                device=device,
-                dtype=initial.dtype,
-            )
-            state = _apply_matrix_batched(state, matrix, instruction.wires, ir.n_wires)
-            continue
-        operators = tuple(
-            torch.as_tensor(operator, device=device, dtype=initial.dtype)
-            for operator in instruction.matrix
-        )
-        if instruction.name in {"bit_flip", "phase_flip", "depolarizing"}:
-            probabilities = torch.tensor(
-                [
-                    float((torch.real(torch.trace(op.mH @ op)) / 2).item())
-                    for op in operators
-                ],
-                device=state.device,
-                dtype=state.real.dtype,
-            ).expand(state.shape[0], state.shape[1], -1)
-            choices = _sample_rows(probabilities, generators)
-            names = (
-                ("i", "x")
-                if instruction.name == "bit_flip"
-                else (
-                    ("i", "z")
-                    if instruction.name == "phase_flip"
-                    else ("i", "x", "y", "z")
-                )
-            )
-            branches = torch.stack(
-                [
-                    _apply_matrix_batched(
-                        state, pauli_matrices[name], instruction.wires, ir.n_wires
-                    )
-                    for name in names
-                ],
-                dim=2,
-            )
-            state = torch.gather(
-                branches,
-                2,
-                choices[..., None, None].expand(-1, -1, 1, state.shape[-1]),
-            ).squeeze(2)
-            pauli_events += state.shape[0] * circuit_batch
-        elif instruction.name == "amplitude_damping" and len(instruction.wires) == 1:
-            state = _apply_amplitude_damping_batched(
-                state, operators, instruction.wires[0], ir.n_wires, generators
-            )
-            amplitude_events += state.shape[0] * circuit_batch
-        else:
-            state = _apply_kraus_batched(
-                state, operators, instruction.wires, ir.n_wires, generators
-            )
-            generic_events += state.shape[0] * circuit_batch
-    expectation = noise_model.apply_readout_expectation_z(
-        _expectation_z(state, ir.n_wires)
+    state, expectation, pauli_events, amplitude_events, generic_events = (
+        run_noisy_trajectory_batch(initial, ir, generators, pauli_matrices)
     )
+    expectation = noise_model.apply_readout_expectation_z(expectation)
     return state, expectation, pauli_events, amplitude_events, generic_events
 
 
@@ -423,7 +354,6 @@ def run_noisy_statevector(
                     seed=seed,
                     device=selected_device,
                     ir=ir,
-                    circuit_batch=circuit_batch,
                     noise_model=noise_model,
                     pauli_matrices=pauli_matrices,
                 )
@@ -447,7 +377,6 @@ def run_noisy_statevector(
                             seed=seed,
                             device=selected_device,
                             ir=ir,
-                            circuit_batch=circuit_batch,
                             noise_model=noise_model,
                             pauli_matrices=pauli_matrices,
                         )

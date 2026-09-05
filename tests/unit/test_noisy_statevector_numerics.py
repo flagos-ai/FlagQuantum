@@ -3,10 +3,14 @@ from __future__ import annotations
 import pytest
 import torch
 
+from flagquantum import Circuit, bit_flip_channel
+from flagquantum.compiler import lower_noise_model
+from flagquantum.noise import NoiseModel
 from flagquantum.simulation.noisy_statevector import (
     apply_amplitude_damping_batched,
     apply_kraus_batched,
     expectation_z,
+    run_noisy_trajectory_batch,
 )
 
 pytestmark = pytest.mark.unit
@@ -42,3 +46,24 @@ def test_amplitude_damping_fast_path_handles_a_certain_jump() -> None:
         evolved, torch.tensor([[[1, 0]], [[1, 0]]], dtype=torch.complex64)
     )
     torch.testing.assert_close(expectation_z(evolved, 1), torch.ones((2, 1, 1)))
+
+
+def test_lowered_trajectory_batch_runs_without_runtime_lifecycle() -> None:
+    circuit = Circuit(1).x(0)
+    ir = lower_noise_model(circuit, NoiseModel().add("x", bit_flip_channel(1.0)))
+    initial = torch.tensor([[1.0, 0.0]], dtype=torch.complex64)
+    identity = torch.eye(2, dtype=torch.complex64)
+    x = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex64)
+
+    state, expectation, pauli, amplitude, generic = run_noisy_trajectory_batch(
+        initial,
+        ir,
+        _generators(2),
+        {"i": identity, "x": x},
+    )
+
+    torch.testing.assert_close(
+        state, torch.tensor([[[1, 0]], [[1, 0]]], dtype=torch.complex64)
+    )
+    torch.testing.assert_close(expectation, torch.ones((2, 1, 1)))
+    assert (pauli, amplitude, generic) == (2, 0, 0)

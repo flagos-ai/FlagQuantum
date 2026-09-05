@@ -22,8 +22,10 @@ execution-plan dispatch through `runtime/noise_registry.py`.
 
 `noisy_statevector.py` owns batched gate application, Kraus sampling,
 amplitude-damping evolution, normalization, and Z-expectation numerics for the
-statevector trajectory backend. Runtime retains trajectory IDs and random-stream
-construction, convergence, retry, checkpointing, collectives, and result assembly.
+statevector trajectory backend, including the instruction loop for one
+already-lowered trajectory batch. Runtime retains trajectory IDs and
+random-stream construction, readout-error handling, convergence, retry,
+checkpointing, collectives, and result assembly.
 
 `double_single_host_gates.py` owns P3's explicit CPU reference encoding;
 `double_single_device_gates.py` separately owns P4's device-resident FP32
