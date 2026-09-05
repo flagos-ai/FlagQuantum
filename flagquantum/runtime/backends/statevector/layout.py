@@ -137,7 +137,9 @@ def distributed_swap_rank_local_bits(
     if fused_matrix is not None:
         if result.data_ptr() != amplitudes.data_ptr():
             raise ValueError("fused transpose gate currently requires in-place output")
-        from .triton import apply_complex64_transpose_1q_inplace
+        from ....simulation.triton_kernels.statevector_gates import (
+            apply_complex64_transpose_1q_inplace,
+        )
 
         apply_complex64_transpose_1q_inplace(
             result,
