@@ -9,6 +9,14 @@ training loops work without adapters. `execute()` returns `fq.ExecutionResult`
 with stable value, state, samples, plan, accuracy, metrics, provenance, runtime,
 and compatibility fields.
 
+`fq.Module` owns one end-to-end precision choice. Its `PrecisionPolicy`
+determines the real parameter dtype and the complex circuit/execution dtype;
+circuit builders that omit `dtype` inherit that choice. An explicit
+`ExecutionOptions.precision` or circuit dtype must agree with it, otherwise the
+module fails before execution instead of silently casting. Software-expanded
+precision such as Double-Single is a backend representation of the requested
+logical precision, not a second user-facing module precision.
+
 ```python
 import flagquantum as fq
 import torch

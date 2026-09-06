@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+import flagquantum.training as fqt
 
 pytestmark = pytest.mark.unit
 
@@ -441,6 +442,65 @@ def test_module_to_updates_precision_and_invalidates_jax_cache() -> None:
     assert module.precision.parameter_dtype == "float64"
     assert module.precision.complex_dtype == "complex128"
     assert module._jax_kernel is None
+
+
+def test_module_precision_controls_default_circuit_builder_precision() -> None:
+    module = fq.Module(build_circuit, 2, dtype=torch.float64)
+
+    result = module.execute()
+
+    assert module._last_ir is not None
+    assert module._last_ir.dtype == "complex128"
+    assert result.state is not None
+    assert result.state.dtype == torch.complex128
+
+
+def test_module_rejects_conflicting_runtime_policy_precision() -> None:
+    policy = fq.RuntimePolicy(
+        execution_options=fq.ExecutionOptions(precision="complex64")
+    )
+
+    with pytest.raises(fqt.PrecisionPolicyError, match="runtime policy precision"):
+        fq.Module(build_circuit, 2, dtype=torch.float64, policy=policy)
+
+
+def test_module_policy_switch_rejects_precision_conflict_without_mutation() -> None:
+    module = fq.Module(build_circuit, 2, dtype=torch.float64)
+    original = module.policy
+    conflicting = fq.RuntimePolicy(
+        execution_options=fq.ExecutionOptions(precision="complex64")
+    )
+
+    with pytest.raises(fqt.PrecisionPolicyError, match="runtime policy precision"):
+        module.set_runtime_policy(conflicting)
+
+    assert module.policy is original
+
+
+def test_module_to_rejects_policy_precision_conflict_before_mutation() -> None:
+    module = fq.Module(
+        build_circuit,
+        2,
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(precision="complex64")
+        ),
+    )
+
+    with pytest.raises(fqt.PrecisionPolicyError, match="runtime policy precision"):
+        module.to(dtype=torch.float64)
+
+    assert module.parameters_tensor.dtype == torch.float32
+    assert module.precision.complex_dtype == "complex64"
+
+
+def test_module_rejects_builder_that_overrides_owned_precision() -> None:
+    def build_with_explicit_precision(parameters):
+        return fq.Circuit(1, dtype=torch.complex64).ry(0, parameters[0])
+
+    module = fq.Module(build_with_explicit_precision, 1, dtype=torch.float64)
+
+    with pytest.raises(fqt.PrecisionPolicyError, match="circuit precision"):
+        module.execute()
 
 
 def test_module_to_rejects_invalid_dtype_before_mutating_parameters() -> None:

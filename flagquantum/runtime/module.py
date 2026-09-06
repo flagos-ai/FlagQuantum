@@ -170,6 +170,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 complex_dtype=("complex128" if dtype == torch.float64 else "complex64"),
                 accumulator_dtype=str(dtype).removeprefix("torch."),
             )
+        self._require_policy_precision(self.policy, precision.complex_dtype)
         # Apply the requested parameter dtype before installing the policy.
         # ``Module._apply`` synchronizes an already-installed policy during a
         # later user-driven ``module.to(...)`` call; doing that here would
@@ -177,6 +178,28 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         precision.apply(self)
         self.precision = precision
         self._sync_correctness_debug_hook()
+
+    @staticmethod
+    def _require_policy_precision(policy: RuntimePolicy, complex_dtype: str) -> None:
+        requested = policy.execution_options.precision
+        if requested is not None and requested != complex_dtype:
+            from .training_state import PrecisionPolicyError
+
+            raise PrecisionPolicyError(
+                "runtime policy precision conflicts with Module precision: "
+                f"{requested!r} != {complex_dtype!r}"
+            )
+
+    def _require_program_precision(self, program: Circuit | CircuitIR) -> None:
+        actual = str(program.dtype).removeprefix("torch.")
+        expected = self.precision.complex_dtype
+        if actual != expected:
+            from .training_state import PrecisionPolicyError
+
+            raise PrecisionPolicyError(
+                "circuit precision conflicts with Module precision: "
+                f"{actual!r} != {expected!r}"
+            )
 
     def _sync_correctness_debug_hook(self) -> None:
         handle = self._correctness_debug_hook_handle
@@ -195,6 +218,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
 
         if not isinstance(policy, RuntimePolicy):
             raise TypeError("fq.Module runtime policy must be a RuntimePolicy")
+        self._require_policy_precision(policy, self.precision.complex_dtype)
         self.policy = policy
         self._jax_kernel = None
         self._jax_kernel_signature = None
@@ -210,6 +234,11 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 raise TypeError(
                     "fq.Module trainable parameters must use float32 or float64"
                 )
+            if hasattr(self, "precision"):
+                complex_dtype = (
+                    "complex128" if probe.dtype == torch.float64 else "complex64"
+                )
+                self._require_policy_precision(self.policy, complex_dtype)
         super()._apply(fn, recurse=recurse)
         if hasattr(self, "precision"):
             dtype = self._parameter_tensors()[0].dtype
@@ -245,11 +274,19 @@ class Module(torch.nn.Module):  # type: ignore[misc]
     def _build(
         self, inputs: torch.Tensor | None, parameters: Any
     ) -> Circuit | CircuitIR:
-        if isinstance(self.circuit_builder, Circuit):
-            if inputs is not None:
-                raise TypeError("a symbolic Circuit template does not accept inputs")
-            return self.circuit_builder.bind_parameters(parameters)
-        return self._build_from_compiled_builder(inputs, parameters)
+        from ..core.runtime_config import runtime_config
+
+        with runtime_config(complex_dtype=self.precision.complex_dtype):
+            if isinstance(self.circuit_builder, Circuit):
+                if inputs is not None:
+                    raise TypeError(
+                        "a symbolic Circuit template does not accept inputs"
+                    )
+                program = self.circuit_builder.bind_parameters(parameters)
+            else:
+                program = self._build_from_compiled_builder(inputs, parameters)
+        self._require_program_precision(program)
+        return program
 
     def _builder_tensor_inputs(
         self, parameters: Any, inputs: torch.Tensor | None
