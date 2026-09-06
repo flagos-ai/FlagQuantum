@@ -423,9 +423,9 @@ class Circuit:
         return self.run_distributed(**options)
 
     def compile(self, **options: Any) -> "Circuit":
-        from .compiler import compile_for_backend
+        from .compiler import compile as compile_program
 
-        compiled_ir = compile_for_backend(self, **options)
+        compiled_ir = compile_program(self, **options)
         compiled = type(self).from_ir(
             compiled_ir,
             **dict(self.circuit_param),
