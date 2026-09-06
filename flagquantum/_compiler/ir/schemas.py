@@ -118,9 +118,13 @@ def circuit_ir_v1_schema_registry() -> OperationSchemaRegistry:
 
     schemas = []
     for source in OPERATOR_SCHEMAS.values():
-        parameter_attributes = tuple(
-            AttributeSpec(name, ("static", "symbolic", "binding"))
-            for name in source.parameters
+        parameter_attributes = (
+            (AttributeSpec("kraus", ("static",), required=False),)
+            if source.channel
+            else tuple(
+                AttributeSpec(name, ("static", "symbolic", "binding"))
+                for name in source.parameters
+            )
         )
         schemas.append(
             OperationSchema(

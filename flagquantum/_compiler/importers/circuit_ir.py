@@ -352,6 +352,64 @@ def _matrix_attribute(matrix: Any, *, arity: int, dtype: str) -> FrozenAttribute
     )
 
 
+def _kraus_attribute(kraus: Any, *, arity: int, dtype: str) -> FrozenAttributes:
+    try:
+        if isinstance(kraus, torch.Tensor):
+            tensor = kraus.detach().cpu()
+        else:
+            tensor = torch.stack(tuple(torch.as_tensor(item) for item in kraus))
+            tensor = tensor.detach().cpu()
+    except (TypeError, ValueError, RuntimeError) as exc:
+        raise _unsupported(
+            DiagnosticCode.ATTRIBUTE_TYPE_MISMATCH,
+            "channel Kraus data must be a concrete tensor sequence",
+        ) from exc
+    expected = 2**arity
+    if (
+        tensor.ndim != 3
+        or tensor.shape[0] < 1
+        or tuple(tensor.shape[1:]) != (expected, expected)
+    ):
+        raise _unsupported(
+            DiagnosticCode.INVALID_VARIADIC_ARITY,
+            "channel Kraus data must contain one or more square operators "
+            f"with shape {(expected, expected)}",
+        )
+    if not torch.isfinite(tensor).all():
+        raise _unsupported(
+            DiagnosticCode.ATTRIBUTE_TYPE_MISMATCH,
+            "channel Kraus operators must be finite",
+        )
+    complex_dtype = torch.complex128 if dtype == "complex128" else torch.complex64
+    candidate = tensor.to(complex_dtype)
+    effect = sum(operator.mH @ operator for operator in candidate)
+    identity = torch.eye(expected, dtype=complex_dtype)
+    low_precision = tensor.dtype in {
+        torch.float16,
+        torch.bfloat16,
+        torch.float32,
+        torch.complex64,
+    }
+    tolerance = 1e-5 if low_precision else 1e-12
+    if not torch.allclose(effect, identity, atol=tolerance, rtol=tolerance):
+        raise _unsupported(
+            DiagnosticCode.ATTRIBUTE_TYPE_MISMATCH,
+            "channel Kraus operators must define a trace-preserving map",
+        )
+    data = tuple(
+        tuple(tuple(complex(item) for item in row) for row in operator)
+        for operator in candidate.tolist()
+    )
+    return FrozenAttributes(
+        {
+            "kind": "kraus",
+            "dtype": str(tensor.dtype).removeprefix("torch."),
+            "shape": tuple(tensor.shape),
+            "data": data,
+        }
+    )
+
+
 def _instruction_operation(
     instruction: Instruction,
     *,
@@ -382,7 +440,7 @@ def _instruction_operation(
             f"operation {instruction.name!r} is not a supported canonical opcode",
             index=index,
         )
-    if semantic is not None and instruction.matrix is not None:
+    if semantic is not None and not semantic.channel and instruction.matrix is not None:
         raise _unsupported(
             DiagnosticCode.UNKNOWN_ATTRIBUTE,
             f"registered opcode {instruction.name!r} cannot also override its matrix",
@@ -450,18 +508,27 @@ def _instruction_operation(
                 index=index,
                 notes=(f"unknown parameters: {', '.join(extra_params)}",),
             )
-        attributes = (
-            {
-                parameter: _convert_parameter(
-                    instruction.params[parameter],
-                    slot=f"op{index}.{parameter}",
-                    binding_entries=binding_entries,
+        if semantic.channel and instruction.matrix is not None:
+            attributes = {
+                "kraus": _kraus_attribute(
+                    instruction.matrix,
+                    arity=len(instruction.wires),
+                    dtype=dtype,
                 )
-                for parameter in semantic.parameters
             }
-            if semantic.parameters
-            else _EMPTY_ATTRIBUTES
-        )
+        else:
+            attributes = (
+                {
+                    parameter: _convert_parameter(
+                        instruction.params[parameter],
+                        slot=f"op{index}.{parameter}",
+                        binding_entries=binding_entries,
+                    )
+                    for parameter in semantic.parameters
+                }
+                if semantic.parameters
+                else _EMPTY_ATTRIBUTES
+            )
         name = _QUANTUM_OPERATION_NAMES[instruction.name]
     operation = Operation(
         name,

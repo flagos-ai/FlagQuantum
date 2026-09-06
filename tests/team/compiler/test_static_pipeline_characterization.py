@@ -266,50 +266,58 @@ def test_candidate_optimizer_preserves_supported_measurement_request() -> None:
     assert _candidate_optimize(source) == optimize(source)
 
 
-@pytest.mark.parametrize(
-    ("source", "message"),
-    (
+def test_candidate_optimizer_dynamic_instruction_blocker_remains_explicit() -> None:
+    source = fq.CircuitIR(
+        1,
         (
-            fq.CircuitIR(
-                1,
-                (
-                    fq.Instruction(
-                        "x",
-                        (0,),
-                        metadata={"is_dynamic": True, "conditions": ((0, 1),)},
-                    ),
-                ),
-                metadata={"num_clbits": 1},
+            fq.Instruction(
+                "x",
+                (0,),
+                metadata={"is_dynamic": True, "conditions": ((0, 1),)},
             ),
-            "dynamic instruction",
         ),
-        (
-            fq.CircuitIR(
-                1,
-                (
-                    fq.Instruction(
-                        "bit_flip",
-                        (0,),
-                        matrix=fq.bit_flip_channel(0.1).kraus,
-                        metadata={"is_channel": True},
-                    ),
-                ),
-            ),
-            "cannot also override its matrix",
-        ),
-    ),
-)
-def test_candidate_optimizer_semantic_blockers_remain_explicit(
-    source: fq.CircuitIR,
-    message: str,
-) -> None:
+        metadata={"num_clbits": 1},
+    )
+
     stable = optimize(source)
     sealed = seal_circuit_ir_round_trip(source)
 
     assert stable.instructions[0] is source.instructions[0]
     assert not sealed.ok
     assert sealed.artifact is None
-    assert message in sealed.diagnostics[0].message
+    assert "dynamic instruction" in sealed.diagnostics[0].message
+
+
+def test_candidate_optimizer_preserves_explicit_kraus_channel_barrier() -> None:
+    channel = fq.bit_flip_channel(0.1)
+    source = fq.CircuitIR(
+        1,
+        (
+            fq.Instruction("x", (0,)),
+            fq.Instruction(
+                channel.name,
+                (0,),
+                matrix=channel.kraus,
+                metadata={"is_channel": True},
+            ),
+            fq.Instruction("x", (0,)),
+        ),
+        dtype="complex128",
+    )
+
+    candidate = _candidate_optimize(source)
+    stable = optimize(source)
+
+    assert tuple(item.name for item in candidate) == tuple(item.name for item in stable)
+    assert candidate.instructions[1].metadata == stable.instructions[1].metadata
+    assert len(candidate.instructions[1].matrix) == len(stable.instructions[1].matrix)
+    for candidate_operator, stable_operator in zip(
+        candidate.instructions[1].matrix,
+        stable.instructions[1].matrix,
+        strict=True,
+    ):
+        assert candidate_operator.dtype == stable_operator.dtype
+        torch.testing.assert_close(candidate_operator, stable_operator)
 
 
 def test_unregistered_measurement_metadata_is_rejected_by_vnext_policy() -> None:

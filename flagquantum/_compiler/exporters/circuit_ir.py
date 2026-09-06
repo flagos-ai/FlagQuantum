@@ -9,6 +9,7 @@ from enum import Enum
 import torch
 
 from flagquantum.core.ir import CircuitIR, IRSerializationError, IRValidationError
+from flagquantum.core.operator_schema import get_operator_schema
 from flagquantum.core.parameters import Parameter, ParameterExpression
 
 from ..bindings import RuntimeBindingRef, SymbolicExpression, SymbolicParameter
@@ -255,6 +256,15 @@ def _restore_operations(
                 raise _ExportError("custom unitary matrix attribute is invalid")
             if operation.attributes != source_operation.attributes:
                 raise _ExportError("custom unitary attributes changed after import")
+            instructions.append(replace(skeleton, wires=wires))
+            continue
+        schema = get_operator_schema(operation.name.removeprefix("quantum."))
+        if schema is not None and schema.channel:
+            source_operation = artifact.imported.module.body.blocks[0].operations[
+                source_index
+            ]
+            if operation.attributes != source_operation.attributes:
+                raise _ExportError("channel attributes changed after import")
             instructions.append(replace(skeleton, wires=wires))
             continue
         if not operation.name.startswith("quantum."):

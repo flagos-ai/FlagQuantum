@@ -233,9 +233,12 @@ and gradient parity, symbolic expression structure, and zero-initialized trainab
 binding identity. These are acceptance conditions for the optimizer replacement,
 not optional numerical smoke tests.
 Standard measurement requests pass the shared optimizer characterization and remain
-unchanged across reconstruction. Dynamic instructions and explicit Kraus channel
-payloads remain semantic switch blockers: stable `optimize` preserves them, while
-the private static importer rejects them with diagnostics.
+unchanged across reconstruction. Explicit Kraus channels are now represented as
+validated optional attributes on the existing internal channel operations. Static
+canonicalization treats them as wire-touching barriers, never rewrites them, and
+the exporter verifies their attributes before restoring the sealed source payload.
+Malformed or non-trace-preserving Kraus data fails closed. Dynamic instructions
+remain the outstanding semantic switch blocker.
 
 Unregistered measurement metadata is intentionally not a compatibility target for
 vNext. The project has not made a public release, so arbitrary metadata keys will

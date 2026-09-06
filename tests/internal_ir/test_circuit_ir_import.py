@@ -17,6 +17,7 @@ from flagquantum._compiler.ir.operations import FrozenAttributes
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.core.parameters import Parameter
+from flagquantum.noise import bit_flip_channel
 
 pytestmark = pytest.mark.unit
 
@@ -89,6 +90,32 @@ def test_all_35_canonical_opcodes_receive_internal_operations() -> None:
     }
 
     assert imported_names == {f"quantum.{name}" for name in OPERATOR_SCHEMAS}
+
+
+def test_explicit_kraus_data_is_part_of_internal_program_identity() -> None:
+    def source(probability: float) -> CircuitIR:
+        channel = bit_flip_channel(probability)
+        return CircuitIR(
+            1,
+            (
+                Instruction(
+                    channel.name,
+                    (0,),
+                    matrix=channel.kraus,
+                    metadata={"is_channel": True},
+                ),
+            ),
+        )
+
+    first = import_circuit_ir(source(0.1))
+    second = import_circuit_ir(source(0.2))
+
+    assert first.ok and second.ok
+    first_operation = first.imported.module.body.blocks[0].operations[0]
+    assert first_operation.attributes["kraus"]["kind"] == "kraus"
+    assert first.imported.internal_program_identity != (
+        second.imported.internal_program_identity
+    )
 
 
 def test_import_builds_deterministic_linear_wire_value_chains() -> None:

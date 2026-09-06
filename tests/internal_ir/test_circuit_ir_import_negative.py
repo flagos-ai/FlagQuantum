@@ -60,6 +60,26 @@ def test_registered_opcode_cannot_override_matrix_or_add_parameters() -> None:
         CircuitIR(1, (Instruction("h", (0,), matrix=[[1, 0], [0, 1]]),)),
         DiagnosticCode.UNKNOWN_ATTRIBUTE,
     )
+
+
+def test_invalid_explicit_kraus_channel_fails_closed() -> None:
+    source = CircuitIR(
+        1,
+        (
+            Instruction(
+                "bit_flip",
+                (0,),
+                matrix=(torch.eye(2), torch.eye(2)),
+                metadata={"is_channel": True},
+            ),
+        ),
+    )
+
+    result = import_circuit_ir(source)
+
+    assert result.status is ImportStatus.UNSUPPORTED_WITH_DIAGNOSTICS
+    assert result.imported is None
+    assert "trace-preserving" in result.diagnostics[0].message
     _assert_unsupported(
         CircuitIR(1, (Instruction("h", (0,), {"theta": 0.2}),)),
         DiagnosticCode.UNKNOWN_ATTRIBUTE,
