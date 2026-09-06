@@ -33,7 +33,13 @@ Every result records these boundaries:
 - `parameter_host_fallback=false`;
 - `state_host_fallback=false`;
 - `complex_accelerator_tensor_materialized=false`;
-- `host_sync_safety_checks=true`.
+- `host_sync_safety_checks=false`;
+- `device_async_safety_checks=true`.
+
+Finite-value, positive-norm, and certified-angle checks execute synchronously
+on CPU and as asynchronous device assertions on accelerators. They therefore
+remain fail-closed without introducing a device-to-host scalar synchronization
+for every gate or normalization step.
 
 ## Usage
 

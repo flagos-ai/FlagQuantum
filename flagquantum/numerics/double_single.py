@@ -44,9 +44,28 @@ def _require_float32(value: torch.Tensor, *, name: str) -> None:
         raise TypeError(f"{name} must use torch.float32, got {value.dtype}")
 
 
+def _require_device_true(
+    condition: torch.Tensor,
+    *,
+    message: str,
+    error_type: type[Exception] = ValueError,
+) -> None:
+    """Fail synchronously on CPU and without a host sync on accelerators."""
+
+    if condition.numel() != 1 or condition.dtype != torch.bool:
+        raise TypeError("Double-Single validation requires one boolean tensor")
+    if condition.device.type == "cpu":
+        if not bool(condition):
+            raise error_type(message)
+        return
+    torch._assert_async(condition, message)
+
+
 def _require_finite(value: torch.Tensor, *, name: str) -> None:
-    if not bool(torch.isfinite(value).all().item()):
-        raise ValueError(f"{name} must contain only finite, non-overflowing values")
+    _require_device_true(
+        torch.isfinite(value).all(),
+        message=f"{name} must contain only finite, non-overflowing values",
+    )
 
 
 def _require_pair(left: torch.Tensor, right: torch.Tensor) -> None:
@@ -186,8 +205,10 @@ class DoubleSingleTensor:
             raise ValueError(
                 "reciprocal_sqrt requires at least one refinement iteration"
             )
-        if bool(torch.any(self.to_float32() <= 0).item()):
-            raise ValueError("reciprocal_sqrt requires strictly positive values")
+        _require_device_true(
+            torch.all(self.to_float32() > 0),
+            message="reciprocal_sqrt requires strictly positive values",
+        )
         estimate = DoubleSingleTensor.from_float32(torch.rsqrt(self.to_float32()))
         half = DoubleSingleTensor.from_float32(torch.full_like(self.high, 0.5))
         three_halves = DoubleSingleTensor.from_float32(torch.full_like(self.high, 1.5))

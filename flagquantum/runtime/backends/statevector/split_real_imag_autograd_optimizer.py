@@ -9,7 +9,7 @@ import torch
 
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import Parameter
-from ....numerics.double_single import DoubleSingleTensor
+from ....numerics.double_single import DoubleSingleTensor, _require_device_true
 from .split_real_imag import _canonical_parameter_bindings
 from .split_real_imag_device_double_single import (
     SplitRealImagDeviceDoubleSingleGradientResult,
@@ -166,10 +166,11 @@ def _learning_rate_pair(
             "P5 learning rate must be a device-resident FP32 tensor or "
             "DoubleSingleTensor"
         )
-    if not bool(torch.isfinite(pair.to_float32()).item()) or not bool(
-        (pair.to_float32() > 0).item()
-    ):
-        raise ValueError("P5 learning rate must be finite and strictly positive")
+    value = pair.to_float32()
+    _require_device_true(
+        torch.isfinite(value) & (value > 0),
+        message="P5 learning rate must be finite and strictly positive",
+    )
     return pair.renormalized()
 
 
@@ -195,10 +196,12 @@ def double_single_sgd_step(
     next_parameters = state.parameters.subtract(
         gradient.multiply(expanded_rate)
     ).renormalized()
-    if not bool(torch.isfinite(next_parameters.high).all().item()) or not bool(
-        torch.isfinite(next_parameters.low).all().item()
-    ):
-        raise FloatingPointError("P5 optimizer update produced a non-finite parameter")
+    _require_device_true(
+        torch.isfinite(next_parameters.high).all()
+        & torch.isfinite(next_parameters.low).all(),
+        message="P5 optimizer update produced a non-finite parameter",
+        error_type=FloatingPointError,
+    )
     return (
         SplitRealImagDoubleSingleSGDState(
             parameter_order=state.parameter_order,

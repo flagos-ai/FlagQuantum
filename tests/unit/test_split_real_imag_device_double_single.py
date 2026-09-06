@@ -64,6 +64,8 @@ def test_p4_state_uses_device_generated_gates_and_four_fp32_words() -> None:
     assert summary["parameter_host_fallback"] is False
     assert summary["state_host_fallback"] is False
     assert summary["complex_accelerator_tensor_materialized"] is False
+    assert summary["host_sync_safety_checks"] is False
+    assert summary["device_async_safety_checks"] is True
 
 
 def test_p4_expectation_and_gradient_match_float32_input_reference() -> None:

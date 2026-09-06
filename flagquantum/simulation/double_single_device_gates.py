@@ -12,6 +12,7 @@ from ..core.parameters import Parameter, ParameterExpression
 from ..numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
+    _require_device_true,
     double_single_sin_cos,
 )
 
@@ -153,10 +154,10 @@ def _parameter_pair(
     else:
         raise TypeError(f"unsupported P4 parameter type {type(value).__name__}")
 
-    if bool(torch.any(torch.abs(pair.to_float32()) > P4_MAX_ABS_ANGLE).item()):
-        raise ValueError(
-            f"P4 device trigonometry certifies |angle| <= {P4_MAX_ABS_ANGLE}"
-        )
+    _require_device_true(
+        torch.all(torch.abs(pair.to_float32()) <= P4_MAX_ABS_ANGLE),
+        message=f"P4 device trigonometry certifies |angle| <= {P4_MAX_ABS_ANGLE}",
+    )
     return pair, host_ingestion
 
 
