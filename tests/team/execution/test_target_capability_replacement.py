@@ -101,8 +101,20 @@ def _cpu_snapshot(*, memory: int = 8 * 1024**3):
             memory_available_bytes=memory,
             precision=(
                 CPUPrecisionObservation(
+                    "precision.native_dtype",
+                    "float64",
+                ),
+                CPUPrecisionObservation(
                     "precision.effective_dtype",
                     "float64",
+                ),
+                CPUPrecisionObservation(
+                    "precision.storage_dtype",
+                    "float64",
+                ),
+                CPUPrecisionObservation(
+                    "precision.software_mechanism",
+                    "none",
                 ),
             ),
         )
@@ -123,6 +135,7 @@ def _remote_fixture(
     device_kind: str = "synthetic_qpu",
     extra_observed_facts: dict[str, object] | None = None,
     declared_facts: dict[str, object] | None = None,
+    complete_precision_path: bool = True,
 ):
     scope = CapabilityScope(device_ids=(f"{target_id}:0",))
     evidence = (
@@ -143,6 +156,14 @@ def _remote_fixture(
         "device.count": 1,
         "precision.effective_dtype": "float64",
     }
+    if complete_precision_path:
+        observed_facts.update(
+            {
+                "precision.native_dtype": "float64",
+                "precision.storage_dtype": "float64",
+                "precision.software_mechanism": "none",
+            }
+        )
     if memory is not None:
         observed_facts["memory.available_bytes"] = memory
     if extra_observed_facts is not None:
@@ -171,6 +192,7 @@ def _remote_snapshot(
     device_kind: str = "synthetic_qpu",
     observed_facts: dict[str, object] | None = None,
     declared_facts: dict[str, object] | None = None,
+    complete_precision_path: bool = True,
 ):
     fixture = _remote_fixture(
         target_id=target_id,
@@ -179,6 +201,7 @@ def _remote_snapshot(
         device_kind=device_kind,
         extra_observed_facts=observed_facts,
         declared_facts=declared_facts,
+        complete_precision_path=complete_precision_path,
     )
     return synthetic_remote_target_capability_snapshot(
         fixture=fixture,
@@ -257,7 +280,7 @@ def _candidate(
 
 
 def test_synthetic_producer_emits_complete_core_snapshot_without_inference() -> None:
-    snapshot = _remote_snapshot()
+    snapshot = _remote_snapshot(complete_precision_path=False)
     facts = {fact.name: fact for fact in snapshot.facts}
 
     assert set(facts) == set(CAPABILITY_NAMES)

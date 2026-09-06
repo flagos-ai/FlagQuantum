@@ -119,13 +119,18 @@ def _snapshot(
     valid_for: timedelta = timedelta(hours=1),
     include_device_kind: bool = True,
     effective_precision: str | None = "float64",
+    native_precision: str | None = None,
+    storage_precision: str | None = None,
+    software_mechanism: str | None = "none",
+    precision_scope_dtype: str | None = None,
+    effective_precision_evidence_level: EvidenceLevel | None = None,
     memory_status: SupportStatus = SupportStatus.VERIFIED,
     memory_exposure: FactExposure = FactExposure.OBSERVED,
     evidence_level: EvidenceLevel = EvidenceLevel.OBSERVABLE,
 ) -> TargetCapabilitySnapshot:
     device_id = f"{kind}:0"
     evidence_id = f"{candidate_id}-probe"
-    scope = CapabilityScope(device_ids=(device_id,))
+    scope = CapabilityScope(device_ids=(device_id,), dtype=precision_scope_dtype)
     evidence = EvidenceReference(
         evidence_id=evidence_id,
         sha256=(candidate_id.encode("utf-8").hex() + "0" * 64)[:64],
@@ -133,6 +138,19 @@ def _snapshot(
         scope=scope,
     )
     source = FactSource(kind="test_probe", ref=evidence_id)
+    evidence_refs = [evidence]
+    effective_source = source
+    if effective_precision_evidence_level is not None:
+        effective_evidence_id = f"{candidate_id}-precision"
+        evidence_refs.append(
+            EvidenceReference(
+                evidence_id=effective_evidence_id,
+                sha256=(effective_evidence_id.encode("utf-8").hex() + "0" * 64)[:64],
+                level=effective_precision_evidence_level,
+                scope=scope,
+            )
+        )
+        effective_source = FactSource(kind="test_probe", ref=effective_evidence_id)
     blockers = ()
     if memory_status is not SupportStatus.VERIFIED:
         from flagquantum.core.target_capabilities import CapabilityBlocker
@@ -178,9 +196,24 @@ def _snapshot(
                 value=effective_precision,
                 support_status=SupportStatus.VERIFIED,
                 fact_exposure=FactExposure.OBSERVED,
-                source=source,
+                source=effective_source,
             )
         )
+        for name, value in (
+            ("precision.native_dtype", native_precision or effective_precision),
+            ("precision.storage_dtype", storage_precision or effective_precision),
+            ("precision.software_mechanism", software_mechanism),
+        ):
+            if value is not None:
+                facts.append(
+                    CapabilityFact(
+                        name=name,
+                        value=value,
+                        support_status=SupportStatus.VERIFIED,
+                        fact_exposure=FactExposure.OBSERVED,
+                        source=source,
+                    )
+                )
     return TargetCapabilitySnapshot(
         target_identity=TargetIdentity(
             target_id=f"target-{candidate_id}",
@@ -194,7 +227,7 @@ def _snapshot(
         captured_at=captured_at.isoformat().replace("+00:00", "Z"),
         valid_until=(captured_at + valid_for).isoformat().replace("+00:00", "Z"),
         facts=tuple(facts),
-        evidence_refs=(evidence,),
+        evidence_refs=tuple(evidence_refs),
     )
 
 
@@ -294,7 +327,6 @@ def test_every_candidate_uses_the_same_immutable_requirement_set_and_core_matche
 
     candidate_calls = [call for call in calls if call[0] is requirements]
     assert len(candidate_calls) == 2
-    assert len(calls) == 6
     assert all(request is requirements for request, _ in candidate_calls)
     assert {snapshot_id for _, snapshot_id in calls} == {
         item.snapshot.snapshot_id for item in candidates
@@ -1138,6 +1170,76 @@ def test_effective_precision_provenance_cannot_disagree_with_snapshot() -> None:
     assert any(
         blocker.code is RuntimeDecisionBlockerCode.PROVENANCE_SNAPSHOT_MISMATCH
         and blocker.fallback_axes == (FallbackAxis.PRECISION,)
+        for blocker in decision.blockers
+    )
+
+
+def test_software_expanded_precision_requires_certified_dtype_scope() -> None:
+    incomplete = _candidate(
+        "software-precision-observed",
+        native_precision="float32",
+        storage_precision="float32",
+        software_mechanism="double-single",
+    )
+    unscoped = _candidate(
+        "software-precision-unscoped",
+        native_precision="float32",
+        storage_precision="float32",
+        software_mechanism="double-single",
+        effective_precision_evidence_level=EvidenceLevel.CERTIFICATION,
+    )
+    certified = _candidate(
+        "software-precision-certified",
+        native_precision="float32",
+        storage_precision="float32",
+        software_mechanism="double-single",
+        precision_scope_dtype="float64",
+        effective_precision_evidence_level=EvidenceLevel.CERTIFICATION,
+    )
+
+    for candidate in (incomplete, unscoped):
+        decision = match_target_capability_candidates(
+            _requirements(
+                _require(
+                    "memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST
+                )
+            ),
+            (candidate,),
+            evaluated_at=_EVALUATED_AT,
+        )
+        assert decision.selected is None
+        assert any(
+            blocker.code is RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED
+            and "certification-level" in blocker.message
+            for blocker in decision.blockers
+        )
+
+    accepted = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (certified,),
+        evaluated_at=_EVALUATED_AT,
+    )
+    assert accepted.executable is True
+    assert accepted.selected is not None
+    assert accepted.selected.candidate.candidate_id == "software-precision-certified"
+
+
+def test_candidate_requires_a_complete_observed_precision_path() -> None:
+    candidate = _candidate("precision-path-incomplete", software_mechanism=None)
+    decision = match_target_capability_candidates(
+        _requirements(
+            _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST)
+        ),
+        (candidate,),
+        evaluated_at=_EVALUATED_AT,
+    )
+
+    assert decision.selected is None
+    assert any(
+        blocker.code is RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED
+        and "precision.software_mechanism" in blocker.message
         for blocker in decision.blockers
     )
 

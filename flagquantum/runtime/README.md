@@ -46,6 +46,13 @@ owned backend facade for backend-native results.
 `records.py` constructs Core-owned execution records from observed facts. It
 must not define a second record schema or make release-eligibility decisions.
 
+Target selection accepts a precision route only when native, effective,
+storage, and software-mechanism facts are observed. If those facts describe
+software-expanded precision, the effective dtype also requires
+certification-level evidence whose snapshot scope names that dtype. This makes
+the mechanism selectable only inside its certified numerical scope; it does
+not promote an experimental implementation to stable `complex128` support.
+
 ## Ten-minute change path
 
 For a small local execution change, modify one Runtime owner and run:

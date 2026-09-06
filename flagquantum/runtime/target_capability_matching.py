@@ -363,6 +363,7 @@ def _verified_string_fact(
     expected_target_identity: TargetIdentity | None,
     required_scope: CapabilityScope | None,
     claim_minimum_evidence_level: EvidenceLevel,
+    minimum_evidence_level: EvidenceLevel = EvidenceLevel.OBSERVABLE,
 ) -> tuple[str | None, tuple[CapabilityBlocker, ...]]:
     """Return one string fact only after Core validates its evidence.
 
@@ -383,7 +384,7 @@ def _verified_string_fact(
                 value=fact.value,
                 strength=RequirementStrength.MANDATORY,
                 source=RequirementSource.RUNTIME_PROTOCOL,
-                minimum_evidence_level=EvidenceLevel.OBSERVABLE,
+                minimum_evidence_level=minimum_evidence_level,
                 accepted_exposures=(FactExposure.OBSERVED,),
             ),
         )
@@ -436,6 +437,128 @@ def _effective_precision_identity(
         required_scope=required_scope,
         claim_minimum_evidence_level=claim_minimum_evidence_level,
     )
+
+
+def _precision_path_blockers(
+    candidate: TargetCapabilityCandidate,
+    *,
+    effective_precision: str | None,
+    evaluated_at: datetime,
+    expected_target_identity: TargetIdentity | None,
+    required_scope: CapabilityScope | None,
+    claim_minimum_evidence_level: EvidenceLevel,
+) -> tuple[RuntimeDecisionBlocker, ...]:
+    """Require a complete, certified account of software-expanded precision."""
+
+    if effective_precision is None:
+        return ()
+
+    precision_path_names = (
+        "precision.native_dtype",
+        "precision.storage_dtype",
+        "precision.software_mechanism",
+    )
+    facts = {fact.name: fact for fact in candidate.snapshot.facts}
+    missing = tuple(
+        name
+        for name in precision_path_names
+        if name not in facts or not isinstance(facts[name].value, str)
+    )
+    if missing:
+        return (
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+                message=(
+                    "candidate precision path is incomplete; missing verified "
+                    + ", ".join(missing)
+                ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+            ),
+        )
+
+    path_requirements = RequirementSet(
+        requirements=tuple(
+            CapabilityRequirement(
+                name=name,
+                operator=ComparisonOperator.EQUALS,
+                value=facts[name].value,
+                strength=RequirementStrength.MANDATORY,
+                source=RequirementSource.RUNTIME_PROTOCOL,
+                minimum_evidence_level=EvidenceLevel.OBSERVABLE,
+                accepted_exposures=(FactExposure.OBSERVED,),
+            )
+            for name in precision_path_names
+        )
+    )
+    path_match = _core.match_target_capabilities(
+        path_requirements,
+        candidate.snapshot,
+        evaluated_at=evaluated_at,
+        expected_target_identity=expected_target_identity,
+        required_scope=required_scope,
+        claim_minimum_evidence_level=claim_minimum_evidence_level,
+    )
+    if not path_match.executable:
+        return (
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+                message="candidate precision path is not backed by observed evidence",
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+                core_blockers=path_match.blockers,
+            ),
+        )
+
+    native = facts["precision.native_dtype"].value
+    storage = facts["precision.storage_dtype"].value
+    mechanism = facts["precision.software_mechanism"].value
+    software_expanded = (
+        mechanism != "none"
+        or native != effective_precision
+        or storage != effective_precision
+    )
+    if not software_expanded:
+        return ()
+    if mechanism == "none":
+        return (
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+                message=(
+                    "candidate precision dtypes imply software expansion but "
+                    "precision.software_mechanism is none"
+                ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+            ),
+        )
+
+    certified_effective, certification_blockers = _verified_string_fact(
+        candidate.snapshot,
+        capability_name="precision.effective_dtype",
+        evaluated_at=evaluated_at,
+        expected_target_identity=expected_target_identity,
+        required_scope=required_scope,
+        claim_minimum_evidence_level=claim_minimum_evidence_level,
+        minimum_evidence_level=EvidenceLevel.CERTIFICATION,
+    )
+    if (
+        certified_effective != effective_precision
+        or candidate.snapshot.scope.dtype != effective_precision
+    ):
+        return (
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+                message=(
+                    "software-expanded precision requires certification-level "
+                    "effective_dtype evidence scoped to that dtype"
+                ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+                core_blockers=certification_blockers,
+            ),
+        )
+    return ()
 
 
 def _requires_cpu(requirements: RequirementSet) -> bool:
@@ -970,6 +1093,16 @@ def match_target_capability_candidates(
                 cpu_identity=cpu_identity,
                 effective_precision=effective_precision,
                 effective_precision_core_blockers=effective_precision_core_blockers,
+            )
+        )
+        candidate_blockers.extend(
+            _precision_path_blockers(
+                candidate,
+                effective_precision=effective_precision,
+                evaluated_at=evaluation_instant,
+                expected_target_identity=expected_target_identity,
+                required_scope=required_scope,
+                claim_minimum_evidence_level=claim_minimum_evidence_level,
             )
         )
         unauthorized = _unauthorized_axes_blocker(
