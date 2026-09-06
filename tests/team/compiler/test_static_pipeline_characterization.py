@@ -297,24 +297,9 @@ def test_candidate_optimizer_preserves_supported_measurement_request() -> None:
             ),
             "cannot also override its matrix",
         ),
-        (
-            fq.CircuitIR(
-                1,
-                (fq.Instruction("x", (0,)),),
-                measurements=(
-                    fq.MeasurementNode(
-                        "sample",
-                        (0,),
-                        shots=8,
-                        metadata={"consumer_tag": "opaque"},
-                    ),
-                ),
-            ),
-            "measurement request has unsupported metadata",
-        ),
     ),
 )
-def test_candidate_optimizer_blockers_remain_explicit(
+def test_candidate_optimizer_semantic_blockers_remain_explicit(
     source: fq.CircuitIR,
     message: str,
 ) -> None:
@@ -325,6 +310,31 @@ def test_candidate_optimizer_blockers_remain_explicit(
     assert not sealed.ok
     assert sealed.artifact is None
     assert message in sealed.diagnostics[0].message
+
+
+def test_unregistered_measurement_metadata_is_rejected_by_vnext_policy() -> None:
+    source = fq.CircuitIR(
+        1,
+        (fq.Instruction("x", (0,)),),
+        measurements=(
+            fq.MeasurementNode(
+                "sample",
+                (0,),
+                shots=8,
+                metadata={"consumer_tag": "opaque"},
+            ),
+        ),
+    )
+
+    stable = optimize(source)
+    sealed = seal_circuit_ir_round_trip(source)
+
+    assert stable.measurements == source.measurements
+    assert not sealed.ok
+    assert sealed.artifact is None
+    assert "measurement request has unsupported metadata" in (
+        sealed.diagnostics[0].message
+    )
 
 
 def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:

@@ -232,12 +232,19 @@ The shared replacement scenario also covers trainable rotation merging, forward
 and gradient parity, symbolic expression structure, and zero-initialized trainable
 binding identity. These are acceptance conditions for the optimizer replacement,
 not optional numerical smoke tests.
-Standard measurement requests now pass the shared optimizer characterization and
-remain unchanged across reconstruction. Dynamic instructions, explicit Kraus
-channel payloads, and unclassified measurement metadata remain documented switch
-blockers: stable `optimize` preserves them, while the private static importer
-rejects them with diagnostics. The default implementation must not switch until
-those input-domain differences are resolved by an approved semantic design.
+Standard measurement requests pass the shared optimizer characterization and remain
+unchanged across reconstruction. Dynamic instructions and explicit Kraus channel
+payloads remain semantic switch blockers: stable `optimize` preserves them, while
+the private static importer rejects them with diagnostics.
+
+Unregistered measurement metadata is intentionally not a compatibility target for
+vNext. The project has not made a public release, so arbitrary metadata keys will
+not acquire a compatibility layer or an expanded internal request model. The
+private importer continues to reject them explicitly. Before the optimizer switches,
+the Core/API validation boundary must adopt the same registered-field policy and
+the protected API baseline must be updated through its normal review; no deprecation
+adapter is required. This is a pre-release contract tightening, not an unresolved
+compiler-semantic feature.
 
 ## Human-maintainability notes for the next slice
 
