@@ -20,12 +20,12 @@ python examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py --steps 3
 python examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py --steps 1000 --n-qubits 1000
 ```
 
-By default, training examples use the FlagQuantum JAX quantum kernel because it
-is the recommended single-machine fast path. Run PyTorch-native comparisons only
-when you want timing data:
+By default, training examples use the PyTorch-native path so the minimal
+installation works without optional accelerators. Select the FlagQuantum JAX
+quantum kernel explicitly when JAX is installed:
 
 ```bash
-python examples/single_machine_quantum_ai/03_mps_training.py --steps 100 --compare-torch
+python examples/single_machine_quantum_ai/03_mps_training.py --backend jax --steps 100 --compare-torch
 ```
 
 MPS correctness and scale diagnostics:
@@ -77,9 +77,9 @@ python examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py --steps
 
 What they show:
 
-- `01_vqe_statevector.py`: VQE with PyTorch optimizer and JAX quantum kernel by default.
-- `02_quantum_classifier.py`: a tiny quantum classifier trained through the JAX quantum kernel by default.
-- `03_mps_training.py`: MPS quantum model training for larger local circuits, JAX accelerated by default.
+- `01_vqe_statevector.py`: VQE with a PyTorch-native default and optional JAX quantum kernel.
+- `02_quantum_classifier.py`: a tiny quantum classifier with PyTorch-native and optional JAX execution.
+- `03_mps_training.py`: MPS quantum model training for larger local circuits, with optional JAX acceleration.
 - `04_jax_kernel_torch_layer.py`: PyTorch training interface with a FlagQuantum JAX quantum kernel.
 - `05_mps_1000q_dimer_training.py`: a structured 1000-qubit dimerized MPS
   teacher-student task. It is intentionally favorable to FlagQuantum's
@@ -95,9 +95,8 @@ Each script prints a correctness reference and a backend speed comparison:
   large local MPS workloads.
 - The classifier uses a known teacher quantum circuit as the theoretical
   solution and reports final loss/accuracy against that teacher-generated data.
-- Speed sections always report the JAX quantum kernel when available. The
-  PyTorch-native timing is skipped by default and enabled with `--compare-torch`
-  to avoid slowing down the user-facing examples.
+- Speed sections report the selected backend. On the JAX path, PyTorch-native
+  comparison timing is enabled with `--compare-torch`.
 - The 1000q dimer example is a structure-aware MPS benchmark, not a claim about
   arbitrary 1000-qubit circuits. It reports `single_device_fast_path` and does
   not make distributed scalability claims.

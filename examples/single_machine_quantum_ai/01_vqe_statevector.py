@@ -47,7 +47,7 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=0.08)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--bench-iters", type=int, default=5)
-    parser.add_argument("--backend", choices=("jax", "torch"), default="jax")
+    parser.add_argument("--backend", choices=("jax", "torch"), default="torch")
     parser.add_argument("--compare-torch", action="store_true")
     args = parser.parse_args()
 

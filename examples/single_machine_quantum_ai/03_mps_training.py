@@ -179,7 +179,7 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=0.05)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--bench-iters", type=int, default=5)
-    parser.add_argument("--backend", choices=("jax", "torch"), default="jax")
+    parser.add_argument("--backend", choices=("jax", "torch"), default="torch")
     parser.add_argument("--compare-torch", action="store_true")
     parser.add_argument("--reference", choices=("auto", "small_exact", "none"), default="auto")
     parser.add_argument("--small-exact-max-wires", type=int, default=12)
