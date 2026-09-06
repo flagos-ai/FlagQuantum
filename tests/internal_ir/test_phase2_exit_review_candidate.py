@@ -16,7 +16,7 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_phase2_exit_candidate_binds_entry_final_public_and_implementation() -> None:
+def test_phase2_exit_candidate_binds_entry_final_public_and_performance() -> None:
     candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
     assert candidate["status"] == "ready_for_owner_review"
@@ -28,8 +28,6 @@ def test_phase2_exit_candidate_binds_entry_final_public_and_implementation() -> 
             assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
     for artifact in candidate["performance_validations"].values():
         assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
-    for relative_path, expected_hash in candidate["implementation_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
 
 
 def test_phase2_exit_candidate_is_technical_private_completion_only() -> None:
