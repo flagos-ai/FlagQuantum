@@ -140,12 +140,13 @@ def _cancellation_case(steps: int, *, device: torch.device) -> tuple[float, floa
         torch.tensor([2.0**-31], dtype=torch.float32, device=device)
     )
     float32_parameter = torch.tensor([1.0], dtype=torch.float32, device=device)
+    learning_rate = torch.tensor(1.0, dtype=torch.float32, device=device)
     for _ in range(steps):
         state, _ = double_single_sgd_step(
             state,
             gradient,
             parameter_order=("theta",),
-            learning_rate=1.0,
+            learning_rate=learning_rate,
         )
         float32_parameter -= gradient.to_float32()
     reference = torch.tensor([1.0 - steps * 2.0**-31], dtype=torch.float64)
@@ -184,13 +185,16 @@ def _trajectory(
     ir = ensure_circuit_ir(circuit)
     reference_ir = _p4_reference_ir(ir)
     terms = _normalized_observables(reference_ir, observable)
+    device_learning_rate = torch.tensor(
+        learning_rate, dtype=torch.float32, device=device
+    )
     cases: list[SplitRealImagOptimizerTrajectoryCase] = []
     for step in range(1, max(checkpoints) + 1):
         candidate = split_real_imag_double_single_sgd_step(
             ir,
             observable,
             state,
-            learning_rate=learning_rate,
+            learning_rate=device_learning_rate,
             preflight=preflight and step == 1,
         )
         state = candidate.state
@@ -208,9 +212,7 @@ def _trajectory(
             ).gradient.to_float32()
         )
         float32_parameters = (
-            float32_parameters
-            - torch.tensor(learning_rate, dtype=torch.float32, device=device)
-            * float32_gradient
+            float32_parameters - device_learning_rate * float32_gradient
         )
 
         reference_bindings = {

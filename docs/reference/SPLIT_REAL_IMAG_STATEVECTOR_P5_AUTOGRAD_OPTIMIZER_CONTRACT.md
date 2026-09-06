@@ -45,19 +45,27 @@ high/low parameter-shift result and maintains a functional high/low master
 parameter state:
 
 ```python
+import torch
+
 from flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer import (
     initialize_split_real_imag_double_single_sgd,
     split_real_imag_double_single_sgd_step,
 )
+from flagquantum.numerics.double_single import DoubleSingleTensor
 
+device = torch.device("cpu")
+master = torch.tensor(0.23, dtype=torch.float64)
 state = initialize_split_real_imag_double_single_sgd(
-    {"theta": torch.tensor(0.23, dtype=torch.float32)}
+    {"theta": DoubleSingleTensor.from_float64(master).to(device)}
 )
+learning_rate = DoubleSingleTensor.from_float64(
+    torch.tensor(0.1, dtype=torch.float64)
+).to(device)
 result = split_real_imag_double_single_sgd_step(
     fq.Circuit(1).ry(0, theta=fq.Parameter("theta")),
     pauli_term(1.0, "Z", (0,)),
     state,
-    learning_rate=0.1,
+    learning_rate=learning_rate,
 )
 state = result.state
 ```
@@ -66,6 +74,12 @@ Each update evaluates `parameter - learning_rate * gradient` with
 Double-Single multiplication, subtraction, and renormalization. The first
 algorithm is plain SGD without momentum, weight decay, loss scaling, or
 `torch.optim.Optimizer`/`state_dict` compatibility.
+
+The parameter words, gradient words, and learning-rate tensor must already
+reside on the same execution device. Initialization may encode and transfer
+them once, but a training step rejects Python learning-rate scalars and
+cross-device tensors so the steady-state loop cannot introduce per-step host
+tensor transfers.
 
 ## CPU numerical evidence
 

@@ -23,19 +23,30 @@ def test_double_single_sgd_retains_updates_below_one_float32_ulp() -> None:
     gradient = DoubleSingleTensor.from_float32(
         torch.tensor([2.0**-31], dtype=torch.float32)
     )
+    learning_rate = torch.tensor(1.0, dtype=torch.float32)
     float32_parameter = initial.clone()
     for _ in range(64):
         state, _ = double_single_sgd_step(
             state,
             gradient,
             parameter_order=("theta",),
-            learning_rate=1.0,
+            learning_rate=learning_rate,
         )
         float32_parameter -= gradient.to_float32()[0]
     expected = 1.0 - 64.0 * 2.0**-31
     assert float32_parameter.item() == 1.0
     assert state.cpu_float64()[0].item() == pytest.approx(expected, abs=1e-14)
     assert state.parameters.low[0].item() != 0.0
+
+
+def test_double_single_sgd_accepts_one_time_high_precision_encoding() -> None:
+    master = torch.tensor(0.123456789012345, dtype=torch.float64)
+    encoded = DoubleSingleTensor.from_float64(master)
+
+    state = initialize_split_real_imag_double_single_sgd({"theta": encoded})
+
+    assert state.device == encoded.high.device
+    assert state.cpu_float64()[0].item() == pytest.approx(master.item(), abs=1e-14)
 
 
 def test_split_real_imag_double_single_sgd_uses_explicit_p4_gradient() -> None:
@@ -48,7 +59,7 @@ def test_split_real_imag_double_single_sgd_uses_explicit_p4_gradient() -> None:
         circuit,
         pauli_term(1.0, "Z", (0,)),
         state,
-        learning_rate=0.1,
+        learning_rate=torch.tensor(0.1, dtype=torch.float32),
         preflight=False,
     )
     expected = 0.23 + 0.1 * math.sin(0.23)
@@ -60,6 +71,8 @@ def test_split_real_imag_double_single_sgd_uses_explicit_p4_gradient() -> None:
     assert result.summary()["native_cuda_evidence"] is True
     assert result.summary()["torch_fl_flagos_evidence"] is True
     assert result.summary()["accelerator_float64_tensor_materialized"] is False
+    assert result.summary()["training_state_device_resident"] is True
+    assert result.summary()["per_step_host_tensor_transfer"] is False
 
 
 def test_double_single_sgd_rejects_precision_and_order_demotion() -> None:
@@ -76,12 +89,19 @@ def test_double_single_sgd_rejects_precision_and_order_demotion() -> None:
             state,
             gradient,
             parameter_order=("other",),
-            learning_rate=0.1,
+            learning_rate=torch.tensor(0.1, dtype=torch.float32),
         )
     with pytest.raises(ValueError, match="strictly positive"):
         double_single_sgd_step(
             state,
             gradient,
             parameter_order=("theta",),
-            learning_rate=0.0,
+            learning_rate=torch.tensor(0.0, dtype=torch.float32),
+        )
+    with pytest.raises(TypeError, match="device-resident"):
+        double_single_sgd_step(
+            state,
+            gradient,
+            parameter_order=("theta",),
+            learning_rate=0.1,
         )

@@ -92,6 +92,8 @@ class SplitRealImagDoubleSingleSGDState:
             "native_cuda_evidence": True,
             "torch_fl_flagos_evidence": True,
             "accelerator_float64_tensor_materialized": False,
+            "training_state_device_resident": True,
+            "per_step_host_tensor_transfer": False,
             "flagcx_collectives_validated": False,
             "convergence_certification": False,
             "production_claim_allowed": False,
@@ -141,7 +143,7 @@ def initialize_split_real_imag_double_single_sgd(
 
 
 def _learning_rate_pair(
-    value: float | torch.Tensor | DoubleSingleTensor,
+    value: torch.Tensor | DoubleSingleTensor,
     *,
     like: torch.Tensor,
 ) -> DoubleSingleTensor:
@@ -160,8 +162,9 @@ def _learning_rate_pair(
             )
         pair = DoubleSingleTensor.from_float32(value.detach().reshape(()))
     else:
-        pair = DoubleSingleTensor.from_float32(
-            torch.tensor(value, dtype=torch.float32, device=like.device)
+        raise TypeError(
+            "P5 learning rate must be a device-resident FP32 tensor or "
+            "DoubleSingleTensor"
         )
     if not bool(torch.isfinite(pair.to_float32()).item()) or not bool(
         (pair.to_float32() > 0).item()
@@ -175,7 +178,7 @@ def double_single_sgd_step(
     gradient: DoubleSingleTensor,
     *,
     parameter_order: Sequence[str],
-    learning_rate: float | torch.Tensor | DoubleSingleTensor,
+    learning_rate: torch.Tensor | DoubleSingleTensor,
 ) -> tuple[SplitRealImagDoubleSingleSGDState, DoubleSingleTensor]:
     """Apply one renormalized high/low SGD update without using ``Tensor.grad``."""
 
@@ -211,7 +214,7 @@ def split_real_imag_double_single_sgd_step(
     observable: Any | None,
     state: SplitRealImagDoubleSingleSGDState,
     *,
-    learning_rate: float | torch.Tensor | DoubleSingleTensor,
+    learning_rate: torch.Tensor | DoubleSingleTensor,
     precision_plan: PrecisionPlanContract | Mapping[str, Any] | None = None,
     accuracy_requirement: AccuracyRequirementContract | Mapping[str, Any] | None = None,
     preflight: bool = True,
