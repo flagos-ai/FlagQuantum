@@ -15,6 +15,9 @@ Simulation owns numerical kernels; Core owns cross-domain contracts.
 - Change provider lookup and device resolution in `registry.py`.
 - Change the existing provider-local value types only in `contracts.py`.
 - Change CPU-to-Core capability observation in `cpu_target_capabilities.py`.
+- Change the observed single-CUDA statevector projection in
+  `cuda_target_capabilities.py`; generate evidence with
+  `tools/probe_cuda_target_capabilities.py` under one-device visibility.
 
 Run the platform unit and team tests, followed by the CPU vertical-slice test.
 An ordinary platform change should remain inside this directory unless an
