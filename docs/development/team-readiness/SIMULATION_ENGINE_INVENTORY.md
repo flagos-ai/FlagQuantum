@@ -361,3 +361,7 @@ P1–P5 conformance 的 complex128 参考路径也不再自行调用门矩阵和
 P2、P3、P4 对“请求的精度计划必须等于可执行计划”和“请求误差界不得严于已认证误差界”的
 共同判断也已收口为两个既有 Runtime 模块内的私有函数。各 profile 继续定义自己的计划、认证
 阈值、不支持字段和错误文本；没有新增契约类型、注册表或跨领域依赖。
+
+P0–P4 的平台身份读取、operator profile 加载、预检执行和 evidence id 投影现统一经过一个
+Runtime 私有入口。各 profile 仍使用既有独立探针和已登记 profile 名称；本次只删除 P3/P4 的
+重复编排，不合并能力声明，也不把 Provider 身份或预检策略放入 Simulation 数值模块。

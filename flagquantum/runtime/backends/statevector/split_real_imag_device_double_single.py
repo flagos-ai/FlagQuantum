@@ -22,7 +22,7 @@ from ....numerics.double_single import (
     DoubleSingleTensor,
     double_single_sum,
 )
-from ....providers.platform import get_platform_runtime, resolve_platform_device
+from ....providers.platform import resolve_platform_device
 from ....simulation.double_single_device_gates import (
     P4_PARAMETER_GATES,
     encode_device_double_single_matrix,
@@ -36,6 +36,7 @@ from .split_real_imag import (
     _coerce_bounded_accuracy,
     _coerce_exact_precision_plan,
     _normalized_observables,
+    _operator_profile_identity,
     _parameter_occurrences,
     _PauliTerm,
     _validate_p1_execution_scope,
@@ -223,29 +224,6 @@ class SplitRealImagDeviceDoubleSingleGradientResult:
         return summary
 
 
-def _profile_identity(
-    *, device: torch.device, preflight: bool
-) -> tuple[str, str, tuple[str, ...], str]:
-    identity = get_platform_runtime(device.type).identity()
-    if preflight:
-        from ...operator_probes import preflight_split_real_imag_statevector_p4
-
-        report = preflight_split_real_imag_statevector_p4(
-            device=device, provider=identity.provider
-        )
-        report.require_supported()
-        return (
-            report.profile,
-            report.profile_hash,
-            tuple(report.evidence_ids),
-            identity.provider,
-        )
-    from ...capabilities import load_operator_profile
-
-    profile = load_operator_profile(P4_PROFILE)
-    return profile.name, profile.profile_hash, (), identity.provider
-
-
 def _validate_scope(ir: CircuitIR) -> None:
     for instruction in ir.instructions:
         if instruction.params and instruction.name not in P4_PARAMETER_GATES:
@@ -264,8 +242,10 @@ def _execute_p4_statevector(
     shifted_occurrence: tuple[int, str, int] | None = None,
 ) -> SplitRealImagDeviceDoubleSingleStatevectorResult:
     resolved_device = resolve_platform_device(device)
-    profile, profile_hash, evidence_ids, provider = _profile_identity(
-        device=resolved_device, preflight=preflight
+    profile, profile_hash, evidence_ids, provider = _operator_profile_identity(
+        device=resolved_device,
+        profile_name=P4_PROFILE,
+        preflight=preflight,
     )
     host_ingestion = False
 

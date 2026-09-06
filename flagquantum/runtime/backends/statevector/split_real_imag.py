@@ -291,6 +291,47 @@ def _coerce_bounded_accuracy(
     return requested
 
 
+def _operator_profile_identity(
+    *,
+    device: torch.device,
+    profile_name: str,
+    preflight: bool,
+) -> tuple[str, str, tuple[str, ...], str]:
+    identity = get_platform_runtime(device.type).identity()
+    if preflight:
+        from ...operator_probes import (
+            preflight_split_real_imag_statevector_p0,
+            preflight_split_real_imag_statevector_p1,
+            preflight_split_real_imag_statevector_p2,
+            preflight_split_real_imag_statevector_p3,
+            preflight_split_real_imag_statevector_p4,
+        )
+
+        preflight_fn = {
+            "split_real_imag_statevector_p0": preflight_split_real_imag_statevector_p0,
+            "split_real_imag_statevector_p1": preflight_split_real_imag_statevector_p1,
+            "split_real_imag_statevector_p2_precision": preflight_split_real_imag_statevector_p2,
+            "split_real_imag_statevector_p3_double_single": preflight_split_real_imag_statevector_p3,
+            "split_real_imag_statevector_p4_device_double_single": preflight_split_real_imag_statevector_p4,
+        }.get(profile_name)
+        if preflight_fn is None:
+            raise ValueError(
+                f"unknown split real/imag operator profile {profile_name!r}"
+            )
+        report = preflight_fn(device=device, provider=identity.provider)
+        report.require_supported()
+        return (
+            report.profile,
+            report.profile_hash,
+            tuple(report.evidence_ids),
+            identity.provider,
+        )
+    from ...capabilities import load_operator_profile
+
+    profile = load_operator_profile(profile_name)
+    return profile.name, profile.profile_hash, (), identity.provider
+
+
 def _execute_bound_split_statevector(
     ir: CircuitIR,
     *,
@@ -300,41 +341,13 @@ def _execute_bound_split_statevector(
     executor: str,
 ) -> SplitRealImagStatevectorResult:
     resolved_device = resolve_platform_device(device)
-    platform = get_platform_runtime(resolved_device.type)
-    identity = platform.identity()
-    if preflight:
-        from ...operator_probes import (
-            preflight_split_real_imag_statevector_p0,
-            preflight_split_real_imag_statevector_p1,
-            preflight_split_real_imag_statevector_p2,
-        )
-
-        preflight_fn = {
-            "split_real_imag_statevector_p0": preflight_split_real_imag_statevector_p0,
-            "split_real_imag_statevector_p1": preflight_split_real_imag_statevector_p1,
-            "split_real_imag_statevector_p2_precision": preflight_split_real_imag_statevector_p2,
-        }.get(profile_name)
-        if preflight_fn is None:
-            raise ValueError(
-                f"unknown split real/imag operator profile {profile_name!r}"
-            )
-        operator_report = preflight_fn(
+    operator_profile, operator_profile_hash, operator_evidence_ids, provider = (
+        _operator_profile_identity(
             device=resolved_device,
-            provider=identity.provider,
+            profile_name=profile_name,
+            preflight=preflight,
         )
-        operator_report.require_supported()
-    else:
-        from ...capabilities import load_operator_profile
-
-        profile = load_operator_profile(profile_name)
-        operator_report = None
-        operator_profile = profile.name
-        operator_profile_hash = profile.profile_hash
-        operator_evidence_ids: tuple[str, ...] = ()
-    if operator_report is not None:
-        operator_profile = operator_report.profile
-        operator_profile_hash = operator_report.profile_hash
-        operator_evidence_ids = tuple(operator_report.evidence_ids)
+    )
     real, imag = run_split_real_imag_statevector(ir, device=resolved_device)
     if (
         real.device.type != resolved_device.type
@@ -346,7 +359,7 @@ def _execute_bound_split_statevector(
         imag=imag,
         circuit_hash=ir.content_hash,
         gate_count=len(ir.instructions),
-        provider=identity.provider,
+        provider=provider,
         operator_profile=operator_profile,
         operator_profile_hash=operator_profile_hash,
         operator_evidence_ids=operator_evidence_ids,
