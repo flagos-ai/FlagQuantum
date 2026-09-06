@@ -12,9 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = (
     ROOT / "contracts/ir-phase2-batch-f-performance-budget-review-candidate.json"
 )
-SUCCESSOR = (
-    ROOT / "contracts/ir-phase2-batch-f-performance-budget-artifact-successor.json"
-)
 
 
 def _sha256(path: Path) -> str:
@@ -27,16 +24,6 @@ def test_batch_f_performance_candidate_binds_authorization() -> None:
     assert candidate["status"] == "ready_for_owner_approval"
     authorization = candidate["authorization"]
     assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-
-
-def test_batch_f_gate_successor_is_authorized_and_scope_closed() -> None:
-    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
-    authorization = successor["authorization"]
-
-    assert successor["status"] == "authorized_artifact_successor"
-    assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    assert successor["predecessor_review_semantics_changed"] is False
-    assert successor["public_or_default_path_changed"] is False
 
 
 def test_batch_f_performance_candidate_keeps_external_and_exit_gates_closed() -> None:

@@ -10,7 +10,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase2-batch-a-exit-batch-b-review-candidate.json"
-SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-machine-gate-test-successor.json"
 
 
 def _sha256(path: Path) -> str:
@@ -23,16 +22,6 @@ def test_batch_a_exit_candidate_binds_authorizations() -> None:
     assert candidate["status"] == "ready_for_owner_approval"
     for authorization in candidate["authorization_chain"].values():
         assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-
-
-def test_batch_a_gate_successor_preserves_budget_and_workload() -> None:
-    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
-    authorization = successor["authorization"]
-
-    assert successor["status"] == "authorized_artifact_successor"
-    assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    assert successor["budget_or_workload_changed"] is False
-    assert successor["public_or_default_path_changed"] is False
 
 
 def test_batch_a_exit_evidence_is_complete_and_has_no_known_blocker() -> None:

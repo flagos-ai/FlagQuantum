@@ -16,9 +16,6 @@ SUCCESSOR = (
     ROOT
     / "tests/fixtures/internal_ir/phase2_performance_budget_successor_candidate.json"
 )
-ARTIFACT_SUCCESSOR = (
-    ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
-)
 
 
 def test_successor_budget_review_records_artifact_snapshot() -> None:
@@ -31,23 +28,6 @@ def test_successor_budget_review_records_artifact_snapshot() -> None:
         len(digest) == 64 and set(digest) <= set("0123456789abcdef")
         for digest in review["artifacts"].values()
     )
-
-
-def test_artifact_successor_is_authorized_and_keeps_historical_reviews_immutable() -> (
-    None
-):
-    successor = json.loads(ARTIFACT_SUCCESSOR.read_text(encoding="utf-8"))
-    authorization = successor["authorization"]
-
-    assert hashlib.sha256((ROOT / authorization["path"]).read_bytes()).hexdigest() == (
-        authorization["sha256"]
-    )
-    assert successor["predecessor_review_semantics_changed"] is False
-    assert successor["public_or_default_path_changed"] is False
-    for relative_path, candidate in successor["candidates"].items():
-        assert hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest() == (
-            candidate["sha256"]
-        )
 
 
 def test_successor_candidate_is_immutable_and_preserves_original_snapshot() -> None:

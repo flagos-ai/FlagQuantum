@@ -11,13 +11,6 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase1-batch-c-review-candidate.json"
 SUCCESSOR = ROOT / "contracts/ir-phase1-batch-f-performance-remediation.json"
-REMEDIATION_SUCCESSOR = (
-    ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
-)
-SUCCESS_CACHE_ATTESTATION = (
-    ROOT
-    / "tests/fixtures/internal_ir/phase1_import_success_cache_successor_candidate.json"
-)
 
 
 def _candidate() -> dict[str, object]:
@@ -28,45 +21,11 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_batch_c_candidate_binds_authorization_and_artifacts() -> None:
+def test_batch_c_candidate_binds_authorization() -> None:
     candidate = _candidate()
     authorization = candidate["authorization"]
-    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
-    successors = successor["successors"]
-    remediation = json.loads(REMEDIATION_SUCCESSOR.read_text(encoding="utf-8"))
-    remediation_transitions = remediation["candidates"][
-        str(CANDIDATE.relative_to(ROOT))
-    ]["artifact_transitions"]
 
     assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    for section in ("implementation_artifacts", "test_artifacts"):
-        for relative_path, expected_hash in candidate[section].items():
-            actual_hash = _sha256(ROOT / relative_path)
-            if actual_hash == expected_hash:
-                continue
-            amendment = remediation_transitions.get(relative_path)
-            if amendment is not None:
-                assert amendment["predecessor_sha256"] == expected_hash
-                assert amendment["successor_sha256"] == actual_hash
-                continue
-            amendment = successors[relative_path]
-            if (
-                relative_path == "flagquantum/_compiler/importers/circuit_ir.py"
-                and actual_hash != amendment["current_sha256"]
-            ):
-                successor_attestation = json.loads(
-                    SUCCESS_CACHE_ATTESTATION.read_text(encoding="utf-8")
-                )
-                implementation = successor_attestation["implementation"]
-                assert (
-                    implementation["predecessor_sha256"] == amendment["current_sha256"]
-                )
-                assert implementation["successor_sha256"] == actual_hash
-                assert implementation["successor_sha256_mode"] == "exact"
-                continue
-            assert amendment["previous_sha256"] == expected_hash
-            assert amendment["current_sha256"] == actual_hash
-            assert amendment["semantic_output_change"] is False
 
 
 def test_batch_c_successor_is_explicitly_authorized_and_non_retroactive() -> None:

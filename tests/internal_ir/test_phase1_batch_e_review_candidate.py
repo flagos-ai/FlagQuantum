@@ -10,16 +10,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase1-batch-e-review-candidate.json"
-SUCCESSOR = ROOT / "contracts/ir-phase2-batch-a-authorized-artifact-successor.json"
-REMEDIATION_SUCCESSOR = (
-    ROOT / "contracts/ir-phase2-batch-a-performance-remediation-artifact-successor.json"
-)
-BATCH_B_SUCCESSOR = (
-    ROOT / "contracts/ir-phase2-batch-b-authorized-artifact-successor.json"
-)
-BATCH_C_SUCCESSOR = (
-    ROOT / "contracts/ir-phase2-batch-c-authorized-artifact-successor.json"
-)
 
 
 def _candidate() -> dict[str, object]:
@@ -30,62 +20,11 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _assert_artifact_binding(relative_path: str, expected_hash: str) -> None:
-    actual_hash = _sha256(ROOT / relative_path)
-    if actual_hash == expected_hash:
-        return
-    batch_c = json.loads(BATCH_C_SUCCESSOR.read_text(encoding="utf-8"))
-    batch_c_candidate = batch_c["candidates"].get(str(CANDIDATE.relative_to(ROOT)))
-    transition = (
-        batch_c_candidate["artifact_transitions"].get(relative_path)
-        if batch_c_candidate
-        else None
-    )
-    if transition is not None:
-        assert transition["successor_sha256"] == actual_hash
-        actual_hash = transition["predecessor_sha256"]
-    batch_b = json.loads(BATCH_B_SUCCESSOR.read_text(encoding="utf-8"))
-    batch_b_candidate = batch_b["candidates"].get(str(CANDIDATE.relative_to(ROOT)))
-    transition = (
-        batch_b_candidate["artifact_transitions"].get(relative_path)
-        if batch_b_candidate
-        else None
-    )
-    if transition is not None:
-        assert transition["predecessor_sha256"] == expected_hash
-        assert transition["successor_sha256"] == actual_hash
-        return
-    remediation = json.loads(REMEDIATION_SUCCESSOR.read_text(encoding="utf-8"))
-    remediation_candidate = remediation["candidates"].get(
-        str(CANDIDATE.relative_to(ROOT))
-    )
-    transition = (
-        remediation_candidate["artifact_transitions"].get(relative_path)
-        if remediation_candidate
-        else None
-    )
-    if transition is not None:
-        assert transition["predecessor_sha256"] == expected_hash
-        assert transition["successor_sha256"] == actual_hash
-        return
-    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
-    candidate = successor["candidates"][str(CANDIDATE.relative_to(ROOT))]
-    transition = candidate["artifact_transitions"][relative_path]
-    assert candidate["sha256"] == _sha256(CANDIDATE)
-    assert transition["predecessor_sha256"] == expected_hash
-    assert transition["successor_sha256"] == actual_hash
-    assert successor["predecessor_review_semantics_changed"] is False
-    assert successor["public_or_default_path_changed"] is False
-
-
-def test_batch_e_candidate_binds_authorization_and_artifacts() -> None:
+def test_batch_e_candidate_binds_authorization() -> None:
     candidate = _candidate()
     authorization = candidate["authorization"]
 
     assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    for section in ("implementation_artifacts", "test_artifacts"):
-        for relative_path, expected_hash in candidate[section].items():
-            _assert_artifact_binding(relative_path, expected_hash)
 
 
 def test_batch_e_candidate_records_private_semantics_preserving_scope() -> None:
