@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PATH_FILES = (
     ROOT / "flagquantum/__init__.py",
     ROOT / "flagquantum/api.py",
-    ROOT / "flagquantum/compilation/planner.py",
+    ROOT / "flagquantum/runtime/planner/__init__.py",
     ROOT / "flagquantum/runtime/execution.py",
     ROOT / "flagquantum/runtime/plan_execution.py",
 )
