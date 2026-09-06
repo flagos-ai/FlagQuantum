@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Iterable
+
 import torch
 
 from ..compilation.execution_plan_contract import (
@@ -14,9 +17,80 @@ from ..compilation.execution_plan_contract import (
 )
 from ..compilation.models import ExecutionPlan
 from ..core.runtime_config import RuntimeConfig
+from ..core.target_capabilities import (
+    CapabilityRequirement,
+    CapabilityScope,
+    ComparisonOperator,
+    EvidenceLevel,
+    FactExposure,
+    RequirementSet,
+    RequirementSource,
+    RequirementStrength,
+    TargetIdentity,
+)
 from ..errors import ExecutionError, FlagQuantumError
 from .measurements import validate_measurements
 from .result import ExecutionResult
+from .target_capability_matching import (
+    RouteIntent,
+    TargetCapabilityCandidate,
+    TargetCapabilityDecision,
+    match_target_capability_candidates,
+)
+
+
+def execution_plan_precision_requirements(
+    plan: ExecutionPlan,
+    requirements: RequirementSet | None = None,
+) -> RequirementSet:
+    """Require candidates to prove the effective precision chosen by ``plan``."""
+
+    precision_requirement = CapabilityRequirement(
+        name="precision.effective_dtype",
+        operator=ComparisonOperator.EQUALS,
+        value=plan.precision,
+        strength=RequirementStrength.MANDATORY,
+        source=RequirementSource.COMPILER,
+        minimum_evidence_level=EvidenceLevel.OBSERVABLE,
+        accepted_exposures=(FactExposure.OBSERVED,),
+    )
+    if requirements is None:
+        return RequirementSet(requirements=(precision_requirement,))
+    if not isinstance(requirements, RequirementSet):
+        raise TypeError("requirements must be a Core RequirementSet")
+    return RequirementSet(
+        requirements=(*requirements.requirements, precision_requirement),
+        fallback_authorizations=requirements.fallback_authorizations,
+        extensions=requirements.extensions,
+    )
+
+
+def match_execution_plan_target_candidates(
+    plan: ExecutionPlan,
+    candidates: Iterable[TargetCapabilityCandidate],
+    *,
+    requirements: RequirementSet | None = None,
+    evaluated_at: datetime | None = None,
+    expected_target_identity: TargetIdentity | None = None,
+    required_scope: CapabilityScope | None = None,
+    claim_minimum_evidence_level: EvidenceLevel = EvidenceLevel.BASIC,
+    route_intent: RouteIntent | None = None,
+) -> TargetCapabilityDecision:
+    """Match candidates after adding the plan's mandatory effective precision."""
+
+    if route_intent is not None and route_intent.effective_precision != plan.precision:
+        raise ValueError(
+            "route_intent.effective_precision must match ExecutionPlan.precision"
+        )
+    return match_target_capability_candidates(
+        execution_plan_precision_requirements(plan, requirements),
+        candidates,
+        evaluated_at=evaluated_at,
+        expected_target_identity=expected_target_identity,
+        required_scope=required_scope,
+        claim_minimum_evidence_level=claim_minimum_evidence_level,
+        route_intent=route_intent,
+    )
 
 
 def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
@@ -89,4 +163,8 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     )
 
 
-__all__ = ("execute_plan",)
+__all__ = (
+    "execute_plan",
+    "execution_plan_precision_requirements",
+    "match_execution_plan_target_candidates",
+)

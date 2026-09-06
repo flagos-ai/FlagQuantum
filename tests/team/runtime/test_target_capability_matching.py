@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum.core.target_capabilities as core_capabilities
+import flagquantum.runtime.plan_execution as plan_execution
 from flagquantum.core.target_capabilities import (
     CapabilityBlocker,
     CapabilityFact,
@@ -1349,3 +1350,101 @@ def test_default_runtime_plan_path_is_not_imported_or_changed() -> None:
 
     assert plan.to_dict()["decision"]["device"] == "cpu"
     assert not hasattr(fq.runtime, "match_target_capability_candidates")
+
+
+def test_execution_plan_precision_becomes_a_mandatory_observed_requirement() -> None:
+    import flagquantum as fq
+
+    plan = fq.plan(
+        fq.Circuit(1).h(0),
+        options=fq.ExecutionOptions(
+            mode="statevector", device="cpu", precision="complex128"
+        ),
+    )
+    base = _requirements(
+        _require("memory.available_bytes", 1, operator=ComparisonOperator.AT_LEAST),
+        authorizations=FallbackAuthorizations(precision=True),
+    )
+
+    projected = plan_execution.execution_plan_precision_requirements(plan, base)
+    precision = next(
+        item
+        for item in projected.requirements
+        if item.name == "precision.effective_dtype"
+    )
+
+    assert precision.value == "complex128"
+    assert precision.strength is RequirementStrength.MANDATORY
+    assert precision.source is RequirementSource.COMPILER
+    assert precision.minimum_evidence_level is EvidenceLevel.OBSERVABLE
+    assert precision.accepted_exposures == (FactExposure.OBSERVED,)
+    assert projected.fallback_authorizations == base.fallback_authorizations
+
+
+def test_execution_plan_matching_rejects_a_lower_precision_candidate() -> None:
+    import flagquantum as fq
+
+    plan = fq.plan(
+        fq.Circuit(1).h(0),
+        options=fq.ExecutionOptions(
+            mode="statevector", device="cpu", precision="complex128"
+        ),
+    )
+    exact = _candidate(
+        "plan-complex128",
+        kind="cpu",
+        route_intent=_CPU_ROUTE_INTENT,
+    )
+    demoted = _candidate(
+        "plan-complex64",
+        kind="cpu",
+        route_intent=_CPU_ROUTE_INTENT,
+        provenance_axes=frozenset({FallbackAxis.PRECISION}),
+    )
+
+    decision = plan_execution.match_execution_plan_target_candidates(
+        plan,
+        (demoted, exact),
+        requirements=_requirements(
+            _require("device.kind", "cpu"),
+            authorizations=FallbackAuthorizations(precision=True),
+        ),
+        evaluated_at=_EVALUATED_AT,
+        route_intent=_CPU_ROUTE_INTENT,
+    )
+
+    assert decision.selected is not None
+    assert decision.selected.candidate.candidate_id == "plan-complex128"
+    rejected = next(
+        item
+        for item in decision.evaluations
+        if item.candidate.candidate_id == "plan-complex64"
+    )
+    assert rejected.core_match.executable is False
+    assert any(
+        blocker.capability_name == "precision.effective_dtype"
+        for blocker in rejected.core_match.blockers
+    )
+
+
+def test_execution_plan_matching_rejects_a_conflicting_route_intent() -> None:
+    import flagquantum as fq
+
+    plan = fq.plan(
+        fq.Circuit(1).h(0),
+        options=fq.ExecutionOptions(
+            mode="statevector", device="cpu", precision="complex128"
+        ),
+    )
+    conflicting_intent = replace(_CPU_ROUTE_INTENT, effective_precision="complex64")
+
+    with pytest.raises(
+        ValueError,
+        match="route_intent.effective_precision must match ExecutionPlan.precision",
+    ):
+        plan_execution.match_execution_plan_target_candidates(
+            plan,
+            (),
+            evaluated_at=_EVALUATED_AT,
+            route_intent=conflicting_intent,
+        )
