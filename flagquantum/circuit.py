@@ -229,6 +229,8 @@ class Circuit:
         kwargs.pop("n_qubits", None)
         kwargs.pop("n_wires", None)
         kwargs.pop("nqubits", None)
+        if "dtype" not in kwargs and "config" not in kwargs:
+            kwargs["dtype"] = getattr(torch, ir.dtype)
         circuit = cls(ir.n_wires, **kwargs)
         circuit._instructions.extend(ir.instructions)
         return circuit

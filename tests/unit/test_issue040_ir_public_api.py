@@ -84,6 +84,24 @@ def test_ir_v1_round_trip_is_deterministic_and_hashes_all_content():
     assert changed.content_hash != ir.content_hash
 
 
+def test_circuit_from_ir_inherits_precision_unless_explicitly_overridden():
+    ir = CircuitIR(
+        1,
+        (Instruction("h", (0,)),),
+        dtype="complex128",
+        shape=(1, 2),
+    )
+
+    restored = fq.Circuit.from_ir(ir)
+    overridden = fq.Circuit.from_ir(ir, dtype=torch.complex64)
+
+    assert restored.dtype == torch.complex128
+    assert restored.runtime_config.complex_dtype == "complex128"
+    assert restored.state().dtype == torch.complex128
+    assert overridden.dtype == torch.complex64
+    assert overridden.state().dtype == torch.complex64
+
+
 def test_serialized_ir_rejects_wrong_kind_version_and_invalid_json():
     payload = fq.Circuit(1).h(0).to_ir().to_dict()
     with pytest.raises(IRSerializationError, match="not a FlagQuantum"):
