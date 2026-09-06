@@ -13,6 +13,11 @@ Updated: 2026-09-06
 | Phase 4 | Not started | ProgramIR and unified dynamic-circuit direction exists in architecture | Implementation |
 | Phase 5 | Not started | Timing/QIR/advanced lowering candidates exist in architecture | Implementation and production claims |
 
+## Phase 1 verification basis
+
+Phase 1 的实现依据是当前代码、语义差分测试、场景测试及活动性能预算。
+历史批次授权、复核、整改和退出记录已退役，不再作为代码契约或测试依赖。
+
 ## Phase 2 accepted capability
 
 The accepted profile is `private_static_compiler_v1` under `flagquantum._compiler`:

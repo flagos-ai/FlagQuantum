@@ -1,6 +1,7 @@
 # FlagQuantum 多层 IR Phase 0–1 实施计划
 
-状态：待架构评审的执行计划，不代表 Phase 1 代码已获准进入生产路径
+状态：历史实施设计；当前实现状态以
+[`IR_IMPLEMENTATION_STATUS.md`](../development/IR_IMPLEMENTATION_STATUS.md) 为准
 上位设计：[`MULTI_LEVEL_IR_ARCHITECTURE.md`](MULTI_LEVEL_IR_ARCHITECTURE.md)
 适用范围：当前语义基线、内部 QuantumIR 骨架、差分验证与性能基线
 明确不改变：Stable Core、`CircuitIR` schema 1.0、`fq.plan`、`fq.run`、部署合同
@@ -16,8 +17,7 @@ dispatcher、12 个正向 fixture、14 个负向 fixture，并修复 CircuitIR c
 [`IR_PHASE_0_CORPUS_DESIGN.md`](../development/IR_PHASE_0_CORPUS_DESIGN.md)，以及
 [`decisions/`](decisions/)。2026-09-01 退出审计确认机器基线可复现，但 manifest oracle、
 owner 复核和明确授权仍未闭合；当前结论与 blocker 见
-[`IR_PHASE_0_EXIT_AUDIT.md`](../development/IR_PHASE_0_EXIT_AUDIT.md)，允许范围候选见
-[`IR_PHASE_1_IMPLEMENTATION_APPROVAL_PACKET.md`](../development/IR_PHASE_1_IMPLEMENTATION_APPROVAL_PACKET.md)。
+[`IR_PHASE_0_EXIT_AUDIT.md`](../development/IR_PHASE_0_EXIT_AUDIT.md)。历史阶段审批记录已退出代码契约体系。
 
 ## 1. 实施目标
 

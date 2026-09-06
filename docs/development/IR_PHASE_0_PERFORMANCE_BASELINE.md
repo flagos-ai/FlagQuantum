@@ -3,7 +3,7 @@
 状态：Phase 0 本地 CPU 基线已测量；Phase 1 内部预算已获 API owner 批准
 Benchmark：`benchmarks/internal/ir_phase0_baseline.py`
 机器结果：`tests/fixtures/internal_ir/phase0_performance_baseline.json`
-预算候选：`tests/fixtures/internal_ir/phase1_performance_budget_candidate.json`
+活动回归预算：`tests/fixtures/internal_ir/phase1_performance_budget.json`
 
 ## 1. 测量边界
 
@@ -56,9 +56,9 @@ max(1 MiB, 2 × legacy plan peak memory)
 
 ## 4. 使用规则
 
-- 当前预算状态为 `approved_internal_phase1_gate`；
-- 批准范围仅为内部 import+verify 验收，不是公开 SLA 或 Phase 1 开工授权；
-- 批准后测试只能比较实现结果，不能自动上调预算；
+- 当前预算状态为 `active_private_regression_budget`；
+- 预算仅用于内部 import+verify 回归，不是公开 SLA；
+- 测试只能比较实现结果，不能自动上调预算；
 - 环境变化需保留新旧结果，不覆盖原始基线；
 - 超预算必须优化、缩小范围或记录 blocker；
 - 不以一次快结果证明性能，也不以 CPU 结果作扩展性声明；

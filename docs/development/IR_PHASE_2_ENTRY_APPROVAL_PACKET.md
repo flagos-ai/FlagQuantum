@@ -2,7 +2,7 @@
 
 状态：**Ready for owner review — 未授权实现**
 日期：2026-09-02
-前置条件：[IR Phase 1 完成记录](IR_PHASE_1_COMPLETION.md)
+前置条件：Phase 1 已完成，当前结果见 [IR 实现状态](IR_IMPLEMENTATION_STATUS.md)
 
 ## 1. 本轮目标
 

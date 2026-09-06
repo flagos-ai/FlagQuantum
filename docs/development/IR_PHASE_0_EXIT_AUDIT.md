@@ -12,7 +12,6 @@
 - [Phase 0 corpus 设计](IR_PHASE_0_CORPUS_DESIGN.md)
 - [Metadata inventory](IR_METADATA_INVENTORY.md)
 - [性能基线与预算](IR_PHASE_0_PERFORMANCE_BASELINE.md)
-- [Phase 1 实现授权包](IR_PHASE_1_IMPLEMENTATION_APPROVAL_PACKET.md)
 
 ## 1. 执行摘要
 

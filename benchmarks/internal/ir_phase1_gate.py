@@ -1,4 +1,4 @@
-"""Machine gate for the approved Phase 1 import-plus-verify CPU budget."""
+"""Enforce the private Phase 1 import-plus-verify CPU regression budget."""
 
 from __future__ import annotations
 
@@ -20,9 +20,7 @@ from flagquantum._compiler.importers.circuit_ir import import_circuit_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_BUDGET = (
-    ROOT / "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json"
-)
+DEFAULT_BUDGET = ROOT / "tests/fixtures/internal_ir/phase1_performance_budget.json"
 
 
 def build_ir(gate_count: int) -> CircuitIR:
@@ -112,6 +110,8 @@ def evaluate(
     warmup: int = 3,
 ) -> dict[str, Any]:
     budget = json.loads(budget_path.read_text(encoding="utf-8"))
+    if budget.get("status") != "active_private_regression_budget":
+        raise ValueError("Phase 1 performance budget is not active")
     cases = [
         measure_case(item, iterations=iterations, warmup=warmup)
         for item in budget["budgets"]

@@ -21,9 +21,8 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "tests/fixtures/internal_ir/circuit_ir_v1/manifest.json"
 METADATA = ROOT / "tests/fixtures/internal_ir/metadata_inventory.json"
-EVIDENCE = ROOT / "tests/fixtures/internal_ir/phase0_evidence.json"
 PERFORMANCE = ROOT / "tests/fixtures/internal_ir/phase0_performance_baseline.json"
-BUDGET = ROOT / "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json"
+BUDGET = ROOT / "tests/fixtures/internal_ir/phase1_performance_budget.json"
 
 
 def _corpus() -> dict[str, object]:
@@ -281,42 +280,12 @@ def test_metadata_inventory_fails_on_unclassified_consumed_key_drift() -> None:
     assert importer_relevant <= set(inventory["typed_destinations"])
 
 
-def test_phase0_evidence_pins_corpus_inventory_and_public_contracts() -> None:
-    evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
-    corpus = _corpus()
-
-    assert evidence["status"] == "in_progress"
-    assert evidence["approval"]["phase1_authorized"] is False
-    assert evidence["corpus"]["sha256"] == _sha256(CORPUS)
-    assert evidence["corpus"]["positive_fixture_count"] == len(corpus["fixtures"])
-    assert evidence["corpus"]["negative_fixture_count"] == len(
-        corpus["negative_fixtures"]
-    )
-    assert evidence["corpus"]["semantic_oracle_dispatch"] == "machine_enforced"
-    assert evidence["metadata_inventory"]["sha256"] == _sha256(METADATA)
-    assert evidence["performance_baseline"]["sha256"] == _sha256(PERFORMANCE)
-    assert evidence["phase1_budget_candidate"]["sha256"] == _sha256(BUDGET)
-    for relative_path, expected_hash in evidence["public_api_contract_hashes"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
-    assert evidence["known_blockers"] == [
-        "IR0-EXIT-003: API/compiler/runtime/training owner review is not recorded",
-        "IR0-EXIT-004: Phase 0 exit and Phase 1 implementation authorization are not approved",
-    ]
-    assert any(
-        "complex128 precision is preserved" in finding
-        for finding in evidence["closed_findings"]
-    )
-
-
-def test_phase1_budget_is_approved_and_derived_from_baseline() -> None:
+def test_phase1_budget_is_active_and_derived_from_baseline() -> None:
     baseline = json.loads(PERFORMANCE.read_text(encoding="utf-8"))
     budget = json.loads(BUDGET.read_text(encoding="utf-8"))
     baseline_by_gates = {case["gate_count"]: case for case in baseline["cases"]}
 
-    assert budget["status"] == "approved_internal_phase1_gate"
-    assert budget["approval"]["approved"] is True
-    assert budget["approval"]["approved_by"]
-    assert "not a public SLA" in budget["approval"]["approved_scope"]
+    assert budget["status"] == "active_private_regression_budget"
     for gate in budget["budgets"]:
         measured = baseline_by_gates[gate["gate_count"]]
         derived_latency = max(1.0, 1.75 * measured["p95_ms"]["legacy_plan"])

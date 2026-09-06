@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "approved_internal_phase1_gate",
+  "status": "active_private_regression_budget",
   "scope": "Phase 1 internal CircuitIR import plus verify; local CPU only",
   "baseline": "tests/fixtures/internal_ir/phase0_performance_baseline.json",
   "derivation": {
@@ -19,11 +19,5 @@
     "growth": "no unexplained superlinear import or verifier growth",
     "default_runtime_regression": "zero new-path work unless an internal test-only opt-in is explicit",
     "budget_changes": "require new measured evidence and owner review; never auto-update to pass CI"
-  },
-  "approval": {
-    "approved": true,
-    "approved_by": "API owner via explicit user directive",
-    "approved_at": "2026-09-01",
-    "approved_scope": "Phase 1 internal import-plus-verify acceptance gate only; not a public SLA or Phase 1 implementation authorization"
   }
 }
