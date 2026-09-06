@@ -18,9 +18,9 @@ from ..errors import PlanningError
 from ..version import __version__
 
 if TYPE_CHECKING:
-    from ..runtime.options import ExecutionOptions
-    from ..runtime.options_resolver import ResolvedExecutionOptions
-    from .models import ExecutionPlan, LayerPlan
+    from .execution_plan import ExecutionPlan, LayerPlan
+    from .options import ExecutionOptions
+    from .options_resolver import ResolvedExecutionOptions
 
 EXECUTION_PLAN_SCHEMA = "flagquantum.execution_plan"
 EXECUTION_PLAN_VERSION = "1.0"
@@ -85,8 +85,8 @@ def canonical_hash(payload: object) -> str:
 def build_layer_plans(ir: CircuitIR) -> tuple[LayerPlan, ...]:
     """Rebuild the immutable layer description carried by a plan product."""
 
-    from ..compiler import schedule_layers
-    from .models import LayerPlan
+    from .execution_plan import LayerPlan
+    from .planner import schedule_layers
 
     return tuple(
         LayerPlan(
@@ -208,13 +208,13 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     program = CircuitIR.from_dict(normalized["program"])
     decision = normalized["decision"]
 
-    from ..runtime.planner import analyze
-    from .models import ExecutionPlan
+    from .execution_plan import ExecutionPlan
+    from .planner import analyze
 
     planned_program = program
     if normalized["extensions"]:
-        from ..compiler import lower_noise_model
         from ..noise import NoiseModel
+        from .planner import lower_noise_model
 
         noise_model = NoiseModel.from_dict(normalized["extensions"][0]["payload"])
         planned_program = lower_noise_model(program, noise_model)
@@ -241,7 +241,7 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         _contract_payload_json=canonical_json(normalized),
     )
     if normalized["extensions"]:
-        from ..runtime.planner import build_noisy_execution_plan
+        from .planner import build_noisy_execution_plan
 
         extension = normalized["extensions"][0]
         plan = replace(
@@ -302,7 +302,7 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             "program_fingerprint_mismatch", str(exc)
         ) from exc
 
-    from ..runtime.options import ExecutionOptions
+    from .options import ExecutionOptions
 
     requested_payload = _require_mapping(
         "requested_options", values["requested_options"]
@@ -383,7 +383,7 @@ def validate_plan_environment(plan: ExecutionPlan) -> None:
     decision = payload["decision"]
     backend = str(decision["backend"])
 
-    from ..runtime.backend_registry import get_backend_capabilities
+    from .backend_registry import get_backend_capabilities
 
     try:
         capabilities = get_backend_capabilities(backend, refresh=True)
@@ -402,7 +402,7 @@ def validate_plan_environment(plan: ExecutionPlan) -> None:
             "environment_incompatible",
             f"backend {backend!r} does not support precision {decision['precision']!r}",
         )
-    from ..runtime.distributed.backend_policy import (
+    from .distributed.backend_policy import (
         resolve_distributed_backend_policy,
     )
 
@@ -541,7 +541,7 @@ def _resolved_mapping(resolved: ResolvedExecutionOptions) -> dict[str, object]:
 
 
 def _resolve_planned_device(device: str, *, backend: str) -> str:
-    from ..runtime.backend_registry import resolve_device
+    from .backend_registry import resolve_device
 
     try:
         return str(resolve_device(device, backend=backend))

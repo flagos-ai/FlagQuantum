@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
-from flagquantum.compilation.execution_plan_contract import (
+from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
 )
 

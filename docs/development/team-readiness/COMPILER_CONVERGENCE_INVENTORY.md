@@ -1,6 +1,6 @@
 # Compiler convergence inventory
 
-Status: stable Compiler authority established; transitional execution-plan package remains
+Status: complete
 
 Updated: 2026-09-07
 
@@ -16,23 +16,9 @@ tests, fixtures, and benchmarks were removed before release. Its useful ideas re
 available in Git history, but unsupported private contracts and deployment/runtime
 shadows no longer appear as a second implementation authority.
 
-## Remaining boundary
-
-`flagquantum.compilation` is not a second compiler. It temporarily contains the
-protected `ExecutionPlan` product, execution-plan serialization and validation,
-performance calibration, and noisy-plan data models used by Runtime. Program
-transformation modules have already moved to `flagquantum.compiler`; planning and
-selection implementations have moved to `flagquantum.runtime.planner`.
-
-The remaining convergence step is narrow:
-
-1. move execution-plan ownership to its final Core/Runtime boundary without changing
-   the public execution contract;
-2. update Runtime imports;
-3. delete `flagquantum.compilation` once no production caller remains.
-
-No new compiler IR, pass framework, capability vocabulary, artifact envelope, or
-compatibility layer should be introduced for this move.
+The former `flagquantum.compilation` transition package has also been removed.
+Execution-plan products, validation, serialization, and calibration now live with
+their Runtime owner. No second compiler authority remains in the package tree.
 
 ## Ten-minute path
 
@@ -41,7 +27,7 @@ compatibility layer should be introduced for this move.
 - Topology routing: `flagquantum/compiler/routing.py`
 - Noise lowering: `flagquantum/compiler/noise.py`
 - Runtime orchestration: `flagquantum/runtime/planner/`
-- Transitional plan product: `flagquantum/compilation/`
+- Execution-plan product: `flagquantum/runtime/execution_plan.py`
 
 The CPU vertical slice must continue to pass without importing a private compiler
 tree or any vendor SDK.

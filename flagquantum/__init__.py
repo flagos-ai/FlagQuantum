@@ -70,7 +70,7 @@ def __getattr__(name: str) -> Any:
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
     if name == "ExecutionPlan":
-        return getattr(import_module(".compilation.models", __name__), name)
+        return getattr(import_module(".runtime.execution_plan", __name__), name)
     if name in {
         "ExecutionOptions",
         "ExecutionResult",

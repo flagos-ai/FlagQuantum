@@ -329,7 +329,7 @@ def _validate_authorized_execution_plan(
     contract: dict[str, Any], names: list[str]
 ) -> list[str]:
     import flagquantum as fq
-    from flagquantum.compilation.models import ExecutionPlan
+    from flagquantum.runtime.execution_plan import ExecutionPlan
 
     errors: list[str] = []
     root_name = str(contract["root_addition"])
@@ -412,7 +412,7 @@ def _validate_authorized_errors_module(contract: dict[str, Any]) -> list[str]:
     import flagquantum as fq
     import flagquantum.errors as errors_module
     import flagquantum.training as training
-    from flagquantum.compilation.execution_plan_contract import (
+    from flagquantum.runtime.execution_plan_contract import (
         ExecutionPlanContractError,
     )
 

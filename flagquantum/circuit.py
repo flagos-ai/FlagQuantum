@@ -28,8 +28,8 @@ from .errors import ValidationError
 from .ops.matrices import GATE_MAT_DICT
 
 if TYPE_CHECKING:
-    from .compilation.models import ExecutionPlan
     from .noise import NoiseModel
+    from .runtime.execution_plan import ExecutionPlan
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
 

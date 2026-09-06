@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-from flagquantum.compilation.models import ExecutionPlan
+from flagquantum.runtime.execution_plan import ExecutionPlan
 
 pytestmark = pytest.mark.unit
 

@@ -8,13 +8,13 @@ from typing import Any
 
 import torch
 
-from ..compilation.models import (
+from ..core.ir import CircuitIR
+from ..noise import NoiseModel
+from .execution_plan import (
     EvolutionSemantics,
     NoisyExecutionPlan,
     StateRepresentation,
 )
-from ..core.ir import CircuitIR
-from ..noise import NoiseModel
 
 NoiseExecutor = Callable[
     [CircuitIR, NoisyExecutionPlan, Mapping[str, Any]],

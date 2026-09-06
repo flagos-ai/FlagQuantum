@@ -56,10 +56,8 @@ runtime_compiler_import_allowed = [
     "flagquantum/runtime/dynamic/routing.py",
     "flagquantum/runtime/execution.py",
     "flagquantum/runtime/noise_registry.py",
-    "flagquantum/runtime/plan_execution.py",
     "flagquantum/runtime/planner/__init__.py",
     "flagquantum/runtime/planner/noise_selection.py",
-    "flagquantum/runtime/result.py",
 ]
 
 [accelerator_boundaries.direct_cuda_call_ceiling]

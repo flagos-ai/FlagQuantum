@@ -30,7 +30,7 @@ Runtime 当前同时承担了三种不同层次的工作：
 Provider 的暂管区域。
 
 最容易作为下一阶段首个移除候选的是
-`flagquantum/runtime/result.py -> flagquantum.compilation.models.ExecutionPlan`：它只在
+`flagquantum/runtime/result.py -> flagquantum.runtime.execution_plan.ExecutionPlan`：它只在
 `TYPE_CHECKING` 分支中存在，不触发运行时导入，也不承担编译行为。移除前应由 Core
 通过批准的 API 变更提案提供最小的 `ExecutablePlanContract`（或等价的 Core-owned
 协议），Compiler 的 `ExecutionPlan` 通过适配/一致性测试满足该契约，Runtime 的

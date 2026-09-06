@@ -10,7 +10,6 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[3]
 INNER_LAYERS = (
     ROOT / "flagquantum/core",
-    ROOT / "flagquantum/compilation",
     ROOT / "flagquantum/runtime",
     ROOT / "flagquantum/simulation",
 )
@@ -95,7 +94,7 @@ def test_runtime_to_ecosystem_reverse_dependency_is_frozen_as_migration_debt() -
 def test_external_framework_names_are_not_part_of_owned_ir_type_annotations() -> None:
     owned_contracts = (
         ROOT / "flagquantum/core",
-        ROOT / "flagquantum/compilation/models.py",
+        ROOT / "flagquantum/runtime/execution_plan.py",
         ROOT / "flagquantum/runtime/contracts.py",
         ROOT / "flagquantum/runtime/result.py",
     )

@@ -5,8 +5,11 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
-from ...compilation.execution_plan_contract import build_layer_plans
-from ...compilation.models import (
+from ...compiler import compile as compile_program
+from ...compiler import lower_noise_model, schedule_layers
+from ...core.ir import CircuitIR, MeasurementNode
+from ...errors import CapabilityError, ValidationError
+from ..execution_plan import (
     CircuitAnalysis,
     EvolutionSemantics,
     ExecutionPlan,
@@ -18,10 +21,7 @@ from ...compilation.models import (
     StateRepresentation,
     TrajectoryPlan,
 )
-from ...compiler import compile as compile_program
-from ...compiler import lower_noise_model, schedule_layers
-from ...core.ir import CircuitIR, MeasurementNode
-from ...errors import CapabilityError, ValidationError
+from ..execution_plan_contract import build_layer_plans
 from .backend_selection import (
     BackendCost,
     BackendSelection,
@@ -693,7 +693,7 @@ def plan(
                 noise_model_identity=noise_model.identity,
             ),
         )
-    from ...compilation.execution_plan_contract import attach_execution_contract
+    from ..execution_plan_contract import attach_execution_contract
 
     return attach_execution_contract(
         internal_plan,

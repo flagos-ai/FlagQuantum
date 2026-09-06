@@ -166,7 +166,7 @@ def test_validated_plan_executes_once_without_replanning_or_recompiling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plan = fq.plan(_bell(), options=fq.ExecutionOptions(mode="statevector"))
-    from flagquantum.compilation.execution_plan_contract import plan_execution_program
+    from flagquantum.runtime.execution_plan_contract import plan_execution_program
     from flagquantum.simulation import statevector as statevector_simulation
 
     expected_program = plan_execution_program(plan).to_dict()

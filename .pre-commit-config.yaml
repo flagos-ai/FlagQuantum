@@ -71,7 +71,8 @@ repos:
         entry: >-
           mypy --no-site-packages --ignore-missing-imports --follow-imports skip
           flagquantum/version.py flagquantum/core/ir.py
-          flagquantum/core/parameters.py flagquantum/compilation
+          flagquantum/core/parameters.py flagquantum/runtime/execution_plan.py
+          flagquantum/runtime/execution_plan_contract.py
           tools/ci_tier.py
         language: system
         pass_filenames: false

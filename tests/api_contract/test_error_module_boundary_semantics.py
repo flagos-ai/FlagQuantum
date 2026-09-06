@@ -9,10 +9,10 @@ import torch
 import flagquantum as fq
 import flagquantum.errors as fqe
 import flagquantum.training as fqt
-from flagquantum.compilation.execution_plan_contract import (
+from flagquantum.models import HybridQuantumClassifier
+from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
 )
-from flagquantum.models import HybridQuantumClassifier
 
 pytestmark = pytest.mark.unit
 

@@ -12,7 +12,7 @@ from ..errors import ExecutionError
 from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
-    from ..compilation.models import ExecutionPlan
+    from .execution_plan import ExecutionPlan
 
 EXECUTION_RESULT_SUMMARY_SCHEMA = "flagquantum.execution_result.summary"
 EXECUTION_RESULT_SUMMARY_VERSION = "1.0"

@@ -126,10 +126,10 @@ credentials、process group 或 SDK handle。
 
 | 类型 | 当前定义 | 主要消费者 | 分类与判断 |
 | --- | --- | --- | --- |
-| `ExecutionPlan` | `flagquantum/compilation/models.py` + `compilation/execution_plan_contract.py` | stable plan/run/Circuit、Runtime execution、result | **受保护公共契约**。完整 schema、四类 fingerprint、identity 重算、未知字段/版本拒绝和 stale environment 拒绝均已冻结。 |
+| `ExecutionPlan` | `flagquantum/runtime/execution_plan.py` + `runtime/execution_plan_contract.py` | stable plan/run/Circuit、Runtime execution、result | **受保护公共契约**。完整 schema、四类 fingerprint、identity 重算、未知字段/版本拒绝和 stale environment 拒绝均已冻结。 |
 | `RuntimePlanContract` | `flagquantum/core/contracts.py` | `ExecutionPlan.to_contract()`、runtime records/result | **内部候选审计投影**。转换与计划序列化同属 `compilation/execution_plan_contract.py`，会丢失完整 program、options、environment、compiler 与 extension identity。 |
-| `RuntimeSelectionPlan` | `flagquantum/compilation/models.py` | experimental planning | **内部 planner 决策报告**，不是可执行计划。 |
-| `NoisyExecutionPlan`、`TrajectoryPlan`、`ParallelPlan`、`MemoryPlan` | `flagquantum/compilation/models.py`；由 `runtime/planner` 组装 | noise runtime | **过渡期子系统计划产品**，应嵌入/引用主计划扩展，不替代主计划；噪声 lowering 已归 Compiler。 |
+| `RuntimeSelectionPlan` | `flagquantum/runtime/execution_plan.py` | experimental planning | **内部 planner 决策报告**，不是可执行计划。 |
+| `NoisyExecutionPlan`、`TrajectoryPlan`、`ParallelPlan`、`MemoryPlan` | `flagquantum/runtime/execution_plan.py`；由 `runtime/planner` 组装 | noise runtime | **过渡期子系统计划产品**，应嵌入/引用主计划扩展，不替代主计划；噪声 lowering 已归 Compiler。 |
 | `DistributedStatevectorPlan`、`HybridParallelPlan`、TN/MPS/JAX plans | `flagquantum/runtime/**` | 各 backend executor | **执行引擎本地计划**。可作为 Provider 内部 lowering 结果；跨领域只暴露主计划和证据。 |
 
 短期权威必须仍是受保护的 `ExecutionPlan`。在没有 API Change Proposal 前，不得用

@@ -8,15 +8,6 @@ from typing import Iterable
 
 import torch
 
-from ..compilation.execution_plan_contract import (
-    ExecutionPlanContractError,
-    plan_decision,
-    plan_execution_program,
-    plan_noise_model,
-    plan_program,
-    validate_plan_environment,
-)
-from ..compilation.models import ExecutionPlan
 from ..core.runtime_config import RuntimeConfig
 from ..core.target_capabilities import (
     CapabilityRequirement,
@@ -32,6 +23,15 @@ from ..core.target_capabilities import (
 from ..errors import ExecutionError, FlagQuantumError
 from ..providers.platform.cpu_target_capabilities import (
     probe_local_cpu_target_capabilities,
+)
+from .execution_plan import ExecutionPlan
+from .execution_plan_contract import (
+    ExecutionPlanContractError,
+    plan_decision,
+    plan_execution_program,
+    plan_noise_model,
+    plan_program,
+    validate_plan_environment,
 )
 from .measurements import validate_measurements
 from .result import ExecutionResult
