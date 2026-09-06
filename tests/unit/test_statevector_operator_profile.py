@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
 import torch
 
 from flagquantum import Circuit
@@ -65,17 +66,28 @@ def test_probe_evidence_is_bound_to_profile_hash_and_device() -> None:
     assert all(item.is_verified for item in evidence)
 
 
-def test_cpu_statevector_does_not_enter_flagos_preflight(monkeypatch) -> None:
+def test_cpu_statevector_does_not_enter_flagos_validation(monkeypatch) -> None:
     monkeypatch.setattr(execution, "resolve_device", lambda device: torch.device("cpu"))
 
-    report = execution._preflight_flagos_statevector(
+    report = execution._validate_flagos_statevector(
         Circuit(1).to_ir(), {"device": "cpu"}
     )
 
     assert report is None
 
 
-def test_flagos_statevector_preflight_uses_platform_provider(monkeypatch) -> None:
+def test_cpu_statevector_rejects_flagos_only_numerical_contract(monkeypatch) -> None:
+    monkeypatch.setattr(execution, "resolve_device", lambda device: torch.device("cpu"))
+
+    with pytest.raises(NotImplementedError, match="only.*flagos"):
+        execution._validate_flagos_statevector(
+            Circuit(1).to_ir(),
+            {"device": "cpu"},
+            accuracy_requirement={},
+        )
+
+
+def test_flagos_statevector_validation_uses_platform_provider(monkeypatch) -> None:
     profile = load_operator_profile("statevector_local_p0")
     expected = CapabilityPreflightReport(
         profile=profile.name,
@@ -92,6 +104,8 @@ def test_flagos_statevector_preflight_uses_platform_provider(monkeypatch) -> Non
         captured.update(kwargs)
         return expected
 
+    numerical_report = SimpleNamespace(require_accepted=lambda: None)
+
     monkeypatch.setattr(
         execution,
         "resolve_device",
@@ -102,16 +116,22 @@ def test_flagos_statevector_preflight_uses_platform_provider(monkeypatch) -> Non
         fake_preflight,
     )
     monkeypatch.setattr(
+        "flagquantum.runtime.numerical_validation.certify_statevector_local_p0",
+        lambda **kwargs: numerical_report,
+    )
+    monkeypatch.setattr(
         "flagquantum.providers.platform.get_platform_runtime",
         lambda name: SimpleNamespace(
             identity=lambda: SimpleNamespace(provider="torch_fl")
         ),
     )
 
-    report = execution._preflight_flagos_statevector(
+    contracts = execution._validate_flagos_statevector(
         Circuit(1).to_ir(), {"device": "flagos:0", "dtype": "complex64"}
     )
 
-    assert report is expected
+    assert contracts is not None
+    assert contracts[0] is expected
+    assert contracts[3] is numerical_report
     assert captured["provider"] == "torch_fl"
     assert captured["dtype"] == "complex64"

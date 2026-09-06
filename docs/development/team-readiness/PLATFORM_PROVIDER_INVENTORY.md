@@ -204,3 +204,11 @@ provider conformance 应由每个硬件 runner 生成带环境与 artifact diges
 
 在这些缺口关闭前，推荐表述是“FlagOS 适配已在 CUDA-backed NVIDIA A800 上获得开发/
 可移植性证据；国产真实卡支持尚未验证”，不得简写为“已支持国产算力”。
+
+## Statevector 验证编排复核（2026-09-06）
+
+本地 FlagOS statevector 的平台身份仍由 Platform Provider 提供；逐算子探测、精度要求、
+执行精度计划和数值认证属于具体工作负载的准入策略，继续由 Runtime 负责，不能下沉为平台
+固有能力。Runtime 已将原先分开的预检与数值认证收口为一个 FlagOS 专用内部入口，只读取
+一次平台身份并按“算子支持后再认证数值”的顺序 fail closed。此次没有修改 `PlatformRuntime`
+契约，也没有把 FlagOS 结论推广到其他设备或工作负载。

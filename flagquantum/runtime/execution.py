@@ -171,49 +171,48 @@ def _statevector_preflight_dtype(ir: CircuitIR, options: dict[str, Any]) -> str:
     return normalized
 
 
-def _preflight_flagos_statevector(
-    ir: CircuitIR,
-    options: dict[str, Any],
-) -> Any | None:
-    requested_device = options.get("device", "auto")
-    device = resolve_device(requested_device)
-    if device.type != "flagos":
-        return None
-    from ..providers.platform import get_platform_runtime
-    from .operator_probes import preflight_statevector_local_p0
-
-    platform = get_platform_runtime("flagos")
-    report = preflight_statevector_local_p0(
-        device=device,
-        dtype=_statevector_preflight_dtype(ir, options),
-        provider=platform.identity().provider,
-    )
-    report.require_supported()
-    return report
-
-
-def _certify_flagos_statevector(
+def _validate_flagos_statevector(
     ir: CircuitIR,
     options: dict[str, Any],
     *,
-    provider: str,
     accuracy_requirement: Any = None,
     precision_plan: Any = None,
-) -> tuple[Any, Any, Any]:
-    from .numerical_validation import certify_statevector_local_p0
+) -> tuple[Any, Any, Any, Any] | None:
+    """Validate the requested FlagOS statevector workload and its numerics."""
 
+    requested_device = options.get("device", "auto")
+    device = resolve_device(requested_device)
+    if device.type != "flagos":
+        if accuracy_requirement is not None or precision_plan is not None:
+            raise NotImplementedError(
+                "explicit numerical contract enforcement is currently available "
+                "only for local statevector execution through flagos"
+            )
+        return None
+    from ..providers.platform import get_platform_runtime
+    from .numerical_validation import certify_statevector_local_p0
+    from .operator_probes import preflight_statevector_local_p0
+
+    platform = get_platform_runtime("flagos")
+    provider = platform.identity().provider
     dtype = _statevector_preflight_dtype(ir, options)
+    report = preflight_statevector_local_p0(
+        device=device,
+        dtype=dtype,
+        provider=provider,
+    )
+    report.require_supported()
     accuracy = coerce_accuracy_requirement(accuracy_requirement, dtype=dtype)
     precision = coerce_precision_plan(precision_plan, dtype=dtype)
-    report = certify_statevector_local_p0(
-        device=resolve_device(options.get("device", "auto")),
+    numerical_report = certify_statevector_local_p0(
+        device=device,
         dtype=dtype,
         provider=provider,
         accuracy_requirement=accuracy,
         precision_plan=precision,
     )
-    report.require_accepted()
-    return accuracy, precision, report
+    numerical_report.require_accepted()
+    return report, accuracy, precision, numerical_report
 
 
 def _distributed_world_size_from_options(
@@ -562,25 +561,12 @@ def run_native(
             raise ValueError("Noise models require density_matrix mode.")
         accuracy_requirement_option = options.pop("accuracy_requirement", None)
         precision_plan_option = options.pop("precision_plan", None)
-        operator_preflight = _preflight_flagos_statevector(execution_ir, options)
-        numerical_contracts = None
-        if operator_preflight is not None:
-            from ..providers.platform import get_platform_runtime
-
-            numerical_contracts = _certify_flagos_statevector(
-                execution_ir,
-                options,
-                provider=get_platform_runtime("flagos").identity().provider,
-                accuracy_requirement=accuracy_requirement_option,
-                precision_plan=precision_plan_option,
-            )
-        elif (
-            accuracy_requirement_option is not None or precision_plan_option is not None
-        ):
-            raise NotImplementedError(
-                "explicit numerical contract enforcement is currently available "
-                "only for local statevector execution through flagos"
-            )
+        statevector_contracts = _validate_flagos_statevector(
+            execution_ir,
+            options,
+            accuracy_requirement=accuracy_requirement_option,
+            precision_plan=precision_plan_option,
+        )
         if (
             provided_execution_plan is None
             and coupling_map is None
@@ -603,13 +589,15 @@ def run_native(
         execution_plan = provided_execution_plan or build_plan(
             execution_ir, state_mode="statevector", **plan_options
         )
-        if operator_preflight is not None:
+        if statevector_contracts is not None:
+            (
+                operator_preflight,
+                accuracy_requirement,
+                precision_plan,
+                numerical_validation,
+            ) = statevector_contracts
             routing_plan = dict(execution_plan.routing_plan or {})
             routing_plan["operator_preflight"] = operator_preflight.to_dict()
-            assert numerical_contracts is not None
-            accuracy_requirement, precision_plan, numerical_validation = (
-                numerical_contracts
-            )
             routing_plan["accuracy_requirement"] = accuracy_requirement.to_dict()
             routing_plan["accuracy_requirement_hash"] = (
                 accuracy_requirement.content_hash()
