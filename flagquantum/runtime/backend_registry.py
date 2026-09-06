@@ -17,7 +17,11 @@ from typing import Any, Mapping
 import torch
 
 from ..core.runtime_config import get_runtime_config
-from ..providers.platform import discover_platform_devices, resolve_platform_device
+from ..providers.platform import (
+    discover_platform_devices,
+    get_platform_runtime,
+    resolve_platform_device,
+)
 
 
 @dataclass(frozen=True)
@@ -211,9 +215,15 @@ def resolve_device(
             f"{requested_type!r}."
         )
     try:
-        resolved = resolve_platform_device(device)
+        get_platform_runtime(requested_type)
     except KeyError:
+        # A custom backend may expose a PyTorch device type without registering
+        # a built-in PlatformRuntime. The backend declaration is authoritative.
         resolved = torch.device(device)
+    else:
+        # Once a platform owns the device type, activation and discovery errors
+        # must propagate rather than bypassing the provider boundary.
+        resolved = resolve_platform_device(device)
     if require_accelerator and resolved.type == "cpu":
         raise RuntimeError("No accelerator is available for this backend.")
     return resolved

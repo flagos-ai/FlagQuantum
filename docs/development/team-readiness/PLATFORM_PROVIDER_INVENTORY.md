@@ -212,3 +212,14 @@ provider conformance 应由每个硬件 runner 生成带环境与 artifact diges
 固有能力。Runtime 已将原先分开的预检与数值认证收口为一个 FlagOS 专用内部入口，只读取
 一次平台身份并按“算子支持后再认证数值”的顺序 fail closed。此次没有修改 `PlatformRuntime`
 契约，也没有把 FlagOS 结论推广到其他设备或工作负载。
+
+## 设备解析边界复核（2026-09-06）
+
+Runtime 继续先以 `BackendCapabilities.devices` 判断后端是否声明某种设备，再由内建 Platform
+Provider 负责激活、可用性和具体设备索引校验。FlagOS 仍保留显式请求特例，以免为生成后端
+能力摘要而提前加载 Torch-FL；未注册内建 Platform Provider、但由自定义后端明确声明的
+PyTorch 设备类型仍可交给 `torch.device` 解析。
+
+未知平台判断现只捕获平台注册表查询自身的 `KeyError`。一旦设备类型已有 Platform Provider，
+其激活或发现阶段产生的 `KeyError` 必须原样失败，不能再绕过 Provider 校验退回裸
+`torch.device`。这不是设备替换或 CPU fallback，而是收紧既有所有权边界。

@@ -139,6 +139,53 @@ def test_flagos_visibility_does_not_promote_auto_without_workload_evidence():
     assert projected.preferred_device == "cpu"
 
 
+def test_explicit_flagos_request_reaches_lazy_platform_provider(monkeypatch):
+    captured: list[str] = []
+
+    monkeypatch.setattr(
+        backend_registry,
+        "resolve_platform_device",
+        lambda device: captured.append(str(device)) or torch.device("cpu"),
+    )
+
+    backend_registry.resolve_device("flagos:0")
+
+    assert captured == ["flagos:0"]
+
+
+def test_declared_custom_torch_device_does_not_require_builtin_platform():
+    capabilities = backend_registry.BackendCapabilities(
+        name="mps_test",
+        tensor_backend="torch",
+        devices=("mps",),
+        dtypes=("complex64",),
+        supports_autograd=True,
+        supports_distributed=False,
+        supports_statevector=True,
+        supports_density_matrix=False,
+        supports_mps=False,
+        preferred_device="mps",
+    )
+    try:
+        backend_registry.register_backend(capabilities)
+
+        assert backend_registry.resolve_device("mps", backend="mps_test") == (
+            torch.device("mps")
+        )
+    finally:
+        backend_registry.refresh_backend_registry()
+
+
+def test_known_platform_key_error_is_not_bypassed(monkeypatch):
+    def fail_resolution(device):
+        raise KeyError("provider discovery failed")
+
+    monkeypatch.setattr(backend_registry, "resolve_platform_device", fail_resolution)
+
+    with pytest.raises(KeyError, match="provider discovery failed"):
+        backend_registry.resolve_device("cpu")
+
+
 def test_hygon_cuda_compatibility_metadata_stays_owned_by_torch_fl(monkeypatch):
     torch_fl = ModuleType("torch_fl")
     torch_fl.__version__ = "test"
