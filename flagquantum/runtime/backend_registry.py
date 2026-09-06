@@ -123,30 +123,18 @@ def detect_accelerators() -> tuple[AcceleratorInfo, ...]:
 
 def _build_pytorch_capabilities() -> BackendCapabilities:
     accelerators = detect_accelerators()
-    devices = ["cpu"]
-    for accelerator in accelerators:
-        if (
-            accelerator.available
-            and accelerator.device_type
-            and accelerator.device_type not in devices
-        ):
-            devices.append(accelerator.device_type)
-    # FlagOS remains explicit until a workload profile has verified operator and
-    # numerical evidence. Device visibility alone must not change ``auto``.
-    preferred = "cuda" if "cuda" in devices else "cpu"
-    return BackendCapabilities(
+    base = BackendCapabilities(
         name="pytorch",
         tensor_backend="torch",
-        devices=tuple(devices),
+        devices=("cpu",),
         dtypes=("complex64", "complex128"),
         supports_autograd=True,
         supports_distributed=True,
         supports_statevector=True,
         supports_density_matrix=True,
         supports_mps=True,
-        preferred_device=preferred,
-        accelerators=accelerators,
     )
+    return with_accelerators(base, accelerators)
 
 
 def refresh_backend_registry() -> dict[str, BackendCapabilities]:
@@ -299,6 +287,8 @@ def with_accelerators(
             and accelerator.device_type not in devices
         ):
             devices.append(accelerator.device_type)
+    # FlagOS remains explicit until a workload profile has verified operator and
+    # numerical evidence. Device visibility alone must not change ``auto``.
     preferred = "cuda" if "cuda" in devices else "cpu"
     return replace(
         capabilities,

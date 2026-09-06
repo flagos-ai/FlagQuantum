@@ -223,3 +223,7 @@ PyTorch 设备类型仍可交给 `torch.device` 解析。
 未知平台判断现只捕获平台注册表查询自身的 `KeyError`。一旦设备类型已有 Platform Provider，
 其激活或发现阶段产生的 `KeyError` 必须原样失败，不能再绕过 Provider 校验退回裸
 `torch.device`。这不是设备替换或 CPU fallback，而是收紧既有所有权边界。
+
+Backend Registry 构造内建 PyTorch 能力时也不再重复实现设备列表和首选设备投影，而是复用
+既有 `with_accelerators()`。因此环境发现、测试注入和默认能力构造共享同一条规则：仅纳入
+明确可用的设备类型，只有 CUDA 可成为自动首选，FlagOS 保持显式选择。
