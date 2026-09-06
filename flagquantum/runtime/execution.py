@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING, Any, Sequence
 import torch
 
 from ..compilation.models import ExecutionPlan
-from ..compiler import compile_for_backend, lower_noise_model
+from ..compiler import compile as compile_program
+from ..compiler import lower_noise_model
 from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
 from ..core.parameters import value_to_tensor
@@ -290,7 +291,7 @@ def run_distributed(
     execution_ir = (
         ir
         if provided_execution_plan is not None
-        else compile_for_backend(
+        else compile_program(
             ir,
             coupling_map=coupling_map,
             optimize=optimize,
@@ -507,7 +508,7 @@ def run_native(
     execution_ir = (
         ir
         if provided_execution_plan is not None
-        else compile_for_backend(
+        else compile_program(
             ir,
             coupling_map=coupling_map,
             optimize=optimize if coupling_map is not None else False,

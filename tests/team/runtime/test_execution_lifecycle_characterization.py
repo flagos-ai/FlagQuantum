@@ -45,7 +45,7 @@ def test_program_execution_plans_compiles_and_launches_numerics_once(
     from flagquantum.simulation import statevector as statevector_simulation
 
     original_plan = runtime_planner.plan
-    original_compile = runtime_planner.compile_for_backend
+    original_compile = runtime_planner.compile_program
     original_execute = statevector_simulation.run_local_statevector
     plans: list[object] = []
     compiled_programs: list[CircuitIR] = []
@@ -71,8 +71,8 @@ def test_program_execution_plans_compiles_and_launches_numerics_once(
         )
 
     monkeypatch.setattr(runtime_planner, "plan", plan_once)
-    monkeypatch.setattr(runtime_planner, "compile_for_backend", compile_once)
-    monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
+    monkeypatch.setattr(runtime_planner, "compile_program", compile_once)
+    monkeypatch.setattr("flagquantum.runtime.execution.compile_program", forbidden)
     monkeypatch.setattr(
         "flagquantum.runtime.execution.select_execution_mode", forbidden
     )
@@ -121,7 +121,7 @@ def test_validated_plan_executes_once_without_replanning_or_recompiling(
         return original_execute(program, **kwargs)
 
     monkeypatch.setattr("flagquantum.runtime.planner.plan", forbidden)
-    monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
+    monkeypatch.setattr("flagquantum.runtime.execution.compile_program", forbidden)
     monkeypatch.setattr(
         "flagquantum.runtime.execution.select_execution_mode", forbidden
     )

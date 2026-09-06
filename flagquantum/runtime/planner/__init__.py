@@ -18,7 +18,8 @@ from ...compilation.models import (
     StateRepresentation,
     TrajectoryPlan,
 )
-from ...compiler import compile_for_backend, lower_noise_model, schedule_layers
+from ...compiler import compile as compile_program
+from ...compiler import lower_noise_model, schedule_layers
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
 from .backend_selection import (
@@ -513,7 +514,7 @@ def plan_advanced(
     from ...core.runtime_config import get_runtime_config
 
     selected_config = config or get_runtime_config()
-    ir = compile_for_backend(
+    ir = compile_program(
         ir,
         coupling_map=coupling_map,
         routing_strategy=routing_strategy,
