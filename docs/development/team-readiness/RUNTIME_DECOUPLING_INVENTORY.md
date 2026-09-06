@@ -148,6 +148,12 @@ Provider 的暂管区域。
 | `runtime/result.py` | `TYPE_CHECKING` 下的 `ExecutionPlan` | 共享数据契约 | `ExecutionResult.plan` 改为批准的 Core-owned executable-plan contract/protocol；Compiler plan 通过适配和 conformance test 满足它 |
 | `runtime/target_execution.py` | `BackendSelection`、`select_backend_by_cost()` | 编译服务调用（同时含共享决策契约） | Compiler service 返回 Core-owned backend-selection decision；Execution Provider 执行已选目标，不在执行文件中导入选择算法 |
 
+分布式状态向量的稳定 `ExecutionPlan.layers` 足以复用 Compiler 的层划分，但不包含
+amplitude shard、fusion block、通信 segment、buffer、节点拓扑或 JAX preflight 结果。
+`run_distributed()` 当前因此仍生成后端专用计划，JAX 摘要路径还会再次构建同一状态向量
+拓扑。只复用 `layers` 不能消除这组重复规划；在后端专用计划进入经批准、可序列化的
+executable-plan 扩展之前，不给公共入口增加隐藏参数，也不新增第二套分布式计划契约。
+
 ### 3.1 不可接受的替代
 
 - 在 Runtime 中复制 `ExecutionPlan`、`NoisyExecutionPlan`、`BackendSelection`、
