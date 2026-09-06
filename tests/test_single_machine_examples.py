@@ -2,6 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples" / "single_machine_quantum_ai"
 
@@ -58,6 +60,7 @@ def test_mps_training_example_smoke():
 
 
 def test_mps_training_scale_report_smoke():
+    pytest.importorskip("jax")
     out = _run_example(
         "03_mps_training.py",
         "--scale-report",
@@ -86,6 +89,7 @@ def test_jax_kernel_torch_layer_example_smoke():
 
 
 def test_1000q_structured_mps_example_smoke():
+    pytest.importorskip("jax")
     out = _run_example(
         "05_mps_1000q_dimer_training.py",
         "--n-qubits",
