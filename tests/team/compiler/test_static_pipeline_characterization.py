@@ -27,11 +27,17 @@ def _source() -> fq.CircuitIR:
         (
             fq.Instruction("h", (0,)),
             fq.Instruction("h", (0,)),
-            fq.Instruction("rx", (1,), {"theta": 0.125}),
+            fq.Instruction(
+                "rx",
+                (1,),
+                {"theta": 0.125},
+                metadata={"source": "first-rotation"},
+            ),
             fq.Instruction("rx", (1,), {"theta": 0.25}),
-            fq.Instruction("cx", (0, 2)),
+            fq.Instruction("cx", (0, 2), metadata={"source": "entangler"}),
         ),
         dtype="complex128",
+        metadata={"source": "compiler-golden-path"},
     )
 
 
@@ -88,8 +94,17 @@ def test_static_pipeline_matches_existing_compiler_semantics() -> None:
 
     assert lowered.ok, lowered.diagnostics
     assert lowered.circuit_ir is not None
+    stable = simple_compile(source)
+    assert lowered.circuit_ir.metadata == stable.metadata
+    candidate_metadata = tuple(
+        item.metadata for item in lowered.circuit_ir.instructions
+    )
+    assert all(
+        instruction.metadata in candidate_metadata
+        for instruction in stable.instructions
+    )
     _assert_state_equivalent(lowered.circuit_ir, source)
-    _assert_state_equivalent(lowered.circuit_ir, simple_compile(source))
+    _assert_state_equivalent(lowered.circuit_ir, stable)
 
 
 def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
@@ -115,6 +130,21 @@ def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
     assert unsupported.execution is None
     assert unsupported.emissions == ()
     assert unsupported.diagnostics
+
+
+def test_static_pipeline_reports_unclassified_metadata_as_domain_gap() -> None:
+    source = replace(_source(), metadata={"application_tag": "chemistry"})
+
+    assert simple_compile(source).metadata == source.metadata
+
+    candidate = compile_offline_static(source, _target())
+
+    assert candidate.status is OfflineCompilationStatus.INVALID_INPUT
+    assert candidate.source_artifact is None
+    assert candidate.module is None
+    assert candidate.execution is None
+    assert candidate.emissions == ()
+    assert "unclassified top-level metadata" in candidate.diagnostics[0].message
 
 
 def test_static_pipeline_binds_source_pipeline_target_and_emission_identities() -> None:

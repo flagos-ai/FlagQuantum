@@ -2,7 +2,7 @@
 
 Status: stable Compiler authority closed; protected product and private-candidate convergence remain
 
-Updated: 2026-09-05
+Updated: 2026-09-06
 
 Path classification: `single_device_fast_path` and provider-free static compilation
 
@@ -210,8 +210,11 @@ the integration branch must approve a replacement contract and prove:
 
 The new team characterization tests cover deterministic output, semantic parity with
 the current optimizer, invalid/unsupported fail-closed behavior without partial
-artifacts, and the source/pipeline/target/emission identity chain. They are evidence
-for the candidate slice, not authorization to switch it on.
+artifacts, preservation of classified program and instruction metadata, and the
+source/pipeline/target/emission identity chain. They also record the remaining input
+domain gap: `simple_compile` preserves arbitrary top-level metadata, while the
+private importer rejects unclassified metadata rather than silently dropping it.
+These tests are evidence for the candidate slice, not authorization to switch it on.
 
 ## Human-maintainability notes for the next slice
 
@@ -223,7 +226,8 @@ migration does not authorize changing semantics or the public API.
 `tests/team/compiler/test_static_pipeline_characterization.py` is the existing
 ten-minute path. It demonstrates deterministic cache behavior, semantic
 equivalence with `simple_compile`, invalid/unsupported input failure without
-partial artifacts, and source/pipeline/target/emission identity binding.
+partial artifacts, classified metadata preservation, the explicit unclassified
+metadata domain gap, and source/pipeline/target/emission identity binding.
 
 No new legality contract is retained in this round. Existing target capability
 coverage stays expressed by `CompilerRequirementProjection.compare_available()`
@@ -281,7 +285,9 @@ The broader machine-readable `compiler_convergence` track correctly remains
 - public signatures, defaults, exceptions, schemas, and `fq.plan`/`fq.run` behavior
   remain protected throughout migration.
 
-Current blockers are the missing Core target/artifact/request contracts, the stable
+Core Target Capabilities v1 and its loss-accounted Compiler adapter now exist, but
+the richer Compiler target fields still require the legacy comparator. Current
+blockers are the incomplete executable artifact/request contracts, the stable
 `ExecutionPlan` definition living in `compilation`, and incomplete accepted-domain
 equivalence between `simple_compile` and the stricter private importer. Intentional
 Runtime calls through the stable Compiler facade are not blockers and must not be
