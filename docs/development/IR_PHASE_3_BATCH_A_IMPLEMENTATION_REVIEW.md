@@ -29,13 +29,13 @@ cannot enter this snapshot.
 - Equal snapshots retain the same fingerprint across Python hash seeds.
 - Topology, calibration, artifact and semantic capability changes affect identity.
 - The 10/100/1K/10K capability-entry baseline is recorded in
-  `contracts/ir-phase3-batch-a-performance-baseline.json`.
+  `tests/fixtures/internal_ir/phase3_batch_a_performance_baseline.json`.
 - At 10K entries, observed p95 was 3.442754 ms for construction plus fingerprint and
   14.506317 ms for compatible comparison; peak traced host memory was 1,531,880 bytes.
 
 The measurements are environment-specific observations, not a public SLA. The proposed
 private regression envelopes remain unapproved in
-`tests/fixtures/internal_ir/phase3_batch_a_performance_budget_candidate.json`.
+`tests/fixtures/internal_ir/phase3_batch_a_performance_budget.json`.
 
 ## Remaining closed surfaces
 

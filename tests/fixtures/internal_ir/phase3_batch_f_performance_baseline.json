@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "measured_baseline",
+  "claim_scope": "Phase 3 Batch F private CPU baseline; not a public SLA or approved budget",
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "evidence_clock": "deterministic 100 ns test step",
+    "peak_memory": "tracemalloc",
+    "pipeline": "explicit legacy-authoritative match-only shadow comparison"
+  },
+  "cases": [
+    {"comparison_count": 10, "match_shadow_p95_ms": 0.157054, "match_shadow_peak_host_memory_bytes": 6111, "deterministic_evidence_identity": true},
+    {"comparison_count": 100, "match_shadow_p95_ms": 1.236629, "match_shadow_peak_host_memory_bytes": 5847, "deterministic_evidence_identity": true},
+    {"comparison_count": 1000, "match_shadow_p95_ms": 14.46095, "match_shadow_peak_host_memory_bytes": 5751, "deterministic_evidence_identity": true},
+    {"comparison_count": 10000, "match_shadow_p95_ms": 158.639725, "match_shadow_peak_host_memory_bytes": 5751, "deterministic_evidence_identity": true}
+  ]
+}

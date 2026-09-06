@@ -28,13 +28,13 @@ default-path change or legacy retirement.
   concurrency, immutability and private-namespace tests pass.
 - Anonymous fixtures pin evidence identities across Python hash seeds.
 - The 10/100/1K/10K match-only baseline is recorded in
-  `contracts/ir-phase3-batch-f-performance-baseline.json`.
+  `tests/fixtures/internal_ir/phase3_batch_f_performance_baseline.json`.
 - At 10K explicit comparisons, observed p95 was 158.639725 ms and peak traced host
   memory was 5,751 bytes.
 
 The measurements are environment-specific observations, not a public SLA. Proposed
 private regression envelopes remain unapproved in
-`tests/fixtures/internal_ir/phase3_batch_f_performance_budget_candidate.json`.
+`tests/fixtures/internal_ir/phase3_batch_f_performance_budget.json`.
 
 ## Remaining closed surfaces
 

@@ -11,9 +11,7 @@ from benchmarks.internal import ir_phase3_batch_c_gate as gate
 pytestmark = [pytest.mark.unit, pytest.mark.benchmark_contract]
 
 ROOT = Path(__file__).resolve().parents[2]
-BUDGET = (
-    ROOT / "tests/fixtures/internal_ir/phase3_batch_c_performance_budget_candidate.json"
-)
+BUDGET = ROOT / "tests/fixtures/internal_ir/phase3_batch_c_performance_budget.json"
 
 
 def test_batch_c_machine_gate_accepts_boundary_and_rejects_regression(

@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "status": "active_private_regression_budget",
+  "claim_scope": "Phase 3 Batch E private CPU regression candidate; not a public SLA",
+  "derivation": "Rounded envelopes above the 2026-09-03 seven-sample Docker baseline",
+  "budgets": [
+    {"suite_count": 10, "three_family_conformance_p95_ms_max": 8.0, "three_family_conformance_peak_host_memory_bytes_max": 262144},
+    {"suite_count": 100, "three_family_conformance_p95_ms_max": 60.0, "three_family_conformance_peak_host_memory_bytes_max": 2097152},
+    {"suite_count": 1000, "three_family_conformance_p95_ms_max": 500.0, "three_family_conformance_peak_host_memory_bytes_max": 16777216},
+    {"suite_count": 10000, "three_family_conformance_p95_ms_max": 6000.0, "three_family_conformance_peak_host_memory_bytes_max": 134217728}
+  ]
+}

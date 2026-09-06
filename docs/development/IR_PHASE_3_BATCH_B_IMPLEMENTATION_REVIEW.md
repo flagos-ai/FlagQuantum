@@ -30,13 +30,13 @@ remain outside TargetIR and compilation identity.
   privacy and namespace tests pass.
 - Target program identity is stable across Python hash seeds.
 - The 10/100/1K/10K operation baseline is recorded in
-  `contracts/ir-phase3-batch-b-performance-baseline.json`.
+  `tests/fixtures/internal_ir/phase3_batch_b_performance_baseline.json`.
 - At 10K operations, observed legalization p95 was 98.144071 ms and peak traced host
   memory was 9,188,711 bytes.
 
 The measurements are environment-specific observations, not a public SLA. Proposed
 private regression envelopes remain unapproved in
-`tests/fixtures/internal_ir/phase3_batch_b_performance_budget_candidate.json`.
+`tests/fixtures/internal_ir/phase3_batch_b_performance_budget.json`.
 
 ## Remaining closed surfaces
 

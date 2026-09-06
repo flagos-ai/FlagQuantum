@@ -13,7 +13,7 @@ have deliberately different ownership and identity semantics.
 
 Batch G therefore defines a staged compatibility bridge, not a bridge implementation.
 The machine-readable source of truth is
-`contracts/ir-phase3-batch-g-deployment-compatibility-proposal.json`.
+`tests/fixtures/internal_ir/phase3_deployment_compatibility.json`.
 
 ## Why direct conversion is unsafe
 

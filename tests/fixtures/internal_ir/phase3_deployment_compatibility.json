@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "profile": "phase3_deployment_compatibility",
+  "status": "reference_mapping",
+  "legacy_boundary": {
+    "type": "flagquantum.deployment.cloud.DeploymentPackage",
+    "fields": [
+      "name",
+      "ir",
+      "qasm",
+      "shots",
+      "qasm_version",
+      "backend",
+      "metadata"
+    ],
+    "schema": "flagquantum_deployment_package_v1",
+    "authority": "unchanged_default_provider_submission_boundary"
+  },
+  "phase3_boundary": {
+    "artifact": "flagquantum._compiler.executable_artifact.SealedExecutableArtifact",
+    "binding": "flagquantum._compiler.runtime_abi.ExecutionBinding",
+    "receipt": "flagquantum._compiler.runtime_abi.SubmissionReceipt",
+    "result": "flagquantum._compiler.runtime_abi.RuntimeResult",
+    "authority": "private_verified_boundary_not_connected_to_default_execution"
+  },
+  "field_mapping": [
+    {
+      "legacy": "qasm or metadata.qcis",
+      "phase3": "SealedExecutableArtifact.payload plus profile and media_type",
+      "mapping_class": "conditional_exact_payload",
+      "condition": "program text already matches an approved canonical artifact profile",
+      "identity_rule": "recompute Phase 3 payload and artifact identities; never reuse deployment_artifact_sha256"
+    },
+    {
+      "legacy": "ir",
+      "phase3": "source program identity then verified QuantumIR and TargetIR",
+      "mapping_class": "requires_verified_recompile",
+      "condition": "no direct cast or identity reuse",
+      "identity_rule": "derive through the approved importer verifier and legalization pipeline"
+    },
+    {
+      "legacy": "shots",
+      "phase3": "ExecutionOptions.shots",
+      "mapping_class": "execution_only",
+      "condition": "positive integer and target maximum-shots validation",
+      "identity_rule": "enters binding identity but never artifact or compilation identity"
+    },
+    {
+      "legacy": "backend provider and name",
+      "phase3": "target resolution followed by execution receipt external identity",
+      "mapping_class": "execution_locator_only",
+      "condition": "resolved outside portable compiler artifacts",
+      "identity_rule": "must not enter ProgramIR QuantumIR TargetIR compilation identity or artifact identity"
+    },
+    {
+      "legacy": "backend semantic capabilities",
+      "phase3": "TargetCapabilities snapshot",
+      "mapping_class": "normalize_and_verify",
+      "condition": "closed semantic values topology limits and calibration identity are complete",
+      "identity_rule": "fingerprint only the canonical semantic snapshot; never hash raw provider metadata"
+    },
+    {
+      "legacy": "metadata.routing_evidence",
+      "phase3": "compilation and legalization evidence",
+      "mapping_class": "verify_not_copy",
+      "condition": "revalidate against target topology and compilation identity",
+      "identity_rule": "legacy evidence digest remains provenance only and cannot become a Phase 3 identity"
+    },
+    {
+      "legacy": "name",
+      "phase3": "display or correlation label outside semantic identities",
+      "mapping_class": "nonsemantic_label",
+      "condition": "excluded from Phase 3 artifact identity",
+      "identity_rule": "preserve for operator correlation only"
+    },
+    {
+      "legacy": "metadata provider extensions",
+      "phase3": "namespaced conformance extensions or execution receipt",
+      "mapping_class": "allowlist_and_route",
+      "condition": "immutable namespaced non-secret values only",
+      "identity_rule": "semantic extensions excluded from execution locators; execution data excluded from compiler identities"
+    }
+  ],
+  "compatibility_matrix": [
+    {
+      "case": "existing DeploymentPackage through existing provider path",
+      "current_behavior": "supported and authoritative",
+      "batch_g_effect": "none"
+    },
+    {
+      "case": "existing DeploymentPackage inspected by offline compatibility checker",
+      "current_behavior": "not implemented",
+      "batch_g_effect": "proposal only"
+    },
+    {
+      "case": "Phase 3 artifact submitted through existing provider path",
+      "current_behavior": "unsupported",
+      "batch_g_effect": "remains unsupported"
+    },
+    {
+      "case": "legacy and Phase 3 dual execution or shadow comparison",
+      "current_behavior": "not connected",
+      "batch_g_effect": "remains inactive"
+    },
+    {
+      "case": "provider or backend automatic fallback",
+      "current_behavior": "not authorized by Phase 3",
+      "batch_g_effect": "remains unauthorized"
+    }
+  ]
+}

@@ -33,13 +33,13 @@ emitter or remote submission is present.
 - Anonymous fixtures pin a conformance identity for each target family across Python hash
   seeds.
 - The 10/100/1K/10K suite baseline is recorded in
-  `contracts/ir-phase3-batch-e-performance-baseline.json`.
+  `tests/fixtures/internal_ir/phase3_batch_e_performance_baseline.json`.
 - At 10K three-family suites (30K target lifecycles), observed p95 was 1,914.625838 ms
   and peak traced host memory was 37,078,803 bytes.
 
 The measurements are environment-specific observations, not a public SLA. Proposed
 private regression envelopes remain unapproved in
-`tests/fixtures/internal_ir/phase3_batch_e_performance_budget_candidate.json`.
+`tests/fixtures/internal_ir/phase3_batch_e_performance_budget.json`.
 
 ## Remaining closed surfaces
 

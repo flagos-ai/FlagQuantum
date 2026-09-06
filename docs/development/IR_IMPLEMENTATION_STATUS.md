@@ -1,6 +1,6 @@
 # FlagQuantum IR implementation status
 
-Updated: 2026-09-02
+Updated: 2026-09-06
 
 ## Current position
 
@@ -9,7 +9,7 @@ Updated: 2026-09-02
 | Phase 0 | Complete | Current API/IR/compiler/runtime/deployment semantics and performance baseline characterized | Implementation changes |
 | Phase 1 | Complete | Private immutable QuantumIR, verifier, importer, analyses, pass manager, round-trip and semantic differential bridge | Public IR/pass API and default-path use |
 | Phase 2 | Complete | Private static canonicalization, target decomposition, directed routing, deterministic emitters, compilation identity/cache and offline end-to-end pipeline | Public/default migration, provider submission and legacy retirement |
-| Phase 3 | Not authorized | TargetIR and executable ABI design is ready for entry review | Any implementation, shadow/default integration or provider work |
+| Phase 3 | Private implementation complete | Target capabilities, TargetIR, executable artifacts, runtime adapter, provider-neutral conformance and opt-in shadow comparison | Public/default integration, real provider submission and legacy retirement |
 | Phase 4 | Not started | ProgramIR and unified dynamic-circuit direction exists in architecture | Implementation |
 | Phase 5 | Not started | Timing/QIR/advanced lowering candidates exist in architecture | Implementation and production claims |
 
@@ -39,12 +39,18 @@ Primary verification surfaces:
 - `tests/internal_ir/test_phase2_offline_deployment.py`
 - `tests/internal_ir/test_phase2_batch_f_performance_budget.py`
 
+## Phase 3 verification surfaces
+
+- `tests/internal_ir/test_phase3_target_capabilities.py`
+- `tests/internal_ir/test_phase3_target_legalization.py`
+- `tests/internal_ir/test_phase3_executable_artifact.py`
+- `tests/internal_ir/test_phase3_runtime_adapter.py`
+- `tests/internal_ir/test_phase3_provider_conformance.py`
+- `tests/internal_ir/test_phase3_shadow_harness.py`
+- `tests/fixtures/internal_ir/phase3_deployment_compatibility.json`
+
 ## Next controlled step
 
-Phase 3 should establish an internal target and executable boundary before any attempt to
-make backend switching transparent. Entry must begin with a provider-free
-`TargetCapabilities` model and identity rules. Public API, default-path shadow execution,
-real provider dispatch, credentials and legacy retirement require later independent
-evidence and approval.
-
-The entry proposal is `docs/development/IR_PHASE_3_ENTRY_APPROVAL_PACKET.md`.
+Connect the private compiler, executable artifact, runtime adapter, and local CPU
+execution path as one minimal vertical slice. Keep public/default integration, real
+provider submission, credentials, and legacy retirement outside that slice.

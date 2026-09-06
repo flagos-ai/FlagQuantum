@@ -34,13 +34,13 @@ submission are present.
   privacy, immutability, concurrency and private-namespace tests pass.
 - The same runtime protocol is satisfied by both local sync and offline async adapters.
 - The 10/100/1K/10K local lifecycle baseline is recorded in
-  `contracts/ir-phase3-batch-d-performance-baseline.json`.
+  `tests/fixtures/internal_ir/phase3_batch_d_performance_baseline.json`.
 - At 10K submit/status/result lifecycles, observed p95 was 419.763387 ms and peak traced
   host memory was 10,422,259 bytes.
 
 The measurements are environment-specific observations, not a public SLA. Proposed
 private regression envelopes remain unapproved in
-`tests/fixtures/internal_ir/phase3_batch_d_performance_budget_candidate.json`.
+`tests/fixtures/internal_ir/phase3_batch_d_performance_budget.json`.
 
 ## Remaining closed surfaces
 

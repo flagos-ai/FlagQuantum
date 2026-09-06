@@ -31,13 +31,13 @@ Adding an emitter remains separately gated work.
   hash-seed and private-namespace tests pass.
 - Four anonymous format fixtures have pinned content and artifact identities.
 - The 10/100/1K/10K operation baseline is recorded in
-  `contracts/ir-phase3-batch-c-performance-baseline.json`.
+  `tests/fixtures/internal_ir/phase3_batch_c_performance_baseline.json`.
 - At 10K operations, observed seal-and-verify p95 was 51.503021 ms and peak traced host
   memory was 7,572,338 bytes for a 1,076,219-byte payload.
 
 The measurements are environment-specific observations, not a public SLA. Proposed
 private regression envelopes remain unapproved in
-`tests/fixtures/internal_ir/phase3_batch_c_performance_budget_candidate.json`.
+`tests/fixtures/internal_ir/phase3_batch_c_performance_budget.json`.
 
 ## Remaining closed surfaces
 

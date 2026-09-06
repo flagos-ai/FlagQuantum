@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "status": "measured_baseline",
+  "claim_scope": "Phase 3 Batch E private CPU baseline; not a public SLA or approved budget",
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36"
+  },
+  "method": {
+    "iterations": 7,
+    "warmup": 2,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "pipeline": "identical conformance lifecycle across three target families"
+  },
+  "cases": [
+    {
+      "suite_count": 10,
+      "target_lifecycle_count": 30,
+      "three_family_conformance_p95_ms": 1.43235,
+      "three_family_conformance_peak_host_memory_bytes": 50455,
+      "deterministic_identity": true
+    },
+    {
+      "suite_count": 100,
+      "target_lifecycle_count": 300,
+      "three_family_conformance_p95_ms": 13.510125,
+      "three_family_conformance_peak_host_memory_bytes": 400987,
+      "deterministic_identity": true
+    },
+    {
+      "suite_count": 1000,
+      "target_lifecycle_count": 3000,
+      "three_family_conformance_p95_ms": 150.078796,
+      "three_family_conformance_peak_host_memory_bytes": 3830443,
+      "deterministic_identity": true
+    },
+    {
+      "suite_count": 10000,
+      "target_lifecycle_count": 30000,
+      "three_family_conformance_p95_ms": 1914.625838,
+      "three_family_conformance_peak_host_memory_bytes": 37078803,
+      "deterministic_identity": true
+    }
+  ]
+}

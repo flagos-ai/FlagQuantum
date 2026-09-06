@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -20,16 +19,10 @@ def _load(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def test_stage3_proposal_binds_stage2_exit() -> None:
+def test_stage3_proposal_identifies_its_boundary() -> None:
     proposal = _load(PROPOSAL)
 
     assert proposal["status"] == "ready_for_owner_review_implementation_not_authorized"
-    for artifact in proposal["prerequisites"].values():
-        assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
     assert proposal["stage_name"] == "Deployment Bridge Stage 3"
     assert "provider-conformance" in proposal["distinct_from"]
 

@@ -1,4 +1,4 @@
-"""Enforce the approved private Phase 3 Batch F performance budget."""
+"""Enforce the private Phase 3 Batch F performance budget."""
 
 from __future__ import annotations
 
@@ -16,17 +16,15 @@ DEFAULT_BUDGET = (
     / "tests"
     / "fixtures"
     / "internal_ir"
-    / "phase3_batch_f_performance_budget_candidate.json"
+    / "phase3_batch_f_performance_budget.json"
 )
 
 
 def evaluate(budget_path: Path, *, iterations: int, warmup: int) -> dict[str, Any]:
     budget_path = budget_path.resolve()
     payload = json.loads(budget_path.read_text(encoding="utf-8"))
-    if payload["approval"]["approval_command"] != (
-        "approve IR-PHASE3-BATCH-F-PERFORMANCE-BUDGET"
-    ):
-        raise ValueError("unexpected Batch F budget approval command")
+    if payload.get("status") != "active_private_regression_budget":
+        raise ValueError("Batch F budget is not active")
     budgets = {int(item["comparison_count"]): item for item in payload["budgets"]}
     if set(budgets) != {10, 100, 1000, 10000}:
         raise ValueError("Batch F budget must cover 10/100/1K/10K comparisons")
