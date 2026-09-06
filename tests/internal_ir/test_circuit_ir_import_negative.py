@@ -43,13 +43,9 @@ def test_dynamic_instruction_is_structurally_rejected() -> None:
     _assert_unsupported(source, DiagnosticCode.UNKNOWN_OPERATION)
 
 
-def test_unknown_semantic_metadata_is_not_silently_dropped() -> None:
+def test_unknown_instruction_semantic_metadata_is_not_silently_dropped() -> None:
     _assert_unsupported(
         CircuitIR(1, (Instruction("h", (0,), metadata={"mystery": 1}),)),
-        DiagnosticCode.UNKNOWN_ATTRIBUTE,
-    )
-    _assert_unsupported(
-        CircuitIR(1, (Instruction("h", (0,)),), metadata={"mystery": 1}),
         DiagnosticCode.UNKNOWN_ATTRIBUTE,
     )
 

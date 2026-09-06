@@ -132,19 +132,20 @@ def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
     assert unsupported.diagnostics
 
 
-def test_static_pipeline_reports_unclassified_metadata_as_domain_gap() -> None:
+def test_static_pipeline_preserves_opaque_top_level_metadata() -> None:
     source = replace(_source(), metadata={"application_tag": "chemistry"})
 
     assert optimize(source).metadata == source.metadata
 
-    candidate = compile_offline_static(source, _target())
+    candidate = _compile(source)
+    lowered = lower_module_for_differential(
+        candidate.source_artifact,
+        candidate.module,
+    )
 
-    assert candidate.status is OfflineCompilationStatus.INVALID_INPUT
-    assert candidate.source_artifact is None
-    assert candidate.module is None
-    assert candidate.execution is None
-    assert candidate.emissions == ()
-    assert "unclassified top-level metadata" in candidate.diagnostics[0].message
+    assert lowered.ok, lowered.diagnostics
+    assert lowered.circuit_ir is not None
+    assert lowered.circuit_ir.metadata == source.metadata
 
 
 def test_static_pipeline_binds_source_pipeline_target_and_emission_identities() -> None:

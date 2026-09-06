@@ -585,18 +585,6 @@ def import_circuit_ir(program: object) -> CircuitImportResult:
         constraint_values = {
             key: metadata[key] for key in _CIRCUIT_CONSTRAINTS if key in metadata
         }
-        unknown_circuit_metadata = sorted(
-            set(metadata)
-            - _CIRCUIT_PROVENANCE
-            - _CIRCUIT_CONSTRAINTS
-            - _CIRCUIT_REQUEST
-        )
-        if unknown_circuit_metadata:
-            raise _unsupported(
-                DiagnosticCode.UNKNOWN_ATTRIBUTE,
-                "CircuitIR has unclassified top-level metadata",
-                notes=(f"unclassified keys: {', '.join(unknown_circuit_metadata)}",),
-            )
         source_fingerprint = _source_fingerprint(program)
         cached = _cached_success(program, source_fingerprint)
         if cached is not None:
