@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import platform
 from pathlib import Path
 
 import pytest
@@ -11,9 +12,15 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 BUDGET = ROOT / "tests/fixtures/internal_ir/phase1_performance_budget_candidate.json"
+BASELINE = ROOT / "tests/fixtures/internal_ir/phase0_performance_baseline.json"
 
 
 def test_approved_import_verify_budget_is_machine_enforced() -> None:
+    baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
+    qualified_platform = baseline["environment"]["platform"].partition("-")[0]
+    if platform.system() != qualified_platform:
+        pytest.skip(f"Phase 1 latency budget is qualified on {qualified_platform}")
+
     result = evaluate(BUDGET, iterations=5, warmup=2)
 
     assert result["status"] == "passed"
