@@ -59,6 +59,8 @@ For each Stable Core API, protection must cover more than its import name.
 - root and stable-namespace exports;
 - canonical import path;
 - class and function names;
+- names that directly express the domain object or operation rather than
+  relative scope, maturity, implementation technique, or project history;
 - public methods and properties;
 - supported constructor forms;
 - experimental and internal namespace boundaries.
@@ -319,6 +321,14 @@ An additive API requires:
 
 Adding an export is not automatically harmless: every stable addition creates
 a long-term maintenance obligation.
+
+Before approval, the API owner must perform an explicit naming review. A stable
+name must remain accurate as implementations improve and must distinguish its
+responsibility from adjacent operations. Relative or transitional labels such
+as `simple`, `advanced`, `new`, `legacy`, and version suffixes are rejected when
+a precise domain term is available. For example, target-independent circuit
+optimization is named `optimize`, while target-aware transformation is named
+`compile`; implementation maturity does not appear in either name.
 
 ### Breaking API change
 

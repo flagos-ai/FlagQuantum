@@ -55,6 +55,13 @@ FlagQuantum must become a flagship quantum AI framework with:
    proposal. Never update an API contract or snapshot merely to make tests
    pass. Follow `docs/development/PUBLIC_API_PROTECTION.md`.
 
+9. Stable API names must state their domain meaning directly. Name an operation
+   for what it does and a value for what it represents; do not use relative,
+   maturity-based, or implementation-era labels such as `simple`, `advanced`,
+   `new`, `legacy`, or `v2` when a precise domain term exists. Before an API is
+   frozen, review its name independently from its implementation and rename
+   unclear pre-release surfaces instead of preserving avoidable ambiguity.
+
 ## Engineering Decision Principles
 
 These principles govern architecture and implementation decisions. They are
