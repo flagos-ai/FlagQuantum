@@ -22,8 +22,9 @@ from flagquantum.providers.platform.cuda_target_capabilities import (
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
-_A800_ARTIFACT = (
-    _ROOT / "artifacts" / "cuda_target_capabilities_a800_jp171_20260906.json"
+_A800_ARTIFACTS = (
+    _ROOT / "artifacts" / "cuda_target_capabilities_a800_jp171_20260906.json",
+    _ROOT / "artifacts" / "cuda_target_capabilities_a800_jp172_20260906.json",
 )
 
 
@@ -79,8 +80,9 @@ def test_cuda_statevector_snapshot_rejects_non_positive_ttl() -> None:
         _snapshot(ttl=timedelta(0))
 
 
-def test_checked_in_a800_observation_matches_its_snapshot() -> None:
-    payload = json.loads(_A800_ARTIFACT.read_text(encoding="utf-8"))
+@pytest.mark.parametrize("path", _A800_ARTIFACTS, ids=("jp171", "jp172"))
+def test_checked_in_a800_observation_matches_its_snapshot(path: Path) -> None:
+    payload = json.loads(path.read_text(encoding="utf-8"))
     encoded = json.dumps(
         payload["evidence"], sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
@@ -94,3 +96,30 @@ def test_checked_in_a800_observation_matches_its_snapshot() -> None:
     assert payload["evidence"]["observations"]["state_dtype"] == "complex128"
     assert payload["evidence"]["observations"]["numerical_validation"]["passed"]
     assert "hidden_cpu_fallback_not_audited" in payload["evidence"]["claim_blockers"]
+
+
+def test_a800_replacement_preserves_the_capability_contract() -> None:
+    left, right = (
+        json.loads(path.read_text(encoding="utf-8")) for path in _A800_ARTIFACTS
+    )
+
+    def contract(payload: dict[str, object]) -> dict[str, object]:
+        snapshot = TargetCapabilitySnapshot.from_dict(payload["snapshot"])  # type: ignore[arg-type]
+        return {
+            fact.name: fact.value
+            for fact in snapshot.facts
+            if fact.name != "memory.available_bytes"
+        }
+
+    assert contract(left) == contract(right)
+    assert left["evidence"]["provider"] == right["evidence"]["provider"]
+    assert left["evidence"]["scope"] == right["evidence"]["scope"]
+    assert left["evidence"]["claim_blockers"] == right["evidence"]["claim_blockers"]
+    assert (
+        left["evidence"]["observations"]["numerical_validation"]["metrics"]
+        == right["evidence"]["observations"]["numerical_validation"]["metrics"]
+    )
+    assert (
+        left["evidence"]["environment"]["device_uuid"]
+        != right["evidence"]["environment"]["device_uuid"]
+    )

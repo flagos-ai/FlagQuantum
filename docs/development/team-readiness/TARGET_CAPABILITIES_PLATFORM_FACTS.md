@@ -110,7 +110,7 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 | `flagquantum/providers/platform/cpu_target_capabilities.py` | 注入式 CPU device/count/memory/precision 观察到 Core v1 snapshot；独立 CPU identity/scope；TTL/evidence 传递；缺失事实 blocker | 不发现 CUDA/FlagOS/QPU；不产生 requirements、fallback 或性能/硬件声明 |
 | `tests/team/platform/test_cpu_target_capabilities.py` | CPU adapter 的 source/evidence round-trip、unavailable/missing/negative probe、TTL/scope 和默认行为不变 | 任何硬件能力；fake probe 不是真实硬件证据 |
 | `cuda_target_capabilities.py` + `probe_cuda_target_capabilities.py` | 单卡 CUDA 实际完成算子预检、状态向量、数值与梯度校验后生成 workload-bound Core snapshot | 不证明隐藏 CPU fallback 缺失、多卡、多节点、通信、性能或国产算力 |
-| `artifacts/cuda_target_capabilities_a800_jp171_20260906.json` | `a800-node-0` 一张 NVIDIA A800 上的 PyTorch CUDA `complex128` 可观测开发证据 | 不是认证证据；不能外推到其他设备、版本或 workload |
+| `artifacts/cuda_target_capabilities_a800_jp17{1,2}_20260906.json` | 两台节点各一张 NVIDIA A800 上的同口径 PyTorch CUDA `complex128` 可观测证据；替换后能力合同和数值指标一致 | 不是认证证据；不能外推到其他设备、版本或 workload |
 | `tests/team/platform/test_target_capability_facts.py` | 候选投影的三轴分离；缺 SDK 字段保持 unknown；声明不晋级；对象不泄漏 | 任何硬件能力；test-only fixture 不是 Core 合同 |
 | `runtime/operator_probes.py` + `CapabilityEvidence` | 特定 provider/device/profile/operator/dtype 的 forward/backward probe | 未探测算子、通信、拓扑、物理 route 或生产等级 |
 | `artifacts/flagos_cuda_reference_a800_20260824.json` | NVIDIA A800 上单 `flagos:0` CUDA-backed Torch-FL 参考路径 | 国产卡、原生 FlagOS 硬件、无 host fallback |
@@ -157,6 +157,8 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 算子预检、状态向量执行、双精度数值与梯度对照后才生成 snapshot。当前 A800 结果为
 `observable` 开发证据；artifact 明确保留隐藏 CPU fallback、多卡、多节点和生产性能未验证的
 blocker，因此不能解释为通用 CUDA、FlagOS 或国产硬件认证。
+`a800-node-0` 与 `a800-node-1` 的独立设备 UUID 和 snapshot identity 不同，但精度事实、
+workload scope、数值指标和 blocker 相同，构成不修改消费方的首个物理节点替换验证。
 
 ## Platform→Core 最小投影提案
 
