@@ -60,10 +60,11 @@ logical execution device. See
 
 ## `split_real_imag_statevector_p4_device_double_single`
 
-P4 extends the P3 FP32 surface with comparison, rounding, remainder, and
-selection operators used by bounded Double-Single angle reduction and
-polynomial sine/cosine. Fixed and supported parameterized gates are generated
-on the logical execution device; no complex accelerator tensor is materialized.
+P4 extends the P3 FP32 surface with comparison, rounding, remainder, selection,
+and asynchronous device assertion operators used by bounded Double-Single angle
+reduction, polynomial sine/cosine, and fail-closed safety checks. Fixed and
+supported parameterized gates are generated on the logical execution device;
+no complex accelerator tensor is materialized.
 See
 [`SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md`](SPLIT_REAL_IMAG_STATEVECTOR_P4_DEVICE_GATES.md).
 

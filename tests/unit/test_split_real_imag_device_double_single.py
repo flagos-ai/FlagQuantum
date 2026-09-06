@@ -131,6 +131,7 @@ def test_p4_profile_and_small_conformance_pass_on_cpu() -> None:
     assert {dtype for item in profile.requirements for dtype in item.dtypes} == {
         "float32"
     }
+    assert "aten::_assert_async" in {item.operator for item in profile.requirements}
     assert all(not item.backward for item in profile.requirements)
     report = preflight_split_real_imag_statevector_p4(
         device="cpu", provider="pytorch_cpu_test", refresh=True
@@ -146,3 +147,19 @@ def test_p4_profile_and_small_conformance_pass_on_cpu() -> None:
     conformance.require_accepted()
     assert conformance.host_gate_encoding is False
     assert conformance.parameter_host_fallback is False
+
+
+def test_p4_preflight_rejects_missing_device_async_assertion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unsupported_assertion(*args: object, **kwargs: object) -> None:
+        raise NotImplementedError("device async assertion is unavailable")
+
+    monkeypatch.setattr(torch, "_assert_async", unsupported_assertion)
+    report = preflight_split_real_imag_statevector_p4(
+        device="cpu",
+        provider="pytorch_cpu_without_async_assert_test",
+        refresh=True,
+    )
+    assert not report.supported
+    assert any(blocker.operator == "aten::_assert_async" for blocker in report.blockers)

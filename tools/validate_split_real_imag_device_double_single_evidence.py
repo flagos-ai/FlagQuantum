@@ -13,8 +13,6 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
-from flagquantum.runtime.capabilities import load_operator_profile
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT = (
     ROOT / "artifacts/split_real_imag_device_double_single_a800_20260825.json"
@@ -24,6 +22,10 @@ CONTRACT = (
     / "contracts"
     / "split-real-imag-statevector-p4-device-double-single-contract.toml"
 )
+HISTORICAL_OPERATOR_PROFILE = {
+    "name": "split_real_imag_statevector_p4_device_double_single",
+    "sha256": "beb0e58248a93d5f9ab17fe61b869f0a4c2925039c29eb9426101ef0c569ac73",
+}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -49,14 +51,8 @@ def evidence_errors(payload: dict[str, Any]) -> tuple[str, ...]:
     if len(str(source.get("archive_sha256", ""))) != 64:
         errors.append("split P4 A800 source archive hash is missing")
 
-    profile = load_operator_profile(
-        "split_real_imag_statevector_p4_device_double_single"
-    )
-    if payload.get("operator_profile") != {
-        "name": profile.name,
-        "sha256": profile.profile_hash,
-    }:
-        errors.append("split P4 A800 operator profile identity drifted")
+    if payload.get("operator_profile") != HISTORICAL_OPERATOR_PROFILE:
+        errors.append("split P4 A800 historical operator profile identity drifted")
 
     contract = tomllib.loads(CONTRACT.read_text(encoding="utf-8"))
     thresholds = contract["thresholds"]

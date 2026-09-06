@@ -239,6 +239,11 @@ def _execute_probe(
     if operator == "aten::any":
         tensor = make((2, 3))
         return torch.any(tensor > 0), (tensor,)
+    if operator == "aten::_assert_async":
+        tensor = make((2, 3))
+        condition = torch.all(torch.isfinite(tensor))
+        torch._assert_async(condition, "FlagQuantum operator probe failed")
+        return condition, (tensor,)
     raise KeyError(f"no executable probe registered for {operator!r}")
 
 

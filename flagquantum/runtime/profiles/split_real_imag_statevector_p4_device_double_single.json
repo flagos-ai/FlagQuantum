@@ -26,6 +26,7 @@
     {"operator": "aten::rsqrt", "dtypes": ["float32"], "forward": true, "backward": false},
     {"operator": "aten::isfinite", "dtypes": ["float32"], "forward": true, "backward": false},
     {"operator": "aten::all", "dtypes": ["float32"], "forward": true, "backward": false},
-    {"operator": "aten::any", "dtypes": ["float32"], "forward": true, "backward": false}
+    {"operator": "aten::any", "dtypes": ["float32"], "forward": true, "backward": false},
+    {"operator": "aten::_assert_async", "dtypes": ["float32"], "forward": true, "backward": false}
   ]
 }

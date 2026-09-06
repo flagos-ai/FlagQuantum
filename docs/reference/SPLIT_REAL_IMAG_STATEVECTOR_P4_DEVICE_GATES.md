@@ -39,7 +39,9 @@ Every result records these boundaries:
 Finite-value, positive-norm, and certified-angle checks execute synchronously
 on CPU and as asynchronous device assertions on accelerators. They therefore
 remain fail-closed without introducing a device-to-host scalar synchronization
-for every gate or normalization step.
+for every gate or normalization step. The P4 operator preflight exercises the
+asynchronous assertion before allocating the user workload state, so a backend
+that cannot execute it is rejected before entering the numerical hot path.
 
 ## Usage
 
@@ -102,7 +104,10 @@ The checked-in A800 native-CUDA and `flagos:0` portability record is
 It is fail-closed by
 `tools/validate_split_real_imag_device_double_single_evidence.py`. The FlagOS
 route is a single-device Torch-FL test; it neither validates FlagCX collectives
-nor makes a distributed-execution claim.
+nor makes a distributed-execution claim. That artifact remains bound to the
+historical profile used on 2026-08-25, which performed host-synchronizing safety
+checks. It does not certify the current asynchronous-assertion requirement;
+each target accelerator must pass the current executable profile preflight.
 
 ## Deliberate limitations
 

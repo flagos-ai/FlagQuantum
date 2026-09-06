@@ -50,7 +50,8 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "parameter_host_fallback_allowed": False,
         "state_host_fallback_allowed": False,
         "complex_accelerator_tensor_allowed": False,
-        "host_sync_safety_checks": True,
+        "host_sync_safety_checks": False,
+        "device_async_safety_checks": True,
         "native_autograd_claim_allowed": False,
         "convergence_claim_allowed": False,
         "hardware_certification": False,
@@ -111,7 +112,12 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         item.get("dtypes") != ["float32"] for item in requirements
     ):
         errors.append("split real/imag P4 profile must be float32-only")
-    required_operators = {"aten::round", "aten::remainder", "aten::where"}
+    required_operators = {
+        "aten::round",
+        "aten::remainder",
+        "aten::where",
+        "aten::_assert_async",
+    }
     if not required_operators <= {item.get("operator") for item in requirements}:
         errors.append("split real/imag P4 range-reduction profile is incomplete")
 

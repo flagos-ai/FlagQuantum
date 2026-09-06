@@ -31,6 +31,16 @@ def test_split_p4_a800_evidence_rejects_claim_promotion() -> None:
     assert "forbidden claim promotion" in " ".join(evidence_errors(payload))
 
 
+def test_split_p4_a800_evidence_keeps_historical_profile_identity() -> None:
+    payload = _payload()
+    operator_profile = payload["operator_profile"]
+    assert isinstance(operator_profile, dict)
+    operator_profile["sha256"] = "0" * 64
+    assert "historical operator profile identity drifted" in " ".join(
+        evidence_errors(payload)
+    )
+
+
 def test_split_p4_a800_evidence_rejects_host_gate_encoding() -> None:
     payload = _payload()
     routes = payload["routes"]
