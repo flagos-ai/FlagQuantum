@@ -358,7 +358,7 @@ fq.compiler
 
 **优先级：P1**
 
-当前 `compile_for_backend()` 可单独产生 IR，而 `plan()` 内部又会进行编译。应明确：
+当前 `compiler.compile()` 可单独产生 IR，而 `plan()` 内部又会进行编译。应明确：
 
 ```text
 Circuit/IR → compile → plan → run

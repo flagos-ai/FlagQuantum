@@ -45,7 +45,7 @@ Provider 的暂管区域。
 | --- | --- | --- |
 | `fq.plan()` / `flagquantum.runtime.planner.plan()` | 生成稳定 `ExecutionPlan`，附带程序、选项、环境、编译器指纹和最终决策 | Runtime 已拥有执行规划策略；共享计划产物仍由 `compilation` 暂管 |
 | `flagquantum.runtime.execution.run()` | 对程序输入先调用 `plan()`，对计划输入直接进入 `execute_plan()` | 便捷编排入口混合了“请求编译”和“执行尝试” |
-| `run_native()` / `run_distributed()` | 兼容入口内部调用 `compile_for_backend()`、`select_execution_mode()`、`plan_advanced()` | 历史耦合；最终应接收可执行计划或显式调用 Compiler 服务端口 |
+| `run_native()` / `run_distributed()` | 兼容入口内部调用 `compiler.compile()`、`select_execution_mode()`、`plan_advanced()` | 历史耦合；最终应接收可执行计划或显式调用 Compiler 服务端口 |
 | `flagquantum.runtime.planner_adapter` | 暴露给 Compiler 的能力查询和 JAX 训练规划适配 | 当前唯一声明的 Compiler→Runtime 窄缝；应保持只查询、不执行 |
 
 ### 2.2 单次执行
@@ -141,7 +141,7 @@ Provider 的暂管区域。
 | `runtime/backends/statevector/planning.py` | `schedule_layers()` | 公共 raw-program 规划入口保留的编译服务调用 | 当前入口直接接收 Circuit/IR，继续通过 Compiler facade 获得 layer schedule；只有经批准的 executable-plan 契约能够携带该结果后，计划执行路径才可改为直接消费，Runtime 不复制调度算法 |
 | `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | 共享数据契约 | 将版本化校准记录的最小只读契约置于 Core；校准构建仍由 Compiler/benchmark owning service 完成，Runtime 只验证适用范围并消费记录 |
 | `runtime/dynamic/routing.py` | `CouplingMap`、`route_to_topology()` | 路由历史耦合（共享契约 + 编译服务） | Core 提供 topology/coupling 数据契约；Compiler routing service 接收动态 IR 并返回已路由 IR，Runtime 只执行 |
-| `runtime/execution.py` | `ExecutionPlan`、`compile_for_backend()`、`select_execution_mode()`、`plan_advanced()`、`plan()`；noise plan/lowering helpers | 编译服务调用（复合） | 把便捷的 program→plan 调用收束到一个 Compiler service port；attempt path 只接收 Core-owned executable plan view。自动模式、编译、噪声 lowering 均在尝试开始前完成 |
+| `runtime/execution.py` | `ExecutionPlan`、`compiler.compile()`、`select_execution_mode()`、`plan_advanced()`、`plan()`；noise plan/lowering helpers | 编译服务调用（复合） | 把便捷的 program→plan 调用收束到一个 Compiler service port；attempt path 只接收 Core-owned executable plan view。自动模式、编译、噪声 lowering 均在尝试开始前完成 |
 | `runtime/noise_registry.py` | `EvolutionSemantics`、`StateRepresentation`、`NoisyExecutionPlan` | 噪声历史耦合（共享契约） | Core 提供 backend-neutral noise execution decision/enum 契约；registry 只按契约解析执行器，不认识 Compiler 类型 |
 | `runtime/plan_execution.py` | `ExecutionPlan`；`plan_program()`、`plan_decision()`、`plan_noise_model()`、`validate_plan_environment()`、`ExecutionPlanContractError` | 错误的内部实现调用（同时含共享契约） | Core executable-plan contract 负责严格反序列化和只读字段；Runtime-owned preflight 负责环境/资源校验；跨层错误使用 Core/公共错误契约。不要把当前 Compiler helper 复制到 Runtime |
 | `runtime/result.py` | `TYPE_CHECKING` 下的 `ExecutionPlan` | 共享数据契约 | `ExecutionResult.plan` 改为批准的 Core-owned executable-plan contract/protocol；Compiler plan 通过适配和 conformance test 满足它 |

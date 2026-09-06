@@ -56,7 +56,7 @@ capability, request, and artifact types require a Core-owned contract first.
 | Analysis | `runtime.planner.analyze()`; `_compiler.analyses.AnalysisManager`, `DefUseAnalysis`, `QubitLifetimeAnalysis` | IR/module → structural or reusable analysis result | Runtime structural analysis feeds execution planning; `_compiler` analyses feed private passes and are not default-path consumers. |
 | Pass execution | `compiler.optimize()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Stable canonicalization is authoritative in `compiler`; `_compiler` remains a private replacement candidate with descriptors, diagnostics, analyses, and pipeline identity. |
 | Routing | `compiler.routing.route_to_topology()` and `select_routing_strategy()`; `_compiler.passes.placement_routing.PlacementRoutingPass` | logical program + coupling graph → routed program | Stable routing is authoritative in `compiler`; the private implementation has a different graph and evidence model and remains off the default path. |
-| Lowering | `compiler.compile_for_backend()`; `compiler.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local, topology, and noise lowering; noisy execution-plan products remain transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
+| Lowering | `compiler.compile()`; `compiler.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local, topology, and noise lowering; noisy execution-plan products remain transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
 | Backend/mode selection | `runtime.planner.select_backend_by_cost()`; `select_execution_mode()`; `plan_runtime_selection()`; noisy-backend selection | `CircuitIR` + execution/resource policy → backend/mode candidate or selection plan | Runtime is authoritative for execution selection. `_compiler.TargetCapabilities` describes target legality and does not select a runtime backend. |
 | Scheduling/planning | `compiler.schedule_layers()`; `runtime.planner.plan()`, `plan_advanced()`, `plan_for_backend()` | compiled IR + resolved execution options → `ExecutionPlan` | Compiler owns instruction scheduling; Runtime owns orchestration and final plan assembly; the protected plan product remains transitional. |
 | Code generation | `_compiler.exporters.text.emit_openqasm2()`, `emit_openqasm3()`, `emit_qcis_v1()`; legacy `flagquantum.utils` exporters used by deployment | verified static module → canonical text + content hash | `_compiler` owns the deterministic private emitters. `compilation` has no generic code-generation boundary. Legacy utility emitters remain separate consumers and are not retired here. |
@@ -141,7 +141,7 @@ currently live under `compilation`.
 | --- | --- | --- | --- | --- | --- |
 | 1. Capture | `Circuit.to_ir()` or direct `CircuitIR` construction | user circuit/builder | validated `CircuitIR` 1.0 | Core validation/type errors | canonical JSON and `CircuitIR.content_hash` |
 | 2. Stable request validation | `runtime.planner.plan()` | `Circuit`/`CircuitIR`, `ExecutionOptions`, measurements, noise | resolved source IR and options | `TypeError`, `ValidationError`, or `CapabilityError`; conflicts and dynamic circuits fail closed | requested/resolved options later enter plan fingerprints |
-| 3. Local compile | `plan_advanced()` → `compile_for_backend()` | source `CircuitIR`, RuntimeConfig, optional coupling map | optimized/routed `CircuitIR` | `CompilationError`, routing/value errors | runtime-config manifest and routing metadata |
+| 3. Local compile | `plan_advanced()` → `compiler.compile()` | source `CircuitIR`, RuntimeConfig, optional coupling map | optimized/routed `CircuitIR` | `CompilationError`, routing/value errors | runtime-config manifest and routing metadata |
 | 4. Canonical optimization | `optimize()` | `CircuitIR` | fixed-point optimized `CircuitIR` | bounded rounds; raises `CompilationError` if no fixed point | transformed instruction sequence; no standalone pass evidence |
 | 5. Optional routing | `route_to_topology()` | optimized IR + `CouplingMap` | routed IR | invalid topology/unsupported routing raises | routing and optional strategy-selection metadata |
 | 6. Optional noise lowering | `lower_noise_model()` | compiled IR + `NoiseModel` | channel-bearing `CircuitIR` | validation/capability errors | channel instructions and noisy-plan identity |
@@ -189,7 +189,7 @@ CircuitIR
 
 The eventual replacement adapter would sit behind the existing
 `compiler.optimize(circuit_or_ir) -> CircuitIR` boundary. Runtime,
-`compile_for_backend`, public imports, and callers would remain unchanged. This is
+`compiler.compile`, public imports, and callers would remain unchanged. This is
 smaller and safer than first replacing routing, planning, backend selection, noise,
 or artifact serialization.
 

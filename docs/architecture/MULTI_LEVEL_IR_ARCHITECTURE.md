@@ -835,7 +835,7 @@ QuantumIR
 
 - 修改当前 `CircuitIR` schema；
 - 修改稳定根导出；
-- 改变 `fq.run`、`fq.plan`、`compile_for_backend` 的公共签名或行为；
+- 改变 `fq.run`、`fq.plan`、`fq.compiler.compile` 的公共签名或行为；
 - 直接替换受保护的 `DeploymentPackage` schema；
 - 将内部多层 IR 暴露为稳定 API；
 - 同时重写 compiler、runtime 和 provider 主路径；
@@ -1202,9 +1202,8 @@ fq.run(...)
 当前 `CircuitIR` 类名保持不变，schema 版本继续存放在序列化 payload 中，不创建
 `CircuitIRV1`、`CircuitIRV2` 等公共类。
 
-现有 `compile_for_backend(...)` 和 `Circuit.compile(...)` 在 API 收敛完成前保持其
-签名、返回类型和行为。新编译 API 不得通过别名或静默替换改变它们；后续关系必须在
-迁移提案中明确为保留、委托、弃用或删除。
+现有 `compiler.compile(...)` 和 `Circuit.compile(...)` 保持其签名、返回类型和
+行为。编译入口不得通过别名或静默替换改变语义；后续变更必须通过明确的迁移提案。
 
 ### 19.3 候选用户编译 API
 
