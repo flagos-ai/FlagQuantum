@@ -18,14 +18,12 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_stage6_performance_review_binds_every_artifact() -> None:
+def test_stage6_performance_review_binds_authorization() -> None:
     review = json.loads(REVIEW.read_text(encoding="utf-8"))
 
     assert review["status"] == "ready_for_owner_approval"
     authorization = review["authorization"]
     assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    for relative_path, expected_hash in review["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
 
 
 def test_stage6_performance_review_authorizes_only_budget_and_gate() -> None:

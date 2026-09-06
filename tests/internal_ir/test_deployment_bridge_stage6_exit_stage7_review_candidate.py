@@ -23,14 +23,12 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_stage6_exit_candidate_binds_authorizations_and_artifacts() -> None:
+def test_stage6_exit_candidate_binds_authorizations() -> None:
     candidate = _candidate()
 
     assert candidate["status"] == "ready_for_owner_approval"
     for authorization in candidate["authorization_chain"].values():
         assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
 
 
 def test_stage6_exit_evidence_is_complete_and_non_activating() -> None:

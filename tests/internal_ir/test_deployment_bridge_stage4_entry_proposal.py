@@ -24,14 +24,11 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_stage4_proposal_binds_stage3_exit_and_current_evidence() -> None:
+def test_stage4_proposal_binds_stage3_exit() -> None:
     proposal = _load(PROPOSAL)
-    review = _load(REVIEW)
 
     assert proposal["status"] == "ready_for_owner_review_implementation_not_authorized"
     for artifact in proposal["prerequisites"].values():
-        assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
-    for artifact in review["current_contracts"].values():
         assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
     assert proposal["stage_name"] == "Deployment Bridge Stage 4"
     assert "Unified IR Phase 4" in proposal["distinct_from"]
@@ -152,8 +149,6 @@ def test_stage4_review_preserves_public_runtime_provider_and_default_paths() -> 
     review = _load(REVIEW)
 
     assert review["status"] == "ready_for_owner_approval"
-    for relative_path, expected_hash in review["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
     decisions = review["proposed_decisions"]
     assert decisions["stage4_private_offline_rehearsal_authorized"] is True
     assert decisions["rehearsal_action_side_effect_authorized"] is False

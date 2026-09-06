@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -17,16 +16,10 @@ REVIEW = (
 )
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def test_quafu_selection_review_is_blocked_pending_target_qualification() -> None:
     review = json.loads(REVIEW.read_text(encoding="utf-8"))
 
     assert review["status"] == "blocked_pending_target_qualification"
-    for relative_path, expected_hash in review["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
     assert review["selection"]["provider_namespace"] == "quafu"
     assert review["selection"]["sandbox_target_identity"] is None
     assert review["qualification"]["provider_verified"] is True

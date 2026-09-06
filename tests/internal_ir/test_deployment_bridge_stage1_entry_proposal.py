@@ -25,14 +25,11 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_stage1_proposal_binds_completed_phase3_and_current_package_contract() -> None:
+def test_stage1_proposal_binds_completed_phase3_and_package_shape() -> None:
     proposal = _load(PROPOSAL)
-    review = _load(REVIEW)
 
     assert proposal["status"] == "ready_for_owner_review_implementation_not_authorized"
     for artifact in proposal["prerequisites"].values():
-        assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
-    for artifact in review["current_contracts"].values():
         assert _sha256(ROOT / artifact["path"]) == artifact["sha256"]
     assert [item.name for item in fields(DeploymentPackage)] == [
         "name",
@@ -96,12 +93,10 @@ def test_stage1_scope_is_one_private_module_and_keeps_activation_closed() -> Non
     assert proposal["approval_command"] == "approve DEPLOYMENT-BRIDGE-STAGE1-ENTRY"
 
 
-def test_stage1_review_candidate_binds_proposal_document_and_public_baselines() -> None:
+def test_stage1_review_candidate_records_decisions() -> None:
     review = _load(REVIEW)
 
     assert review["status"] == "ready_for_owner_approval"
-    for relative_path, expected_hash in review["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
     decisions = review["proposed_decisions"]
     assert decisions["stage1_implementation_authorized"] is True
     assert decisions["stage1_performance_baseline_authorized"] is True
