@@ -348,3 +348,7 @@ Statevector P2–P5 结果对象曾分别重写 high/low 到 CPU float64/complex
 本轮删除三组重复 helper 和一处内联重复实现，不改变公开结果类型、执行计划、设备选择或数值
 Kernel；CPU conformance 覆盖状态、期望值、梯度和优化器诊断结果。后续不再为同类结果对象
 增加 high/low 手工重建代码。
+
+P1–P5 conformance 的 complex128 参考路径也不再自行调用门矩阵和 statevector 底层作用函数，
+而是复用 `simulation.pauli.pauli_product_statevector_expectation()`。Runtime 仍负责构造测试线路、
+参数移位和判定阈值，Simulation 继续唯一拥有 Pauli 乘积期望值的稠密数值实现。

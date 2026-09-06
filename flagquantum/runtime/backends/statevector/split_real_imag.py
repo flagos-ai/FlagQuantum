@@ -736,24 +736,15 @@ def _complex128_pauli_expectation(
     ir: CircuitIR, terms: Sequence[_PauliTerm]
 ) -> torch.Tensor:
     from ....circuit import Circuit
-    from ....ops.matrices import GATE_MAT_DICT
-    from ....simulation.statevector_ops import _apply_matrix
+    from ....simulation.pauli import pauli_product_statevector_expectation
 
     state = Circuit.from_ir(ir, device="cpu", dtype=torch.complex128).state()
-    batched = state.reshape(1, -1)
     values = []
     for term in terms:
-        transformed = batched
-        for wire, name in term.ops:
-            transformed = _apply_matrix(
-                transformed,
-                GATE_MAT_DICT[name].to(dtype=torch.complex128),
-                (wire,),
-                ir.n_wires,
-            )
         coefficient = term.coefficient.to(dtype=torch.float64, device="cpu")
         values.append(
-            coefficient * torch.real(torch.sum(torch.conj(batched) * transformed))
+            coefficient
+            * pauli_product_statevector_expectation(state, term.ops, ir.n_wires)
         )
     return torch.stack(values).sum()
 
