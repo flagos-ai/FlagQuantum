@@ -228,6 +228,10 @@ Custom-unitary characterization also requires the candidate to preserve the seal
 source matrix value and dtype after validating that its internal attributes were
 not changed. Python object identity is intentionally not part of this serialized
 boundary.
+The shared replacement scenario also covers trainable rotation merging, forward
+and gradient parity, symbolic expression structure, and zero-initialized trainable
+binding identity. These are acceptance conditions for the optimizer replacement,
+not optional numerical smoke tests.
 
 ## Human-maintainability notes for the next slice
 

@@ -183,6 +183,74 @@ def test_candidate_optimizer_preserves_custom_matrix_identity() -> None:
     )
 
 
+def test_candidate_optimizer_matches_trainable_forward_and_gradients() -> None:
+    theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
+    phi = torch.tensor(-0.2, dtype=torch.float64, requires_grad=True)
+    source = fq.CircuitIR(
+        1,
+        (
+            fq.Instruction("ry", (0,), {"theta": theta}),
+            fq.Instruction("ry", (0,), {"theta": phi}),
+        ),
+        dtype="complex128",
+    )
+
+    stable = optimize(source)
+    candidate = _candidate_optimize(source)
+    stable_loss = fq.Circuit.from_ir(stable).expectation_z(0).sum()
+    candidate_loss = fq.Circuit.from_ir(candidate).expectation_z(0).sum()
+    stable_gradients = torch.autograd.grad(
+        stable_loss,
+        (theta, phi),
+        retain_graph=True,
+    )
+    candidate_gradients = torch.autograd.grad(candidate_loss, (theta, phi))
+
+    assert tuple(item.name for item in candidate) == tuple(item.name for item in stable)
+    assert candidate.instructions[0].params["theta"].requires_grad
+    torch.testing.assert_close(candidate_loss, stable_loss, atol=1e-12, rtol=0)
+    for candidate_gradient, stable_gradient in zip(
+        candidate_gradients,
+        stable_gradients,
+        strict=True,
+    ):
+        torch.testing.assert_close(
+            candidate_gradient,
+            stable_gradient,
+            atol=1e-12,
+            rtol=0,
+        )
+
+
+def test_candidate_optimizer_matches_symbolic_parameter_structure() -> None:
+    theta = fq.Parameter("theta")
+    source = fq.CircuitIR(
+        2,
+        (
+            fq.Instruction("rz", (0,), {"theta": theta}),
+            fq.Instruction("h", (1,)),
+            fq.Instruction("rz", (0,), {"theta": theta * 0.5}),
+        ),
+    )
+
+    candidate = _candidate_optimize(source)
+    stable = optimize(source)
+
+    assert candidate.instructions == stable.instructions
+
+
+def test_candidate_optimizer_preserves_zero_initialized_trainable_parameter() -> None:
+    theta = torch.tensor(0.0, requires_grad=True)
+    source = fq.CircuitIR(
+        1,
+        (fq.Instruction("rx", (0,), {"theta": theta}),),
+    )
+
+    candidate = _candidate_optimize(source)
+
+    assert candidate.instructions[0].params["theta"] is theta
+
+
 def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
     invalid = compile_offline_static(object(), _target())
     unsupported = compile_offline_static(
