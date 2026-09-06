@@ -7,6 +7,7 @@ import torch
 
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import pauli_term
+from flagquantum.core.numerics import default_accuracy_requirement
 from flagquantum.numerics.double_single import (
     DoubleSingleTensor,
     double_single_sin_cos,
@@ -63,7 +64,14 @@ def test_p4_state_uses_device_generated_gates_and_four_fp32_words() -> None:
     assert summary["host_gate_encoding"] is False
     assert summary["parameter_host_fallback"] is False
     assert summary["state_host_fallback"] is False
+    assert summary["host_execution_fallback"] is False
     assert summary["complex_accelerator_tensor_materialized"] is False
+    assert summary["precision_mechanism"] == "double_single_fp32"
+    assert summary["precision_class"] == "emulated_high_precision"
+    assert summary["precision_plan"]["state_storage_dtype"] == "float32"
+    assert summary["native_complex128"] is False
+    assert summary["logical_complex128_certified"] is False
+    assert summary["automatic_runtime_selection"] is False
     assert summary["host_sync_safety_checks"] is False
     assert summary["device_async_safety_checks"] is True
 
@@ -89,6 +97,16 @@ def test_p4_expectation_and_gradient_match_float32_input_reference() -> None:
     assert torch.abs(expectation.cpu_float64() - torch.cos(reference)) < 1e-11
     assert torch.max(torch.abs(gradient.cpu_float64() + torch.sin(reference))) < 1e-10
     assert gradient.parameter_order == ("theta",)
+
+
+def test_p4_rejects_strict_logical_complex128_accuracy_requirement() -> None:
+    with pytest.raises(RuntimeError, match="cannot certify requested"):
+        execute_split_real_imag_device_double_single_expectation(
+            Circuit(1).h(0),
+            pauli_term(1.0, "Z", (0,)),
+            accuracy_requirement=default_accuracy_requirement("complex128"),
+            preflight=False,
+        )
 
 
 def test_p4_device_double_single_binding_avoids_host_ingestion() -> None:

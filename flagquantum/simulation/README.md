@@ -52,6 +52,11 @@ gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
 `double_single_statevector.py` owns the shared gate application and state
 initialization, local execution, normalization, and Pauli-term reduction used
 by the P3 and P4 executors.
+
+P4 result summaries identify Double-Single as emulated high
+precision, include the exact precision plan and storage dtype, and explicitly
+deny native/logical complex128 certification and automatic Runtime selection.
+The executor rejects accuracy requirements stricter than its measured envelope.
 Runtime retains precision authorization, platform selection, execution evidence,
 and conformance reporting.
 

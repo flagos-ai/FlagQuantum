@@ -141,10 +141,18 @@ class SplitRealImagDeviceDoubleSingleStatevectorResult:
         )
 
     def summary(self) -> dict[str, Any]:
+        precision_plan = split_real_imag_p4_precision_plan()
         return {
             "schema": "flagquantum_split_real_imag_p4_statevector_result_v1",
             "executor": self.executor,
             "representation": "double_single_fp32_complex",
+            "precision_mechanism": ComplexRepresentation.DOUBLE_SINGLE_FP32.value,
+            "precision_class": "emulated_high_precision",
+            "precision_plan": precision_plan.to_dict(),
+            "precision_plan_hash": precision_plan.content_hash(),
+            "native_complex128": False,
+            "logical_complex128_certified": False,
+            "automatic_runtime_selection": False,
             "distribution_semantics": "single_device_fast_path",
             "device": str(self.device),
             "provider": self.provider,
@@ -154,6 +162,7 @@ class SplitRealImagDeviceDoubleSingleStatevectorResult:
             "host_gate_encoding": False,
             "parameter_host_fallback": False,
             "state_host_fallback": False,
+            "host_execution_fallback": False,
             "host_scalar_parameter_ingestion": self.host_scalar_parameter_ingestion,
             "host_sync_safety_checks": False,
             "device_async_safety_checks": True,
