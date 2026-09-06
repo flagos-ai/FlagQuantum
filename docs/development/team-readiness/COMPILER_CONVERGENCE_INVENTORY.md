@@ -213,9 +213,9 @@ the current optimizer, invalid/unsupported fail-closed behavior without partial
 artifacts, preservation of classified program and instruction metadata, and the
 source/pipeline/target/emission identity chain. Opaque top-level metadata now
 round-trips through the existing sealed source envelope without adding another
-contract field. Unclassified instruction metadata remains outside the private
-importer's accepted domain. These tests are evidence for the candidate slice, not
-authorization to switch it on.
+contract field. Opaque instruction metadata follows the same source-location rules
+as the stable optimizer, while known semantic metadata remains fail-closed. These
+tests are evidence for the candidate slice, not authorization to switch it on.
 
 ## Human-maintainability notes for the next slice
 
@@ -227,11 +227,9 @@ migration does not authorize changing semantics or the public API.
 `tests/team/compiler/test_static_pipeline_characterization.py` is the existing
 ten-minute path. It demonstrates deterministic cache behavior, semantic
 equivalence with `optimize`, invalid/unsupported input failure without
-partial artifacts, classified metadata preservation, the remaining
-instruction-metadata domain boundary, and source/pipeline/target/emission identity
-binding.
-Top-level opaque metadata is preserved by the sealed source envelope; instruction
-metadata remains subject to the explicit importer profile.
+partial artifacts, classified and opaque metadata preservation, and
+source/pipeline/target/emission identity binding. Known instruction semantics remain
+subject to the explicit importer profile.
 
 No new legality contract is retained in this round. Existing target capability
 coverage stays expressed by `CompilerRequirementProjection.compare_available()`
@@ -292,7 +290,7 @@ The broader machine-readable `compiler_convergence` track correctly remains
 Core Target Capabilities v1 and its loss-accounted Compiler adapter now exist, but
 the richer Compiler target fields still require the legacy comparator. Current
 blockers are the incomplete executable artifact/request contracts, the stable
-`ExecutionPlan` definition living in `compilation`, and the private importer's
-stricter instruction-metadata profile. Intentional
+`ExecutionPlan` definition living in `compilation`, and remaining execution-request
+profile differences. Intentional
 Runtime calls through the stable Compiler facade are not blockers and must not be
 removed merely to reduce an import count.

@@ -148,6 +148,39 @@ def test_static_pipeline_preserves_opaque_top_level_metadata() -> None:
     assert lowered.circuit_ir.metadata == source.metadata
 
 
+def test_static_pipeline_matches_opaque_instruction_metadata_behavior() -> None:
+    source = fq.CircuitIR(
+        3,
+        (
+            fq.Instruction(
+                "rx",
+                (0,),
+                {"theta": 0.5},
+                metadata={"application_tag": "kept"},
+            ),
+            fq.Instruction("rx", (1,), {"theta": 0.125}, metadata={"step": 1}),
+            fq.Instruction("rx", (1,), {"theta": 0.25}, metadata={"step": 2}),
+            fq.Instruction("x", (2,), metadata={"pair": "first"}),
+            fq.Instruction("x", (2,), metadata={"pair": "second"}),
+        ),
+    )
+    stable = optimize(source)
+    candidate = _compile(source)
+    lowered = lower_module_for_differential(
+        candidate.source_artifact,
+        candidate.module,
+    )
+
+    assert lowered.ok, lowered.diagnostics
+    assert lowered.circuit_ir is not None
+    assert tuple(item.name for item in lowered.circuit_ir) == tuple(
+        item.name for item in stable
+    )
+    assert tuple(item.metadata for item in lowered.circuit_ir) == tuple(
+        item.metadata for item in stable
+    )
+
+
 def test_static_pipeline_binds_source_pipeline_target_and_emission_identities() -> None:
     source = _source()
     result = _compile(source)

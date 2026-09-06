@@ -403,24 +403,6 @@ def _instruction_operation(
                 f"is_channel metadata contradicts opcode {instruction.name!r}",
                 index=index,
             )
-    unknown_metadata = (
-        sorted(
-            set(metadata)
-            - _INSTRUCTION_PROVENANCE
-            - _INSTRUCTION_SEMANTICS
-            - _DYNAMIC_KEYS
-            - {"is_channel"}
-        )
-        if metadata
-        else []
-    )
-    if unknown_metadata:
-        raise _unsupported(
-            DiagnosticCode.UNKNOWN_ATTRIBUTE,
-            f"instruction {instruction.name!r} has unsupported semantic metadata",
-            index=index,
-            notes=(f"unclassified keys: {', '.join(unknown_metadata)}",),
-        )
     metadata_keys = set(metadata) if metadata else set()
     for key in _INSTRUCTION_PROVENANCE & metadata_keys:
         provenance[f"instruction.{index}.{key}"] = metadata[key]
