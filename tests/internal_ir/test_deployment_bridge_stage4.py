@@ -33,7 +33,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests/fixtures/internal_ir/deployment_bridge_stage4.json"
-PROPOSAL = ROOT / "contracts/deployment-bridge-stage4-entry-proposal.json"
 
 
 def _policy(**changes: int) -> RehearsalPolicy:
@@ -75,25 +74,6 @@ def _run(scenario: RehearsalScenario) -> OfflineRehearsalReport:
     )
 
 
-def test_runtime_taxonomies_and_report_exactly_match_the_approved_proposal() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-
-    assert {item.value for item in RehearsalScenario} == set(
-        proposal["scenario_taxonomy"]
-    )
-    assert {item.value for item in RehearsalState} == set(proposal["state_taxonomy"])
-    assert {item.value for item in SimulatedRehearsalAction} == set(
-        proposal["simulated_action_taxonomy"]
-    )
-    assert {item.value for item in RehearsalOutcome} == set(
-        proposal["outcome_taxonomy"]
-    )
-    assert {item.value for item in RehearsalRole} == set(proposal["role_taxonomy"])
-    assert [item.name for item in fields(OfflineRehearsalReport)] == proposal[
-        "privacy_identity_and_report_contract"
-    ]["report_fields"]
-
-
 def test_all_thirteen_anonymous_scenarios_pass_with_golden_evidence() -> None:
     golden = json.loads(FIXTURE.read_text(encoding="utf-8"))["scenarios"]
 
@@ -103,20 +83,6 @@ def test_all_thirteen_anonymous_scenarios_pass_with_golden_evidence() -> None:
         assert report.outcome is RehearsalOutcome.OFFLINE_REHEARSAL_PASSED
         assert report.evidence_identity == golden[scenario.value]
         assert report.encoded_size <= 65536
-
-
-def test_runtime_requirements_exactly_match_the_approved_scenario_matrix() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-    matrix = {item["scenario"]: item for item in proposal["scenario_response_contract"]}
-
-    for scenario in RehearsalScenario:
-        roles, actions = rehearsal_requirements(scenario)
-        assert {item.value for item in roles} == set(
-            matrix[scenario.value]["required_roles"]
-        )
-        assert {item.value for item in actions} == set(
-            matrix[scenario.value]["required_actions"]
-        )
 
 
 def test_omitted_reordered_duplicated_and_failed_states_fail_closed() -> None:

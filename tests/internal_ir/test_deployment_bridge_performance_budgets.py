@@ -58,11 +58,12 @@ STAGES = (
 )
 
 
-def _budget_platform(stage: int) -> str:
-    validation = ROOT / (
-        f"contracts/deployment-bridge-stage{stage}-performance-budget-validation.json"
+def _baseline_platform(stage: int) -> str:
+    baseline = ROOT / (
+        f"tests/fixtures/internal_ir/"
+        f"deployment_bridge_stage{stage}_performance_baseline.json"
     )
-    payload = json.loads(validation.read_text(encoding="utf-8"))
+    payload = json.loads(baseline.read_text(encoding="utf-8"))
     return payload["environment"]["platform"].partition("-")[0]
 
 
@@ -71,13 +72,13 @@ def _budget_platform(stage: int) -> str:
     STAGES,
     ids=[f"stage{stage}" for stage, *_ in STAGES],
 )
-def test_approved_budget_is_enforced_in_its_qualified_environment(
+def test_active_budget_is_enforced(
     stage: int,
     gate: ModuleType,
     size_key: str,
     identity_key: str,
 ) -> None:
-    qualified_platform = _budget_platform(stage)
+    qualified_platform = _baseline_platform(stage)
     if platform.system() != qualified_platform:
         pytest.skip(
             f"stage {stage} latency budget is qualified on {qualified_platform}"
@@ -85,7 +86,6 @@ def test_approved_budget_is_enforced_in_its_qualified_environment(
 
     result = gate.evaluate(
         gate.DEFAULT_BUDGET,
-        gate.DEFAULT_AUTHORIZATION,
         iterations=5,
         warmup=2,
     )
@@ -102,21 +102,22 @@ def test_approved_budget_is_enforced_in_its_qualified_environment(
     [(stage, gate) for stage, gate, *_ in STAGES],
     ids=[f"stage{stage}" for stage, *_ in STAGES],
 )
-def test_budget_gate_rejects_an_unbound_budget(
+def test_budget_gate_rejects_an_inactive_budget(
     stage: int,
     gate: ModuleType,
     tmp_path: Path,
 ) -> None:
     changed_budget = tmp_path / f"stage{stage}-budget.json"
-    changed_budget.write_bytes(gate.DEFAULT_BUDGET.read_bytes() + b"\n")
+    payload = json.loads(gate.DEFAULT_BUDGET.read_text(encoding="utf-8"))
+    payload["status"] = "draft"
+    changed_budget.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(
         ValueError,
-        match=f"Stage {stage} budget does not match its authorization",
+        match=f"Stage {stage} performance budget is not active",
     ):
         gate.evaluate(
             changed_budget,
-            gate.DEFAULT_AUTHORIZATION,
             iterations=5,
             warmup=1,
         )

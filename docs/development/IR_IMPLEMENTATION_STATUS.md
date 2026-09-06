@@ -49,6 +49,18 @@ Primary verification surfaces:
 - `tests/internal_ir/test_phase3_shadow_harness.py`
 - `tests/fixtures/internal_ir/phase3_deployment_compatibility.json`
 
+## Deployment bridge verification surfaces
+
+The private deployment bridge remains implemented and tested as six behavior
+steps: compatibility inspection, offline compile dry-run, canary readiness,
+offline failure rehearsal, sandbox observation, and scripted sandbox connector.
+Its source of truth is the implementation plus the scenario tests in
+`tests/internal_ir/test_deployment_bridge_stage1.py` through
+`test_deployment_bridge_stage6.py`. Performance baselines and active private
+regression budgets live under `tests/fixtures/internal_ir/`. Historical entry,
+review, authorization, and completion packets are not runtime contracts and
+have been retired. A real provider activation step has not been implemented.
+
 ## Next controlled step
 
 Connect the private compiler, executable artifact, runtime adapter, and local CPU

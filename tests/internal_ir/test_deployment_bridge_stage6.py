@@ -33,7 +33,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests/fixtures/internal_ir/deployment_bridge_stage6.json"
-PROPOSAL = ROOT / "contracts/deployment-bridge-stage6-entry-proposal.json"
 
 
 def _identity(label: str) -> str:
@@ -149,26 +148,6 @@ def _run(name: str, **request_changes: object) -> SandboxConnectorReport:
         ScriptedSandboxTransport(responses),
         _policy(),
     )
-
-
-def test_runtime_taxonomies_and_report_match_the_approved_proposal() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-
-    assert {item.value for item in SandboxConnectorOperation} == set(
-        proposal["operation_taxonomy"]
-    )
-    assert {item.value for item in SandboxLifecycleState} == set(
-        proposal["lifecycle_state_taxonomy"]
-    )
-    assert {item.value for item in SandboxTerminalState} == set(
-        proposal["terminal_state_taxonomy"]
-    )
-    assert {item.value for item in SandboxConnectorError} == set(
-        proposal["error_taxonomy"]
-    )
-    assert set(proposal["normalized_report_contract"]["required_facts"]) <= {
-        item.name for item in fields(SandboxConnectorReport)
-    }
 
 
 def test_four_scripted_outcomes_have_deterministic_golden_evidence() -> None:

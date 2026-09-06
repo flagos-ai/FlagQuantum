@@ -47,7 +47,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests/fixtures/internal_ir/deployment_bridge_stage3.json"
-PROPOSAL = ROOT / "contracts/deployment-bridge-stage3-entry-proposal.json"
 
 
 def _dry_run_report():
@@ -124,17 +123,6 @@ def _evaluate(*, activation: bool = True) -> CanaryReadinessReport:
         _controls(separate_activation_approval=activation),
         _budgets(),
         CanaryReadinessPolicy(65536),
-    )
-
-
-def test_runtime_contract_exactly_matches_approved_closed_proposal() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-
-    assert {item.value for item in CanaryReadinessStatus} == set(
-        proposal["readiness_status_taxonomy"]
-    )
-    assert {item.value for item in CanaryReadinessFinding} == set(
-        proposal["finding_taxonomy"]
     )
 
 

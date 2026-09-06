@@ -41,7 +41,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests/fixtures/internal_ir/deployment_bridge_stage2.json"
-PROPOSAL = ROOT / "contracts/deployment-bridge-stage2-entry-proposal.json"
 
 
 def _policy(**changes: int) -> DeploymentDryRunPolicy:
@@ -127,20 +126,6 @@ def _run(record: dict[str, str]) -> DeploymentDryRunReport:
         _target(package, record["format"]),
         _policy(),
     )
-
-
-def test_runtime_contract_exactly_matches_the_approved_closed_proposal() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-
-    assert {item.value for item in DeploymentDryRunStatus} == set(
-        proposal["status_taxonomy"]
-    )
-    assert {item.value for item in DeploymentDryRunFinding} == set(
-        proposal["finding_taxonomy"]
-    )
-    assert [item.name for item in fields(DeploymentDryRunReport)] == proposal[
-        "report_contract"
-    ]["fields"]
 
 
 def test_three_profiles_complete_the_ephemeral_identity_chain() -> None:

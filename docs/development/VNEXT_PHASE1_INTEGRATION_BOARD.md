@@ -29,7 +29,7 @@ Phase 1 完成了三个相互依赖的最小切片：
 | 3 | Compiler 后继授权 | `80d3234c66bbf14f953ffc5ebb87e3807af71740` | `a7a9e8e6` | 通过 |
 | 4 | Compiler 性能实现 | `cba6bad207d49fdc43acc6640e7cd67c0919c314` | `11c473cc` | 通过 |
 
-初始 Compiler 实现因历史 SHA-256 契约约束未直接放行。Integration 先建立非追溯 successor 授权，再由 Compiler 提交精确绑定新 importer、授权、预算和测试证据的 successor candidate。旧 Phase 1 与 Deployment Bridge 记录保持不可变。
+初始 Compiler 实现曾受历史 SHA-256 流程记录约束。当前以实现、场景测试和性能预算作为可执行验证依据，不再把 Deployment Bridge 的阶段审批记录视为代码契约。
 
 ## 3. 关键决策
 

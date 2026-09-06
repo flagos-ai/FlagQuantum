@@ -20,7 +20,6 @@ from flagquantum._compiler.deployment_rehearsal import (
     run_offline_deployment_rehearsal,
 )
 from flagquantum._compiler.provider_sandbox_observation import (
-    SandboxLimit,
     SandboxObservationDecision,
     SandboxObservationPolicy,
     SandboxObservationReport,
@@ -42,7 +41,6 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests/fixtures/internal_ir/deployment_bridge_stage5.json"
-PROPOSAL = ROOT / "contracts/deployment-bridge-stage5-entry-proposal.json"
 
 
 def _identity(label: str) -> str:
@@ -109,22 +107,6 @@ def _run(states: tuple[SandboxObservationState, ...]) -> SandboxObservationRepor
     )
 
 
-def test_runtime_taxonomies_exactly_match_the_approved_proposal() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-
-    assert {item.value for item in SandboxObservationState} == set(
-        proposal["observation_state_taxonomy"]
-    )
-    assert {item.value for item in SandboxObservationDecision} == set(
-        proposal["decision_taxonomy"]
-    )
-    assert {item.value for item in SandboxLimit} == set(
-        proposal["quota_cost_and_retention_contract"][
-            "caller_supplied_nonnegative_observations"
-        ]
-    )
-
-
 def test_four_lifecycle_classes_have_deterministic_golden_evidence() -> None:
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))["lifecycles"]
     cases = {
@@ -150,20 +132,6 @@ def test_four_lifecycle_classes_have_deterministic_golden_evidence() -> None:
         assert report.decision is decision
         assert report.evidence_identity == fixture[name]
         assert report.encoded_size <= 65536
-
-
-def test_lifecycle_helpers_exactly_match_the_approved_orders() -> None:
-    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
-    expected = {
-        tuple(item.value for item in incomplete_observation_states()),
-        tuple(item.value for item in rejected_observation_states()),
-        tuple(item.value for item in accepted_observation_states()),
-        tuple(item.value for item in unknown_observation_states()),
-    }
-
-    assert expected == {
-        tuple(item) for item in proposal["lifecycle_contract"]["normal_orders"]
-    }
 
 
 def test_omitted_reordered_duplicated_and_crossed_states_fail_closed() -> None:
