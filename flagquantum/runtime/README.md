@@ -27,6 +27,11 @@ Start in `planner/` for selection policy, `plan_execution.py` for exact-plan
 validation, and `execution.py` for local dispatch. Backend-specific lifecycle
 code belongs in `backends/`; numerical tensor operations do not.
 
+Executing an existing plan is a strict suffix of this path: `fq.run(plan)`
+starts at `execute_plan()`, does not invoke planning, mode selection, compilation,
+or plan construction again, and launches the selected Simulation entry exactly
+once. The returned `ExecutionResult` retains the supplied plan object.
+
 `records.py` constructs Core-owned execution records from observed facts. It
 must not define a second record schema or make release-eligibility decisions.
 

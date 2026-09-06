@@ -14,6 +14,7 @@ from flagquantum.core.contracts import (
     ProvenanceContract,
     RuntimePlanContract,
 )
+from flagquantum.core.ir import CircuitIR
 from flagquantum.errors import ExecutionError
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
@@ -41,16 +42,33 @@ def test_validated_plan_executes_once_without_replanning_or_recompiling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plan = fq.plan(_bell(), options=fq.ExecutionOptions(mode="statevector"))
+    from flagquantum.compilation.execution_plan_contract import plan_execution_program
+    from flagquantum.simulation import statevector as statevector_simulation
+
+    expected_program = plan_execution_program(plan).to_dict()
+    original_execute = statevector_simulation.run_local_statevector
+    numerical_launches: list[CircuitIR] = []
 
     def forbidden(*args: object, **kwargs: object) -> None:
         raise AssertionError("an execution attempt must consume its supplied plan")
 
+    def execute_once(program: CircuitIR, **kwargs: object) -> torch.Tensor:
+        numerical_launches.append(program)
+        return original_execute(program, **kwargs)
+
     monkeypatch.setattr("flagquantum.runtime.planner.plan", forbidden)
     monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.execution.select_execution_mode", forbidden
+    )
+    monkeypatch.setattr("flagquantum.runtime.execution.build_plan", forbidden)
+    monkeypatch.setattr(statevector_simulation, "run_local_statevector", execute_once)
 
     result = fq.run(plan)
     summary = result.summary()
 
+    assert len(numerical_launches) == 1
+    assert numerical_launches[0].to_dict() == expected_program
     assert result.plan is plan
     assert summary["schema"] == "flagquantum.execution_result.summary"
     assert summary["has_plan"] is True
