@@ -299,3 +299,27 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
     assert routing["inserted_swap_count"] == 2
     assert routing["dynamic_boundary_mapping_policy"] == "identity_restored_per_gate"
     assert "swap q[0], q[1];" in package.qasm
+
+
+def test_dynamic_deployment_reuses_matching_routing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = DynamicCircuit(3)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional("cx", (0, 2), classical_bit=0)
+    coupling = fq.CouplingMap.line(3)
+    routed = route_dynamic_circuit(circuit, coupling)
+    backend = _dynamic_backend(n_wires=3, coupling_map=coupling)
+
+    def reject_rerouting(*args: object, **kwargs: object) -> None:
+        raise AssertionError("matching dynamic routing must be reused")
+
+    monkeypatch.setattr(
+        "flagquantum.runtime.dynamic.deployment.route_dynamic_circuit",
+        reject_rerouting,
+    )
+    package = create_dynamic_deployment_package(routed, backend=backend, shots=32)
+
+    assert package.metadata["routing_reused"] is True
+    assert package.metadata["routing_evidence"]["routing_reused"] is True
+    assert package.ir.instructions == routed.to_ir().instructions

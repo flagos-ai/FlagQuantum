@@ -83,10 +83,19 @@ def create_dynamic_deployment_package(
         raise RuntimeError(
             "dynamic backend is incompatible: " + ", ".join(compatibility.blockers)
         )
+    source_ir = circuit.to_ir()
+    existing_routing = source_ir.metadata.get("routing")
+    routing_reused = bool(
+        isinstance(existing_routing, Mapping)
+        and backend.coupling_map is not None
+        and tuple(existing_routing.get("coupling_edges", ()))
+        == backend.coupling_map.edges
+        and existing_routing.get("mapping_restored") is True
+    )
     deployment_circuit = (
-        route_dynamic_circuit(circuit, backend.coupling_map)
-        if backend.coupling_map is not None
-        else circuit
+        circuit
+        if backend.coupling_map is None or routing_reused
+        else route_dynamic_circuit(circuit, backend.coupling_map)
     )
     routed_report = assess_dynamic_backend(deployment_circuit, backend)
     if not routed_report.compatible:
@@ -98,7 +107,7 @@ def create_dynamic_deployment_package(
     qasm = export_dynamic_qasm3_for_backend(deployment_circuit, backend)
     routing_evidence = build_deployment_routing_evidence(
         dict(deployment_ir.metadata.get("routing", {}) or {}),
-        routing_reused=False,
+        routing_reused=routing_reused,
         n_wires=circuit.n_wires,
         coupling_map=backend.coupling_map,
     )
@@ -119,7 +128,7 @@ def create_dynamic_deployment_package(
         "deployment_program_format": "openqasm-3",
         "routing_evidence": routing_evidence,
         "routing_plan": routing_evidence["routing_plan"],
-        "routing_reused": False,
+        "routing_reused": routing_reused,
         "routing_evidence_sha256": routing_hash,
         "dynamic_backend_compatibility": compatibility.summary(),
     }
