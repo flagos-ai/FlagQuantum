@@ -193,6 +193,13 @@ single-node evidence only. A skipped test produces no accelerator evidence.
 Use this tier only in a scheduled/manual torchrun or cluster environment with
 explicit rank placement.
 
+For a minimal two-node CUDA correctness check, launch one rank per node with
+the same rendezvous address and run `tools/probe_cuda_multinode_statevector.py`.
+The probe retains one statevector shard per rank during execution, materializes
+the tiny five-wire state only for validation, and records the selected NCCL
+route from a rank-zero debug log. Its output is correctness and communication
+evidence only; it is not a scalability or release claim.
+
 ```bash
 python tools/ci_tier.py multinode-scheduled
 # direct:
