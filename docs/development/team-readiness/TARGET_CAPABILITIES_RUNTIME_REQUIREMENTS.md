@@ -114,7 +114,7 @@ Runtime 的权威职责是：基于 requirement、snapshot、资源租约与显�
 2. 校验 snapshot identity、scope、版本和 freshness；过期或对象不匹配等价于不可用于证明。
 3. 对每个 mandatory predicate，要求存在相应 fact，且状态/暴露满足该谓词自己的 evidence threshold；例如不可变规格可接受带权威 provenance 的 `declared`，容量、延迟、route 和“无 fallback”通常要求 `observed`。`verified` 不会把低于门槛的 exposure 自动升级。
 4. 比较值与机制。集合用包含关系，数值容量用带单位的上下界，topology/route 用明确语义谓词，不能只比较字符串。
-5. 区分 native 与 effective：软件扩展可满足 `precision.effective=complex128`，但绝不能满足 `precision.native=complex128`；结果证据必须记录 mechanism、storage/accumulator dtype 和误差界。
+5. 区分 native 与 effective：软件扩展可满足 `precision.effective=complex128`，但绝不能满足 `precision.native=float64`；结果证据必须记录 mechanism、storage/accumulator dtype 和误差界。native/storage/parameter/accumulator 使用标量 dtype，effective 使用逻辑复数量子态 dtype。
 6. `unsupported` 立即淘汰当前候选；`unknown`、`unmeasured`、`not_exposed` 对 mandatory requirement 产生带原因 blocker。
 7. preference 只影响可执行候选排序，不得把不可执行候选变为可执行。
 8. 应用 fallback 前检查对应的独立授权，并使用替代候选自己的 snapshot/lease 对全部仍适用谓词执行完整匹配。不得复用原候选事实，也不得用一个宽泛的 `allow_backend_fallback` 推导 CPU、精度或算法降级授权。
@@ -177,7 +177,7 @@ Platform/Provider CapabilitySnapshot -+--> Runtime match/policy
 - 当前 plan 中的 mode/device/precision/device count/memory/gradient/fallback 仍被解释为 requirements，而不是可用硬件事实；
 - topology fact 为 `unknown` 或 `unmeasured` 时 mandatory requirement 失败关闭；
 - 明确 `unsupported` 的 realtime session 不得被 policy 弱化；
-- 软件扩展可满足 effective complex128，但不能宣称 native complex128；
+- 软件扩展可满足 effective complex128，但不能宣称 native float64；
 - CPU fallback 必须显式授权、使用独立 CPU snapshot 完整重匹配并产生事件；
 - 宽泛的 backend fallback 授权不能推导 CPU fallback 授权；
 - route `not_exposed` 不能证明没有 CPU fallback。

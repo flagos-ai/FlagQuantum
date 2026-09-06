@@ -161,7 +161,7 @@ snapshot、requirement 与 requirement 的偶然比较。
 3. 集合为 required subset；minimum capacity/maximum supported limits 均要求 available 覆盖；
    gate parameter domain、topology edge、control-flow、ancilla 的覆盖规则复用现有 comparator。
 4. 精度同时比较 storage/compute/accumulation、native/software、dtype 与 workload/kernel scope；
-   native FP64/complex128 requirement 不能由 Double-Single 满足。
+   native float64 requirement 不能由 Double-Single 满足。
 5. topology requirement 比较 node/world/local-world、rank placement、物理 links 和 source；仅有
    logical device names 或 inferred topology 不能满足 observed/certification requirement。
 6. communication requirement 比较 outer process-group backend、inner physical route、collective、
@@ -183,7 +183,7 @@ snapshot、requirement 与 requirement 的偶然比较。
   FlagOS-on-CUDA/NVIDIA A800 不能序列化为“国产卡”。
 - precision 记录 `storage_dtype`、`compute_dtype`、`accumulation_dtype`、`mode=native|software`、
   `software_scheme`、`kernel/workload_scope`。Double-Single 是软件模式且保留 FP32 指数范围，
-  不能别名为 native FP64/complex128。
+  可以在认证范围内形成 effective complex128，但不能别名为 native float64。
 - topology 记录 `node_count/world_size/local_world_size`、每 rank 的 node/device ownership、
   links、`source=observed|provider_declared|inferred` 与 fingerprint；未知链路保持 unknown。
 - communication 记录 outer backend、inner route、P2P/collective/dtype matrix、device residency、

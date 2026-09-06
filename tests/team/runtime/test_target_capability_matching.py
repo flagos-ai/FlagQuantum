@@ -51,7 +51,7 @@ _ROUTE_INTENT = RouteIntent(
     backend="test-backend",
     device_kind="cuda",
     cpu=False,
-    effective_precision="float64",
+    effective_precision="complex128",
     algorithm="exact",
     approximation="exact",
 )
@@ -59,7 +59,7 @@ _CPU_ROUTE_INTENT = RouteIntent(
     backend="test-backend",
     device_kind="cpu",
     cpu=True,
-    effective_precision="float64",
+    effective_precision="complex128",
     algorithm="exact",
     approximation="exact",
 )
@@ -118,7 +118,7 @@ def _snapshot(
     captured_at: datetime = _CAPTURED_AT,
     valid_for: timedelta = timedelta(hours=1),
     include_device_kind: bool = True,
-    effective_precision: str | None = "float64",
+    effective_precision: str | None = "complex128",
     native_precision: str | None = None,
     storage_precision: str | None = None,
     software_mechanism: str | None = "none",
@@ -200,8 +200,16 @@ def _snapshot(
             )
         )
         for name, value in (
-            ("precision.native_dtype", native_precision or effective_precision),
-            ("precision.storage_dtype", storage_precision or effective_precision),
+            (
+                "precision.native_dtype",
+                native_precision
+                or ("float64" if effective_precision == "complex128" else "float32"),
+            ),
+            (
+                "precision.storage_dtype",
+                storage_precision
+                or ("float64" if effective_precision == "complex128" else "float32"),
+            ),
             ("precision.software_mechanism", software_mechanism),
         ):
             if value is not None:
@@ -249,7 +257,7 @@ def _candidate(
     snapshot_kwargs.setdefault(
         "effective_precision",
         (
-            ("float32" if FallbackAxis.PRECISION in provenance_axes else "float64")
+            ("complex64" if FallbackAxis.PRECISION in provenance_axes else "complex128")
             if effective_precision is _UNSET
             else effective_precision
         ),
@@ -279,7 +287,7 @@ def _candidate(
             ),
             cpu=(effective_kind == "cpu"),
             effective_precision=(
-                "float32"
+                "complex64"
                 if FallbackAxis.PRECISION in axes
                 else route_intent.effective_precision
             ),
@@ -1121,7 +1129,7 @@ def test_provenance_must_bind_the_exact_snapshot_identity() -> None:
             RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
         ),
         (
-            "float64",
+            "complex128",
             EvidenceLevel.BASIC,
             RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
         ),
@@ -1154,7 +1162,7 @@ def test_effective_precision_provenance_cannot_disagree_with_snapshot() -> None:
         base,
         provenance=replace(
             base.provenance,
-            effective_precision="float32",
+            effective_precision="complex64",
             provenance_id="",
         ),
     )
@@ -1193,7 +1201,7 @@ def test_software_expanded_precision_requires_certified_dtype_scope() -> None:
         native_precision="float32",
         storage_precision="float32",
         software_mechanism="double-single",
-        precision_scope_dtype="float64",
+        precision_scope_dtype="complex128",
         effective_precision_evidence_level=EvidenceLevel.CERTIFICATION,
     )
 
@@ -1250,7 +1258,7 @@ def test_route_values_reject_cpu_device_kind_contradictions() -> None:
             backend="test-backend",
             device_kind="cpu",
             cpu=False,
-            effective_precision="float64",
+            effective_precision="complex128",
             algorithm="exact",
             approximation="exact",
         )
@@ -1262,6 +1270,29 @@ def test_route_values_reject_cpu_device_kind_contradictions() -> None:
             device_kind="cpu",
             cpu=False,
             effective_precision=_ROUTE_INTENT.effective_precision,
+            algorithm=_ROUTE_INTENT.algorithm,
+            approximation=_ROUTE_INTENT.approximation,
+        )
+
+
+def test_route_values_reject_scalar_effective_precision() -> None:
+    with pytest.raises(ValueError, match="complex64 or complex128"):
+        RouteIntent(
+            backend="test-backend",
+            device_kind="cuda",
+            cpu=False,
+            effective_precision="float64",
+            algorithm="exact",
+            approximation="exact",
+        )
+    with pytest.raises(ValueError, match="complex64 or complex128"):
+        CandidateProvenance(
+            intent_id=_ROUTE_INTENT.intent_id,
+            snapshot_id="snapshot",
+            backend=_ROUTE_INTENT.backend,
+            device_kind=_ROUTE_INTENT.device_kind,
+            cpu=False,
+            effective_precision="float64",
             algorithm=_ROUTE_INTENT.algorithm,
             approximation=_ROUTE_INTENT.approximation,
         )

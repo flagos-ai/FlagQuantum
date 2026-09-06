@@ -52,6 +52,10 @@ software-expanded precision, the effective dtype also requires
 certification-level evidence whose snapshot scope names that dtype. This makes
 the mechanism selectable only inside its certified numerical scope; it does
 not promote an experimental implementation to stable `complex128` support.
+`native_dtype` and `storage_dtype` name scalar lanes (`float32` or `float64`),
+while `effective_dtype` names logical complex state precision (`complex64` or
+`complex128`). Runtime rejects mixed vocabulary instead of treating `float64`
+and `complex128` as aliases.
 
 ## Ten-minute change path
 

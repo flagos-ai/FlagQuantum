@@ -37,6 +37,7 @@ DECISION_SCHEMA_VERSION = "flagquantum.runtime.target_capability_decision.v1"
 SORTING_KEY_VERSION = "satisfied_preferences_then_rank_then_identity.v1"
 ROUTE_INTENT_SCHEMA_VERSION = "flagquantum.runtime.route_intent.v1"
 CANDIDATE_PROVENANCE_SCHEMA_VERSION = "flagquantum.runtime.candidate_provenance.v1"
+_SCALAR_TO_COMPLEX_DTYPE = {"float32": "complex64", "float64": "complex128"}
 
 
 class FallbackAxis(str, Enum):
@@ -101,9 +102,10 @@ def _stable_identity(payload: object) -> str:
 class RouteIntent:
     """The original Runtime routing intent with a closed six-axis shape.
 
-    ``effective_precision`` is the execution dtype expected from a candidate.
-    This is an internal policy value.  It contains no provider handles or
-    credentials; its identity is derived only from its normalized values.
+    ``effective_precision`` is the logical complex state dtype expected from a
+    candidate. This is an internal policy value. It contains no provider
+    handles or credentials; its identity is derived only from its normalized
+    values.
     """
 
     backend: str
@@ -125,6 +127,8 @@ class RouteIntent:
             object.__setattr__(
                 self, name, _route_value(getattr(self, name), field_name=name)
             )
+        if self.effective_precision not in _SCALAR_TO_COMPLEX_DTYPE.values():
+            raise ValueError("effective_precision must be complex64 or complex128")
         if type(self.cpu) is not bool:
             raise TypeError("cpu must be a boolean")
         if self.cpu is not (self.device_kind == "cpu"):
@@ -195,6 +199,8 @@ class CandidateProvenance:
             object.__setattr__(
                 self, name, _route_value(getattr(self, name), field_name=name)
             )
+        if self.effective_precision not in _SCALAR_TO_COMPLEX_DTYPE.values():
+            raise ValueError("effective_precision must be complex64 or complex128")
         if type(self.cpu) is not bool:
             raise TypeError("cpu must be a boolean")
         if self.cpu is not (self.device_kind == "cpu"):
@@ -513,21 +519,30 @@ def _precision_path_blockers(
     native = facts["precision.native_dtype"].value
     storage = facts["precision.storage_dtype"].value
     mechanism = facts["precision.software_mechanism"].value
-    software_expanded = (
-        mechanism != "none"
-        or native != effective_precision
-        or storage != effective_precision
-    )
-    if not software_expanded:
-        return ()
-    if mechanism == "none":
+    expected_effective = _SCALAR_TO_COMPLEX_DTYPE.get(native)
+    if (
+        expected_effective is None
+        or storage not in _SCALAR_TO_COMPLEX_DTYPE
+        or effective_precision not in _SCALAR_TO_COMPLEX_DTYPE.values()
+    ):
         return (
             RuntimeDecisionBlocker(
                 code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
                 message=(
-                    "candidate precision dtypes imply software expansion but "
-                    "precision.software_mechanism is none"
+                    "candidate precision path must use scalar native/storage "
+                    "dtypes and a logical complex effective dtype"
                 ),
+                candidate_id=candidate.candidate_id,
+                fallback_axes=(FallbackAxis.PRECISION,),
+            ),
+        )
+    if mechanism == "none":
+        if storage == native and effective_precision == expected_effective:
+            return ()
+        return (
+            RuntimeDecisionBlocker(
+                code=RuntimeDecisionBlockerCode.PRECISION_IDENTITY_UNVERIFIED,
+                message="native precision path has inconsistent dtype semantics",
                 candidate_id=candidate.candidate_id,
                 fallback_axes=(FallbackAxis.PRECISION,),
             ),

@@ -35,7 +35,7 @@ pytestmark = pytest.mark.unit
 _CAPTURED_AT = datetime(2026, 9, 4, 8, 0, tzinfo=timezone.utc)
 _ALL_PRECISION = (
     CPUPrecisionObservation("precision.native_dtype", "float64"),
-    CPUPrecisionObservation("precision.effective_dtype", "float64"),
+    CPUPrecisionObservation("precision.effective_dtype", "complex128"),
     CPUPrecisionObservation("precision.storage_dtype", "float64"),
     CPUPrecisionObservation("precision.parameter_dtype", "float32"),
     CPUPrecisionObservation("precision.accumulator_dtype", "float64"),

@@ -138,10 +138,23 @@ accepted exposure、scope、freshness 与值比较都通过时才满足。`verif
 - `precision.software_mechanism`。
 
 software extension 是 mechanism 轴，不是 dtype 别名。Double-Single 可以在匹配 scope 的材料
-下满足 effective precision，但不能满足 native FP64/complex128；必须保留实际 storage、
+下满足 effective complex128，但不能满足 native float64；必须保留实际 storage、
 parameter、accumulator dtype、mechanism 和误差/范围限制。`gates.native`、参数域、artifact、
 measurement、qubit、limit 和 ancilla 的 `covers`/集合/上下界语义复用当前
 `_compiler.TargetCapabilities` comparator，迁移时不得改变其 fingerprint 或旧 schema。
+
+精度字段采用以下唯一口径，不允许把 `float64` 与 `complex128` 当作同义词：
+
+- `native_dtype`：数值内核原生执行的标量类型，如 `float32`、`float64`；
+- `effective_dtype`：对用户和算法成立的逻辑复数量子态精度，如 `complex64`、`complex128`；
+- `storage_dtype`：状态表示中每个实际存储分量的标量类型；
+- `parameter_dtype`：可训练参数的标量类型；
+- `accumulator_dtype`：归约和累加的标量类型；
+- `software_mechanism`：把原生、存储精度提升为有效精度的软件机制，未使用时为 `none`。
+
+因此，普通双精度状态向量路径表示为 `native=float64`、`storage=float64`、
+`effective=complex128`、`mechanism=none`；Double-Single 路径表示为
+`native=float32`、`storage=float32`、`effective=complex128`，并明确记录机制名称。
 
 ## 匹配与 fallback
 

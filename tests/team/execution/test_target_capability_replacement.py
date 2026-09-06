@@ -52,7 +52,7 @@ _ROUTE_INTENT = RouteIntent(
     backend="runtime-test",
     device_kind="synthetic_qpu",
     cpu=False,
-    effective_precision="float64",
+    effective_precision="complex128",
     algorithm="exact",
     approximation="exact",
 )
@@ -106,7 +106,7 @@ def _cpu_snapshot(*, memory: int = 8 * 1024**3):
                 ),
                 CPUPrecisionObservation(
                     "precision.effective_dtype",
-                    "float64",
+                    "complex128",
                 ),
                 CPUPrecisionObservation(
                     "precision.storage_dtype",
@@ -154,7 +154,7 @@ def _remote_fixture(
     )
     observed_facts = {
         "device.count": 1,
-        "precision.effective_dtype": "float64",
+        "precision.effective_dtype": "complex128",
     }
     if complete_precision_path:
         observed_facts.update(
@@ -256,7 +256,7 @@ def _candidate(
         ),
         cpu=(kind == "cpu"),
         effective_precision=(
-            "float32"
+            "complex64"
             if FallbackAxis.PRECISION in declared_axes
             else _ROUTE_INTENT.effective_precision
         ),

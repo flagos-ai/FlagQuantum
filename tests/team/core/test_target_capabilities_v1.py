@@ -484,12 +484,13 @@ def test_preference_does_not_reject_candidate_or_authorize_fallback() -> None:
 def test_double_single_can_satisfy_effective_but_never_native_precision() -> None:
     facts = (
         _fact("precision.effective_dtype", "complex128", evidence_id="effective"),
-        _fact("precision.native_dtype", "complex64", evidence_id="native"),
+        _fact("precision.native_dtype", "float32", evidence_id="native"),
+        _fact("precision.storage_dtype", "float32", evidence_id="storage"),
         _fact("precision.software_mechanism", "double-single", evidence_id="mechanism"),
     )
     evidences = tuple(
         _evidence(item, level=EvidenceLevel.OBSERVABLE)
-        for item in ("effective", "native", "mechanism")
+        for item in ("effective", "native", "storage", "mechanism")
     )
     effective = RequirementSet(
         requirements=(
@@ -504,7 +505,7 @@ def test_double_single_can_satisfy_effective_but_never_native_precision() -> Non
         requirements=(
             _requirement(
                 "precision.native_dtype",
-                "complex128",
+                "float64",
                 operator=ComparisonOperator.EQUALS,
             ),
         )

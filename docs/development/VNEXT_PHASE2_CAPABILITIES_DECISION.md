@@ -53,7 +53,8 @@ not_applicable、未知 extension handler 都 fail closed。
 
 Precision 不是一个字符串。v1 分为 native、effective、storage、parameter、accumulator dtype 与
 software mechanism 六个谓词。Double-Single 是 software mechanism；它可在窄 scope 证据下支持
-effective precision，但永远不能冒充 native FP64/complex128。
+effective complex128，但永远不能冒充 native float64。native、storage、parameter 和
+accumulator 使用标量 dtype；effective 使用逻辑复数量子态 dtype。
 
 Fallback 授权固定为 backend、device、CPU、precision、algorithm、approximation 六轴，缺省
 全部禁止。每次 fallback 创建新候选并用其自身 snapshot 全量重匹配。CPU 是正常的独立候选，
