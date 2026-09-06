@@ -26,6 +26,4 @@ expert-facing entry points. Change or compose them through `optimize`.
 
 Runtime planning, backend selection, resource estimation, execution-plan
 assembly, noise execution policy, provider lifecycle, and simulation numerics
-do not belong here. The private `_compiler` research tree remains frozen until
-one of its implementations replaces a stable compiler concern under the same
-consumer-facing tests.
+do not belong here.

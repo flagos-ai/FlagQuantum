@@ -1,9 +1,0 @@
-{
-  "schema_version": "1.0",
-  "contains_real_provider_backend_job_or_credentials": false,
-  "positive_cases": [
-    {"name": "anonymous_openqasm2", "format": "openqasm_2", "expected_report_identity": "4d327e6f15eb85b2f7802921ec10c68c825636a7b88708ef570062c81b20fb06"},
-    {"name": "anonymous_openqasm3", "format": "openqasm_3_static", "expected_report_identity": "799cbccbd7407142efff8d0aea673949739c8cd058e12f46a8d188fc130778aa"},
-    {"name": "anonymous_qcis", "format": "qcis_1", "expected_report_identity": "c03b42297cf9993e05ca11d0c319350c9ab287ae34d504d08e343c4a48686387"}
-  ]
-}

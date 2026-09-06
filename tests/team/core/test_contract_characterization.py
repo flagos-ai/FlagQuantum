@@ -4,16 +4,6 @@ import json
 
 import pytest
 
-from flagquantum._compiler.target_capabilities import (
-    ArtifactFormat,
-    ArtifactProfile,
-    GateCapability,
-    TargetCapabilities,
-    TargetClass,
-)
-from flagquantum._compiler.target_capabilities import (
-    MeasurementResult as TargetMeasurementResult,
-)
 from flagquantum.core._artifacts import ArtifactKind, ProgramArtifact
 from flagquantum.core.contracts import (
     CapabilityContract,
@@ -34,17 +24,6 @@ from flagquantum.runtime.options import ExecutionOptions
 from flagquantum.runtime.result import ExecutionResult
 
 pytestmark = pytest.mark.unit
-
-
-def _target_capabilities() -> TargetCapabilities:
-    return TargetCapabilities(
-        target_class=TargetClass.LOCAL_RUNTIME,
-        logical_qubit_capacity=2,
-        physical_qubit_capacity=2,
-        native_gates=(GateCapability("h"), GateCapability("cx")),
-        measurement_results=(TargetMeasurementResult.STATE,),
-        artifact_profiles=(ArtifactProfile(ArtifactFormat.RUNTIME_PLAN, "1.0"),),
-    )
 
 
 def test_circuit_ir_characterizes_canonical_round_trip_and_strict_reads() -> None:
@@ -113,28 +92,6 @@ def test_core_runtime_plan_characterizes_nested_strictness_and_hashing() -> None
     nested["version"] = "2.0"
     with pytest.raises(ContractVersionError, match="unsupported requested_execution"):
         RuntimePlanContract.from_dict({**payload, "requested": nested})
-
-
-def test_target_capabilities_characterizes_semantic_hash_and_strict_reads() -> None:
-    target = _target_capabilities()
-    payload = target.to_dict()
-
-    restored = TargetCapabilities.from_dict(payload)
-    relabeled = TargetCapabilities.from_dict(
-        {**payload, "display_label": "non-semantic label"}
-    )
-
-    assert restored == target
-    assert restored.semantic_fingerprint == target.semantic_fingerprint
-    assert relabeled.semantic_fingerprint == target.semantic_fingerprint
-    with pytest.raises(ValueError, match="unknown target capability fields"):
-        TargetCapabilities.from_dict({**payload, "future": True})
-    with pytest.raises(
-        ValueError, match="unsupported target capability schema version"
-    ):
-        TargetCapabilities.from_dict(
-            {**payload, "schema_version": "target_capabilities_v2"}
-        )
 
 
 def test_execution_options_characterizes_versioned_strict_round_trip() -> None:

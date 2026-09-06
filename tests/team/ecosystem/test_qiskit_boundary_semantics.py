@@ -6,26 +6,15 @@ from typing import Any, Mapping
 import pytest
 
 qiskit = pytest.importorskip("qiskit")
-torch = pytest.importorskip("torch")
 
-from qiskit import QuantumCircuit, qasm3  # noqa: E402
+from qiskit import QuantumCircuit  # noqa: E402
 from qiskit.circuit import Parameter as QiskitParameter  # noqa: E402
-from qiskit.quantum_info import Statevector  # noqa: E402
 
 import flagquantum as fq  # noqa: E402
-from flagquantum._compiler.offline_deployment import (  # noqa: E402
-    OfflineStaticTarget,
-    OfflineTextFormat,
-    compile_offline_static,
-)
-from flagquantum._compiler.passes.placement_routing import (  # noqa: E402
-    DirectedCouplingGraph,
-)
 from flagquantum.interop.qiskit import (  # noqa: E402
     QiskitConversionError,
     export_qiskit,
     import_qiskit,
-    qiskit_statevector_to_flagquantum,
     semantic_fingerprint,
 )
 
@@ -92,51 +81,3 @@ def test_qiskit_loss_is_machine_readable_and_requires_explicit_opt_in() -> None:
     assert not lossy.report.lossless
     assert [instruction.name for instruction in lossy.ir.instructions] == ["h"]
     assert _external_types(lossy) == set()
-
-
-@pytest.mark.parametrize(
-    ("output_format", "loader"),
-    (
-        (OfflineTextFormat.OPENQASM2, QuantumCircuit.from_qasm_str),
-        (OfflineTextFormat.OPENQASM3, qasm3.loads),
-    ),
-)
-def test_compiler_openqasm_artifacts_round_trip_through_qiskit(
-    output_format: OfflineTextFormat,
-    loader: Any,
-) -> None:
-    source = fq.CircuitIR(
-        2,
-        (
-            fq.Instruction("ry", (0,), {"theta": 0.231}),
-            fq.Instruction("rz", (1,), {"theta": -0.417}),
-            fq.Instruction("cx", (0, 1)),
-        ),
-        dtype="complex128",
-    )
-    target = OfflineStaticTarget(
-        DirectedCouplingGraph(2, ((0, 1),)),
-        "e" * 64,
-    )
-    compiled = compile_offline_static(
-        source,
-        target,
-        output_formats=(output_format,),
-    )
-
-    assert compiled.ok, compiled.diagnostics
-    external = loader(compiled.emission(output_format).text)
-    imported = import_qiskit(external)
-    external_state = qiskit_statevector_to_flagquantum(
-        Statevector.from_instruction(external).data,
-        source.n_wires,
-    ).to(dtype=fq.run(source).state.dtype)
-    flagquantum_state = fq.run(source).state.reshape(-1)
-
-    assert _external_types(imported) == set()
-    torch.testing.assert_close(
-        external_state,
-        flagquantum_state,
-        atol=1e-10,
-        rtol=0,
-    )
