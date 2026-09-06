@@ -5,7 +5,9 @@ from pathlib import Path
 
 def test_feature_parity_matrix_indexes_authoritative_capability_sources():
     root = Path(__file__).resolve().parents[1]
-    matrix = (root / "docs" / "FEATURE_PARITY_MATRIX.md").read_text(encoding="utf-8")
+    matrix = (root / "docs/reference/FEATURE_PARITY_MATRIX.md").read_text(
+        encoding="utf-8"
+    )
 
     for source in (
         "capability-maturity.toml",
