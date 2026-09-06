@@ -185,6 +185,37 @@ def test_machine_authorized_shapes_are_exact_and_internal() -> None:
     assert not hasattr(core, "CapabilityRequirement")
 
 
+@pytest.mark.parametrize(
+    ("name", "value"),
+    (
+        ("precision.native_dtype", "complex128"),
+        ("precision.storage_dtype", "complex64"),
+        ("precision.parameter_dtype", "complex64"),
+        ("precision.accumulator_dtype", "complex128"),
+        ("precision.effective_dtype", "float64"),
+    ),
+)
+def test_precision_fields_reject_the_wrong_dtype_category(
+    name: str, value: str
+) -> None:
+    with pytest.raises(CapabilityContractError):
+        _fact(name, value)
+    with pytest.raises(CapabilityContractError):
+        _requirement(name, value, operator=ComparisonOperator.EQUALS)
+
+
+def test_native_precision_path_must_have_consistent_dtypes() -> None:
+    facts = (
+        _fact("precision.native_dtype", "float64"),
+        _fact("precision.effective_dtype", "complex128"),
+        _fact("precision.storage_dtype", "float32"),
+        _fact("precision.software_mechanism", "none"),
+    )
+
+    with pytest.raises(CapabilityContractError, match="inconsistent"):
+        _snapshot(*facts)
+
+
 def test_strict_round_trip_and_canonical_identity_are_order_independent() -> None:
     first = _requirement()
     second = _requirement(
@@ -468,7 +499,7 @@ def test_preference_does_not_reject_candidate_or_authorize_fallback() -> None:
             _requirement(),
             _requirement(
                 "precision.native_dtype",
-                "complex128",
+                "float64",
                 operator=ComparisonOperator.EQUALS,
                 strength=RequirementStrength.PREFERENCE,
             ),

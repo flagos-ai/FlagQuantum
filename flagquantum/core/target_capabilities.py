@@ -72,6 +72,18 @@ OBSERVED_REQUIRED = frozenset(
     }
 )
 
+_SCALAR_PRECISION_DTYPES = frozenset({"float32", "float64"})
+_EFFECTIVE_PRECISION_DTYPES = frozenset({"complex64", "complex128"})
+_SCALAR_TO_COMPLEX_DTYPE = {"float32": "complex64", "float64": "complex128"}
+_SCALAR_PRECISION_NAMES = frozenset(
+    {
+        "precision.native_dtype",
+        "precision.storage_dtype",
+        "precision.parameter_dtype",
+        "precision.accumulator_dtype",
+    }
+)
+
 
 class CapabilityContractError(ValueError):
     """Base error for an invalid Target Capabilities v1 value object."""
@@ -313,6 +325,14 @@ def _validate_capability_value(
         raise CapabilityContractError(f"{name} must be a JSON array")
     if name not in numeric_names | collection_names and not isinstance(value, str):
         raise CapabilityContractError(f"{name} must be a string")
+    if name in _SCALAR_PRECISION_NAMES and value not in _SCALAR_PRECISION_DTYPES:
+        raise CapabilityContractError(
+            f"{name} must be a scalar dtype: float32 or float64"
+        )
+    if name == "precision.effective_dtype" and value not in _EFFECTIVE_PRECISION_DTYPES:
+        raise CapabilityContractError(
+            "precision.effective_dtype must be complex64 or complex128"
+        )
     if (
         operator in {ComparisonOperator.AT_LEAST, ComparisonOperator.AT_MOST}
         and name not in numeric_names
@@ -888,6 +908,31 @@ class RequirementSet:
         return cls.from_dict(decoded)
 
 
+def _validate_precision_path(facts: tuple[CapabilityFact, ...]) -> None:
+    precision = {
+        fact.name: fact.value
+        for fact in facts
+        if fact.support_status is SupportStatus.VERIFIED
+        and fact.name
+        in {
+            "precision.native_dtype",
+            "precision.effective_dtype",
+            "precision.storage_dtype",
+            "precision.software_mechanism",
+        }
+    }
+    if len(precision) != 4 or precision["precision.software_mechanism"] != "none":
+        return
+    native = precision["precision.native_dtype"]
+    if (
+        precision["precision.storage_dtype"] != native
+        or precision["precision.effective_dtype"] != _SCALAR_TO_COMPLEX_DTYPE[native]
+    ):
+        raise CapabilityContractError(
+            "native precision path has inconsistent native, storage, or effective dtype"
+        )
+
+
 @dataclass(frozen=True, kw_only=True)
 class TargetCapabilitySnapshot:
     schema_version: str = TARGET_CAPABILITIES_SCHEMA_VERSION
@@ -927,6 +972,7 @@ class TargetCapabilitySnapshot:
             raise CapabilityContractError(
                 "facts must contain at most one fact per capability name"
             )
+        _validate_precision_path(facts)
         object.__setattr__(
             self, "facts", tuple(sorted(facts, key=lambda item: item.name))
         )
