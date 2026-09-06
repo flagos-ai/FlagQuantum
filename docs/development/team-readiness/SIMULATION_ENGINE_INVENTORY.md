@@ -366,6 +366,12 @@ P0–P4 的平台身份读取、operator profile 加载、预检执行和 eviden
 Runtime 私有入口。各 profile 仍使用既有独立探针和已登记 profile 名称；本次只删除 P3/P4 的
 重复编排，不合并能力声明，也不把 Provider 身份或预检策略放入 Simulation 数值模块。
 
+P5 Double-Single SGD 的参数更新直接依赖 P5 状态、规范参数顺序、设备一致性和结果证据，目前
+没有第二个脱离该执行路径的消费者，因此不为目录归位新增 Numerics 优化器原语或 Algorithms
+兼容门面。P5 参数键规范化已复用 P1–P4 的 Runtime 私有实现；标量 pair 构造、学习率验证、
+更新和有限性检查继续留在当前执行切片。只有出现第二个真实 Double-Single 优化消费者，或批准
+独立优化器契约后，才重新评估下沉。
+
 `runtime/operator_probes.py` 中五个受现有调用方依赖的 P0–P4 命名入口继续保留，但共同的
 FP32 profile 加载、可执行探测和 capability 判定已收口为一个私有实现。这样既维持入口稳定，
 也避免五份预检流程随时间产生不同的 dtype、设备或 evidence 语义。

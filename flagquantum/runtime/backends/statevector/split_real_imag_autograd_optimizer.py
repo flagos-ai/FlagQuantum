@@ -10,16 +10,13 @@ import torch
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import Parameter
 from ....numerics.double_single import DoubleSingleTensor
+from .split_real_imag import _canonical_parameter_bindings
 from .split_real_imag_device_double_single import (
     SplitRealImagDeviceDoubleSingleGradientResult,
     parameter_shift_split_real_imag_device_double_single_gradient,
 )
 
 P5_OPTIMIZER = "split_real_imag_statevector_p5_double_single_sgd"
-
-
-def _name(value: str | Parameter) -> str:
-    return value.name if isinstance(value, Parameter) else str(value)
 
 
 def _scalar_pair(value: Any, *, name: str) -> DoubleSingleTensor:
@@ -129,10 +126,7 @@ def initialize_split_real_imag_double_single_sgd(
     """Create owned co-resident high/low masters from direct named bindings."""
 
     normalized: dict[str, DoubleSingleTensor] = {}
-    for raw_name, value in parameter_bindings.items():
-        name = _name(raw_name)
-        if not name or name in normalized:
-            raise ValueError(f"duplicate or empty P5 optimizer parameter {name!r}")
+    for name, value in _canonical_parameter_bindings(parameter_bindings).items():
         normalized[name] = _scalar_pair(value, name=name)
     order = tuple(sorted(normalized))
     if not order:
