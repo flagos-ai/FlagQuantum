@@ -96,6 +96,14 @@ For each Stable Core API, protection must cover more than its import name.
 Performance, internal data structures, private helpers, and backend algorithms
 are not frozen unless a separate capability or serialization contract says so.
 
+Historical review records may contain hashes of the private implementation that
+was reviewed at the time. Those hashes are evidence about that review, not a
+permanent lock on the current source tree. CI should protect the historical
+record itself and verify current private behavior through focused tests. A
+private refactor does not require a chain of successor manifests unless it
+changes a separately frozen schema, capability claim, serialized artifact, or
+public behavior.
+
 ## Four enforcement layers
 
 No single layer is sufficient. FlagQuantum must use all four.

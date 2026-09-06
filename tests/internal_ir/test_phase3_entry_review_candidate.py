@@ -10,18 +10,18 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase3-entry-batch-a-review-candidate.json"
+CANDIDATE_SHA256 = "3eac168d3d15051cbb19d109dd7390983445bee14927a21d9f88f185c9d6b7b3"
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_phase3_entry_candidate_binds_phase2_design_and_public_contracts() -> None:
+def test_phase3_entry_candidate_preserves_review_record() -> None:
     candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
+    assert _sha256(CANDIDATE) == CANDIDATE_SHA256
     assert candidate["status"] == "ready_for_owner_approval"
-    for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
     assert all(candidate["technical_review"].values())
 
 

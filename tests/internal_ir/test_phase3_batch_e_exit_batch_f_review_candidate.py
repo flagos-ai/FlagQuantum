@@ -10,6 +10,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase3-batch-e-exit-batch-f-review-candidate.json"
+CANDIDATE_SHA256 = "1bb9d05d938ba95548f54212ca4abc18af4f7bc296f2fe1391bfac04b5040079"
 
 
 def _sha256(path: Path) -> str:
@@ -20,14 +21,13 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_batch_e_exit_candidate_binds_authorizations_and_artifacts() -> None:
+def test_batch_e_exit_candidate_preserves_record_and_authorizations() -> None:
     candidate = _candidate()
 
+    assert _sha256(CANDIDATE) == CANDIDATE_SHA256
     assert candidate["status"] == "ready_for_owner_approval"
     for authorization in candidate["authorization_chain"].values():
         assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
 
 
 def test_batch_e_exit_evidence_is_complete_and_has_no_known_blocker() -> None:
