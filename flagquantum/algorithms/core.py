@@ -15,9 +15,14 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 import torch
 
 from ..circuit import Circuit
-from ..ops.matrices import GATE_MAT_DICT, get_global_precision
+from ..ops.matrices import get_global_precision
 from ..simulation.mps import MPSState
-from ..simulation.statevector_ops import _apply_matrix
+from ..simulation.pauli import (
+    infer_n_wires_from_dense_state,
+    pauli_product_density_expectation,
+    pauli_product_operator,
+    pauli_product_statevector_expectation,
+)
 from .optimization import (
     HybridOptimizationResult,
     OptimizationStage,
@@ -67,54 +72,6 @@ def _coefficient_tensor(
     device: torch.device | str,
 ) -> torch.Tensor:
     return torch.as_tensor(coefficient, dtype=dtype, device=device)
-
-
-def _infer_n_wires_from_state(state: torch.Tensor) -> int:
-    dim = state.shape[-1]
-    n_wires = int(torch.log2(torch.tensor(dim, dtype=torch.float64)).item())
-    if 2**n_wires != dim:
-        raise ValueError("State dimension must be a power of two.")
-    return n_wires
-
-
-def _expectation_from_statevector(
-    state: torch.Tensor,
-    term: "HamiltonianTerm",
-    n_wires: int,
-) -> torch.Tensor:
-    batched = state.reshape(1, -1) if state.ndim == 1 else state
-    transformed = batched
-    for wire, name in term.ops:
-        matrix = GATE_MAT_DICT[name].to(device=batched.device, dtype=batched.dtype)
-        transformed = _apply_matrix(transformed, matrix, (wire,), n_wires)
-    value = (torch.conj(batched) * transformed).sum(dim=-1)
-    return torch.real(value)
-
-
-def _pauli_operator(
-    term: "HamiltonianTerm",
-    n_wires: int,
-    *,
-    dtype: torch.dtype,
-    device: torch.device | str,
-) -> torch.Tensor:
-    op = torch.ones(1, 1, dtype=dtype, device=device)
-    ops = {wire: name for wire, name in term.ops}
-    for wire in range(n_wires):
-        matrix = GATE_MAT_DICT[ops.get(wire, "i")].to(device=device, dtype=dtype)
-        op = torch.kron(op, matrix)
-    return op
-
-
-def _expectation_from_density(
-    rho: torch.Tensor,
-    term: "HamiltonianTerm",
-    n_wires: int,
-) -> torch.Tensor:
-    batch = rho.reshape(1, *rho.shape) if rho.ndim == 2 else rho
-    op = _pauli_operator(term, n_wires, dtype=batch.dtype, device=batch.device)
-    values = torch.diagonal(torch.matmul(batch, op), dim1=-2, dim2=-1).sum(dim=-1)
-    return torch.real(values)
 
 
 @dataclass(frozen=True)
@@ -183,7 +140,7 @@ class HamiltonianTerm:
 
         tensor = target
         if tensor.ndim >= 2 and tensor.shape[-1] == tensor.shape[-2]:
-            n_wires = _infer_n_wires_from_state(tensor)
+            n_wires = infer_n_wires_from_dense_state(tensor)
             base = (
                 torch.ones(
                     tensor.shape[0] if tensor.ndim == 3 else 1,
@@ -191,10 +148,10 @@ class HamiltonianTerm:
                     device=tensor.device,
                 )
                 if not self.ops
-                else _expectation_from_density(tensor, self, n_wires)
+                else pauli_product_density_expectation(tensor, self.ops, n_wires)
             )
         else:
-            n_wires = _infer_n_wires_from_state(tensor)
+            n_wires = infer_n_wires_from_dense_state(tensor)
             base = (
                 torch.ones(
                     tensor.shape[0] if tensor.ndim == 2 else 1,
@@ -202,7 +159,7 @@ class HamiltonianTerm:
                     device=tensor.device,
                 )
                 if not self.ops
-                else _expectation_from_statevector(tensor, self, n_wires)
+                else pauli_product_statevector_expectation(tensor, self.ops, n_wires)
             )
         coeff = _coefficient_tensor(
             self.coefficient, dtype=base.dtype, device=base.device
@@ -276,8 +233,8 @@ class Hamiltonian:
         result = torch.zeros(dimension, dimension, dtype=dtype, device=device)
         for term in self.terms:
             coefficient = torch.as_tensor(term.coefficient, dtype=dtype, device=device)
-            result = result + coefficient * _pauli_operator(
-                term, self.n_wires, dtype=dtype, device=device
+            result = result + coefficient * pauli_product_operator(
+                term.ops, self.n_wires, dtype=dtype, device=device
             )
         return result
 

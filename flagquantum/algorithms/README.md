@@ -18,10 +18,10 @@ external-framework objects or a second execution path.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
 - `__init__.py`: the intentionally small public algorithms surface.
 
-`core.py` still contains established direct Simulation helpers used by existing
-Hamiltonian evaluation. Treat them as contained implementation debt, not a
-pattern for new workflows; move them only with an equivalent public execution
-path and scientific replacement tests.
+`core.py` accepts existing Circuit, MPS, statevector, and density-matrix inputs,
+but dense Pauli-product mathematics lives in `simulation/pauli.py`. Keep new
+numerical kernels in Simulation and preserve Algorithms as their workflow
+composition layer.
 
 ## Ten-minute change path
 
