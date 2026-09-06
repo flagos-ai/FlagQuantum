@@ -404,6 +404,39 @@ def test_native_distributed_bridge_uses_compiled_plan():
     assert torch.allclose(fq.measure_allZ(qdev), circuit.expectation_z(), atol=1e-5)
 
 
+def test_native_distributed_bridge_preserves_complex128_end_to_end():
+    theta = torch.tensor(0.371 + 2**-30, dtype=torch.float64)
+    custom = torch.tensor([[1.0, 2**-30j], [2**-30j, 1.0]], dtype=torch.complex128)
+    circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta=theta)
+    circuit.any(0, unitary=custom)
+
+    qdev, plan = circuit.run_distributed(
+        device="cpu",
+        world_size=1,
+        return_plan=True,
+    )
+
+    assert qdev.real_dtype == torch.float64
+    assert qdev.complex_dtype == torch.complex128
+    assert qdev.states.dtype == torch.float64
+    assert plan.state_bytes == 2 * torch.complex128.itemsize
+    actual = torch.view_as_complex(qdev.states).reshape(1, -1)
+    torch.testing.assert_close(actual, circuit.state(), atol=1e-15, rtol=1e-15)
+
+
+def test_native_distributed_bridge_rejects_device_precision_conflict():
+    circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
+    qdev = fq.DistributedQuantumDevice(
+        n_wires=1,
+        device="cpu",
+        world_sz=1,
+        precision=torch.complex64,
+    )
+
+    with pytest.raises(ValueError, match="device precision conflicts"):
+        circuit.run_distributed(device=qdev)
+
+
 def test_native_pauli_string_entangled_correlation():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)

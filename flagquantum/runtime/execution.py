@@ -75,7 +75,12 @@ _PARAM_ALIASES = {
 }
 
 
-def _as_parameter_tensor(instruction: Instruction) -> torch.Tensor | None:
+def _as_parameter_tensor(
+    instruction: Instruction,
+    *,
+    device: torch.device | str,
+    dtype: torch.dtype,
+) -> torch.Tensor | None:
     """Adapt IR parameters to the legacy distributed-device gate signature."""
 
     names = _PARAM_ALIASES.get(instruction.name)
@@ -89,18 +94,18 @@ def _as_parameter_tensor(instruction: Instruction) -> torch.Tensor | None:
         [tensor.reshape(()) if tensor.ndim == 0 else tensor for tensor in tensors],
         dim=-1,
     )
-    return params.to(dtype=torch.float32)
+    return params.to(device=device, dtype=dtype)
 
 
-def _matrix_to_torch(matrix: Any, device: torch.device | str) -> torch.Tensor:
-    """Adapt a custom matrix to the legacy complex64 distributed-device path."""
+def _matrix_to_torch(
+    matrix: Any, device: torch.device | str, *, dtype: torch.dtype
+) -> torch.Tensor:
+    """Adapt a custom matrix without changing the selected execution precision."""
 
     tensor = getattr(matrix, "tensor", matrix)
     if hasattr(tensor, "detach"):
         tensor = tensor.detach()
-    if hasattr(tensor, "cpu"):
-        tensor = tensor.cpu()
-    tensor = torch.as_tensor(tensor, dtype=torch.complex64, device=device).reshape(-1)
+    tensor = torch.as_tensor(tensor, dtype=dtype, device=device).reshape(-1)
     width = int(tensor.numel() ** 0.5)
     return tensor.reshape(width, width)
 
@@ -257,14 +262,22 @@ class DistributedExecutor:
             )
 
         name = _GATE_ALIASES.get(instruction.name, instruction.name)
-        params = _as_parameter_tensor(instruction)
+        params = _as_parameter_tensor(
+            instruction,
+            device=self.device.device,
+            dtype=self.device.real_dtype,
+        )
         if hasattr(self.device, name):
             getattr(self.device, name)(wires=list(instruction.wires), params=params)
             return
 
         if instruction.matrix is None:
             raise KeyError(f"No native distributed implementation for gate {name!r}.")
-        matrix = _matrix_to_torch(instruction.matrix, self.device.device)
+        matrix = _matrix_to_torch(
+            instruction.matrix,
+            self.device.device,
+            dtype=self.device.complex_dtype,
+        )
         functional.gate(
             matrix, self.device, wires=list(instruction.wires), params=params
         )
@@ -297,6 +310,18 @@ def run_distributed(
             optimize=optimize,
         )
     )
+    requested_dtype = device_options.pop("dtype", None)
+    requested_precision = device_options.pop("precision", None)
+    if requested_dtype is not None and requested_precision is not None:
+        _, dtype_precision = resolve_dtype(requested_dtype)
+        _, named_precision = resolve_dtype(requested_precision)
+        if dtype_precision != named_precision:
+            raise ValueError(
+                "dtype and precision request different execution precisions"
+            )
+    _, execution_precision = resolve_dtype(
+        requested_dtype or requested_precision or execution_ir.dtype
+    )
     if "world_size" in device_options and "world_sz" not in device_options:
         device_options["world_sz"] = device_options.pop("world_size")
     backend_policy = _resolve_policy_from_options(device_options)
@@ -315,7 +340,11 @@ def run_distributed(
         backend_policy=backend_policy,
     )
     execution_plan = provided_execution_plan or build_plan(
-        execution_ir, bsz=batch_size, world_size=world_size, optimize=False
+        execution_ir,
+        bsz=batch_size,
+        world_size=world_size,
+        complex_bytes=execution_precision.itemsize,
+        optimize=False,
     )
     statevector_plan = plan_distributed_statevector(
         execution_ir,
@@ -344,6 +373,7 @@ def run_distributed(
             world_size=world_size,
             bsz=batch_size,
             device=device,
+            dtype=execution_precision,
             backend_policy=backend_policy,
             jax_distributed_plan=jax_distributed_plan,
         )
@@ -358,9 +388,15 @@ def run_distributed(
 
     if isinstance(device, DistributedQuantumDevice):
         qdev = device
+        if qdev.complex_dtype != execution_precision:
+            raise ValueError(
+                "existing distributed device precision conflicts with execution: "
+                f"{qdev.complex_dtype} != {execution_precision}"
+            )
     else:
         if device is not None:
             device_options["device"] = str(device)
+        device_options["precision"] = execution_precision
         qdev = DistributedQuantumDevice(n_wires=execution_ir.n_wires, **device_options)
     DistributedExecutor(qdev).run(execution_ir)
     qdev.execution_ir = execution_ir
@@ -540,7 +576,7 @@ def run_native(
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
         distributed_options = dict(options)
-        distributed_options.pop("dtype", None)
+        distributed_options["precision"] = distributed_options.pop("dtype")
         distributed_options.pop("max_bond", None)
         distributed_options.pop("cutoff", None)
         distributed_options.pop("memory_limit_bytes", None)

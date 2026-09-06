@@ -109,6 +109,24 @@ def test_circuit_run_development_distributed_statevector_is_transparent(monkeypa
     assert torch.allclose(result.state, circuit.state(), atol=1e-6)
 
 
+def test_distributed_statevector_uses_one_explicit_complex128_precision(monkeypatch):
+    monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "development")
+    circuit = fq.Circuit(2, dtype=torch.complex64).ry(0, theta=0.371).cx(0, 1)
+
+    result = run_advanced(
+        circuit,
+        mode="distributed_statevector",
+        world_size=2,
+        device="cpu",
+        dtype=torch.complex128,
+    )
+
+    assert result.state is not None
+    assert result.state.dtype == torch.complex128
+    assert result.plan.runtime_config["complex_dtype"] == "complex128"
+    assert result.plan.state_bytes == 4 * torch.complex128.itemsize
+
+
 def test_distributed_statevector_uses_env_local_world_size_without_code_change(
     monkeypatch,
 ):

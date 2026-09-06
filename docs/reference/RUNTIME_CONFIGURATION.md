@@ -31,3 +31,18 @@ keys. The compatibility APIs `set_dtype`, `set_backend`,
 They remain supported through 0.3.x; new execution code should pass
 `RuntimeConfig` explicitly. Their process-global interpretation is removed and
 will not be restored.
+
+## Precision flow
+
+Each execution resolves complex precision once. `complex64` implies float32
+parameters and real-valued components; `complex128` implies float64. The
+resolved value controls planning bytes, state allocation, parameter tensors,
+gate matrices, and distributed development simulation. These stages must not
+independently consult process defaults.
+
+An already-created distributed device is accepted only when its precision
+matches the execution request. Conflicting `dtype` and `precision` inputs, or a
+device whose state precision differs from the requested execution, fail before
+gate application. Double-Single is a separate explicit representation: its
+high and low words remain float32 on the selected device and are never inferred
+from a native `complex128` label.
