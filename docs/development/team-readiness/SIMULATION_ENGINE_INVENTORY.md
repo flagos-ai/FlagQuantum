@@ -399,3 +399,11 @@ pair 合并和 gate-basis block 合并均已由 `simulation/statevector_ops.py` 
 跨分片路径中安排 P2P 或 collective、workspace 复用、流水线和通信计数。继续把这些入口整体迁入
 Simulation 会引入 Runtime 模型或第二套分片契约，因此当前前向路径也已到停止点。数值 Kernel
 可以独立修改和测试，Runtime 只决定何时、以何种执行计划及通信路径调用它们。
+
+## 18. 本地分布式测量数值收口（2026-09-06）
+
+Runtime 的本地分布式开发路径不再维护一份 reshape、边缘化和逐 wire 组装的 Z 期望值实现，
+而是直接复用 `simulation/noisy_statevector.py` 中支持批次维度的 `expectation_z()`。Simulation
+继续唯一拥有从完整 statevector 计算全 wire Z 期望值的纯数值语义；Runtime 只决定是否执行
+测量以及何时把本地分布式结果交给该数值入口。现有开发 profile 测试覆盖 Bell 态的批次形状、
+wire 顺序和结果一致性。

@@ -100,17 +100,6 @@ def _matrix_to_torch(matrix: Any, device: torch.device | str) -> torch.Tensor:
     return tensor.reshape(width, width)
 
 
-def _statevector_all_z_expectation(state: torch.Tensor, n_wires: int) -> torch.Tensor:
-    probs = torch.abs(state) ** 2
-    probs = probs.reshape((probs.shape[0],) + (2,) * n_wires)
-    values = []
-    for wire in range(n_wires):
-        axes = tuple(axis for axis in range(1, n_wires + 1) if axis != wire + 1)
-        marginal = probs.sum(dim=axes) if axes else probs
-        values.append(marginal[:, 0] - marginal[:, 1])
-    return torch.stack(values, dim=-1)
-
-
 def _resolve_policy_from_options(
     device_options: dict[str, Any],
 ) -> DistributedBackendPolicy:
@@ -355,6 +344,8 @@ def run_distributed(
         and backend_policy.profile == "development"
         and backend_policy.torch_backend == "local_tensor"
     ):
+        from ..simulation.noisy_statevector import expectation_z
+
         local_result = simulate_distributed_statevector_local(
             execution_ir,
             world_size=world_size,
@@ -364,7 +355,7 @@ def run_distributed(
             jax_distributed_plan=jax_distributed_plan,
         )
         result = (
-            _statevector_all_z_expectation(local_result.state, execution_ir.n_wires)
+            expectation_z(local_result.state, execution_ir.n_wires)
             if measure
             else local_result
         )
