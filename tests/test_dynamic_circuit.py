@@ -323,3 +323,53 @@ def test_dynamic_deployment_reuses_matching_routing(
     assert package.metadata["routing_reused"] is True
     assert package.metadata["routing_evidence"]["routing_reused"] is True
     assert package.ir.instructions == routed.to_ir().instructions
+
+
+def test_dynamic_deployment_does_not_reuse_mismatched_topology(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = DynamicCircuit(3)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional("cx", (0, 2), classical_bit=0)
+    routed = route_dynamic_circuit(circuit, fq.CouplingMap.line(3))
+    backend = _dynamic_backend(n_wires=3, coupling_map=fq.CouplingMap.ring(3))
+    route_calls = 0
+    original_route = route_dynamic_circuit
+
+    def count_routing(*args: object, **kwargs: object) -> DynamicCircuit:
+        nonlocal route_calls
+        route_calls += 1
+        return original_route(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "flagquantum.runtime.dynamic.deployment.route_dynamic_circuit",
+        count_routing,
+    )
+    package = create_dynamic_deployment_package(routed, backend=backend, shots=32)
+
+    assert route_calls == 1
+    assert package.metadata["routing_reused"] is False
+    assert package.metadata["routing_evidence"]["routing_reused"] is False
+    assert package.metadata["routing_plan"]["coupling_edges"] == (
+        backend.coupling_map.edges
+    )
+
+
+def test_dynamic_deployment_rejects_tampered_reused_routing() -> None:
+    circuit = DynamicCircuit(3)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional("cx", (0, 2), classical_bit=0)
+    coupling = fq.CouplingMap.line(3)
+    routed = route_dynamic_circuit(circuit, coupling)
+    routed_ir = routed.to_ir()
+    metadata = dict(routed_ir.metadata)
+    metadata["routing"] = dict(metadata["routing"])
+    metadata["routing"]["inserted_swap_count"] = -1
+    routed._ir_cache = replace(routed_ir, metadata=metadata)
+
+    with pytest.raises(ValueError, match="non-negative integer"):
+        create_dynamic_deployment_package(
+            routed,
+            backend=_dynamic_backend(n_wires=3, coupling_map=coupling),
+            shots=32,
+        )
