@@ -392,14 +392,20 @@ def run_native(
     config_active = bool(options.pop("_runtime_config_active", False))
     selected_config = options.pop("config", None)
     if not config_active:
+        ir = ensure_circuit_ir(circuit_or_ir)
         if selected_config is None:
-            metadata = getattr(ensure_circuit_ir(circuit_or_ir), "metadata", {})
+            metadata = ir.metadata
             manifest = metadata.get("runtime_config")
             selected_config = (
                 RuntimeConfig.from_manifest(manifest)
                 if manifest is not None
                 else get_runtime_config()
             )
+        _, execution_dtype = resolve_dtype(options.get("dtype") or ir.dtype)
+        selected_config = selected_config.with_overrides(
+            complex_dtype=str(execution_dtype).removeprefix("torch.")
+        )
+        options = {**options, "dtype": execution_dtype}
         with runtime_config(selected_config):
             return run_native(
                 circuit_or_ir,
@@ -487,6 +493,7 @@ def run_native(
         "target_count": target_count,
         "require_gradients": require_gradients,
         "allow_approximate": allow_approximate,
+        "complex_bytes": torch.empty((), dtype=options["dtype"]).element_size(),
     }
     if "max_bond" in options:
         plan_options["max_bond"] = options["max_bond"]
@@ -561,6 +568,7 @@ def run_native(
             provided_execution_plan is None
             and coupling_map is None
             and hasattr(circuit_or_ir, "state")
+            and getattr(circuit_or_ir, "dtype", None) == options["dtype"]
         ):
             result = circuit_or_ir.state()
         else:
@@ -571,10 +579,7 @@ def run_native(
                 execution_ir,
                 batch_size=int(options.get("bsz", 1)),
                 device=resolved_device,
-                dtype=(
-                    options.get("dtype")
-                    or getattr(torch, get_runtime_config().complex_dtype)
-                ),
+                dtype=options["dtype"],
             )
         execution_plan = provided_execution_plan or build_plan(
             execution_ir, state_mode="statevector", **plan_options

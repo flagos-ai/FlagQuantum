@@ -3,6 +3,7 @@
 import os
 import socket
 from collections import Counter
+from dataclasses import replace
 
 import pytest
 import torch
@@ -475,6 +476,27 @@ def test_auto_mode_selects_statevector_by_default():
     assert fq.audit_distributed_scalability(plan.summary()).valid
     assert torch.allclose(result, circuit.state(), atol=1e-6)
     assert fq.select_execution_mode(circuit) == "statevector"
+
+
+def test_run_native_uses_one_resolved_precision_for_execution_and_plan():
+    circuit = fq.Circuit(1, dtype=torch.complex64).h(0)
+
+    promoted, promoted_plan = fqb.run_native(
+        circuit,
+        dtype=torch.complex128,
+        return_plan=True,
+    )
+    standalone_ir = replace(
+        fq.Circuit(1, dtype=torch.complex128).h(0).to_ir(),
+        metadata={},
+    )
+    inherited, inherited_plan = fqb.run_native(standalone_ir, return_plan=True)
+
+    assert promoted.dtype == torch.complex128
+    assert promoted_plan.runtime_config["complex_dtype"] == "complex128"
+    assert promoted_plan.state_bytes == 2 * torch.complex128.itemsize
+    assert inherited.dtype == torch.complex128
+    assert inherited_plan.runtime_config["complex_dtype"] == "complex128"
 
 
 def test_auto_mode_selects_mps_for_bond_control_and_preserves_full_state_contract():
