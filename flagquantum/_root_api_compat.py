@@ -26,7 +26,6 @@ MIGRATED_ROOT_EXPORTS = {
     "PrecisionPolicyError": "flagquantum.training.PrecisionPolicyError",
     "SeedContract": "flagquantum.training.SeedContract",
     "build_mps_release_artifact": "flagquantum.runtime.backends.mps.build_mps_release_artifact",
-    "compile_for_backend": "flagquantum.compiler.compile_for_backend",
     "create_deployment_package": "flagquantum.deployment.create_deployment_package",
     "create_pauli_measurement_plan": "flagquantum.deployment.create_pauli_measurement_plan",
     "deploy_circuit": "flagquantum.deployment.deploy_circuit",
@@ -59,6 +58,7 @@ MIGRATED_ROOT_EXPORTS = {
 }
 
 REMOVED_ROOT_EXPORTS = {
+    "compile_for_backend": "flagquantum.compiler.compile",
     "get_version": "flagquantum.__version__",
     "hello": None,
     "info": None,

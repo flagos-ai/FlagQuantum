@@ -101,7 +101,7 @@ This catalog is generated from the machine-validated
 Build, validate, serialize, compile, and inspect quantum circuits through the stable FlagQuantum interface.
 
 - **Maturity:** Release certified
-- **Public API:** `fq.Circuit`, `fq.CircuitIR`, `flagquantum.compiler.compile_for_backend`
+- **Public API:** `fq.Circuit`, `fq.CircuitIR`, `flagquantum.compiler.compile`
 - **Runtime modes:** `not_applicable`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`

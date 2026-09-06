@@ -68,11 +68,30 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
     assert isinstance(errors_extension, dict)
     if errors_module_contract["implementation_authorized"] is True:
         authorized_additions.update(errors_extension["additions"])
+    pre_public_renames = candidate["pre_public_renames"]
+    assert isinstance(pre_public_renames, dict)
+    authorized_additions.update(
+        replacement.rsplit(".", 1)[-1] for replacement in pre_public_renames.values()
+    )
     extension_contract = _load(EXTENSION_PROTOCOL)
     if extension_contract["implementation_authorized"] is True:
         for extension in extension_contract["stable_extensions"]:
             authorized_additions.update(extension["additions"])
     assert set(classified) == set(exports) | authorized_additions
+
+
+def test_pre_public_renames_have_one_stable_destination() -> None:
+    candidate = _load(CANDIDATE)
+    pre_public_renames = candidate["pre_public_renames"]
+    assert isinstance(pre_public_renames, dict)
+    stable_extensions = {
+        f"{section['namespace']}.{symbol}"
+        for section in candidate["stable_extensions"]
+        for symbol in section["symbols"]
+    }
+
+    assert set(pre_public_renames) <= set(candidate["remove_before_public"])
+    assert set(pre_public_renames.values()) <= stable_extensions
 
 
 def test_current_manifest_is_the_implemented_stable_core() -> None:
@@ -119,6 +138,11 @@ def test_migrated_and_removed_exports_are_not_accessible_at_root() -> None:
     extension_contract = _load(EXTENSION_PROTOCOL)
     for extension in extension_contract["stable_extensions"]:
         new_namespace_only.update(extension["new_namespace_only"])
+    pre_public_renames = candidate["pre_public_renames"]
+    assert isinstance(pre_public_renames, dict)
+    new_namespace_only.update(
+        replacement.rsplit(".", 1)[-1] for replacement in pre_public_renames.values()
+    )
 
     for name in sorted(replacements - new_namespace_only):
         with pytest.raises(AttributeError, match="moved before the first public alpha"):

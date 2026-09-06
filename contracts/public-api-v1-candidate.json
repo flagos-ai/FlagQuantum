@@ -50,7 +50,7 @@
     {
       "namespace": "flagquantum.compiler",
       "symbols": [
-        "compile_for_backend"
+        "compile"
       ]
     },
     {
@@ -175,10 +175,14 @@
     }
   ],
   "remove_before_public": [
+    "compile_for_backend",
     "get_version",
     "hello",
     "info"
   ],
+  "pre_public_renames": {
+    "compile_for_backend": "flagquantum.compiler.compile"
+  },
   "rules": {
     "root_export_budget": 25,
     "root_backend_specific_exports": 0,
