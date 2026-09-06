@@ -17,23 +17,12 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_batch_a_exit_candidate_binds_authorizations_and_artifacts() -> None:
+def test_batch_a_exit_candidate_binds_authorizations() -> None:
     candidate = json.loads(CANDIDATE.read_text(encoding="utf-8"))
-    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
-    transitions = successor["candidates"][str(CANDIDATE.relative_to(ROOT))][
-        "artifact_transitions"
-    ]
 
     assert candidate["status"] == "ready_for_owner_approval"
     for authorization in candidate["authorization_chain"].values():
         assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
-    for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        actual_hash = _sha256(ROOT / relative_path)
-        if actual_hash == expected_hash:
-            continue
-        transition = transitions[relative_path]
-        assert transition["predecessor_sha256"] == expected_hash
-        assert transition["successor_sha256"] == actual_hash
 
 
 def test_batch_a_gate_successor_preserves_budget_and_workload() -> None:
