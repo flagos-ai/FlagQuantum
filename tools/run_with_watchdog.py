@@ -34,7 +34,9 @@ def _diagnostics(directory: Path, payload: dict[str, object]) -> None:
             text = f"diagnostic unavailable: {error}\n"
         (directory / name).write_text(text, encoding="utf-8")
     stacks = []
-    for entry in Path("/proc").iterdir():
+    proc = Path("/proc")
+    entries = proc.iterdir() if proc.is_dir() else ()
+    for entry in entries:
         if not entry.name.isdigit():
             continue
         try:
