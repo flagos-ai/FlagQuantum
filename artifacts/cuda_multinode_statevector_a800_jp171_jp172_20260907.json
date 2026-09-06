@@ -1,0 +1,266 @@
+{
+  "evidence": {
+    "captured_at": "2026-09-06T16:14:03.801281+00:00",
+    "claim_blockers": [
+      "validation_only_tiny_full_state_gather",
+      "hidden_host_staging_not_audited",
+      "rdma_not_tested",
+      "distributed_gradient_not_tested",
+      "checkpoint_restart_not_tested",
+      "production_performance_not_measured"
+    ],
+    "environment": {
+      "cuda_runtime": "13.0",
+      "nccl": "2.29.7",
+      "python": "3.12.13",
+      "source_revision": "2d4f327c9f55da9576359e87d05026caa9862b8f",
+      "torch": "2.13.0+cu130"
+    },
+    "observations": {
+      "network": {
+        "backend": "nccl",
+        "configured_interface": "ens22f0",
+        "configured_interface_observed": true,
+        "debug_log_sha256": "2fbbf64695b29999c908b4ea0d9b9b863adacebb41bff763dbd48f1fa80c8e90",
+        "evidence_level": "observed_debug_log",
+        "ib_disabled": true,
+        "route": "socket",
+        "socket_transport_observed": true
+      },
+      "numerical_metrics": {
+        "statevector_infidelity": 0.0,
+        "statevector_max_abs_error": 0.0,
+        "statevector_norm_error": 0.0
+      },
+      "production_full_state_materialization": false,
+      "rank_records": [
+        {
+          "amplitude_basis_order": "canonical_logical",
+          "backend": "nccl",
+          "blockers": [
+            "forward_only_no_sharded_backward_or_optimizer"
+          ],
+          "claim_evidence_type": "accelerator_semantics",
+          "communication_bytes": 384,
+          "communication_count": 2,
+          "communication_primitive": "torch.distributed.collective",
+          "cross_shard_fusion_enabled": true,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+          "distributed_gate_count": 3,
+          "distributed_identity": {
+            "blockers": [
+              "distributed_identity_is_not_collective_conformance_evidence"
+            ],
+            "communication_claim_allowed": false,
+            "flagcx_route_status": "not_applicable",
+            "flagcx_route_verified": false,
+            "host_staging_observed": null,
+            "inner_backend": "nccl",
+            "inner_backend_verified": true,
+            "logical_device": "cuda:0",
+            "outer_backend": "nccl",
+            "platform_identity": {},
+            "process_group_initialized": true,
+            "provider": "pytorch",
+            "provider_version": null,
+            "rank": 0,
+            "schema": "flagquantum_distributed_identity_v1",
+            "world_size": 2
+          },
+          "distribution_semantics": "sharded_across_ranks",
+          "exchange_pipeline_enabled": true,
+          "exchange_pipeline_prefetch_count": 0,
+          "exchange_pipelined_gate_count": 0,
+          "exchange_subgroup_pipelined_gate_count": 0,
+          "exchange_workspace_allocation_count": 1,
+          "exchange_workspace_reserved_bytes": 512,
+          "exchange_workspace_reuse_count": 1,
+          "executed_distributed_segment_count": 3,
+          "executor": "pytorch_native_distributed_statevector_v1",
+          "full_state_materialization": false,
+          "fused_cross_shard_gate_count": 0,
+          "fused_cross_shard_regions": 0,
+          "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
+          "inter_node_communication_bytes": 384,
+          "inter_node_communication_count": 2,
+          "intra_node_communication_bytes": 0,
+          "intra_node_communication_count": 0,
+          "kernel_dispatch": {
+            "decisions": [
+              {
+                "count": 2,
+                "feature": "local_1q",
+                "reason": "disabled_by_policy",
+                "selected": "pytorch"
+              },
+              {
+                "count": 1,
+                "feature": "local_cx",
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              }
+            ],
+            "pytorch_fallback_count": 3,
+            "triton_execution_count": 0
+          },
+          "local_diagonal_gate_count": 1,
+          "local_gate_count": 4,
+          "local_state_bytes": 256,
+          "local_world_size": 1,
+          "logical_to_physical_wires": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "node_count": 2,
+          "owned_global_basis_indices": "0 + k*2, 0 <= k < 16",
+          "peak_scratch_bytes": 1536,
+          "rank": 0,
+          "rank_ownership": {
+            "amplitude_end": 16,
+            "amplitude_start": 0,
+            "compact_global_indices": true,
+            "device": "cuda:0",
+            "dtype": "torch.complex128",
+            "global_index_count": 16,
+            "local_amplitudes": 16,
+            "rank": 0,
+            "shape": [
+              1,
+              16
+            ]
+          },
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "scratch_accounting": "peak_live_amplitude_tensors_including_output_buffer",
+          "wire_layout": "canonical",
+          "world_size": 2
+        },
+        {
+          "amplitude_basis_order": "canonical_logical",
+          "backend": "nccl",
+          "blockers": [
+            "forward_only_no_sharded_backward_or_optimizer"
+          ],
+          "claim_evidence_type": "accelerator_semantics",
+          "communication_bytes": 384,
+          "communication_count": 2,
+          "communication_primitive": "torch.distributed.collective",
+          "cross_shard_fusion_enabled": true,
+          "device_name": "NVIDIA A800-SXM4-80GB",
+          "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
+          "distributed_gate_count": 3,
+          "distributed_identity": {
+            "blockers": [
+              "distributed_identity_is_not_collective_conformance_evidence"
+            ],
+            "communication_claim_allowed": false,
+            "flagcx_route_status": "not_applicable",
+            "flagcx_route_verified": false,
+            "host_staging_observed": null,
+            "inner_backend": "nccl",
+            "inner_backend_verified": true,
+            "logical_device": "cuda:0",
+            "outer_backend": "nccl",
+            "platform_identity": {},
+            "process_group_initialized": true,
+            "provider": "pytorch",
+            "provider_version": null,
+            "rank": 1,
+            "schema": "flagquantum_distributed_identity_v1",
+            "world_size": 2
+          },
+          "distribution_semantics": "sharded_across_ranks",
+          "exchange_pipeline_enabled": true,
+          "exchange_pipeline_prefetch_count": 0,
+          "exchange_pipelined_gate_count": 0,
+          "exchange_subgroup_pipelined_gate_count": 0,
+          "exchange_workspace_allocation_count": 1,
+          "exchange_workspace_reserved_bytes": 512,
+          "exchange_workspace_reuse_count": 1,
+          "executed_distributed_segment_count": 3,
+          "executor": "pytorch_native_distributed_statevector_v1",
+          "full_state_materialization": false,
+          "fused_cross_shard_gate_count": 0,
+          "fused_cross_shard_regions": 0,
+          "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
+          "inter_node_communication_bytes": 384,
+          "inter_node_communication_count": 2,
+          "intra_node_communication_bytes": 0,
+          "intra_node_communication_count": 0,
+          "kernel_dispatch": {
+            "decisions": [
+              {
+                "count": 2,
+                "feature": "local_1q",
+                "reason": "disabled_by_policy",
+                "selected": "pytorch"
+              },
+              {
+                "count": 1,
+                "feature": "local_cx",
+                "reason": "input_not_supported",
+                "selected": "pytorch"
+              }
+            ],
+            "pytorch_fallback_count": 3,
+            "triton_execution_count": 0
+          },
+          "local_diagonal_gate_count": 1,
+          "local_gate_count": 4,
+          "local_state_bytes": 256,
+          "local_world_size": 1,
+          "logical_to_physical_wires": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "node_count": 2,
+          "owned_global_basis_indices": "1 + k*2, 0 <= k < 16",
+          "peak_scratch_bytes": 1536,
+          "rank": 1,
+          "rank_ownership": {
+            "amplitude_end": 32,
+            "amplitude_start": 16,
+            "compact_global_indices": true,
+            "device": "cuda:0",
+            "dtype": "torch.complex128",
+            "global_index_count": 16,
+            "local_amplitudes": 16,
+            "rank": 1,
+            "shape": [
+              1,
+              16
+            ]
+          },
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "scratch_accounting": "peak_live_amplitude_tensors_including_output_buffer",
+          "wire_layout": "canonical",
+          "world_size": 2
+        }
+      ],
+      "validation_full_state_materialization": true
+    },
+    "release_gate_allowed": false,
+    "scalability_claim_allowed": false,
+    "schema": "flagquantum.cuda_multinode_statevector_probe.v1",
+    "scope": {
+      "distribution_semantics": "sharded_across_ranks",
+      "dtype": "complex128",
+      "execution": "forward_statevector",
+      "local_world_size": 1,
+      "n_wires": 5,
+      "node_count": 2,
+      "world_size": 2
+    },
+    "status": "passed"
+  },
+  "evidence_sha256": "9735d67d2080ba21bf77ffaf693dfdaa0ea15685b1ea511a3a20e77adf23cd1c",
+  "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
+}
