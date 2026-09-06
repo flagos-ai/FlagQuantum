@@ -22,7 +22,7 @@ from ..devices import DistributedQuantumDevice
 from ..errors import ExecutionError
 from ..measurement import measure_allZ
 from ..ops import functional
-from ..runtime.backend_registry import resolve_device
+from ..runtime.backend_registry import resolve_device, resolve_dtype
 from ..runtime.distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
@@ -159,18 +159,6 @@ def _env_int(name: str, default: int = 0) -> int:
         return int(default)
 
 
-def _statevector_preflight_dtype(ir: CircuitIR, options: dict[str, Any]) -> str:
-    requested = str(options.get("dtype") or ir.dtype).removeprefix("torch.")
-    aliases = {
-        "float32": "complex64",
-        "float64": "complex128",
-    }
-    normalized = aliases.get(requested, requested)
-    if normalized not in {"complex64", "complex128"}:
-        raise ValueError(f"unsupported statevector preflight dtype: {requested!r}")
-    return normalized
-
-
 def _validate_flagos_statevector(
     ir: CircuitIR,
     options: dict[str, Any],
@@ -195,7 +183,8 @@ def _validate_flagos_statevector(
 
     platform = get_platform_runtime("flagos")
     provider = platform.identity().provider
-    dtype = _statevector_preflight_dtype(ir, options)
+    _, complex_dtype = resolve_dtype(options.get("dtype") or ir.dtype)
+    dtype = str(complex_dtype).removeprefix("torch.")
     report = preflight_statevector_local_p0(
         device=device,
         dtype=dtype,
