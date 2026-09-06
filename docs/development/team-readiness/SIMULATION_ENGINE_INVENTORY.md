@@ -365,3 +365,7 @@ P2、P3、P4 对“请求的精度计划必须等于可执行计划”和“请�
 P0–P4 的平台身份读取、operator profile 加载、预检执行和 evidence id 投影现统一经过一个
 Runtime 私有入口。各 profile 仍使用既有独立探针和已登记 profile 名称；本次只删除 P3/P4 的
 重复编排，不合并能力声明，也不把 Provider 身份或预检策略放入 Simulation 数值模块。
+
+`runtime/operator_probes.py` 中五个受现有调用方依赖的 P0–P4 命名入口继续保留，但共同的
+FP32 profile 加载、可执行探测和 capability 判定已收口为一个私有实现。这样既维持入口稳定，
+也避免五份预检流程随时间产生不同的 dtype、设备或 evidence 语义。

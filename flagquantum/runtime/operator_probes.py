@@ -410,15 +410,14 @@ def preflight_statevector_local_p0(
     )
 
 
-def preflight_split_real_imag_statevector_p0(
+def _preflight_split_real_imag_profile(
+    profile_name: str,
     *,
     device: str | torch.device,
     provider: str,
-    refresh: bool = False,
+    refresh: bool,
 ) -> CapabilityPreflightReport:
-    """Probe the pure-FP32 operator slice used by split statevector P0."""
-
-    profile = load_operator_profile("split_real_imag_statevector_p0")
+    profile = load_operator_profile(profile_name)
     evidence = probe_operator_profile(
         profile,
         device=device,
@@ -431,6 +430,22 @@ def preflight_split_real_imag_statevector_p0(
         evidence,
         device_type=torch.device(device).type,
         required_dtypes=("float32",),
+    )
+
+
+def preflight_split_real_imag_statevector_p0(
+    *,
+    device: str | torch.device,
+    provider: str,
+    refresh: bool = False,
+) -> CapabilityPreflightReport:
+    """Probe the pure-FP32 operator slice used by split statevector P0."""
+
+    return _preflight_split_real_imag_profile(
+        "split_real_imag_statevector_p0",
+        device=device,
+        provider=provider,
+        refresh=refresh,
     )
 
 
@@ -442,19 +457,11 @@ def preflight_split_real_imag_statevector_p1(
 ) -> CapabilityPreflightReport:
     """Probe P1 FP32 expectation and gradient-supporting operators."""
 
-    profile = load_operator_profile("split_real_imag_statevector_p1")
-    evidence = probe_operator_profile(
-        profile,
+    return _preflight_split_real_imag_profile(
+        "split_real_imag_statevector_p1",
         device=device,
-        dtype="float32",
         provider=provider,
         refresh=refresh,
-    )
-    return preflight_operator_profile(
-        profile,
-        evidence,
-        device_type=torch.device(device).type,
-        required_dtypes=("float32",),
     )
 
 
@@ -466,19 +473,11 @@ def preflight_split_real_imag_statevector_p2(
 ) -> CapabilityPreflightReport:
     """Probe the FP32 surface used by selective Double-Single reductions."""
 
-    profile = load_operator_profile("split_real_imag_statevector_p2_precision")
-    evidence = probe_operator_profile(
-        profile,
+    return _preflight_split_real_imag_profile(
+        "split_real_imag_statevector_p2_precision",
         device=device,
-        dtype="float32",
         provider=provider,
         refresh=refresh,
-    )
-    return preflight_operator_profile(
-        profile,
-        evidence,
-        device_type=torch.device(device).type,
-        required_dtypes=("float32",),
     )
 
 
@@ -490,19 +489,11 @@ def preflight_split_real_imag_statevector_p3(
 ) -> CapabilityPreflightReport:
     """Probe the FP32 surface used by full Double-Single state evolution."""
 
-    profile = load_operator_profile("split_real_imag_statevector_p3_double_single")
-    evidence = probe_operator_profile(
-        profile,
+    return _preflight_split_real_imag_profile(
+        "split_real_imag_statevector_p3_double_single",
         device=device,
-        dtype="float32",
         provider=provider,
         refresh=refresh,
-    )
-    return preflight_operator_profile(
-        profile,
-        evidence,
-        device_type=torch.device(device).type,
-        required_dtypes=("float32",),
     )
 
 
@@ -514,21 +505,11 @@ def preflight_split_real_imag_statevector_p4(
 ) -> CapabilityPreflightReport:
     """Probe full-state DS arithmetic plus device-side range reduction."""
 
-    profile = load_operator_profile(
-        "split_real_imag_statevector_p4_device_double_single"
-    )
-    evidence = probe_operator_profile(
-        profile,
+    return _preflight_split_real_imag_profile(
+        "split_real_imag_statevector_p4_device_double_single",
         device=device,
-        dtype="float32",
         provider=provider,
         refresh=refresh,
-    )
-    return preflight_operator_profile(
-        profile,
-        evidence,
-        device_type=torch.device(device).type,
-        required_dtypes=("float32",),
     )
 
 
