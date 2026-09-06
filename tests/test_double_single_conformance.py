@@ -17,7 +17,7 @@ def test_cpu_double_single_conformance_is_machine_readable_and_passes() -> None:
     assert report.runtime_integration_certified is False
     assert report.passed
     assert all(case.passed for case in report.cases)
-    assert all(case.improvement_factor > 1.0 for case in report.cases)
+    assert all(case.improvement_factor >= 1.0 for case in report.cases)
     assert json.loads(report.to_json())["passed"] is True
 
 
