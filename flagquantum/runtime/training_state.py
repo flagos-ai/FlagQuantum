@@ -57,6 +57,16 @@ class PrecisionPolicy:
             raise PrecisionPolicyError("accumulator dtype must be float32 or float64")
         if self.mode not in {"full", "mixed"}:
             raise PrecisionPolicyError("precision mode must be full or mixed")
+        expected_real = "float64" if self.complex_dtype == "complex128" else "float32"
+        if self.mode == "full" and (
+            self.parameter_dtype != expected_real
+            or self.accumulator_dtype != expected_real
+        ):
+            raise PrecisionPolicyError(
+                f"full {self.complex_dtype} precision requires "
+                f"parameter_dtype={expected_real!r} and "
+                f"accumulator_dtype={expected_real!r}"
+            )
         if self.complex_dtype == "complex128" and self.parameter_dtype != "float64":
             raise PrecisionPolicyError(
                 "complex128 requires float64 trainable parameters"

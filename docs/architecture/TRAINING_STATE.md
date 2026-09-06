@@ -10,7 +10,10 @@ group layouts before restoring state.
 `flagquantum.training.PrecisionPolicy` supports complex64/float32 and
 complex128/float64 full
 precision, plus an explicit mixed policy with a named accumulator dtype and
-tolerances. Reducing trainable parameter precision raises unless
+tolerances. Full precision rejects mismatched circuit, parameter, or
+accumulator dtypes; differing accumulator precision therefore requires
+`mode="mixed"` rather than becoming an accidental intermediate cast. Reducing
+trainable parameter precision raises unless
 `allow_parameter_downcast=True`; circuit gate construction follows the declared
 complex dtype and cannot silently return complex64 for a complex128 circuit.
 

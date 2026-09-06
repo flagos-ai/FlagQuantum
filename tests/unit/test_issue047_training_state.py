@@ -192,6 +192,30 @@ def test_precision_policy_is_explicit_and_forbids_silent_downcast() -> None:
     assert double().dtype == torch.float64
 
 
+@pytest.mark.parametrize(
+    "values",
+    (
+        {"complex_dtype": "complex64", "parameter_dtype": "float64"},
+        {"complex_dtype": "complex64", "accumulator_dtype": "float64"},
+        {
+            "complex_dtype": "complex128",
+            "parameter_dtype": "float64",
+            "accumulator_dtype": "float32",
+        },
+    ),
+)
+def test_full_precision_policy_rejects_inconsistent_real_dtypes(values) -> None:
+    with pytest.raises(fqt.PrecisionPolicyError, match="full .* precision requires"):
+        fqt.PrecisionPolicy(**values)
+
+
+def test_mixed_precision_policy_requires_an_explicit_mode() -> None:
+    policy = fqt.PrecisionPolicy(accumulator_dtype="float64", mode="mixed")
+
+    assert policy.parameter_dtype == "float32"
+    assert policy.accumulator_dtype == "float64"
+
+
 def test_seed_streams_and_correctness_debug_are_reproducible() -> None:
     first = fqt.seed_everything(99)
     torch_values = torch.rand(5)
