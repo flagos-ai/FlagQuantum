@@ -32,7 +32,7 @@ def test_issue012_unit_baseline_covers_pure_logic_planner_audit_and_runtime_meta
     text = UNIT_PATH.read_text(encoding="utf-8")
 
     assert "to_ir" in text
-    assert "simple_compile" in text
+    assert "optimize" in text
     assert "plan_runtime_selection" in text
     assert "audit_distributed_scalability" in text
     assert "backend_execution_options" in text

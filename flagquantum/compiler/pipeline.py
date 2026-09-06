@@ -169,7 +169,7 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
     return layers
 
 
-def simple_compile(circuit_or_ir: Any) -> CircuitIR:
+def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     ir = _as_ir(circuit_or_ir)
     max_rounds = len(ir) + 1
     for _ in range(max_rounds):
@@ -181,6 +181,12 @@ def simple_compile(circuit_or_ir: Any) -> CircuitIR:
         if len(ir) == previous_count:
             return ir
     raise CompilationError("compiler optimization passes did not reach a fixed point")
+
+
+def optimize(circuit_or_ir: Any) -> CircuitIR:
+    """Apply target-independent circuit optimizations to a fixed point."""
+
+    return _optimize_to_fixed_point(circuit_or_ir)
 
 
 def compile_for_backend(
@@ -199,7 +205,7 @@ def compile_for_backend(
     metadata["runtime_config"] = selected_config.to_manifest()
     ir = replace(ir, metadata=metadata)
     if optimize:
-        ir = simple_compile(ir)
+        ir = _optimize_to_fixed_point(ir)
     if coupling_map is not None:
         coupling = (
             coupling_map
@@ -217,7 +223,7 @@ def compile_for_backend(
             strategy=selected_routing_strategy,
         )
         if optimize:
-            ir = simple_compile(ir)
+            ir = _optimize_to_fixed_point(ir)
         ir = record_post_routing_optimization(ir)
         if strategy_selection is not None:
             metadata = dict(ir.metadata)
@@ -229,7 +235,7 @@ def compile_for_backend(
 __all__ = [
     "CouplingMap",
     "compile_for_backend",
-    "simple_compile",
+    "optimize",
     "remove_identity_gates",
     "merge_self_inverse",
     "merge_adjacent_rotations",

@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler import simple_compile
+from flagquantum.compiler import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit
@@ -15,7 +15,7 @@ def test_zero_initialized_trainable_rotation_is_not_removed() -> None:
         (Instruction("ry", (0,), params={"theta": theta}),),
     )
 
-    compiled = simple_compile(ir)
+    compiled = optimize(ir)
 
     assert compiled.instructions == ir.instructions
     assert compiled.instructions[0].params["theta"] is theta
@@ -32,7 +32,7 @@ def test_cancelling_trainable_rotations_keep_parameter_gradients() -> None:
         ),
     )
 
-    compiled = simple_compile(ir)
+    compiled = optimize(ir)
     merged = compiled.instructions[0].params["theta"]
     merged.backward()
 
@@ -48,7 +48,7 @@ def test_constant_zero_rotation_is_still_removed() -> None:
         (Instruction("ry", (0,), params={"theta": torch.tensor(0.0)}),),
     )
 
-    assert simple_compile(ir).instructions == ()
+    assert optimize(ir).instructions == ()
 
 
 def test_compiled_zero_initialized_rotation_remains_trainable_end_to_end() -> None:

@@ -9,10 +9,10 @@ from .pipeline import (
     compile_for_backend,
     merge_adjacent_rotations,
     merge_self_inverse,
+    optimize,
     remove_identity_gates,
     route_to_topology,
     schedule_layers,
-    simple_compile,
 )
 
 compile = compile_for_backend
@@ -25,8 +25,8 @@ __all__ = (
     "lower_noise_model",
     "merge_adjacent_rotations",
     "merge_self_inverse",
+    "optimize",
     "remove_identity_gates",
     "route_to_topology",
     "schedule_layers",
-    "simple_compile",
 )

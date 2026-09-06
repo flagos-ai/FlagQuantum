@@ -11,7 +11,7 @@ def test_ir_and_compiler_pure_logic_baseline():
     circuit.x(0).x(0).h(0)
 
     ir = circuit.to_ir()
-    compiled = fq.compiler.simple_compile(ir)
+    compiled = fq.compiler.optimize(ir)
 
     assert len(ir) == 3
     assert len(compiled) == 1

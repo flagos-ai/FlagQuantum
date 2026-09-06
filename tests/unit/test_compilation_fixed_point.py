@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.compiler import simple_compile
+from flagquantum.compiler import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit
@@ -18,7 +18,7 @@ def test_rotation_cancellation_exposes_self_inverse_pair_next_round() -> None:
         ),
     )
 
-    assert simple_compile(ir).instructions == ()
+    assert optimize(ir).instructions == ()
 
 
 def test_nested_rewrites_converge_across_multiple_pass_families() -> None:
@@ -34,7 +34,7 @@ def test_nested_rewrites_converge_across_multiple_pass_families() -> None:
         ),
     )
 
-    assert simple_compile(ir).instructions == ()
+    assert optimize(ir).instructions == ()
 
 
 def test_fixed_point_does_not_fold_currently_cancelling_trainable_values() -> None:
@@ -50,7 +50,7 @@ def test_fixed_point_does_not_fold_currently_cancelling_trainable_values() -> No
         ),
     )
 
-    compiled = simple_compile(ir)
+    compiled = optimize(ir)
     merged = compiled.instructions[1].params["theta"]
     merged.backward()
 

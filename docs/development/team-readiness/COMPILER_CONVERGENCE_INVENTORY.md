@@ -54,7 +54,7 @@ capability, request, and artifact types require a Core-owned contract first.
 | Normalization/import | `compiler.pipeline._as_ir()` through `ensure_circuit_ir()`; `_compiler.importers.circuit_ir.import_circuit_ir()`; `_compiler.exporters.circuit_ir.seal_circuit_ir_round_trip()` | `Circuit`/`CircuitIR` → `CircuitIR`, or validated `CircuitIR` → `ImportedCircuitProgram`/`SealedCircuitIRRoundTrip` | `compiler` performs stable public normalization. `_compiler` owns the exact, allowlisted private import profile and structured diagnostics. |
 | Validation | `CircuitIR.validate()`; stable checks in `runtime.planner.plan()`; `_compiler.ir.verifier.verify_module()`; `TargetCapabilities`/`TargetIR` constructors and `legalize_quantum_module()` | candidate program/target → accepted value or typed failure | Core validates public IR. `_compiler` has the only compiler-internal verifier. Stable execution-request validation belongs to Runtime planning. |
 | Analysis | `runtime.planner.analyze()`; `_compiler.analyses.AnalysisManager`, `DefUseAnalysis`, `QubitLifetimeAnalysis` | IR/module → structural or reusable analysis result | Runtime structural analysis feeds execution planning; `_compiler` analyses feed private passes and are not default-path consumers. |
-| Pass execution | `compiler.simple_compile()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Stable canonicalization is authoritative in `compiler`; `_compiler` remains a private replacement candidate with descriptors, diagnostics, analyses, and pipeline identity. |
+| Pass execution | `compiler.optimize()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Stable canonicalization is authoritative in `compiler`; `_compiler` remains a private replacement candidate with descriptors, diagnostics, analyses, and pipeline identity. |
 | Routing | `compiler.routing.route_to_topology()` and `select_routing_strategy()`; `_compiler.passes.placement_routing.PlacementRoutingPass` | logical program + coupling graph → routed program | Stable routing is authoritative in `compiler`; the private implementation has a different graph and evidence model and remains off the default path. |
 | Lowering | `compiler.compile_for_backend()`; `compiler.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local, topology, and noise lowering; noisy execution-plan products remain transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
 | Backend/mode selection | `runtime.planner.select_backend_by_cost()`; `select_execution_mode()`; `plan_runtime_selection()`; noisy-backend selection | `CircuitIR` + execution/resource policy → backend/mode candidate or selection plan | Runtime is authoritative for execution selection. `_compiler.TargetCapabilities` describes target legality and does not select a runtime backend. |
@@ -68,7 +68,7 @@ capability, request, and artifact types require a Core-owned contract first.
 
 | Overlap | `compilation` implementation | `_compiler` implementation | Material difference |
 | --- | --- | --- | --- |
-| Canonicalization | `remove_identity_gates`, `merge_self_inverse`, `merge_adjacent_rotations`, `simple_compile` | the three corresponding passes and `StaticCanonicalizationPass` | The private path has explicit pass contracts, revision/identity checks, diagnostics, and a pipeline digest. |
+| Canonicalization | `remove_identity_gates`, `merge_self_inverse`, `merge_adjacent_rotations`, `optimize` | the three corresponding passes and `StaticCanonicalizationPass` | The private path has explicit pass contracts, revision/identity checks, diagnostics, and a pipeline digest. |
 | Routing/topology | `CouplingMap`, routing strategies, metadata-producing functions | `DirectedCouplingGraph`, `PlacementRoutingPass` | Models and evidence schemas differ; neither delegates to the other. |
 | Structural inspection | `analyze`, `schedule_layers` | def-use/lifetime analyses plus IR walkers | The analyses are not equivalent, but both trees own compiler analysis concepts. |
 | Lowering | backend compile and noise lowering | gate-set decomposition and target legalization | The legacy path lowers for execution policy; the private path lowers against an explicit static target contract. |
@@ -142,7 +142,7 @@ currently live under `compilation`.
 | 1. Capture | `Circuit.to_ir()` or direct `CircuitIR` construction | user circuit/builder | validated `CircuitIR` 1.0 | Core validation/type errors | canonical JSON and `CircuitIR.content_hash` |
 | 2. Stable request validation | `runtime.planner.plan()` | `Circuit`/`CircuitIR`, `ExecutionOptions`, measurements, noise | resolved source IR and options | `TypeError`, `ValidationError`, or `CapabilityError`; conflicts and dynamic circuits fail closed | requested/resolved options later enter plan fingerprints |
 | 3. Local compile | `plan_advanced()` → `compile_for_backend()` | source `CircuitIR`, RuntimeConfig, optional coupling map | optimized/routed `CircuitIR` | `CompilationError`, routing/value errors | runtime-config manifest and routing metadata |
-| 4. Canonical optimization | `simple_compile()` | `CircuitIR` | fixed-point optimized `CircuitIR` | bounded rounds; raises `CompilationError` if no fixed point | transformed instruction sequence; no standalone pass evidence |
+| 4. Canonical optimization | `optimize()` | `CircuitIR` | fixed-point optimized `CircuitIR` | bounded rounds; raises `CompilationError` if no fixed point | transformed instruction sequence; no standalone pass evidence |
 | 5. Optional routing | `route_to_topology()` | optimized IR + `CouplingMap` | routed IR | invalid topology/unsupported routing raises | routing and optional strategy-selection metadata |
 | 6. Optional noise lowering | `lower_noise_model()` | compiled IR + `NoiseModel` | channel-bearing `CircuitIR` | validation/capability errors | channel instructions and noisy-plan identity |
 | 7. Analysis | `analyze()` | compiled/lowered IR | `CircuitAnalysis` | assumes valid IR; malformed values surface normal exceptions | counts, depth, wire use, noise flags |
@@ -188,7 +188,7 @@ CircuitIR
 ```
 
 The eventual replacement adapter would sit behind the existing
-`compiler.simple_compile(circuit_or_ir) -> CircuitIR` boundary. Runtime,
+`compiler.optimize(circuit_or_ir) -> CircuitIR` boundary. Runtime,
 `compile_for_backend`, public imports, and callers would remain unchanged. This is
 smaller and safer than first replacing routing, planning, backend selection, noise,
 or artifact serialization.
@@ -197,7 +197,7 @@ The physical authority move does **not** switch to the private implementation.
 Before a later implementation replacement,
 the integration branch must approve a replacement contract and prove:
 
-1. the accepted-input domain matches the current `simple_compile` domain, including
+1. the accepted-input domain matches the current `optimize` domain, including
    metadata and trainable parameter cases, or unsupported inputs have an explicitly
    approved failure contract;
 2. instruction semantics, state, expectation, gradients, dtype/device, request
@@ -212,20 +212,20 @@ The new team characterization tests cover deterministic output, semantic parity 
 the current optimizer, invalid/unsupported fail-closed behavior without partial
 artifacts, preservation of classified program and instruction metadata, and the
 source/pipeline/target/emission identity chain. They also record the remaining input
-domain gap: `simple_compile` preserves arbitrary top-level metadata, while the
+domain gap: `optimize` preserves arbitrary top-level metadata, while the
 private importer rejects unclassified metadata rather than silently dropping it.
 These tests are evidence for the candidate slice, not authorization to switch it on.
 
 ## Human-maintainability notes for the next slice
 
 **Primary domain:** Compiler. The first replacement candidate remains the static
-canonicalization path behind `compiler.simple_compile`; the physical directory
+canonicalization path behind `compiler.optimize`; the physical directory
 migration does not authorize changing semantics or the public API.
 
 **Readable scenario:**
 `tests/team/compiler/test_static_pipeline_characterization.py` is the existing
 ten-minute path. It demonstrates deterministic cache behavior, semantic
-equivalence with `simple_compile`, invalid/unsupported input failure without
+equivalence with `optimize`, invalid/unsupported input failure without
 partial artifacts, classified metadata preservation, the explicit unclassified
 metadata domain gap, and source/pipeline/target/emission identity binding.
 
@@ -289,6 +289,6 @@ Core Target Capabilities v1 and its loss-accounted Compiler adapter now exist, b
 the richer Compiler target fields still require the legacy comparator. Current
 blockers are the incomplete executable artifact/request contracts, the stable
 `ExecutionPlan` definition living in `compilation`, and incomplete accepted-domain
-equivalence between `simple_compile` and the stricter private importer. Intentional
+equivalence between `optimize` and the stricter private importer. Intentional
 Runtime calls through the stable Compiler facade are not blockers and must not be
 removed merely to reduce an import count.

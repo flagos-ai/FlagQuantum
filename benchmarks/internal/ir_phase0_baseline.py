@@ -1,4 +1,4 @@
-"""Measure the legacy CircuitIR path before internal QuantumIR work begins."""
+"""Measure the stable CircuitIR path before internal QuantumIR work begins."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from typing import Any
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler import simple_compile
+from flagquantum.compiler import optimize
 
 
 def _build_circuit(gate_count: int) -> fq.Circuit:
@@ -87,7 +87,7 @@ def _case(
     operations: dict[str, Callable[[], Any]] = {
         "circuit_build_to_ir": lambda: _build_circuit(gate_count).to_ir(),
         "ir_to_json": ir.to_json,
-        "legacy_simple_compile": lambda: simple_compile(ir),
+        "stable_optimize": lambda: optimize(ir),
         "legacy_plan": lambda: fq.plan(ir),
     }
     if gate_count <= run_max_gates:

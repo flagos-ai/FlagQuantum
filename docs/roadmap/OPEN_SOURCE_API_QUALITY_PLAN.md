@@ -370,7 +370,8 @@ Circuit/IR → compile → plan → run
 推荐：
 
 - `fq.plan` 自动完成规范化、编译、路由和资源规划；
-- 编译专家使用 `fq.compiler.compile`；
+- 编译专家使用 `fq.compiler.optimize` 做目标无关优化，使用
+  `fq.compiler.compile` 做面向目标的编译；
 - `ExecutionPlan` 记录编译后的 IR 和所有 transformation provenance；
 - 相同输入和配置产生稳定 plan identity。
 

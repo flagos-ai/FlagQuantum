@@ -7,7 +7,7 @@
 ## 1. 本轮目标
 
 Phase 2 迁移现有静态编译能力，但继续保持内部、显式 opt-in 和可整体回滚。首批只迁移
-`simple_compile` 中最小的 canonicalization 子集，不接入 `fq.run`、`fq.plan`、
+`optimize` 中最小的 canonicalization 子集，不接入 `fq.run`、`fq.plan`、
 `compile_for_backend` 或 deployment 默认路径。
 
 本轮不是重新设计公共 compiler API，也不以删除 legacy compiler 为目标。
@@ -66,7 +66,7 @@ Batch A 必须：
 - 数值旋转仅按 legacy `_is_zero` 行为处理，trainable tensor 不得折叠；
 - 参数表达式合并必须保持 autograd；
 - 每个 pass 具有独立 descriptor、确定性 digest 和统计信息；
-- restricted lowering 后与 legacy `simple_compile` 做结构与科学语义差分；
+- restricted lowering 后与稳定 `optimize` 做结构与科学语义差分；
 - 默认公共路径不 import 或执行 Phase 2 pass。
 
 ## 5. 明确禁止

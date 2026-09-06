@@ -7,6 +7,11 @@ routing. `noise.py` owns the deterministic `CircuitIR + NoiseModel` to
 channel-bearing `CircuitIR` transformation. `__init__.py` is the stable
 expert-facing compiler interface.
 
+Use `optimize(program)` for target-independent canonical optimization and
+`compile(program, coupling_map=...)` for target-aware lowering. The pre-release name
+`simple_compile` has been removed; it did not describe a distinct compilation
+stage.
+
 ## Ten-minute change path
 
 - Change local canonical optimization in `pipeline.py`.

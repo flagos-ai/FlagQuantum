@@ -16,7 +16,7 @@ from flagquantum._compiler.offline_deployment import (
 from flagquantum._compiler.passes.placement_routing import DirectedCouplingGraph
 from flagquantum._compiler.pipeline_cache import BoundedPipelineCache, CacheDisposition
 from flagquantum._compiler.testing.differential import lower_module_for_differential
-from flagquantum.compiler import simple_compile
+from flagquantum.compiler import optimize
 
 pytestmark = pytest.mark.unit
 
@@ -94,7 +94,7 @@ def test_static_pipeline_matches_existing_compiler_semantics() -> None:
 
     assert lowered.ok, lowered.diagnostics
     assert lowered.circuit_ir is not None
-    stable = simple_compile(source)
+    stable = optimize(source)
     assert lowered.circuit_ir.metadata == stable.metadata
     candidate_metadata = tuple(
         item.metadata for item in lowered.circuit_ir.instructions
@@ -135,7 +135,7 @@ def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
 def test_static_pipeline_reports_unclassified_metadata_as_domain_gap() -> None:
     source = replace(_source(), metadata={"application_tag": "chemistry"})
 
-    assert simple_compile(source).metadata == source.metadata
+    assert optimize(source).metadata == source.metadata
 
     candidate = compile_offline_static(source, _target())
 

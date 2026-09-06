@@ -30,5 +30,5 @@ Target-capability comparisons remain under the existing
 `CompilerRequirementProjection.compare_available()` and
 `CapabilityComparison` types. They are not a separate public or cross-domain
 legality contract. The first implementation-replacement candidate is still the
-static canonicalization path behind `compiler.simple_compile`; this README does
+static canonicalization path behind `compiler.optimize`; this README does
 not authorize switching the default path.

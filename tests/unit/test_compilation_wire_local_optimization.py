@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.compiler import simple_compile
+from flagquantum.compiler import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit
@@ -14,7 +14,7 @@ def test_self_inverse_gates_cancel_across_disjoint_wire_gate() -> None:
         (Instruction("x", (0,)), middle, Instruction("x", (0,))),
     )
 
-    assert simple_compile(ir).instructions == (middle,)
+    assert optimize(ir).instructions == (middle,)
 
 
 def test_rotation_gates_merge_across_disjoint_wire_gate() -> None:
@@ -28,7 +28,7 @@ def test_rotation_gates_merge_across_disjoint_wire_gate() -> None:
         ),
     )
 
-    compiled = simple_compile(ir)
+    compiled = optimize(ir)
 
     assert tuple(item.name for item in compiled) == ("rx", "h")
     assert compiled.instructions[0].params["theta"] == pytest.approx(0.3)
@@ -52,8 +52,8 @@ def test_touching_gate_blocks_self_inverse_and_rotation_rewrites() -> None:
         ),
     )
 
-    assert simple_compile(self_inverse).instructions == self_inverse.instructions
-    assert simple_compile(rotations).instructions == rotations.instructions
+    assert optimize(self_inverse).instructions == self_inverse.instructions
+    assert optimize(rotations).instructions == rotations.instructions
 
 
 def test_wire_local_trainable_rotation_merge_preserves_both_gradients() -> None:
@@ -68,7 +68,7 @@ def test_wire_local_trainable_rotation_merge_preserves_both_gradients() -> None:
         ),
     )
 
-    merged = simple_compile(ir).instructions[0].params["theta"]
+    merged = optimize(ir).instructions[0].params["theta"]
     merged.backward()
 
     assert theta.grad == pytest.approx(1.0)

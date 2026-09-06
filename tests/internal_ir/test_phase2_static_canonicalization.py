@@ -18,7 +18,7 @@ from flagquantum._compiler.passes.static_canonicalization import (
 from flagquantum._compiler.testing.differential import (
     lower_module_for_differential,
 )
-from flagquantum.compiler import simple_compile
+from flagquantum.compiler import optimize
 
 pytestmark = pytest.mark.unit
 
@@ -52,7 +52,7 @@ def test_batch_a_matches_legacy_structure_across_disjoint_wires() -> None:
     )
 
     pipeline, candidate = _compile_candidate(source)
-    legacy = simple_compile(source)
+    legacy = optimize(source)
 
     assert candidate.instructions == legacy.instructions
     assert tuple(item.name for item in candidate.instructions) == ("h", "rx", "z")
@@ -140,7 +140,7 @@ def test_trainable_rotation_merge_preserves_forward_and_both_gradients() -> None
     )
 
     _, candidate = _compile_candidate(source)
-    legacy = simple_compile(source)
+    legacy = optimize(source)
     legacy_loss = fq.Circuit.from_ir(legacy).expectation_z(0).sum()
     candidate_loss = fq.Circuit.from_ir(candidate).expectation_z(0).sum()
     legacy_gradients = torch.autograd.grad(legacy_loss, (theta, phi), retain_graph=True)
@@ -186,7 +186,7 @@ def test_batch_a_state_and_expectation_parity(dtype: str, atol: float) -> None:
     )
 
     _, candidate = _compile_candidate(source)
-    legacy_result = fq.run(simple_compile(source))
+    legacy_result = fq.run(optimize(source))
     candidate_result = fq.run(candidate)
 
     torch.testing.assert_close(
