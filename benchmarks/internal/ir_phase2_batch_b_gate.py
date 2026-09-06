@@ -33,7 +33,7 @@ DEFAULT_BUDGET = (
     / "tests"
     / "fixtures"
     / "internal_ir"
-    / "phase2_batch_b_performance_budget_candidate.json"
+    / "phase2_batch_b_performance_budget.json"
 )
 
 

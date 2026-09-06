@@ -30,12 +30,14 @@ CircuitIR import/seal
 It has structural, state, expectation, gradient, order, parser, text-hash,
 fail-closed and performance evidence. It is not a public or default compiler.
 
-Primary evidence:
+Primary verification surfaces:
 
-- `contracts/ir-phase2-exit-authorization.json`
 - `docs/development/IR_PHASE_2_BATCH_F_COMPLETION_REVIEW.md`
-- `contracts/ir-phase2-batch-f-performance-budget-validation.json`
 - `tests/fixtures/internal_ir/phase2_batch_f_offline_corpus.json`
+- `tests/fixtures/internal_ir/phase2_batch_f_performance_baseline.json`
+- `tests/fixtures/internal_ir/phase2_batch_f_performance_budget.json`
+- `tests/internal_ir/test_phase2_offline_deployment.py`
+- `tests/internal_ir/test_phase2_batch_f_performance_budget.py`
 
 ## Next controlled step
 

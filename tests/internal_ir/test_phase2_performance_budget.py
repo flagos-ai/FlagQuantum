@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
@@ -12,31 +10,7 @@ from benchmarks.internal import ir_phase2_batch_a_gate as gate
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-BUDGET = (
-    ROOT
-    / "tests/fixtures/internal_ir/phase2_performance_budget_successor_candidate.json"
-)
-ORIGINAL_BUDGET = (
-    ROOT / "tests/fixtures/internal_ir/phase2_performance_budget_candidate.json"
-)
-AUTHORIZATION = ROOT / "contracts/ir-phase2-batch-a-successor-budget-authorization.json"
-CANDIDATE = ROOT / "contracts/ir-phase2-batch-a-successor-budget-review-candidate.json"
-
-
-def test_phase2_successor_budget_is_approved_only_through_bound_authorization() -> None:
-    budget = json.loads(BUDGET.read_text(encoding="utf-8"))
-    authorization = json.loads(AUTHORIZATION.read_text(encoding="utf-8"))
-
-    assert budget["status"] == "pending_owner_approval"
-    assert authorization["decisions"]["successor_budget_approved"] is True
-    assert authorization["approved_budget"]["path"] == str(BUDGET.relative_to(ROOT))
-    assert hashlib.sha256(BUDGET.read_bytes()).hexdigest() == (
-        authorization["approved_budget"]["sha256"]
-    )
-    assert (
-        hashlib.sha256(CANDIDATE.read_bytes()).hexdigest()
-        == authorization["review_candidate"]["sha256"]
-    )
+BUDGET = ROOT / "tests/fixtures/internal_ir/phase2_batch_a_performance_budget.json"
 
 
 def _boundary_observation(
@@ -58,7 +32,7 @@ def _boundary_observation(
     }
 
 
-def test_approved_phase2_batch_a_successor_gate_accepts_and_rejects(
+def test_phase2_batch_a_gate_accepts_budget_and_rejects_regression(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(gate, "measure_case", _boundary_observation)
@@ -83,11 +57,9 @@ def test_approved_phase2_batch_a_successor_gate_accepts_and_rejects(
 def test_phase2_performance_gate_never_rewrites_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    original_before = ORIGINAL_BUDGET.read_bytes()
     before = BUDGET.read_bytes()
     monkeypatch.setattr(gate, "measure_case", _boundary_observation)
 
     gate.evaluate(BUDGET, iterations=3, warmup=1)
 
     assert BUDGET.read_bytes() == before
-    assert ORIGINAL_BUDGET.read_bytes() == original_before

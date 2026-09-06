@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "status": "measured_baseline",
+  "measured_at": "2026-09-02",
+  "scope": "CircuitIR import, Batch A canonicalization, Batch B universal decomposition, restricted lowering, verification, and identity digests",
+  "environment": {
+    "image": "flagquantum-dev:pr-check",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "iterations": 3,
+    "warmup": 1,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "workload": "rewrite-heavy deterministic mix including one-, two-, and three-qubit decompositions"
+  },
+  "cases": [
+    {
+      "gate_count": 10,
+      "emitted_gate_count": 48,
+      "expansion_ratio": 4.8,
+      "p95_ms": 4.097675,
+      "peak_host_memory_bytes": 121676,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 100,
+      "emitted_gate_count": 589,
+      "expansion_ratio": 5.89,
+      "p95_ms": 31.977937,
+      "peak_host_memory_bytes": 1206565,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 1000,
+      "emitted_gate_count": 5984,
+      "expansion_ratio": 5.984,
+      "p95_ms": 179.677072,
+      "peak_host_memory_bytes": 12091980,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 10000,
+      "emitted_gate_count": 60000,
+      "expansion_ratio": 6.0,
+      "p95_ms": 2059.454859,
+      "peak_host_memory_bytes": 123473111,
+      "deterministic_identity": true
+    }
+  ],
+  "claim_boundary": "private CPU baseline only; not a public SLA, routing baseline, emitter baseline, or provider throughput claim"
+}

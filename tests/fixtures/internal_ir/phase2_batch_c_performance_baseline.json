@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "status": "measured_baseline",
+  "measured_at": "2026-09-02",
+  "claim_scope": "Phase 2 Batch C private CPU baseline; not a public SLA",
+  "environment": {
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu",
+    "torch_num_threads": 1
+  },
+  "method": {
+    "iterations": 3,
+    "warmup": 1,
+    "clock": "time.perf_counter_ns",
+    "peak_memory": "tracemalloc",
+    "topology": "8-qubit bidirectional line",
+    "workload": "native long-range CX-heavy deterministic mix",
+    "pipeline_scope": "isolated Batch C placement/routing pass"
+  },
+  "cases": [
+    {
+      "gate_count": 10,
+      "emitted_gate_count": 142,
+      "physical_swap_count": 44,
+      "expansion_ratio": 14.2,
+      "p95_ms": 3.02505,
+      "peak_host_memory_bytes": 321484,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 100,
+      "emitted_gate_count": 652,
+      "physical_swap_count": 184,
+      "expansion_ratio": 6.52,
+      "p95_ms": 17.567671,
+      "peak_host_memory_bytes": 1382292,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 1000,
+      "emitted_gate_count": 5872,
+      "physical_swap_count": 1624,
+      "expansion_ratio": 5.872,
+      "p95_ms": 381.173687,
+      "peak_host_memory_bytes": 12551456,
+      "deterministic_identity": true
+    },
+    {
+      "gate_count": 10000,
+      "emitted_gate_count": 58072,
+      "physical_swap_count": 16024,
+      "expansion_ratio": 5.8072,
+      "p95_ms": 2212.930085,
+      "peak_host_memory_bytes": 123544108,
+      "deterministic_identity": true
+    }
+  ]
+}

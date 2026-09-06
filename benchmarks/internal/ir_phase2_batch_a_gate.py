@@ -1,4 +1,4 @@
-"""Machine gate for the approved Phase 2 Batch A static compiler budget."""
+"""Machine gate for the Phase 2 Batch A static compiler budget."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from flagquantum.core.ir import CircuitIR, Instruction
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BUDGET = (
-    ROOT / "tests/fixtures/internal_ir/phase2_performance_budget_candidate.json"
+    ROOT / "tests/fixtures/internal_ir/phase2_batch_a_performance_budget.json"
 )
 
 

@@ -102,7 +102,7 @@ Batch A 至少验证：
 
 ## 7. 性能预算候选
 
-机器预算：`tests/fixtures/internal_ir/phase2_performance_budget_candidate.json`。
+当前机器回归预算：`tests/fixtures/internal_ir/phase2_batch_a_performance_budget.json`。
 
 预算覆盖 import + verify + 已批准 pass + restricted lowering + lowered-result verification：
 

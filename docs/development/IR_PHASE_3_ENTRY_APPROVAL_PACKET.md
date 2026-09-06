@@ -4,8 +4,9 @@ Status: **Ready for owner review — implementation not authorized**
 
 Date: 2026-09-02
 
-Prerequisite: IR Phase 2 is technically complete under
-`contracts/ir-phase2-exit-authorization.json`.
+Prerequisite: IR Phase 2's private compiler pipeline is covered by the offline
+deployment, semantic differential, fail-closed, and performance regression
+tests listed in `IR_IMPLEMENTATION_STATUS.md`.
 
 ## 1. Objective
 

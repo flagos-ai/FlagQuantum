@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "status": "active_private_regression_budget",
+  "claim_scope": "Phase 2 Batch F private CPU regression candidate; not a public SLA",
+  "derivation": "Rounded envelopes above the 2026-09-02 five-sample Docker baseline",
+  "budgets": [
+    {"gate_count": 10, "cold_end_to_end_p95_ms_max": 2.0, "cached_end_to_end_p95_ms_max": 1.0, "cold_peak_host_memory_bytes_max": 1048576},
+    {"gate_count": 100, "cold_end_to_end_p95_ms_max": 10.0, "cached_end_to_end_p95_ms_max": 6.0, "cold_peak_host_memory_bytes_max": 1048576},
+    {"gate_count": 1000, "cold_end_to_end_p95_ms_max": 100.0, "cached_end_to_end_p95_ms_max": 80.0, "cold_peak_host_memory_bytes_max": 8388608},
+    {"gate_count": 10000, "cold_end_to_end_p95_ms_max": 1000.0, "cached_end_to_end_p95_ms_max": 800.0, "cold_peak_host_memory_bytes_max": 67108864}
+  ]
+}
