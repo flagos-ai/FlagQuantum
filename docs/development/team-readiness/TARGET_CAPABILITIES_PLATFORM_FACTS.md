@@ -1,6 +1,6 @@
 # TargetCapabilities 的 Platform 事实映射
 
-状态日期：2026-09-03
+状态日期：2026-09-06
 负责团队：Platform Provider
 基线：`vnext-phase1-contract-foundation`
 
@@ -19,6 +19,8 @@ Platform→Core 投影必须同时保留 `support_status`、`fact_exposure`、`e
 “未发生回退”。本轮新增的是 Platform-owned CPU 窄适配
 `cpu_platform_to_target_capability_snapshot`；它只接收注入式 probe、时间和 evidence，
 不新增 Provider 注册体系、不改变现有 Platform API/default 行为，也不触碰受保护 Core/API。
+后续增加的 CUDA 投影严格限于实际通过的单卡
+`statevector_local_p0/complex128` 范围，不外推到其他 workload、多卡、通信或无 CPU 回退。
 
 代码路径分类为 `single_device_fast_path` 的 discovery 特征映射。引用的分片和通信材料仅说明
 已有证据边界，不形成新的硬件或可扩展性证据。
@@ -107,6 +109,8 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 | `tests/unit/test_platform_runtime.py` | CPU 生命周期、CUDA discovery fake、FlagOS lazy/public API 适配和厂商名不参与分类 | 真实 CUDA、FlagOS 或国产硬件执行 |
 | `flagquantum/providers/platform/cpu_target_capabilities.py` | 注入式 CPU device/count/memory/precision 观察到 Core v1 snapshot；独立 CPU identity/scope；TTL/evidence 传递；缺失事实 blocker | 不发现 CUDA/FlagOS/QPU；不产生 requirements、fallback 或性能/硬件声明 |
 | `tests/team/platform/test_cpu_target_capabilities.py` | CPU adapter 的 source/evidence round-trip、unavailable/missing/negative probe、TTL/scope 和默认行为不变 | 任何硬件能力；fake probe 不是真实硬件证据 |
+| `cuda_target_capabilities.py` + `probe_cuda_target_capabilities.py` | 单卡 CUDA 实际完成算子预检、状态向量、数值与梯度校验后生成 workload-bound Core snapshot | 不证明隐藏 CPU fallback 缺失、多卡、多节点、通信、性能或国产算力 |
+| `artifacts/cuda_target_capabilities_a800_jp171_20260906.json` | `a800-node-0` 一张 NVIDIA A800 上的 PyTorch CUDA `complex128` 可观测开发证据 | 不是认证证据；不能外推到其他设备、版本或 workload |
 | `tests/team/platform/test_target_capability_facts.py` | 候选投影的三轴分离；缺 SDK 字段保持 unknown；声明不晋级；对象不泄漏 | 任何硬件能力；test-only fixture 不是 Core 合同 |
 | `runtime/operator_probes.py` + `CapabilityEvidence` | 特定 provider/device/profile/operator/dtype 的 forward/backward probe | 未探测算子、通信、拓扑、物理 route 或生产等级 |
 | `artifacts/flagos_cuda_reference_a800_20260824.json` | NVIDIA A800 上单 `flagos:0` CUDA-backed Torch-FL 参考路径 | 国产卡、原生 FlagOS 硬件、无 host fallback |
@@ -122,7 +126,7 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 
 ## CPU Platform 窄适配实现
 
-`flagquantum.providers.platform.cpu_target_capabilities` 是当前唯一实现切片。调用者注入
+`flagquantum.providers.platform.cpu_target_capabilities` 是首个实现切片。调用者注入
 `CPUCapabilityProbe`，其 `observe()` 返回 `CPUCapabilityObservation`，同时提供独立的
 `target_id`、`provider_version`、`target_revision`、`environment_id`、probe `source_ref` 和
 静态 `target_class_source_ref`。适配器
@@ -145,6 +149,14 @@ CPU fallback 只可由执行路径观测或经审计的 provider attestation 给
 
 该适配器只生产 `TargetCapabilitySnapshot`，不生产 `CapabilityRequirement`，不选择目标，
 不实现 Runtime fallback，不影响 `get_platform_runtime()`、平台 registry 或默认 backend。
+
+## CUDA 单卡观测切片
+
+`cuda_statevector_capability_snapshot` 只投影已通过的单设备
+`statevector_local_p0/complex128` 证据。配套工具要求进程仅可见一张 CUDA 卡，并实际完成
+算子预检、状态向量执行、双精度数值与梯度对照后才生成 snapshot。当前 A800 结果为
+`observable` 开发证据；artifact 明确保留隐藏 CPU fallback、多卡、多节点和生产性能未验证的
+blocker，因此不能解释为通用 CUDA、FlagOS 或国产硬件认证。
 
 ## Platform→Core 最小投影提案
 

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -18,6 +21,10 @@ from flagquantum.providers.platform.cuda_target_capabilities import (
 )
 
 pytestmark = pytest.mark.unit
+_ROOT = Path(__file__).resolve().parents[3]
+_A800_ARTIFACT = (
+    _ROOT / "artifacts" / "cuda_target_capabilities_a800_jp171_20260906.json"
+)
 
 
 def _snapshot(**changes: object) -> TargetCapabilitySnapshot:
@@ -70,3 +77,20 @@ def test_cuda_statevector_snapshot_rejects_invalid_evidence_digest() -> None:
 def test_cuda_statevector_snapshot_rejects_non_positive_ttl() -> None:
     with pytest.raises(ValueError, match="ttl must be positive"):
         _snapshot(ttl=timedelta(0))
+
+
+def test_checked_in_a800_observation_matches_its_snapshot() -> None:
+    payload = json.loads(_A800_ARTIFACT.read_text(encoding="utf-8"))
+    encoded = json.dumps(
+        payload["evidence"], sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    digest = hashlib.sha256(encoded).hexdigest()
+    snapshot = TargetCapabilitySnapshot.from_dict(payload["snapshot"])
+
+    assert payload["evidence_sha256"] == digest
+    assert snapshot.evidence_refs[0].sha256 == digest
+    assert payload["evidence"]["status"] == "passed"
+    assert payload["evidence"]["observations"]["state_device"] == "cuda:0"
+    assert payload["evidence"]["observations"]["state_dtype"] == "complex128"
+    assert payload["evidence"]["observations"]["numerical_validation"]["passed"]
+    assert "hidden_cpu_fallback_not_audited" in payload["evidence"]["claim_blockers"]
