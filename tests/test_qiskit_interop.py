@@ -6,8 +6,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.interop import get_adapter
-from flagquantum.interop.qiskit import (
+from flagquantum.ecosystem import get_adapter
+from flagquantum.ecosystem.qiskit import (
     QiskitConversionError,
     export_qiskit,
     from_qiskit,

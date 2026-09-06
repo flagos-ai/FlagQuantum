@@ -11,7 +11,7 @@
     "approved_scope": "framework-neutral interoperability protocol contract"
   },
   "stable_extension": {
-    "namespace": "flagquantum.interop",
+    "namespace": "flagquantum.ecosystem",
     "additions": [
       "INTEROP_API_VERSION",
       "InteropAdapter",

@@ -366,11 +366,11 @@ contract.
 ### Interoperability adapter contract
 
 External framework adapters implement one candidate-stable, framework-neutral
-protocol under `flagquantum.interop`. The default registry stores import-safe
+protocol under `flagquantum.ecosystem`. The default registry stores import-safe
 descriptors and loads an adapter implementation only when requested:
 
 ```python
-from flagquantum.interop import available_adapters, get_adapter
+from flagquantum.ecosystem import available_adapters, get_adapter
 
 assert available_adapters() == ("pennylane", "qiskit")
 adapter = get_adapter("qiskit")
@@ -397,7 +397,7 @@ runtime dependency. On Python 3.11 or newer, install it with
 `QuantumScript` boundary:
 
 ```python
-from flagquantum.interop.pennylane import from_pennylane, to_pennylane
+from flagquantum.ecosystem.pennylane import from_pennylane, to_pennylane
 
 ir = from_pennylane(quantum_script)
 round_trip = to_pennylane(ir)
@@ -426,7 +426,7 @@ dependency. Install it with `pip install 'flagquantum[qiskit]'`, then convert at
 the versioned IR boundary:
 
 ```python
-from flagquantum.interop.qiskit import from_qiskit, to_qiskit
+from flagquantum.ecosystem.qiskit import from_qiskit, to_qiskit
 
 ir = from_qiskit(qiskit_circuit)
 round_trip = to_qiskit(ir)
@@ -441,7 +441,7 @@ parameter expression cannot be represented losslessly. Use `import_qiskit()`
 or `export_qiskit()` to receive the converted object together with a
 machine-readable `QiskitConversionReport`. `allow_lossy=True` must be explicit
 and records every skipped operation; it is intended for inspection, not silent
-execution fallback. Importing `flagquantum` or `flagquantum.interop.qiskit`
+execution fallback. Importing `flagquantum` or `flagquantum.ecosystem.qiskit`
 does not import Qiskit.
 
 The supported bidirectional gate set, parameter names, bit-index mapping,
@@ -451,7 +451,7 @@ same deterministic semantic certification used by CI when qualifying a new
 environment:
 
 ```python
-from flagquantum.interop.qiskit import run_qiskit_conformance
+from flagquantum.ecosystem.qiskit import run_qiskit_conformance
 
 result = run_qiskit_conformance()
 assert result.passed

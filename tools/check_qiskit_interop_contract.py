@@ -19,7 +19,7 @@ from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "qiskit-interop-contract.toml"
 DEPENDENCY_POLICY = ROOT / "dependency-policy.toml"
-CONVERSION = ROOT / "flagquantum" / "interop" / "qiskit" / "conversion.py"
+CONVERSION = ROOT / "flagquantum" / "ecosystem" / "qiskit" / "conversion.py"
 EXPECTED_SCHEMA = "flagquantum_qiskit_interop_contract_v1"
 EXPECTED_SEMANTICS = {
     "quantum_wire_mapping": "flat_qiskit_bit_index_equals_flagquantum_wire",

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.interop.qiskit import (
+from flagquantum.ecosystem.qiskit import (
     QiskitConversionIssue,
     QiskitConversionReport,
     QiskitDependencyError,
@@ -21,14 +21,14 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_qiskit_namespace_is_lazy_without_external_framework_imports() -> None:
     code = """
 import sys
-import flagquantum.interop.qiskit
+import flagquantum.ecosystem.qiskit
 loaded = sorted(
     name for name in sys.modules
     if name == 'qiskit' or name.startswith('qiskit.')
     or name == 'qiskit_aer' or name.startswith('qiskit_aer.')
 )
 assert not loaded, loaded
-assert 'flagquantum.interop.qiskit.execution' not in sys.modules
+assert 'flagquantum.ecosystem.qiskit.execution' not in sys.modules
 assert 'flagquantum.runtime.dynamic' not in sys.modules
 """
     subprocess.run([sys.executable, "-c", code], cwd=ROOT, check=True)
@@ -36,8 +36,8 @@ assert 'flagquantum.runtime.dynamic' not in sys.modules
 
 def test_experimental_convenience_exports_delegate_to_interop() -> None:
     import flagquantum as fq
-    import flagquantum.interop.pennylane as pennylane
-    import flagquantum.interop.qiskit as qiskit
+    import flagquantum.ecosystem.pennylane as pennylane
+    import flagquantum.ecosystem.qiskit as qiskit
 
     assert fq.experimental.interop.qiskit is qiskit
     assert fq.experimental.interop.pennylane is pennylane
@@ -87,7 +87,7 @@ def test_conversion_report_is_machine_readable_and_fail_closed() -> None:
 
 def test_architecture_isolates_qiskit_imports_to_interop_namespace() -> None:
     prefixes = CONFIG["interop_boundaries"]["qiskit_import_allowed_prefixes"]
-    assert prefixes == ["flagquantum/interop/qiskit/"]
+    assert prefixes == ["flagquantum/ecosystem/qiskit/"]
     assert architecture_errors() == ()
 
 

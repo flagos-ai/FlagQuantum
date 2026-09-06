@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 import flagquantum as fq
-from flagquantum.interop import (
+from flagquantum.ecosystem import (
     INTEROP_API_VERSION,
     InteropConversionError,
     InteropConversionIssue,

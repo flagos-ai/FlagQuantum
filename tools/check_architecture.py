@@ -261,14 +261,14 @@ def architecture_errors() -> tuple[str, ...]:
             ) and not relative.startswith(qiskit_import_allowed_prefixes):
                 errors.append(
                     f"{relative}: Qiskit imports are isolated to "
-                    "flagquantum.interop.qiskit"
+                    "flagquantum.ecosystem.qiskit"
                 )
             if (
                 module == "pennylane" or module.startswith("pennylane.")
             ) and not relative.startswith(pennylane_import_allowed_prefixes):
                 errors.append(
                     f"{relative}: PennyLane imports are isolated to "
-                    "flagquantum.interop.pennylane"
+                    "flagquantum.ecosystem.pennylane"
                 )
         for subsystem_name, policy in legacy_subsystems.items():
             allowed_importers = set(policy.get("allowed_importers", ()))

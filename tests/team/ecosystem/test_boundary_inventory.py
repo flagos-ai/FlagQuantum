@@ -82,8 +82,8 @@ def test_runtime_to_ecosystem_reverse_dependency_is_frozen_as_migration_debt() -
         path.relative_to(ROOT).as_posix()
         for path in _python_files()
         if any(
-            module.startswith("flagquantum.interop")
-            or module.lstrip(".").startswith("interop")
+            module.startswith("flagquantum.ecosystem")
+            or module.lstrip(".").startswith("ecosystem")
             for module in _imports(path)
         )
     }

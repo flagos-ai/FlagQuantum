@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.interop.pennylane import PennyLaneDependencyError, conversion
+from flagquantum.ecosystem.pennylane import PennyLaneDependencyError, conversion
 from tools.check_architecture import CONFIG, architecture_errors
 
 pytestmark = pytest.mark.unit
@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_pennylane_namespace_and_registry_are_lazy() -> None:
     code = """
 import sys
-import flagquantum.interop.pennylane
-from flagquantum.interop import available_adapters, get_adapter
+import flagquantum.ecosystem.pennylane
+from flagquantum.ecosystem import available_adapters, get_adapter
 assert available_adapters() == ('pennylane', 'qiskit')
 assert get_adapter('pennylane').name == 'pennylane'
 assert not [name for name in sys.modules if name == 'pennylane' or name.startswith('pennylane.')]
@@ -37,7 +37,7 @@ def test_missing_pennylane_fails_only_when_conversion_is_requested(monkeypatch) 
 
 def test_architecture_isolates_pennylane_imports() -> None:
     assert CONFIG["interop_boundaries"]["pennylane_import_allowed_prefixes"] == [
-        "flagquantum/interop/pennylane/"
+        "flagquantum/ecosystem/pennylane/"
     ]
     assert architecture_errors() == ()
 

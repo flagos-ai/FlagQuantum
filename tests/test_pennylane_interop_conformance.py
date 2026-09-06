@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.interop.pennylane import run_pennylane_conformance
+from flagquantum.ecosystem.pennylane import run_pennylane_conformance
 
 pytest.importorskip("pennylane")
 pytestmark = [pytest.mark.integration, pytest.mark.pennylane]

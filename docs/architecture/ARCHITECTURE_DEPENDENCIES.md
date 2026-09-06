@@ -48,8 +48,8 @@ Every exception names an owner and removal version. Run
 | Optional kernels | backend adapters behind `flagquantum.runtime.backends` |
 | Measurements | `flagquantum.measurement` |
 | Deployment/providers | `flagquantum.deployment` |
-| External framework adapter contract | `flagquantum.interop` |
-| External framework conversion | `flagquantum.interop.<framework>` |
+| External framework adapter contract | `flagquantum.ecosystem` |
+| External framework conversion | `flagquantum.ecosystem.<framework>` |
 | Evidence and audit policy | `flagquantum.runtime.audit` |
 
 `flagquantum.runtime` is the sole runtime implementation namespace. New
@@ -60,9 +60,9 @@ The circuit implementation lives at `flagquantum.circuit`; `flagquantum.core`
 contains backend-neutral IR, operator schemas, parameters, configuration, and
 versioned contracts only.
 
-External framework objects stop at `flagquantum.interop`. Its immutable lazy
+External framework objects stop at `flagquantum.ecosystem`. Its immutable lazy
 registry and framework-neutral conversion contracts are the shared control-plane
-boundary; concrete implementations live under `flagquantum.interop.<framework>`.
+boundary; concrete implementations live under `flagquantum.ecosystem.<framework>`.
 The Qiskit and PennyLane adapters convert to or from versioned FlagQuantum IR,
 report semantic loss explicitly, and load their external framework only when
 conversion is called. PennyLane v1 stops specifically at immutable

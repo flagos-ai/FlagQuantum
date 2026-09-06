@@ -390,7 +390,7 @@ Package trained circuits, export provider formats, and route them through deploy
 Implement and certify optional external-framework conversion behind one immutable lazy registry and framework-neutral, loss-aware result contract.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.interop`
+- **Public API:** `flagquantum.ecosystem`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `adapter_defined`
@@ -404,7 +404,7 @@ Implement and certify optional external-framework conversion behind one immutabl
 Translate supported immutable PennyLane QuantumScript programs to versioned FlagQuantum IR and back through an isolated, loss-aware control-plane adapter.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.interop.pennylane.from_pennylane`, `flagquantum.interop.pennylane.to_pennylane`
+- **Public API:** `flagquantum.ecosystem.pennylane.from_pennylane`, `flagquantum.ecosystem.pennylane.to_pennylane`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `bound_parameters_only`
@@ -418,7 +418,7 @@ Translate supported immutable PennyLane QuantumScript programs to versioned Flag
 Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQuantum IR through an isolated, loss-aware control-plane adapter.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.interop.qiskit.from_qiskit`, `flagquantum.interop.qiskit.to_qiskit`
+- **Public API:** `flagquantum.ecosystem.qiskit.from_qiskit`, `flagquantum.ecosystem.qiskit.to_qiskit`
 - **Runtime modes:** `control_plane_conversion`
 - **Hardware:** `cpu_control_plane`
 - **Gradient support:** `symbolic_parameters_only`

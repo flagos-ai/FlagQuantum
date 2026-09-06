@@ -119,13 +119,13 @@ class InteropRegistry:
 
 QISKIT_ADAPTER_SPEC = InteropAdapterSpec(
     name="qiskit",
-    module="flagquantum.interop.qiskit.adapter",
+    module="flagquantum.ecosystem.qiskit.adapter",
     attribute="QISKIT_ADAPTER",
     dependency_extra="qiskit",
 )
 PENNYLANE_ADAPTER_SPEC = InteropAdapterSpec(
     name="pennylane",
-    module="flagquantum.interop.pennylane.adapter",
+    module="flagquantum.ecosystem.pennylane.adapter",
     attribute="PENNYLANE_ADAPTER",
     dependency_extra="pennylane",
 )

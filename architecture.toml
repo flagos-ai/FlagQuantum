@@ -21,10 +21,10 @@ direct_cuda_allowed = [
 
 [interop_boundaries]
 qiskit_import_allowed_prefixes = [
-    "flagquantum/interop/qiskit/",
+    "flagquantum/ecosystem/qiskit/",
 ]
 pennylane_import_allowed_prefixes = [
-    "flagquantum/interop/pennylane/",
+    "flagquantum/ecosystem/pennylane/",
 ]
 
 [simulation_boundaries]

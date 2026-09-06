@@ -9,8 +9,8 @@ from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.core.parameters import Parameter
-from flagquantum.interop import get_adapter
-from flagquantum.interop.pennylane import (
+from flagquantum.ecosystem import get_adapter
+from flagquantum.ecosystem.pennylane import (
     PennyLaneConversionError,
     from_pennylane,
     import_pennylane,

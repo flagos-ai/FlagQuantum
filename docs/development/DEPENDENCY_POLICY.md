@@ -14,7 +14,7 @@ Installing core FlagQuantum therefore never installs an external quantum
 framework.
 
 External framework imports are also namespace-governed. Qiskit and PennyLane
-imports belong only under their matching `flagquantum.interop` namespaces; the
+imports belong only under their matching `flagquantum.ecosystem` namespaces; the
 architecture check rejects either dependency in core IR, compilers, runtimes,
 kernels, and distributed workers. Existing experimental Aer entry points are
 compatibility wrappers over the Qiskit adapter. The common registry stores only

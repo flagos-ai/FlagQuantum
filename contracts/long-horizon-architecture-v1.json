@@ -91,12 +91,12 @@
       "name": "ecosystem_convergence",
       "owner": "ecosystem-maintainers",
       "target_milestone": "vnext-phase-4",
-      "current_authority": ["flagquantum/interop", "flagquantum/extensions"],
+      "current_authority": ["flagquantum/ecosystem", "flagquantum/extensions"],
       "target_authority": "flagquantum/ecosystem",
       "compatibility_adapter": "existing interop and extension entry points",
       "completion_evidence": "external objects are converted at the boundary and round-trip conformance tests pass",
       "retirement_condition": "external framework objects no longer cross into Core, Compiler, Runtime, or Simulation",
-      "status": "planned"
+      "status": "in_progress"
     },
     {
       "name": "agent_gateway_separation",

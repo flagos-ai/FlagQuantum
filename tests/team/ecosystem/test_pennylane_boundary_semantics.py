@@ -9,8 +9,8 @@ qml = pytest.importorskip("pennylane")
 torch = pytest.importorskip("torch")
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.interop import semantic_fingerprint  # noqa: E402
-from flagquantum.interop.pennylane import (  # noqa: E402
+from flagquantum.ecosystem import semantic_fingerprint  # noqa: E402
+from flagquantum.ecosystem.pennylane import (  # noqa: E402
     PennyLaneConversionError,
     export_pennylane,
     import_pennylane,

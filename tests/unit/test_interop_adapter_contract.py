@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-from flagquantum.interop import (
+from flagquantum.ecosystem import (
     DEFAULT_INTEROP_REGISTRY,
     INTEROP_API_VERSION,
     InteropAdapter,
@@ -27,8 +27,8 @@ from flagquantum.interop import (
     run_adapter_conformance,
     semantic_fingerprint,
 )
-from flagquantum.interop.pennylane import PENNYLANE_ADAPTER
-from flagquantum.interop.qiskit import (
+from flagquantum.ecosystem.pennylane import PENNYLANE_ADAPTER
+from flagquantum.ecosystem.qiskit import (
     QISKIT_ADAPTER,
     QiskitConversionError,
     QiskitConversionIssue,
@@ -101,7 +101,7 @@ def test_registered_adapter_extras_are_dependency_governed() -> None:
     for spec in DEFAULT_INTEROP_REGISTRY.specs.values():
         assert spec.dependency_extra in policy["extras"]
         assert spec.dependency_extra in interop_extras
-        assert spec.module.startswith(f"flagquantum.interop.{spec.name}")
+        assert spec.module.startswith(f"flagquantum.ecosystem.{spec.name}")
 
 
 def test_registry_additions_return_new_registry_and_reject_ambiguity() -> None:
@@ -132,7 +132,7 @@ def test_registry_additions_return_new_registry_and_reject_ambiguity() -> None:
 
     missing = InteropAdapterSpec(
         name="missing",
-        module="flagquantum.interop.missing_adapter",
+        module="flagquantum.ecosystem.missing_adapter",
         attribute="ADAPTER",
         dependency_extra="missing",
     )
@@ -143,7 +143,7 @@ def test_registry_additions_return_new_registry_and_reject_ambiguity() -> None:
 def test_importing_and_resolving_adapter_does_not_import_qiskit() -> None:
     code = """
 import sys
-from flagquantum.interop import available_adapters, get_adapter
+from flagquantum.ecosystem import available_adapters, get_adapter
 assert available_adapters() == ('pennylane', 'qiskit')
 assert get_adapter('qiskit').name == 'qiskit'
 assert get_adapter('pennylane').name == 'pennylane'
@@ -186,7 +186,7 @@ def test_generic_result_and_error_preserve_typed_diagnostics() -> None:
 
 
 def test_conformance_kit_is_available_without_external_frameworks() -> None:
-    assert InteropConformanceResult.__module__ == "flagquantum.interop.conformance"
-    assert InteropRoundTripCase.__module__ == "flagquantum.interop.conformance"
+    assert InteropConformanceResult.__module__ == "flagquantum.ecosystem.conformance"
+    assert InteropRoundTripCase.__module__ == "flagquantum.ecosystem.conformance"
     assert callable(run_adapter_conformance)
     assert callable(semantic_fingerprint)

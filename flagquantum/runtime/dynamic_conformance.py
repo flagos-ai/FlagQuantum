@@ -165,7 +165,7 @@ def run_qiskit_aer_dynamic(
 ) -> DynamicExecutionResult:
     """Compatibility wrapper for the isolated Qiskit Aer adapter."""
 
-    from ..interop.qiskit.execution import run_qiskit_aer_dynamic as execute
+    from ..ecosystem.qiskit.execution import run_qiskit_aer_dynamic as execute
 
     return execute(circuit, shots=shots, seed=seed)
 
@@ -178,7 +178,7 @@ def run_qiskit_aer_qasm3_round_trip(
 ) -> DynamicExecutionResult:
     """Compatibility wrapper for the isolated Qiskit QASM 3 adapter."""
 
-    from ..interop.qiskit.execution import (
+    from ..ecosystem.qiskit.execution import (
         run_qiskit_aer_qasm3_round_trip as execute,
     )
 

@@ -11,7 +11,7 @@ from qiskit import QuantumCircuit  # noqa: E402
 from qiskit.circuit import Parameter as QiskitParameter  # noqa: E402
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.interop.qiskit import (  # noqa: E402
+from flagquantum.ecosystem.qiskit import (  # noqa: E402
     QiskitConversionError,
     export_qiskit,
     import_qiskit,

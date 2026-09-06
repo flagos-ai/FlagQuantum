@@ -90,7 +90,7 @@ def test_local_deployment_package_executes() -> None:
 @pytest.mark.qiskit
 def test_qiskit_round_trip_preserves_bell_program() -> None:
     pytest.importorskip("qiskit")
-    from flagquantum.interop.qiskit import export_qiskit, import_qiskit
+    from flagquantum.ecosystem.qiskit import export_qiskit, import_qiskit
 
     original = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
     exported = export_qiskit(original)

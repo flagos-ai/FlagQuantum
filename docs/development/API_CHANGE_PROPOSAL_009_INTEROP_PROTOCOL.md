@@ -4,7 +4,7 @@
 
 **Frozen by API owner — 候选稳定契约已批准并冻结。**
 
-- 候选稳定命名空间：`flagquantum.interop`；
+- 候选稳定命名空间：`flagquantum.ecosystem`；
 - 根级名称变化：无；
 - 机器可读契约：`contracts/interop-protocol-v1-candidate.json`；
 - 实施授权：API owner 于 2026-09-01 要求继续执行稳定化漏斗；
@@ -35,14 +35,14 @@ external framework object
 experimental adapter implementation
         │  InteropImportResult / InteropExportResult
         ▼
-candidate-stable flagquantum.interop protocol
+candidate-stable flagquantum.ecosystem protocol
         │
         ▼
 versioned CircuitIR
 ```
 
 外部对象不能进入 compiler、runtime、kernel、distributed 或 accelerator 层。导入
-`flagquantum.interop`、查看 registry 或加载 adapter 描述符不能隐式导入 Qiskit/PennyLane。
+`flagquantum.ecosystem`、查看 registry 或加载 adapter 描述符不能隐式导入 Qiskit/PennyLane。
 
 ## 本轮修正
 
@@ -50,7 +50,7 @@ versioned CircuitIR
    RuntimeError 的 Python 兼容分类；
 2. `run_adapter_conformance` 的 callable 默认值改为 `None`，消除签名中进程地址导致的
    不可复现契约；
-3. `flagquantum.interop.__all__` 排除具体 adapter 和默认 registry 实例；
+3. `flagquantum.ecosystem.__all__` 排除具体 adapter 和默认 registry 实例；
 4. `fq.experimental.interop` 只路由 `qiskit`、`pennylane` 两个实验实现命名空间。
 
 ## 验收标准

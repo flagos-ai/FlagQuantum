@@ -50,7 +50,7 @@ made.
 
 | Operation | Entry point | Boundary result | Classification | Finding |
 | --- | --- | --- | --- | --- |
-| Discover/register | `flagquantum.interop.available_adapters`, `get_adapter("qiskit")`, `QISKIT_ADAPTER` | Lazy `InteropAdapter`; no Qiskit import during discovery | Format interoperability | Correct boundary |
+| Discover/register | `flagquantum.ecosystem.available_adapters`, `get_adapter("qiskit")`, `QISKIT_ADAPTER` | Lazy `InteropAdapter`; no Qiskit import during discovery | Format interoperability | Correct boundary |
 | Import | `import_qiskit`, `from_qiskit` | `QiskitImportResult(ir=CircuitIR, report=...)` or `CircuitIR` | Format interoperability | Correct object boundary; metadata caveat below |
 | Export | `export_qiskit`, `to_qiskit` | Qiskit object only in explicit `artifact`/`circuit` | Format interoperability | Correct boundary |
 | Semantic conversion | `qiskit_statevector_to_flagquantum`, `semantic_fingerprint`, `run_qiskit_conformance` | PyTorch tensor or owned conformance record | Result conversion/test | Correct boundary |
@@ -172,7 +172,7 @@ before implementation. Regardless of vendor naming, migration follows the same
 split:
 
 1. Put program/object import and export in
-   `flagquantum/interop/<framework>/`. Convert immediately to/from `CircuitIR`;
+   `flagquantum/ecosystem/<framework>/`. Convert immediately to/from `CircuitIR`;
    never store the vendor kernel, builder, AST, MLIR/QIR handle, observable, or
    result object in FlagQuantum IR.
 2. Put execution, target discovery, job submission, polling, cancellation, and

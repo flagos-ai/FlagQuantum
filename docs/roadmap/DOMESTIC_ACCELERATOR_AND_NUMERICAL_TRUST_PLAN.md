@@ -469,7 +469,7 @@ flagquantum-vendor-<name>
 
 ## 9. 外部量子框架的隔离策略
 
-`flagquantum.interop.qiskit` 的定位是反腐层：
+`flagquantum.ecosystem.qiskit` 的定位是反腐层：
 
 - `from_qiskit()` 将 Qiskit circuit 转为 FlagQuantum IR；
 - `to_qiskit()` 将可表达的 FlagQuantum IR 导出；
@@ -480,12 +480,12 @@ flagquantum-vendor-<name>
 其他外部框架遵循相同结构：
 
 ```text
-flagquantum.interop.qiskit
-flagquantum.interop.pennylane
-flagquantum.interop.cirq
-flagquantum.interop.pytket
-flagquantum.interop.qir
-flagquantum.interop.openfermion
+flagquantum.ecosystem.qiskit
+flagquantum.ecosystem.pennylane
+flagquantum.ecosystem.cirq
+flagquantum.ecosystem.pytket
+flagquantum.ecosystem.qir
+flagquantum.ecosystem.openfermion
 ```
 
 依赖策略：

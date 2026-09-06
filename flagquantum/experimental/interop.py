@@ -12,7 +12,7 @@ __all__ = _ADAPTER_NAMES
 def __getattr__(name: str) -> Any:
     if name not in __all__:
         raise AttributeError(name)
-    return import_module(f"flagquantum.interop.{name}")
+    return import_module(f"flagquantum.ecosystem.{name}")
 
 
 def __dir__() -> list[str]:

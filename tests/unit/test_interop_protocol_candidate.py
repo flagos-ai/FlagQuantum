@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+import flagquantum.ecosystem as fqi
 import flagquantum.errors as fqe
-import flagquantum.interop as fqi
 
 pytestmark = pytest.mark.unit
 
@@ -36,7 +36,7 @@ def test_interop_protocol_is_frozen_without_freezing_adapters() -> None:
 def test_interop_namespace_matches_candidate_exactly() -> None:
     extension = _load()["stable_extension"]
 
-    assert extension["namespace"] == "flagquantum.interop"
+    assert extension["namespace"] == "flagquantum.ecosystem"
     assert list(fqi.__all__) == extension["additions"]
     assert extension["new_namespace_only"] == extension["additions"]
     assert set(extension["additions"]).isdisjoint(dir(fq))

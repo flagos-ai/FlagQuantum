@@ -7,7 +7,7 @@ enter simulation, training, accelerator, or distributed runtime layers.
 
 ## Required structure
 
-Each adapter lives under `flagquantum.interop.<name>` and implements
+Each adapter lives under `flagquantum.ecosystem.<name>` and implements
 `InteropAdapter`. Its descriptor belongs in the immutable lazy registry; the
 descriptor may be imported without importing the external framework.
 
@@ -16,7 +16,7 @@ retains its own dependency window, operation mapping, issue codes and maturity.
 
 The adapter dependency must have its own optional extra and be classified as
 `interop` in `dependency-policy.toml`. Importing `flagquantum`,
-`flagquantum.interop`, or resolving the adapter object must continue to work in
+`flagquantum.ecosystem`, or resolving the adapter object must continue to work in
 a core-only installation.
 
 ## Common conformance suite
@@ -25,7 +25,7 @@ Use the framework-neutral suite before adding framework-specific numerical or
 provider tests:
 
 ```python
-from flagquantum.interop import (
+from flagquantum.ecosystem import (
     InteropRejectionCase,
     InteropRoundTripCase,
     get_adapter,

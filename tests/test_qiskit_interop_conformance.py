@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.operators as fqo
-from flagquantum.interop.qiskit import (
+from flagquantum.ecosystem.qiskit import (
     from_qiskit,
     qiskit_statevector_to_flagquantum,
     run_qiskit_conformance,
