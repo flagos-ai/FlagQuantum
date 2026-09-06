@@ -99,7 +99,8 @@ provider/hardware 接入，也不构成国产硬件、FlagCX、多节点、QPU�
 5. Runtime 接 matching seam、独立 CPU candidate、六轴 fallback 和 decision/evidence 关联。
 6. 各延后域逐项提交 contract proposal；真实硬件能力另走认证路径。
 
-机器可读授权：`contracts/target-capabilities-v1-implementation-authorization.json`。
+实现依据为 `flagquantum/core/target_capabilities.py` 及 Core、Runtime、Compiler、
+Provider 的能力匹配与替换测试。历史实现授权记录不再作为代码契约。
 
 ## Phase 2 集成收口状态（2026-09-04）
 

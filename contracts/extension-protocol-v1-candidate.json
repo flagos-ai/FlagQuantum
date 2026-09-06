@@ -86,8 +86,7 @@
   "evidence": {
     "third_party_example": "examples/extensions/reference_extensions.py",
     "public_imports_only_test": "tests/api_contract/test_extension_protocol_semantics.py",
-    "golden_paths": "tests/api_contract/test_open_source_golden_paths.py",
-    "freeze_audit": "docs/development/ALPHA_API_FREEZE_AUDIT.md"
+    "golden_paths": "tests/api_contract/test_open_source_golden_paths.py"
   },
   "rules": {
     "candidate_is_frozen_contract": true,

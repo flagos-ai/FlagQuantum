@@ -108,7 +108,6 @@ fq.run(program)
 | `docs/public_api_v1.json` | `d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4` |
 | `contracts/public-api-v0.2-baseline.json` | `ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea` |
 | `contracts/public-api-v1-candidate.json` | `72124b6557b09ffee1ecbcc682e958d50aa6a1895e77f96d6e3bb63581ddc256` |
-| `contracts/api-convergence-review-packet-008-010.json` | `068e45620f6d6beecf8ad02960c40f20db05be5906bddde6fd46308df747de03` |
 | `contracts/experimental-namespace-v1-candidate.json` | `852c74c6441b89764836615ad4aca93eff6b20919e897f1166a1c26635177ba4` |
 | `contracts/experimental-surface-v2-candidate.json` | `f400fb5d8de97f4cf51a15e4c8d2634398fbd158b5b0fda0dbfcf0d4afd63ef4` |
 

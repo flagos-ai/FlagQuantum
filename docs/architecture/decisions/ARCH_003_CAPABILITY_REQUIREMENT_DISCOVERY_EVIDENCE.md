@@ -212,7 +212,8 @@ CPU Platform adapter → Runtime matching seam 与独立 CPU candidate → 第�
 - 至少两个 producer adapter 通过同一 conformance，消费者不修改；
 - 国产硬件 fixture 保持 unknown/unmeasured、basic ceiling 和非空 blocker。
 
-机器授权与精确字段见 `contracts/target-capabilities-v1-implementation-authorization.json`；裁决说明
+精确字段由 `flagquantum/core/target_capabilities.py` 定义，并由 Core、Runtime、Compiler
+和 Provider 的能力匹配测试共同验证；裁决说明
 见 `docs/development/VNEXT_PHASE2_CAPABILITIES_DECISION.md`。
 
 ## 未决问题
