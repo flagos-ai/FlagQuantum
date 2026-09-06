@@ -102,7 +102,7 @@
       "name": "agent_gateway_separation",
       "owner": "agent-service-maintainers",
       "target_milestone": "vnext-phase-4",
-      "current_authority": ["flagquantum/_agent_services", "flagquantum/_gateways/mcp"],
+      "current_authority": ["flagquantum/agent_services"],
       "target_authority": "protocol-neutral Agent Services in FlagQuantum; gateways in external Compute Service",
       "compatibility_adapter": "versioned service contract",
       "completion_evidence": "local SDK and Agent Services pass with the MCP SDK absent, and cross-repository contract tests pass",

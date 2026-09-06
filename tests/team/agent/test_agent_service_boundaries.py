@@ -6,10 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-NORTHBOUND_ROOTS = (
-    ROOT / "flagquantum" / "_agent_services",
-    ROOT / "flagquantum" / "_gateways",
-)
+NORTHBOUND_ROOTS = (ROOT / "flagquantum" / "agent_services",)
 
 
 def _imports(path: Path) -> tuple[str, ...]:
@@ -68,7 +65,7 @@ class RejectMCP(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, RejectMCP())
 
 import flagquantum as fq
-from flagquantum._agent_services import AgentApplicationService
+from flagquantum.agent_services import AgentApplicationService
 
 circuit = fq.Circuit(1).h(0)
 validation = AgentApplicationService().validate_program(circuit.to_ir().to_dict())

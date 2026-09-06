@@ -34,13 +34,6 @@ runtime_import_allowed = [
 ]
 
 [northbound_boundaries]
-gateway_forbidden = [
-    "_compiler",
-    "compilation",
-    "deployment",
-    "runtime",
-    "simulation",
-]
 agent_services_forbidden = [
     "backends",
     "platforms",

@@ -5,8 +5,8 @@ from dataclasses import fields
 
 import pytest
 
-import flagquantum._agent_services.service as agent_service_module
-from flagquantum._agent_services import AgentApplicationService
+import flagquantum.agent_services.service as agent_service_module
+from flagquantum.agent_services import AgentApplicationService
 from flagquantum.core._artifacts import ArtifactKind, ProgramArtifact
 from flagquantum.core.ir import CircuitIR, Instruction, IRSerializationError
 

@@ -337,16 +337,7 @@ def architecture_errors() -> tuple[str, ...]:
                         "forbidden; move the shared contract to Core"
                     )
 
-        if relative.startswith("flagquantum/_gateways/"):
-            forbidden = tuple(northbound_boundaries.get("gateway_forbidden", ()))
-            for module, _ in imports:
-                if any(part in module.split(".") for part in forbidden):
-                    errors.append(
-                        f"{relative}: northbound gateway imports forbidden "
-                        f"implementation layer {module}"
-                    )
-
-        if relative.startswith("flagquantum/_agent_services/"):
+        if relative.startswith("flagquantum/agent_services/"):
             forbidden = tuple(northbound_boundaries.get("agent_services_forbidden", ()))
             for module, _ in imports:
                 if any(part in module.split(".") for part in forbidden):
