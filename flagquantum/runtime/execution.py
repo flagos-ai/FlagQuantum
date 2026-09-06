@@ -75,6 +75,8 @@ _PARAM_ALIASES = {
 
 
 def _as_parameter_tensor(instruction: Instruction) -> torch.Tensor | None:
+    """Adapt IR parameters to the legacy distributed-device gate signature."""
+
     names = _PARAM_ALIASES.get(instruction.name)
     if not names:
         return None
@@ -90,6 +92,8 @@ def _as_parameter_tensor(instruction: Instruction) -> torch.Tensor | None:
 
 
 def _matrix_to_torch(matrix: Any, device: torch.device | str) -> torch.Tensor:
+    """Adapt a custom matrix to the legacy complex64 distributed-device path."""
+
     tensor = getattr(matrix, "tensor", matrix)
     if hasattr(tensor, "detach"):
         tensor = tensor.detach()

@@ -407,3 +407,14 @@ Runtime 的本地分布式开发路径不再维护一份 reshape、边缘化和�
 继续唯一拥有从完整 statevector 计算全 wire Z 期望值的纯数值语义；Runtime 只决定是否执行
 测量以及何时把本地分布式结果交给该数值入口。现有开发 profile 测试覆盖 Bell 态的批次形状、
 wire 顺序和结果一致性。
+
+## 19. 旧分布式设备转换边界（2026-09-06）
+
+`runtime/execution.py` 中 `_as_parameter_tensor()` 与 `_matrix_to_torch()` 只服务于受保护的
+`DistributedExecutor` 兼容路径，继续保留在 Runtime。前者按旧设备函数约定生成 float32 参数，
+把批次补齐留给 `ops.functional.gate()`；后者按旧自定义门行为切断输入梯度并转换为 complex64。
+现有 `ops.gate_matrix.parameter_tensor()` 和 `gate_matrix()` 则是设备驻留、批次化、精度感知的
+通用执行入口，并保留可微输入，因而不是等价替代。
+
+本轮不移动函数、不增加转换契约，也不把旧行为扩散到 Simulation。待该兼容执行器按公共 API
+迁移流程退出时，两个私有转换应随执行器一并删除；在此之前，新执行路径不得依赖它们。
