@@ -55,6 +55,7 @@ def test_backend_facade_preserves_implementation_identity() -> None:
 
     assert backends.run_native is execution.run_native
     assert backends.run_mps is mps_execution.run_mps
+    assert "run_advanced" not in execution.__all__
 
 
 def test_compiler_facade_has_one_canonical_short_name() -> None:

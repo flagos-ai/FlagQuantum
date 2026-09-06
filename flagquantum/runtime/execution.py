@@ -1168,7 +1168,6 @@ __all__ = [
     "DistributedExecutor",
     "ExecutionPlan",
     "run",
-    "run_advanced",
     "run_distributed",
     "run_native",
 ]

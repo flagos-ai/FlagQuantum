@@ -246,3 +246,12 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 
 只有 Core 契约、contract fake 和 conformance test 先在集成分支落地后，Runtime 才应同步
 基线并实施依赖移除。
+
+## 7. 兼容执行入口收口（2026-09-06）
+
+`run_native()` 与 `run_distributed()` 仍属于受保护的 backend-native 兼容面，当前有公开 facade、
+文档及真实测试消费者，不能在没有 API 迁移提案时删除。`run_advanced()` 只服务内部后端特征与
+分布式测试，当前 `fq.experimental.execution` 已明确为空，因此不再列入
+`runtime.execution.__all__`，也不得新增产品调用方。函数暂留是为了避免一次性重写大量底层测试，
+不代表新的公共执行入口；后续应按真实消费者逐步改用稳定 `fq.run()` 或所属 backend facade，
+消费者清零后再删除实现。

@@ -38,6 +38,11 @@ starts at `execute_plan()`, does not invoke planning, mode selection, compilatio
 or plan construction again, and launches the selected Simulation entry exactly
 once. The returned `ExecutionResult` retains the supplied plan object.
 
+`run_advanced()` remains an internal characterization bridge for backend-specific
+tests. It is not part of Runtime's declared exports or the experimental public
+namespace. Do not add product callers; use `fq.run()` for stable execution or an
+owned backend facade for backend-native results.
+
 `records.py` constructs Core-owned execution records from observed facts. It
 must not define a second record schema or make release-eligibility decisions.
 
