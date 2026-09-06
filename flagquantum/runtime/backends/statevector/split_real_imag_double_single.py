@@ -40,6 +40,7 @@ from ....simulation.double_single_statevector import (
     run_double_single_statevector,
 )
 from .split_real_imag import (
+    _canonical_parameter_bindings,
     _normalized_observables,
     _parameter_occurrences,
     _PauliTerm,
@@ -289,10 +290,7 @@ def _normalized_p3_bindings(
     parameter_bindings: Mapping[str | Parameter, Any],
 ) -> dict[str, torch.Tensor]:
     normalized: dict[str, torch.Tensor] = {}
-    for raw_name, value in parameter_bindings.items():
-        name = raw_name.name if isinstance(raw_name, Parameter) else str(raw_name)
-        if not name or name in normalized:
-            raise ValueError(f"duplicate or empty parameter binding {name!r}")
+    for name, value in _canonical_parameter_bindings(parameter_bindings).items():
         tensor = (
             value.detach()
             if isinstance(value, torch.Tensor)

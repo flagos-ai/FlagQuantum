@@ -32,6 +32,7 @@ from ....simulation.double_single_statevector import (
     run_double_single_statevector,
 )
 from .split_real_imag import (
+    _canonical_parameter_bindings,
     _normalized_observables,
     _parameter_occurrences,
     _PauliTerm,
@@ -272,18 +273,6 @@ def _profile_identity(
     return profile.name, profile.profile_hash, (), identity.provider
 
 
-def _canonical_bindings(
-    parameter_bindings: Mapping[str | Parameter, Any],
-) -> dict[str, Any]:
-    normalized: dict[str, Any] = {}
-    for raw_name, value in parameter_bindings.items():
-        name = raw_name.name if isinstance(raw_name, Parameter) else str(raw_name)
-        if not name or name in normalized:
-            raise ValueError(f"duplicate or empty P4 parameter binding {name!r}")
-        normalized[name] = value
-    return normalized
-
-
 def _validate_scope(ir: CircuitIR) -> None:
     for instruction in ir.instructions:
         if instruction.params and instruction.name not in P4_PARAMETER_GATES:
@@ -462,7 +451,7 @@ def execute_split_real_imag_device_double_single_expectation(
     _validate_p1_execution_scope(circuit_or_ir, ir)
     _validate_scope(ir)
     occurrences = _parameter_occurrences(ir)
-    bindings = _canonical_bindings(parameter_bindings or {})
+    bindings = _canonical_parameter_bindings(parameter_bindings or {})
     if set(bindings) != set(occurrences):
         raise ValueError(
             "P4 bindings must exactly match named parameters; "
@@ -497,7 +486,7 @@ def parameter_shift_split_real_imag_device_double_single_gradient(
     _validate_p1_execution_scope(circuit_or_ir, ir)
     _validate_scope(ir)
     occurrences = _parameter_occurrences(ir)
-    bindings = _canonical_bindings(parameter_bindings)
+    bindings = _canonical_parameter_bindings(parameter_bindings)
     if set(bindings) != set(occurrences) or not occurrences:
         raise ValueError(
             "P4 bindings must exactly match at least one named parameter; "

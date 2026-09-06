@@ -352,3 +352,8 @@ Kernel；CPU conformance 覆盖状态、期望值、梯度和优化器诊断结�
 P1–P5 conformance 的 complex128 参考路径也不再自行调用门矩阵和 statevector 底层作用函数，
 而是复用 `simulation.pauli.pauli_product_statevector_expectation()`。Runtime 仍负责构造测试线路、
 参数移位和判定阈值，Simulation 继续唯一拥有 Pauli 乘积期望值的稠密数值实现。
+
+输入处理复核确认，观测量到内部 Pauli term 的适配、参数出现位置、逐 occurrence 参数移位以及
+各精度 profile 的标量与 dtype 限制都属于一次执行的验证和组织，继续由 Runtime 负责。P1、P3
+和 P4 曾各自实现参数键的字符串化与冲突检查，现收口为同一个 Runtime 内部函数；各路径仍独立
+执行自己的值域、设备和精度检查，未把执行策略下沉到 Simulation 或 Core。

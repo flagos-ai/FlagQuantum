@@ -333,7 +333,7 @@ def execute_split_real_imag_statevector(
     )
 
 
-def _normalized_bindings(
+def _canonical_parameter_bindings(
     parameter_bindings: Mapping[str | Parameter, Any],
 ) -> dict[str, Any]:
     normalized: dict[str, Any] = {}
@@ -341,6 +341,15 @@ def _normalized_bindings(
         name = raw_name.name if isinstance(raw_name, Parameter) else str(raw_name)
         if not name or name in normalized:
             raise ValueError(f"duplicate or empty parameter binding {name!r}")
+        normalized[name] = value
+    return normalized
+
+
+def _normalized_bindings(
+    parameter_bindings: Mapping[str | Parameter, Any],
+) -> dict[str, Any]:
+    normalized: dict[str, Any] = {}
+    for name, value in _canonical_parameter_bindings(parameter_bindings).items():
         tensor = value_to_tensor(value)
         if tensor.numel() != 1:
             raise ValueError("split real/imag P1 requires scalar parameter bindings")
