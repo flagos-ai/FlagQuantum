@@ -189,7 +189,7 @@ def optimize(circuit_or_ir: Any) -> CircuitIR:
     return _optimize_to_fixed_point(circuit_or_ir)
 
 
-def compile_for_backend(
+def compile(
     circuit_or_ir: Any,
     *,
     coupling_map: CouplingMap | Iterable[tuple[int, int]] | None = None,
@@ -197,7 +197,7 @@ def compile_for_backend(
     optimize: bool = True,
     config: RuntimeConfig | None = None,
 ) -> CircuitIR:
-    """Compile an IR for a backend topology and local optimizer stack."""
+    """Compile a circuit with optional topology routing and optimization."""
 
     ir = _as_ir(circuit_or_ir)
     selected_config = config or get_runtime_config()
@@ -234,7 +234,7 @@ def compile_for_backend(
 
 __all__ = [
     "CouplingMap",
-    "compile_for_backend",
+    "compile",
     "optimize",
     "remove_identity_gates",
     "merge_self_inverse",

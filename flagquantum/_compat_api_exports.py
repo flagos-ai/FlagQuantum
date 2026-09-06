@@ -141,7 +141,6 @@ def compatibility_exports(
             "DistributedTensorNetworkState",
             "ShardedMPSState",
             "TorchDistributedContext",
-            "compile_for_backend",
             "route_to_topology",
             "destroy_torch_distributed",
             "distributed_backend_env_help",

@@ -60,7 +60,10 @@ def test_backend_facade_preserves_implementation_identity() -> None:
 
 def test_compiler_facade_has_one_canonical_short_name() -> None:
     compiler = importlib.import_module("flagquantum.compiler")
+    compatibility_api = importlib.import_module("flagquantum.api")
 
     assert callable(compiler.compile)
     assert callable(compiler.optimize)
+    assert not hasattr(compiler, "compile_for_backend")
+    assert not hasattr(compatibility_api, "compile_for_backend")
     assert not hasattr(compiler, "simple_compile")

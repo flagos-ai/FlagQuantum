@@ -61,7 +61,6 @@ from .circuit import Circuit, expectation
 from .compiler import (
     CouplingMap,
     channel_instruction,
-    compile_for_backend,
     lower_noise_model,
     route_to_topology,
 )

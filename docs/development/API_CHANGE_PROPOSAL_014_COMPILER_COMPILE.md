@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved for pre-public convergence; implementation migration in progress.**
+**Completed.**
 
 The repository owner required stable API names to express their domain meaning
 directly. This proposal applies that rule before the first public release, so no
@@ -36,3 +36,7 @@ backend selection.
 The function signature and behavior do not change during this naming migration.
 Each implementation step remains independently testable; no forwarding wrapper
 survives the final step.
+
+The migration is complete: production callers use `compiler.compile`, and the
+old symbol is absent from the Compiler and compatibility APIs. References in
+baseline and completed phase records remain as historical evidence.
