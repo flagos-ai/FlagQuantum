@@ -17,52 +17,14 @@ from flagquantum.runtime.backends.statevector.local_execution import (
 from flagquantum.runtime.backends.statevector.reverse import (
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
-    _bind_parameters,
     execute_torch_distributed_statevector_reverse,
     resolve_checkpoint_policy,
 )
 from flagquantum.runtime.backends.statevector.reverse_adjoint import (
     _compact_reverse_global_indices,
 )
-from flagquantum.simulation.statevector_adjoint import (
-    analytic_rotation_derivative,
-    real_conjugate_inner_sum,
-    z_expectation_adjoint_chunk,
-    z_expectation_chunk,
-)
-from flagquantum.simulation.statevector_ops import _instruction_matrix
 
 pytestmark = pytest.mark.unit
-
-
-@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
-def test_real_conjugate_inner_sum_matches_complex_definition(dtype):
-    left = torch.tensor(
-        [[0.25 + 0.5j, -0.75 + 0.125j], [0.33 - 0.2j, -0.4 - 0.6j]],
-        dtype=dtype,
-    )
-    right = torch.tensor(
-        [[-0.1 + 0.7j, 0.2 - 0.3j], [0.8 + 0.05j, -0.9 + 0.4j]],
-        dtype=dtype,
-    )
-    expected = torch.real(torch.sum(torch.conj(left) * right))
-    actual = real_conjugate_inner_sum(left, right)
-    torch.testing.assert_close(actual, expected)
-    assert actual.dtype == left.real.dtype
-
-
-def test_z_expectation_chunk_and_adjoint_share_wire_semantics():
-    amplitudes = torch.tensor([[0.5 + 0.5j, 0.5 - 0.5j]], dtype=torch.complex64)
-    indices = torch.tensor([0, 2])
-
-    expectation = z_expectation_chunk(amplitudes, indices, n_wires=2, wire=0)
-    adjoint = z_expectation_adjoint_chunk(amplitudes, indices, n_wires=2, wire=0)
-
-    torch.testing.assert_close(expectation, torch.tensor(0.0))
-    torch.testing.assert_close(
-        adjoint,
-        torch.tensor([[1.0 + 1.0j, -1.0 + 1.0j]], dtype=torch.complex64),
-    )
 
 
 def test_address_sharded_reverse_always_uses_compact_global_indices():
@@ -99,30 +61,6 @@ def test_compact_index_policy_is_shared_by_forward_and_reverse():
     for rank in range(plan.world_size):
         assert use_compact_global_indices(plan, rank)
         assert _compact_reverse_global_indices(plan, rank)
-
-
-@pytest.mark.parametrize("gate_name", ("rx", "ry", "rz"))
-@pytest.mark.parametrize("dtype", (torch.float32, torch.float64))
-def test_standard_rotation_analytic_derivative_matches_autograd(gate_name, dtype):
-    theta = torch.tensor(0.37, dtype=dtype, requires_grad=True)
-    circuit = fq.Circuit(1)
-    getattr(circuit, gate_name)(0, theta)
-    instruction = circuit.to_ir().instructions[0]
-    complex_dtype = torch.complex64 if dtype == torch.float32 else torch.complex128
-
-    def matrix_at(value):
-        rebound = _bind_parameters(circuit.to_ir(), ((0, "theta", 0),), (value,))
-        return _instruction_matrix(
-            rebound.instructions[0], device=theta.device, dtype=complex_dtype
-        )
-
-    matrix = matrix_at(theta)
-    _, reference = torch.autograd.functional.jvp(
-        matrix_at, (theta,), (torch.ones_like(theta),)
-    )
-    actual = analytic_rotation_derivative(instruction, matrix)
-    assert actual is not None
-    assert torch.allclose(actual, reference, atol=2e-7, rtol=2e-6)
 
 
 def test_parameter_gradients_are_all_reduced_in_dtype_packed_buckets(monkeypatch):

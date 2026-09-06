@@ -375,3 +375,15 @@ P5 Double-Single SGD 的参数更新直接依赖 P5 状态、规范参数顺序�
 `runtime/operator_probes.py` 中五个受现有调用方依赖的 P0–P4 命名入口继续保留，但共同的
 FP32 profile 加载、可执行探测和 capability 判定已收口为一个私有实现。这样既维持入口稳定，
 也避免五份预检流程随时间产生不同的 dtype、设备或 evidence 语义。
+
+## 16. Statevector 伴随反向边界复核（2026-09-06）
+
+`runtime/backends/statevector/reverse_adjoint.py` 已将旋转门解析导数、实值复内积以及分块 Z
+期望值与伴随量计算委托给 `simulation/statevector_adjoint.py`。这些纯数值行为的测试也归入
+Simulation 团队目录，不再借助 Runtime 参数绑定或反向执行对象构造参考结果。
+
+Runtime 文件剩余逻辑直接组织分片索引与 chunk 策略、前向重算、检查点、持久线序布局、P2P
+交换、梯度 collective、Triton 路由及执行证据。`_local_expectation_z*` 虽进行张量遍历，但遍历
+边界和全局索引来自 Runtime 计划；`_fused_sharded_1q_vjp_adjoint` 同时拥有通信流水线和证据
+计数。将其继续拆入 Simulation 会迫使数值层依赖 Runtime 计划或复制通信契约，因此本路径已到
+停止点。后续只有出现不依赖计划、所有权、通信、检查点和证据的完整数值行为时再下沉。
