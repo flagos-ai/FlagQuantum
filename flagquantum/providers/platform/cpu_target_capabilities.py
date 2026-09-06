@@ -8,14 +8,20 @@ directly here and are not re-exported from the public package.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import platform
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Iterable, Protocol
+
+import torch
 
 from flagquantum.core.target_capabilities import (
     CapabilityBlocker,
     CapabilityFact,
     CapabilityScope,
+    EvidenceLevel,
     EvidenceReference,
     FactExposure,
     FactSource,
@@ -23,6 +29,7 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.providers.platform.pytorch import CPUPlatformRuntime
 
 CPU_PLATFORM_ADAPTER_VERSION = "1.0"
 CPU_PLATFORM_PROVIDER = "pytorch_cpu"
@@ -148,6 +155,20 @@ class CPUCapabilityProbe(Protocol):
     target_class_source_ref: str
 
     def observe(self) -> CPUCapabilityObservation: ...
+
+
+@dataclass(frozen=True)
+class _ObservedCPUProbe:
+    observation: CPUCapabilityObservation
+    target_id: str
+    provider_version: str
+    target_revision: str
+    environment_id: str
+    source_ref: str
+    target_class_source_ref: str
+
+    def observe(self) -> CPUCapabilityObservation:
+        return self.observation
 
 
 def _isoformat(value: datetime) -> str:
@@ -405,6 +426,86 @@ def cpu_platform_to_target_capability_snapshot(
     )
 
 
+def probe_local_cpu_target_capabilities(
+    precision: str,
+    *,
+    captured_at: datetime | None = None,
+    ttl: timedelta = timedelta(minutes=5),
+) -> TargetCapabilitySnapshot:
+    """Observe one local PyTorch CPU precision path and return its snapshot."""
+
+    if precision not in {"complex64", "complex128"}:
+        raise ValueError("precision must be complex64 or complex128")
+    runtime = CPUPlatformRuntime()
+    devices = runtime.discover()
+    if len(devices) != 1 or not devices[0].available:
+        raise RuntimeError("local CPU provider did not expose one available device")
+    dtype = getattr(torch, precision)
+    observed = torch.ones(2, dtype=dtype, device="cpu").sum()
+    if observed.device.type != "cpu" or observed.dtype != dtype:
+        raise RuntimeError("local CPU precision probe changed device or dtype")
+
+    scalar_dtype = "float64" if precision == "complex128" else "float32"
+    precision_facts = tuple(
+        CPUPrecisionObservation(name, value)
+        for name, value in (
+            ("precision.native_dtype", scalar_dtype),
+            ("precision.effective_dtype", precision),
+            ("precision.storage_dtype", scalar_dtype),
+            ("precision.software_mechanism", "none"),
+        )
+    )
+    identity = runtime.identity()
+    environment = {
+        "host_sha256": hashlib.sha256(platform.node().encode()).hexdigest(),
+        "machine": platform.machine(),
+        "processor": platform.processor(),
+        "python": platform.python_version(),
+        "provider": identity.to_dict(),
+    }
+    environment_id = hashlib.sha256(
+        json.dumps(environment, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    evidence_payload = {
+        "device": "cpu:0",
+        "environment_id": environment_id,
+        "precision": precision,
+        "result_dtype": str(observed.dtype).removeprefix("torch."),
+    }
+    evidence_sha256 = hashlib.sha256(
+        json.dumps(evidence_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    evidence_id = f"cpu-precision-{evidence_sha256[:16]}"
+    scope = CapabilityScope(device_ids=("cpu:0",))
+    probe = _ObservedCPUProbe(
+        observation=CPUCapabilityObservation(
+            available=True,
+            device_count=1,
+            device_ids=scope.device_ids,
+            precision=precision_facts,
+        ),
+        target_id=f"local-cpu-{environment_id[:16]}",
+        provider_version=f"torch-{torch.__version__}",
+        target_revision=platform.machine() or "unknown",
+        environment_id=environment_id,
+        source_ref=evidence_id,
+        target_class_source_ref=evidence_id,
+    )
+    return cpu_platform_to_target_capability_snapshot(
+        probe=probe,
+        captured_at=captured_at or datetime.now(timezone.utc),
+        ttl=ttl,
+        evidence_refs=(
+            EvidenceReference(
+                evidence_id=evidence_id,
+                sha256=evidence_sha256,
+                level=EvidenceLevel.OBSERVABLE,
+                scope=scope,
+            ),
+        ),
+    )
+
+
 __all__ = [
     "CPUCapabilityObservation",
     "CPUCapabilityProbe",
@@ -412,4 +513,5 @@ __all__ = [
     "CPU_PLATFORM_ADAPTER_VERSION",
     "CPU_TARGET_CLASS",
     "cpu_platform_to_target_capability_snapshot",
+    "probe_local_cpu_target_capabilities",
 ]

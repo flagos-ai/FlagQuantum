@@ -28,6 +28,7 @@ from flagquantum.providers.platform.cpu_target_capabilities import (
     CPUCapabilityObservation,
     CPUPrecisionObservation,
     cpu_platform_to_target_capability_snapshot,
+    probe_local_cpu_target_capabilities,
 )
 
 pytestmark = pytest.mark.unit
@@ -156,6 +157,22 @@ def test_cpu_adapter_observes_only_injected_device_memory_and_precision() -> Non
     )
     assert result.executable is True
     assert result.blockers == ()
+
+
+@pytest.mark.parametrize("precision", ["complex64", "complex128"])
+def test_local_cpu_probe_observes_requested_precision(precision: str) -> None:
+    snapshot = probe_local_cpu_target_capabilities(
+        precision,
+        captured_at=_CAPTURED_AT,
+        ttl=timedelta(minutes=1),
+    )
+    facts = {item.name: item for item in snapshot.facts}
+
+    assert facts["device.kind"].value == "cpu"
+    assert facts["device.count"].value == 1
+    assert facts["precision.effective_dtype"].value == precision
+    assert facts["precision.software_mechanism"].value == "none"
+    assert snapshot.evidence_refs[0].level is EvidenceLevel.OBSERVABLE
 
 
 def test_cpu_adapter_source_and_evidence_round_trip_with_ttl() -> None:

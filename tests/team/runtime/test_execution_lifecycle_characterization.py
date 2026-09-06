@@ -102,6 +102,66 @@ def test_program_execution_plans_compiles_and_launches_numerics_once(
 
 
 @pytest.mark.integration
+def test_local_cpu_execution_matches_observed_plan_precision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.runtime.plan_execution as plan_execution
+
+    original_probe = plan_execution.probe_local_cpu_target_capabilities
+    observed: list[str] = []
+
+    def probe(precision: str):
+        observed.append(precision)
+        return original_probe(precision)
+
+    plan_execution._require_local_cpu_capabilities.cache_clear()
+    monkeypatch.setattr(plan_execution, "probe_local_cpu_target_capabilities", probe)
+
+    result = fq.run(
+        _bell(),
+        options=fq.ExecutionOptions(
+            mode="statevector", device="cpu", precision="complex128"
+        ),
+    )
+
+    assert observed == ["complex128"]
+    assert result.state is not None
+    assert result.state.device.type == "cpu"
+    assert result.state.dtype is torch.complex128
+    plan_execution._require_local_cpu_capabilities.cache_clear()
+
+
+@pytest.mark.integration
+def test_local_cpu_execution_stops_before_a_precision_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.runtime.plan_execution as plan_execution
+
+    plan = fq.plan(
+        _bell(),
+        options=fq.ExecutionOptions(
+            mode="statevector", device="cpu", precision="complex128"
+        ),
+    )
+    incompatible = plan_execution.probe_local_cpu_target_capabilities("complex64")
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("numerical execution must not start")
+
+    plan_execution._require_local_cpu_capabilities.cache_clear()
+    monkeypatch.setattr(
+        plan_execution,
+        "probe_local_cpu_target_capabilities",
+        lambda precision: incompatible,
+    )
+    monkeypatch.setattr("flagquantum.runtime.execution.run_native", forbidden)
+
+    with pytest.raises(ExecutionError, match="CPU capability preflight failed"):
+        fq.run(plan)
+    plan_execution._require_local_cpu_capabilities.cache_clear()
+
+
+@pytest.mark.integration
 def test_validated_plan_executes_once_without_replanning_or_recompiling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

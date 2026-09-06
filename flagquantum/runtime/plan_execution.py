@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from functools import lru_cache
 from typing import Iterable
 
 import torch
@@ -29,26 +30,51 @@ from ..core.target_capabilities import (
     TargetIdentity,
 )
 from ..errors import ExecutionError, FlagQuantumError
+from ..providers.platform.cpu_target_capabilities import (
+    probe_local_cpu_target_capabilities,
+)
 from .measurements import validate_measurements
 from .result import ExecutionResult
 from .target_capability_matching import (
+    CandidateProvenance,
     RouteIntent,
     TargetCapabilityCandidate,
     TargetCapabilityDecision,
     match_target_capability_candidates,
 )
 
+_LOCAL_CPU_REQUIREMENTS = RequirementSet(
+    requirements=(
+        CapabilityRequirement(
+            name="device.kind",
+            operator=ComparisonOperator.EQUALS,
+            value="cpu",
+            strength=RequirementStrength.MANDATORY,
+            source=RequirementSource.RUNTIME_PROTOCOL,
+            minimum_evidence_level=EvidenceLevel.OBSERVABLE,
+            accepted_exposures=(FactExposure.OBSERVED,),
+        ),
+        CapabilityRequirement(
+            name="device.count",
+            operator=ComparisonOperator.AT_LEAST,
+            value=1,
+            strength=RequirementStrength.MANDATORY,
+            source=RequirementSource.RUNTIME_PROTOCOL,
+            minimum_evidence_level=EvidenceLevel.OBSERVABLE,
+            accepted_exposures=(FactExposure.OBSERVED,),
+        ),
+    )
+)
 
-def execution_plan_precision_requirements(
-    plan: ExecutionPlan,
+
+def _effective_precision_requirements(
+    precision: str,
     requirements: RequirementSet | None = None,
 ) -> RequirementSet:
-    """Require candidates to prove the effective precision chosen by ``plan``."""
-
     precision_requirement = CapabilityRequirement(
         name="precision.effective_dtype",
         operator=ComparisonOperator.EQUALS,
-        value=plan.precision,
+        value=precision,
         strength=RequirementStrength.MANDATORY,
         source=RequirementSource.COMPILER,
         minimum_evidence_level=EvidenceLevel.OBSERVABLE,
@@ -63,6 +89,15 @@ def execution_plan_precision_requirements(
         fallback_authorizations=requirements.fallback_authorizations,
         extensions=requirements.extensions,
     )
+
+
+def execution_plan_precision_requirements(
+    plan: ExecutionPlan,
+    requirements: RequirementSet | None = None,
+) -> RequirementSet:
+    """Require candidates to prove the effective precision chosen by ``plan``."""
+
+    return _effective_precision_requirements(plan.precision, requirements)
 
 
 def match_execution_plan_target_candidates(
@@ -93,16 +128,64 @@ def match_execution_plan_target_candidates(
     )
 
 
+@lru_cache(maxsize=4)
+def _require_local_cpu_capabilities(
+    backend: str,
+    precision: str,
+) -> None:
+    """Validate each process-stable local CPU route once."""
+
+    snapshot = probe_local_cpu_target_capabilities(precision)
+    requirements = _effective_precision_requirements(precision, _LOCAL_CPU_REQUIREMENTS)
+    intent = RouteIntent(
+        backend=backend,
+        device_kind="cpu",
+        cpu=True,
+        effective_precision=precision,
+        algorithm="local_execution",
+        approximation="exact",
+    )
+    provenance = CandidateProvenance(
+        intent_id=intent.intent_id,
+        snapshot_id=snapshot.snapshot_id,
+        backend=intent.backend,
+        device_kind=intent.device_kind,
+        cpu=intent.cpu,
+        effective_precision=intent.effective_precision,
+        algorithm=intent.algorithm,
+        approximation=intent.approximation,
+    )
+    decision = match_target_capability_candidates(
+        requirements,
+        (
+            TargetCapabilityCandidate(
+                candidate_id=snapshot.snapshot_id,
+                snapshot=snapshot,
+                provenance=provenance,
+            ),
+        ),
+        route_intent=intent,
+    )
+    if not decision.executable:
+        details = "; ".join(blocker.message for blocker in decision.blockers)
+        raise ExecutionError(f"local CPU capability preflight failed: {details}")
+
+
 def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     """Execute one verified plan without invoking planner or compiler again."""
 
     from .execution import _normalize_execution_output, run_native
 
     validate_plan_environment(execution_plan)
+    decision = plan_decision(execution_plan)
+    if decision["device"] == "cpu" and decision["backend"] == "pytorch":
+        _require_local_cpu_capabilities(
+            str(decision["backend"]),
+            str(decision["precision"]),
+        )
     source_ir = plan_program(execution_plan)
     execution_ir = plan_execution_program(execution_plan)
     noise_model = plan_noise_model(execution_plan)
-    decision = plan_decision(execution_plan)
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_wires=source_ir.n_wires)
     mode = str(decision["mode"])
