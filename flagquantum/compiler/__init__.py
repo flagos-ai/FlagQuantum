@@ -3,7 +3,7 @@
 Normal execution compiles internally through :func:`flagquantum.plan`.
 """
 
-from .noise import channel_instruction, lower_noise_model
+from .noise import lower_noise_model
 from .pipeline import (
     CouplingMap,
     compile,
@@ -15,7 +15,6 @@ from .pipeline import (
 __all__ = (
     "CouplingMap",
     "compile",
-    "channel_instruction",
     "lower_noise_model",
     "optimize",
     "route_to_topology",

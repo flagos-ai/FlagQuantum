@@ -372,7 +372,6 @@ def compatibility_exports(
             "apply_unitary_density",
             "bit_flip_channel",
             "coherent_overrotation_channel",
-            "channel_instruction",
             "density_matrix",
             "density_matrix_from_ir",
             "depolarizing_channel",

@@ -60,7 +60,6 @@ from .algorithms import (
 from .circuit import Circuit, expectation
 from .compiler import (
     CouplingMap,
-    channel_instruction,
     lower_noise_model,
     route_to_topology,
 )

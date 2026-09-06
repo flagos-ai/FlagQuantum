@@ -9,7 +9,7 @@ from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..noise import KrausChannel, NoiseModel, thermal_relaxation_channel
 
 
-def channel_instruction(
+def _encode_channel_instruction(
     channel: KrausChannel,
     wires: Sequence[int],
     *,
@@ -44,7 +44,7 @@ def _profile_channel(
         duration,
         excited_population=calibration.excited_population,
     )
-    return channel_instruction(
+    return _encode_channel_instruction(
         channel,
         (wire,),
         metadata={
@@ -104,7 +104,7 @@ def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> Cir
                     instructions.append(relaxation)
                 wire_clock[wire] = start + duration
         for channel, wires in noise_model.channels_for(instruction):
-            instructions.append(channel_instruction(channel, wires))
+            instructions.append(_encode_channel_instruction(channel, wires))
     if profile is not None:
         makespan = max(wire_clock, default=0.0)
         for wire in range(ir.n_wires):
@@ -121,4 +121,4 @@ def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> Cir
     return replace(ir, instructions=tuple(instructions))
 
 
-__all__ = ("channel_instruction", "lower_noise_model")
+__all__ = ("lower_noise_model",)
