@@ -405,11 +405,11 @@ class MergeAdjacentRotationsPass:
 
 
 class StaticCanonicalizationPass:
-    """Fused Batch A path with one entry and one exit verification."""
+    """Run the fused Batch A sequence to a fixed point."""
 
     descriptor = PassDescriptor(
         "static_canonicalization",
-        "2.0",
+        "2.1",
         options={
             "components": (
                 "remove_identity_operations",
@@ -418,6 +418,7 @@ class StaticCanonicalizationPass:
                 "remove_identity_operations",
             ),
             "verification": "entry_exit",
+            "fixed_point": True,
         },
         program_identity_policy="transform",
     )
@@ -428,26 +429,51 @@ class StaticCanonicalizationPass:
             return PassResult(module, diagnostics=entry_verification.diagnostics)
         current = module
         changed = False
+        rounds = 0
         operations_removed = 0
         pairs_cancelled = 0
         rotations_merged = 0
         zero_sums_removed = 0
-        for compiler_pass in _independent_passes(verify_output=False):
-            result = compiler_pass.run(current)
-            if result.diagnostics:
-                return PassResult(module, diagnostics=result.diagnostics)
-            changed |= result.changed
-            operations_removed += int(result.statistics.get("operations_removed", 0))
-            pairs_cancelled += int(result.statistics.get("pairs_cancelled", 0))
-            rotations_merged += int(result.statistics.get("rotations_merged", 0))
-            zero_sums_removed += int(result.statistics.get("zero_sums_removed", 0))
-            current = result.module
+        max_rounds = len(module.body.blocks[0].operations) + 1
+        for _ in range(max_rounds):
+            rounds += 1
+            round_changed = False
+            for compiler_pass in _independent_passes(verify_output=False):
+                result = compiler_pass.run(current)
+                if result.diagnostics:
+                    return PassResult(module, diagnostics=result.diagnostics)
+                round_changed |= result.changed
+                operations_removed += int(
+                    result.statistics.get("operations_removed", 0)
+                )
+                pairs_cancelled += int(result.statistics.get("pairs_cancelled", 0))
+                rotations_merged += int(result.statistics.get("rotations_merged", 0))
+                zero_sums_removed += int(result.statistics.get("zero_sums_removed", 0))
+                current = result.module
+            changed |= round_changed
+            if not round_changed:
+                break
+        else:
+            return PassResult(
+                module,
+                diagnostics=(
+                    _failure("static canonicalization did not reach a fixed point"),
+                ),
+            )
+        statistics = {
+            "component_passes": 4 * rounds,
+            "fixed_point_rounds": rounds,
+            "operations_removed": operations_removed,
+            "pairs_cancelled": pairs_cancelled,
+            "rotations_merged": rotations_merged,
+            "zero_sums_removed": zero_sums_removed,
+        }
         if not changed:
             return PassResult(
                 module,
                 changed=False,
                 preserved_analyses=frozenset({"def_use", "qubit_lifetime"}),
-                statistics={"component_passes": 4},
+                statistics=statistics,
             )
         exit_verification = verify_module(current, circuit_ir_v1_schema_registry())
         if not exit_verification.ok:
@@ -459,13 +485,7 @@ class StaticCanonicalizationPass:
         return PassResult(
             current,
             changed=True,
-            statistics={
-                "component_passes": 4,
-                "operations_removed": operations_removed,
-                "pairs_cancelled": pairs_cancelled,
-                "rotations_merged": rotations_merged,
-                "zero_sums_removed": zero_sums_removed,
-            },
+            statistics=statistics,
         )
 
 

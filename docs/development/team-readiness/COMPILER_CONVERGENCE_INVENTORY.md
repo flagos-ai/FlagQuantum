@@ -220,6 +220,10 @@ The private CircuitIR exporter now owns reconstruction of imported and transform
 internal modules. Differential tests delegate to that implementation instead of
 carrying a test-only lowering bridge. This closes the production-path gap without
 changing the stable optimizer or adding a public contract.
+The fused private canonicalization pass now follows the stable optimizer's
+fixed-point contract. Shared characterization includes rewrites that expose a
+second optimization opportunity, preventing a one-round candidate from replacing
+the stable implementation.
 
 ## Human-maintainability notes for the next slice
 

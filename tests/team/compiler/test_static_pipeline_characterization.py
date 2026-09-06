@@ -7,14 +7,21 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum._compiler.exporters.circuit_ir import export_transformed_circuit_ir
+from flagquantum._compiler.exporters.circuit_ir import (
+    export_transformed_circuit_ir,
+    seal_circuit_ir_round_trip,
+)
 from flagquantum._compiler.offline_deployment import (
     OfflineCompilationStatus,
     OfflineStaticTarget,
     OfflineTextFormat,
     compile_offline_static,
 )
+from flagquantum._compiler.passes.manager import PassManager
 from flagquantum._compiler.passes.placement_routing import DirectedCouplingGraph
+from flagquantum._compiler.passes.static_canonicalization import (
+    StaticCanonicalizationPass,
+)
 from flagquantum._compiler.pipeline_cache import BoundedPipelineCache, CacheDisposition
 from flagquantum._compiler.testing.differential import lower_module_for_differential
 from flagquantum.compiler import optimize
@@ -71,6 +78,18 @@ def _assert_state_equivalent(actual: fq.CircuitIR, expected: fq.CircuitIR) -> No
     torch.testing.assert_close(actual_state, phase * expected_state, atol=1e-12, rtol=0)
 
 
+def _candidate_optimize(source: fq.CircuitIR) -> fq.CircuitIR:
+    sealed = seal_circuit_ir_round_trip(source)
+    assert sealed.ok and sealed.artifact is not None
+    pipeline = PassManager((StaticCanonicalizationPass(),)).run(
+        sealed.artifact.imported.module
+    )
+    assert pipeline.ok, pipeline.diagnostics
+    exported = export_transformed_circuit_ir(sealed.artifact, pipeline.module)
+    assert exported.ok and exported.circuit_ir is not None
+    return exported.circuit_ir
+
+
 def test_static_pipeline_is_deterministic_for_identical_inputs() -> None:
     source = _source()
     cache = BoundedPipelineCache(max_entries=2)
@@ -106,6 +125,35 @@ def test_static_pipeline_matches_existing_compiler_semantics() -> None:
     )
     _assert_state_equivalent(lowered.circuit_ir, source)
     _assert_state_equivalent(lowered.circuit_ir, stable)
+
+
+@pytest.mark.parametrize(
+    "source",
+    (
+        fq.CircuitIR(
+            1,
+            (
+                fq.Instruction("x", (0,)),
+                fq.Instruction("rz", (0,), {"theta": 0.2}),
+                fq.Instruction("rz", (0,), {"theta": -0.2}),
+                fq.Instruction("x", (0,)),
+            ),
+        ),
+        fq.CircuitIR(
+            1,
+            (
+                fq.Instruction("x", (0,)),
+                fq.Instruction("rz", (0,), {"theta": 0.2}),
+                fq.Instruction("h", (0,)),
+                fq.Instruction("h", (0,)),
+                fq.Instruction("rz", (0,), {"theta": -0.2}),
+                fq.Instruction("x", (0,)),
+            ),
+        ),
+    ),
+)
+def test_candidate_optimizer_matches_stable_fixed_point(source: fq.CircuitIR) -> None:
+    assert _candidate_optimize(source) == optimize(source)
 
 
 def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
