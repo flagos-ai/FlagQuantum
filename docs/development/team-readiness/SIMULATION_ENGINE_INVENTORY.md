@@ -321,3 +321,21 @@ DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、col
 不构成可独立复用的数值算法。该路径已到停止点：不为减少 Runtime 中的 tensor 操作新增
 批处理包装、镜像记录或通用 executor；只有完全不依赖 Runtime DAG、任务、checkpoint、
 所有权、process group 和证据类型的第二个实际消费者出现时，才继续向 Simulation 下沉。
+
+## 14. 过渡代码删除复核（2026-09-06）
+
+本轮按“先找无调用项，再进入下一条迁移切片”的顺序复核了现存过渡目录。未发现可在不改变
+受保护 API、序列化产物或执行语义的前提下直接删除的已跟踪实现：
+
+- `runtime/backends` 中的私有定义均仍有代码或测试消费者；其余张量操作属于计划、所有权、
+  通信、checkpoint 或证据组装，不能仅因位于 Runtime 就认定为死代码；
+- `utils.qasm_exporter` 与 `utils.qcis_exporter` 仍由公开 API、Deployment 和测试使用。Compiler
+  emitter 是受限静态目标的权威实现，但尚不能覆盖旧 exporter 的完整 gate 集和失败语义，
+  因而本轮不以简单转发或删除制造兼容性回归；
+- `compilation` 剩余模块承载受保护的执行计划、序列化和校准语义，须先经过公共契约迁移；
+- `_gateways/mcp` 没有已跟踪的生产实现可删除。
+
+结论是删除路径已到当前安全停止点。下一条代码切片应以真实调用链为单位迁移，而不是继续按
+文件名清理：优先选择 `runtime/backends/statevector` 中一段不依赖计划、设备选择、通信、
+checkpoint 或证据类型的独立数值行为，迁入 Simulation 并由原入口委托；若不存在这样的完整
+行为，则保留边界，不新增包装层。
