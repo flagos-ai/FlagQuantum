@@ -56,7 +56,7 @@ capability, request, and artifact types require a Core-owned contract first.
 | Analysis | `runtime.planner.analyze()`; `_compiler.analyses.AnalysisManager`, `DefUseAnalysis`, `QubitLifetimeAnalysis` | IR/module → structural or reusable analysis result | Runtime structural analysis feeds execution planning; `_compiler` analyses feed private passes and are not default-path consumers. |
 | Pass execution | `compiler.optimize()` and its three functions; `_compiler.passes.PassManager`; `_compiler.passes.static_canonicalization`; target decomposition and placement/routing passes | program IR → transformed program IR | Stable canonicalization is authoritative in `compiler`; `_compiler` remains a private replacement candidate with descriptors, diagnostics, analyses, and pipeline identity. |
 | Routing | `compiler.routing.route_to_topology()` and `select_routing_strategy()`; `_compiler.passes.placement_routing.PlacementRoutingPass` | logical program + coupling graph → routed program | Stable routing is authoritative in `compiler`; the private implementation has a different graph and evidence model and remains off the default path. |
-| Lowering | `compiler.compile()`; `compiler.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; test-only `lower_module_for_differential()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local, topology, and noise lowering; noisy execution-plan products remain transitional in `compilation`; `_compiler` owns private TargetIR lowering. |
+| Lowering | `compiler.compile()`; `compiler.lower_noise_model()`; `_compiler.passes.DecomposeToTargetGateSetPass`; `_compiler.target_legalization.legalize_quantum_module()`; `_compiler.exporters.circuit_ir.export_transformed_circuit_ir()` | source/logical IR + target/noise constraints → lowered IR or `TargetIR` | `compiler` owns stable local, topology, and noise lowering; noisy execution-plan products remain transitional in `compilation`; `_compiler` owns private TargetIR lowering and verified reconstruction of transformed internal IR. |
 | Backend/mode selection | `runtime.planner.select_backend_by_cost()`; `select_execution_mode()`; `plan_runtime_selection()`; noisy-backend selection | `CircuitIR` + execution/resource policy → backend/mode candidate or selection plan | Runtime is authoritative for execution selection. `_compiler.TargetCapabilities` describes target legality and does not select a runtime backend. |
 | Scheduling/planning | `compiler.schedule_layers()`; `runtime.planner.plan()`, `plan_advanced()`, `plan_for_backend()` | compiled IR + resolved execution options → `ExecutionPlan` | Compiler owns instruction scheduling; Runtime owns orchestration and final plan assembly; the protected plan product remains transitional. |
 | Code generation | `_compiler.exporters.text.emit_openqasm2()`, `emit_openqasm3()`, `emit_qcis_v1()`; legacy `flagquantum.utils` exporters used by deployment | verified static module → canonical text + content hash | `_compiler` owns the deterministic private emitters. `compilation` has no generic code-generation boundary. Legacy utility emitters remain separate consumers and are not retired here. |
@@ -216,6 +216,10 @@ round-trips through the existing sealed source envelope without adding another
 contract field. Opaque instruction metadata follows the same source-location rules
 as the stable optimizer, while known semantic metadata remains fail-closed. These
 tests are evidence for the candidate slice, not authorization to switch it on.
+The private CircuitIR exporter now owns reconstruction of imported and transformed
+internal modules. Differential tests delegate to that implementation instead of
+carrying a test-only lowering bridge. This closes the production-path gap without
+changing the stable optimizer or adding a public contract.
 
 ## Human-maintainability notes for the next slice
 
@@ -229,7 +233,9 @@ ten-minute path. It demonstrates deterministic cache behavior, semantic
 equivalence with `optimize`, invalid/unsupported input failure without
 partial artifacts, classified and opaque metadata preservation, and
 source/pipeline/target/emission identity binding. Known instruction semantics remain
-subject to the explicit importer profile.
+subject to the explicit importer profile. Its semantic-parity scenario now calls
+the production-private transformed CircuitIR exporter directly; the differential
+module retains only test execution and comparison concerns.
 
 No new legality contract is retained in this round. Existing target capability
 coverage stays expressed by `CompilerRequirementProjection.compare_available()`

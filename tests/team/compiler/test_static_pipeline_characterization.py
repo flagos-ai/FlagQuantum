@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum._compiler.exporters.circuit_ir import export_transformed_circuit_ir
 from flagquantum._compiler.offline_deployment import (
     OfflineCompilationStatus,
     OfflineStaticTarget,
@@ -87,7 +88,7 @@ def test_static_pipeline_is_deterministic_for_identical_inputs() -> None:
 def test_static_pipeline_matches_existing_compiler_semantics() -> None:
     source = _source()
     candidate = _compile(source)
-    lowered = lower_module_for_differential(
+    lowered = export_transformed_circuit_ir(
         candidate.source_artifact,
         candidate.module,
     )
