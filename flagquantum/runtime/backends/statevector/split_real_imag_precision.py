@@ -27,6 +27,8 @@ from ....simulation.split_real_imag_statevector import (
 from .split_real_imag import (
     SplitRealImagStatevectorResult,
     _bind_p1_ir,
+    _coerce_bounded_accuracy,
+    _coerce_exact_precision_plan,
     _complex128_parameter_shift,
     _execute_bound_split_statevector,
     _normalized_bindings,
@@ -80,65 +82,31 @@ def split_real_imag_p2_accuracy_envelope() -> AccuracyRequirementContract:
 def _coerce_p2_precision_plan(
     value: PrecisionPlanContract | Mapping[str, Any] | None,
 ) -> PrecisionPlanContract:
-    requested = (
-        split_real_imag_p2_precision_plan()
-        if value is None
-        else (
-            value
-            if isinstance(value, PrecisionPlanContract)
-            else PrecisionPlanContract.from_dict(value)
-        )
-    )
-    implemented = split_real_imag_p2_precision_plan()
-    if requested != implemented:
-        raise NotImplementedError(
+    return _coerce_exact_precision_plan(
+        value,
+        implemented=split_real_imag_p2_precision_plan(),
+        error=(
             "split real/imag P2 implements selective Double-Single reductions "
             "only; the requested precision plan is not executable"
-        )
-    return requested
+        ),
+    )
 
 
 def _coerce_p2_accuracy_requirement(
     value: AccuracyRequirementContract | Mapping[str, Any] | None,
 ) -> AccuracyRequirementContract:
-    requested = (
-        split_real_imag_p2_accuracy_envelope()
-        if value is None
-        else (
-            value
-            if isinstance(value, AccuracyRequirementContract)
-            else AccuracyRequirementContract.from_dict(value)
-        )
-    )
     certified = split_real_imag_p2_accuracy_envelope()
-    maximum_fields = (
-        "max_norm_drift",
-        "max_expectation_abs_error",
-        "max_expectation_rel_error",
-        "max_gradient_rel_error",
+    requested = _coerce_bounded_accuracy(
+        value,
+        certified=certified,
+        maximum_fields=(
+            "max_norm_drift",
+            "max_expectation_abs_error",
+            "max_expectation_rel_error",
+            "max_gradient_rel_error",
+        ),
+        owner="split real/imag P2",
     )
-    for name in maximum_fields:
-        limit = getattr(requested, name)
-        certified_limit = getattr(certified, name)
-        if (
-            limit is not None
-            and certified_limit is not None
-            and limit < certified_limit
-        ):
-            raise RuntimeError(
-                f"split real/imag P2 cannot certify requested {name}={limit}; "
-                f"certified envelope is {certified_limit}"
-            )
-    cosine = requested.min_gradient_cosine_similarity
-    certified_cosine = certified.min_gradient_cosine_similarity
-    if (
-        cosine is not None
-        and certified_cosine is not None
-        and cosine > certified_cosine
-    ):
-        raise RuntimeError(
-            "split real/imag P2 cannot certify the requested gradient cosine"
-        )
     unsupported = {
         name: getattr(requested, name)
         for name in (

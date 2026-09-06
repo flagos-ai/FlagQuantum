@@ -9,6 +9,7 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ....core.ir import CircuitIR, ensure_circuit_ir
+from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import (
     Parameter,
     ParameterExpression,
@@ -229,6 +230,65 @@ class SplitRealImagTrainingConformanceReport:
 class _PauliTerm:
     coefficient: Any
     ops: tuple[tuple[int, str], ...]
+
+
+def _coerce_exact_precision_plan(
+    value: PrecisionPlanContract | Mapping[str, Any] | None,
+    *,
+    implemented: PrecisionPlanContract,
+    error: str,
+) -> PrecisionPlanContract:
+    requested = (
+        implemented
+        if value is None
+        else (
+            value
+            if isinstance(value, PrecisionPlanContract)
+            else PrecisionPlanContract.from_dict(value)
+        )
+    )
+    if requested != implemented:
+        raise NotImplementedError(error)
+    return requested
+
+
+def _coerce_bounded_accuracy(
+    value: AccuracyRequirementContract | Mapping[str, Any] | None,
+    *,
+    certified: AccuracyRequirementContract,
+    maximum_fields: Sequence[str],
+    owner: str,
+) -> AccuracyRequirementContract:
+    requested = (
+        certified
+        if value is None
+        else (
+            value
+            if isinstance(value, AccuracyRequirementContract)
+            else AccuracyRequirementContract.from_dict(value)
+        )
+    )
+    for name in maximum_fields:
+        limit = getattr(requested, name)
+        certified_limit = getattr(certified, name)
+        if (
+            limit is not None
+            and certified_limit is not None
+            and limit < certified_limit
+        ):
+            raise RuntimeError(
+                f"{owner} cannot certify requested {name}={limit}; "
+                f"certified envelope is {certified_limit}"
+            )
+    cosine = requested.min_gradient_cosine_similarity
+    certified_cosine = certified.min_gradient_cosine_similarity
+    if (
+        cosine is not None
+        and certified_cosine is not None
+        and cosine > certified_cosine
+    ):
+        raise RuntimeError(f"{owner} cannot certify the requested gradient cosine")
+    return requested
 
 
 def _execute_bound_split_statevector(

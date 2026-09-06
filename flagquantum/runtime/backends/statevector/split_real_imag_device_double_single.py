@@ -33,6 +33,8 @@ from ....simulation.double_single_statevector import (
 )
 from .split_real_imag import (
     _canonical_parameter_bindings,
+    _coerce_bounded_accuracy,
+    _coerce_exact_precision_plan,
     _normalized_observables,
     _parameter_occurrences,
     _PauliTerm,
@@ -78,58 +80,29 @@ def split_real_imag_p4_accuracy_envelope() -> AccuracyRequirementContract:
 def _coerce_plan(
     value: PrecisionPlanContract | Mapping[str, Any] | None,
 ) -> PrecisionPlanContract:
-    requested = (
-        split_real_imag_p4_precision_plan()
-        if value is None
-        else (
-            value
-            if isinstance(value, PrecisionPlanContract)
-            else PrecisionPlanContract.from_dict(value)
-        )
+    return _coerce_exact_precision_plan(
+        value,
+        implemented=split_real_imag_p4_precision_plan(),
+        error="P4 implements one device Double-Single plan",
     )
-    if requested != split_real_imag_p4_precision_plan():
-        raise NotImplementedError("P4 implements one device Double-Single plan")
-    return requested
 
 
 def _coerce_accuracy(
     value: AccuracyRequirementContract | Mapping[str, Any] | None,
 ) -> AccuracyRequirementContract:
-    requested = (
-        split_real_imag_p4_accuracy_envelope()
-        if value is None
-        else (
-            value
-            if isinstance(value, AccuracyRequirementContract)
-            else AccuracyRequirementContract.from_dict(value)
-        )
-    )
     certified = split_real_imag_p4_accuracy_envelope()
-    for name in (
-        "max_norm_drift",
-        "max_expectation_abs_error",
-        "max_expectation_rel_error",
-        "max_gradient_rel_error",
-        "max_state_infidelity",
-    ):
-        limit = getattr(requested, name)
-        certified_limit = getattr(certified, name)
-        if (
-            limit is not None
-            and certified_limit is not None
-            and limit < certified_limit
-        ):
-            raise RuntimeError(
-                f"P4 cannot certify requested {name}={limit}; "
-                f"certified envelope is {certified_limit}"
-            )
-    cosine = requested.min_gradient_cosine_similarity
-    if (
-        cosine is not None
-        and certified.min_gradient_cosine_similarity is not None
-        and cosine > certified.min_gradient_cosine_similarity
-    ):
-        raise RuntimeError("P4 cannot certify the requested gradient cosine")
+    requested = _coerce_bounded_accuracy(
+        value,
+        certified=certified,
+        maximum_fields=(
+            "max_norm_drift",
+            "max_expectation_abs_error",
+            "max_expectation_rel_error",
+            "max_gradient_rel_error",
+            "max_state_infidelity",
+        ),
+        owner="P4",
+    )
     if requested.require_determinism or requested.require_convergence_evidence:
         raise RuntimeError("P4 has no determinism or convergence certification")
     if any(
