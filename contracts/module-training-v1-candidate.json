@@ -2,6 +2,9 @@
   "schema_version": "1.0",
   "status": "frozen",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_005_MODULE_TRAINING.md",
+  "amendments": [
+    "docs/development/API_CHANGE_PROPOSAL_015_PRECISION_POLICY.md"
+  ],
   "target": "first-public-alpha",
   "implementation_authorized": true,
   "root_manifest_change": false,
@@ -72,6 +75,21 @@
     "restore_version": "1.0",
     "workload_topology_precision_optimizer_mismatch": "fail_closed",
     "fq_train_automatic_resume": false
+  },
+  "precision_policy": {
+    "fields": [
+      "complex_dtype",
+      "parameter_dtype",
+      "allow_parameter_downcast",
+      "atol",
+      "rtol"
+    ],
+    "supported_pairs": [
+      ["complex64", "float32"],
+      ["complex128", "float64"]
+    ],
+    "mixed_precision_control": false,
+    "accumulator_dtype_control": false
   },
   "backend_semantics": {
     "primary_autograd_interface": "pytorch",

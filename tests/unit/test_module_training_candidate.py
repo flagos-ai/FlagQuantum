@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
@@ -64,3 +65,15 @@ def test_candidate_records_intentional_training_boundaries() -> None:
         candidate["training_semantics"]["distributed_training_namespace"]
         == "flagquantum.experimental.distributed"
     )
+
+
+def test_precision_policy_matches_reviewed_pre_alpha_contract() -> None:
+    precision = _load()["precision_policy"]
+
+    assert [field.name for field in fields(fqt.PrecisionPolicy)] == precision["fields"]
+    assert precision["supported_pairs"] == [
+        ["complex64", "float32"],
+        ["complex128", "float64"],
+    ]
+    assert precision["mixed_precision_control"] is False
+    assert precision["accumulator_dtype_control"] is False

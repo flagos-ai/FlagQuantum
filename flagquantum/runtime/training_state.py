@@ -42,8 +42,6 @@ class NonFiniteTrainingError(TrainingStateError):
 class PrecisionPolicy:
     complex_dtype: str = "complex64"
     parameter_dtype: str = "float32"
-    accumulator_dtype: str = "float32"
-    mode: str = "full"
     allow_parameter_downcast: bool = False
     atol: float = 1e-5
     rtol: float = 1e-5
@@ -53,23 +51,10 @@ class PrecisionPolicy:
             raise PrecisionPolicyError("complex dtype must be complex64 or complex128")
         if self.parameter_dtype not in {"float32", "float64"}:
             raise PrecisionPolicyError("parameter dtype must be float32 or float64")
-        if self.accumulator_dtype not in {"float32", "float64"}:
-            raise PrecisionPolicyError("accumulator dtype must be float32 or float64")
-        if self.mode not in {"full", "mixed"}:
-            raise PrecisionPolicyError("precision mode must be full or mixed")
         expected_real = "float64" if self.complex_dtype == "complex128" else "float32"
-        if self.mode == "full" and (
-            self.parameter_dtype != expected_real
-            or self.accumulator_dtype != expected_real
-        ):
+        if self.parameter_dtype != expected_real:
             raise PrecisionPolicyError(
-                f"full {self.complex_dtype} precision requires "
-                f"parameter_dtype={expected_real!r} and "
-                f"accumulator_dtype={expected_real!r}"
-            )
-        if self.complex_dtype == "complex128" and self.parameter_dtype != "float64":
-            raise PrecisionPolicyError(
-                "complex128 requires float64 trainable parameters"
+                f"{self.complex_dtype} requires parameter_dtype={expected_real!r}"
             )
         if self.atol <= 0 or self.rtol <= 0:
             raise PrecisionPolicyError("precision tolerances must be positive")

@@ -126,7 +126,10 @@ def test_checkpoint_signature_preserves_fixed_tensor_gate_values(tmp_path) -> No
 
 def test_public_loader_installs_saved_precision_policy(tmp_path) -> None:
     policy = fqt.PrecisionPolicy(
-        accumulator_dtype="float64", mode="mixed", atol=3e-5, rtol=4e-5
+        complex_dtype="complex128",
+        parameter_dtype="float64",
+        atol=3e-10,
+        rtol=4e-10,
     )
     source = fq.Module(build, 2, precision=policy)
     source.execute()
@@ -180,8 +183,6 @@ def test_precision_policy_is_explicit_and_forbids_silent_downcast() -> None:
     policy = fqt.PrecisionPolicy(
         complex_dtype="complex64",
         parameter_dtype="float32",
-        accumulator_dtype="float64",
-        mode="mixed",
         allow_parameter_downcast=True,
         atol=3e-5,
         rtol=3e-5,
@@ -196,24 +197,27 @@ def test_precision_policy_is_explicit_and_forbids_silent_downcast() -> None:
     "values",
     (
         {"complex_dtype": "complex64", "parameter_dtype": "float64"},
-        {"complex_dtype": "complex64", "accumulator_dtype": "float64"},
-        {
-            "complex_dtype": "complex128",
-            "parameter_dtype": "float64",
-            "accumulator_dtype": "float32",
-        },
+        {"complex_dtype": "complex128", "parameter_dtype": "float32"},
     ),
 )
-def test_full_precision_policy_rejects_inconsistent_real_dtypes(values) -> None:
-    with pytest.raises(fqt.PrecisionPolicyError, match="full .* precision requires"):
+def test_precision_policy_rejects_inconsistent_real_dtype(values) -> None:
+    with pytest.raises(fqt.PrecisionPolicyError, match="requires parameter_dtype"):
         fqt.PrecisionPolicy(**values)
 
 
-def test_mixed_precision_policy_requires_an_explicit_mode() -> None:
-    policy = fqt.PrecisionPolicy(accumulator_dtype="float64", mode="mixed")
+def test_precision_policy_has_only_effective_user_controls() -> None:
+    assert tuple(fqt.PrecisionPolicy.__dataclass_fields__) == (
+        "complex_dtype",
+        "parameter_dtype",
+        "allow_parameter_downcast",
+        "atol",
+        "rtol",
+    )
 
-    assert policy.parameter_dtype == "float32"
-    assert policy.accumulator_dtype == "float64"
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        fqt.PrecisionPolicy(accumulator_dtype="float64")
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        fqt.PrecisionPolicy(mode="mixed")
 
 
 def test_seed_streams_and_correctness_debug_are_reproducible() -> None:

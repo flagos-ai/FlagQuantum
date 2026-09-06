@@ -168,7 +168,6 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             precision = PrecisionPolicy(
                 parameter_dtype=str(dtype).removeprefix("torch."),
                 complex_dtype=("complex128" if dtype == torch.float64 else "complex64"),
-                accumulator_dtype=str(dtype).removeprefix("torch."),
             )
         self._require_policy_precision(self.policy, precision.complex_dtype)
         # Apply the requested parameter dtype before installing the policy.
@@ -250,7 +249,6 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             self.precision = replace(
                 self.precision,
                 parameter_dtype=name,
-                accumulator_dtype=name,
                 complex_dtype="complex128" if dtype == torch.float64 else "complex64",
             )
         self._jax_kernel = None

@@ -7,12 +7,12 @@ hybrid-parallel topology. `load_checkpoint()` rejects unknown versions,
 different IR versions, precision mismatches, and non-equivalent data/state/model
 group layouts before restoring state.
 
-`flagquantum.training.PrecisionPolicy` supports complex64/float32 and
-complex128/float64 full
-precision, plus an explicit mixed policy with a named accumulator dtype and
-tolerances. Full precision rejects mismatched circuit, parameter, or
-accumulator dtypes; differing accumulator precision therefore requires
-`mode="mixed"` rather than becoming an accidental intermediate cast. Reducing
+`flagquantum.training.PrecisionPolicy` supports the coherent
+complex64/float32 and complex128/float64 pairs plus numerical tolerances.
+Mismatched circuit and parameter dtypes are rejected. It does not expose a
+mixed-precision mode or accumulator dtype because the execution engines do not
+yet implement such a cross-backend guarantee; hardware accumulator precision
+remains observable capability evidence rather than a user control. Reducing
 trainable parameter precision raises unless
 `allow_parameter_downcast=True`; circuit gate construction follows the declared
 complex dtype and cannot silently return complex64 for a complex128 circuit.
