@@ -15,7 +15,8 @@ import torch
 
 from ..algorithms import Hamiltonian
 from ..circuit import Circuit
-from ..compiler import CouplingMap, compile_for_backend
+from ..compiler import CouplingMap
+from ..compiler import compile as compile_program
 from ..core.ir import CircuitIR, Instruction, MeasurementNode
 from ..runtime.parallel import ObservableGroup, group_observables
 from ..utils.qasm_exporter import export_to_qasm_str
@@ -344,7 +345,7 @@ def create_deployment_package(
         == backend.coupling_map.edges
         and existing_routing.get("mapping_restored") is True
     )
-    compiled_ir = compile_for_backend(
+    compiled_ir = compile_program(
         ir,
         coupling_map=None if routing_reused else backend.coupling_map,
         routing_strategy=routing_strategy,
