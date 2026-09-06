@@ -16,6 +16,7 @@ except ModuleNotFoundError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "split-real-imag-statevector-p1-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum/runtime/backends/statevector/split_real_imag.py"
+SIMULATION = ROOT / "flagquantum/simulation/split_real_imag_statevector.py"
 PROFILE = ROOT / "flagquantum/runtime/profiles/split_real_imag_statevector_p1.json"
 
 
@@ -92,8 +93,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     ):
         errors.append("split real/imag P1 parameter-shift gates drifted")
 
-    p1_functions = {
-        "_pauli_term_expectation",
+    runtime_functions = {
         "_expectation_from_bound_p1_ir",
         "execute_split_real_imag_expectation",
         "parameter_shift_split_real_imag_gradient",
@@ -102,7 +102,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     for node in tree.body:
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        if node.name not in p1_functions:
+        if node.name not in runtime_functions:
             continue
         found.add(node.name)
         calls = {
@@ -113,8 +113,32 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         forbidden = {"torch.complex", "torch.view_as_complex"} & calls
         if forbidden:
             errors.append(f"{node.name} materializes complex tensors: {forbidden}")
-    if found != p1_functions:
-        errors.append("split real/imag P1 public execution functions are missing")
+    if found != runtime_functions:
+        errors.append("split real/imag P1 runtime execution functions are missing")
+
+    simulation_tree = ast.parse(SIMULATION.read_text(encoding="utf-8"))
+    numerical_kernel = next(
+        (
+            node
+            for node in simulation_tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "pauli_term_expectation"
+        ),
+        None,
+    )
+    if numerical_kernel is None:
+        errors.append("split real/imag P1 simulation expectation kernel is missing")
+    else:
+        calls = {
+            _attribute_name(item.func)
+            for item in ast.walk(numerical_kernel)
+            if isinstance(item, ast.Call)
+        }
+        forbidden = {"torch.complex", "torch.view_as_complex"} & calls
+        if forbidden:
+            errors.append(
+                "pauli_term_expectation materializes complex tensors: " f"{forbidden}"
+            )
 
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))
     if profile.get("name") != contract.get("operator_profile"):
