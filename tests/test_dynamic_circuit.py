@@ -235,7 +235,9 @@ def test_dynamic_deployment_rejects_unsupported_capacity_and_batching() -> None:
         )
 
 
-def test_dynamic_routing_preserves_measurement_and_conditional_semantics() -> None:
+def test_dynamic_routing_preserves_measurement_and_conditional_semantics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     circuit = DynamicCircuit(3)
     circuit.x(0)
     circuit.measure(0, classical_bit=0)
@@ -244,6 +246,14 @@ def test_dynamic_routing_preserves_measurement_and_conditional_semantics() -> No
     coupling = fq.CouplingMap.line(3)
 
     routed = route_dynamic_circuit(circuit, coupling)
+
+    def reject_rerouting(*args: object, **kwargs: object) -> None:
+        raise AssertionError("dynamic execution must consume the routed circuit")
+
+    monkeypatch.setattr(
+        "flagquantum.runtime.dynamic.routing.route_to_topology",
+        reject_rerouting,
+    )
     original_result = fq.experimental.dynamic.run_dynamic(circuit, shots=8, seed=17)
     routed_result = fq.experimental.dynamic.run_dynamic(routed, shots=8, seed=17)
 
