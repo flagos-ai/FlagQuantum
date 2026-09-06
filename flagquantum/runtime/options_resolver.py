@@ -82,6 +82,7 @@ def resolve_execution_options(
                 values[name] = value
                 sources[name] = source_name
     _validate_program_batch(values, program_constraints)
+    _validate_program_precision(values, program_constraints)
     return ResolvedExecutionOptions(
         **values,
         sources=tuple((name, sources[name]) for name in _DEFAULTS),
@@ -138,6 +139,18 @@ def _validate_program_batch(
         raise ValueError(
             "batch_size conflicts with the program batch constraint: "
             f"{values['batch_size']} != {constraints.batch_size}"
+        )
+
+
+def _validate_program_precision(
+    values: Mapping[str, object], constraints: ExecutionOptions | None
+) -> None:
+    if constraints is None or constraints.precision != "complex128":
+        return
+    if values["precision"] == "complex64":
+        raise ValueError(
+            "precision=complex64 would demote a complex128 program; construct "
+            "the program with complex64 precision instead"
         )
 
 

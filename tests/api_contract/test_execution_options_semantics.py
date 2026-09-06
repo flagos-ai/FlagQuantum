@@ -65,3 +65,12 @@ def test_stable_execution_fails_closed_for_unavailable_backend() -> None:
 
     with pytest.raises(NotImplementedError, match="is not available"):
         fq.run(circuit, options=options)
+
+
+@pytest.mark.parametrize("operation", (fq.plan, fq.run))
+def test_stable_execution_rejects_program_precision_demotion(operation) -> None:
+    circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
+    options = fq.ExecutionOptions(precision="complex64")
+
+    with pytest.raises(ValueError, match="would demote a complex128 program"):
+        operation(circuit, options=options)

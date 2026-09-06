@@ -101,6 +101,14 @@ def test_resolver_rejects_program_batch_conflict() -> None:
         )
 
 
+def test_resolver_rejects_program_precision_demotion() -> None:
+    with pytest.raises(ValueError, match="would demote a complex128 program"):
+        resolve_execution_options(
+            ExecutionOptions(precision="complex64"),
+            program_constraints=ExecutionOptions(precision="complex128"),
+        )
+
+
 def test_circuit_ir_precision_is_a_program_constraint() -> None:
     constraints = circuit_execution_constraints(
         CircuitIR(n_wires=1, instructions=(), dtype="complex128")
