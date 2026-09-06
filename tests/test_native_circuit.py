@@ -532,6 +532,19 @@ def test_run_native_uses_one_resolved_precision_for_execution_and_plan():
     assert inherited_plan.runtime_config["complex_dtype"] == "complex128"
 
 
+def test_backend_native_execution_rejects_program_precision_demotion():
+    circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
+
+    with pytest.raises(ValueError, match="would demote a complex128 program"):
+        fqb.run_native(circuit, dtype=torch.complex64)
+    with pytest.raises(ValueError, match="would demote a complex128 program"):
+        circuit.run_distributed(
+            device="cpu",
+            world_size=1,
+            precision=torch.complex64,
+        )
+
+
 def test_auto_mode_selects_mps_for_bond_control_and_preserves_full_state_contract():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)

@@ -165,6 +165,31 @@ def _env_int(name: str, default: int = 0) -> int:
         return int(default)
 
 
+def _resolve_execution_precision(
+    program_dtype: str | torch.dtype,
+    *,
+    requested_dtype: str | torch.dtype | None = None,
+    requested_precision: str | torch.dtype | None = None,
+) -> torch.dtype:
+    if requested_dtype is not None and requested_precision is not None:
+        _, dtype_precision = resolve_dtype(requested_dtype)
+        _, named_precision = resolve_dtype(requested_precision)
+        if dtype_precision != named_precision:
+            raise ValueError(
+                "dtype and precision request different execution precisions"
+            )
+    _, program_precision = resolve_dtype(program_dtype)
+    _, execution_precision = resolve_dtype(
+        requested_dtype or requested_precision or program_precision
+    )
+    if program_precision == torch.complex128 and execution_precision == torch.complex64:
+        raise ValueError(
+            "precision=complex64 would demote a complex128 program; construct "
+            "the program with complex64 precision instead"
+        )
+    return execution_precision
+
+
 def _validate_flagos_statevector(
     ir: CircuitIR,
     options: dict[str, Any],
@@ -312,15 +337,10 @@ def run_distributed(
     )
     requested_dtype = device_options.pop("dtype", None)
     requested_precision = device_options.pop("precision", None)
-    if requested_dtype is not None and requested_precision is not None:
-        _, dtype_precision = resolve_dtype(requested_dtype)
-        _, named_precision = resolve_dtype(requested_precision)
-        if dtype_precision != named_precision:
-            raise ValueError(
-                "dtype and precision request different execution precisions"
-            )
-    _, execution_precision = resolve_dtype(
-        requested_dtype or requested_precision or execution_ir.dtype
+    execution_precision = _resolve_execution_precision(
+        execution_ir.dtype,
+        requested_dtype=requested_dtype,
+        requested_precision=requested_precision,
     )
     if "world_size" in device_options and "world_sz" not in device_options:
         device_options["world_sz"] = device_options.pop("world_size")
@@ -437,7 +457,10 @@ def run_native(
                 if manifest is not None
                 else get_runtime_config()
             )
-        _, execution_dtype = resolve_dtype(options.get("dtype") or ir.dtype)
+        execution_dtype = _resolve_execution_precision(
+            ir.dtype,
+            requested_dtype=options.get("dtype"),
+        )
         selected_config = selected_config.with_overrides(
             complex_dtype=str(execution_dtype).removeprefix("torch.")
         )
