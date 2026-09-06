@@ -232,6 +232,12 @@ The shared replacement scenario also covers trainable rotation merging, forward
 and gradient parity, symbolic expression structure, and zero-initialized trainable
 binding identity. These are acceptance conditions for the optimizer replacement,
 not optional numerical smoke tests.
+Standard measurement requests now pass the shared optimizer characterization and
+remain unchanged across reconstruction. Dynamic instructions, explicit Kraus
+channel payloads, and unclassified measurement metadata remain documented switch
+blockers: stable `optimize` preserves them, while the private static importer
+rejects them with diagnostics. The default implementation must not switch until
+those input-domain differences are resolved by an approved semantic design.
 
 ## Human-maintainability notes for the next slice
 

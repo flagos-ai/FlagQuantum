@@ -251,6 +251,82 @@ def test_candidate_optimizer_preserves_zero_initialized_trainable_parameter() ->
     assert candidate.instructions[0].params["theta"] is theta
 
 
+def test_candidate_optimizer_preserves_supported_measurement_request() -> None:
+    source = fq.CircuitIR(
+        1,
+        (
+            fq.Instruction("h", (0,)),
+            fq.Instruction("h", (0,)),
+        ),
+        measurements=(
+            fq.MeasurementNode("sample", (0,), shots=8, metadata={"seed": 7}),
+        ),
+    )
+
+    assert _candidate_optimize(source) == optimize(source)
+
+
+@pytest.mark.parametrize(
+    ("source", "message"),
+    (
+        (
+            fq.CircuitIR(
+                1,
+                (
+                    fq.Instruction(
+                        "x",
+                        (0,),
+                        metadata={"is_dynamic": True, "conditions": ((0, 1),)},
+                    ),
+                ),
+                metadata={"num_clbits": 1},
+            ),
+            "dynamic instruction",
+        ),
+        (
+            fq.CircuitIR(
+                1,
+                (
+                    fq.Instruction(
+                        "bit_flip",
+                        (0,),
+                        matrix=fq.bit_flip_channel(0.1).kraus,
+                        metadata={"is_channel": True},
+                    ),
+                ),
+            ),
+            "cannot also override its matrix",
+        ),
+        (
+            fq.CircuitIR(
+                1,
+                (fq.Instruction("x", (0,)),),
+                measurements=(
+                    fq.MeasurementNode(
+                        "sample",
+                        (0,),
+                        shots=8,
+                        metadata={"consumer_tag": "opaque"},
+                    ),
+                ),
+            ),
+            "measurement request has unsupported metadata",
+        ),
+    ),
+)
+def test_candidate_optimizer_blockers_remain_explicit(
+    source: fq.CircuitIR,
+    message: str,
+) -> None:
+    stable = optimize(source)
+    sealed = seal_circuit_ir_round_trip(source)
+
+    assert stable.instructions[0] is source.instructions[0]
+    assert not sealed.ok
+    assert sealed.artifact is None
+    assert message in sealed.diagnostics[0].message
+
+
 def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
     invalid = compile_offline_static(object(), _target())
     unsupported = compile_offline_static(
