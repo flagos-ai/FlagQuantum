@@ -67,3 +67,6 @@ def test_compiler_facade_has_one_canonical_short_name() -> None:
     assert not hasattr(compiler, "compile_for_backend")
     assert not hasattr(compatibility_api, "compile_for_backend")
     assert not hasattr(compiler, "simple_compile")
+    assert not hasattr(compiler, "remove_identity_gates")
+    assert not hasattr(compiler, "merge_self_inverse")
+    assert not hasattr(compiler, "merge_adjacent_rotations")

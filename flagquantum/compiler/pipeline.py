@@ -236,9 +236,6 @@ __all__ = [
     "CouplingMap",
     "compile",
     "optimize",
-    "remove_identity_gates",
-    "merge_self_inverse",
-    "merge_adjacent_rotations",
     "route_to_topology",
     "schedule_layers",
 ]
