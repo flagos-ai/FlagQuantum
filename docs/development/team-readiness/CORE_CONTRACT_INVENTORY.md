@@ -114,7 +114,7 @@
 | `RequestedExecution` | `flagquantum/core/contracts.py` | `RuntimePlanContract` | **内部候选简化请求投影**。与稳定 options 字段重叠，缺少 artifact、evidence、timeout/recovery 等完整请求边界。 |
 | `InternalExecutionRequest` | `flagquantum/_compiler/import_models.py` | `CircuitIR` importer | **Compiler 内部对象**。实际只分离 observables/measurements/classical width，名称过宽。权威请求落地后可改名为 importer-local request 或被适配。 |
 | `DistributedExecutionRequest` | `flagquantum/runtime/distributed/protocols.py` | JAX/PyTorch distributed adapters | **Runtime 临时兼容对象**。`Mapping[str, Any]` options 是跨层逃生口，应在新请求契约落地后退出。 |
-| `ExecutionOptions`（私有 ABI） | `flagquantum/_compiler/runtime_abi.py` | compiler runtime adapters/provider conformance | **可合并的同名重复对象**。实际只包含 `shots` 与 parameter bindings，语义更接近 `ExecutionBindings`，不应继续叫 `ExecutionOptions`。 |
+| `RuntimeBindings`（私有 ABI） | `flagquantum/_compiler/runtime_abi.py` | compiler runtime adapters/provider conformance | **已消歧的私有绑定对象**。只包含 `shots` 与 parameter bindings，不与稳定 `ExecutionOptions` 形成第二套用户选项。 |
 | `SandboxConnectorRequest` | `flagquantum/_compiler/provider_sandbox_connector.py` | provider sandbox tests | **私有测试/演练请求**，不得成为生产 Core 请求。 |
 
 仓库中没有一个名为 `ExecutionRequest` 的 Core 权威类型。建议位置为
@@ -193,7 +193,7 @@ Provider 层合成一个含大量可选方法的接口。
 
 | 编号 | 重复/转换/泄漏 | 当前路径 | 处理建议 |
 | --- | --- | --- | --- |
-| D1 | 两个同名 `ExecutionOptions` | `runtime/options.py` ↔ `_compiler/runtime_abi.py` | 最高优先级消歧。稳定类型保持不动；私有 ABI 类型改为 binding-specific 名称并通过 adapter 接收稳定请求。 |
+| D1 | 稳定 `ExecutionOptions` 与私有运行时绑定曾同名 | `runtime/options.py` ↔ `_compiler/runtime_abi.py` | **已完成名称消歧**：稳定类型保持不动；私有 ABI 使用 `RuntimeBindings`，且不保留同名兼容别名。后续只在 adapter 边界接收稳定请求。 |
 | D2 | 两个 `ProviderExtension` | `extensions/sdk.py` ↔ `_compiler/provider_conformance.py` | 私有 metadata 类型改名；不得影响稳定扩展协议。 |
 | D3 | artifact 三轨 | Core `ProgramArtifact` ↔ compiler `SealedExecutableArtifact` ↔ Deployment `DeploymentPackage` | Core 定义 program/executable 信封；Deployment 仅做 provider wire adapter。 |
 | D4 | target capability 三轨 | `_compiler.TargetCapabilities` ↔ Runtime `BackendCapabilities` ↔ Deployment `CloudBackendProfile` | Core snapshot 为跨领域权威；dynamic discovery 和 cloud profile 都显式投影。 |
@@ -206,7 +206,7 @@ Provider 层合成一个含大量可选方法的接口。
 | D11 | Deployment provider 原生异常泄漏 | `deployment/providers.py`、`braket_provider.py`、`cloud.py` | adapter 将 provider 状态/异常映射为 Core failure category；保留原异常为 cause/private diagnostics。 |
 | D12 | `Mapping[str, Any]` 跨边界 | distributed request options、ExecutionResult diagnostics/metrics/provenance | 请求语义改为 typed contract；结果的 namespaced additive diagnostics 可保留 mapping，但不得承载稳定核心字段。 |
 
-可在契约获批和调用者清零后删除/合并的是 D1 私有 ABI options、D2 私有同名 extension、D4
+可在契约获批和调用者清零后删除/合并的是 D2 私有同名 extension、D4
 中的重复跨领域字段、D5 的 Distributed request 自由字典以及 D6 的无主双轨。专用 backend
 plan/result/metrics 不是天然重复，只有在它们越过 Provider 边界时才需要删除或适配。
 

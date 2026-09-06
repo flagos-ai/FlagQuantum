@@ -17,9 +17,9 @@ from .executable_artifact import (
 from .runtime_abi import (
     AdapterKind,
     ExecutionHandle,
-    ExecutionOptions,
     ExecutionState,
     RuntimeAdapter,
+    RuntimeBindings,
     RuntimeCallStatus,
     RuntimeDiagnostic,
     StatusResult,
@@ -385,7 +385,7 @@ def run_conformance_case(
         return _failure(
             "compatibility", "target family and runtime adapter do not match"
         )
-    submitted = driver.adapter.submit(case.artifact, ExecutionOptions())
+    submitted = driver.adapter.submit(case.artifact, RuntimeBindings())
     if not submitted.ok or submitted.receipt is None:
         return _failure("submit", "runtime rejected the conformance artifact")
     receipt = submitted.receipt

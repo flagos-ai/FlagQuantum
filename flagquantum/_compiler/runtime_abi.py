@@ -80,7 +80,7 @@ class RuntimeParameterBinding:
 
 
 @dataclass(frozen=True)
-class ExecutionOptions:
+class RuntimeBindings:
     shots: int | None = None
     parameter_bindings: tuple[RuntimeParameterBinding, ...] = ()
 
@@ -111,7 +111,7 @@ class ExecutionBinding:
     artifact_identity: str
     adapter_identity: str
     adapter_kind: AdapterKind
-    options: ExecutionOptions
+    options: RuntimeBindings
     binding_identity: str
 
     def __post_init__(self) -> None:
@@ -120,8 +120,8 @@ class ExecutionBinding:
         _require_digest(self.binding_identity, "binding identity")
         if not isinstance(self.adapter_kind, AdapterKind):
             raise ValueError("adapter kind must use the closed enum")
-        if not isinstance(self.options, ExecutionOptions):
-            raise ValueError("execution options must use ExecutionOptions")
+        if not isinstance(self.options, RuntimeBindings):
+            raise ValueError("runtime bindings must use RuntimeBindings")
         if self.binding_identity != _digest(self.identity_dict()):
             raise ValueError("execution binding identity does not match its content")
 
@@ -138,14 +138,14 @@ def create_execution_binding(
     artifact: SealedExecutableArtifact,
     adapter_identity: str,
     adapter_kind: AdapterKind,
-    options: ExecutionOptions,
+    options: RuntimeBindings,
 ) -> ExecutionBinding:
     if not executable_artifact_envelope_is_valid(artifact):
         raise ValueError("execution binding requires a valid sealed artifact")
     if not isinstance(adapter_kind, AdapterKind):
         raise ValueError("adapter kind must use the closed enum")
-    if not isinstance(options, ExecutionOptions):
-        raise ValueError("execution options must use ExecutionOptions")
+    if not isinstance(options, RuntimeBindings):
+        raise ValueError("runtime bindings must use RuntimeBindings")
     values = {
         "artifact_identity": artifact.artifact_identity,
         "adapter_identity": _require_digest(adapter_identity, "adapter identity"),
@@ -445,7 +445,7 @@ class RuntimeAdapter(Protocol):
     def submit(
         self,
         artifact: SealedExecutableArtifact,
-        options: ExecutionOptions = ExecutionOptions(),
+        options: RuntimeBindings = RuntimeBindings(),
     ) -> SubmitResult: ...
 
     def status(self, handle: ExecutionHandle) -> StatusResult: ...
@@ -460,7 +460,7 @@ __all__ = [
     "CancelResult",
     "ExecutionBinding",
     "ExecutionHandle",
-    "ExecutionOptions",
+    "RuntimeBindings",
     "ExecutionState",
     "ExternalExecutionIdentity",
     "FetchResult",

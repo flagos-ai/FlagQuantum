@@ -13,9 +13,9 @@ from .runtime_abi import (
     AdapterKind,
     CancelResult,
     ExecutionHandle,
-    ExecutionOptions,
     ExecutionState,
     FetchResult,
+    RuntimeBindings,
     RuntimeCallStatus,
     RuntimeDiagnostic,
     RuntimeResult,
@@ -62,7 +62,7 @@ class _MemoryRuntimeAdapter:
     def _create_record(
         self,
         artifact: SealedExecutableArtifact,
-        options: ExecutionOptions,
+        options: RuntimeBindings,
         state: ExecutionState,
     ) -> _ExecutionRecord:
         binding = create_execution_binding(
@@ -177,7 +177,7 @@ class _MemoryRuntimeAdapter:
     def _validate_submission(
         self,
         artifact: SealedExecutableArtifact,
-        options: ExecutionOptions,
+        options: RuntimeBindings,
     ) -> SubmitResult | None:
         if not executable_artifact_envelope_is_valid(artifact):
             return SubmitResult(
@@ -187,12 +187,12 @@ class _MemoryRuntimeAdapter:
                     "runtime requires an intrinsically valid sealed artifact",
                 ),
             )
-        if not isinstance(options, ExecutionOptions):
+        if not isinstance(options, RuntimeBindings):
             return SubmitResult(
                 RuntimeCallStatus.INVALID_REQUEST,
                 diagnostics=_diagnostic(
                     RuntimeCallStatus.INVALID_REQUEST,
-                    "runtime options must use ExecutionOptions",
+                    "runtime bindings must use RuntimeBindings",
                 ),
             )
         return None
@@ -206,7 +206,7 @@ class LocalSyncRuntimeAdapter(_MemoryRuntimeAdapter):
     def __init__(
         self,
         adapter_identity: str,
-        executor: Callable[[SealedExecutableArtifact, ExecutionOptions], bytes],
+        executor: Callable[[SealedExecutableArtifact, RuntimeBindings], bytes],
     ) -> None:
         super().__init__(adapter_identity)
         if not callable(executor):
@@ -216,7 +216,7 @@ class LocalSyncRuntimeAdapter(_MemoryRuntimeAdapter):
     def submit(
         self,
         artifact: SealedExecutableArtifact,
-        options: ExecutionOptions = ExecutionOptions(),
+        options: RuntimeBindings = RuntimeBindings(),
     ) -> SubmitResult:
         invalid = self._validate_submission(artifact, options)
         if invalid is not None:
@@ -251,7 +251,7 @@ class OfflineAsyncMockRuntimeAdapter(_MemoryRuntimeAdapter):
     def submit(
         self,
         artifact: SealedExecutableArtifact,
-        options: ExecutionOptions = ExecutionOptions(),
+        options: RuntimeBindings = RuntimeBindings(),
     ) -> SubmitResult:
         invalid = self._validate_submission(artifact, options)
         if invalid is not None:

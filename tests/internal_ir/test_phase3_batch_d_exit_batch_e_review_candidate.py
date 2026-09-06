@@ -10,6 +10,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase3-batch-d-exit-batch-e-review-candidate.json"
+SUCCESSOR = ROOT / "contracts/ir-phase3-runtime-bindings-successor-authorization.json"
 
 
 def _sha256(path: Path) -> str:
@@ -20,6 +21,18 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
+def _assert_artifact_hash(relative_path: str, predecessor_hash: str) -> None:
+    actual_hash = _sha256(ROOT / relative_path)
+    if actual_hash == predecessor_hash:
+        return
+    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
+    transition = successor["artifact_transitions"][relative_path]
+    assert transition == {
+        "predecessor_sha256": predecessor_hash,
+        "successor_sha256": actual_hash,
+    }
+
+
 def test_batch_d_exit_candidate_binds_authorizations_and_artifacts() -> None:
     candidate = _candidate()
 
@@ -27,7 +40,7 @@ def test_batch_d_exit_candidate_binds_authorizations_and_artifacts() -> None:
     for authorization in candidate["authorization_chain"].values():
         assert _sha256(ROOT / authorization["path"]) == authorization["sha256"]
     for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        assert _sha256(ROOT / relative_path) == expected_hash
+        _assert_artifact_hash(relative_path, expected_hash)
 
 
 def test_batch_d_exit_evidence_is_complete_and_has_no_known_blocker() -> None:

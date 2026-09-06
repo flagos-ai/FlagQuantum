@@ -10,11 +10,11 @@ import flagquantum as fq
 from flagquantum._compiler.executable_artifact import seal_executable_artifact
 from flagquantum._compiler.runtime_abi import (
     CancelResult,
-    ExecutionOptions,
     ExecutionState,
     ExternalExecutionIdentity,
     FetchResult,
     RuntimeAdapter,
+    RuntimeBindings,
     RuntimeCallStatus,
     RuntimeParameterBinding,
     StatusResult,
@@ -78,7 +78,7 @@ def _artifact():
 
 def test_local_sync_lifecycle_binds_receipt_and_result_to_artifact() -> None:
     artifact = _artifact()
-    options = ExecutionOptions(
+    options = RuntimeBindings(
         shots=16,
         parameter_bindings=(RuntimeParameterBinding("theta", 0.5),),
     )
