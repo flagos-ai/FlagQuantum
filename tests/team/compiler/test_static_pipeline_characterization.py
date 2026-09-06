@@ -156,6 +156,33 @@ def test_candidate_optimizer_matches_stable_fixed_point(source: fq.CircuitIR) ->
     assert _candidate_optimize(source) == optimize(source)
 
 
+def test_candidate_optimizer_preserves_custom_matrix_identity() -> None:
+    matrix = torch.tensor([[0.0, 1.0], [1.0, 0.0]])
+    source = fq.CircuitIR(
+        1,
+        (fq.Instruction("custom_x", (0,), matrix=matrix),),
+    )
+
+    candidate = _candidate_optimize(source)
+    stable = optimize(source)
+
+    assert candidate.n_wires == stable.n_wires
+    assert candidate.dtype == stable.dtype
+    assert candidate.shape == stable.shape
+    assert candidate.instructions[0].name == stable.instructions[0].name
+    assert candidate.instructions[0].wires == stable.instructions[0].wires
+    assert candidate.instructions[0].params == stable.instructions[0].params
+    assert candidate.instructions[0].metadata == stable.instructions[0].metadata
+    assert candidate.instructions[0].matrix.dtype == stable.instructions[0].matrix.dtype
+    assert (
+        candidate.instructions[0].matrix.device == stable.instructions[0].matrix.device
+    )
+    torch.testing.assert_close(
+        candidate.instructions[0].matrix,
+        stable.instructions[0].matrix,
+    )
+
+
 def test_static_pipeline_fails_closed_without_partial_artifacts() -> None:
     invalid = compile_offline_static(object(), _target())
     unsupported = compile_offline_static(

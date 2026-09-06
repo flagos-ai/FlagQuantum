@@ -224,6 +224,10 @@ The fused private canonicalization pass now follows the stable optimizer's
 fixed-point contract. Shared characterization includes rewrites that expose a
 second optimization opportunity, preventing a one-round candidate from replacing
 the stable implementation.
+Custom-unitary characterization also requires the candidate to preserve the sealed
+source matrix value and dtype after validating that its internal attributes were
+not changed. Python object identity is intentionally not part of this serialized
+boundary.
 
 ## Human-maintainability notes for the next slice
 

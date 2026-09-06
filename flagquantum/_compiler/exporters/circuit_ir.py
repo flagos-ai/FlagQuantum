@@ -235,9 +235,10 @@ def _restore_operations(
                 raise _ExportError(
                     "transformed operation lacks sealed CircuitIR source provenance"
                 )
-            skeleton = restored.instructions[location.line - 1]
+            source_index = location.line - 1
         else:
-            skeleton = restored.instructions[index]
+            source_index = index
+        skeleton = restored.instructions[source_index]
         try:
             wires = tuple(value_wires[operand.id] for operand in operation.operands)
         except KeyError as exc:
@@ -247,21 +248,14 @@ def _restore_operations(
         for result, wire in zip(operation.results, wires, strict=True):
             value_wires[result.id] = wire
         if operation.name == "quantum.custom_unitary":
-            matrix = operation.attributes["matrix"]
-            if not isinstance(matrix, FrozenAttributes):
+            source_operation = artifact.imported.module.body.blocks[0].operations[
+                source_index
+            ]
+            if not isinstance(operation.attributes.get("matrix"), FrozenAttributes):
                 raise _ExportError("custom unitary matrix attribute is invalid")
-            dtype = getattr(torch, str(matrix["dtype"]), None)
-            if dtype is None:
-                raise _ExportError("custom unitary matrix dtype is unsupported")
-            instructions.append(
-                replace(
-                    skeleton,
-                    name=str(operation.attributes["symbolic_name"]),
-                    wires=wires,
-                    params={},
-                    matrix=torch.tensor(matrix["data"], dtype=dtype),
-                )
-            )
+            if operation.attributes != source_operation.attributes:
+                raise _ExportError("custom unitary attributes changed after import")
+            instructions.append(replace(skeleton, wires=wires))
             continue
         if not operation.name.startswith("quantum."):
             raise _ExportError(

@@ -6,8 +6,12 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum._compiler.exporters.circuit_ir import seal_circuit_ir_round_trip
+from flagquantum._compiler.exporters.circuit_ir import (
+    export_transformed_circuit_ir,
+    seal_circuit_ir_round_trip,
+)
 from flagquantum._compiler.ir.modules import Block, QuantumModule, Region
+from flagquantum._compiler.ir.operations import FrozenAttributes
 from flagquantum._compiler.passes.manager import PassManager
 from flagquantum._compiler.passes.static_canonicalization import (
     CancelSelfInverseOperationsPass,
@@ -229,3 +233,29 @@ def test_optimized_lowering_rejects_unsealed_source_provenance() -> None:
 
     assert not lowered.ok
     assert "source provenance" in lowered.diagnostics[0].message
+
+
+def test_transformed_export_rejects_changed_custom_unitary_attributes() -> None:
+    source = fq.CircuitIR(
+        1,
+        (
+            fq.Instruction(
+                "custom_x",
+                (0,),
+                matrix=torch.tensor([[0.0, 1.0], [1.0, 0.0]]),
+            ),
+        ),
+    )
+    artifact = seal_circuit_ir_round_trip(source).artifact
+    block = artifact.imported.module.body.blocks[0]
+    operation = block.operations[0]
+    attributes = dict(operation.attributes)
+    attributes["symbolic_name"] = "changed"
+    changed = replace(operation, attributes=FrozenAttributes(attributes))
+    module = QuantumModule(Region((Block(block.arguments, (changed,)),)))
+
+    exported = export_transformed_circuit_ir(artifact, module)
+
+    assert not exported.ok
+    assert exported.circuit_ir is None
+    assert "custom unitary attributes changed" in exported.diagnostics[0].message
