@@ -38,6 +38,70 @@ def _bell() -> fq.Circuit:
 
 
 @pytest.mark.integration
+def test_program_execution_plans_compiles_and_launches_numerics_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.runtime.planner as runtime_planner
+    from flagquantum.simulation import statevector as statevector_simulation
+
+    original_plan = runtime_planner.plan
+    original_compile = runtime_planner.compile_for_backend
+    original_execute = statevector_simulation.run_local_statevector
+    plans: list[object] = []
+    compiled_programs: list[CircuitIR] = []
+    numerical_programs: list[CircuitIR] = []
+
+    def plan_once(*args: object, **kwargs: object) -> object:
+        planned = original_plan(*args, **kwargs)
+        plans.append(planned)
+        return planned
+
+    def compile_once(*args: object, **kwargs: object) -> CircuitIR:
+        compiled = original_compile(*args, **kwargs)
+        compiled_programs.append(compiled)
+        return compiled
+
+    def execute_once(program: CircuitIR, **kwargs: object) -> torch.Tensor:
+        numerical_programs.append(program)
+        return original_execute(program, **kwargs)
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "execution must consume the plan produced for this request"
+        )
+
+    monkeypatch.setattr(runtime_planner, "plan", plan_once)
+    monkeypatch.setattr(runtime_planner, "compile_for_backend", compile_once)
+    monkeypatch.setattr("flagquantum.runtime.execution.compile_for_backend", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.execution.select_execution_mode", forbidden
+    )
+    monkeypatch.setattr("flagquantum.runtime.execution.build_plan", forbidden)
+    monkeypatch.setattr(statevector_simulation, "run_local_statevector", execute_once)
+
+    result = fq.run(
+        _bell(),
+        options=fq.ExecutionOptions(
+            mode="statevector",
+            backend="pytorch",
+            device="cpu",
+        ),
+    )
+
+    assert len(plans) == 1
+    assert len(compiled_programs) == 1
+    assert len(numerical_programs) == 1
+    assert result.plan is plans[0]
+    compiled = compiled_programs[0]
+    numerical = numerical_programs[0]
+    assert numerical.n_wires == compiled.n_wires
+    assert numerical.instructions == compiled.instructions
+    assert numerical.observables == compiled.observables
+    assert numerical.measurements == compiled.measurements
+    assert numerical.dtype == compiled.dtype
+
+
+@pytest.mark.integration
 def test_validated_plan_executes_once_without_replanning_or_recompiling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

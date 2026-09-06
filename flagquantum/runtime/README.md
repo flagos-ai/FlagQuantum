@@ -27,6 +27,12 @@ Start in `planner/` for selection policy, `plan_execution.py` for exact-plan
 validation, and `execution.py` for local dispatch. Backend-specific lifecycle
 code belongs in `backends/`; numerical tensor operations do not.
 
+For program input, `fq.run(program)` invokes the stable planner once; that
+planning step compiles once and seals a canonical executable program into the
+plan. Execution passes the same compiled instructions and numerical semantics
+to Simulation for one numerical launch; plan-only metadata need not enter the
+numerical layer.
+
 Executing an existing plan is a strict suffix of this path: `fq.run(plan)`
 starts at `execute_plan()`, does not invoke planning, mode selection, compilation,
 or plan construction again, and launches the selected Simulation entry exactly
