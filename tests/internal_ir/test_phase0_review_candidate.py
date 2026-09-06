@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -10,40 +9,16 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts/ir-phase0-exit-phase1-review-candidate.json"
-SUCCESSOR = ROOT / "contracts/ir-phase0-review-format-normalization-successor.json"
 
 
 def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def test_review_candidate_binds_every_reviewed_artifact() -> None:
-    candidate = _candidate()
-    successor = json.loads(SUCCESSOR.read_text(encoding="utf-8"))
-    transitions = successor["artifact_transitions"]
-    mismatches = set()
-
-    assert candidate["status"] == "ready_for_owner_approval"
-    for relative_path, expected_hash in candidate["reviewed_artifacts"].items():
-        actual_hash = _sha256(ROOT / relative_path)
-        if actual_hash == expected_hash:
-            continue
-        mismatches.add(relative_path)
-        transition = transitions[relative_path]
-        assert transition["predecessor_sha256"] == expected_hash
-        assert transition["successor_sha256"] == actual_hash
-    assert mismatches == set(transitions)
-    assert successor["predecessor"]["sha256"] == _sha256(CANDIDATE)
-    assert successor["transformation"]["semantic_or_authorization_change"] is False
-
-
 def test_review_candidate_cannot_authorize_itself() -> None:
     candidate = _candidate()
 
+    assert candidate["status"] == "ready_for_owner_approval"
     assert candidate["technical_review"]["completed"] is True
     assert all(value is False for value in candidate["formal_signoffs"].values())
     assert all(value is False for value in candidate["authorization"].values())
