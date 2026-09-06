@@ -387,3 +387,15 @@ Runtime 文件剩余逻辑直接组织分片索引与 chunk 策略、前向重�
 边界和全局索引来自 Runtime 计划；`_fused_sharded_1q_vjp_adjoint` 同时拥有通信流水线和证据
 计数。将其继续拆入 Simulation 会迫使数值层依赖 Runtime 计划或复制通信契约，因此本路径已到
 停止点。后续只有出现不依赖计划、所有权、通信、检查点和证据的完整数值行为时再下沉。
+
+## 17. Statevector 前向边界复核（2026-09-06）
+
+`runtime/backends/statevector/forward.py` 使用的局部门作用、对角门作用、basis 索引与偏移、rank
+pair 合并和 gate-basis block 合并均已由 `simulation/statevector_ops.py` 唯一实现。对应的纯张量
+行为测试已归入 Simulation 团队目录；Runtime 前向测试只保留布局策略、Kernel 路由、设备等待、
+通信 workspace、执行计划和结果证据等职责。
+
+前向文件剩余的 `_vectorized_*` 入口需要把 Runtime 的 shard/plan 记录适配到数值 Kernel，并在
+跨分片路径中安排 P2P 或 collective、workspace 复用、流水线和通信计数。继续把这些入口整体迁入
+Simulation 会引入 Runtime 模型或第二套分片契约，因此当前前向路径也已到停止点。数值 Kernel
+可以独立修改和测试，Runtime 只决定何时、以何种执行计划及通信路径调用它们。
