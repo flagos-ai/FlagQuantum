@@ -160,12 +160,6 @@ def _coerce_p2_accuracy_requirement(
     return requested
 
 
-def _pair_cpu_float64(value: DoubleSingleTensor) -> torch.Tensor:
-    return value.high.detach().cpu().to(torch.float64) + value.low.detach().cpu().to(
-        torch.float64
-    )
-
-
 @dataclass(frozen=True)
 class SplitRealImagPrecisionExpectationResult:
     """Pauli expectation retained as Double-Single high/low FP32 words."""
@@ -180,7 +174,7 @@ class SplitRealImagPrecisionExpectationResult:
     def cpu_float64(self) -> torch.Tensor:
         """Reconstruct the scalar after moving both FP32 words to CPU."""
 
-        return _pair_cpu_float64(self.value)
+        return self.value.to("cpu").to_float64().detach()
 
     def summary(self) -> dict[str, Any]:
         summary = cast(dict[str, Any], self.state.summary())
@@ -211,7 +205,7 @@ class SplitRealImagPrecisionGradientResult:
     shift: float = math.pi / 2.0
 
     def cpu_float64(self) -> torch.Tensor:
-        return _pair_cpu_float64(self.gradient)
+        return self.gradient.to("cpu").to_float64().detach()
 
     def summary(self) -> dict[str, Any]:
         summary = self.expectation.summary()

@@ -339,3 +339,12 @@ DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、col
 文件名清理：优先选择 `runtime/backends/statevector` 中一段不依赖计划、设备选择、通信、
 checkpoint 或证据类型的独立数值行为，迁入 Simulation 并由原入口委托；若不存在这样的完整
 行为，则保留边界，不新增包装层。
+
+## 15. Double-Single 诊断转换收口（2026-09-06）
+
+Statevector P2–P5 结果对象曾分别重写 high/low 到 CPU float64/complex128 的诊断转换。
+`DoubleSingleTensor.to_float64()`、`DoubleSingleComplexTensor.to_complex128()` 和现有 `to()`
+已经是该数值表示的权威实现，因此 Runtime 结果对象现只组合这些方法并在返回前切断梯度图。
+本轮删除三组重复 helper 和一处内联重复实现，不改变公开结果类型、执行计划、设备选择或数值
+Kernel；CPU conformance 覆盖状态、期望值、梯度和优化器诊断结果。后续不再为同类结果对象
+增加 high/low 手工重建代码。

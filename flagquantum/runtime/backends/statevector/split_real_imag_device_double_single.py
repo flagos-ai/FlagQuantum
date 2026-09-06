@@ -139,16 +139,6 @@ def _coerce_accuracy(
     return requested
 
 
-def _cpu_float64(value: DoubleSingleTensor) -> torch.Tensor:
-    return value.high.detach().cpu().to(torch.float64) + value.low.detach().cpu().to(
-        torch.float64
-    )
-
-
-def _cpu_complex128(value: DoubleSingleComplexTensor) -> torch.Tensor:
-    return torch.complex(_cpu_float64(value.real), _cpu_float64(value.imag))
-
-
 @dataclass(frozen=True)
 class SplitRealImagDeviceDoubleSingleStatevectorResult:
     state: DoubleSingleComplexTensor
@@ -168,10 +158,12 @@ class SplitRealImagDeviceDoubleSingleStatevectorResult:
         return self.state.real.high.device
 
     def cpu_complex128(self) -> torch.Tensor:
-        return _cpu_complex128(self.state)
+        return self.state.to("cpu").to_complex128().detach()
 
     def norm_cpu_float64(self) -> torch.Tensor:
-        return _cpu_float64(double_single_sum(self.state.abs_squared()))
+        return (
+            double_single_sum(self.state.abs_squared()).to("cpu").to_float64().detach()
+        )
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -216,7 +208,7 @@ class SplitRealImagDeviceDoubleSingleExpectationResult:
     accuracy_requirement: AccuracyRequirementContract
 
     def cpu_float64(self) -> torch.Tensor:
-        return _cpu_float64(self.value)
+        return self.value.to("cpu").to_float64().detach()
 
     def summary(self) -> dict[str, Any]:
         summary = self.state.summary()
@@ -242,7 +234,7 @@ class SplitRealImagDeviceDoubleSingleGradientResult:
     shift: float = math.pi / 2.0
 
     def cpu_float64(self) -> torch.Tensor:
-        return _cpu_float64(self.gradient)
+        return self.gradient.to("cpu").to_float64().detach()
 
     def summary(self) -> dict[str, Any]:
         summary = self.expectation.summary()

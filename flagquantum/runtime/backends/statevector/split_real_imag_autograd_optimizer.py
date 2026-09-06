@@ -76,9 +76,7 @@ class SplitRealImagDoubleSingleSGDState:
     def cpu_float64(self) -> torch.Tensor:
         """Reconstruct master parameters for diagnostics only."""
 
-        return self.parameters.high.detach().cpu().to(
-            torch.float64
-        ) + self.parameters.low.detach().cpu().to(torch.float64)
+        return self.parameters.to("cpu").to_float64().detach()
 
     def summary(self) -> dict[str, Any]:
         return {
