@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from flagquantum.simulation.mps.site_kernels import (  # noqa: E402
-    _rxx_contraction_real,
+    _two_site_gate_contraction_real,
 )
 
 
@@ -81,9 +81,9 @@ def main() -> None:
             ),
         )
         for _ in range(3):
-            _rxx_contraction_real(*static_inputs)
+            _two_site_gate_contraction_real(*static_inputs)
         compiled_contraction = torch.compile(
-            _rxx_contraction_real,
+            _two_site_gate_contraction_real,
             fullgraph=True,
             dynamic=False,
         )

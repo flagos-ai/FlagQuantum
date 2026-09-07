@@ -18,7 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from flagquantum.simulation.mps.site_kernels import (  # noqa: E402
-    _rxx_contraction_real,
+    _two_site_gate_contraction_real,
 )
 
 
@@ -61,10 +61,12 @@ def main() -> None:
         )
 
         def contraction(a, b, g):
-            return _rxx_contraction_real(a, b, g)
+            return _two_site_gate_contraction_real(a, b, g)
 
         def fused(a, b, g):
-            pair = torch.view_as_complex(_rxx_contraction_real(a, b, g).contiguous())
+            pair = torch.view_as_complex(
+                _two_site_gate_contraction_real(a, b, g).contiguous()
+            )
             return torch.linalg.svd(pair, full_matrices=False, driver="gesvd")
 
         compiled_contraction = torch.compile(contraction, fullgraph=True, dynamic=False)
@@ -79,7 +81,7 @@ def main() -> None:
         fused_result = compiled_fused(*inputs)
         torch.cuda.synchronize(device)
         reference_pair = torch.view_as_complex(
-            _rxx_contraction_real(*inputs).contiguous()
+            _two_site_gate_contraction_real(*inputs).contiguous()
         )
         separate_reconstruction = (
             separate_result[0]

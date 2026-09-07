@@ -87,7 +87,7 @@ def test_compiled_rxx_nonfinite_output_recovers_with_eager_kernel(monkeypatch):
     matrix = torch.eye(4, dtype=torch.complex64).reshape(1, 1, 4, 4)
 
     def nonfinite_compiled(*args, **kwargs):
-        eager = site_kernels._rxx_contraction_real(*args[1])
+        eager = site_kernels._two_site_gate_contraction_real(*args[1])
         return torch.full_like(eager, float("nan"))
 
     monkeypatch.setattr(site_kernels, "_run", nonfinite_compiled)
@@ -105,7 +105,7 @@ def test_compiled_rxx_norm_bound_violation_recovers_with_eager_kernel(monkeypatc
     matrix = torch.eye(4, dtype=torch.complex64).reshape(1, 1, 4, 4)
 
     def corrupted_compiled(*args, **kwargs):
-        return 1.0e10 * site_kernels._rxx_contraction_real(*args[1])
+        return 1.0e10 * site_kernels._two_site_gate_contraction_real(*args[1])
 
     monkeypatch.setattr(site_kernels, "_run", corrupted_compiled)
     reset_site_kernel_stats()

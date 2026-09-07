@@ -376,7 +376,7 @@ def apply_ry_bucket(
     return torch.view_as_complex(output.contiguous())
 
 
-def _rxx_contraction_real(
+def _two_site_gate_contraction_real(
     left: torch.Tensor, right: torch.Tensor, matrices: torch.Tensor
 ) -> torch.Tensor:
     lr, li = left[..., 0], left[..., 1]
@@ -417,7 +417,7 @@ def apply_two_site_gate_contraction_bucket(
         torch.view_as_real(matrices),
     )
     output = _run(
-        _rxx_contraction_real,
+        _two_site_gate_contraction_real,
         real_inputs,
         kind="rxx_contraction",
         compiled=compiled,
@@ -431,7 +431,7 @@ def apply_two_site_gate_contraction_bucket(
             output = torch.full_like(output, float("nan"))
         output = _recover_nonfinite_compiled_output(
             output,
-            eager=_rxx_contraction_real,
+            eager=_two_site_gate_contraction_real,
             inputs=real_inputs,
             kind="two-site contraction",
         )
@@ -561,7 +561,7 @@ def prewarm_site_kernel_buckets(
                 bucket.bucket_size, bucket.batch_size, 4, 4
             )
             _run(
-                _rxx_contraction_real,
+                _two_site_gate_contraction_real,
                 tuple(torch.view_as_real(item) for item in (left, right, matrices)),
                 kind="rxx_contraction",
                 compiled=True,
