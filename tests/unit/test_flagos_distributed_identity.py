@@ -5,7 +5,7 @@ import torch
 
 from flagquantum.runtime.distributed import (
     DistributedIdentity,
-    models,
+    context,
     require_verified_flagcx,
 )
 from flagquantum.runtime.distributed.identity import (
@@ -84,15 +84,17 @@ def test_flagos_backend_and_device_must_be_requested_together(monkeypatch):
         activated = True
         raise AssertionError(f"unexpected activation for local rank {local_rank}")
 
-    monkeypatch.setattr(models.dist, "is_available", lambda: True)
-    monkeypatch.setattr(models, "activate_flagos_device", fail_if_activated)
+    monkeypatch.setattr(context.dist, "is_available", lambda: True)
+    monkeypatch.setattr(context, "activate_flagos_device", fail_if_activated)
 
     with pytest.raises(ValueError, match="requires device='flagos"):
-        models.init_torch_distributed(backend="flagos", device="cpu")
+        context.init_torch_distributed(backend="flagos", device="cpu")
     with pytest.raises(ValueError, match="requires backend='flagos"):
-        models.init_torch_distributed(backend="gloo", device="flagos")
+        context.init_torch_distributed(backend="gloo", device="flagos")
     with pytest.raises(ValueError, match="conflicts with LOCAL_RANK"):
-        models.init_torch_distributed(backend="flagos", device="flagos:1", local_rank=0)
+        context.init_torch_distributed(
+            backend="flagos", device="flagos:1", local_rank=0
+        )
 
     assert activated is False
 
@@ -105,14 +107,14 @@ def test_flagos_initialization_uses_public_process_group_boundary(monkeypatch):
         calls.append(kwargs)
         state["initialized"] = True
 
-    monkeypatch.setattr(models.dist, "is_available", lambda: True)
-    monkeypatch.setattr(models.dist, "is_initialized", lambda: state["initialized"])
-    monkeypatch.setattr(models.dist, "init_process_group", init_process_group)
-    monkeypatch.setattr(models.dist, "get_backend", lambda: "flagos")
-    monkeypatch.setattr(models.dist, "get_rank", lambda: 1)
-    monkeypatch.setattr(models.dist, "get_world_size", lambda: 2)
+    monkeypatch.setattr(context.dist, "is_available", lambda: True)
+    monkeypatch.setattr(context.dist, "is_initialized", lambda: state["initialized"])
+    monkeypatch.setattr(context.dist, "init_process_group", init_process_group)
+    monkeypatch.setattr(context.dist, "get_backend", lambda: "flagos")
+    monkeypatch.setattr(context.dist, "get_rank", lambda: 1)
+    monkeypatch.setattr(context.dist, "get_world_size", lambda: 2)
     monkeypatch.setattr(
-        models,
+        context,
         "activate_flagos_device",
         lambda local_rank: (
             torch.device("cpu"),
@@ -124,7 +126,7 @@ def test_flagos_initialization_uses_public_process_group_boundary(monkeypatch):
         ),
     )
 
-    context = models.init_torch_distributed(
+    distributed_context = context.init_torch_distributed(
         backend="flagos",
         device="flagos",
         rank=1,
@@ -137,30 +139,31 @@ def test_flagos_initialization_uses_public_process_group_boundary(monkeypatch):
     assert calls[0]["backend"] == "flagos"
     assert calls[0]["rank"] == 1
     assert calls[0]["world_size"] == 2
-    assert context.backend == "flagos"
-    assert context.initialized is True
-    assert context.initialized_by_flagquantum is True
-    assert context.identity is not None
-    assert context.identity.logical_device == "flagos:1"
-    assert context.identity.provider == "torch_fl"
-    assert context.identity.flagcx_route_verified is False
-    assert context.summary()["distributed_identity"]["flagcx_route_status"] == (
-        "unverified"
+    assert distributed_context.backend == "flagos"
+    assert distributed_context.initialized is True
+    assert distributed_context.initialized_by_flagquantum is True
+    assert distributed_context.identity is not None
+    assert distributed_context.identity.logical_device == "flagos:1"
+    assert distributed_context.identity.provider == "torch_fl"
+    assert distributed_context.identity.flagcx_route_verified is False
+    assert (
+        distributed_context.summary()["distributed_identity"]["flagcx_route_status"]
+        == "unverified"
     )
 
 
 def test_flagos_attach_rejects_an_existing_different_backend(monkeypatch):
-    monkeypatch.setattr(models.dist, "is_available", lambda: True)
-    monkeypatch.setattr(models.dist, "is_initialized", lambda: True)
-    monkeypatch.setattr(models.dist, "get_backend", lambda: "gloo")
+    monkeypatch.setattr(context.dist, "is_available", lambda: True)
+    monkeypatch.setattr(context.dist, "is_initialized", lambda: True)
+    monkeypatch.setattr(context.dist, "get_backend", lambda: "gloo")
     monkeypatch.setattr(
-        models,
+        context,
         "activate_flagos_device",
         lambda local_rank: (torch.device("cpu"), {"provider": "torch_fl"}),
     )
 
     with pytest.raises(RuntimeError, match="does not match"):
-        models.init_torch_distributed(
+        context.init_torch_distributed(
             backend="flagos",
             device="flagos",
             rank=0,

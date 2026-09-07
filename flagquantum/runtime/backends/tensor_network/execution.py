@@ -51,20 +51,20 @@ from ....simulation.tensor_network.stages import (
 )
 from ....simulation.tensor_network.state import TensorNetworkState
 from ....version import __version__
-from ..jax import plan_jax_distributed_quantum_backend
-from .joint_planning import (
-    DistributedTNWorkingSetPolicy,
-)
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
     _resolve_backend_policy,
     _should_use_torch_distributed,
 )
-from ...planner.tn_calibration import TNWorkingSetCalibration
-from ...distributed.models import (
+from ...distributed.context import (
     TorchDistributedContext,
     _rank_placement_summary,
     init_torch_distributed,
+)
+from ...planner.tn_calibration import TNWorkingSetCalibration
+from ..jax import plan_jax_distributed_quantum_backend
+from .joint_planning import (
+    DistributedTNWorkingSetPolicy,
 )
 
 _PERSISTENT_PLAN_SCHEMA = "flagquantum.distributed_tn_plan.v1"
