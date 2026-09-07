@@ -49,7 +49,7 @@ convergence, retry, checkpointing, collectives, and result assembly.
 `double_single_host_gates.py` owns P3's explicit CPU reference encoding;
 `double_single_device_gates.py` separately owns P4's device-resident FP32
 gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
-`double_single_statevector.py` owns the shared gate application and state
+`statevector/double_single.py` owns the shared gate application and state
 initialization, local execution, normalization, and Pauli-term reduction used
 by the P3 and P4 executors.
 

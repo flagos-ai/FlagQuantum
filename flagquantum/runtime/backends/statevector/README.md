@@ -66,7 +66,7 @@ term kernel in Runtime.
 They own parameter binding and shifts, precision authorization, platform
 preflight, the deliberate choice between host and device gate encoding, route
 auditing, and result/conformance evidence. Both stream encoded gates into the
-same `simulation.double_single_statevector` execution and Pauli-reduction
+same `simulation.statevector.double_single` execution and Pauli-reduction
 primitives. This is the P3/P4 stopping point: keep the adapters separate because
 their host-ingestion claims differ, and do not move their contracts, provider
 checks, or evidence records into Simulation merely to remove Runtime code.

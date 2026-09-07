@@ -12,4 +12,6 @@ evidence.
 - Start in `noisy.py` for one already-lowered batch of noisy trajectories.
 - Start in `split_real_imag.py` for split-storage FP32 and selective
   Double-Single numerical primitives.
+- Start in `double_single.py` for full Double-Single state evolution,
+  normalization, and observable reduction.
 - The stable user entry points remain `fq.Circuit`, `fq.plan`, and `fq.run`.
