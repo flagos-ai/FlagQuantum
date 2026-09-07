@@ -1,6 +1,6 @@
 import torch
 
-from flagquantum.simulation.dense_island import DenseIslandPlan, DenseIslandState
+from flagquantum.simulation.mps.dense_island import DenseIslandPlan, DenseIslandState
 from flagquantum.simulation.statevector.operations import _apply_matrix
 
 

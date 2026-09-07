@@ -10,7 +10,7 @@ from typing import Sequence
 
 import torch
 
-from .statevector.operations import _apply_matrix
+from ..statevector.operations import _apply_matrix
 
 
 @dataclass(frozen=True)
