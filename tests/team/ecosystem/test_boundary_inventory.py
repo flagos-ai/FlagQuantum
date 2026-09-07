@@ -62,15 +62,13 @@ def test_external_sdk_imports_do_not_enter_inner_layers() -> None:
 def test_jax_objects_are_confined_to_the_optional_kernel_boundary() -> None:
     leaks = []
     runtime_boundary = ROOT / "flagquantum/runtime/backends/jax"
-    simulation_boundary = ROOT / "flagquantum/simulation"
+    simulation_boundary = ROOT / "flagquantum/simulation/jax"
     for path in _python_files():
         for module in _imports(path):
             if (
                 module.split(".", 1)[0] in {"jax", "jaxlib"}
                 and runtime_boundary not in path.parents
-                and not (
-                    path.parent == simulation_boundary and path.name.startswith("jax_")
-                )
+                and simulation_boundary not in path.parents
             ):
                 leaks.append(f"{path.relative_to(ROOT)} -> {module}")
 
@@ -88,7 +86,7 @@ def test_runtime_to_ecosystem_reverse_dependency_is_frozen_as_migration_debt() -
         )
     }
 
-    assert importers == {"flagquantum/runtime/dynamic_conformance.py"}
+    assert importers == {"flagquantum/runtime/dynamic/conformance.py"}
 
 
 def test_external_framework_names_are_not_part_of_owned_ir_type_annotations() -> None:

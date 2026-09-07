@@ -7,11 +7,11 @@ from typing import Callable
 
 import torch
 
-from .dynamic._conditions import classical_width as _classical_width
-from .dynamic._conditions import instruction_conditions as _instruction_conditions
-from .dynamic.circuit import DynamicCircuit
-from .dynamic.execution import run_dynamic
-from .dynamic.result import DynamicExecutionResult
+from ._conditions import classical_width as _classical_width
+from ._conditions import instruction_conditions as _instruction_conditions
+from .circuit import DynamicCircuit
+from .execution import run_dynamic
+from .result import DynamicExecutionResult
 
 
 @dataclass(frozen=True)
@@ -165,7 +165,7 @@ def run_qiskit_aer_dynamic(
 ) -> DynamicExecutionResult:
     """Compatibility wrapper for the isolated Qiskit Aer adapter."""
 
-    from ..ecosystem.qiskit.execution import run_qiskit_aer_dynamic as execute
+    from ...ecosystem.qiskit.execution import run_qiskit_aer_dynamic as execute
 
     return execute(circuit, shots=shots, seed=seed)
 
@@ -178,7 +178,7 @@ def run_qiskit_aer_qasm3_round_trip(
 ) -> DynamicExecutionResult:
     """Compatibility wrapper for the isolated Qiskit QASM 3 adapter."""
 
-    from ..ecosystem.qiskit.execution import (
+    from ...ecosystem.qiskit.execution import (
         run_qiskit_aer_qasm3_round_trip as execute,
     )
 

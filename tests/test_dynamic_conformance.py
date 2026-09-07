@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.runtime.dynamic_conformance as fqdc
+import flagquantum.runtime.dynamic.conformance as fqdc
 from flagquantum.dynamic import DynamicCircuit
 
 

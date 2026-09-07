@@ -55,7 +55,7 @@ made.
 | Export | `export_qiskit`, `to_qiskit` | Qiskit object only in explicit `artifact`/`circuit` | Format interoperability | Correct boundary |
 | Semantic conversion | `qiskit_statevector_to_flagquantum`, `semantic_fingerprint`, `run_qiskit_conformance` | PyTorch tensor or owned conformance record | Result conversion/test | Correct boundary |
 | Execute | `run_qiskit_aer_dynamic`, `run_qiskit_aer_qasm3_round_trip` in `interop/qiskit/execution.py` | `DynamicExecutionResult` | Backend execution | Misclassified location; migrate after an execution-provider contract exists |
-| Runtime compatibility wrapper | same names in `runtime/dynamic_conformance.py` | Delegates to Ecosystem | Backend conformance | Reverse dependency debt: Runtime imports Ecosystem |
+| Runtime compatibility wrapper | same names in `runtime/dynamic/conformance.py` | Delegates to Ecosystem | Backend conformance | Reverse dependency debt: Runtime imports Ecosystem |
 
 Import behavior is fail-closed by default. Barriers, arbitrary metadata,
 register flattening, unsupported control flow, unsafe multi-qubit unitary basis
@@ -149,7 +149,7 @@ adapter or alternate IR.
 | --- | --- | --- | --- | --- |
 | P1 | `interop/qiskit/conversion.py` source provenance copy | Recognized `flagquantum_*` metadata values are copied recursively without an owned scalar/container validator. A caller can place an arbitrary external object under one of those keys and carry it into `CircuitIR.metadata`. | Potential real object leakage through an otherwise correct adapter. | Core must define canonical metadata value types and validation; Ecosystem then rejects or explicitly serializes unsupported values with an approved issue code. |
 | P1 | `ecosystem/extensions/sdk.py` protocols | `execute`, `value_and_grad`, `transform`, and `plan` accept/return `Any`. | Third-party objects can cross layers through a negotiated extension. | Ecosystem/integration must replace `Any` at cross-layer points with approved owned contracts. |
-| P2 | `runtime/dynamic_conformance.py` | Runtime compatibility wrappers import `interop.qiskit.execution`. | Dependency direction is Runtime -> Ecosystem. | Move Qiskit Aer implementation to Execution Provider; keep an Ecosystem format converter and a compatibility shim with an owned removal plan. |
+| P2 | `runtime/dynamic/conformance.py` | Runtime compatibility wrappers import `interop.qiskit.execution`. | Dependency direction is Runtime -> Ecosystem. | Move Qiskit Aer implementation to Execution Provider; keep an Ecosystem format converter and a compatibility shim with an owned removal plan. |
 | P2 | `_compiler/importers/circuit_ir.py` | Compiler provenance allowlist names `qiskit_label`. | No external object leaks, but vendor vocabulary has entered Compiler. | Core defines vendor-neutral operation label/provenance semantics; Qiskit maps at the edge. |
 | P2 | `runtime/dynamic/dialects/braket_iqm.py` | Vendor-specific Braket/IQM lowering is implemented under Runtime. | Runtime owns orchestration, not vendor artifact dialects. | Execution Provider migration after a dynamic artifact contract is approved. |
 | P2 | compiler emitters plus `utils/qasm_exporter.py` and `utils/qcis_exporter.py` | Two text-lowering families exist for OpenQASM/QCIS. | Risks divergent gate, parameter, wire, and failure semantics. | Compiler remains authoritative; compatibility paths delegate, deprecate, then remove through API policy. |
