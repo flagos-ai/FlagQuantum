@@ -8,7 +8,7 @@ _MODULES = (
     "flagquantum.simulation.tensor_network.models",
     "flagquantum.simulation.tensor_network.state",
     "flagquantum.simulation.tensor_execution",
-    "flagquantum.simulation.tensor_observables",
+    "flagquantum.simulation.tensor_network.observables",
 )
 
 __all__ = (

@@ -22,23 +22,23 @@ from .tensor_network.models import (  # noqa: E402
     TensorNetworkExpectationPlan,
     TensorNetworkNode,
 )
-from .tensor_network.state import (  # noqa: E402
-    TensorNetworkState,
-)
-from .tensor_observables import (  # noqa: E402
+from .tensor_network.observables import (  # noqa: E402
     build_tensor_network_expectation as _build_tensor_network_expectation,
 )
-from .tensor_observables import (
+from .tensor_network.observables import (
     build_tensor_network_hamiltonian_expectation as _build_tensor_network_hamiltonian_expectation,
 )
-from .tensor_observables import (
+from .tensor_network.observables import (
     build_tensor_network_hamiltonian_expectations as _build_tensor_network_hamiltonian_expectations,
 )
-from .tensor_observables import (
+from .tensor_network.observables import (
     tensor_network_expectation_ps as _tensor_network_expectation_ps,
 )
-from .tensor_observables import (
+from .tensor_network.observables import (
     tensor_network_expectations as _tensor_network_expectations,
+)
+from .tensor_network.state import (  # noqa: E402
+    TensorNetworkState,
 )
 
 

@@ -10,7 +10,7 @@ import flagquantum.runtime.distributed.tensor_network_execution as fqxd
 import flagquantum.runtime.planner as fqxp
 import flagquantum.simulation.tensor as tensor_runtime
 import flagquantum.simulation.tensor_execution as tensor_execution
-import flagquantum.simulation.tensor_observables as tensor_observables
+import flagquantum.simulation.tensor_network.observables as tensor_observables
 from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.runtime.backends.tensor_network import (
     DistributedTNWorkingSetPolicy,

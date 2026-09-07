@@ -16,6 +16,8 @@ evidence.
   and sliced contraction execution.
 - Start in `local.py` for Circuit/IR adaptation, local plan construction, and
   local numerical execution.
+- Start in `observables.py` for Pauli/Hamiltonian plans, MPO compression, and
+  batched observable contraction.
 - Import the owning submodule directly; this package does not re-export a
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local
