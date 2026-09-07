@@ -9,7 +9,7 @@ import flagquantum as fq
 import flagquantum.algorithms as fqa
 from flagquantum.algorithms import Hamiltonian, pauli_term, vqe_loss
 from flagquantum.algorithms.optimization import OptimizationStage, optimize_hybrid
-from flagquantum.ops import get_global_precision, set_global_precision
+from flagquantum.core.runtime_config import runtime_config
 
 
 def _one_qubit_problem():
@@ -151,9 +151,7 @@ def test_hybrid_vqe_preserves_requested_parameter_precision():
 
 @pytest.mark.integration
 def test_eight_qubit_heisenberg_hybrid_recipe_meets_convergence_gate():
-    previous_precision = get_global_precision()
-    set_global_precision(torch.complex128)
-    try:
+    with runtime_config(complex_dtype="complex128"):
         n_wires, depth = 8, 5
         count = fqa.heisenberg_hva_parameter_count(n_wires, depth)
         generator = torch.Generator().manual_seed(260720)
@@ -186,5 +184,3 @@ def test_eight_qubit_heisenberg_hybrid_recipe_meets_convergence_gate():
         relative_error = (result.history[-1] - exact) / abs(exact)
 
         assert relative_error <= 1e-5
-    finally:
-        set_global_precision(previous_precision)

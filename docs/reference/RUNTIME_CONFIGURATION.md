@@ -27,11 +27,9 @@ with runtime_config(complex_dtype="complex128"):
 ```
 
 Matrix and kernel caches include immutable device/precision policy in their
-keys. The compatibility APIs `set_dtype`, `set_backend`,
-`set_global_precision`, and `use_style` now update only the current context.
-They remain supported through 0.3.x; new execution code should pass
-`RuntimeConfig` explicitly. Their process-global interpretation is removed and
-will not be restored.
+keys. New execution code should pass `RuntimeConfig` explicitly or use a
+bounded `runtime_config` context; process-global precision mutation is not
+supported.
 
 ## Precision flow
 

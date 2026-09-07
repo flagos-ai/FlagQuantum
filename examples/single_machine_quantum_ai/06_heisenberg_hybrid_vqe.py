@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 import flagquantum.algorithms as fqa
 from flagquantum.algorithms.optimization import OptimizationStage
-from flagquantum.ops import set_global_precision
+from flagquantum.core.runtime_config import get_runtime_config, set_runtime_config
 
 
 def main() -> None:
@@ -34,8 +34,12 @@ def main() -> None:
     args = parser.parse_args()
 
     real_dtype = torch.float64 if args.precision == "float64" else torch.float32
-    set_global_precision(
-        torch.complex128 if real_dtype == torch.float64 else torch.complex64
+    set_runtime_config(
+        get_runtime_config().with_overrides(
+            complex_dtype=(
+                "complex128" if real_dtype == torch.float64 else "complex64"
+            )
+        )
     )
 
     initial_depth = 1 if args.layerwise else args.depth

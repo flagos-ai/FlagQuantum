@@ -9,7 +9,8 @@ import torch
 from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import value_to_tensor
-from ..ops.matrices import GATE_MAT_DICT, get_global_precision
+from ..core.runtime_config import get_runtime_config
+from ..ops.matrices import GATE_MAT_DICT
 
 _FIXED_GATE_CACHE: dict[tuple[str, str, torch.dtype], torch.Tensor] = {}
 
@@ -39,7 +40,7 @@ def parameter_tensor(
     else:
         values = list(direct_values)
 
-    complex_dtype = complex_dtype or get_global_precision()
+    complex_dtype = complex_dtype or getattr(torch, get_runtime_config().complex_dtype)
     real_dtype = torch.float64 if complex_dtype == torch.complex128 else torch.float32
     tensors = [
         value_to_tensor(value, device=device, dtype=real_dtype) for value in values
@@ -66,7 +67,7 @@ def gate_matrix(
 ) -> torch.Tensor:
     """Return the concrete matrix for one backend-neutral IR instruction."""
 
-    dtype = dtype or get_global_precision()
+    dtype = dtype or getattr(torch, get_runtime_config().complex_dtype)
     if instruction.matrix is not None:
         matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
         return torch.as_tensor(matrix, dtype=dtype, device=device).reshape(

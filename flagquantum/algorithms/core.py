@@ -15,7 +15,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 import torch
 
 from ..circuit import Circuit
-from ..ops.matrices import get_global_precision
+from ..core.runtime_config import get_runtime_config
 from ..simulation.mps.state import MPSState
 from ..simulation.pauli import (
     infer_n_wires_from_dense_state,
@@ -360,7 +360,11 @@ def hardware_efficient_ansatz(
     if params.numel() != expected:
         raise ValueError(f"Expected {expected} parameters, got {params.numel()}.")
 
-    circuit = Circuit(n_wires, device=device, dtype=get_global_precision())
+    circuit = Circuit(
+        n_wires,
+        device=device,
+        dtype=getattr(torch, get_runtime_config().complex_dtype),
+    )
     cursor = 0
     for _ in range(layers):
         for wire in range(n_wires):
@@ -398,7 +402,11 @@ def qaoa_circuit(
         raise ValueError("gammas and betas must have the same number of layers.")
 
     edge_tuple = tuple(edges)
-    circuit = Circuit(n_wires, device=device, dtype=get_global_precision())
+    circuit = Circuit(
+        n_wires,
+        device=device,
+        dtype=getattr(torch, get_runtime_config().complex_dtype),
+    )
     for wire in range(n_wires):
         circuit.h(wire)
 

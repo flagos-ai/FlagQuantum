@@ -11,7 +11,8 @@ from typing import Any, Mapping
 
 import torch
 
-from ..ops.matrices import GATE_MAT_DICT, get_global_precision
+from ..core.runtime_config import get_runtime_config
+from ..ops.matrices import GATE_MAT_DICT
 
 
 def _as_probability(value: float | torch.Tensor, name: str) -> torch.Tensor:
@@ -24,7 +25,7 @@ def _as_probability(value: float | torch.Tensor, name: str) -> torch.Tensor:
 
 
 def _complex_dtype(dtype: torch.dtype | None = None) -> torch.dtype:
-    return dtype or get_global_precision()
+    return dtype or getattr(torch, get_runtime_config().complex_dtype)
 
 
 def _real_dtype(dtype: torch.dtype) -> torch.dtype:

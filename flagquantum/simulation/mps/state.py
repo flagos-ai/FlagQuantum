@@ -9,7 +9,8 @@ import torch
 
 from ...core.ir import Instruction
 from ..gate_matrix import gate_matrix
-from ...ops.matrices import GATE_MAT_DICT, get_global_precision
+from ...core.runtime_config import get_runtime_config
+from ...ops.matrices import GATE_MAT_DICT
 from ..real_imag_kernels import complex_einsum_pair
 from ..statevector.operations import _apply_matrix, _bits_from_indices
 from .factorization import (
@@ -91,7 +92,7 @@ class MPSState(MPSPlanningMixin):
         dtype: torch.dtype | None = None,
         config: MPSConfig | None = None,
     ) -> "MPSState":
-        out_dtype = dtype or get_global_precision()
+        out_dtype = dtype or getattr(torch, get_runtime_config().complex_dtype)
         tensors = []
         for _ in range(int(n_wires)):
             tensor = torch.zeros(bsz, 1, 2, 1, dtype=out_dtype, device=device)

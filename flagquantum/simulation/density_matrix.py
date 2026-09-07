@@ -9,11 +9,11 @@ import torch
 from ..core.ir import CircuitIR
 from ..noise import KrausChannel
 from .gate_matrix import gate_matrix
-from ..ops.matrices import get_global_precision
+from ..core.runtime_config import get_runtime_config
 
 
 def _complex_dtype(dtype: torch.dtype | None = None) -> torch.dtype:
-    return dtype or get_global_precision()
+    return dtype or getattr(torch, get_runtime_config().complex_dtype)
 
 
 def density_matrix(circuit_or_state: Any) -> torch.Tensor:
@@ -128,7 +128,7 @@ def density_matrix_from_ir(
         state = circuit.initial_state()
     elif isinstance(circuit_or_ir, CircuitIR):
         ir = circuit_or_ir
-        out_dtype = dtype or get_global_precision()
+        out_dtype = dtype or getattr(torch, get_runtime_config().complex_dtype)
         state = torch.zeros(bsz, 2**ir.n_wires, dtype=out_dtype, device=device)
         state[:, 0] = 1
     else:

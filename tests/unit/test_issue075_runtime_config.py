@@ -10,7 +10,6 @@ from flagquantum.core.runtime_config import (
     get_runtime_config,
     runtime_config,
 )
-from flagquantum.ops import get_global_precision, set_global_precision
 
 pytestmark = pytest.mark.unit
 
@@ -33,7 +32,7 @@ def test_runtime_config_manifest_is_versioned_and_round_trips():
 def test_nested_scopes_restore_without_precision_leakage():
     original = get_runtime_config()
     with runtime_config(complex_dtype="complex128") as outer:
-        assert get_global_precision() == torch.complex128
+        assert get_runtime_config().complex_dtype == "complex128"
         with runtime_config(device="cuda") as inner:
             assert inner.device == "cuda"
             assert inner.complex_dtype == "complex128"
@@ -54,20 +53,18 @@ def test_concurrent_threads_build_independent_precision_circuits():
     assert double.result() == (torch.complex128, torch.complex128)
 
 
-def test_async_tasks_do_not_leak_compatibility_setters():
+def test_async_tasks_keep_independent_runtime_precision():
     async def build(dtype):
         with runtime_config(complex_dtype=dtype):
             await asyncio.sleep(0)
-            set_global_precision(getattr(torch, dtype))
-            await asyncio.sleep(0)
-            return get_global_precision(), fq.Circuit(1).x(0).state().dtype
+            return get_runtime_config().complex_dtype, fq.Circuit(1).x(0).state().dtype
 
     async def gather():
         return await asyncio.gather(build("complex64"), build("complex128"))
 
     assert asyncio.run(gather()) == [
-        (torch.complex64, torch.complex64),
-        (torch.complex128, torch.complex128),
+        ("complex64", torch.complex64),
+        ("complex128", torch.complex128),
     ]
 
 
@@ -79,11 +76,3 @@ def test_circuit_ir_and_plan_carry_reconstructable_configuration():
     manifest = circuit.to_ir().metadata["runtime_config"]
     assert RuntimeConfig.from_manifest(manifest) == config
     assert circuit.plan().summary()["runtime_config"] == manifest
-
-
-def test_legacy_setter_changes_only_current_context():
-    original = get_runtime_config()
-    with runtime_config():
-        set_global_precision(torch.complex128)
-        assert get_runtime_config().complex_dtype == "complex128"
-    assert get_runtime_config() == original

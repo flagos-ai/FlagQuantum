@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Union
 
 import torch
 
-from ..core.runtime_config import get_runtime_config, set_runtime_config
+from ..core.runtime_config import get_runtime_config
 
 # ============================================================================
 # Precision Configuration
@@ -22,21 +22,6 @@ def _real_dtype() -> torch.dtype:
 def _fixed_gate(matrix: Any) -> torch.Tensor:
     """Create a complex128 master matrix for lossless execution-time casting."""
     return torch.as_tensor(matrix, dtype=torch.complex128)
-
-
-def set_global_precision(dtype: torch.dtype):
-    """Set the task-local default complex precision."""
-    if dtype not in {torch.complex64, torch.complex128}:
-        raise ValueError(
-            f"Unsupported complex dtype: {dtype}. Use complex64 or complex128."
-        )
-    name = str(dtype).removeprefix("torch.")
-    set_runtime_config(get_runtime_config().with_overrides(complex_dtype=name))
-
-
-def get_global_precision() -> torch.dtype:
-    """Return the task-local default complex precision."""
-    return _complex_dtype()
 
 
 # ============================================================================
@@ -555,8 +540,6 @@ def qft_matrix(n_qubits: int) -> torch.Tensor:
 
 
 __all__ = [
-    "set_global_precision",
-    "get_global_precision",
     "GATE_MAT_DICT",
     "rx_mat",
     "ry_mat",
