@@ -14,7 +14,7 @@ from ....simulation.mps.compiled_layers import (
     contract_mps_two_site_bucket,
 )
 from ....simulation.mps.rank_local import apply_rank_local_mps_instruction
-from ....simulation.mps_reverse import mps_vjp as _mps_vjp
+from ....simulation.mps.reverse import mps_vjp as _mps_vjp
 from .errors import MPSReverseContractError
 from .factorization import mps_qr_forward
 from .records import MPSReverseTapeRecord, TorchDistributedMPSGradientResult

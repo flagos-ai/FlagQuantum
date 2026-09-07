@@ -8,8 +8,8 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
-from ....simulation.mps_observables import mps_z_zz_local_scan
-from ....simulation.mps_reverse import mps_vjp
+from ....simulation.mps.observables import mps_z_zz_local_scan
+from ....simulation.mps.reverse import mps_vjp
 from .reverse_observables import (
     SiteShardedZZScanResult,
     mps_expectation_and_adjoints,

@@ -961,7 +961,7 @@ class MPSState(MPSPlanningMixin):
             and int(fixed_rank) < full_rank
             and not reverse
         ):
-            from .mps_low_rank import fixed_rank_two_site_range_qr
+            from .low_rank import fixed_rank_two_site_range_qr
 
             left_out, right_out = fixed_rank_two_site_range_qr(
                 left, matrix, right, int(fixed_rank)

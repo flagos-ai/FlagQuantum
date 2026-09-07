@@ -6,8 +6,8 @@ from typing import Mapping, Sequence
 
 import torch
 
-from ..ops.matrices import GATE_MAT_DICT
-from .mps.site_kernels import environment_transfer, environment_transfer_channels
+from ...ops.matrices import GATE_MAT_DICT
+from .site_kernels import environment_transfer, environment_transfer_channels
 
 
 def transfer_mps_operator_environment(

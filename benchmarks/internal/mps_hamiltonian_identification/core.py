@@ -15,7 +15,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
-from flagquantum.simulation.mps_brickwork import (
+from flagquantum.simulation.mps.brickwork import (
     compiled_local_z_zz,
     run_batched_brickwork_mps,
 )

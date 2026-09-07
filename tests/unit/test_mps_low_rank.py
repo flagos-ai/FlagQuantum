@@ -1,6 +1,6 @@
 import torch
 
-from flagquantum.simulation.mps_low_rank import (
+from flagquantum.simulation.mps.low_rank import (
     fixed_rank_range_qr,
     fixed_rank_two_site_range_qr,
 )

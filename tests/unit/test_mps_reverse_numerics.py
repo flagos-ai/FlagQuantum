@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from flagquantum.simulation.mps.models import MPSConfig
-from flagquantum.simulation.mps_reverse import (
+from flagquantum.simulation.mps.reverse import (
     factor_mps_reverse_pair,
     factor_mps_reverse_pair_bucket,
     mps_vjp,

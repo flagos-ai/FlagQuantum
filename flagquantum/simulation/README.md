@@ -110,11 +110,11 @@ and tensor sizing.
 `mps/site_kernels.py` owns eager/compiled site kernels and their bounded
 compile cache. `mps/compiled_layers.py` owns equal-shape instruction packing,
 batched contraction, and factorization. `mps/factorization.py` owns QR/SVD
-numerical routines; `mps_canonicalization.py` owns canonical-site factorization,
+numerical routines; `mps/canonicalization.py` owns canonical-site factorization,
 transfer absorption, residuals, and center norms; and
-`mps_reverse.py` owns reverse pair factorization, truncated-subspace projection,
+`mps/reverse.py` owns reverse pair factorization, truncated-subspace projection,
 rank-local adjoint projection, and VJP evaluation.
-`mps_observables.py` owns local Pauli-environment, Z/ZZ-channel, and
+`mps/observables.py` owns local Pauli-environment, Z/ZZ-channel, and
 Heisenberg-MPO scans.
 Distributed ownership, transport ordering, memory budgets, microbatch
 selection, checkpointing, and evidence remain in Runtime.
@@ -169,8 +169,8 @@ For rank-local distributed-MPS math, start in `mps/rank_local.py`; for compiled
 layer numerics, start in `mps/compiled_layers.py`; for compiled site kernels,
 start in `mps/site_kernels.py`; for QR/SVD behavior, start in
 `mps/factorization.py`; for canonicalization math, start in
-`mps_canonicalization.py`; for local VJP behavior, start in `mps_reverse.py`.
-For observable contraction math, start in `mps_observables.py`. Run:
+`mps/canonicalization.py`; for local VJP behavior, start in `mps/reverse.py`.
+For observable contraction math, start in `mps/observables.py`. Run:
 
 ```bash
 python -m pytest tests/unit/test_mps_site_kernels.py \

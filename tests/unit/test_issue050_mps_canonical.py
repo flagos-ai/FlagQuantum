@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.simulation.mps_canonicalization import (
+from flagquantum.simulation.mps.canonicalization import (
     absorb_left_canonical_transfer,
     absorb_right_canonical_transfer,
     deterministic_mps_qr,

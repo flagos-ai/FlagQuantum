@@ -10,13 +10,13 @@ import torch.distributed as dist
 from torch.profiler import record_function
 
 from ....ops.matrices import GATE_MAT_DICT
-from ....simulation.mps_observables import (
+from ....simulation.mps.observables import (
     mps_heisenberg_local_scan,
     mps_local_observable_adjoint,
     transfer_mps_operator_environment,
     transfer_mps_operator_right_environment,
 )
-from ....simulation.mps_reverse import mps_vjp
+from ....simulation.mps.reverse import mps_vjp
 from .reverse_transport import (
     receive_reverse_tensor,
     receive_static_reverse_tensor,

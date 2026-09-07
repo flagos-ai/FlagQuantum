@@ -1,4 +1,4 @@
-"""Pure rank-local MPS canonicalization numerics."""
+"""Rank-local MPS canonicalization numerics."""
 
 from __future__ import annotations
 

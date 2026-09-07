@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.simulation.mps_observables import (
+from flagquantum.simulation.mps.observables import (
     mps_heisenberg_local_scan,
     mps_z_zz_local_scan,
 )

@@ -1,4 +1,4 @@
-"""Fixed-rank MPS factorization experiments.
+"""Fixed-rank MPS factorization primitives.
 
 The reference implementation defines the numerical contract for a future
 Triton kernel that computes the range projection without materializing the

@@ -9,8 +9,8 @@ from typing import Sequence
 import torch
 import torch.nn.functional as functional
 
-from .mps.models import MPSConfig
-from .mps.state import MPSState
+from .models import MPSConfig
+from .state import MPSState
 
 # Compiling tiny edge buckets costs more than it saves and, for long chains,
 # creates many dynamic-shape specializations.  Interior buckets contain almost

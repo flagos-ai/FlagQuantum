@@ -22,6 +22,13 @@ evidence.
   bounded compile cache.
 - Start in `compiled_layers.py` for equal-shape instruction packing, batched
   contraction, and factorization.
+- Start in `brickwork.py` for shape-bucketed nearest-neighbour sweeps.
+- Start in `canonicalization.py` for canonical-site factorization, transfer
+  absorption, residuals, and center norms.
+- Start in `low_rank.py` for fixed-rank factorization primitives.
+- Start in `observables.py` for local observable and MPO environment scans.
+- Start in `reverse.py` for reverse factorization, projection, and local VJP
+  primitives.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.

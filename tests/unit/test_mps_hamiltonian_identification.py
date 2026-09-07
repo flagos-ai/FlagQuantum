@@ -98,7 +98,7 @@ def test_batched_probe_predictions_match_individual_predictions_and_gradients():
 
 
 def test_shape_bucketed_brickwork_matches_circuit_interpreter():
-    from flagquantum.simulation.mps_brickwork import run_batched_brickwork_mps
+    from flagquantum.simulation.mps.brickwork import run_batched_brickwork_mps
 
     coupling, field = core.smooth_couplings(6)
     probes = (
@@ -129,7 +129,7 @@ def test_shape_bucketed_brickwork_matches_circuit_interpreter():
 
 
 def test_real_environment_scan_matches_complex_observable_path():
-    from flagquantum.simulation.mps_brickwork import (
+    from flagquantum.simulation.mps.brickwork import (
         compiled_local_z_zz,
         run_batched_brickwork_mps,
     )

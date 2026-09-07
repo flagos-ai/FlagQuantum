@@ -10,29 +10,29 @@ in `simulation/mps/rank_local.py`, compiled site kernels live in
 live in `simulation/mps/compiled_layers.py`, and QR/SVD math lives in
 `simulation/mps/factorization.py`. Reverse pair factorization,
 truncated-subspace projection, rank-local adjoint projection, and VJP
-evaluation live in `simulation/mps_reverse.py`. Import these numerical owners
+evaluation live in `simulation/mps/reverse.py`. Import these numerical owners
 directly; local observable contractions live in
-`simulation/mps_observables.py`. Do not recreate Runtime aliases or a second
+`simulation/mps/observables.py`. Do not recreate Runtime aliases or a second
 implementation.
 Canonicalization sweep order, ownership, transfers, and metrics remain in
 `canonicalization.py`; its QR, transfer absorption, residual, and norm formulas
-live in `simulation/mps_canonicalization.py`.
+live in `simulation/mps/canonicalization.py`.
 
 ## Ten-minute change path
 
 - Change rank ownership or communication order in `state.py`,
   `distribution.py`, or `communication.py`.
 - Change canonicalization sweep ownership or transport in `canonicalization.py`;
-  change its tensor math in `simulation/mps_canonicalization.py`.
+  change its tensor math in `simulation/mps/canonicalization.py`.
 - Change forward ownership, communication, lifecycle, or evidence in
   `forward.py`; change reverse lifecycle in `reverse.py` or
   `reverse_replay.py`. Their local instruction buckets call
   `simulation/mps/compiled_layers.py` rather than owning tensor contraction.
 - Change reverse pair factorization, truncated-subspace projection, rank-local
   adjoint projection, or VJP evaluation in
-  `simulation/mps_reverse.py`.
+  `simulation/mps/reverse.py`.
 - Change local observable environment or MPO contraction math in
-  `simulation/mps_observables.py`; change cross-rank scans and pipelines in
+  `simulation/mps/observables.py`; change cross-rank scans and pipelines in
   `reverse_observables.py` or `reverse_z_observables.py`.
 - Change memory admission or microbatch policy in `factorization.py`.
   That file also owns the bounded workspace pool and Runtime error translation;
