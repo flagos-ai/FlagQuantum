@@ -9,4 +9,5 @@ Runtime records, and evidence. Numerical MPS operations remain in
 - Start in `training_records.py` for training, parameter-flow, and shard records.
 - Start in `gradient_result.py` for parameter-gradient execution results.
 - Start in `execution.py` for sharded forward execution.
+- Start in `gradients.py` for parameter-gradient execution.
 - Import the owning module directly; this package does not add another facade.

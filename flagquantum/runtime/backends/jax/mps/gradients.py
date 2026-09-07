@@ -4,26 +4,20 @@ from __future__ import annotations
 
 from typing import Any, Callable, Sequence
 
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .array_conversions import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..array_conversions import (
     _jax_parameter_array_from_input,
     _torch_parameters_for_static_build,
 )
-from .backend_dispatch import plan_jax_distributed_quantum_backend
-from .mps.execution import _jax_parameterized_mps_rank_tensors
-from .mps.gradient_result import JAXShardedMPSParameterGradientResult
-from .mps.planning import (
-    _mps_pmap_backward_blockers,
-    plan_jax_sharded_mps_parameter_flow,
-)
-from .mps_boundary_exchange import _execute_local_mps_boundary_adjoint_exchange
-from .mps_gradient_ownership import (
+from ..backend_dispatch import plan_jax_distributed_quantum_backend
+from ..mps_boundary_exchange import _execute_local_mps_boundary_adjoint_exchange
+from ..mps_gradient_ownership import (
     _execute_local_mps_parameter_gradient_ownership,
     _jax_sharded_mps_z_sum_from_rank_tensors,
 )
-from .mps_kernels import _rank_shards_from_jax_mps_tensors
-from .planning_core import _as_ir
-from .runtime_environment import (
+from ..mps_kernels import _rank_shards_from_jax_mps_tensors
+from ..planning_core import _as_ir
+from ..runtime_environment import (
     _jax_real_dtype,
     _require_jax,
     _require_jax_production_backward_ready,
@@ -33,6 +27,12 @@ from .runtime_environment import (
     _resolve_local_world_size,
     _resolve_policy,
     _resolve_world_size,
+)
+from .execution import _jax_parameterized_mps_rank_tensors
+from .gradient_result import JAXShardedMPSParameterGradientResult
+from .planning import (
+    _mps_pmap_backward_blockers,
+    plan_jax_sharded_mps_parameter_flow,
 )
 
 
@@ -60,7 +60,7 @@ def jax_sharded_mps_parameter_value_and_grad(
 ) -> JAXShardedMPSParameterGradientResult:
     """Reverse-mode value/gradient for a site-sharded parameterized MPS circuit."""
 
-    from ...distributed.engine import _instruction_is_boundary_local, _mps_shards
+    from ....distributed.engine import _instruction_is_boundary_local, _mps_shards
 
     torch = _require_torch()
     jax, jnp = _require_jax()
@@ -131,7 +131,7 @@ def jax_sharded_mps_parameter_value_and_grad(
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
 
     def _loss(parameter_array: Any) -> Any:
-        from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+        from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
         previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
         try:
@@ -169,7 +169,7 @@ def jax_sharded_mps_parameter_value_and_grad(
         value_and_grad = jax.jit(value_and_grad)
     value, gradient = value_and_grad(jax_parameters)
 
-    from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
     previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
     try:
