@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from ....core.ir import CircuitIR
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .common import communication_tier as _communication_tier
-from .common import node_count as _node_count
-from .common import rank_for_wire as _rank_for_wire
-from .common import split_contiguous as _split_contiguous
-from .mps_training_records import (
+from .....core.ir import CircuitIR
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..common import communication_tier as _communication_tier
+from ..common import node_count as _node_count
+from ..common import rank_for_wire as _rank_for_wire
+from ..common import split_contiguous as _split_contiguous
+from ..mps_training_records import (
     JAXShardedMPSParameterFlowPlan,
     JAXShardedMPSParameterGateAssignment,
     JAXShardedMPSTrainingPlan,
 )
-from .planning_core import JAXDistributedQuantumPlan, _as_ir
-from .runtime_environment import (
+from ..planning_core import JAXDistributedQuantumPlan, _as_ir
+from ..runtime_environment import (
     _jax_device_count_summary,
     _resolve_jax_backward_backend,
     _resolve_local_world_size,
@@ -97,14 +97,14 @@ def plan_jax_sharded_mps_parameter_flow(
 ) -> JAXShardedMPSParameterFlowPlan:
     """Plan parameter ownership and gradient routes for sharded MPS backward."""
 
-    from ...distributed.engine import (
+    from ....distributed.engine import (
         _boundary_sync_record,
         _instruction_is_boundary_local,
         _instruction_is_site_local,
         _instruction_owner,
         _mps_shards,
     )
-    from ...distributed.engine import (
+    from ....distributed.engine import (
         _rank_for_wire as _distributed_rank_for_wire,
     )
 
@@ -278,7 +278,7 @@ def plan_jax_sharded_mps_training(
     executor is being completed.
     """
 
-    from ...distributed.engine import _instruction_is_boundary_local, _mps_shards
+    from ....distributed.engine import _instruction_is_boundary_local, _mps_shards
 
     policy = _resolve_policy(
         distributed_backend_policy=distributed_backend_policy,

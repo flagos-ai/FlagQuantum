@@ -26,14 +26,14 @@ from flagquantum.runtime.backends.jax import (
     run_jax_sharded_tensor_network,
     runtime_environment,
 )
+from flagquantum.runtime.backends.jax.mps.planning import (
+    plan_jax_sharded_mps_parameter_flow,
+)
 from flagquantum.runtime.backends.jax.mps_gradient_result import (
     JAXShardedMPSParameterGradientResult,
 )
 from flagquantum.runtime.backends.jax.mps_gradients import (
     jax_sharded_mps_parameter_value_and_grad,
-)
-from flagquantum.runtime.backends.jax.mps_planning import (
-    plan_jax_sharded_mps_parameter_flow,
 )
 from flagquantum.runtime.backends.jax.mps_result import JAXShardedMPSResult
 from flagquantum.runtime.backends.jax.mps_training_records import (

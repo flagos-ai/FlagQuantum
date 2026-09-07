@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 from ...distributed.backend_policy import DistributedBackendPolicy
-from .mps_planning import _mps_plan
+from .mps.planning import _mps_plan
 from .planning_core import JAXDistributedQuantumPlan, _as_ir
 from .runtime_environment import (
     _resolve_local_world_size,

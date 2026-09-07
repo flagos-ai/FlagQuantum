@@ -937,7 +937,7 @@ def test_runtime_selection_projects_mps_evidence_status(
     monkeypatch,
     readiness_status,
 ):
-    from flagquantum.runtime.backends.jax import mps_planning
+    from flagquantum.runtime.backends.jax.mps import planning as mps_planning
 
     class _TrainingPlan:
         def summary(self):
