@@ -139,25 +139,4 @@ def small_data_reuploading_z(
     return probabilities @ signs
 
 
-def two_qubit_data_reuploading_z(
-    inputs: torch.Tensor,
-    *,
-    variational_rz: torch.Tensor,
-    variational_ry: torch.Tensor,
-    input_ry_scale: torch.Tensor,
-    input_rz_scale: torch.Tensor,
-) -> torch.Tensor:
-    """Backward-compatible spelling for the two-qubit specialization."""
-
-    if inputs.ndim != 2 or inputs.shape[1] != 2:
-        raise ValueError("inputs must have shape (batch, 2)")
-    return small_data_reuploading_z(
-        inputs,
-        variational_rz=variational_rz,
-        variational_ry=variational_ry,
-        input_ry_scale=input_ry_scale,
-        input_rz_scale=input_rz_scale,
-    )
-
-
-__all__ = ["small_data_reuploading_z", "two_qubit_data_reuploading_z"]
+__all__ = ["small_data_reuploading_z"]
