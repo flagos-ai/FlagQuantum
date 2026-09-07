@@ -8,8 +8,9 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.algorithms import Hamiltonian, pauli_term, zz_chain_hamiltonian
-from flagquantum.runtime.backends.jax import compile_quantum_kernel
+from flagquantum.runtime.backends.jax import compile_quantum_kernel, mps_kernel
 from flagquantum.runtime.backends.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
+from flagquantum.simulation import jax_mps
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("jax") is None, reason="jax is not installed"
@@ -274,8 +275,6 @@ def test_jax_mps_kernel_matches_native_mps_gradient():
 
 
 def test_jax_mps_z_sum_does_not_materialize_statevector(monkeypatch):
-    from flagquantum.runtime import compatibility as hybrid
-
     params = torch.tensor([0.17, -0.31, 0.23, -0.19], requires_grad=False)
 
     def build(values):
@@ -291,7 +290,7 @@ def test_jax_mps_z_sum_does_not_materialize_statevector(monkeypatch):
     def forbidden(*args, **kwargs):
         raise AssertionError("JAX MPS observable must not materialize a statevector")
 
-    monkeypatch.setattr(hybrid, "_jax_mps_to_statevector", forbidden)
+    monkeypatch.setattr(jax_mps, "jax_mps_to_statevector", forbidden)
     kernel = compile_quantum_kernel(
         build,
         params,
@@ -367,8 +366,6 @@ def test_jax_mps_local_pauli_zz_chain_hamiltonian_uses_fastpath_and_matches_nati
 
 
 def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
-    from flagquantum.runtime import compatibility as hybrid
-
     params = (0.11 * torch.arange(1, 25, dtype=torch.float32)).requires_grad_(False)
     hamiltonian = zz_chain_hamiltonian(6, coupling=-1.0, field=0.1)
 
@@ -407,7 +404,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
         )
 
     monkeypatch.delenv("FQ_DISABLE_JAX_MPS_CX_SCAN")
-    monkeypatch.setattr(hybrid, "_jax_mps_apply_two_remote", forbidden)
+    monkeypatch.setattr(mps_kernel, "_jax_mps_apply_two_remote", forbidden)
     scan_kernel = compile_quantum_kernel(
         build,
         params,
