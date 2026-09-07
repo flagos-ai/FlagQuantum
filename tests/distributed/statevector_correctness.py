@@ -12,15 +12,6 @@ import os
 import sys
 from pathlib import Path
 
-from flagquantum.runtime.backends.statevector import plan_distributed_statevector
-from flagquantum.runtime.backends.statevector.local_execution import (
-    execute_distributed_statevector_transport,
-)
-from flagquantum.runtime.distributed import (
-    destroy_torch_distributed,
-    init_torch_distributed,
-)
-
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import torch
@@ -30,6 +21,16 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import flagquantum as fq  # noqa: E402
+from flagquantum.runtime.backends.statevector import (  # noqa: E402
+    plan_distributed_statevector,
+)
+from flagquantum.runtime.backends.statevector.local_execution import (  # noqa: E402
+    execute_distributed_statevector_transport,
+)
+from flagquantum.runtime.distributed import (  # noqa: E402
+    destroy_torch_distributed,
+    init_torch_distributed,
+)
 
 
 def _env_int(name: str, default: int) -> int:
