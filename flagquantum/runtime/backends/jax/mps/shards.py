@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from .mps.training_records import JAXMPSRankShardState
-from .runtime_environment import (
+from ..runtime_environment import (
     _jnp_device_put,
     _require_jax,
     _require_torch,
     _torch_complex_dtype,
 )
+from .training_records import JAXMPSRankShardState
 
 
 def _initialize_jax_mps_rank_tensors(
@@ -59,8 +59,8 @@ def _reconstruct_torch_mps_from_jax_rank_shards(
     import numpy as np
 
     torch = _require_torch()
-    from ....simulation.mps.models import MPSConfig, MPSTruncationRecord
-    from ....simulation.mps.state import MPSState
+    from .....simulation.mps.models import MPSConfig, MPSTruncationRecord
+    from .....simulation.mps.state import MPSState
 
     dtype = _torch_complex_dtype(complex_bytes)
     tensors_by_wire: dict[int, Any] = {}

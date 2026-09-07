@@ -10,4 +10,5 @@ Runtime records, and evidence. Numerical MPS operations remain in
 - Start in `gradient_result.py` for parameter-gradient execution results.
 - Start in `execution.py` for sharded forward execution.
 - Start in `gradients.py` for parameter-gradient execution.
+- Start in `shards.py` for rank initialization, packaging, and reconstruction.
 - Import the owning module directly; this package does not add another facade.

@@ -18,10 +18,6 @@ from ..array_conversions import (
 )
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
 from ..mps_canonicalization import _jax_mps_boundary_protocol
-from ..mps_kernels import (
-    _initialize_jax_mps_rank_tensors,
-    _rank_shards_from_jax_mps_tensors,
-)
 from ..planning_core import _as_ir
 from ..runtime_environment import (
     _jax_array_nbytes,
@@ -35,6 +31,10 @@ from ..runtime_environment import (
     _torch_complex_dtype,
 )
 from .result import JAXShardedMPSResult
+from .shards import (
+    _initialize_jax_mps_rank_tensors,
+    _rank_shards_from_jax_mps_tensors,
+)
 
 
 def run_jax_sharded_mps(

@@ -16,7 +16,6 @@ from flagquantum.runtime.backends.jax import (
     mps_canonicalization,
     mps_evidence,
     mps_gradient_ownership,
-    mps_kernels,
     mps_pullbacks,
     plan_jax_distributed_quantum_backend,
     plan_jax_sharded_mps_training,
@@ -26,6 +25,7 @@ from flagquantum.runtime.backends.jax import (
     run_jax_sharded_tensor_network,
     runtime_environment,
 )
+from flagquantum.runtime.backends.jax.mps import shards as mps_shards
 from flagquantum.runtime.backends.jax.mps.gradient_result import (
     JAXShardedMPSParameterGradientResult,
 )
@@ -2476,7 +2476,7 @@ def test_local_mps_fast_path_does_not_inherit_distributed_mps_readiness_metadata
 
 def test_mps_backward_resource_evidence_helper_remains_internal_api():
     assert hasattr(mps_evidence, "_build_mps_backward_resource_evidence")
-    assert not hasattr(mps_kernels, "_build_mps_backward_resource_evidence")
+    assert not hasattr(mps_shards, "_build_mps_backward_resource_evidence")
     assert not hasattr(fq, "_build_mps_backward_resource_evidence")
 
 

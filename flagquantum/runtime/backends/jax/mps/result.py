@@ -6,12 +6,12 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from ....distributed.backend_policy import DistributedBackendPolicy
-from ..mps_kernels import _reconstruct_torch_mps_from_jax_rank_shards
 from ..planning_core import JAXDistributedQuantumPlan
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
 from ..runtime_environment import _require_torch
+from .shards import _reconstruct_torch_mps_from_jax_rank_shards
 from .training_records import JAXMPSRankShardState
 
 
