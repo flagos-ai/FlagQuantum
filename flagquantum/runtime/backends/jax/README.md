@@ -8,7 +8,7 @@ numerical operations live under `flagquantum/simulation/` and are imported
 explicitly; this boundary does not proxy Simulation internals dynamically.
 
 For local execution, start with `kernel.py`. For MPS circuit lowering and the
-nearest-neighbor CX fast-path decision, start with `mps_kernel.py`. The latter
+nearest-neighbor CX fast-path decision, start with `mps/lowering.py`. The latter
 may recognize and lower circuit structure, but delegates tensor initialization,
 updates, contraction, and observable evaluation to Simulation.
 

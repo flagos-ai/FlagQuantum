@@ -8,8 +8,9 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.algorithms import Hamiltonian, pauli_term, zz_chain_hamiltonian
-from flagquantum.runtime.backends.jax import compile_quantum_kernel, mps_kernel
+from flagquantum.runtime.backends.jax import compile_quantum_kernel
 from flagquantum.runtime.backends.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
+from flagquantum.runtime.backends.jax.mps import lowering as mps_lowering
 from flagquantum.simulation.jax.mps import kernels as jax_mps
 
 pytestmark = pytest.mark.skipif(
@@ -404,7 +405,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
         )
 
     monkeypatch.delenv("FQ_DISABLE_JAX_MPS_CX_SCAN")
-    monkeypatch.setattr(mps_kernel, "_jax_mps_apply_two_remote", forbidden)
+    monkeypatch.setattr(mps_lowering, "_jax_mps_apply_two_remote", forbidden)
     scan_kernel = compile_quantum_kernel(
         build,
         params,

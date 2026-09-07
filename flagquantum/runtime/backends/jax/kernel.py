@@ -327,7 +327,7 @@ class _JAXParameterProxy:
         return self.parameters.reshape(*shape)
 
 
-from .mps_kernel import _jax_mps_from_circuit  # noqa: E402
+from .mps.lowering import _jax_mps_from_circuit  # noqa: E402
 
 
 def compile_quantum_kernel(

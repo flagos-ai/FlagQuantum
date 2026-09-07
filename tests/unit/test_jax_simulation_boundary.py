@@ -7,10 +7,10 @@ from flagquantum.runtime.backends.jax import (
     kernel,
     mps_canonicalization,
     mps_gradient_ownership,
-    mps_kernel,
     mps_pullbacks,
 )
 from flagquantum.runtime.backends.jax.mps import execution as mps_execution
+from flagquantum.runtime.backends.jax.mps import lowering as mps_lowering
 from flagquantum.runtime.backends.jax.statevector import (
     gradient_records as statevector_gradient_records,
 )
@@ -79,22 +79,23 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
 
 
 def test_runtime_reuses_simulation_owned_jax_mps_operations():
-    assert mps_kernel._jax_mps_apply_one is jax_mps.jax_mps_apply_one
-    assert mps_kernel._jax_mps_apply_local_stack is jax_mps.jax_mps_apply_local_stack
+    assert mps_lowering._jax_mps_apply_one is jax_mps.jax_mps_apply_one
+    assert mps_lowering._jax_mps_apply_local_stack is jax_mps.jax_mps_apply_local_stack
     assert (
-        mps_kernel._jax_mps_apply_adjacent_chain_scan
+        mps_lowering._jax_mps_apply_adjacent_chain_scan
         is jax_mps.jax_mps_apply_adjacent_chain_scan
     )
     assert (
-        mps_kernel._jax_mps_initial_padded_stack is jax_mps.jax_mps_initial_padded_stack
+        mps_lowering._jax_mps_initial_padded_stack
+        is jax_mps.jax_mps_initial_padded_stack
     )
     assert (
-        mps_kernel._jax_mps_initial_open_boundary_tensors
+        mps_lowering._jax_mps_initial_open_boundary_tensors
         is jax_mps.jax_mps_initial_open_boundary_tensors
     )
     assert mps_gradient_ownership.jax_sharded_mps_z_sum is jax_mps.jax_sharded_mps_z_sum
     assert (
-        mps_kernel._jax_mps_project_open_boundaries
+        mps_lowering._jax_mps_project_open_boundaries
         is jax_mps.jax_mps_project_open_boundaries
     )
     assert kernel._jax_mps_z_values is jax_mps.jax_mps_z_values

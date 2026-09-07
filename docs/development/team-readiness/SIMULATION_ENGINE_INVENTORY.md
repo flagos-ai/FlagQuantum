@@ -124,7 +124,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
 | `simulation/jax/primitives.py`、`simulation/jax/statevector.py`、`simulation/jax/tensor_network.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
 | `simulation/jax/mps/kernels.py`、`simulation/jax/mps/batched.py`、`simulation/jax/mps/pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
-| `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、slice 与 contraction 编排 | backend/device 是否选择 JAX 由 Runtime/Platform；标签切片与基础 einsum 数学归 Simulation |
+| `jax/kernel.py`、`mps/lowering.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、slice 与 contraction 编排 | backend/device 是否选择 JAX 由 Runtime/Platform；标签切片与基础 einsum 数学归 Simulation |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
 | `jax/*execution.py`、`backend_dispatch.py`、`statevector/training.py`、`mps/gradients.py`、`tensor_network/gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
 | `jax/*planning.py`、`planning_core.py`、`runtime_environment.py`、`transport.py` | 资源或通信编排 | 算法约束/代价输入 | Runtime/Platform topology、environment、transport 和 device lifecycle |
@@ -160,7 +160,7 @@ canonicalization/truncation pullback 已由 `simulation/jax/mps/pullbacks.py` �
 其中少量解析解校验与张量 shape 用于验证协议证据，不是第二套通用 MPS 数值权威；在没有
 第二条脱离 Runtime 策略和记录的生产路径复用前，不继续拆成细碎 helper。该路径已到停止点。
 
-本轮同时删除 `mps_kernel.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
+本轮同时删除 `mps/lowering.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
 上下文继续以 `simulation/jax/primitives.py` 中的实现为唯一权威。
 
 ## 6. Simulation 不应拥有的逻辑
