@@ -15,7 +15,7 @@ from benchmarks.runners.tn.tn_gap_common import (
     load_workload,
     write_result,
 )
-from flagquantum.simulation.tensor_models import (
+from flagquantum.simulation.tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkNode,
 )

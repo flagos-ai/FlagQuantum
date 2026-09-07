@@ -13,7 +13,7 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_sliced_tn_checkpoint_memory,
 )
 from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
-from flagquantum.simulation.tensor_models import TensorNetworkSlicingPlan
+from flagquantum.simulation.tensor_network.models import TensorNetworkSlicingPlan
 
 
 def _slicing() -> TensorNetworkSlicingPlan:

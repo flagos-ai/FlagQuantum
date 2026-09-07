@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ..ops.matrices import GATE_MAT_DICT
+from ...ops.matrices import GATE_MAT_DICT
 
 _CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
 _CONTRACTION_PATH_CACHE: dict[
@@ -821,7 +821,7 @@ class TensorNetworkExpectationPlan:
 
 
 def _contraction_call(name: str, *args: Any, **kwargs: Any) -> Any:
-    from . import tensor_contraction
+    from .. import tensor_contraction
 
     return getattr(tensor_contraction, name)(*args, **kwargs)
 

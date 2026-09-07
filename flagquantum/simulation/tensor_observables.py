@@ -15,7 +15,7 @@ from .tensor_contraction import (
     _contract_nodes_sliced,
 )
 from .tensor_local import ensure_local_tensor_network_plan
-from .tensor_models import (
+from .tensor_network.models import (
     ContractionPathStep,
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,

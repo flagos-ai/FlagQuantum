@@ -96,7 +96,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_local.py` | 纯数值执行 | IR 到本地 contraction plan、状态入口和局部编译模板复用 | 无 Runtime/Provider 依赖；初态和程序缓存仍消费现有 Circuit 生命周期容器 |
 | `tensor_observables.py` | 纯数值算法 | Pauli/Hamiltonian 计划、MPO 压缩和批量观测量 contraction | 压缩设备由调用方显式给定，不读取 rank 或集群环境 |
 | `tensor_execution.py` | 兼容入口与振幅执行 | 公开入口薄适配、振幅投影与 contraction 调用 | 不拥有 Runtime/Provider 策略；振幅代码可在收益明确时再独立 |
-| `tensor_models.py`、`tensor.py` | 结果转换/兼容门面 | 算法内部结构 | 跨层结果与稳定类型应由 Core 提案定义 |
+| `tensor_network/models.py`、`tensor.py` | 结果转换/兼容门面 | 算法内部结构 | 跨层结果与稳定类型应由 Core 提案定义 |
 | `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
 | `graph.py` | 受保护兼容工具 | 当前仅由根 API 兼容导出，无 Compiler 调用方 | 不复制到 Compiler，不形成第二权威；只有出现具体 Compiler 消费者并批准公共 API 迁移后才归位 |
 

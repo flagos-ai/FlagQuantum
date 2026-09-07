@@ -30,7 +30,7 @@ from flagquantum.simulation.tensor_contraction import (
     _pair_steps_from_dynamic_path,
     _slice_nodes,
 )
-from flagquantum.simulation.tensor_models import TensorNetworkSlicingPlan
+from flagquantum.simulation.tensor_network.models import TensorNetworkSlicingPlan
 
 
 def _arguments() -> argparse.Namespace:

@@ -63,7 +63,7 @@ from flagquantum.simulation.tensor_execution import (
     build_tensor_network,
     build_tensor_network_expectation,
 )
-from flagquantum.simulation.tensor_models import TensorNetworkContractionPlan
+from flagquantum.simulation.tensor_network.models import TensorNetworkContractionPlan
 
 
 def _plan() -> TensorNetworkContractionPlan:

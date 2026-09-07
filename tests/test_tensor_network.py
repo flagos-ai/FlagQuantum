@@ -26,7 +26,7 @@ from flagquantum.simulation.tensor_execution import (
     build_tensor_network_hamiltonian_expectation,
     build_tensor_network_hamiltonian_expectations,
 )
-from flagquantum.simulation.tensor_models import (
+from flagquantum.simulation.tensor_network.models import (
     PairContractionStep,
     TensorNetworkContractionPlan,
     TensorNetworkContractionProfile,

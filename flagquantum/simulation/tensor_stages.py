@@ -7,7 +7,7 @@ from typing import Any, Sequence
 import torch
 
 from .real_imag_kernels import complex_einsum_pair
-from .tensor_models import (
+from .tensor_network.models import (
     CompiledTNContractionBucket,
     CompiledTNContractionStage,
     CompiledTNStagePlan,

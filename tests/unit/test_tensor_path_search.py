@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from flagquantum.simulation import tensor_contraction, tensor_path_search
-from flagquantum.simulation.tensor_models import TensorNetworkNode
+from flagquantum.simulation.tensor_network.models import TensorNetworkNode
 
 pytestmark = pytest.mark.unit
 

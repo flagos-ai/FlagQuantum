@@ -82,7 +82,9 @@ result types only during type checking because the protected
 types, or a second lifecycle implementation. Their exit requires an approved
 public API migration for the wrapper functions and result type.
 
-`tensor_local.py` owns local tensor-network plan construction and the numerical
+`tensor_network/models.py` owns tensor nodes, contraction plans, compiled
+schedules, slicing plans, and local expectation plans. `tensor_local.py` owns
+local tensor-network plan construction and the numerical
 state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,
 MPO compression, and batched observable contraction. `tensor_execution.py`
 preserves the public wrappers and amplitude entry points; distributed
@@ -157,8 +159,9 @@ trajectory, start in `mps/noisy.py`. Run:
 python -m pytest tests/test_mps.py -q
 ```
 
-For local tensor-network plan construction or execution, start in
-`tensor_local.py`; for observable behavior, start in `tensor_observables.py`.
+For tensor-network data and plans, start in `tensor_network/models.py`; for
+local plan construction or execution, start in `tensor_local.py`; for
+observable behavior, start in `tensor_observables.py`.
 Run:
 
 ```bash

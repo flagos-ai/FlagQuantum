@@ -17,7 +17,7 @@ from .tensor_local import (  # noqa: E402
     ensure_local_tensor_network_plan,
     run_local_tensor_network,
 )
-from .tensor_models import (  # noqa: E402
+from .tensor_network.models import (  # noqa: E402
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkNode,

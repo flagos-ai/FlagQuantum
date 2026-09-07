@@ -13,7 +13,7 @@ from ....simulation.tensor_contraction import (
     _canonicalize_unit_extent_nodes,
     _slice_nodes,
 )
-from ....simulation.tensor_models import (
+from ....simulation.tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkNode,

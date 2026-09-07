@@ -9,7 +9,7 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from . import tensor_stages as _tensor_stages
-from .tensor_models import (
+from .tensor_network.models import (
     PairContractionStep,
     TensorNetworkContractionProfile,
     TensorNetworkNode,

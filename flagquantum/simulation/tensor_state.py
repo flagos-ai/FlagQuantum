@@ -21,7 +21,7 @@ _Z_OBSERVABLE_NODE_CACHE: dict[
 ] = {}
 
 
-from .tensor_models import (  # noqa: E402
+from .tensor_network.models import (  # noqa: E402
     CompiledTNObservableProgram,
     CompiledTNStagePlan,
     TensorNetworkContractionPlan,

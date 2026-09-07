@@ -10,7 +10,11 @@ import torch
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from .real_imag_kernels import complex_einsum_pair
-from .tensor_models import CompiledTNStagePlan, PairContractionStep, TensorNetworkNode
+from .tensor_network.models import (
+    CompiledTNStagePlan,
+    PairContractionStep,
+    TensorNetworkNode,
+)
 from .tensor_stages import (
     compile_contraction_stages as _compile_contraction_stages,
 )

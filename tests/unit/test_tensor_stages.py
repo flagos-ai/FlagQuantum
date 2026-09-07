@@ -4,7 +4,10 @@ import torch
 from flagquantum.simulation.tensor_contraction import (
     _einsum_pair_by_labels as compatibility_einsum_pair,
 )
-from flagquantum.simulation.tensor_models import PairContractionStep, TensorNetworkNode
+from flagquantum.simulation.tensor_network.models import (
+    PairContractionStep,
+    TensorNetworkNode,
+)
 from flagquantum.simulation.tensor_stages import (
     compile_contraction_stages,
     einsum_pair_by_labels,

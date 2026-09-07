@@ -9,7 +9,7 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_models import (
+from ....simulation.tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkSlicingPlan,

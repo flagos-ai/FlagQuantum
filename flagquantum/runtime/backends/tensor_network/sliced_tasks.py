@@ -7,7 +7,7 @@ import json
 from dataclasses import asdict, dataclass
 from itertools import product
 
-from ....simulation.tensor_models import TensorNetworkSlicingPlan
+from ....simulation.tensor_network.models import TensorNetworkSlicingPlan
 
 TN_SLICE_TASK_PLAN_VERSION = "flagquantum.tn_slice_task_plan.v1"
 
