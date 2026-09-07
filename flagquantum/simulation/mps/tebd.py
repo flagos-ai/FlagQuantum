@@ -15,10 +15,10 @@ from typing import Any
 
 import torch
 
-from ..algorithms.core import Hamiltonian
-from ..ops.matrices import GATE_MAT_DICT
-from .mps.models import MPSConfig
-from .mps.state import MPSState
+from ...algorithms.core import Hamiltonian
+from ...ops.matrices import GATE_MAT_DICT
+from .models import MPSConfig
+from .state import MPSState
 
 _SUPPORTED_INITIAL_STATES = {"+x", "+z", "-z", "neel_z", "domain_wall"}
 _MAX_STEPS = 100_000

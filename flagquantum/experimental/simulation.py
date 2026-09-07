@@ -11,7 +11,7 @@ __all__ = _PUBLIC_NAMES
 
 def __getattr__(name: str) -> Any:
     if name in __all__:
-        return getattr(import_module("flagquantum.simulation.tebd"), name)
+        return getattr(import_module("flagquantum.simulation.mps.tebd"), name)
     raise AttributeError(name)
 
 
