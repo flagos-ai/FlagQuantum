@@ -6,8 +6,8 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from ...distributed.backend_policy import DistributedBackendPolicy
+from .mps.training_records import JAXMPSRankShardState
 from .mps_evidence import _build_mps_backward_resource_evidence
-from .mps_training_records import JAXMPSRankShardState
 from .planning_core import JAXDistributedQuantumPlan
 from .release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,

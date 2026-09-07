@@ -30,15 +30,15 @@ from flagquantum.runtime.backends.jax.mps.planning import (
     plan_jax_sharded_mps_parameter_flow,
 )
 from flagquantum.runtime.backends.jax.mps.result import JAXShardedMPSResult
+from flagquantum.runtime.backends.jax.mps.training_records import (
+    JAXShardedMPSParameterFlowPlan,
+    JAXShardedMPSTrainingPlan,
+)
 from flagquantum.runtime.backends.jax.mps_gradient_result import (
     JAXShardedMPSParameterGradientResult,
 )
 from flagquantum.runtime.backends.jax.mps_gradients import (
     jax_sharded_mps_parameter_value_and_grad,
-)
-from flagquantum.runtime.backends.jax.mps_training_records import (
-    JAXShardedMPSParameterFlowPlan,
-    JAXShardedMPSTrainingPlan,
 )
 from flagquantum.runtime.backends.jax.statevector import (
     execution as statevector_execution,

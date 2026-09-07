@@ -5,11 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from .mps_evidence import _build_mps_backward_resource_evidence
-from .release_policy import (
+from ..mps_evidence import _build_mps_backward_resource_evidence
+from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
-from .runtime_environment import _jax_array_nbytes
+from ..runtime_environment import _jax_array_nbytes
 
 
 @dataclass(frozen=True)

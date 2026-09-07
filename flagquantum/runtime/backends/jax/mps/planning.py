@@ -10,11 +10,6 @@ from ..common import communication_tier as _communication_tier
 from ..common import node_count as _node_count
 from ..common import rank_for_wire as _rank_for_wire
 from ..common import split_contiguous as _split_contiguous
-from ..mps_training_records import (
-    JAXShardedMPSParameterFlowPlan,
-    JAXShardedMPSParameterGateAssignment,
-    JAXShardedMPSTrainingPlan,
-)
 from ..planning_core import JAXDistributedQuantumPlan, _as_ir
 from ..runtime_environment import (
     _jax_device_count_summary,
@@ -22,6 +17,11 @@ from ..runtime_environment import (
     _resolve_local_world_size,
     _resolve_policy,
     _resolve_world_size,
+)
+from .training_records import (
+    JAXShardedMPSParameterFlowPlan,
+    JAXShardedMPSParameterGateAssignment,
+    JAXShardedMPSTrainingPlan,
 )
 
 

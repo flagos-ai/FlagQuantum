@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping, Sequence
 
 from ....simulation.jax.mps.kernels import jax_sharded_mps_z_sum
-from .mps_training_records import JAXShardedMPSParameterFlowPlan
+from .mps.training_records import JAXShardedMPSParameterFlowPlan
 from .runtime_environment import (
     _jax_complex_dtype,
     _require_jax,

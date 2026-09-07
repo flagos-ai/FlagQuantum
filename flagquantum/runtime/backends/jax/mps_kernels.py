@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from .mps_training_records import JAXMPSRankShardState
+from .mps.training_records import JAXMPSRankShardState
 from .runtime_environment import (
     _jnp_device_put,
     _require_jax,
