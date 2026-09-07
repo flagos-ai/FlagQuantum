@@ -11,7 +11,6 @@ from flagquantum.runtime.audit.release_policy import require_distributed_scalabi
 from flagquantum.runtime.backends.jax import (
     JAXDistributedQuantumPlan,
     compile_quantum_kernel,
-    mps_backward,
     mps_evidence,
     mps_gradient_ownership,
     plan_jax_distributed_quantum_backend,
@@ -22,6 +21,7 @@ from flagquantum.runtime.backends.jax import (
     run_jax_sharded_tensor_network,
     runtime_environment,
 )
+from flagquantum.runtime.backends.jax.mps import backward as mps_backward
 from flagquantum.runtime.backends.jax.mps import (
     boundary_exchange as mps_boundary_exchange,
 )

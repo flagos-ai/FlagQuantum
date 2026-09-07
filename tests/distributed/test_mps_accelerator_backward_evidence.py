@@ -2,11 +2,11 @@ import pytest
 
 from flagquantum.runtime.audit import DistributedScalabilityError
 from flagquantum.runtime.audit.release_policy import require_distributed_scalability
+from flagquantum.runtime.backends.jax.mps.backward import (
+    _execute_minimal_mps_sharded_backward,
+)
 from flagquantum.runtime.backends.jax.mps.canonicalization import (
     _execute_minimal_mps_sharded_optimizer_step,
-)
-from flagquantum.runtime.backends.jax.mps_backward import (
-    _execute_minimal_mps_sharded_backward,
 )
 from flagquantum.runtime.backends.jax.mps_evidence import (
     _collect_jax_mps_accelerator_backward_evidence,

@@ -6,12 +6,12 @@ from typing import Any
 
 from .....simulation.jax.mps.pullbacks import jax_mps_canonicalization_pullback
 from ..common import communication_tier as _communication_tier
-from ..mps_backward import _execute_minimal_mps_sharded_backward
 from ..mps_evidence import _summarize_minimal_mps_measured_runtime_evidence
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
 from ..runtime_environment import _require_jax
+from .backward import _execute_minimal_mps_sharded_backward
 from .pullbacks import _execute_minimal_mps_boundary_gate_adjoint_pullback
 
 

@@ -15,4 +15,5 @@ Runtime records, and evidence. Numerical MPS operations remain in
 - Start in `boundary_exchange.py` for boundary-adjoint transport evidence.
 - Start in `pullbacks.py` for owner-rank VJP and boundary-adjoint orchestration.
 - Start in `canonicalization.py` for truncation and optimizer pullback protocols.
+- Start in `backward.py` for the constrained sharded backward executor.
 - Import the owning module directly; this package does not add another facade.

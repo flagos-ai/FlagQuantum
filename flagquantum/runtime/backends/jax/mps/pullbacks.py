@@ -8,11 +8,11 @@ from .....simulation.jax.mps.pullbacks import (
     jax_mps_boundary_rxx_pullback,
     jax_mps_owner_local_vjp,
 )
-from ..mps_backward import _execute_minimal_mps_sharded_backward
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
 from ..runtime_environment import _require_jax
+from .backward import _execute_minimal_mps_sharded_backward
 from .boundary_exchange import _summarize_local_mps_boundary_adjoint_exchange
 
 
