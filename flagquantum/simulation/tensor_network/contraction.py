@@ -8,27 +8,27 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from .tensor_network import stages as _tensor_stages
-from .tensor_network.models import (
+from . import stages as _tensor_stages
+from .models import (
     PairContractionStep,
     TensorNetworkContractionProfile,
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
-from .tensor_network.path_search import (
+from .path_search import (
     _CONTRACTION_PATH_CACHE as _CONTRACTION_PATH_CACHE,
 )
-from .tensor_network.path_search import (
+from .path_search import (
     _CONTRACTION_STAGE_CACHE as _CONTRACTION_STAGE_CACHE,
 )
-from .tensor_network.path_search import (
+from .path_search import (
     _QUALITY_MULTISTART_PATH_CACHE as _QUALITY_MULTISTART_PATH_CACHE,
 )
-from .tensor_network.path_search import _as_ir as _as_ir
-from .tensor_network.path_search import (
+from .path_search import _as_ir as _as_ir
+from .path_search import (
     _choose_greedy_pair as _choose_greedy_pair,
 )
-from .tensor_network.path_search import (
+from .path_search import (
     _contract_nodes_beam,
     _contract_nodes_greedy,
     _contract_nodes_optimal,
@@ -42,16 +42,16 @@ from .tensor_network.path_search import (
     _profile_cache_key,
     _quality_multistart_cache_key,
 )
-from .tensor_network.path_search import (
+from .path_search import (
     _linearize_contraction_tree as _linearize_contraction_tree,
 )
-from .tensor_network.path_search import (
+from .path_search import (
     _tree_from_steps as _tree_from_steps,
 )
-from .tensor_network.stages import execute_pair_steps as _execute_pair_steps
+from .stages import execute_pair_steps as _execute_pair_steps
 
 # Compatibility names retained for internal consumers of the historical
-# aggregation module. Canonical implementations live in ``tensor_stages``.
+# aggregation module. Canonical implementations live in ``stages``.
 _batched_pair_equation = _tensor_stages.batched_pair_equation
 _compile_contraction_stages = _tensor_stages.compile_contraction_stages
 _einsum_pair_by_labels = _tensor_stages.einsum_pair_by_labels

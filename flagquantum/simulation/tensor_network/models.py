@@ -821,9 +821,9 @@ class TensorNetworkExpectationPlan:
 
 
 def _contraction_call(name: str, *args: Any, **kwargs: Any) -> Any:
-    from .. import tensor_contraction
+    from . import contraction
 
-    return getattr(tensor_contraction, name)(*args, **kwargs)
+    return getattr(contraction, name)(*args, **kwargs)
 
 
 def _build_slicing_plan(*args: Any, **kwargs: Any) -> Any:

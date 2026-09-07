@@ -24,7 +24,7 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_slice_tasks,
     plan_sliced_tn_checkpoint_memory,
 )
-from flagquantum.simulation.tensor_contraction import (
+from flagquantum.simulation.tensor_network.contraction import (
     _canonicalize_unit_extent_nodes,
     _cost_for_sliced_labels,
     _pair_steps_from_dynamic_path,

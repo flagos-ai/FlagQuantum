@@ -8,13 +8,13 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ..ops.matrices import GATE_MAT_DICT
-from .tensor_contraction import (
+from .tensor_local import ensure_local_tensor_network_plan
+from .tensor_network.contraction import (
     _build_slicing_plan,
     _clone_nodes_with_offset,
     _contract_nodes_greedy,
     _contract_nodes_sliced,
 )
-from .tensor_local import ensure_local_tensor_network_plan
 from .tensor_network.models import (
     ContractionPathStep,
     TensorNetworkContractionPlan,

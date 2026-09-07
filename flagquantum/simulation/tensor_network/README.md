@@ -12,6 +12,8 @@ evidence.
   execution, high-rank fallback, and compensated accumulation.
 - Start in `path_search.py` for greedy, multistart, tree-reconfiguration, beam,
   and bounded-optimal contraction-order search.
+- Start in `contraction.py` for slicing-plan construction, contraction profiles,
+  and sliced contraction execution.
 - Import the owning submodule directly; this package does not re-export a
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local

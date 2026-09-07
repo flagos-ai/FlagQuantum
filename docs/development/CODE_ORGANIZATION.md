@@ -204,7 +204,7 @@ plugins, benchmarks, or serialized artifacts.
   modules consume that narrow boundary instead of the compatibility-heavy local
   contraction planner. Greedy, multistart, tree-reconfiguration, beam, and
   bounded-optimal path search live in `simulation.tensor_network.path_search`; the
-  historical oversized `simulation.tensor_contraction` exception has been
+  historical oversized `simulation.tensor_network.contraction` exception has been
   removed.
 - Provider-neutral deployment contracts remain in `deployment.cloud`.
   Shared HTTP transport lives in `providers.execution.http`, stateless

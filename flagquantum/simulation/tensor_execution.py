@@ -7,20 +7,23 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ..circuit import Circuit
-from .tensor_contraction import (  # noqa: E402
-    _build_slicing_plan,
-    _contract_nodes_greedy,
-    _contract_nodes_sliced,
-)
 from .tensor_local import (  # noqa: E402
     build_local_tensor_network,
     ensure_local_tensor_network_plan,
     run_local_tensor_network,
 )
+from .tensor_network.contraction import (  # noqa: E402
+    _build_slicing_plan,
+    _contract_nodes_greedy,
+    _contract_nodes_sliced,
+)
 from .tensor_network.models import (  # noqa: E402
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkNode,
+)
+from .tensor_network.state import (  # noqa: E402
+    TensorNetworkState,
 )
 from .tensor_observables import (  # noqa: E402
     build_tensor_network_expectation as _build_tensor_network_expectation,
@@ -36,9 +39,6 @@ from .tensor_observables import (
 )
 from .tensor_observables import (
     tensor_network_expectations as _tensor_network_expectations,
-)
-from .tensor_network.state import (  # noqa: E402
-    TensorNetworkState,
 )
 
 

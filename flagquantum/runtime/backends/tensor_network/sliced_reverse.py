@@ -9,7 +9,7 @@ from typing import Sequence
 
 import torch
 
-from ....simulation.tensor_contraction import (
+from ....simulation.tensor_network.contraction import (
     _canonicalize_unit_extent_nodes,
     _slice_nodes,
 )

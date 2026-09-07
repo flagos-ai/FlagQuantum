@@ -116,14 +116,14 @@ return result_adapter.normalize(raw, plan)
 
 当前热点包括：
 
-- `simulation/tensor_contraction.py` 超过 1800 行；
+- `simulation/tensor_network/contraction.py` 曾超过 1800 行；
 - `runtime/distributed/tensor_network_execution.py` 超过 1000 行；
 - TN backend facade 暴露大量内部类型和 kernel；
 - 多个 TN backend 模块在 600–800 行之间。
 
 Noise 开发期间应冻结以下增长：
 
-- 不向 `tensor_contraction.py` 加入 noisy TN；
+- 不向 `tensor_network/contraction.py` 加入 noisy TN；
 - 不向 TN `__init__.py` 增加新的内部导出；
 - 新 pair kernel 放到有明确所有权的模块；
 - SV/MPS trajectory 稳定前不启动 noisy TN；
@@ -280,7 +280,7 @@ api/circuit
 
 ```python
 from flagquantum.circuit import _gate_matrix
-from flagquantum.simulation.tensor_contraction import _einsum_pair_by_labels
+from flagquantum.simulation.tensor_network.contraction import _einsum_pair_by_labels
 from flagquantum.simulation.mps.factorization import _split_pair_matrix
 ```
 

@@ -16,11 +16,10 @@ from pathlib import Path
 from time import perf_counter
 
 import torch
-
 from adapt_vqe_tn_contract import initial_angles, product_state_energy
 
 import flagquantum as fq
-from flagquantum.simulation.tensor_contraction import (
+from flagquantum.simulation.tensor_network.contraction import (
     _canonicalize_unit_extent_nodes,
     _linearize_contraction_tree,
     _slice_nodes,

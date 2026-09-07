@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.simulation.tensor_contraction import (
+from flagquantum.simulation.tensor_network.contraction import (
     _einsum_pair_by_labels as compatibility_einsum_pair,
 )
 from flagquantum.simulation.tensor_network.models import (

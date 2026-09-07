@@ -4,7 +4,7 @@ from importlib import import_module
 from typing import Any
 
 _MODULES = (
-    "flagquantum.simulation.tensor_contraction",
+    "flagquantum.simulation.tensor_network.contraction",
     "flagquantum.simulation.tensor_network.models",
     "flagquantum.simulation.tensor_network.state",
     "flagquantum.simulation.tensor_execution",

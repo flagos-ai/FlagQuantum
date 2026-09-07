@@ -21,12 +21,12 @@ from flagquantum.runtime.distributed.tensor_network_execution import (
     _persistent_plan_key,
 )
 from flagquantum.runtime.planner import load_tn_working_set_calibration
-from flagquantum.simulation.tensor_contraction import (
+from flagquantum.simulation.tensor_execution import _amplitude_batch_projection
+from flagquantum.simulation.tensor_network.contraction import (
     _build_slicing_plan,
     _cost_for_sliced_labels,
     _parallel_slice_labels,
 )
-from flagquantum.simulation.tensor_execution import _amplitude_batch_projection
 
 
 def _parser() -> argparse.ArgumentParser:

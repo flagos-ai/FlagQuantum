@@ -1,8 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.simulation import tensor_contraction
-from flagquantum.simulation.tensor_network import path_search
+from flagquantum.simulation.tensor_network import contraction, path_search
 from flagquantum.simulation.tensor_network.models import TensorNetworkNode
 
 pytestmark = pytest.mark.unit
@@ -28,7 +27,7 @@ def _nodes() -> tuple[TensorNetworkNode, ...]:
     ),
 )
 def test_compatibility_names_preserve_path_search_function_identity(name):
-        assert getattr(tensor_contraction, name) is getattr(path_search, name)
+        assert getattr(contraction, name) is getattr(path_search, name)
 
 
 def test_extracted_path_search_modes_preserve_contraction_result():
