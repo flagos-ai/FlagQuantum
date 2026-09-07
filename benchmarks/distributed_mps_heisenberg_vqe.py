@@ -37,10 +37,10 @@ from benchmarks.sc27_metadata import (
 )
 from examples.distributed_mps.variable_bond_capacity_8gpu import bond_dimensions
 from flagquantum.core.runtime_config import get_runtime_config, set_runtime_config
-from flagquantum.runtime.backends.mps.forward import (
-    _initial_ownership,
+from flagquantum.runtime.backends.mps.state import (
     cost_aware_mps_ownership,
     gate_aligned_cost_aware_mps_ownership,
+    initial_mps_ownership,
     mps_factorization_site_costs,
 )
 
@@ -381,7 +381,7 @@ def main() -> None:
     predicted_bonds = tuple(bond_dimensions(args.n_sites, args.initial_bond))
     predicted_site_costs = mps_factorization_site_costs(predicted_bonds)
     if args.partition_policy == "equal_sites":
-        site_ownership = _initial_ownership(args.n_sites, world)
+        site_ownership = initial_mps_ownership(args.n_sites, world)
     elif args.partition_policy == "cost_aware":
         site_ownership = cost_aware_mps_ownership(predicted_bonds, world)
     else:
