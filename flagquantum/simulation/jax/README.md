@@ -10,6 +10,7 @@ distributed collectives, or produce execution evidence.
   pair-exchange assembly, and sharded observable loss.
 - Start in `tensor_network.py` for JAX node construction, contraction,
   observables, slicing, and contracted-output loss.
+- Start in `mps/` for JAX matrix-product-state kernels and differentiation.
 - Import the owning submodule directly; this package does not re-export a JAX
   simulation facade.
 - Run `python -m pytest tests/unit/test_jax_simulation_boundary.py -q` after a

@@ -10,7 +10,7 @@ import flagquantum.backends as fqb
 from flagquantum.algorithms import Hamiltonian, pauli_term, zz_chain_hamiltonian
 from flagquantum.runtime.backends.jax import compile_quantum_kernel, mps_kernel
 from flagquantum.runtime.backends.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
-from flagquantum.simulation import jax_mps
+from flagquantum.simulation.jax.mps import kernels as jax_mps
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("jax") is None, reason="jax is not installed"

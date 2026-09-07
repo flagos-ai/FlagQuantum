@@ -9,31 +9,31 @@ from typing import Any
 TorchCircuitBuilder = Callable[..., Any]
 
 
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_apply_adjacent_chain_scan as _jax_mps_apply_adjacent_chain_scan,
+)
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_apply_local_stack as _jax_mps_apply_local_stack,
+)
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_apply_one as _jax_mps_apply_one,
+)
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
+)
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_initial_open_boundary_tensors as _jax_mps_initial_open_boundary_tensors,
+)
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_initial_padded_stack as _jax_mps_initial_padded_stack,
+)
+from ....simulation.jax.mps.kernels import (  # noqa: E402
+    jax_mps_project_open_boundaries as _jax_mps_project_open_boundaries,
+)
 from ....simulation.jax.primitives import (  # noqa: E402
     _jax_cx,
     _jax_instruction_matrix,
     _jax_pauli_matrix,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_apply_adjacent_chain_scan as _jax_mps_apply_adjacent_chain_scan,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_apply_local_stack as _jax_mps_apply_local_stack,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_apply_one as _jax_mps_apply_one,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_apply_two_remote as _jax_mps_apply_two_remote,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_initial_open_boundary_tensors as _jax_mps_initial_open_boundary_tensors,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_initial_padded_stack as _jax_mps_initial_padded_stack,
-)
-from ....simulation.jax_mps import (  # noqa: E402
-    jax_mps_project_open_boundaries as _jax_mps_project_open_boundaries,
 )
 
 

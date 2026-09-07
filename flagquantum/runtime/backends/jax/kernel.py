@@ -8,6 +8,18 @@ from typing import Any
 
 import torch
 
+from ....simulation.jax.mps.kernels import (
+    is_zz_z_chain_hamiltonian as _is_zz_z_chain_hamiltonian,
+)
+from ....simulation.jax.mps.kernels import (
+    jax_mps_hamiltonian_expectation as _jax_mps_hamiltonian_expectation,
+)
+from ....simulation.jax.mps.kernels import (
+    jax_mps_z_sum as _jax_mps_z_sum,
+)
+from ....simulation.jax.mps.kernels import (
+    jax_mps_z_values as _jax_mps_z_values,
+)
 from ....simulation.jax.primitives import (
     _jax_hamiltonian_expectation,
     _jax_real_dtype,
@@ -24,18 +36,6 @@ from ....simulation.jax.tensor_network import (
 )
 from ....simulation.jax.tensor_network import (
     jax_tensor_network_z_values as _jax_tensor_network_z_values,
-)
-from ....simulation.jax_mps import (
-    is_zz_z_chain_hamiltonian as _is_zz_z_chain_hamiltonian,
-)
-from ....simulation.jax_mps import (
-    jax_mps_hamiltonian_expectation as _jax_mps_hamiltonian_expectation,
-)
-from ....simulation.jax_mps import (
-    jax_mps_z_sum as _jax_mps_z_sum,
-)
-from ....simulation.jax_mps import (
-    jax_mps_z_values as _jax_mps_z_values,
 )
 
 TorchCircuitBuilder = Callable[..., Any]

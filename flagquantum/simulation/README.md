@@ -94,7 +94,7 @@ fallback, and compensated numerical accumulation used by sliced execution.
 `jax/primitives.py` owns JAX dtype selection, instruction matrices, local
 statevector execution, gate application, and observable kernels. Runtime retains
 JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
-`jax_mps.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
+`jax/mps/kernels.py` owns local one- and two-site MPS updates, pair splitting, remote-gate
 swap routing math, MPS-to-statevector contraction, and observable transfer
 environments, including Z and Pauli-string expectations. It also owns
 open-boundary and padded MPS initialization, open-boundary projection, and
