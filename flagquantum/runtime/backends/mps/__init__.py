@@ -61,11 +61,11 @@ _EXPORTS = {
         "build_mps_release_artifact",
     ),
     "execute_torch_distributed_mps_forward": (
-        "flagquantum.runtime.backends.mps.execution",
+        "flagquantum.runtime.backends.mps.forward",
         "execute_torch_distributed_mps_forward",
     ),
     "execute_torch_distributed_mps_reverse": (
-        "flagquantum.runtime.backends.mps.execution",
+        "flagquantum.runtime.backends.mps.reverse",
         "execute_torch_distributed_mps_reverse",
     ),
     "plan_production_mps": (
