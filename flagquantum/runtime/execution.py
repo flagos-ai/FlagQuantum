@@ -646,7 +646,7 @@ def run_native(
     elif mode == "distributed_mps":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from .distributed import run_distributed_mps
+        from .backends.mps import run_distributed_mps
 
         mps_options = dict(options)
         world_size = _distributed_world_size_from_options(

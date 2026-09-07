@@ -3,7 +3,7 @@
 `flagquantum.runtime.backends.mps.execute_torch_distributed_mps_forward` is the Phase-3 PyTorch-native MPS
 forward executor. Every rank allocates only its contiguous owned sites; no full
 `MPSState` is constructed before or during production execution. The older
-`run_distributed_mps` facade remains a compatibility/development path and keeps
+`run_distributed_mps` remains a development path and keeps
 its existing hybrid/replicated blockers.
 
 One-site and adjacent same-shard two-site gates execute without communication.

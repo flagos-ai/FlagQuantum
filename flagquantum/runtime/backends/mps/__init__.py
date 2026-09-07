@@ -18,6 +18,7 @@ __all__ = (
     "execute_torch_distributed_mps_forward",
     "execute_torch_distributed_mps_reverse",
     "plan_production_mps",
+    "run_distributed_mps",
     "select_mps_crossover_decision",
     "train_distributed_mps",
     "validate_production_mps_workload",
@@ -71,6 +72,10 @@ _EXPORTS = {
     "plan_production_mps": (
         "flagquantum.runtime.backends.mps.production",
         "plan_production_mps",
+    ),
+    "run_distributed_mps": (
+        "flagquantum.runtime.backends.mps.execution",
+        "run_distributed_mps",
     ),
     "select_mps_crossover_decision": (
         "flagquantum.runtime.backends.mps.production",

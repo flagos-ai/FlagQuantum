@@ -1,4 +1,4 @@
-"""Distributed MPS and tensor-network execution plans.
+"""Distributed MPS execution plans.
 
 This module provides FlagQuantum-native distributed result objects without
 depending on an external graph or tensor-network package. Development backends
@@ -16,34 +16,34 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...simulation.mps.entrypoints import run_mps
-from ...simulation.mps.models import (
+from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from ....simulation.mps.entrypoints import run_mps
+from ....simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
     MPSTruncationRecord,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     apply_two_mps_tensors_with_info as _apply_two_mps_tensors_with_info,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     instruction_matrix_for_mps as _instruction_matrix_for_mps,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...simulation.mps.state import MPSState
-from ..backends.jax import plan_jax_distributed_quantum_backend
-from .identity import (
+from ....simulation.mps.state import MPSState
+from ..jax import plan_jax_distributed_quantum_backend
+from ...distributed.identity import (
     DistributedIdentity,
     DistributedIdentityError,
     backend_uses_accelerator_tensors,
     require_verified_flagcx,
 )
-from .models import (
+from ...distributed.models import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
     DistributedMPSState,
@@ -58,7 +58,7 @@ from .models import (
     init_torch_distributed,
     torch_distributed_is_available,
 )
-from .mps_transport import (
+from ...distributed.mps_transport import (
     _recv_tensor_async_p2p,
     _recv_tensor_p2p,
     _send_tensor_async_p2p,

@@ -79,7 +79,7 @@ Provider 的暂管区域。
   `DistributedExecutionRecord` 和执行器协议；这些仍是内部、较弱的记录形状。
 - `runtime.distributed.models` 负责进程组、rank placement、shard/task ownership、通信层级
   与汇总元数据。
-- `runtime.distributed.engine.run_distributed_mps()` 组织 MPS 分布式执行；数值算法目录的
+- `runtime.backends.mps.execution.run_distributed_mps()` 组织 MPS 分布式执行；数值算法目录的
   归属迁移仍需与 Simulation 团队分开处理。
 - `runtime.backends.tensor_network.execution` 组织切片任务和归约，但仍直接依赖
   Compiler 的 TN 内存校准记录。

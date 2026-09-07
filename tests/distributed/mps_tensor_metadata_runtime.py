@@ -11,7 +11,7 @@ from flagquantum.circuit import Circuit
 from flagquantum.runtime.backends.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
-from flagquantum.runtime.distributed.engine import (
+from flagquantum.runtime.distributed.mps_transport import (
     clear_mps_static_descriptor_cache,
     mps_p2p_stats,
     reset_mps_p2p_stats,

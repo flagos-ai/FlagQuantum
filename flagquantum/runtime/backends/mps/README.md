@@ -20,6 +20,8 @@ live in `simulation/mps/canonicalization.py`.
 
 ## Ten-minute change path
 
+- Change the development distributed MPS path, rank ownership, or boundary
+  synchronization in `execution.py`.
 - Change rank ownership or communication order in `state.py`,
   `distribution.py`, or `communication.py`.
 - Change canonicalization sweep ownership or transport in `canonicalization.py`;

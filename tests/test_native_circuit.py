@@ -1518,7 +1518,7 @@ def test_sharded_mps_apply_two_local_matches_mps_kernel():
 
 
 def test_distributed_mps_identifies_cross_shard_boundary_gate():
-    from flagquantum.runtime.distributed import engine as dist_runtime
+    from flagquantum.runtime.backends.mps import execution as dist_runtime
 
     circuit = fq.Circuit(4)
     circuit.cx(1, 2)

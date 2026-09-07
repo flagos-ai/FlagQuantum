@@ -15,7 +15,10 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.distributed.engine import _recv_tensor_p2p, _send_tensor_p2p
+from flagquantum.runtime.distributed.mps_transport import (
+    _recv_tensor_p2p,
+    _send_tensor_p2p,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:

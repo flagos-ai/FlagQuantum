@@ -30,7 +30,6 @@ __all__ = (
     "reset_mps_p2p_stats",
     "resolve_distributed_backend_policy",
     "require_verified_flagcx",
-    "run_distributed_mps",
     "torch_distributed_is_available",
     "warmup_mps_neighbor_communicators",
     "build_flagos_workload_capability_matrix",
@@ -66,14 +65,13 @@ _MPS_TRANSPORT_EXPORTS = {
     "reset_mps_p2p_stats",
     "warmup_mps_neighbor_communicators",
 }
-_ENGINE_EXPORTS = {
+_MODEL_EXPORTS = {
     "DistributedBoundaryProtocol",
     "DistributedBoundarySync",
     "DistributedShardPlan",
     "TorchDistributedContext",
     "destroy_torch_distributed",
     "init_torch_distributed",
-    "run_distributed_mps",
     "torch_distributed_is_available",
 }
 
@@ -89,8 +87,8 @@ def __getattr__(name: str) -> Any:
         module = import_module("flagquantum.runtime.distributed.mps_transport")
     elif name in _WORKLOAD_CAPABILITY_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.workload_capability")
-    elif name in _ENGINE_EXPORTS:
-        module = import_module("flagquantum.runtime.distributed.engine")
+    elif name in _MODEL_EXPORTS:
+        module = import_module("flagquantum.runtime.distributed.models")
     else:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     return getattr(module, name)
