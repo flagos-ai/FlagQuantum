@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from ..core.ir import Instruction
+from ...core.ir import Instruction
 
 
 def analytic_rotation_derivative(

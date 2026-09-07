@@ -11,19 +11,19 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
-from ....simulation.statevector.operations import _instruction_matrix
-from ....simulation.statevector_adjoint import (
+from ....simulation.statevector.adjoint import (
     analytic_rotation_derivative as _analytic_rotation_derivative,
 )
-from ....simulation.statevector_adjoint import (
+from ....simulation.statevector.adjoint import (
     real_conjugate_inner_sum as _real_conjugate_inner_sum,
 )
-from ....simulation.statevector_adjoint import (
+from ....simulation.statevector.adjoint import (
     z_expectation_adjoint_chunk as _z_expectation_adjoint_chunk,
 )
-from ....simulation.statevector_adjoint import (
+from ....simulation.statevector.adjoint import (
     z_expectation_chunk as _z_expectation_chunk,
 )
+from ....simulation.statevector.operations import _instruction_matrix
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,

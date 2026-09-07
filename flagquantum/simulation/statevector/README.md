@@ -8,4 +8,5 @@ evidence.
   dense observables, and sampling.
 - Start in `operations.py` for gate application, layout, matrix composition,
   fusion, and rank-local tensor operations.
+- Start in `adjoint.py` for local adjoint and gradient primitives.
 - The stable user entry points remain `fq.Circuit`, `fq.plan`, and `fq.run`.

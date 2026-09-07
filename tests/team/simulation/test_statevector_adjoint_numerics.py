@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from flagquantum.core.ir import Instruction
-from flagquantum.simulation.statevector_adjoint import (
+from flagquantum.simulation.statevector.adjoint import (
     analytic_rotation_derivative,
     real_conjugate_inner_sum,
     z_expectation_adjoint_chunk,

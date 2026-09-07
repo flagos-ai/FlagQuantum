@@ -29,7 +29,7 @@ and backward-pass evidence.
 `Circuit.state()` remains the
 stable user facade and Runtime enters through `run_local_statevector()`.
 
-`statevector_adjoint.py` owns local adjoint numerical primitives that do not
+`statevector/adjoint.py` owns local adjoint numerical primitives that do not
 depend on shard ownership or communication: supported rotation derivatives,
 the real-valued complex inner product, and chunk-local Z expectation/adjoint
 math. Runtime retains shard indexing, chunk policy, rematerialization,
