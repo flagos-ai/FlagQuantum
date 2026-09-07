@@ -1,7 +1,7 @@
 import pytest
 
 from flagquantum.deployment import providers
-from flagquantum.providers.execution import braket, http, result_parsing
+from flagquantum.providers.execution import braket, http, quafu, result_parsing
 
 pytestmark = pytest.mark.unit
 
@@ -30,6 +30,10 @@ def test_provider_aggregator_preserves_braket_object_identity(name):
 )
 def test_provider_aggregator_preserves_http_object_identity(name):
     assert getattr(providers, name) is getattr(http, name)
+
+
+def test_provider_aggregator_preserves_quafu_object_identity():
+    assert providers.QuafuProvider is quafu.QuafuProvider
 
 
 @pytest.mark.parametrize(
