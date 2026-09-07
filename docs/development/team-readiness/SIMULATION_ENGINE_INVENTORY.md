@@ -68,13 +68,13 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `simulation/statevector_ops.py`、`statevector_adjoint.py` 和 `simulation/triton_kernels/statevector_*` 的 rank-local 数值原语 | `runtime/backends/statevector/` 的 planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime 保留 amplitude/qubit-address 所有权、通信、chunk 和生命周期；不再实现局部门矩阵数学 |
 | Split real/imag 与 Double-Single | `simulation/split_real_imag_statevector.py` 的 P0/P1/P2 门矩阵、门作用、零态执行循环和 Pauli-term 数值归约；`simulation/double_single_host_gates.py` 与 `double_single_device_gates.py` 的隔离门矩阵生成；`simulation/double_single_statevector.py` 的 P3/P4 零态初始化、门执行、归一化和 Pauli-term 归约 | Runtime 文件中的参数绑定、平台身份、精度计划与授权、编码策略、observables、参数移位调度、P5 autograd/SGD 边界、conformance/result | P0--P4 的基础数值实现已归 Simulation；Runtime 只组合既有数值原语；P3/P4 适配器因主机摄取与路径证据不同而保持分离；P5 单行 SGD 更新尚不构成独立数值核，不为搬移而新增 helper；实验路径不得成为首切片默认实现或被描述为等价 FP64 |
-| 本地 MPS | `simulation/mps/local.py` 的无噪声指令循环；`mps/noisy.py` 的已降低单轨迹数值循环；`mps/models.py`、`mps/state.py`、`mps/factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps/brickwork.py` | `mps_execution.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
+| 本地 MPS | `simulation/mps/local.py` 的无噪声指令循环；`mps/noisy.py` 的已降低单轨迹数值循环；`mps/models.py`、`mps/state.py`、`mps/factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps/brickwork.py` | `mps/entrypoints.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
 | 分布式 MPS | `simulation/mps/rank_local.py`、`mps/site_kernels.py`、`mps/compiled_layers.py`、`mps/factorization.py`、`mps/canonicalization.py`、`mps/reverse.py`、`mps/observables.py` | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
 | 本地张量网络 | `simulation/tensor_local.py` 的计划构建与数值状态入口；`tensor_observables.py` 的观测量计划与 MPO；`tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容门面与振幅入口、`tensor_path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
 | 分布式张量网络 | `simulation/tensor_stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/backends/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime；旧 `simulation.noise` 门面已退出 |
-| 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps/state.py`/`mps_execution.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
-| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/noisy_statevector.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps_execution.py`/`mps/state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
+| 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps/state.py`/`mps/entrypoints.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
+| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/noisy_statevector.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps/entrypoints.py`/`mps/state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
 | 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作、Triton autograd 和已拆出的 JAX MPS pullback 在 `simulation/`；其余显式 sharded adjoint/reverse 仍在各 backend | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
 
 ## 4. `simulation` 代码归属矩阵
@@ -87,7 +87,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `static_mps.py`、`mps/brickwork.py`、`tebd.py`、`dense_island.py` | 数值算法 + Kernel 调用 | 固定形状图、TEBD、dense island、局部编译核 | 编译/缓存策略和能力选择需与 Runtime/Compiler 的决定区分 |
 | `mps/local.py` | 纯数值执行 | 已初始化 MPS 上的 IR 门作用、融合与 bucket kernel 调用 | 无 Runtime 生命周期所有权 |
 | `mps/noisy.py` | 纯数值执行 | 已降低 IR 上的 unitary/Kraus MPS 单轨迹演化 | 不导入 Compiler 或 Runtime，不派生 seed，不拥有 checkpoint |
-| `mps_execution.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、lowered IR 内部入口、adaptive bond rerun | 正式 `run_native` 路径由 Runtime 先调用 Compiler lowering；受保护的 legacy 直接入口仍保留同签名 lowering |
+| `mps/entrypoints.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、lowered IR 内部入口、adaptive bond rerun | 正式 `run_native` 路径由 Runtime 先调用 Compiler lowering；受保护的 legacy 直接入口仍保留同签名 lowering |
 | `runtime/trajectories/mps.py` | Runtime 生命周期 | 多轨迹 ownership、随机流、统计收敛、失败重试、checkpoint/restart 和 rank 结果合并 | 通过调用方提供的单轨迹执行器调用 Simulation，不实现 MPS 门或 Kraus 数值算法 |
 | `mps/planning.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
 | `mps/models.py` | MPS 配置、编译调度和结果模型 | 算法内部配置、不可变调度及诊断结果 | 长期跨领域结果契约必须由 Core；模型不得承担执行或设备策略 |
@@ -183,7 +183,7 @@ canonicalization/truncation pullback 已由 `simulation/jax_mps_pullbacks.py` �
 6. **跨层结果和公共类型**：Simulation 可产生内部数值 diagnostics，但稳定请求、结果、
    Evidence、Failure 和序列化 schema 均由 Core 唯一拥有。
 
-`mps_execution.py` 的 Runtime 导入豁免暂时只服务受保护的 `run_noisy_mps*` 限定名称；应在公共 API 完成正式弃用迁移后删除，不得通过动态导入绕过。下一批迁移热点是三个分布式 backend
+`mps/entrypoints.py` 的 Runtime 导入豁免暂时只服务受保护的 `run_noisy_mps*` 限定名称；应在公共 API 完成正式弃用迁移后删除，不得通过动态导入绕过。下一批迁移热点是三个分布式 backend
 中的 process-group/数值核交织。不能简单搬文件；必须先有 Core 契约和替换测试。
 
 ## 7. 第一个可替换切片
@@ -276,7 +276,7 @@ Runtime 中剩余的 tensor 拼接、reshape 和 stack 主要用于通信打包�
 结果组装，不因使用张量操作而自动属于数值算法；只有改变 MPS 数学语义的实现才应继续迁入
 Simulation。已删除本轮确认无消费者的私有兼容别名，不因文件较大而机械拆分模块。
 
-目前仅保留 MPS 受保护兼容面相关的反向依赖：`simulation/mps_execution.py` 调用轨迹
+目前仅保留 MPS 受保护兼容面相关的反向依赖：`simulation/mps/entrypoints.py` 调用轨迹
 Runtime，`simulation/mps/models.py` 仅在类型检查时引用 Runtime trajectory result 类型。
 前者支撑受保护的 `run_noisy_mps`/merge 入口，后者受 `MPSMonteCarloResult` 的既有合格名约束；
 不得以 `Any`、镜像类型或第二套生命周期实现绕开。
@@ -291,7 +291,7 @@ Runtime，`simulation/mps/models.py` 仅在类型检查时引用 Runtime traject
 1. 真实本地 Engine 与 contract fake 运行同一套 conformance，Runtime 消费者无需修改；
 2. `runtime/backends/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
 3. 分布式 TN reverse 中不依赖 task ownership、checkpoint 或 process group 的数学移至 Simulation；
-4. 已登记的 `simulation/mps_execution.py`→Runtime 兼容调用和 `simulation/mps/models.py` 类型引用须经公共 API 迁移退出；`simulation/noise.py` 反向依赖已经退出；
+4. 已登记的 `simulation/mps/entrypoints.py`→Runtime 兼容调用和 `simulation/mps/models.py` 类型引用须经公共 API 迁移退出；`simulation/noise.py` 反向依赖已经退出；
 5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
 
 当前第 1 项已对本地 Statevector 首切片建立测试证据，第 2、3 项已达到各自审计停止点，

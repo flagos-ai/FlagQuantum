@@ -29,7 +29,7 @@ pennylane_import_allowed_prefixes = [
 
 [simulation_boundaries]
 runtime_import_allowed = [
-    "flagquantum/simulation/mps_execution.py",
+    "flagquantum/simulation/mps/entrypoints.py",
     "flagquantum/simulation/mps/models.py",
 ]
 

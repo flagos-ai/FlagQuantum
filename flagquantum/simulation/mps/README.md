@@ -29,6 +29,8 @@ evidence.
 - Start in `observables.py` for local observable and MPO environment scans.
 - Start in `reverse.py` for reverse factorization, projection, and local VJP
   primitives.
+- Start in `entrypoints.py` for the stable MPS wrappers and Circuit/IR input
+  adaptation; execution policy and trajectory lifecycle remain in Runtime.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.

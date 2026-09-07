@@ -11,7 +11,7 @@ from flagquantum.circuit import Circuit
 from flagquantum.runtime.backends.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
-from flagquantum.simulation.mps_execution import run_mps
+from flagquantum.simulation.mps.entrypoints import run_mps
 
 
 def workload(world: int, theta: torch.Tensor) -> Circuit:

@@ -51,10 +51,10 @@ def test_historical_experimental_inventory_is_superseded_without_rewriting_it() 
 def test_backend_facade_preserves_implementation_identity() -> None:
     backends = importlib.import_module("flagquantum.backends")
     execution = importlib.import_module("flagquantum.runtime.execution")
-    mps_execution = importlib.import_module("flagquantum.simulation.mps_execution")
+    mps_entrypoints = importlib.import_module("flagquantum.simulation.mps.entrypoints")
 
     assert backends.run_native is execution.run_native
-    assert backends.run_mps is mps_execution.run_mps
+    assert backends.run_mps is mps_entrypoints.run_mps
     assert "run_advanced" not in execution.__all__
 
 

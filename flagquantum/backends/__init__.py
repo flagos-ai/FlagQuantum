@@ -20,9 +20,9 @@ __all__ = (
 
 _EXPORTS = {
     "resolve_device": ("flagquantum.runtime.backend_registry", "resolve_device"),
-    "run_mps": ("flagquantum.simulation.mps_execution", "run_mps"),
+    "run_mps": ("flagquantum.simulation.mps.entrypoints", "run_mps"),
     "run_native": ("flagquantum.runtime.execution", "run_native"),
-    "run_noisy_mps": ("flagquantum.simulation.mps_execution", "run_noisy_mps"),
+    "run_noisy_mps": ("flagquantum.simulation.mps.entrypoints", "run_noisy_mps"),
     "run_target": ("flagquantum.runtime.target_execution", "run_target"),
     "run_tensor_network": (
         "flagquantum.simulation.tensor_execution",

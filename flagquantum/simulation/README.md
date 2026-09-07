@@ -69,13 +69,13 @@ reporting.
 `mps/local.py` owns the single-device, noiseless MPS instruction loop.
 `mps/noisy.py` owns the numerical loop for one already-lowered noisy trajectory
 and accepts an initialized MPS plus an explicit random generator.
-`mps_execution.py` preserves the public wrappers and adapts legacy Circuit
+`mps/entrypoints.py` preserves the public wrappers and adapts legacy Circuit
 inputs. Multi-trajectory ownership, random streams, convergence, retry,
 checkpoint/restart, and rank result merging belong to
 `runtime/trajectories/mps.py`. The primary `run_native` path lowers noise once
 before entering the lowered MPS entry points; only protected direct legacy
 calls still perform lowering in the compatibility wrapper.
-The Runtime imports in `mps_execution.py` serve the protected
+The Runtime imports in `mps/entrypoints.py` serve the protected
 `run_noisy_mps`/merge compatibility surface; `mps/models.py` imports trajectory
 result types only during type checking because the protected
 `MPSMonteCarloResult` still names them. Do not replace these with `Any`, mirror

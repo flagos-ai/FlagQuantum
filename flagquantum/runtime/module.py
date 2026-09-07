@@ -633,7 +633,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 "production MPS integration currently supports one Z observable"
             )
         if plan.world_size == 1:
-            from ..simulation.mps_execution import run_mps
+            from ..simulation.mps.entrypoints import run_mps
 
             state = run_mps(
                 ir,
@@ -858,7 +858,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 values = circuit.expectation_z(wires)
                 executor = "pytorch_native_module_v1"
             elif self.policy.mode == "mps":
-                from ..simulation.mps_execution import run_mps
+                from ..simulation.mps.entrypoints import run_mps
 
                 state = None
                 backend_state = run_mps(
@@ -1007,7 +1007,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 circuit.state(refresh=True)
                 values = circuit.expectation_z(wires)
             elif self.policy.mode == "mps":
-                from ..simulation.mps_execution import run_mps
+                from ..simulation.mps.entrypoints import run_mps
 
                 backend_state = run_mps(
                     circuit,

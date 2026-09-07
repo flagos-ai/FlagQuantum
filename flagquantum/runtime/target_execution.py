@@ -174,7 +174,7 @@ def run_target(
             raise NotImplementedError(
                 "distributed MPS sparse-output execution is not production-ready"
             )
-        from ..simulation.mps_execution import run_mps
+        from ..simulation.mps.entrypoints import run_mps
 
         mps = run_mps(
             circuit_or_ir,

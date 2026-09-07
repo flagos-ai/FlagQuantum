@@ -22,12 +22,12 @@ from flagquantum.runtime.distributed.models import (
     ShardedMPSState,
     TorchDistributedContext,
 )
+from flagquantum.simulation.mps.entrypoints import run_mps
 from flagquantum.simulation.mps.site_kernels import (
     configure_site_kernel_cache,
     reset_site_kernel_stats,
     site_kernel_cache_policy,
 )
-from flagquantum.simulation.mps_execution import run_mps
 
 
 def circuit_for_world(world: int, *, device: torch.device) -> Circuit:

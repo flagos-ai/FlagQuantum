@@ -39,7 +39,7 @@ docs/               能力、架构和 claim boundary
 ### 2.2 P0：高层 Circuit 反向进入底层执行
 
 历史 `simulation/noise.py` 反向依赖已经退出；当前仍需治理
-`simulation/mps_execution.py` 对高层路径的依赖。运行时 TN/MPS 后端还会导入
+`simulation/mps/entrypoints.py` 对高层路径的依赖。运行时 TN/MPS 后端还会导入
 simulation 模块中的私有 kernel。
 
 这形成错误的依赖方向：

@@ -10,6 +10,10 @@ from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
 from flagquantum.runtime.mps_training import MPSTrainingStep, compile_mps_training_step
 from flagquantum.runtime.planner import estimate_mps_bytes
 from flagquantum.simulation.density_matrix import expectation_z_density
+from flagquantum.simulation.mps.entrypoints import (
+    run_mps_adaptive,
+    run_noisy_mps_trajectory,
+)
 from flagquantum.simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSAdaptiveRunResult,
@@ -17,14 +21,10 @@ from flagquantum.simulation.mps.models import (
     MPSLocalRefinementPlan,
     MPSTruncationRecord,
 )
-from flagquantum.simulation.mps_execution import (
-    run_mps_adaptive,
-    run_noisy_mps_trajectory,
-)
 
 
 def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
-    import flagquantum.simulation.mps_execution as mps_execution
+    import flagquantum.simulation.mps.entrypoints as mps_entrypoints
 
     expected = object()
     calls = []
@@ -34,7 +34,7 @@ def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
         return expected
 
     monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
-    monkeypatch.setattr(mps_execution, "run_local_mps", replacement)
+    monkeypatch.setattr(mps_entrypoints, "run_local_mps", replacement)
 
     assert fqb.run_mps(fq.Circuit(2).h(0)) is expected
     assert len(calls) == 1
@@ -622,7 +622,7 @@ def test_noisy_mps_trajectory_bit_flip_matches_density_path():
 
 
 def test_noisy_mps_wrapper_passes_lowered_ir_and_explicit_rng(monkeypatch):
-    import flagquantum.simulation.mps_execution as mps_execution
+    import flagquantum.simulation.mps.entrypoints as mps_entrypoints
 
     expected = object()
     calls = []
@@ -631,7 +631,7 @@ def test_noisy_mps_wrapper_passes_lowered_ir_and_explicit_rng(monkeypatch):
         calls.append((lowered_ir, state, generator))
         return expected
 
-    monkeypatch.setattr(mps_execution, "run_local_noisy_mps_trajectory", replacement)
+    monkeypatch.setattr(mps_entrypoints, "run_local_noisy_mps_trajectory", replacement)
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))
     generator = torch.Generator().manual_seed(11)

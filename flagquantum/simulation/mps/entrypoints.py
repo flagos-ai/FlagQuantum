@@ -1,4 +1,4 @@
-"""Native matrix-product-state execution for FlagQuantum."""
+"""Stable matrix-product-state execution entry points."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from typing import Any
 
 import torch
 
-from ..core.ir import CircuitIR, ensure_circuit_ir
-from .mps.local import run_local_mps
-from .mps.models import (
+from ...core.ir import CircuitIR, ensure_circuit_ir
+from .local import run_local_mps
+from .models import (
     MPSAdaptiveRunResult,
     MPSConfig,
     MPSMonteCarloResult,
 )
-from .mps.noisy import run_local_noisy_mps_trajectory
-from .mps.state import MPSState
+from .noisy import run_local_noisy_mps_trajectory
+from .state import MPSState
 
 
 def run_mps(
@@ -176,7 +176,7 @@ def run_noisy_mps_trajectory(
 ) -> MPSState:
     """Prepare and execute one sampled MPS quantum trajectory."""
 
-    from ..compiler import lower_noise_model
+    from ...compiler import lower_noise_model
 
     lowered = lower_noise_model(circuit_or_ir, noise_model)
     return run_lowered_noisy_mps_trajectory(
@@ -208,7 +208,7 @@ def run_lowered_noisy_mps_trajectory(
 ) -> MPSState:
     """Execute a Compiler-lowered trajectory through Runtime and Simulation."""
 
-    from ..runtime.trajectories.mps import run_single_mps_trajectory_runtime
+    from ...runtime.trajectories.mps import run_single_mps_trajectory_runtime
 
     effective_device = device if not hasattr(source, "device") else source.device
     return run_single_mps_trajectory_runtime(
@@ -294,7 +294,7 @@ def run_noisy_mps(
 ) -> MPSMonteCarloResult:
     """Schedule noisy MPS trajectories through the Runtime lifecycle."""
 
-    from ..compiler import lower_noise_model
+    from ...compiler import lower_noise_model
 
     lowered = lower_noise_model(circuit_or_ir, noise_model)
     return run_lowered_noisy_mps(
@@ -350,7 +350,7 @@ def run_lowered_noisy_mps(
 ) -> MPSMonteCarloResult:
     """Schedule trajectories for one already-lowered noisy MPS program."""
 
-    from ..runtime.trajectories.mps import run_noisy_mps_runtime
+    from ...runtime.trajectories.mps import run_noisy_mps_runtime
 
     def execute_lowered_trajectory(
         _source: Any,
@@ -409,7 +409,7 @@ def merge_noisy_mps_results(
 ) -> MPSMonteCarloResult:
     """Merge disjoint rank-local noisy MPS results through Runtime."""
 
-    from ..runtime.trajectories.mps import merge_noisy_mps_results_runtime
+    from ...runtime.trajectories.mps import merge_noisy_mps_results_runtime
 
     return merge_noisy_mps_results_runtime(
         results,

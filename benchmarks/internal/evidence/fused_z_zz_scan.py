@@ -16,7 +16,7 @@ from flagquantum.simulation.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,
 )
-from flagquantum.simulation.mps_execution import run_mps
+from flagquantum.simulation.mps.entrypoints import run_mps
 
 
 def workload(parameters, *, device, n_wires=8):

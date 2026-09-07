@@ -10,7 +10,7 @@ from flagquantum.runtime.backends.mps.forward import (
     execute_torch_distributed_mps_forward,
     gather_mps_for_validation,
 )
-from flagquantum.simulation.mps_execution import run_mps
+from flagquantum.simulation.mps.entrypoints import run_mps
 
 
 def workload(world: int) -> Circuit:
