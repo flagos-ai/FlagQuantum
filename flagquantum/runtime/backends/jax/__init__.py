@@ -38,7 +38,7 @@ _EXPORTS = {
         "plan_jax_sharded_mps_training",
     ),
     "plan_jax_sharded_statevector_training": (
-        "flagquantum.runtime.backends.jax.statevector_training",
+        "flagquantum.runtime.backends.jax.statevector.training",
         "plan_jax_sharded_statevector_training",
     ),
     "run_jax_sharded_mps": (

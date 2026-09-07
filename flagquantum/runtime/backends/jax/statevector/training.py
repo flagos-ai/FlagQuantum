@@ -4,21 +4,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .backend_dispatch import plan_jax_distributed_quantum_backend
-from .planning_core import _as_ir
-from .runtime_environment import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..backend_dispatch import plan_jax_distributed_quantum_backend
+from ..planning_core import _as_ir
+from ..runtime_environment import (
     _jax_device_count_summary,
     _resolve_jax_backward_backend,
     _resolve_local_world_size,
     _resolve_policy,
     _resolve_world_size,
 )
-from .statevector.kernels import (
+from .kernels import (
     _statevector_pmap_backward_blockers,
     _statevector_shard_map_backward_blockers,
 )
-from .statevector.records import JAXShardedStatevectorTrainingPlan
+from .records import JAXShardedStatevectorTrainingPlan
 
 
 def _statevector_training_device_blockers(
@@ -73,7 +73,7 @@ def plan_jax_sharded_statevector_training(
     quantum kernel and it never turns local simulation into a scalability claim.
     """
 
-    from ..statevector.planning import plan_distributed_statevector
+    from ...statevector.planning import plan_distributed_statevector
 
     policy = _resolve_policy(
         distributed_backend_policy=distributed_backend_policy,

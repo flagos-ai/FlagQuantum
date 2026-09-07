@@ -8,4 +8,5 @@ remain in `simulation/jax/statevector.py`.
 - Start in `records.py` for statevector shard, execution, and training records.
 - Start in `gradient_records.py` for parameter-gradient results and planning data.
 - Start in `kernels.py` for plan-aware collective execution.
+- Start in `training.py` for training preflight and plan construction.
 - Import the owning module directly; this package does not add another facade.
