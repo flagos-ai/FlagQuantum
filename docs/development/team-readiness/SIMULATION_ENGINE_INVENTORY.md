@@ -128,9 +128,9 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
 | `jax/*execution.py`、`backend_dispatch.py`、`statevector_training.py`、`mps_gradients.py`、`tensor_network_gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
 | `jax/*planning.py`、`planning_core.py`、`runtime_environment.py`、`transport.py` | 资源或通信编排 | 算法约束/代价输入 | Runtime/Platform topology、environment、transport 和 device lifecycle |
-| `jax/*records.py`、`*result.py`、`evidence_collector.py`、`release_policy.py`、`compatibility_surface.py` | 结果转换/门面 | 算法内部 diagnostics | Core result/evidence、Runtime 汇总、release policy；兼容面应有退出条件 |
+| `jax/*records.py`、`*result.py`、`evidence_collector.py`、`release_policy.py` | 结果转换/门面 | 算法内部 diagnostics | Core result/evidence、Runtime 汇总和 release policy |
 
-`__init__.py` 和各 facade 仅是导出/兼容层，不建立新的算法权威位置。
+`__init__.py` 仅维护明确的后端边界，不建立新的算法权威位置。
 
 ### JAX Runtime 数值边界收口审计（2026-09-05）
 
