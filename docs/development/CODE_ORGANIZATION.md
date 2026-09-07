@@ -13,12 +13,11 @@ code must not reach sideways into implementation modules.
 | Simulation primitives | `flagquantum.simulation` | Internal local algorithms, tensor primitives, and compatibility façades |
 | Distribution | `flagquantum.runtime.distributed` | Topology, protocols, collectives |
 | Governance | `flagquantum.runtime.audit` | Evidence validation and release gates |
-| Adapters | `deployment`, `devices`, `extensions` | External systems and plugins |
+| Adapters | `deployment`, `providers`, `ecosystem.extensions` | External systems and plugins |
 
-The v0.1 DTensor device subsystem is a closed internal compatibility island,
-not an adapter extension point. Its exact modules are declared in
-`architecture.toml`. New imports into that island are forbidden by policy, and
-none of its symbols belongs to the v0.2 stable API.
+The pre-release v0.1 DTensor device subsystem has been removed without a
+compatibility layer. Device execution now enters through the Runtime and
+Provider boundaries; numerical kernels remain in Simulation.
 
 Canonical audit wildcard exports use capability vocabulary. Historical
 milestone-numbered names remain available only as lazy explicit-import aliases.
@@ -197,13 +196,9 @@ plugins, benchmarks, or serialized artifacts.
 - The Statevector backend is a lazy package boundary under
   `flagquantum.runtime.backends.statevector`; importing the namespace does not
   initialize forward, reverse, or training engines.
-  Its `legacy_device.py` module contains the standalone v0.1 DTensor
-  compatibility device. It is not accepted by the Runtime execution path.
   Default distributed execution uses the statevector backend's local
   development simulator or torch-distributed executor. The main Runtime
-  execution module contains no device-specific gates;
-  `flagquantum.devices` is only the documented compatibility entry and must not
-  gain new implementations.
+  execution module contains no device-specific gates or v0.1 device adapter.
 - The Tensor Network backend is a lazy package boundary under
   `flagquantum.runtime.backends.tensor_network`; local simulation and
   distributed execution remain unloaded until their entry point is requested.

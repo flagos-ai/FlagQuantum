@@ -2,7 +2,7 @@
 
 生成日期：2026-07-09
 
-本文面向算子/编译器团队，用于梳理 FlagQuantum native PyTorch 后端在 statevector、MPS、tensor network、density matrix/noise、训练梯度与兼容分布式设备路径中实际涉及的 PyTorch 算子、精度要求和 FlagGems 替换优先级。
+本文面向算子/编译器团队，用于梳理 FlagQuantum native PyTorch 后端在 statevector、MPS、tensor network、density matrix/noise 与训练梯度中实际涉及的 PyTorch 算子、精度要求和 FlagGems 替换优先级。
 
 这份清单只描述 PyTorch native operator acceleration 需求，不把多卡复制运行描述为分布式扩展性。真正分布式能力仍以一个逻辑量子任务跨 rank sharding 为准。
 
@@ -15,7 +15,6 @@ FlagQuantum 当前 PyTorch 后端对外承诺的量子核心精度是：
 | 量子态、门矩阵、MPS tensor、TN node、密度矩阵 | `torch.complex64`, `torch.complex128` | 默认 `complex64`，高精度路径 `complex128` |
 | 参数、概率、期望值、loss、实数 Hamiltonian 系数 | `torch.float32`, `torch.float64` | 与 complex dtype 成对出现：`complex64 -> float32`，`complex128 -> float64` |
 | 采样、basis index、rank transport metadata | `torch.int64`, `torch.long`, `torch.int` | 不要求 autograd |
-| legacy `DistributedQuantumDevice` 状态存储 | `float32/float64` real-imag pair | 通过 `view_as_complex/view_as_real` 进入复数计算 |
 | `float16/bfloat16` | 非量子核心默认精度 | 可作为经典侧/未来混合精度优化，不应作为当前量子核心正确性主线 |
 
 给算子部门的最重要需求是：**complex64 + autograd + 非连续张量布局**。只支持 float32/bfloat16/fp16 不足以加速 FlagQuantum 的量子核心。
@@ -156,29 +155,6 @@ TN 需求重点：
 | `torch.optim.*`, `.backward()` | 训练 loop | float parameters | PyTorch 原生 | 不替换 |
 | `torch.as_tensor`, `torch.linspace`, `torch.randn` | parameter init / benchmarks | float32/float64 | 部分需要 | P2 |
 
-### 2.7 Legacy `DistributedQuantumDevice` / DTensor 兼容路径
-
-主要文件：
-
-- `flagquantum/runtime/backends/statevector/legacy_device.py`
-- `flagquantum/ops/functional.py`
-- `flagquantum/utils/interchange.py`
-- `flagquantum/utils/maybe_dtensor.py`
-
-状态存储方式：
-
-- 本路径把复数态存成 real-imag pair，末维大小为 2。
-- gate application 时通过 `torch.view_as_complex` 转成 complex，再执行 `bmm`，之后 `view_as_real` 转回。
-
-热点算子：
-
-| 算子 | 用途 | dtype | autograd | 优先级 |
-| --- | --- | --- | --- | --- |
-| `torch.view_as_complex`, `torch.view_as_real` | real-imag pair 与 complex tensor 转换 | float32/float64 <-> complex | 必须 | P1 |
-| `.bmm` / `torch.bmm` | gate application | complex64/complex128 | 必须 | P0 |
-| `DTensor.redistribute`, `Shard`, device mesh | sharding/resharding | float real-pair | 非 FlagGems 范畴 | 独立跟进 |
-| `torch.distributed.init_process_group`, collectives | 分布式通信 | metadata/real-pair | 非本地算子替换 | 独立跟进 |
-
 ## 3. P0/P1/P2 需求汇总
 
 ### P0：量子训练核心，必须优先支持
@@ -206,7 +182,6 @@ TN 需求重点：
 | `gather`, `index_select`, `nonzero`, `arange` | int64/complex | sharded basis/index path |
 | `where`, `clamp` | float/complex/bool | probabilities、JAX parity/debug、sampling |
 | `scatter_`, `scatter_add_`, `scatter_reduce` | complex/float/int64 | sampling、future sharded transport/reduction |
-| `view_as_complex`, `view_as_real` | float32/float64 pair | legacy DTensor path |
 
 ### P2：辅助/工程路径
 

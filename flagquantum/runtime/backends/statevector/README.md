@@ -30,10 +30,6 @@ checkpoint, or evidence objects as public API.
 `noisy.py` and the `split_real_imag*` modules are specialized execution paths.
 They are not the default local CPU vertical slice.
 
-`legacy_device.py` contains the v0.1 DTensor device still consumed by the
-native compatibility route. New execution code must not depend on it; remove
-it with the documented v0.1 compatibility surface once that route exits.
-
 `noisy.py` is the Runtime boundary for statevector trajectories. It owns input
 validation, global trajectory ownership and random streams, batching,
 checkpoint/restart, retry, online and collective statistics, readout-result

@@ -414,19 +414,6 @@ def test_native_distributed_bridge_preserves_complex128_end_to_end():
     torch.testing.assert_close(result.state, circuit.state(), atol=1e-15, rtol=1e-15)
 
 
-def test_native_distributed_bridge_rejects_historical_device_object():
-    circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
-    qdev = fq.DistributedQuantumDevice(
-        n_wires=1,
-        device="cpu",
-        world_sz=1,
-        precision=torch.complex64,
-    )
-
-    with pytest.raises(TypeError, match="device must be"):
-        circuit.run_distributed(device=qdev)
-
-
 def test_native_pauli_string_entangled_correlation():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)

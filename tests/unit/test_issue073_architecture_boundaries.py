@@ -30,15 +30,15 @@ assert flagquantum.COMPATIBILITY_EXPORT_REMOVAL_VERSION == '0.3.0'
     subprocess.run([sys.executable, "-c", code], cwd=ROOT, check=True)
 
 
-def test_stable_api_and_lazy_compatibility_symbols_preserve_behavior():
+def test_stable_api_preserves_behavior_without_v01_device_surface():
     import flagquantum as fq
 
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     assert circuit.state().shape[-1] == 4
-    assert fq.DistributedQuantumDevice is not None
+    assert not hasattr(fq, "DistributedQuantumDevice")
 
 
-def test_dependency_graph_and_compatibility_registry_are_checked_in():
+def test_dependency_graph_and_architecture_policy_are_checked_in():
     graph = (ROOT / "docs" / "architecture" / "ARCHITECTURE_DEPENDENCIES.md").read_text(
         encoding="utf-8"
     )
@@ -47,5 +47,4 @@ def test_dependency_graph_and_compatibility_registry_are_checked_in():
     assert "flowchart TD" in graph
     assert "Executors emit backend-neutral" in graph
     assert "legacy_exceptions" not in policy
-    assert "[legacy_subsystems.v01_dtensor_device]" in policy
-    assert 'classification = "internal_compatibility_adapter"' in policy
+    assert "[legacy_subsystems.v01_dtensor_device]" not in policy

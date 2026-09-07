@@ -132,8 +132,6 @@ ignore = ["E501"]
 "flagquantum/__init__.py" = ["F401", "F403"]
 "flagquantum/api.py" = ["F401"]
 "flagquantum/simulation/tensor.py" = ["F822"]
-"tests/distributed/test_quantum_device.py" = ["E402"]
-"tests/distributed/test_quantum_gradients.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.10"

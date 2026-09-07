@@ -7,11 +7,8 @@ support for distributed simulation across multiple GPUs.
 Examples
 --------
 >>> import flagquantum as fq
->>> device = fq.DistributedQuantumDevice(n_wires=4, bsz=2)
->>> fq.h(device, wires=[0])
->>> fq.rx(device, wires=[1], params=0.5)
->>> fq.cx(device, wires=[0, 1])
->>> results = fq.measure_allZ(device)
+>>> circuit = fq.Circuit(2).h(0).cx(0, 1)
+>>> result = fq.run(circuit)
 """
 
 import logging
@@ -21,10 +18,7 @@ from . import (
     algorithms,
     compiler,
     deployment,
-    devices,
     drawer,
-    encoding,
-    measurement,
     noise,
     ops,
     utils,
@@ -407,10 +401,7 @@ logger.addHandler(logging.NullHandler())
 
 __author__ = "FlagQuantum Team"
 __license__ = "Apache-2.0"
-# Historical module namespace retained lazily through the compatibility API.
-invertible = ops.invertible
-
-_COMPAT_EXPORT_MODULES = (devices, drawer, encoding, measurement, ops, utils)
+_COMPAT_EXPORT_MODULES = (drawer, ops, utils)
 
 
 def __getattr__(name):
@@ -440,10 +431,7 @@ def hello() -> None:
 # ============================================================================
 
 __all__ = _compatibility_exports(
-    devices=devices,
     drawer=drawer,
-    encoding=encoding,
-    measurement=measurement,
     ops=ops,
     utils=utils,
 )

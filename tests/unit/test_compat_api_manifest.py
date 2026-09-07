@@ -10,10 +10,7 @@ pytestmark = pytest.mark.unit
 
 def test_compatibility_manifest_matches_api_surface():
     expected = _compat_api_exports.compatibility_exports(
-        devices=compatibility_api.devices,
         drawer=compatibility_api.drawer,
-        encoding=compatibility_api.encoding,
-        measurement=compatibility_api.measurement,
         ops=compatibility_api.ops,
         utils=compatibility_api.utils,
     )
@@ -43,8 +40,22 @@ def test_migrated_backend_exports_preserve_canonical_identity(name):
     assert name not in fq.__all__
 
 
-@pytest.mark.parametrize("name", ["AmazonBraketProvider", "DistributedQuantumDevice"])
+@pytest.mark.parametrize("name", ["AmazonBraketProvider"])
 def test_historical_compatibility_exports_are_not_stable_root_contracts(name):
     assert hasattr(compatibility_api, name)
     assert name not in fq.__all__
     assert name not in dir(fq)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "DistributedQuantumDevice",
+        "GeneralEncoder",
+        "InvertibleUnitary",
+        "measure_allZ",
+    ],
+)
+def test_v01_device_api_is_removed(name):
+    assert not hasattr(compatibility_api, name)
+    assert not hasattr(fq, name)

@@ -18,11 +18,10 @@ Maintainer and coding-agent enforcement is defined by
 the API snapshot is not, by itself, authorization to change the stable
 contract.
 
-## Version 0.1 boundary
+## Removed pre-release device API
 
 `DistributedQuantumDevice`, `GeneralEncoder`, `InvertibleUnitary`,
 `measure_allZ`, and the DTensor interchange helpers are historical v0.1
-interfaces. They are intentionally absent from `public_api_v1.json` and are not
-supported v0.2 product APIs. Their continued importability is an implementation
-compatibility property only; new applications and framework code must use the
-IR/runtime interfaces in the stable snapshot.
+interfaces. They were removed before the first public alpha, are absent from
+`public_api_v1.json`, and have no compatibility layer. Applications must use
+`Circuit`, `Module`, and the plan/run/result interfaces in the stable snapshot.

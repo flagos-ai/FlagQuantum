@@ -106,9 +106,7 @@ def _loss_and_grad(
     if mode.startswith("distributed"):
         run_options["world_size"] = world_size
     result = run_advanced(circuit, mode=mode, device=device, **run_options)
-    if mode == "distributed_statevector":
-        loss = fq.measure_allZ(result.native())[:, (0, 2)].sum()
-    elif mode == "distributed_tensor_network":
+    if mode == "distributed_tensor_network":
         loss = _z_loss_from_state(result.to_statevector())
     else:
         loss = _training_loss(result)

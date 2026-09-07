@@ -9,12 +9,10 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   planning, explicit sharded statevector/MPS execution, distributed training,
   deployment packaging, and versioned result contracts as the maintained
   product architecture.
-- Classified the v0.1 `DistributedQuantumDevice`, `GeneralEncoder`,
-  `InvertibleUnitary`, DTensor interchange helpers, and device-oriented
-  measurement path as an internal compatibility subsystem. They are excluded
-  from the v0.2 stable API and cannot be used as evidence for v0.2 capability
-  or patent claims.
-- Deprecated construction of `GeneralEncoder` and `InvertibleUnitary`.
+- Removed the pre-release v0.1 `DistributedQuantumDevice`, `GeneralEncoder`,
+  `InvertibleUnitary`, DTensor interchange helpers, device-oriented gates, and
+  device-oriented measurement path without a compatibility layer. They are not
+  part of the v0.2 product or its capability evidence.
 - Fixed the package release identity at `0.2.0`.
 
 ## Unreleased

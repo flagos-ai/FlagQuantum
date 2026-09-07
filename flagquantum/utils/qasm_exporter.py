@@ -262,7 +262,7 @@ class QASMExporter:
         return f"({', '.join(str(v) for v in values)})"
 
     def _normalize_program(self, program: Any) -> tuple[int, list[dict[str, Any]]]:
-        """Accept native circuits, native IR, or legacy devices."""
+        """Accept native circuits, native IR, or recorded operation data."""
 
         if isinstance(program, CircuitIR):
             return program.n_wires, [
@@ -523,7 +523,7 @@ class QASMExporter:
         Unified export interface.
 
         Args:
-            qdev: DistributedQuantumDevice instance
+            qdev: FlagQuantum circuit, IR, or recorded operation data
             filename: Output filename. If None, returns string instead
             version: QASM version, either 2.0 or 3.0
 
@@ -560,77 +560,3 @@ __all__ = [
     "export_to_qasm",
     "export_to_qasm_str",
 ]
-
-
-# ==================== Example Usage ====================
-
-if __name__ == "__main__":
-    import torch
-
-    import flagquantum as fq
-
-    # Create quantum device
-    qdev = fq.DistributedQuantumDevice(n_wires=3, bsz=1, device="cpu", record_op=True)
-
-    # Build circuit
-    fq.I(wires=[0])(qdev)  # Identity gate
-    fq.X(wires=[1])(qdev)  # Pauli-X
-    fq.Y(wires=[2])(qdev)  # Pauli-Y
-    fq.Z(wires=[0])(qdev)  # Pauli-Z
-
-    fq.H(wires=[0])(qdev)  # Hadamard
-    fq.S(wires=[1])(qdev)  # S gate
-    fq.SDG(wires=[2])(qdev)  # S† gate
-    fq.T(wires=[2])(qdev)  # T gate
-    fq.TDG(wires=[0])(qdev)  # T† gate
-
-    fq.SX(wires=[1])(qdev)  # SX gate (√X)
-    fq.SXDG(wires=[2])(qdev)  # SX† gate
-
-    fq.RX(wires=[0], init_params=torch.tensor([0.1]))(qdev)
-    fq.RY(wires=[1], init_params=torch.tensor([0.2]))(qdev)
-    fq.RZ(wires=[2], init_params=torch.tensor([0.3]))(qdev)
-
-    fq.CX(wires=[0, 1])(qdev)  # CNOT (controlled-NOT)
-    fq.CY(wires=[1, 2])(qdev)  # CY (controlled-Y)
-    fq.CZ(wires=[0, 2])(qdev)  # CZ (controlled-Z)
-
-    fq.P(wires=[2], init_params=torch.tensor([0.3]))(qdev)
-    fq.CPHASE(wires=[1, 2], init_params=torch.tensor([0.3]))(qdev)
-
-    fq.U1(wires=[1], init_params=torch.tensor([[0.5]]))(qdev)
-    fq.U2(wires=[1], init_params=torch.tensor([[0.3, 0.5]]))(qdev)
-    fq.U3(wires=[1], init_params=torch.tensor([[0.3, 0.2, 0.5]]))(qdev)
-
-    fq.RXX(wires=[0, 2], init_params=torch.tensor([0.1]))(qdev)  # Ising XX gate
-    fq.RYY(wires=[0, 2], init_params=torch.tensor([0.2]))(qdev)  # Ising YY gate
-    fq.RZZ(wires=[0, 2], init_params=torch.tensor([0.3]))(qdev)  # Ising ZZ gate
-
-    fq.CRX(wires=[0, 1], init_params=torch.tensor([0.1]))(qdev)  # CRX(θ)
-    fq.CRY(wires=[1, 2], init_params=torch.tensor([0.2]))(qdev)  # CRY(θ)
-    fq.CRZ(wires=[0, 2], init_params=torch.tensor([0.3]))(qdev)  # CRZ(θ)
-
-    fq.CCX(wires=[0, 1, 2])(qdev)  # Toffoli (CCX)
-    fq.CSWAP(wires=[0, 1, 2])(qdev)  # Fredkin (CSWAP)
-
-    fq.measure_allZ(qdev)
-
-    # Export to QASM 3.0
-    fq.export_to_qasm(qdev, "circuit_qasm3.qasm", version=3.0)
-
-    # Export to QASM 2.0
-    fq.export_to_qasm(qdev, "circuit_qasm2.qasm", version=2.0)
-
-    # Get QASM string
-    qasm_str = fq.export_to_qasm_str(qdev, version=3.0)
-    print(qasm_str)
-
-    # Example: Import QASM 3.0 into qiskit
-    # import qiskit.qasm3
-    # circuit = qiskit.qasm3.load("circuit_qasm3.qasm")
-    # circuit.draw()
-
-    # Example: Import QASM 2.0 into qiskit
-    # from qiskit import QuantumCircuit
-    # circuit = QuantumCircuit.from_qasm_file("circuit_qasm2.qasm")
-    # circuit.draw()

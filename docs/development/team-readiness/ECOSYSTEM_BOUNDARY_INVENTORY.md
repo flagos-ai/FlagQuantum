@@ -82,13 +82,11 @@ by a bare `QuantumScript` and therefore fails closed.
 
 | Framework | Entrypoints | Classification | Boundary assessment |
 | --- | --- | --- | --- |
-| PyTorch | `fq.Module`, `fq.Circuit` tensor parameters/matrices, `fq.run`, `ExecutionResult`, legacy `encoding`, extension backend conformance | Primary ML frontend and numerical runtime | Intentional owned product surface; not an ecosystem adapter. Other framework objects must not piggyback through tensor-valued fields or metadata. |
+| PyTorch | `fq.Module`, `fq.Circuit` tensor parameters/matrices, `fq.run`, `ExecutionResult`, extension backend conformance | Primary ML frontend and numerical runtime | Intentional owned product surface; not an ecosystem adapter. Other framework objects must not piggyback through tensor-valued fields or metadata. |
 | JAX | `runtime/backends/jax/**`, DLPack helpers in `kernel.py`, PyTorch autograd wrapper | Optional backend execution/kernel acceleration | Imports are confined to the optional JAX backend. JAX arrays are kernel-local and outputs return through PyTorch. |
 
-The legacy `flagquantum.encoding.GeneralEncoder` is a PyTorch module coupled to
-the v0.1 device API. It is deprecated and is an algorithm/frontend convenience,
-not a new IR or plugin boundary. Its future replacement is ordinary
-parameterized `fq.Circuit`/`fq.Module` construction.
+The v0.1 device-coupled encoding API has been removed. Parameterized
+`fq.Circuit`/`fq.Module` construction is the maintained PyTorch frontend.
 
 ### Formats and provider SDKs
 
@@ -212,8 +210,9 @@ This is sequencing only; no bulk move is part of this change.
 7. **Add future adapters one at a time.** Add CUDA-Q/QX conversion only after
    their artifact semantics are specified and conformance fixtures prove that
    replacing the adapter does not change consumers.
-8. **Retire legacy frontend coupling.** Migrate `encoding` examples and users to
-   `fq.Circuit`/`fq.Module`, preserving approved compatibility until removal.
+8. **Keep the retired frontend boundary closed.** The v0.1 `encoding` package
+   has been removed; new encoding conveniences must build ordinary
+   `fq.Circuit`/`fq.Module` programs rather than recreate a device-side API.
 
 ## Format semantics requiring Core unification
 

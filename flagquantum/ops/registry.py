@@ -8,13 +8,12 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import partial
-from types import MappingProxyType, SimpleNamespace
+from types import MappingProxyType
 from typing import Mapping
 
 import torch
 
-from . import functional, matrices, operator
+from . import matrices
 
 
 @dataclass(frozen=True)
@@ -70,35 +69,6 @@ def register_gate(name: str, mat: torch.Tensor) -> RegisteredGate:
     updated[normalized] = record
     _REGISTERED.set(MappingProxyType(updated))
     return record
-
-
-def _symbols(record: RegisteredGate) -> SimpleNamespace:
-    forward = partial(functional.gate, record.matrix)
-    inverse = partial(functional.gate, record.matrix, inverse=True)
-    return SimpleNamespace(
-        **{
-            record.name: forward,
-            f"{record.name}_inv": inverse,
-        }
-    )
-
-
-def __getattr__(name: str):
-    lookup = name.lower()
-    inverse = lookup.endswith("_inv")
-    gate_name = lookup[:-4] if inverse else lookup
-    record = _REGISTERED.get().get(gate_name)
-    if record is None:
-        raise AttributeError(name)
-    symbols = _symbols(record)
-    if name.isupper():
-        return operator.op_factory(
-            gate_name,
-            symbols,
-            has_params=False,
-            trainable=False,
-        )
-    return getattr(symbols, f"{gate_name}_inv" if inverse else gate_name)
 
 
 __all__ = ["RegisteredGate", "register_gate", "registered_gates"]

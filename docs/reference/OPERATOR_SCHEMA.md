@@ -18,5 +18,5 @@ python tools/operator_manifest.py --check
 
 Backend entry points call `flagquantum.ops.validate_lowering` before execution
 or serialization. Custom lowering registries use copy-on-write `with_operator`
-and `with_capability`; custom PyTorch matrix gates use context-local
-`register_gate`. Neither API mutates built-in module tables.
+and `with_capability`; context-local `register_gate` validates and records
+custom PyTorch matrices without creating v0.1 device-callable gate objects.

@@ -11,10 +11,7 @@ from types import ModuleType
 
 def compatibility_exports(
     *,
-    devices: ModuleType,
     drawer: ModuleType,
-    encoding: ModuleType,
-    measurement: ModuleType,
     ops: ModuleType,
     utils: ModuleType,
 ) -> list[str]:
@@ -25,12 +22,9 @@ def compatibility_exports(
         +
         # Submodules
         [
-            "devices",
             "deployment",
             "algorithms",
             "ops",
-            "encoding",
-            "measurement",
             "mps",
             "utils",
             "drawer",
@@ -390,17 +384,8 @@ def compatibility_exports(
             "two_qubit_depolarizing_channel",
         ]
         +
-        # Devices exports
-        (devices.__all__ if hasattr(devices, "__all__") else [])
-        +
         # Ops exports
         (ops.__all__ if hasattr(ops, "__all__") else [])
-        +
-        # Encoding exports
-        (encoding.__all__ if hasattr(encoding, "__all__") else [])
-        +
-        # Measurement exports
-        (measurement.__all__ if hasattr(measurement, "__all__") else [])
         +
         # Drawer exports
         (drawer.__all__ if hasattr(drawer, "__all__") else [])

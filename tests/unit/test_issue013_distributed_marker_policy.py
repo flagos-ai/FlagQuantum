@@ -40,8 +40,8 @@ def test_issue013_cpu_distributed_layer_contains_statevector_fail_closed_coverag
 
 def test_issue013_accelerator_tests_are_not_selected_by_cpu_marker():
     accelerator_files = [
-        "tests/distributed/test_quantum_device.py",
-        "tests/distributed/test_quantum_gradients.py",
+        "tests/test_flagos_distributed_conformance.py",
+        "tests/test_flagos_statevector_scale.py",
     ]
 
     for path in accelerator_files:
@@ -50,7 +50,7 @@ def test_issue013_accelerator_tests_are_not_selected_by_cpu_marker():
         assert "pytest.mark.distributed_accel" in text, path
         assert "pytest.mark.gpu" in text, path
         assert "pytest.mark.distributed_cpu" not in text, path
-        assert '"RANK" not in os.environ' in text, path
+        assert "FLAGQUANTUM_TEST_FLAGOS" in text, path
 
 
 def test_issue013_torchrun_cpu_candidates_keep_local_skip_guards():

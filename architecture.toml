@@ -56,7 +56,6 @@ runtime_compiler_import_allowed = [
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/algorithms/optimization.py" = 6
 "flagquantum/benchmarking/statevector_local.py" = 7
-"flagquantum/runtime/backends/statevector/legacy_device.py" = 1
 "flagquantum/runtime/backends/mps/compiled_layers.py" = 3
 "flagquantum/runtime/backends/mps/checkpointing.py" = 2
 "flagquantum/runtime/backends/mps/factorization.py" = 7
@@ -78,27 +77,3 @@ runtime_compiler_import_allowed = [
 "flagquantum/runtime/distributed/tensor_network_execution.py" = 1
 "flagquantum/runtime/operator_backends.py" = 2
 "flagquantum/runtime/training_state.py" = 8
-
-[legacy_subsystems.v01_dtensor_device]
-classification = "internal_compatibility_adapter"
-public_api = false
-new_dependencies_allowed = false
-modules = [
-    "flagquantum/runtime/backends/statevector/legacy_device.py",
-    "flagquantum/encoding/encoder.py",
-    "flagquantum/measurement/measure.py",
-    "flagquantum/ops/invertible.py",
-    "flagquantum/utils/interchange.py",
-    "flagquantum/utils/maybe_dtensor.py",
-]
-allowed_importers = [
-    "flagquantum/api.py",
-    "flagquantum/devices/__init__.py",
-    "flagquantum/runtime/backends/statevector/legacy_device.py",
-    "flagquantum/encoding/__init__.py",
-    "flagquantum/encoding/encoder.py",
-    "flagquantum/measurement/__init__.py",
-    "flagquantum/measurement/measure.py",
-    "flagquantum/ops/functional.py",
-    "flagquantum/ops/invertible.py",
-]

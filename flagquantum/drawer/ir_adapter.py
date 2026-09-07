@@ -41,7 +41,7 @@ def _instruction_to_op(instruction: Any) -> dict[str, Any]:
 
 
 def to_drawable_circuit(program: Any) -> Any:
-    """Return a drawer-compatible object for Circuit, CircuitIR, or legacy qdev."""
+    """Return a drawer-compatible object for Circuit, CircuitIR, or operation data."""
 
     if hasattr(program, "op_history") and hasattr(program, "n_wires"):
         return program
