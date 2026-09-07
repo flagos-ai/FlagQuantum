@@ -4,27 +4,26 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from ....simulation.jax.mps.batched import (
+from .....simulation.jax.mps.batched import (
     jax_mps_apply_one_batched as _apply_one_jax_mps_tensor,
 )
-from ....simulation.jax.mps.batched import (
+from .....simulation.jax.mps.batched import (
     jax_mps_apply_two_batched as _apply_two_jax_mps_tensors,
 )
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .array_conversions import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..array_conversions import (
     _gate_matrix_as_jax,
     _jax_split_record,
     _parameterized_gate_matrix_as_jax,
 )
-from .backend_dispatch import plan_jax_distributed_quantum_backend
-from .mps.result import JAXShardedMPSResult
-from .mps_canonicalization import _jax_mps_boundary_protocol
-from .mps_kernels import (
+from ..backend_dispatch import plan_jax_distributed_quantum_backend
+from ..mps_canonicalization import _jax_mps_boundary_protocol
+from ..mps_kernels import (
     _initialize_jax_mps_rank_tensors,
     _rank_shards_from_jax_mps_tensors,
 )
-from .planning_core import _as_ir
-from .runtime_environment import (
+from ..planning_core import _as_ir
+from ..runtime_environment import (
     _jax_array_nbytes,
     _jax_complex_dtype,
     _jnp_device_put,
@@ -35,6 +34,7 @@ from .runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
+from .result import JAXShardedMPSResult
 
 
 def run_jax_sharded_mps(
@@ -63,7 +63,7 @@ def run_jax_sharded_mps(
     replicated MPS.
     """
 
-    from ...distributed.engine import (
+    from ....distributed.engine import (
         _boundary_sync_record,
         _instruction_is_boundary_local,
         _instruction_is_site_local,
@@ -266,7 +266,7 @@ def _jax_parameterized_mps_rank_tensors(
     list[dict[str, Any]],
     list[dict[str, Any]],
 ]:
-    from ...distributed.engine import (
+    from ....distributed.engine import (
         _boundary_sync_record,
         _instruction_is_boundary_local,
         _instruction_is_site_local,
