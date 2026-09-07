@@ -8,26 +8,22 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.algorithms import (
-    Hamiltonian,
-    hardware_efficient_parameter_count,
-    pauli_term,
-)
-from flagquantum.runtime.backends.jax import compile_quantum_kernel
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from common import (  # noqa: E402
     exact_ground_energy,
-    jax_available,
     print_training_summary,
-    speedup,
     time_value_and_grad,
 )
 
 import flagquantum as fq  # noqa: E402
+from flagquantum.algorithms import (  # noqa: E402
+    Hamiltonian,
+    hardware_efficient_parameter_count,
+    pauli_term,
+)
 
 
 def build_ansatz(
@@ -54,7 +50,6 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=0.08)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--bench-iters", type=int, default=5)
-    parser.add_argument("--backend", choices=("jax", "torch"), default="torch")
     parser.add_argument("--compare-torch", action="store_true")
     args = parser.parse_args()
 
@@ -75,33 +70,7 @@ def main() -> None:
         )
         return hamiltonian.expectation(circuit).sum()
 
-    has_jax = False
-    jax_error = None
-    if args.backend == "jax":
-        has_jax, jax_error = jax_available()
-    if args.backend == "jax" and not has_jax:
-        raise SystemExit(
-            f"JAX backend requested but unavailable: {jax_error}. "
-            "Use --backend torch to run the native path."
-        )
-    jax_kernel = None
-    if has_jax:
-        jax_kernel = compile_quantum_kernel(
-            lambda theta: build_ansatz(
-                theta, n_wires=args.n_qubits, layers=args.layers, device=args.device
-            ),
-            parameters.detach(),
-            backend="jax",
-            interface="torch",
-            mode="statevector",
-            n_wires=args.n_qubits,
-            hamiltonian=hamiltonian,
-            jit=True,
-        )
-
     def training_loss(theta: torch.Tensor) -> torch.Tensor:
-        if args.backend == "jax":
-            return jax_kernel(theta).sum()
         return native_loss(theta)
 
     optimizer = torch.optim.Adam([parameters], lr=args.lr)
@@ -133,16 +102,6 @@ def main() -> None:
             iters=args.bench_iters,
             device=args.device,
         )
-    jax_speed = (
-        time_value_and_grad(
-            lambda theta: jax_kernel(theta).sum(),
-            parameters.detach(),
-            iters=args.bench_iters,
-            device=args.device,
-        )
-        if jax_kernel is not None
-        else None
-    )
     final_energy = float(training_loss(parameters).detach())
     speed_compare = {
         "pytorch_native": (
@@ -154,18 +113,15 @@ def main() -> None:
             }
         ),
     }
-    if jax_speed is not None:
-        speed_compare["jax_kernel"] = jax_speed
-        speed_compare["speedup_jax_over_pytorch"] = speedup(
-            native_speed["avg_seconds"] if native_speed else None,
-            jax_speed["avg_seconds"],
-        )
+    speed_compare["jax_kernel"] = {
+        "status": "see examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py"
+    }
     print_training_summary(
         title="Single-Machine VQE (Statevector)",
         example="single_machine_vqe_statevector",
         metrics={
             "theoretical_ground_energy": exact_energy,
-            "training_backend": args.backend,
+            "training_backend": "pytorch",
             "initial_energy": initial,
             "final_energy": final_energy,
             "gap_to_theory": final_energy - exact_energy,
