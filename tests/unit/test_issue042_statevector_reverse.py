@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.runtime.backends.statevector import plan_distributed_statevector
 from flagquantum.runtime.backends.statevector.gradient_reduction import (
     AsyncGradientReducer,
 )
@@ -42,7 +43,7 @@ def test_address_sharded_reverse_always_uses_compact_global_indices():
 
 @pytest.mark.parametrize("world_size", (2, 4, 8))
 def test_address_sharded_indices_are_built_from_local_ordinal(world_size):
-    plan = fq.plan_distributed_statevector(fq.Circuit(8), world_size=world_size)
+    plan = plan_distributed_statevector(fq.Circuit(8), world_size=world_size)
     rank_bits = len(plan.sharded_wires)
 
     for rank in range(world_size):
@@ -56,7 +57,7 @@ def test_address_sharded_indices_are_built_from_local_ordinal(world_size):
 
 
 def test_compact_index_policy_is_shared_by_forward_and_reverse():
-    plan = fq.plan_distributed_statevector(fq.Circuit(8), world_size=4)
+    plan = plan_distributed_statevector(fq.Circuit(8), world_size=4)
 
     for rank in range(plan.world_size):
         assert use_compact_global_indices(plan, rank)

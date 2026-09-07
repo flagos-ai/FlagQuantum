@@ -3,7 +3,19 @@
 import pytest
 
 import flagquantum as fq
+import flagquantum.deployment as deployment
 import flagquantum.deployment as fqd
+from flagquantum.deployment import (
+    CloudBackendProfile,
+    FieldQuantumProvider,
+    GuodunProvider,
+    HttpQuantumProvider,
+    OriginQProvider,
+    ProviderCredentials,
+    QuafuProvider,
+    TencentQuantumProvider,
+    TianyanProvider,
+)
 
 
 class FakeTransport:
@@ -58,7 +70,7 @@ class FakeTransport:
 def _package(provider, n_wires=2, *, metadata=None):
     circuit = fq.Circuit(n_wires)
     circuit.h(0).cx(0, 1)
-    backend = fq.CloudBackendProfile(provider=provider, name="chip", n_wires=8)
+    backend = CloudBackendProfile(provider=provider, name="chip", n_wires=8)
     return fqd.create_deployment_package(
         circuit, backend=backend, shots=8, metadata=metadata
     )
@@ -81,10 +93,10 @@ def _assert_identity_chain(package, result):
 
 def test_http_provider_submit_status_and_result():
     transport = FakeTransport()
-    provider = fq.HttpQuantumProvider(
+    provider = HttpQuantumProvider(
         provider="fake",
         base_url="https://example.test",
-        credentials=fq.ProviderCredentials(token="secret"),
+        credentials=ProviderCredentials(token="secret"),
         transport=transport,
     )
     circuit = fq.Circuit(2)
@@ -126,7 +138,7 @@ def test_http_provider_discovery_fallback_without_network():
         def post_form(self, url, payload, headers, timeout):
             raise RuntimeError("offline")
 
-    provider = fq.HttpQuantumProvider(
+    provider = HttpQuantumProvider(
         provider="offline",
         base_url="https://offline.test",
         transport=FailingTransport(),
@@ -142,7 +154,7 @@ def test_http_provider_discovery_fallback_without_network():
 
 def test_quafu_provider_uses_platform_endpoint_and_token_header():
     transport = FakeTransport()
-    provider = fq.QuafuProvider(
+    provider = QuafuProvider(
         base_url="https://quafu.test", token="secret", transport=transport
     )
     package = _package("quafu")
@@ -160,7 +172,7 @@ def test_quafu_provider_uses_platform_endpoint_and_token_header():
 
 def test_quafu_provider_preserves_returned_bit_order_by_default():
     transport = FakeTransport()
-    provider = fq.QuafuProvider(base_url="https://quafu.test", transport=transport)
+    provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
     package = _package("quafu")
     handle = provider.submit(package)
 
@@ -177,7 +189,7 @@ def test_quafu_provider_can_reverse_result_bits_for_legacy_consumers():
                 return {"status": "Finished", "count": {"01": 3, "10": 5}}
             return super().get_json(url, headers, timeout)
 
-    provider = fq.QuafuProvider(
+    provider = QuafuProvider(
         base_url="https://quafu.test",
         transport=AsymmetricResultTransport(),
         reverse_result_bits=True,
@@ -199,7 +211,7 @@ def test_quafu_provider_uses_official_token_env_and_status_discovery(monkeypatch
 
     monkeypatch.setenv("QPU_API_TOKEN", "env-secret")
     transport = StatusTransport()
-    provider = fq.QuafuProvider(base_url="https://quafu.test", transport=transport)
+    provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
 
     backends = provider.discover_backends(5)
 
@@ -220,7 +232,7 @@ def test_quafu_provider_run_polls_until_finished():
                 return {"status": next(self.statuses)}
             return super().get_json(url, headers, timeout)
 
-    provider = fq.QuafuProvider(
+    provider = QuafuProvider(
         base_url="https://quafu.test",
         transport=PollingTransport(),
         poll_interval=0,
@@ -247,7 +259,7 @@ def test_quafu_provider_fetches_verbatim_chip_info():
             return super().get_json(url, headers, timeout)
 
     transport = ChipInfoTransport()
-    provider = fq.QuafuProvider(
+    provider = QuafuProvider(
         base_url="https://quafu.test", token="secret", transport=transport
     )
 
@@ -260,7 +272,7 @@ def test_quafu_provider_fetches_verbatim_chip_info():
 
 def test_quafu_provider_submits_sealed_physical_qasm_without_compile():
     transport = FakeTransport()
-    provider = fq.QuafuProvider(
+    provider = QuafuProvider(
         base_url="https://quafu.test", token="secret", transport=transport
     )
     qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\n'
@@ -278,7 +290,7 @@ def test_quafu_provider_submits_sealed_physical_qasm_without_compile():
 
 def test_tencent_provider_uses_real_task_contract():
     transport = FakeTransport()
-    provider = fq.TencentQuantumProvider(
+    provider = TencentQuantumProvider(
         base_url="https://tencent.test/cloud/quk", token="secret", transport=transport
     )
     package = _package("tencent")
@@ -297,9 +309,7 @@ def test_tencent_provider_uses_real_task_contract():
 
 def test_fieldquantum_provider_uses_sample_mode_contract():
     transport = FakeTransport()
-    provider = fq.FieldQuantumProvider(
-        base_url="https://field.test", transport=transport
-    )
+    provider = FieldQuantumProvider(base_url="https://field.test", transport=transport)
     package = _package("fieldquantum")
 
     result = provider.run(package)
@@ -314,7 +324,7 @@ def test_fieldquantum_provider_uses_sample_mode_contract():
 
 def test_cqlib_provider_logs_in_discovers_and_requires_qcis_for_submit():
     transport = FakeTransport()
-    provider = fq.TianyanProvider(token="open-id", transport=transport)
+    provider = TianyanProvider(token="open-id", transport=transport)
 
     backends = provider.discover_backends(2)
 
@@ -346,7 +356,7 @@ def test_cqlib_provider_submits_qcis_and_extracts_matrix_counts():
             return super().post_json(url, payload, headers, timeout)
 
     transport = CqlibTransport()
-    provider = fq.GuodunProvider(token="open-id", transport=transport)
+    provider = GuodunProvider(token="open-id", transport=transport)
     backend = provider.discover_backends(2)[0]
     package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
@@ -365,7 +375,7 @@ def test_cqlib_provider_submits_qcis_and_extracts_matrix_counts():
 
 
 def test_originq_provider_is_sdk_based_not_fake_http():
-    provider = fq.OriginQProvider()
+    provider = OriginQProvider()
     package = _package("originq")
 
     with pytest.raises(NotImplementedError, match="sdk adapter"):
@@ -374,14 +384,14 @@ def test_originq_provider_is_sdk_based_not_fake_http():
 
 def test_named_quantum_cloud_provider_apis_exist():
     providers = [
-        fq.QuafuProvider(base_url="https://example.test", transport=FakeTransport()),
-        fq.OriginQProvider(),
-        fq.TencentQuantumProvider(
+        QuafuProvider(base_url="https://example.test", transport=FakeTransport()),
+        OriginQProvider(),
+        TencentQuantumProvider(
             base_url="https://example.test", transport=FakeTransport()
         ),
-        fq.TianyanProvider(token="open-id", transport=FakeTransport()),
-        fq.GuodunProvider(token="open-id", transport=FakeTransport()),
-        fq.FieldQuantumProvider(
+        TianyanProvider(token="open-id", transport=FakeTransport()),
+        GuodunProvider(token="open-id", transport=FakeTransport()),
+        FieldQuantumProvider(
             base_url="https://example.test", transport=FakeTransport()
         ),
     ]
@@ -394,4 +404,4 @@ def test_named_quantum_cloud_provider_apis_exist():
         "guodun",
         "fieldquantum",
     ]
-    assert fq.deployment.QuafuProvider is fq.QuafuProvider
+    assert deployment.QuafuProvider is QuafuProvider

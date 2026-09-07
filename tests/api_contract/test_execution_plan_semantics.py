@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
+from flagquantum.noise import bit_flip_channel
 from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
 )
@@ -100,7 +101,7 @@ def test_run_plan_does_not_replan_or_recompile(monkeypatch: pytest.MonkeyPatch) 
 def test_run_noisy_plan_uses_planned_lowering(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+    noise_model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))
     plan = fq.plan(
         fq.Circuit(1).x(0),
         options=fq.ExecutionOptions(mode="density_matrix"),

@@ -3,6 +3,7 @@
 import pytest
 
 import flagquantum as fq
+from flagquantum.deployment import quafu_noise_model_from_chip_info
 
 
 def _chip_info():
@@ -39,7 +40,7 @@ def test_quafu_chip_info_builds_timestamped_logical_noise_model():
         ((0.96, 0.04), (0.12, 0.88)),
     )
 
-    model = fq.quafu_noise_model_from_chip_info(
+    model = quafu_noise_model_from_chip_info(
         _chip_info(), physical_qubits=(123, 124), readout_confusion_matrices=matrices
     )
 
@@ -66,9 +67,7 @@ def test_quafu_chip_info_builds_timestamped_logical_noise_model():
 
 
 def test_quafu_chip_info_preserves_per_qubit_gate_fidelity():
-    model = fq.quafu_noise_model_from_chip_info(
-        _chip_info(), physical_qubits=(123, 124)
-    )
+    model = quafu_noise_model_from_chip_info(_chip_info(), physical_qubits=(123, 124))
 
     q0 = next(iter(fq.Circuit(2).ry(0, 0.2).to_ir()))
     q1 = next(iter(fq.Circuit(2).ry(1, 0.2).to_ir()))
@@ -84,4 +83,4 @@ def test_quafu_chip_info_rejects_missing_or_unphysical_calibration():
     payload["qubits_info"]["Q123"]["T2"] = 100.0
 
     with pytest.raises(ValueError, match="invalid T1/T2"):
-        fq.quafu_noise_model_from_chip_info(payload, physical_qubits=(123,))
+        quafu_noise_model_from_chip_info(payload, physical_qubits=(123,))

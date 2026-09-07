@@ -10,7 +10,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.training as fqt
-from flagquantum.runtime.parallel import HybridParallelPlan
+from flagquantum.runtime.parallel import HybridParallelPlan, plan_hybrid_parallel
 
 
 def build(parameters: torch.Tensor) -> fq.Circuit:
@@ -37,7 +37,7 @@ def main() -> None:
     dist.init_process_group("gloo")
     rank = dist.get_rank()
     try:
-        plan = fq.plan_hybrid_parallel(world_size=2, state_parallel_size=2)
+        plan = plan_hybrid_parallel(world_size=2, state_parallel_size=2)
         module, optimizer = module_and_optimizer(plan)
         seed = fqt.seed_everything(314)
         value = module().sum()

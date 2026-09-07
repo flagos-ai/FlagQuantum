@@ -73,10 +73,10 @@ noise model for the physical qubits used by the transpiled circuit:
 
 ```python
 from quark.circuit import Backend
-import flagquantum as fq
+import flagquantum.deployment as fqd
 
 chip_info = Backend("Baihua").chip_info
-noise_model = fq.quafu_noise_model_from_chip_info(
+noise_model = fqd.quafu_noise_model_from_chip_info(
     chip_info,
     physical_qubits=(123, 124),
     readout_confusion_matrices=(

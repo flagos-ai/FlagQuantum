@@ -5,7 +5,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.core.runtime_config import RuntimeConfig
+from flagquantum.core.runtime_config import (
+    RuntimeConfig,
+    get_runtime_config,
+    runtime_config,
+)
 from flagquantum.ops import get_global_precision, set_global_precision
 
 pytestmark = pytest.mark.unit
@@ -27,19 +31,19 @@ def test_runtime_config_manifest_is_versioned_and_round_trips():
 
 
 def test_nested_scopes_restore_without_precision_leakage():
-    original = fq.get_runtime_config()
-    with fq.runtime_config(complex_dtype="complex128") as outer:
+    original = get_runtime_config()
+    with runtime_config(complex_dtype="complex128") as outer:
         assert get_global_precision() == torch.complex128
-        with fq.runtime_config(device="cuda") as inner:
+        with runtime_config(device="cuda") as inner:
             assert inner.device == "cuda"
             assert inner.complex_dtype == "complex128"
-        assert fq.get_runtime_config() == outer
-    assert fq.get_runtime_config() == original
+        assert get_runtime_config() == outer
+    assert get_runtime_config() == original
 
 
 def test_concurrent_threads_build_independent_precision_circuits():
     def build(dtype):
-        with fq.runtime_config(complex_dtype=dtype):
+        with runtime_config(complex_dtype=dtype):
             circuit = fq.Circuit(1).h(0)
             return circuit.dtype, circuit.state().dtype
 
@@ -52,7 +56,7 @@ def test_concurrent_threads_build_independent_precision_circuits():
 
 def test_async_tasks_do_not_leak_compatibility_setters():
     async def build(dtype):
-        with fq.runtime_config(complex_dtype=dtype):
+        with runtime_config(complex_dtype=dtype):
             await asyncio.sleep(0)
             set_global_precision(getattr(torch, dtype))
             await asyncio.sleep(0)
@@ -78,8 +82,8 @@ def test_circuit_ir_and_plan_carry_reconstructable_configuration():
 
 
 def test_legacy_setter_changes_only_current_context():
-    original = fq.get_runtime_config()
-    with fq.runtime_config():
+    original = get_runtime_config()
+    with runtime_config():
         set_global_precision(torch.complex128)
-        assert fq.get_runtime_config().complex_dtype == "complex128"
-    assert fq.get_runtime_config() == original
+        assert get_runtime_config().complex_dtype == "complex128"
+    assert get_runtime_config() == original

@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum.core.target_capabilities as core_capabilities
+import flagquantum.runtime.configuration as runtime
 import flagquantum.runtime.plan_execution as plan_execution
 from flagquantum.core.target_capabilities import (
     CapabilityBlocker,
@@ -1349,7 +1350,7 @@ def test_default_runtime_plan_path_is_not_imported_or_changed() -> None:
     )
 
     assert plan.to_dict()["decision"]["device"] == "cpu"
-    assert not hasattr(fq.runtime, "match_target_capability_candidates")
+    assert not hasattr(runtime, "match_target_capability_candidates")
 
 
 def test_execution_plan_precision_becomes_a_mandatory_observed_requirement() -> None:

@@ -4,15 +4,27 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+from flagquantum.algorithms import (
+    Hamiltonian,
+    hardware_efficient_ansatz,
+    hardware_efficient_parameter_count,
+    pauli_term,
+    qaoa_circuit,
+    qaoa_loss,
+    run_adapt_vqe,
+    run_vqe,
+    vqe_loss,
+    zz_chain_hamiltonian,
+)
 
 
 def test_hamiltonian_expectation_on_bell_circuit_and_mps():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(0.5, "ZZ", (0, 1)),
-            fq.pauli_term(0.25, "XX", (0, 1)),
+            pauli_term(0.5, "ZZ", (0, 1)),
+            pauli_term(0.25, "XX", (0, 1)),
         ]
     )
 
@@ -25,10 +37,10 @@ def test_hamiltonian_expectation_on_bell_circuit_and_mps():
 def test_hamiltonian_expectation_on_statevector_and_density_matrix():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(2.0, "Z", (0,)),
-            fq.pauli_term(0.5, "I", (0,)),
+            pauli_term(2.0, "Z", (0,)),
+            pauli_term(0.5, "I", (0,)),
         ]
     )
 
@@ -42,7 +54,7 @@ def test_hamiltonian_expectation_on_statevector_and_density_matrix():
 def test_mps_z_zz_chain_fastpath_matches_termwise_energy_and_gradient():
     parameters = torch.linspace(0.1, 0.6, 6, requires_grad=True)
     reference_parameters = parameters.detach().clone().requires_grad_(True)
-    hamiltonian = fq.zz_chain_hamiltonian(6, coupling=-0.7, field=0.2)
+    hamiltonian = zz_chain_hamiltonian(6, coupling=-0.7, field=0.2)
 
     def build(values):
         circuit = fq.Circuit(6)
@@ -69,14 +81,14 @@ def test_mps_z_zz_chain_fastpath_matches_termwise_energy_and_gradient():
 
 def test_vqe_loss_is_differentiable():
     theta = torch.tensor([0.3], requires_grad=True)
-    hamiltonian = fq.Hamiltonian([fq.pauli_term(1.0, "Z", (0,))])
+    hamiltonian = Hamiltonian([pauli_term(1.0, "Z", (0,))])
 
     def builder(params):
         circuit = fq.Circuit(1)
         circuit.rx(0, theta=params[0])
         return circuit
 
-    loss = fq.vqe_loss(builder, theta, hamiltonian)
+    loss = vqe_loss(builder, theta, hamiltonian)
     loss.backward()
 
     assert torch.allclose(loss.detach(), torch.cos(theta.detach()), atol=1e-6)
@@ -84,10 +96,10 @@ def test_vqe_loss_is_differentiable():
 
 
 def test_hardware_efficient_ansatz_parameter_count_and_state_norm():
-    count = fq.hardware_efficient_parameter_count(3, 2)
+    count = hardware_efficient_parameter_count(3, 2)
     params = torch.linspace(0.0, 0.5, count)
 
-    circuit = fq.hardware_efficient_ansatz(3, 2, params)
+    circuit = hardware_efficient_ansatz(3, 2, params)
     state = circuit.state()
 
     assert count == 12
@@ -100,8 +112,8 @@ def test_hardware_efficient_ansatz_parameter_count_and_state_norm():
 def test_qaoa_circuit_builds_weighted_cost_layers():
     gammas = torch.tensor([0.2], requires_grad=True)
     betas = torch.tensor([0.3], requires_grad=True)
-    circuit = fq.qaoa_circuit(3, [(0, 1), (1, 2, 0.5)], gammas, betas)
-    hamiltonian = fq.zz_chain_hamiltonian(3)
+    circuit = qaoa_circuit(3, [(0, 1), (1, 2, 0.5)], gammas, betas)
+    hamiltonian = zz_chain_hamiltonian(3)
 
     value = hamiltonian.expectation(circuit).sum()
     value.backward()
@@ -119,9 +131,9 @@ def test_qaoa_circuit_builds_weighted_cost_layers():
 def test_qaoa_loss_is_differentiable():
     gammas = torch.tensor([0.2], requires_grad=True)
     betas = torch.tensor([0.3], requires_grad=True)
-    hamiltonian = fq.zz_chain_hamiltonian(2)
+    hamiltonian = zz_chain_hamiltonian(2)
 
-    loss = fq.qaoa_loss(2, [(0, 1)], gammas, betas, hamiltonian)
+    loss = qaoa_loss(2, [(0, 1)], gammas, betas, hamiltonian)
     loss.backward()
 
     assert gammas.grad is not None
@@ -129,7 +141,7 @@ def test_qaoa_loss_is_differentiable():
 
 
 def test_run_vqe_reduces_energy():
-    hamiltonian = fq.Hamiltonian([fq.pauli_term(1.0, "Z", (0,))])
+    hamiltonian = Hamiltonian([pauli_term(1.0, "Z", (0,))])
 
     def builder(params):
         circuit = fq.Circuit(1)
@@ -137,8 +149,8 @@ def test_run_vqe_reduces_energy():
         return circuit
 
     initial = torch.tensor([1.0])
-    initial_energy = fq.vqe_loss(builder, initial, hamiltonian).detach()
-    result = fq.run_vqe(builder, initial, hamiltonian, steps=25, lr=0.2)
+    initial_energy = vqe_loss(builder, initial, hamiltonian).detach()
+    result = run_vqe(builder, initial, hamiltonian, steps=25, lr=0.2)
 
     assert result.n_steps == 25
     assert result.parameters.shape == initial.shape
@@ -147,7 +159,7 @@ def test_run_vqe_reduces_energy():
 
 
 def test_run_adapt_vqe_selects_largest_exact_gradient_and_reduces_energy():
-    hamiltonian = fq.Hamiltonian([fq.pauli_term(1.0, "Z", (0,))])
+    hamiltonian = Hamiltonian([pauli_term(1.0, "Z", (0,))])
     pool = ("rx", "ry")
 
     def builder(operators, parameters):
@@ -157,7 +169,7 @@ def test_run_adapt_vqe_selects_largest_exact_gradient_and_reduces_energy():
             getattr(circuit, operator)(0, theta=parameter)
         return circuit
 
-    result = fq.run_adapt_vqe(
+    result = run_adapt_vqe(
         builder,
         pool,
         hamiltonian,
@@ -188,7 +200,7 @@ def test_run_adapt_vqe_accepts_tensor_network_energy_evaluator():
         state = fqb.run_native(circuit, mode="tensor_network")
         return state.expectation_ps(z=(0,))
 
-    result = fq.run_adapt_vqe(
+    result = run_adapt_vqe(
         builder,
         pool,
         energy_function=tn_energy,
@@ -203,7 +215,7 @@ def test_run_adapt_vqe_accepts_tensor_network_energy_evaluator():
 
 def test_run_adapt_vqe_accepts_exact_screening_function():
     pool = (("rx", 0), ("ry", 0))
-    target = fq.Hamiltonian([fq.pauli_term(-1.0, "X", (0,))])
+    target = Hamiltonian([pauli_term(-1.0, "X", (0,))])
     calls = []
 
     def builder(operators, parameters):
@@ -216,7 +228,7 @@ def test_run_adapt_vqe_accepts_exact_screening_function():
         calls.append((operators, tuple(candidates)))
         return (0.0, -1.0)
 
-    result = fq.run_adapt_vqe(
+    result = run_adapt_vqe(
         builder,
         pool,
         target,

@@ -4,6 +4,8 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
+from flagquantum.compiler import CouplingMap
+from flagquantum.deployment import CloudBackendProfile
 from flagquantum.deployment.routing_evidence import (
     DEPLOYMENT_ROUTING_EVIDENCE_SCHEMA,
     DeploymentRoutingEvidenceError,
@@ -15,13 +17,13 @@ from flagquantum.deployment.routing_evidence import (
 pytestmark = pytest.mark.unit
 
 
-def _routing_plan() -> tuple[dict, fq.CouplingMap]:
+def _routing_plan() -> tuple[dict, CouplingMap]:
     circuit = fq.Circuit(5)
     circuit.cx(0, 4).h(4).cx(0, 4)
-    coupling = fq.CouplingMap.line(5)
+    coupling = CouplingMap.line(5)
     package = fqd.create_deployment_package(
         circuit,
-        backend=fq.CloudBackendProfile(
+        backend=CloudBackendProfile(
             provider="local",
             name="line5",
             n_wires=5,

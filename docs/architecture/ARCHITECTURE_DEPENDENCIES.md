@@ -37,7 +37,7 @@ Every exception names an owner and removal version. Run
 | Responsibility | Package/module |
 | --- | --- |
 | Stable API | `flagquantum.__init__`, `flagquantum.circuit` |
-| Compatibility API | `flagquantum.api` through version 0.3.0 |
+| Maintained extension APIs | Explicit domain packages such as `flagquantum.compiler`, `flagquantum.noise`, and `flagquantum.deployment` |
 | IR and parameters | `flagquantum.core` |
 | Compiler | `flagquantum.compiler` |
 | Runtime execution planning | `flagquantum.runtime.planner` |
@@ -46,7 +46,7 @@ Every exception names an owner and removal version. Run
 | Backend boundaries | `flagquantum.runtime.backends` |
 | Distributed orchestration | `flagquantum.runtime.distributed` |
 | Optional kernels | backend adapters behind `flagquantum.runtime.backends` |
-| Measurements | `flagquantum.measurement` |
+| Measurement contracts | `flagquantum.core.ir`, `flagquantum.runtime.measurements` |
 | Deployment/providers | `flagquantum.deployment` |
 | External framework adapter contract | `flagquantum.ecosystem` |
 | External framework conversion | `flagquantum.ecosystem.<framework>` |

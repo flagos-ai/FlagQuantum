@@ -6,7 +6,10 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.deployment as deployment
 import flagquantum.errors as fqe
+from flagquantum.compiler import CouplingMap
+from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
     create_dynamic_deployment_package,
@@ -124,13 +127,13 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=2)
 
-    unsupported = fq.CloudBackendProfile.simulator(2)
+    unsupported = CloudBackendProfile.simulator(2)
     rejected = fq.experimental.dynamic.assess_dynamic_backend(circuit, unsupported)
     assert not rejected.compatible
     assert rejected.required_classical_bits == 3
     assert "backend_does_not_declare_dynamic_circuit_support" in rejected.blockers
 
-    supported = fq.CloudBackendProfile(
+    supported = CloudBackendProfile(
         provider="test",
         name="dynamic-qpu",
         n_wires=2,
@@ -142,7 +145,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     assert accepted.compatible
     assert accepted.blockers == ()
 
-    too_small = fq.CloudBackendProfile(
+    too_small = CloudBackendProfile(
         provider="test",
         name="small-register-qpu",
         n_wires=2,
@@ -154,7 +157,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     assert rejected.blockers == ("required_classical_bits_exceed_backend_limit",)
 
 
-def _dynamic_backend(**overrides) -> fq.CloudBackendProfile:
+def _dynamic_backend(**overrides) -> CloudBackendProfile:
     values = {
         "provider": "test",
         "name": "dynamic-qpu",
@@ -164,7 +167,7 @@ def _dynamic_backend(**overrides) -> fq.CloudBackendProfile:
         "max_classical_bits": 4,
     }
     values.update(overrides)
-    return fq.CloudBackendProfile(**values)
+    return CloudBackendProfile(**values)
 
 
 def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None:
@@ -182,7 +185,7 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
         metadata={"experiment": "bell-feedback"},
     )
 
-    assert fq.deployment.validate_deployment_package(package) is package
+    assert deployment.validate_deployment_package(package) is package
     assert package.qasm_version == 3.0
     assert package.shots == 256
     assert package.metadata["dynamic_circuit"] is True
@@ -192,17 +195,17 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
 
     tampered = replace(package, qasm=package.qasm + "// tampered\n")
     with pytest.raises(
-        fq.deployment.DeploymentPackageIdentityError,
+        deployment.DeploymentPackageIdentityError,
         match="QASM",
     ):
-        fq.deployment.validate_deployment_package(tampered)
+        deployment.validate_deployment_package(tampered)
 
     class RecordingProvider:
         def __init__(self):
             self.package = None
 
         def run(self, submitted):
-            fq.deployment.validate_deployment_package(submitted)
+            deployment.validate_deployment_package(submitted)
             self.package = submitted
             return {"task_id": "dynamic-1", "shots": submitted.shots}
 
@@ -243,7 +246,7 @@ def test_dynamic_routing_preserves_measurement_and_conditional_semantics(
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
     circuit.reset(0)
-    coupling = fq.CouplingMap.line(3)
+    coupling = CouplingMap.line(3)
 
     routed = route_dynamic_circuit(circuit, coupling)
 
@@ -282,7 +285,7 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
     circuit.conditional("cx", (0, 2), classical_bit=0)
     backend = _dynamic_backend(
         n_wires=3,
-        coupling_map=fq.CouplingMap.line(3),
+        coupling_map=CouplingMap.line(3),
     )
 
     report = fq.experimental.dynamic.assess_dynamic_backend(circuit, backend)
@@ -293,7 +296,7 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
     )
 
     assert report.compatible
-    assert fq.deployment.validate_deployment_package(package) is package
+    assert deployment.validate_deployment_package(package) is package
     assert package.metadata["compiled"] is True
     routing = package.metadata["routing_plan"]
     assert routing["inserted_swap_count"] == 2
@@ -307,7 +310,7 @@ def test_dynamic_deployment_reuses_matching_routing(
     circuit = DynamicCircuit(3)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
-    coupling = fq.CouplingMap.line(3)
+    coupling = CouplingMap.line(3)
     routed = route_dynamic_circuit(circuit, coupling)
     backend = _dynamic_backend(n_wires=3, coupling_map=coupling)
 
@@ -331,8 +334,8 @@ def test_dynamic_deployment_does_not_reuse_mismatched_topology(
     circuit = DynamicCircuit(3)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
-    routed = route_dynamic_circuit(circuit, fq.CouplingMap.line(3))
-    backend = _dynamic_backend(n_wires=3, coupling_map=fq.CouplingMap.ring(3))
+    routed = route_dynamic_circuit(circuit, CouplingMap.line(3))
+    backend = _dynamic_backend(n_wires=3, coupling_map=CouplingMap.ring(3))
     route_calls = 0
     original_route = route_dynamic_circuit
 
@@ -359,7 +362,7 @@ def test_dynamic_deployment_rejects_tampered_reused_routing() -> None:
     circuit = DynamicCircuit(3)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("cx", (0, 2), classical_bit=0)
-    coupling = fq.CouplingMap.line(3)
+    coupling = CouplingMap.line(3)
     routed = route_dynamic_circuit(circuit, coupling)
     routed_ir = routed.to_ir()
     metadata = dict(routed_ir.metadata)

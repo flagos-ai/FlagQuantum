@@ -59,12 +59,17 @@ from flagquantum.runtime.backends.tensor_network import (
     with_sharded_tn_input,
     with_sharded_tn_intermediate,
 )
+from flagquantum.simulation.tensor_execution import (
+    build_tensor_network,
+    build_tensor_network_expectation,
+)
+from flagquantum.simulation.tensor_models import TensorNetworkContractionPlan
 
 
-def _plan() -> fq.TensorNetworkContractionPlan:
+def _plan() -> TensorNetworkContractionPlan:
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    return fq.build_tensor_network(circuit)
+    return build_tensor_network(circuit)
 
 
 def test_distributed_tn_dag_is_deterministic_and_planning_only():
@@ -89,7 +94,7 @@ def test_distributed_tn_dag_is_deterministic_and_planning_only():
 def test_distributed_tn_dag_accepts_native_quality_path():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).ry(2, theta=0.3).cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 3])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 3])
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=1,
@@ -189,7 +194,7 @@ def test_distributed_tn_dag_rejects_invalid_planning_inputs():
 def test_distributed_tn_dag_executes_direct_scalar_observable():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)
-    expectation = fq.build_tensor_network_expectation(circuit, x=[0, 2], z=[1])
+    expectation = build_tensor_network_expectation(circuit, x=[0, 2], z=[1])
     dag = plan_distributed_tn_contraction_dag(expectation, world_size=1)
     local_inputs = {
         f"input:{index}": node.tensor for index, node in enumerate(expectation.nodes)
@@ -214,7 +219,7 @@ def test_compiled_forward_schedule_matches_exact_tape_and_reduces_launches():
     for qubit in range(6):
         circuit.h(qubit)
     circuit.cx(0, 1).cx(2, 3).cx(4, 5)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2, 4])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2, 4])
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=1,
@@ -254,7 +259,7 @@ def test_compiled_forward_schedule_matches_exact_tape_and_reduces_launches():
 def test_explicit_reverse_dag_matches_complex_autograd_input_cotangents():
     circuit = fq.Circuit(3)
     circuit.ry(0, theta=0.23).cx(0, 1).rzz(1, 2, theta=-0.37)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=1,
@@ -297,7 +302,7 @@ def test_explicit_reverse_tensor_cotangents_chain_to_gate_parameters():
     phi = torch.tensor(-0.37, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(3)
     circuit.ry(0, theta=theta).cx(0, 1).rzz(1, 2, theta=phi)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=1,
@@ -333,7 +338,7 @@ def test_explicit_reverse_tensor_cotangents_chain_to_gate_parameters():
     reference_circuit.ry(0, theta=theta_reference).cx(0, 1).rzz(
         1, 2, theta=phi_reference
     )
-    reference_value = fq.build_tensor_network_expectation(
+    reference_value = build_tensor_network_expectation(
         reference_circuit, z=[0, 2]
     ).contract(strategy="memory_greedy")
     reference_parameters = torch.autograd.grad(
@@ -355,7 +360,7 @@ def test_sliced_explicit_reverse_matches_unsliced_all_parameter_gradients(
     phi = torch.tensor(-0.37, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=theta).cx(0, 3).rzz(1, 2, theta=phi).cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     baseline = expectation.contraction_profile("quality_multistart")
     target_peak = max(baseline.output_size, baseline.peak_size // 2)
     slicing = expectation.slicing_plan(max_intermediate_size=target_peak)
@@ -385,7 +390,7 @@ def test_sliced_reverse_consumes_embedded_external_pair_path():
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(3)
     circuit.ry(0, theta=theta).cx(0, 1).cx(1, 2)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     slicing = expectation.slicing_plan(sliced_labels=())
     external = expectation.quality_multistart_path()
     slicing = replace(
@@ -413,7 +418,7 @@ def test_external_path_adaptive_reslicing_preserves_value_and_gradient():
     theta = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=theta).cx(0, 1).cx(1, 2).cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 3])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 3])
     base = expectation.slicing_plan(sliced_labels=())
     base = replace(
         base,
@@ -441,7 +446,7 @@ def test_sliced_checkpointed_reverse_matches_full_tape_gradients():
     phi = torch.tensor(-0.37, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=theta).cx(0, 3).rzz(1, 2, theta=phi).cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     baseline = expectation.contraction_profile("quality_multistart")
     slicing = expectation.slicing_plan(
         max_intermediate_size=max(
@@ -477,7 +482,7 @@ def test_sliced_reverse_uses_full_tape_when_it_fits_checkpoint_budget():
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(3)
     circuit.ry(0, theta=theta).cx(0, 1).cx(1, 2)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     slicing = expectation.slicing_plan(sliced_labels=())
 
     result = execute_sliced_tn_explicit_reverse(
@@ -493,7 +498,7 @@ def test_sliced_reverse_uses_full_tape_when_it_fits_checkpoint_budget():
 def test_checkpointed_reverse_rematerializes_and_matches_full_tape():
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).cx(0, 3).rzz(1, 2, theta=-0.4)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     dag = plan_distributed_tn_contraction_dag(expectation, world_size=1)
     inputs = {
         f"input:{index}": node.tensor for index, node in enumerate(expectation.nodes)
@@ -566,7 +571,7 @@ def test_adjoint_layout_inherits_forward_mesh_and_validates_local_shapes():
     for layer in range(3):
         for qubit in range(layer % 2, 7, 2):
             circuit.cx(qubit, qubit + 1)
-    expectation = fq.build_tensor_network_expectation(circuit, z=list(range(8)))
+    expectation = build_tensor_network_expectation(circuit, z=list(range(8)))
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=4,
@@ -622,7 +627,7 @@ def test_joint_planner_binds_mesh_checkpoints_communication_and_remat():
     for layer in range(3):
         for qubit in range(layer % 2, 7, 2):
             circuit.cx(qubit, qubit + 1)
-    expectation = fq.build_tensor_network_expectation(circuit, z=list(range(8)))
+    expectation = build_tensor_network_expectation(circuit, z=list(range(8)))
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=8,
@@ -665,7 +670,7 @@ def test_joint_planner_enforces_total_rank_memory_budget():
     for layer in range(3):
         for qubit in range(layer % 2, 7, 2):
             circuit.cx(qubit, qubit + 1)
-    expectation = fq.build_tensor_network_expectation(circuit, z=list(range(8)))
+    expectation = build_tensor_network_expectation(circuit, z=list(range(8)))
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=8,
@@ -706,7 +711,7 @@ def test_joint_planner_accounts_for_workspace_buffers_and_headroom():
         circuit.ry(qubit, theta=0.1 * (qubit + 1))
     circuit.cx(0, 1)
     circuit.cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=range(4))
+    expectation = build_tensor_network_expectation(circuit, z=range(4))
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=2,
@@ -770,7 +775,7 @@ def test_joint_memory_evidence_is_deterministic_and_fails_closed():
         circuit.ry(qubit, theta=0.1 * (qubit + 1))
     circuit.cx(0, 1)
     circuit.cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=range(4))
+    expectation = build_tensor_network_expectation(circuit, z=range(4))
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=2,
@@ -871,7 +876,7 @@ def test_dynamic_reverse_segment_is_deterministic_and_frontier_validated():
     for layer in range(3):
         for qubit in range(layer % 2, 7, 2):
             circuit.cx(qubit, qubit + 1)
-    expectation = fq.build_tensor_network_expectation(circuit, z=list(range(8)))
+    expectation = build_tensor_network_expectation(circuit, z=list(range(8)))
     dag = plan_distributed_tn_contraction_dag(
         expectation,
         world_size=8,

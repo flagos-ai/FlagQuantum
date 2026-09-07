@@ -9,6 +9,12 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+from flagquantum.runtime.operator_backends import (
+    flaggems_preflight,
+    operator_backend,
+    plan_operator_replacements,
+    validate_flaggems_ops,
+)
 
 
 class _FakeUseGems:
@@ -48,7 +54,7 @@ def _raise_current_registrar_error():
 def test_flaggems_preflight_reports_unavailable_without_importable_module(monkeypatch):
     monkeypatch.setitem(sys.modules, "flag_gems", None)
 
-    report = fq.flaggems_preflight(requested_ops=["mm", "einsum"])
+    report = flaggems_preflight(requested_ops=["mm", "einsum"])
 
     assert report["availability"]["available"] is False
     assert "mm" in report["replacement_plan"]["catalog_safe_ops"]
@@ -73,7 +79,7 @@ def test_flaggems_preflight_uses_static_catalog_before_registered_keys(monkeypat
     )
     monkeypatch.setitem(sys.modules, "flag_gems", fake)
 
-    report = fq.flaggems_preflight(requested_ops=["mm", "bmm"])
+    report = flaggems_preflight(requested_ops=["mm", "bmm"])
 
     assert report["availability"]["available"] is True
     assert set(report["replacement_plan"]["runtime_replaceable_ops"]) == {"mm", "bmm"}
@@ -82,7 +88,7 @@ def test_flaggems_preflight_uses_static_catalog_before_registered_keys(monkeypat
 def test_flaggems_replacement_plan_classifies_runtime_and_experimental_ops(monkeypatch):
     _install_fake_flaggems(monkeypatch)
 
-    plan = fq.plan_operator_replacements(
+    plan = plan_operator_replacements(
         "flaggems",
         requested_ops=[
             "mm",
@@ -106,9 +112,7 @@ def test_flaggems_replacement_plan_classifies_runtime_and_experimental_ops(monke
 def test_operator_backend_normalizes_aten_overload_aliases(monkeypatch):
     _install_fake_flaggems(monkeypatch, keys=("where_self",))
 
-    with fq.operator_backend(
-        "flaggems", include=["where.self"], strict=True
-    ) as session:
+    with operator_backend("flaggems", include=["where.self"], strict=True) as session:
         assert session.enabled
 
     assert _FakeUseGems.calls == [("enter", ("where_self",)), ("exit", ("where_self",))]
@@ -117,7 +121,7 @@ def test_operator_backend_normalizes_aten_overload_aliases(monkeypatch):
 def test_validate_flaggems_ops_runs_complex_smoke(monkeypatch):
     _install_fake_flaggems(monkeypatch, keys=("mm", "mul"))
 
-    result = fq.validate_flaggems_ops(["mm", "mul"], device="cpu", dtype="complex64")
+    result = validate_flaggems_ops(["mm", "mul"], device="cpu", dtype="complex64")
 
     assert result.passed_ops == ("mm", "mul")
     assert result.failed_ops == {}
@@ -126,7 +130,7 @@ def test_validate_flaggems_ops_runs_complex_smoke(monkeypatch):
 def test_validate_flaggems_ops_reports_unimplemented_validator(monkeypatch):
     _install_fake_flaggems(monkeypatch, keys=("made_up",))
 
-    result = fq.validate_flaggems_ops(["made_up"], device="cpu", dtype="complex64")
+    result = validate_flaggems_ops(["made_up"], device="cpu", dtype="complex64")
 
     assert result.passed_ops == ()
     assert "made_up" in result.failed_ops
@@ -135,9 +139,7 @@ def test_validate_flaggems_ops_reports_unimplemented_validator(monkeypatch):
 def test_operator_backend_context_enables_only_safe_requested_ops(monkeypatch):
     _install_fake_flaggems(monkeypatch, keys=("mm", "bmm", "einsum"))
 
-    with fq.operator_backend(
-        "flaggems", include=["mm", "einsum"], strict=True
-    ) as session:
+    with operator_backend("flaggems", include=["mm", "einsum"], strict=True) as session:
         assert session.enabled
 
     assert _FakeUseGems.calls == [("enter", ("mm",)), ("exit", ("mm",))]
@@ -164,6 +166,6 @@ def test_run_native_accepts_flaggems_operator_backend(monkeypatch):
 def test_operator_backend_context_fails_open_when_flaggems_unavailable(monkeypatch):
     monkeypatch.setitem(sys.modules, "flag_gems", None)
 
-    with fq.operator_backend("flaggems", include=["mm"], strict=False) as session:
+    with operator_backend("flaggems", include=["mm"], strict=False) as session:
         assert not session.enabled
         assert not session.availability.available

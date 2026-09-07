@@ -16,6 +16,7 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_slice_tasks,
     plan_tn_parameter_owners,
 )
+from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
 
 
 def main() -> None:
@@ -28,7 +29,7 @@ def main() -> None:
     phi = torch.tensor(-0.37, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=theta).cx(0, 3).rzz(1, 2, theta=phi).cx(2, 3)
-    expectation = fq.build_tensor_network_expectation(circuit, z=[0, 2])
+    expectation = build_tensor_network_expectation(circuit, z=[0, 2])
     counts = Counter(label for node in expectation.nodes for label in node.labels)
     labels = tuple(
         label

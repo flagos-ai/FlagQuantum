@@ -4,7 +4,22 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.errors import ExecutionError
+from flagquantum.runtime.backends.statevector import (
+    simulate_distributed_statevector_local,
+)
+from flagquantum.runtime.backends.statevector.models import (
+    LocalDistributedStatevectorResult,
+)
+from flagquantum.runtime.distributed import (
+    LocalTensor,
+    resolve_distributed_backend_policy,
+)
 from flagquantum.runtime.execution import run_advanced
+from flagquantum.runtime.parity import (
+    local_distributed_development_preflight,
+    require_development_production_parity,
+    validate_development_production_parity,
+)
 
 pytestmark = [
     pytest.mark.integration,
@@ -21,7 +36,7 @@ def test_distributed_backend_policy_defaults_to_development_without_torchrun(
     monkeypatch.delenv("FQ_TORCH_DISTRIBUTED_BACKEND", raising=False)
     monkeypatch.delenv("WORLD_SIZE", raising=False)
 
-    policy = fq.resolve_distributed_backend_policy()
+    policy = resolve_distributed_backend_policy()
 
     assert policy.profile == "development"
     assert policy.jax_backend == "pmap_local_cpu"
@@ -34,7 +49,7 @@ def test_distributed_backend_policy_uses_env_for_production(monkeypatch):
     monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "production")
     monkeypatch.setenv("FQ_LOCAL_WORLD_SIZE", "8")
 
-    policy = fq.resolve_distributed_backend_policy()
+    policy = resolve_distributed_backend_policy()
 
     assert policy.profile == "production"
     assert policy.jax_backend == "pmap"
@@ -49,7 +64,7 @@ def test_distributed_backend_policy_allows_explicit_backend_overrides(monkeypatc
     monkeypatch.setenv("FQ_JAX_DISTRIBUTED_BACKEND", "pmap_local_cpu")
     monkeypatch.setenv("FQ_TORCH_DISTRIBUTED_BACKEND", "local_tensor")
 
-    policy = fq.resolve_distributed_backend_policy()
+    policy = resolve_distributed_backend_policy()
 
     assert policy.summary()["source"]["FQ_DISTRIBUTED_PROFILE"] == "development"
     assert policy.jax_backend == "pmap_local_cpu"
@@ -59,7 +74,7 @@ def test_distributed_backend_policy_allows_explicit_backend_overrides(monkeypatc
 def test_local_tensor_simulates_rank_sharded_pytorch_tensor():
     tensor = torch.arange(12, dtype=torch.float32).reshape(6, 2)
 
-    local = fq.LocalTensor.from_tensor(tensor, world_size=3, dim=0)
+    local = LocalTensor.from_tensor(tensor, world_size=3, dim=0)
     doubled = local.map_shards(lambda shard, rank: shard + rank)
 
     expected = torch.cat(
@@ -81,7 +96,7 @@ def test_local_distributed_statevector_summary_uses_development_policy(monkeypat
     circuit = fq.Circuit(3)
     circuit.h(0).x(2)
 
-    result = fq.simulate_distributed_statevector_local(circuit, world_size=2)
+    result = simulate_distributed_statevector_local(circuit, world_size=2)
     summary = result.summary()
 
     assert summary["distributed_backend_policy"]["profile"] == "development"
@@ -184,7 +199,7 @@ def test_circuit_run_single_rank_uses_statevector_backend_result(monkeypatch):
     qdev = result.native()
     plan = result.plan
 
-    assert isinstance(qdev, fq.LocalDistributedStatevectorResult)
+    assert isinstance(qdev, LocalDistributedStatevectorResult)
     assert qdev.backend_policy.profile == "development"
     assert torch.allclose(qdev.state, circuit.state(), atol=1e-6)
     assert plan.recommended_mode == "local"
@@ -372,7 +387,7 @@ def test_development_production_statevector_parity_contract():
     circuit = fq.Circuit(3)
     circuit.h(0).x(2).cx(0, 2).rz(1, theta=0.3)
 
-    report = fq.require_development_production_parity(
+    report = require_development_production_parity(
         circuit,
         mode="distributed_statevector",
         world_size=2,
@@ -394,7 +409,7 @@ def test_development_production_mps_parity_contract():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).rx(2, theta=0.2).cx(2, 3)
 
-    report = fq.validate_development_production_parity(
+    report = validate_development_production_parity(
         circuit,
         mode="distributed_mps",
         world_size=2,
@@ -412,7 +427,7 @@ def test_development_production_tensor_network_parity_contract():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).rz(2, theta=0.4)
 
-    report = fq.validate_development_production_parity(
+    report = validate_development_production_parity(
         circuit,
         mode="distributed_tensor_network",
         world_size=2,
@@ -427,7 +442,7 @@ def test_development_production_tensor_network_parity_contract():
 
 
 def test_local_distributed_development_preflight_default_program():
-    report = fq.local_distributed_development_preflight(world_size=2)
+    report = local_distributed_development_preflight(world_size=2)
     summary = report.summary()
 
     assert summary["passed"] is True
@@ -445,7 +460,7 @@ def test_local_distributed_development_preflight_accepts_custom_program():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 1).rz(2, theta=0.5)
 
-    report = fq.local_distributed_development_preflight(
+    report = local_distributed_development_preflight(
         circuit,
         world_size=2,
         modes=("distributed_statevector",),

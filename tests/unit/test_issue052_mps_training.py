@@ -29,6 +29,7 @@ from flagquantum.runtime.distributed.models import (
     ShardedMPSState,
     TorchDistributedContext,
 )
+from flagquantum.simulation.mps_state import MPSState
 
 pytestmark = pytest.mark.unit
 
@@ -273,7 +274,7 @@ def test_site_kernel_auto_policy_fails_open_to_eager_for_reversed_rotations():
 
 
 def test_single_rank_sharded_mps_gather_avoids_object_collective(monkeypatch):
-    mps = fq.MPSState.zero(1)
+    mps = MPSState.zero(1)
     context = TorchDistributedContext(
         rank=0,
         world_size=1,

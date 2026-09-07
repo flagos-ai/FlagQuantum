@@ -16,6 +16,11 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
+from flagquantum.runtime.distributed import (
+    destroy_torch_distributed,
+    init_torch_distributed,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -257,7 +262,7 @@ def _observe(
 
 def _worker(*, output_prefix: Path, timeout_seconds: float) -> int:
     torch_fl, torch, fq = _load_runtime()
-    context = fq.init_torch_distributed(
+    context = init_torch_distributed(
         backend="flagos", device="flagos", timeout_seconds=timeout_seconds
     )
     try:
@@ -310,7 +315,7 @@ def _worker(*, output_prefix: Path, timeout_seconds: float) -> int:
         _write_json(_rank_path(output_prefix, rank), payload)
         return 0 if all(item["passed"] for item in observations) else 2
     finally:
-        fq.destroy_torch_distributed()
+        destroy_torch_distributed()
 
 
 def _run_payload(

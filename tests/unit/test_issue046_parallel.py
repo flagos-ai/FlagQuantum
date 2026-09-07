@@ -4,6 +4,8 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.runtime.parallel import plan_hybrid_parallel
 
 pytestmark = pytest.mark.unit
 
@@ -56,11 +58,11 @@ def test_parameter_batch_and_observable_batch_are_explicit() -> None:
 
 
 def test_hamiltonian_grouping_and_batched_evaluation() -> None:
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         (
-            fq.pauli_term(0.5, "Z", (0,)),
-            fq.pauli_term(-0.2, "ZZ", (0, 1)),
-            fq.pauli_term(0.3, "X", (0,)),
+            pauli_term(0.5, "Z", (0,)),
+            pauli_term(-0.2, "ZZ", (0, 1)),
+            pauli_term(0.3, "X", (0,)),
         )
     )
     module = fq.Module(
@@ -80,7 +82,7 @@ def test_hamiltonian_grouping_and_batched_evaluation() -> None:
 def test_hybrid_parallel_plan_has_orthogonal_groups_and_fail_closed_model_parallel() -> (
     None
 ):
-    plan = fq.plan_hybrid_parallel(
+    plan = plan_hybrid_parallel(
         world_size=4,
         data_parallel_size=2,
         state_parallel_size=2,
@@ -103,15 +105,15 @@ def test_hybrid_parallel_plan_has_orthogonal_groups_and_fail_closed_model_parall
         == 64
     )
     with pytest.raises(NotImplementedError):
-        fq.plan_hybrid_parallel(world_size=2, model_parallel_size=2)
+        plan_hybrid_parallel(world_size=2, model_parallel_size=2)
 
 
 def test_single_rank_semantics_and_non_divisible_memory_are_conservative() -> None:
-    local = fq.plan_hybrid_parallel(
+    local = plan_hybrid_parallel(
         world_size=1, global_quantum_state_bytes=1025, input_bytes=129
     )
     assert local.distribution_semantics == "single_device_fast_path"
-    sharded = fq.plan_hybrid_parallel(
+    sharded = plan_hybrid_parallel(
         world_size=4,
         data_parallel_size=2,
         state_parallel_size=2,
@@ -131,7 +133,7 @@ def test_parallel_context_requires_initialized_matching_global_world(
     monkeypatch,
 ) -> None:
     module = fq.Module(parameter_batch_builder, 2)
-    plan = fq.plan_hybrid_parallel(
+    plan = plan_hybrid_parallel(
         world_size=4, data_parallel_size=2, state_parallel_size=2
     )
     monkeypatch.setattr(torch.distributed, "is_initialized", lambda: False)
@@ -146,7 +148,7 @@ def test_parallel_context_requires_initialized_matching_global_world(
 
 def test_parallel_context_rejects_process_group_size_mismatch(monkeypatch) -> None:
     module = fq.Module(parameter_batch_builder, 2)
-    plan = fq.plan_hybrid_parallel(
+    plan = plan_hybrid_parallel(
         world_size=4, data_parallel_size=2, state_parallel_size=2
     )
     monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)
@@ -161,7 +163,7 @@ def test_parallel_context_rejects_process_group_size_mismatch(monkeypatch) -> No
 
 def test_parallel_context_rejects_wrong_state_group_ranks(monkeypatch) -> None:
     module = fq.Module(parameter_batch_builder, 2)
-    plan = fq.plan_hybrid_parallel(
+    plan = plan_hybrid_parallel(
         world_size=4, data_parallel_size=2, state_parallel_size=2
     )
     group = object()

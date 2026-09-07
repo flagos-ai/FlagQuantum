@@ -3,6 +3,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+from flagquantum.runtime.configuration import get_backend
 
 pytestmark = pytest.mark.smoke
 
@@ -10,7 +11,7 @@ pytestmark = pytest.mark.smoke
 def test_import_flagquantum_top_level_api():
     assert fq.Circuit is not None
     assert fqb.run_native is not None
-    assert fq.get_backend() == "pytorch"
+    assert get_backend() == "pytorch"
 
 
 def test_minimal_circuit_expectation_fast_path():

@@ -9,12 +9,13 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.algorithms import Hamiltonian, pauli_term, transverse_field_ising
 
 pytestmark = pytest.mark.integration
 
 
 def _ising(n_wires: int = 2, coupling: float = 1.0, field: float = 0.7):
-    return fq.transverse_field_ising(
+    return transverse_field_ising(
         n_wires,
         coupling=coupling,
         field=field,
@@ -83,17 +84,17 @@ def test_two_site_tebd_converges_to_exact_ground_energy() -> None:
         (_ising(), {"initial_state": "random"}, "Unsupported initial_state"),
         (_ising(), {"dtype": torch.float64}, "dtype"),
         (
-            fq.Hamiltonian([fq.pauli_term(1.0, "ZZ", (0, 2))]),
+            Hamiltonian([pauli_term(1.0, "ZZ", (0, 2))]),
             {"n_wires": 3},
             "adjacent",
         ),
         (
-            fq.Hamiltonian([fq.pauli_term(1.0 + 0.1j, "X", (0,))]),
+            Hamiltonian([pauli_term(1.0 + 0.1j, "X", (0,))]),
             {},
             "must be real",
         ),
         (
-            fq.Hamiltonian([fq.pauli_term(1.0, "XYZ", (0, 1, 2))]),
+            Hamiltonian([pauli_term(1.0, "XYZ", (0, 1, 2))]),
             {"n_wires": 3},
             "one-site and two-site",
         ),

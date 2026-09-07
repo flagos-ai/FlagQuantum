@@ -1,7 +1,10 @@
 import pytest
 
 import flagquantum as fq
+import flagquantum.compiler as compiler
 import flagquantum.runtime.planner as fqxp
+from flagquantum.runtime.audit import audit_distributed_scalability
+from flagquantum.runtime.backend_registry import backend_execution_options
 
 pytestmark = pytest.mark.unit
 
@@ -11,7 +14,7 @@ def test_ir_and_compiler_pure_logic_baseline():
     circuit.x(0).x(0).h(0)
 
     ir = circuit.to_ir()
-    compiled = fq.compiler.optimize(ir)
+    compiled = compiler.optimize(ir)
 
     assert len(ir) == 3
     assert len(compiled) == 1
@@ -41,7 +44,7 @@ def test_audit_single_device_metadata_is_non_scalability():
         "mode": "statevector",
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert audit.valid
     assert not audit.scalability_claim_allowed
@@ -50,7 +53,7 @@ def test_audit_single_device_metadata_is_non_scalability():
 
 
 def test_backend_policy_normalizes_local_runtime_metadata():
-    options = fq.backend_execution_options(
+    options = backend_execution_options(
         mode="statevector", device="cpu", dtype="complex64"
     )
 

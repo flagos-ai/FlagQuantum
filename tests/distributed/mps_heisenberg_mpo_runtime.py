@@ -8,6 +8,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.runtime.backends.mps.records as fqxm
+from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.runtime.backends.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
@@ -117,8 +118,8 @@ def main() -> None:
         checkpointed_gradient, fused_gradient, rtol=5e-5, atol=5e-5
     )
     statevector_parameter = torch.tensor(0.17, device=device, requires_grad=True)
-    statevector_hamiltonian = fq.Hamiltonian(
-        [fq.pauli_term(coefficient, observable) for observable, coefficient in _terms()]
+    statevector_hamiltonian = Hamiltonian(
+        [pauli_term(coefficient, observable) for observable, coefficient in _terms()]
     )
     statevector_value = statevector_hamiltonian.expectation(
         _statevector_circuit(statevector_parameter)

@@ -10,6 +10,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.training as fqt
+from flagquantum.models import HybridQuantumClassifier, VariationalEnergyModel
 
 
 def acceptance_summary(
@@ -36,7 +37,7 @@ def acceptance_summary(
 
 def classifier_run(steps: int) -> dict[str, object]:
     fqt.seed_everything(480)
-    model = fq.HybridQuantumClassifier(
+    model = HybridQuantumClassifier(
         deployment_binding={"provider": "local", "target": "simulator"}
     )
     inputs = torch.tensor([[-1.0, -0.5], [-0.7, 0.8], [0.6, -0.9], [0.9, 0.7]])
@@ -71,7 +72,7 @@ def energy_run(steps: int, backend: str) -> dict[str, object]:
         observable="hamiltonian",
         observable_wires=(0, 1),
     )
-    model = fq.VariationalEnergyModel(policy=policy)
+    model = VariationalEnergyModel(policy=policy)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
     energies = []
     started = time.perf_counter()

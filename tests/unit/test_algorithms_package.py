@@ -6,16 +6,16 @@ from pathlib import Path
 
 import pytest
 
-import flagquantum as fq
 import flagquantum.algorithms as algorithms
+from flagquantum.algorithms import Hamiltonian, run_vqe
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_canonical_algorithms_package_owns_public_implementations() -> None:
-    assert fq.Hamiltonian is algorithms.Hamiltonian
-    assert fq.run_vqe is algorithms.run_vqe
+    assert Hamiltonian is algorithms.Hamiltonian
+    assert run_vqe is algorithms.run_vqe
     assert algorithms.OptimizationStage.__module__ == (
         "flagquantum.algorithms.optimization"
     )

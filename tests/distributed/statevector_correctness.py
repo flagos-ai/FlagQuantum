@@ -12,6 +12,15 @@ import os
 import sys
 from pathlib import Path
 
+from flagquantum.runtime.backends.statevector import plan_distributed_statevector
+from flagquantum.runtime.backends.statevector.local_execution import (
+    execute_distributed_statevector_transport,
+)
+from flagquantum.runtime.distributed import (
+    destroy_torch_distributed,
+    init_torch_distributed,
+)
+
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import torch
@@ -97,7 +106,7 @@ def run_statevector_correctness(
         world_size = env_world_size
 
     _log(rank, "initializing process group", enabled=verbose)
-    context = fq.init_torch_distributed(
+    context = init_torch_distributed(
         backend=backend,
         world_size=world_size,
         device=device,
@@ -112,7 +121,7 @@ def run_statevector_correctness(
 
     _barrier("after_init", rank, enabled=verbose)
     circuit = build_reference_circuit(n_wires)
-    plan = fq.plan_distributed_statevector(circuit, world_size=world_size)
+    plan = plan_distributed_statevector(circuit, world_size=world_size)
     validation = plan.validate()
     report = plan.execute_dry_run()
     _log(
@@ -122,7 +131,7 @@ def run_statevector_correctness(
         enabled=verbose,
     )
     _barrier("before_transport", rank, enabled=verbose)
-    transport = fq.execute_distributed_statevector_transport(plan, device=device)
+    transport = execute_distributed_statevector_transport(plan, device=device)
     _log(rank, f"transport summary={transport.summary()}", enabled=verbose)
     _barrier("after_transport", rank, enabled=verbose)
     expectation = circuit.expectation_z().detach().cpu()
@@ -197,7 +206,7 @@ def main() -> None:
             f"peak_buffer_bytes={report.peak_buffer_bytes}"
         )
 
-    fq.destroy_torch_distributed()
+    destroy_torch_distributed()
 
 
 if __name__ == "__main__":

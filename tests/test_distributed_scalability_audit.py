@@ -4,9 +4,26 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+import flagquantum.runtime.audit.engine as audit
 import flagquantum.runtime.planner as fqxp
 from benchmarks.audit_results import _json_files, audit_paths
+from flagquantum.runtime.audit import (
+    DistributedScalabilityAudit,
+    DistributedScalabilityError,
+    attach_distributed_evidence_contract,
+    audit_distributed_scalability,
+    evaluate_distributed_evidence_contract,
+    evaluate_distributed_transport_evidence,
+    evaluate_statevector_training_claimability,
+)
 from flagquantum.runtime.audit.engine import evaluate_mps_backward_readiness
+from flagquantum.runtime.audit.release_policy import (
+    attach_sharded_optimizer_step_evidence,
+    require_distributed_scalability,
+    validate_distributed_claim_evidence,
+)
+from flagquantum.runtime.audit.statistics import attach_distributed_scalability_audit
+from flagquantum.runtime.backends.statevector import plan_distributed_statevector
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
@@ -32,7 +49,7 @@ def _optimizer_ownership():
 
 def _with_sharded_optimizer_evidence(payload, *, training_step_count=3):
     ownership = _optimizer_ownership()
-    return fq.attach_sharded_optimizer_step_evidence(
+    return attach_sharded_optimizer_step_evidence(
         payload,
         training_step_count=training_step_count,
         parameter_ownership=ownership,
@@ -48,7 +65,7 @@ def test_sharded_optimizer_step_evidence_helper_rejects_non_positive_steps(
     with pytest.raises(
         ValueError, match="training_step_count must be a positive integer"
     ):
-        fq.attach_sharded_optimizer_step_evidence(
+        attach_sharded_optimizer_step_evidence(
             {},
             training_step_count=bad_training_step_count,
             parameter_ownership=_optimizer_ownership(),
@@ -78,7 +95,7 @@ def test_sharded_optimizer_step_evidence_helper_rejects_missing_ownership(
     kwargs[missing_key] = ()
 
     with pytest.raises(ValueError, match=expected_message):
-        fq.attach_sharded_optimizer_step_evidence({}, **kwargs)
+        attach_sharded_optimizer_step_evidence({}, **kwargs)
 
 
 def _write_repo_local_audit_payload(name, payload):
@@ -91,11 +108,11 @@ def _write_repo_local_audit_payload(name, payload):
 def test_scalability_audit_accepts_sharded_statevector_plan():
     circuit = fq.Circuit(5)
     circuit.x(3).x(4).cx(0, 4)
-    plan = fq.plan_distributed_statevector(circuit, world_size=4, local_world_size=2)
+    plan = plan_distributed_statevector(circuit, world_size=4, local_world_size=2)
 
-    audit = fq.audit_distributed_scalability(plan.summary())
+    audit = audit_distributed_scalability(plan.summary())
 
-    assert isinstance(audit, fq.DistributedScalabilityAudit)
+    assert isinstance(audit, DistributedScalabilityAudit)
     assert audit.valid
     assert not audit.scalability_claim_allowed
     assert audit.claim_evidence_type == "plan_preflight"
@@ -110,7 +127,7 @@ def test_scalability_audit_rejects_replicated_kernel_claim():
         "world_size": 8,
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert not audit.valid
     assert not audit.scalability_claim_allowed
@@ -132,7 +149,7 @@ def test_scalability_audit_accepts_single_device_fast_path_without_distributed_m
         "mode": "mps",
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert audit.valid
     assert not audit.scalability_claim_allowed
@@ -147,7 +164,7 @@ def test_runtime_planner_local_fast_path_does_not_emit_distributed_claim():
         circuit, prefer_jax=True, require_gradients=True
     ).summary()
     candidate = summary["recommended_candidate"]
-    audit = fq.audit_distributed_scalability(candidate)
+    audit = audit_distributed_scalability(candidate)
 
     assert summary["world_size"] == 1
     assert candidate["distribution_semantics"] == "single_device_fast_path"
@@ -156,8 +173,8 @@ def test_runtime_planner_local_fast_path_does_not_emit_distributed_claim():
     assert candidate["available"] is True
     assert audit.valid
     assert not audit.scalability_claim_allowed
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(candidate)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(candidate)
 
 
 def test_attach_scalability_audit_adds_machine_readable_summary():
@@ -167,7 +184,7 @@ def test_attach_scalability_audit_adds_machine_readable_summary():
         "world_size": 1,
     }
 
-    attached = fq.attach_distributed_scalability_audit(payload)
+    attached = attach_distributed_scalability_audit(payload)
 
     assert attached is not payload
     assert attached["scalability_audit"]["valid"] is True
@@ -225,9 +242,7 @@ def _statevector_claimable_payload(**overrides):
 
 
 def test_statevector_training_claimability_accepts_complete_training_payload():
-    gate = fq.evaluate_statevector_training_claimability(
-        _statevector_claimable_payload()
-    )
+    gate = evaluate_statevector_training_claimability(_statevector_claimable_payload())
 
     assert gate.status == "claimable_production_training"
     assert gate.claimable_production_training
@@ -278,7 +293,7 @@ def test_sharded_optimizer_step_evidence_helper_satisfies_statevector_ownership_
     }
 
     payload = _with_sharded_optimizer_evidence(payload, training_step_count=2)
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert payload["parameter_ownership_semantics"] == "sharded_across_ranks"
     assert payload["gradient_ownership_semantics"] == "sharded_across_ranks"
@@ -293,7 +308,7 @@ def test_sharded_optimizer_step_evidence_helper_satisfies_statevector_ownership_
 
 
 def test_statevector_training_claimability_rejects_non_statevector_payload():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         _statevector_claimable_payload(state_mode="distributed_mps")
     )
 
@@ -307,7 +322,7 @@ def test_statevector_training_claimability_rejects_non_statevector_payload():
 
 
 def test_statevector_training_claimability_rejects_unknown_state_mode_even_if_mode_is_statevector():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         _statevector_claimable_payload(state_mode="tensor_network", mode="statevector")
     )
 
@@ -317,7 +332,7 @@ def test_statevector_training_claimability_rejects_unknown_state_mode_even_if_mo
 
 
 def test_statevector_training_claimability_fails_closed_for_missing_fields():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         {
             "state_mode": "jax_sharded_statevector",
             "distribution_semantics": "sharded_across_ranks",
@@ -341,7 +356,7 @@ def test_statevector_training_claimability_fails_closed_for_missing_fields():
 
 
 def test_statevector_training_claimability_rejects_forward_only_and_full_state_replay():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         _statevector_claimable_payload(
             backward_distribution_semantics="incomplete",
             parameter_gradient_ready=False,
@@ -365,7 +380,7 @@ def test_statevector_training_claimability_rejects_forward_only_and_full_state_r
 
 
 def test_statevector_training_claimability_rejects_nonempty_blockers():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         _statevector_claimable_payload(
             scalability_blockers=("production_collective_timeout_not_validated",),
         )
@@ -385,7 +400,7 @@ def test_statevector_training_claimability_rejects_missing_rank_ownership_and_to
     payload.pop("local_world_size")
     payload.pop("node_count")
 
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert gate.status == "blocked"
     assert gate.checks["rank_ownership_explicit"] is False
@@ -398,7 +413,7 @@ def test_statevector_training_claimability_rejects_missing_rank_ownership_and_to
 
 
 def test_statevector_training_claimability_rejects_incomplete_memory_and_communication_plans():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         _statevector_claimable_payload(
             memory_plan={"per_rank_shard_bytes": (64, 64)},
             communication_plan={"communication_execution": "rank_local_no_transport"},
@@ -420,7 +435,7 @@ def test_statevector_training_claimability_rejects_incomplete_memory_and_communi
 
 
 def test_statevector_training_claimability_rejects_non_sharded_optimizer_update():
-    gate = fq.evaluate_statevector_training_claimability(
+    gate = evaluate_statevector_training_claimability(
         _statevector_claimable_payload(
             optimizer_update_semantics="replicated_all_reduce"
         )
@@ -441,7 +456,7 @@ def test_statevector_training_claimability_rejects_missing_optimizer_ownership_e
     payload.pop("optimizer_update_ownership")
     payload.pop("optimizer_step_evidence")
 
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert gate.status == "blocked"
     assert gate.checks["parameter_ownership_sharded"] is False
@@ -488,7 +503,7 @@ def test_statevector_training_claimability_rejects_non_sharded_optimizer_ownersh
 ):
     payload = _statevector_claimable_payload(**{semantics_key: bad_semantics})
 
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert gate.status == "blocked"
     assert not gate.claimable_production_training
@@ -548,7 +563,7 @@ def test_statevector_training_claimability_false_positive_matrix_fails_closed(
     payload = _statevector_claimable_payload()
     mutate(payload)
 
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert name
     assert gate.status == "blocked"
@@ -562,7 +577,7 @@ def test_statevector_training_claimability_reports_preflight_only():
         planner="jax_sharded_statevector_training",
         scalability_claim_allowed=False,
     )
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert gate.status == "preflight_only"
     assert not gate.claimable_production_training
@@ -573,7 +588,7 @@ def test_statevector_training_claimability_reports_local_simulation():
         claim_evidence_type="development_smoke",
         backward_execution="local_simulated_backward",
     )
-    gate = fq.evaluate_statevector_training_claimability(payload)
+    gate = evaluate_statevector_training_claimability(payload)
 
     assert gate.status == "local_simulation"
     assert not gate.claimable_production_training
@@ -609,7 +624,7 @@ def test_require_scalability_accepts_only_release_grade_training_benchmark():
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    audit = fq.require_distributed_scalability(payload)
+    audit = require_distributed_scalability(payload)
 
     assert audit.valid
     assert audit.scalability_claim_allowed
@@ -635,7 +650,7 @@ def test_require_scalability_accepts_explicit_release_payload():
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    audit = fq.require_distributed_scalability(payload)
+    audit = require_distributed_scalability(payload)
 
     assert audit.valid
     assert audit.claim_evidence_type == "release_payload"
@@ -660,8 +675,8 @@ def test_require_scalability_rejects_release_payload_without_explicit_marker():
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert excinfo.value.audit.claim_evidence_type == "release_payload"
     assert "release_payload evidence must be explicit" in excinfo.value.audit.errors
@@ -697,8 +712,8 @@ def test_require_scalability_rejects_production_runtime_even_with_training_field
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert excinfo.value.audit.claim_evidence_type == "production_runtime"
     assert (
@@ -710,10 +725,10 @@ def test_require_scalability_rejects_production_runtime_even_with_training_field
 def test_require_scalability_rejects_plan_preflight_payload():
     circuit = fq.Circuit(5)
     circuit.x(3).x(4).cx(0, 4)
-    plan = fq.plan_distributed_statevector(circuit, world_size=4, local_world_size=2)
+    plan = plan_distributed_statevector(circuit, world_size=4, local_world_size=2)
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(plan.summary())
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(plan.summary())
 
     assert excinfo.value.audit.claim_evidence_type == "plan_preflight"
     assert (
@@ -749,8 +764,8 @@ def test_require_scalability_rejects_missing_capacity_evidence():
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert (
         "release gate requires single_gpu_expected_oom=True"
@@ -792,8 +807,8 @@ def test_require_scalability_rejects_false_capacity_expansion():
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert (
         "release gate requires single_gpu_expected_oom=True"
@@ -831,7 +846,7 @@ def test_base_audit_release_gate_rejects_false_capacity_expansion():
     }
     payload = _with_sharded_optimizer_evidence(payload)
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert audit.valid
     assert audit.scalability_claim_allowed
@@ -858,8 +873,8 @@ def test_distributed_transport_evidence_classifies_single_node_release_collectiv
         },
     )
 
-    transport = fq.evaluate_distributed_transport_evidence(payload)
-    attached = fq.attach_distributed_evidence_contract(payload)
+    transport = evaluate_distributed_transport_evidence(payload)
+    attached = attach_distributed_evidence_contract(payload)
 
     assert transport.status == "single_node_executed_collective"
     assert transport.node_count == 1
@@ -906,9 +921,9 @@ def test_distributed_transport_evidence_accepts_multi_node_production_route():
         capacity_failure_reason="single_gpu_memory_budget_exceeded",
     )
 
-    transport = fq.evaluate_distributed_transport_evidence(payload)
-    audit = fq.require_distributed_scalability(payload)
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    transport = evaluate_distributed_transport_evidence(payload)
+    audit = require_distributed_scalability(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert transport.status == "multi_node_production_transport"
     assert transport.network_backend == "nccl"
@@ -951,16 +966,16 @@ def test_multi_node_release_claim_rejects_route_scope_without_backend_evidence()
         capacity_failure_reason="single_gpu_memory_budget_exceeded",
     )
 
-    transport = fq.evaluate_distributed_transport_evidence(payload)
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    transport = evaluate_distributed_transport_evidence(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert transport.status == "topology_dependent_planning"
     assert transport.network_backend == "unknown"
     assert "multi_node_production_transport_backend_required" in transport.blockers
     assert contract.status == "blocked"
     assert contract.checks["multi_node_transport_evidence_complete"] is False
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
     assert (
         "multi_node_production_transport_backend_required" in excinfo.value.audit.errors
     )
@@ -999,9 +1014,9 @@ def test_multi_node_release_claim_accepts_payload_level_production_backend_evide
         capacity_failure_reason="single_gpu_memory_budget_exceeded",
     )
 
-    transport = fq.evaluate_distributed_transport_evidence(payload)
-    contract = fq.evaluate_distributed_evidence_contract(payload)
-    audit = fq.require_distributed_scalability(payload)
+    transport = evaluate_distributed_transport_evidence(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
+    audit = require_distributed_scalability(payload)
 
     assert transport.status == "multi_node_production_transport"
     assert transport.network_backend == "gloo"
@@ -1069,15 +1084,15 @@ def test_multi_node_release_claim_rejects_backend_route_without_required_evidenc
         payload["communication_plan"].pop("intra_node_communication_bytes", None)
         payload["communication_plan"].pop("inter_node_communication_bytes", None)
 
-    transport = fq.evaluate_distributed_transport_evidence(payload)
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    transport = evaluate_distributed_transport_evidence(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert transport.status == "topology_dependent_planning"
     assert expected_blocker in transport.blockers
     assert contract.status == "blocked"
     assert contract.checks["multi_node_transport_evidence_complete"] is False
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
     assert expected_blocker in excinfo.value.audit.errors
 
 
@@ -1109,16 +1124,16 @@ def test_multi_node_release_claim_fails_closed_without_transport_route_evidence(
         capacity_failure_reason="single_gpu_memory_budget_exceeded",
     )
 
-    transport = fq.evaluate_distributed_transport_evidence(payload)
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    transport = evaluate_distributed_transport_evidence(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert transport.status == "topology_dependent_planning"
     assert transport.topology_dependent is True
     assert "multi_node_production_transport_evidence_missing" in transport.blockers
     assert contract.status == "blocked"
     assert contract.checks["multi_node_transport_evidence_complete"] is False
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
     assert (
         "release gate requires multi_node_production_transport evidence for node_count > 1"
         in excinfo.value.audit.errors
@@ -1154,7 +1169,7 @@ def test_benchmark_require_scalability_uses_release_gate_validator():
         "gradient_distribution_semantics": "sharded_across_ranks",
     }
     payload = _with_sharded_optimizer_evidence(payload)
-    audit = fq.validate_distributed_claim_evidence(payload)
+    audit = validate_distributed_claim_evidence(payload)
     audit_errors = audit.errors
     assert audit.release_gate_allowed is False
     assert "release gate requires single_gpu_expected_oom=True" in audit_errors
@@ -1189,7 +1204,7 @@ def test_benchmark_require_scalability_accepts_release_grade_payload():
         "gradient_distribution_semantics": "sharded_across_ranks",
     }
     payload = _with_sharded_optimizer_evidence(payload)
-    audit = fq.require_distributed_scalability(payload)
+    audit = require_distributed_scalability(payload)
     assert audit.release_gate_allowed is True
 
 
@@ -1216,7 +1231,7 @@ def test_benchmark_results_layout_separates_non_release_evidence():
         payload_count += len(payload_paths)
         for path in payload_paths:
             payload = json.loads(path.read_text(encoding="utf-8"))
-            audit = fq.audit_distributed_scalability(payload)
+            audit = audit_distributed_scalability(payload)
             assert audit.valid, path
             assert payload["scalability_claim_allowed"] is False
             assert payload["release_gate_allowed"] is False
@@ -1252,7 +1267,7 @@ def test_legacy_smoke_payloads_are_not_release_claims():
     assert smoke_paths
     for path in smoke_paths:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        audit = fq.audit_distributed_scalability(payload)
+        audit = audit_distributed_scalability(payload)
         conclusion = payload["conclusion"]
 
         assert payload["claim_evidence_type"] == "development_smoke"
@@ -1273,8 +1288,8 @@ def test_legacy_smoke_payloads_are_not_release_claims():
         )
         assert audit.valid
         assert not audit.scalability_claim_allowed
-        with pytest.raises(fq.DistributedScalabilityError):
-            fq.require_distributed_scalability(payload)
+        with pytest.raises(DistributedScalabilityError):
+            require_distributed_scalability(payload)
 
 
 def test_benchmark_results_root_scan_is_hygienic_after_issue010():
@@ -1330,8 +1345,8 @@ def test_non_scalability_result_payloads_fail_strict_release_gate_after_issue010
         assert summary["file_count"] == 1
         assert summary["claimable_count"] == 0
         assert summary["invalid_count"] == 1
-        with pytest.raises(fq.DistributedScalabilityError):
-            fq.require_distributed_scalability(payload)
+        with pytest.raises(DistributedScalabilityError):
+            require_distributed_scalability(payload)
 
 
 @pytest.mark.parametrize(
@@ -1430,7 +1445,7 @@ def test_distributed_evidence_contract_normalizes_backend_families(
         "scalability_blockers": ("executor_pending",),
     }
 
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert contract.backend_family == expected_family
     assert contract.claim_evidence_type == "plan_preflight"
@@ -1442,7 +1457,7 @@ def test_distributed_evidence_contract_normalizes_backend_families(
 
 
 def test_distributed_evidence_contract_fails_closed_for_rank_local_claim():
-    contract = fq.evaluate_distributed_evidence_contract(
+    contract = evaluate_distributed_evidence_contract(
         {
             "claim_evidence_type": "production_training_benchmark",
             "state_mode": "jax_sharded_mps",
@@ -1523,7 +1538,7 @@ def test_distributed_evidence_contract_rejects_replicated_release_claims_across_
         ),
     }
 
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert contract.backend_family == expected_family
     assert contract.status == "blocked"
@@ -1614,7 +1629,7 @@ def test_distributed_evidence_contract_fails_closed_for_missing_evidence_across_
     for missing_key in missing_keys:
         payload.pop(missing_key)
 
-    contract = fq.evaluate_distributed_evidence_contract(payload)
+    contract = evaluate_distributed_evidence_contract(payload)
 
     assert contract.backend_family == expected_family
     assert contract.status == "blocked"
@@ -1726,7 +1741,7 @@ def test_benchmark_require_scalability_rejects_implicit_release_payload():
         "gradient_distribution_semantics": "sharded_across_ranks",
     }
     payload = _with_sharded_optimizer_evidence(payload)
-    audit = fq.validate_distributed_claim_evidence(payload)
+    audit = validate_distributed_claim_evidence(payload)
     audit_errors = audit.errors
     assert "release_payload evidence must be explicit" in audit_errors
 
@@ -1760,8 +1775,8 @@ def test_require_scalability_rejects_missing_optimizer_update_semantics():
         "gradient_distribution_semantics": "sharded_across_ranks",
     }
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert (
         "release gate requires optimizer_update_semantics='sharded_across_ranks'"
@@ -1801,8 +1816,8 @@ def test_require_scalability_rejects_missing_optimizer_ownership_evidence():
         "gradient_distribution_semantics": "sharded_across_ranks",
     }
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert (
         "release gate requires parameter_ownership_semantics='sharded_across_ranks' with explicit parameter ownership"
@@ -1873,8 +1888,8 @@ def test_require_scalability_rejects_non_sharded_optimizer_ownership_semantics(
     payload = _with_sharded_optimizer_evidence(payload)
     payload[semantics_key] = bad_semantics
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert expected_error in excinfo.value.audit.errors
 
@@ -1886,8 +1901,8 @@ def test_require_scalability_fails_closed_for_replicated_payload():
         "world_size": 8,
     }
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert excinfo.value.audit.distribution_semantics == "rank_local_replicated_kernel"
     assert not excinfo.value.audit.scalability_claim_allowed
@@ -1900,7 +1915,7 @@ def test_scalability_audit_rejects_single_device_fast_path_scalability_claim():
         "world_size": 1,
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert not audit.valid
     assert (
@@ -1915,7 +1930,7 @@ def test_scalability_audit_rejects_single_device_fast_path_with_multi_rank():
         "world_size": 2,
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert not audit.valid
     assert "single-device fast paths require world_size <= 1" in audit.errors
@@ -1932,7 +1947,7 @@ def test_scalability_audit_warns_for_hybrid_mps_without_claim():
         ),
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert audit.valid
     assert not audit.scalability_claim_allowed
@@ -1947,7 +1962,7 @@ def test_scalability_audit_accepts_planner_runtime_summary_required_without_clai
         "scalability_blockers": ("runtime_summary_required_for_scalability_claim",),
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert audit.valid
     assert not audit.scalability_claim_allowed
@@ -1961,7 +1976,7 @@ def test_scalability_audit_requires_evidence_for_sharded_claim():
         "world_size": 2,
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert not audit.valid
     assert "sharded payload must report local_world_size" in audit.errors
@@ -1984,7 +1999,7 @@ def test_scalability_audit_rejects_empty_sharded_evidence_containers():
         "communication_tiers": {},
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert not audit.valid
     assert not audit.scalability_claim_allowed
@@ -2021,7 +2036,7 @@ def test_scalability_audit_accepts_rank_shard_memory_without_duplicate_memory_li
         "scalability_blockers": (),
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert audit.valid
     assert audit.scalability_claim_allowed
@@ -2043,7 +2058,7 @@ def test_scalability_audit_rejects_rank_ownership_without_memory_evidence():
         "communication_tiers": {"model": "rank_endpoint_attributed"},
     }
 
-    audit = fq.audit_distributed_scalability(payload)
+    audit = audit_distributed_scalability(payload)
 
     assert not audit.valid
     assert not audit.scalability_claim_allowed
@@ -2310,11 +2325,11 @@ def test_mps_backward_gate_requires_shared_release_contract_to_claim_training():
     assert summary["blockers"] == ()
     assert summary["errors"] == ()
     assert summary["checks"]["shared_release_contract_claimable"] is True
-    assert fq.require_distributed_scalability(payload).release_gate_allowed is True
+    assert require_distributed_scalability(payload).release_gate_allowed is True
 
 
 def test_mps_backward_gate_remains_internal_metadata_not_top_level_api():
-    assert hasattr(fq.audit, "evaluate_mps_backward_readiness")
+    assert hasattr(audit, "evaluate_mps_backward_readiness")
     assert not hasattr(fq, "evaluate_mps_backward_readiness")
     assert not hasattr(fq, "Phase5MPSBackwardReadinessGate")
 
@@ -2461,8 +2476,8 @@ def test_mps_cpu_preflight_evidence_cannot_be_promoted_to_release_claim():
         edge["execution_status"] = "local_cpu_executed"
 
     gate = evaluate_mps_backward_readiness(payload)
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert gate.production_training_claimable is False
     assert gate.fail_closed is True

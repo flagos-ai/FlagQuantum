@@ -2,12 +2,13 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.runtime.local_preflight import local_fast_path_preflight
 
 pytestmark = pytest.mark.integration
 
 
 def test_local_fast_path_preflight_default_program():
-    report = fq.local_fast_path_preflight()
+    report = local_fast_path_preflight()
     summary = report.summary()
 
     assert summary["passed"] is True
@@ -40,7 +41,7 @@ def test_local_fast_path_preflight_accepts_custom_modes():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    report = fq.local_fast_path_preflight(circuit, modes=("statevector", "mps"))
+    report = local_fast_path_preflight(circuit, modes=("statevector", "mps"))
 
     assert report.passed is True
     assert report.modes == ("statevector", "mps")

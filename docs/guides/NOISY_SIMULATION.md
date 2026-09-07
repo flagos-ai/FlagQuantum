@@ -11,6 +11,7 @@ sampling statistics, and the MPS path additionally reports truncation data.
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.noise as fqn
+from flagquantum.runtime.planner import plan_noise_execution_selection
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
 noise = (
@@ -53,7 +54,7 @@ For dense circuits that fit statevector memory, trajectories can be processed
 in true tensor batches:
 
 ```python
-sampled_sv = fq.run_noisy_statevector(
+sampled_sv = fqb.run_noisy_statevector(
     circuit,
     noise,
     trajectories=4096,
@@ -86,7 +87,7 @@ If every candidate exceeds policy or memory constraints, selection fails
 instead of silently ignoring the budget.
 
 ```python
-selection = fq.plan_noise_execution_selection(
+selection = plan_noise_execution_selection(
     circuit,
     noise,
     trajectories=512,
@@ -122,7 +123,7 @@ Raw measurements are in
 The artifact can be supplied as an optional selector cost input:
 
 ```python
-selection = fq.plan_noise_execution_selection(
+selection = plan_noise_execution_selection(
     circuit,
     noise,
     trajectories=128,
@@ -145,7 +146,7 @@ estimate when both a standard-error target and a hard trajectory ceiling are
 provided:
 
 ```python
-selection = fq.plan_noise_execution_selection(
+selection = plan_noise_execution_selection(
     circuit,
     noise,
     trajectories=4096,

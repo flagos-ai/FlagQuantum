@@ -60,15 +60,16 @@ def test_backend_facade_preserves_implementation_identity() -> None:
 
 def test_compiler_facade_has_one_canonical_short_name() -> None:
     compiler = importlib.import_module("flagquantum.compiler")
-    compatibility_api = importlib.import_module("flagquantum.api")
 
     assert callable(compiler.compile)
     assert callable(compiler.optimize)
     assert not hasattr(compiler, "compile_for_backend")
-    assert not hasattr(compatibility_api, "compile_for_backend")
     assert not hasattr(compiler, "simple_compile")
     assert not hasattr(compiler, "remove_identity_gates")
     assert not hasattr(compiler, "merge_self_inverse")
     assert not hasattr(compiler, "merge_adjacent_rotations")
     assert not hasattr(compiler, "channel_instruction")
-    assert not hasattr(compatibility_api, "channel_instruction")
+
+
+def test_historical_api_aggregator_is_not_shipped() -> None:
+    assert importlib.util.find_spec("flagquantum.api") is None

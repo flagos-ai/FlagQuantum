@@ -3,8 +3,11 @@ from __future__ import annotations
 import pytest
 import torch
 
-import flagquantum as fq
-from flagquantum.runtime.distributed import models
+from flagquantum.runtime.distributed import (
+    DistributedIdentity,
+    models,
+    require_verified_flagcx,
+)
 from flagquantum.runtime.distributed.identity import (
     DistributedIdentityError,
     build_distributed_identity,
@@ -40,12 +43,12 @@ def test_flagos_identity_is_fail_closed_without_provider_evidence():
     assert "host_staging_unverified" in summary["blockers"]
 
     with pytest.raises(DistributedIdentityError, match="not verified"):
-        fq.require_verified_flagcx(identity)
+        require_verified_flagcx(identity)
 
 
 def test_flagcx_identity_rejects_unverified_or_host_staged_claims():
     with pytest.raises(ValueError, match="verified FlagCX"):
-        fq.DistributedIdentity(
+        DistributedIdentity(
             outer_backend="flagos",
             logical_device="flagos:0",
             rank=0,
@@ -59,7 +62,7 @@ def test_flagcx_identity_rejects_unverified_or_host_staged_claims():
         )
 
     with pytest.raises(ValueError, match="verified FlagCX"):
-        fq.DistributedIdentity(
+        DistributedIdentity(
             outer_backend="flagos",
             logical_device="flagos:0",
             rank=0,

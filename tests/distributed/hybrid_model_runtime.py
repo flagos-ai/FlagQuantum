@@ -7,13 +7,15 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.training as fqt
+from flagquantum.models import HybridQuantumClassifier
+from flagquantum.runtime.parallel import plan_hybrid_parallel
 
 INPUTS = torch.tensor([[-0.8, -0.2], [0.7, 0.4]])
 TARGETS = torch.tensor([-1.0, 1.0])
 
 
 def train_step(
-    model: fq.HybridQuantumClassifier, optimizer: torch.optim.Optimizer
+    model: HybridQuantumClassifier, optimizer: torch.optim.Optimizer
 ) -> torch.Tensor:
     optimizer.zero_grad()
     loss = torch.nn.functional.mse_loss(model(INPUTS), TARGETS)
@@ -27,17 +29,17 @@ def main() -> None:
     rank = dist.get_rank()
     try:
         fqt.seed_everything(480)
-        local = fq.HybridQuantumClassifier(
+        local = HybridQuantumClassifier(
             deployment_binding={"provider": "local", "target": "simulator"}
         )
         initial = local.state_dict()
-        sharded = fq.HybridQuantumClassifier(
+        sharded = HybridQuantumClassifier(
             policy=fq.RuntimePolicy(observable_wires=(1,)),
             deployment_binding={"provider": "local", "target": "simulator"},
         )
         sharded.load_state_dict(initial)
         sharded.set_runtime_policy(fq.RuntimePolicy(observable_wires=(1,)))
-        plan = fq.plan_hybrid_parallel(world_size=2, state_parallel_size=2)
+        plan = plan_hybrid_parallel(world_size=2, state_parallel_size=2)
         sharded.quantum.set_parallel_context(
             state_process_group=dist.group.WORLD, plan=plan
         )

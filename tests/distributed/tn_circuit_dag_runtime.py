@@ -15,6 +15,7 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_contraction_dag,
     with_sharded_tn_intermediate,
 )
+from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
 
 
 def _arguments() -> argparse.Namespace:
@@ -28,7 +29,7 @@ def _expectation():
     circuit.h(0).ry(1, theta=0.17).rx(4, theta=-0.31)
     circuit.cx(0, 1).cx(1, 2).rzz(2, 3, theta=0.23)
     circuit.cx(3, 4).ry(5, theta=0.41).cx(4, 5)
-    return fq.build_tensor_network_expectation(
+    return build_tensor_network_expectation(
         circuit,
         x=[0, 3],
         z=[1, 4, 5],

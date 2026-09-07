@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
+from flagquantum.deployment import AmazonBraketProvider, braket_backend_profile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import create_dynamic_deployment_package
 
@@ -59,7 +60,7 @@ def _dynamic_package(provider):
 
 def test_braket_device_properties_build_dynamic_backend_profile() -> None:
     device = FakeAwsDevice()
-    profile = fq.braket_backend_profile(
+    profile = braket_backend_profile(
         device,
         dynamic_qubit_groups=((0, 1), (2, 3)),
     )
@@ -77,7 +78,7 @@ def test_braket_device_properties_build_dynamic_backend_profile() -> None:
 
 def test_braket_dry_run_does_not_submit_and_exposes_exact_program() -> None:
     device = FakeAwsDevice()
-    provider = fq.AmazonBraketProvider(
+    provider = AmazonBraketProvider(
         device,
         dynamic_qubit_groups=((0, 1), (2, 3)),
         program_factory=lambda *, source: {"source": source},
@@ -95,7 +96,7 @@ def test_braket_dry_run_does_not_submit_and_exposes_exact_program() -> None:
 
 def test_braket_provider_submits_program_and_normalizes_result() -> None:
     device = FakeAwsDevice()
-    provider = fq.AmazonBraketProvider(
+    provider = AmazonBraketProvider(
         device,
         dynamic_qubit_groups=((0, 1), (2, 3)),
         program_factory=lambda *, source: {"source": source},
@@ -117,7 +118,7 @@ def test_braket_provider_submits_program_and_normalizes_result() -> None:
 
 def test_braket_iqm_missing_groups_fails_before_hardware_submission() -> None:
     device = FakeAwsDevice()
-    provider = fq.AmazonBraketProvider(
+    provider = AmazonBraketProvider(
         device,
         program_factory=lambda *, source: {"source": source},
     )

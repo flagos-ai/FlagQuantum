@@ -15,6 +15,7 @@ import pytest
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.deployment as fqd
+from flagquantum.deployment import CloudBackendProfile
 from flagquantum.ecosystem.extensions import ProviderExtension
 from flagquantum.runtime.result import ExecutionResult
 from flagquantum.runtime.target_execution import TargetExecutionResult
@@ -23,7 +24,7 @@ pytestmark = pytest.mark.unit
 
 
 def _local_package(*, provider: str = "local", shots: int = 8):
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider=provider,
         name="characterization-target",
         n_wires=2,

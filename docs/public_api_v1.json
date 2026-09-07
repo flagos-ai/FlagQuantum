@@ -26,8 +26,8 @@
     "train"
   ],
   "verification": {
-    "Circuit": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_experimental_deprecation_path",
-    "CircuitIR": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_experimental_deprecation_path",
+    "Circuit": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_internal_root_exports_are_closed",
+    "CircuitIR": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_internal_root_exports_are_closed",
     "ExecutionOptions": "tests/unit/test_execution_options.py::test_execution_options_exact_shape_and_immutability",
     "ExecutionPlan": "tests/api_contract/test_execution_plan_semantics.py::test_plan_json_round_trip_preserves_identity_and_execution",
     "ExecutionResult": "tests/api_contract/test_module_training_semantics.py::test_result_diagnostics_and_required_value_fail_closed",
@@ -44,11 +44,10 @@
     "RuntimePolicy": "tests/unit/test_issue045_module.py::test_policy_rejects_unknown_modes",
     "TrainingResult": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop",
     "__version__": "tests/unit/test_issue079_docs_source_of_truth.py::test_stable_api_includes_module_contract",
-    "experimental": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_experimental_deprecation_path",
+    "experimental": "tests/unit/test_issue040_ir_public_api.py::test_public_api_snapshot_and_internal_root_exports_are_closed",
     "plan": "tests/test_distributed_statevector.py::test_distributed_statevector_plan_marks_sharded_wires_and_communication",
     "run": "tests/unit/test_issue045_module.py::test_fq_run_is_the_uniform_execution_entry_point",
     "train": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop"
   },
-  "compatibility_root_removal_version": "0.3.0",
   "experimental_stability": "none"
 }

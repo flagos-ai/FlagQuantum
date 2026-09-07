@@ -12,12 +12,14 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_slice_tasks,
     plan_sliced_tn_checkpoint_memory,
 )
+from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
+from flagquantum.simulation.tensor_models import TensorNetworkSlicingPlan
 
 
-def _slicing() -> fq.TensorNetworkSlicingPlan:
+def _slicing() -> TensorNetworkSlicingPlan:
     circuit = fq.Circuit(5)
     circuit.h(0).cx(0, 4).ry(1, theta=0.2).rzz(2, 3, theta=-0.4).cx(1, 3)
-    plan = fq.build_tensor_network_expectation(circuit, z=[0, 2, 4])
+    plan = build_tensor_network_expectation(circuit, z=[0, 2, 4])
     counts = Counter(label for node in plan.nodes for label in node.labels)
     labels = tuple(
         label
@@ -83,7 +85,7 @@ def test_distributed_tn_slice_task_plan_rejects_invalid_topology():
 def test_sliced_reverse_full_tape_estimate_is_deterministic():
     circuit = fq.Circuit(5)
     circuit.h(0).cx(0, 4).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    plan = fq.build_tensor_network_expectation(circuit, z=[0, 2, 4])
+    plan = build_tensor_network_expectation(circuit, z=[0, 2, 4])
     counts = Counter(label for node in plan.nodes for label in node.labels)
     labels = tuple(
         label

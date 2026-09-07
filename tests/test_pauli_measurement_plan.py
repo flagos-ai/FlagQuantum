@@ -5,17 +5,19 @@ import torch
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
+from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.deployment import LocalSimulatorProvider
 
 pytestmark = pytest.mark.integration
 
 
-def _hamiltonian() -> fq.Hamiltonian:
-    return fq.Hamiltonian(
+def _hamiltonian() -> Hamiltonian:
+    return Hamiltonian(
         (
-            fq.pauli_term(0.5, "X", (0,)),
-            fq.pauli_term(-0.25, "XZ", (0, 1)),
-            fq.pauli_term(0.75, "Y", (0,)),
-            fq.pauli_term(0.1, "", ()),
+            pauli_term(0.5, "X", (0,)),
+            pauli_term(-0.25, "XZ", (0, 1)),
+            pauli_term(0.75, "Y", (0,)),
+            pauli_term(0.1, "", ()),
         )
     )
 
@@ -80,7 +82,7 @@ def test_local_provider_executes_grouped_measurement_packages() -> None:
         shots=8192,
         optimize=False,
     )
-    provider = fq.LocalSimulatorProvider()
+    provider = LocalSimulatorProvider()
 
     results = tuple(provider.run(package) for package in plan.packages)
     measured = plan.expectation(tuple(result.counts for result in results))

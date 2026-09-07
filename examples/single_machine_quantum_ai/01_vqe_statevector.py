@@ -8,6 +8,13 @@ from pathlib import Path
 
 import torch
 
+from flagquantum.algorithms import (
+    Hamiltonian,
+    hardware_efficient_parameter_count,
+    pauli_term,
+)
+from flagquantum.runtime.backends.jax import compile_quantum_kernel
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -52,13 +59,13 @@ def main() -> None:
     args = parser.parse_args()
 
     torch.manual_seed(7)
-    n_params = fq.hardware_efficient_parameter_count(args.n_qubits, args.layers)
+    n_params = hardware_efficient_parameter_count(args.n_qubits, args.layers)
     parameters = (0.2 * torch.randn(n_params, device=args.device)).requires_grad_(True)
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            *(fq.pauli_term(0.7, "ZZ", (i, i + 1)) for i in range(args.n_qubits - 1)),
-            *(fq.pauli_term(-0.25, "X", (i,)) for i in range(args.n_qubits)),
-            fq.pauli_term(0.05, "Z", (0,)),
+            *(pauli_term(0.7, "ZZ", (i, i + 1)) for i in range(args.n_qubits - 1)),
+            *(pauli_term(-0.25, "X", (i,)) for i in range(args.n_qubits)),
+            pauli_term(0.05, "Z", (0,)),
         ]
     )
 
@@ -79,7 +86,7 @@ def main() -> None:
         )
     jax_kernel = None
     if has_jax:
-        jax_kernel = fq.compile_quantum_kernel(
+        jax_kernel = compile_quantum_kernel(
             lambda theta: build_ansatz(
                 theta, n_wires=args.n_qubits, layers=args.layers, device=args.device
             ),

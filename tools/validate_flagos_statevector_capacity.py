@@ -15,6 +15,11 @@ import time
 from pathlib import Path
 from typing import Any, Mapping
 
+from flagquantum.runtime.distributed import (
+    destroy_torch_distributed,
+    init_torch_distributed,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -303,7 +308,7 @@ def _worker(
             device=device,
         )
     else:
-        context = fq.init_torch_distributed(
+        context = init_torch_distributed(
             backend="flagos", device="flagos", timeout_seconds=timeout_seconds
         )
         rank = context.rank
@@ -320,7 +325,7 @@ def _worker(
             record = _run_sharded(torch, fq, workload, context=context)
     _write_json(_rank_path(output_prefix, rank), record)
     if context is not None:
-        fq.destroy_torch_distributed()
+        destroy_torch_distributed()
     expected = "passed" if mode == "sharded" else "expected_oom"
     return 0 if record["status"] == expected else 2
 

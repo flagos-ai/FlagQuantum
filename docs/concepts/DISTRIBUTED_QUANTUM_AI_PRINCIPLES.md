@@ -44,8 +44,9 @@ For local development and regression checks, run:
 
 ```python
 import flagquantum as fq
+from flagquantum.runtime.local_preflight import local_fast_path_preflight
 
-report = fq.local_fast_path_preflight()
+report = local_fast_path_preflight()
 assert report.passed
 ```
 
@@ -116,7 +117,7 @@ and only the environment changes.
 Development mode is meaningful only when it is a faithful mirror of production
 distributed intent. The same Circuit/IR must produce the same shard ownership,
 rank/task layout, and communication signature in development and production
-profiles. Use `fq.validate_development_production_parity(...)` in tests and
+profiles. Use `flagquantum.runtime.parity.validate_development_production_parity(...)` in tests and
 preflight checks when changing distributed statevector, MPS, or tensor-network
 runtime code.
 
@@ -124,8 +125,9 @@ For everyday local development, run:
 
 ```python
 import flagquantum as fq
+from flagquantum.runtime.parity import local_distributed_development_preflight
 
-report = fq.local_distributed_development_preflight(world_size=2)
+report = local_distributed_development_preflight(world_size=2)
 assert report.passed
 ```
 

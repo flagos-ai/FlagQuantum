@@ -12,7 +12,7 @@ and two state shards, ranks `(0, 1)` and `(2, 3)` are state groups, while
 remain inside each state group; DDP averages the completed parameter gradients
 between replicas exactly once.
 
-`fq.plan_hybrid_parallel(...)` validates the factorization and reports group
+`flagquantum.runtime.parallel.plan_hybrid_parallel(...)` validates the factorization and reports group
 membership, ownership, per-rank state/input memory, parameter and observable
 memory, state-exchange bytes, DDP gradient communication, and observable
 reductions. Model-parallel execution currently fails closed. FSDP and DTensor

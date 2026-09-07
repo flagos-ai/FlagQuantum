@@ -48,13 +48,14 @@ that cannot execute it is rejected before entering the numerical hot path.
 ```python
 import torch
 import flagquantum as fq
+from flagquantum.algorithms import pauli_term
 from flagquantum.runtime.backends.statevector.split_real_imag_device_double_single import (
     parameter_shift_split_real_imag_device_double_single_gradient,
 )
 
 theta = fq.Parameter("theta")
 circuit = fq.Circuit(2).h(0).ry(1, theta=theta).cx(0, 1)
-observable = fq.algorithms.pauli_term(1.0, "ZZ", (0, 1))
+observable = pauli_term(1.0, "ZZ", (0, 1))
 
 result = (
     parameter_shift_split_real_imag_device_double_single_gradient(

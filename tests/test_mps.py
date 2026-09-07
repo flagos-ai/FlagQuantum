@@ -6,6 +6,21 @@ import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.noise as fqn
 import flagquantum.simulation.mps as mps_runtime
+from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
+from flagquantum.runtime.mps_training import MPSTrainingStep, compile_mps_training_step
+from flagquantum.runtime.planner import estimate_mps_bytes
+from flagquantum.simulation.density_matrix import expectation_z_density
+from flagquantum.simulation.mps_execution import (
+    run_mps_adaptive,
+    run_noisy_mps_trajectory,
+)
+from flagquantum.simulation.mps_models import (
+    MPSAdaptiveBondPlan,
+    MPSAdaptiveRunResult,
+    MPSBondProfile,
+    MPSLocalRefinementPlan,
+    MPSTruncationRecord,
+)
 
 
 def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
@@ -39,11 +54,11 @@ def test_mps_bell_state_matches_statevector():
     assert plan.recommended_mode == "mps"
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
     assert torch.allclose(mps.expectation_z(), circuit.expectation_z(), atol=1e-6)
-    assert plan.state_bytes == fq.estimate_mps_bytes(2, max_bond=2)
+    assert plan.state_bytes == estimate_mps_bytes(2, max_bond=2)
     assert mps.summary()["state_mode"] == "mps"
     assert mps.max_bond == 2
     assert mps.left_canonical_residual() < 1e-6
-    assert isinstance(mps.bond_profile(), fq.MPSBondProfile)
+    assert isinstance(mps.bond_profile(), MPSBondProfile)
     assert mps.summary()["parameter_count"] == mps.parameter_count
     assert abs(mps.summary()["state_norm_min"] - 1.0) < 1e-6
 
@@ -224,7 +239,7 @@ def test_compile_mps_training_step_allows_parameter_updates_and_matches_mps():
         circuit.ry(0, theta=values[3])
         return circuit
 
-    step = fq.compile_mps_training_step(
+    step = compile_mps_training_step(
         build,
         params,
         compile=False,
@@ -244,7 +259,7 @@ def test_compile_mps_training_step_allows_parameter_updates_and_matches_mps():
     shifted = params + 0.07
     shifted_loss, shifted_grad = step(shifted)
 
-    assert isinstance(step, fq.MPSTrainingStep)
+    assert isinstance(step, MPSTrainingStep)
     assert torch.allclose(loss, ref_loss.detach(), atol=1e-6)
     assert ref_params.grad is not None
     assert torch.allclose(grad, ref_params.grad, atol=1e-5)
@@ -264,7 +279,7 @@ def test_compile_mps_training_step_compile_failure_falls_back(monkeypatch):
         raise RuntimeError("compiler unavailable")
 
     monkeypatch.setattr(torch, "compile", failing_compile, raising=False)
-    step = fq.compile_mps_training_step(build, params, compile=True, max_bond=4)
+    step = compile_mps_training_step(build, params, compile=True, max_bond=4)
     loss, grad = step(params)
 
     assert torch.isfinite(loss)
@@ -412,8 +427,7 @@ def test_mps_truncation_records_are_reported_per_bond():
 
     assert profile.truncation_records
     assert all(
-        isinstance(record, fq.MPSTruncationRecord)
-        for record in profile.truncation_records
+        isinstance(record, MPSTruncationRecord) for record in profile.truncation_records
     )
     assert all(record.kept_rank <= 1 for record in profile.truncation_records)
     assert profile.truncation_by_bond == tuple(
@@ -436,7 +450,7 @@ def test_mps_adaptive_bond_plan_uses_truncation_hotspots():
     mps = fqb.run_mps(circuit, max_bond=1)
     plan = mps.adaptive_bond_plan(global_error_budget=0.0, growth_factor=2.0)
 
-    assert isinstance(plan, fq.MPSAdaptiveBondPlan)
+    assert isinstance(plan, MPSAdaptiveBondPlan)
     assert not plan.budget_satisfied
     assert plan.observed_error == mps.summary()["truncation_error"]
     assert plan.hot_bonds
@@ -455,7 +469,7 @@ def test_mps_local_refinement_plan_maps_hot_bonds_to_windows():
     mps = fqb.run_mps(circuit, max_bond=1)
     plan = mps.local_refinement_plan(global_error_budget=0.0, window_radius=0)
 
-    assert isinstance(plan, fq.MPSLocalRefinementPlan)
+    assert isinstance(plan, MPSLocalRefinementPlan)
     assert plan.hot_bonds
     assert plan.windows
     assert all(
@@ -469,14 +483,14 @@ def test_run_mps_adaptive_reruns_with_suggested_bond():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)
 
-    result = fq.run_mps_adaptive(
+    result = run_mps_adaptive(
         circuit,
         initial_max_bond=1,
         global_error_budget=0.0,
         max_bond_cap=4,
     )
 
-    assert isinstance(result, fq.MPSAdaptiveRunResult)
+    assert isinstance(result, MPSAdaptiveRunResult)
     assert result.rerun
     assert result.initial_plan.hot_bonds
     assert result.final_plan.current_max_bond > result.initial_plan.current_max_bond
@@ -494,7 +508,7 @@ def test_run_mps_adaptive_skips_rerun_when_budget_is_satisfied():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    result = fq.run_mps_adaptive(
+    result = run_mps_adaptive(
         circuit,
         initial_max_bond=2,
         global_error_budget=0.0,
@@ -519,7 +533,7 @@ def test_circuit_run_accepts_adaptive_mps_mode():
         return_plan=True,
     )
 
-    assert isinstance(result, fq.MPSAdaptiveRunResult)
+    assert isinstance(result, MPSAdaptiveRunResult)
     assert result.summary()["state_mode"] == "adaptive_mps"
     assert plan.state_mode == "mps"
     assert torch.allclose(
@@ -552,7 +566,7 @@ def test_mps_orthogonalize_left_preserves_state_and_profiles():
     mps.orthogonalize_left()
     profile = mps.bond_profile()
 
-    assert isinstance(profile, fq.MPSBondProfile)
+    assert isinstance(profile, MPSBondProfile)
     assert torch.allclose(mps.to_statevector(), before, atol=1e-6)
     assert profile.left_canonical_residual < 1e-6
     assert profile.parameter_count == mps.parameter_count
@@ -596,13 +610,13 @@ def test_mps_move_orthogonality_center_to_middle():
 def test_noisy_mps_trajectory_bit_flip_matches_density_path():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
-    mps = fq.run_noisy_mps_trajectory(circuit, model)
+    mps = run_noisy_mps_trajectory(circuit, model)
     rho = fqn.noisy_density_matrix(circuit, model)
 
     assert torch.allclose(
-        mps.expectation_z(0), fq.expectation_z_density(rho, 0), atol=1e-6
+        mps.expectation_z(0), expectation_z_density(rho, 0), atol=1e-6
     )
     assert torch.allclose(mps.expectation_z(0), torch.ones(1, 1), atol=1e-6)
 
@@ -619,10 +633,10 @@ def test_noisy_mps_wrapper_passes_lowered_ir_and_explicit_rng(monkeypatch):
 
     monkeypatch.setattr(mps_execution, "run_local_noisy_mps_trajectory", replacement)
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))
     generator = torch.Generator().manual_seed(11)
 
-    assert fq.run_noisy_mps_trajectory(circuit, model, generator=generator) is expected
+    assert run_noisy_mps_trajectory(circuit, model, generator=generator) is expected
     assert isinstance(calls[0][0], fq.CircuitIR)
     assert any(item.metadata.get("is_channel") for item in calls[0][0])
     assert calls[0][1].n_wires == 1
@@ -632,7 +646,7 @@ def test_noisy_mps_wrapper_passes_lowered_ir_and_explicit_rng(monkeypatch):
 def test_noisy_mps_trajectory_amplitude_damping():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.amplitude_damping_channel(1.0))
+    model = fqn.NoiseModel().add("x", amplitude_damping_channel(1.0))
 
     mps, plan = fqb.run_native(
         circuit,
@@ -652,7 +666,7 @@ def test_noisy_mps_trajectory_amplitude_damping():
 def test_noisy_mps_monte_carlo_aggregates_deterministic_channel():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     result = fqb.run_noisy_mps(
         circuit,
@@ -671,7 +685,7 @@ def test_noisy_mps_monte_carlo_aggregates_deterministic_channel():
 def test_run_native_noisy_mps_mode():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.amplitude_damping_channel(1.0))
+    model = fqn.NoiseModel().add("x", amplitude_damping_channel(1.0))
 
     result, plan = fqb.run_native(
         circuit,

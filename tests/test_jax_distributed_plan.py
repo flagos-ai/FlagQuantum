@@ -3,7 +3,14 @@ import torch
 
 import flagquantum as fq
 import flagquantum.runtime.planner as fqxp
+from flagquantum.runtime.audit import (
+    DistributedScalabilityError,
+    audit_distributed_scalability,
+)
+from flagquantum.runtime.audit.release_policy import require_distributed_scalability
 from flagquantum.runtime.backends.jax import (
+    JAXDistributedQuantumPlan,
+    compile_quantum_kernel,
     mps_backward,
     mps_boundary_exchange,
     mps_canonicalization,
@@ -11,17 +18,60 @@ from flagquantum.runtime.backends.jax import (
     mps_gradient_ownership,
     mps_kernels,
     mps_pullbacks,
+    plan_jax_distributed_quantum_backend,
+    plan_jax_sharded_mps_training,
+    plan_jax_sharded_statevector_training,
+    run_jax_sharded_mps,
+    run_jax_sharded_statevector,
+    run_jax_sharded_tensor_network,
     runtime_environment,
     statevector_execution,
     tensor_network_contraction,
 )
+from flagquantum.runtime.backends.jax.mps_gradient_result import (
+    JAXShardedMPSParameterGradientResult,
+)
+from flagquantum.runtime.backends.jax.mps_gradients import (
+    jax_sharded_mps_parameter_value_and_grad,
+)
+from flagquantum.runtime.backends.jax.mps_planning import (
+    plan_jax_sharded_mps_parameter_flow,
+)
+from flagquantum.runtime.backends.jax.mps_result import JAXShardedMPSResult
+from flagquantum.runtime.backends.jax.mps_training_records import (
+    JAXShardedMPSParameterFlowPlan,
+    JAXShardedMPSTrainingPlan,
+)
+from flagquantum.runtime.backends.jax.statevector_execution import (
+    jax_sharded_statevector_parameter_value_and_grad,
+)
+from flagquantum.runtime.backends.jax.statevector_gradient_records import (
+    JAXShardedStatevectorParameterGradientResult,
+)
+from flagquantum.runtime.backends.jax.statevector_records import (
+    JAXShardedStatevectorResult,
+    JAXShardedStatevectorTrainingPlan,
+)
+from flagquantum.runtime.backends.jax.tensor_network_gradients import (
+    jax_sliced_tensor_network_parameter_value_and_grad,
+    jax_sliced_tensor_network_value_and_grad,
+)
+from flagquantum.runtime.backends.jax.tensor_network_records import (
+    JAXShardedTensorNetworkResult,
+    JAXSlicedTensorNetworkGradientResult,
+    JAXSlicedTensorNetworkParameterGradientResult,
+)
 from flagquantum.runtime.execution import run_advanced
+from flagquantum.simulation.tensor_execution import (
+    build_tensor_network,
+    build_tensor_network_expectation,
+)
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
 
 def _first_internal_tn_label(circuit):
-    plan = fq.build_tensor_network(circuit)
+    plan = build_tensor_network(circuit)
     counts = {}
     for node in plan.nodes:
         for label in node.labels:
@@ -34,7 +84,7 @@ def _first_internal_tn_label(circuit):
 
 
 def _first_internal_tn_expectation_label(circuit):
-    plan = fq.build_tensor_network_expectation(fq.build_tensor_network(circuit), z=(0,))
+    plan = build_tensor_network_expectation(build_tensor_network(circuit), z=(0,))
     counts = {}
     for node in plan.nodes:
         for label in node.labels:
@@ -54,11 +104,11 @@ def test_jax_distributed_statevector_plan_reports_sharding_intent_without_claim(
     circuit = fq.Circuit(5)
     circuit.h(0).x(4).cx(0, 4)
 
-    plan = fq.plan_jax_distributed_quantum_backend(circuit, mode="statevector", bsz=2)
+    plan = plan_jax_distributed_quantum_backend(circuit, mode="statevector", bsz=2)
     summary = plan.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
-    assert isinstance(plan, fq.JAXDistributedQuantumPlan)
+    assert isinstance(plan, JAXDistributedQuantumPlan)
     assert summary["backend"] == "jax"
     assert summary["jax_backend"] == "pmap_local_cpu"
     assert summary["mode"] == "statevector"
@@ -101,7 +151,7 @@ def test_jax_distributed_plans_share_distributed_evidence_contract(
     if mode == "tensor_network":
         kwargs = {"max_intermediate_size": 64}
 
-    summary = fq.plan_jax_distributed_quantum_backend(
+    summary = plan_jax_distributed_quantum_backend(
         circuit, mode=mode, bsz=2, **kwargs
     ).summary()
     contract = summary["distributed_evidence_contract"]
@@ -123,9 +173,9 @@ def test_jax_sharded_mps_and_tn_runtime_summaries_share_evidence_contract(monkey
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).cx(0, 1).cx(2, 3)
 
-    mps = fq.run_jax_sharded_mps(circuit, world_size=2, max_bond=4).summary()
+    mps = run_jax_sharded_mps(circuit, world_size=2, max_bond=4).summary()
     sliced_label = _first_internal_tn_label(circuit)
-    tn = fq.run_jax_sharded_tensor_network(
+    tn = run_jax_sharded_tensor_network(
         circuit, world_size=2, sliced_labels=(sliced_label,)
     ).summary()
 
@@ -148,7 +198,7 @@ def test_jax_sharded_statevector_training_plan_requires_device_preflight():
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).cx(2, 3)
 
-    plan = fq.plan_jax_sharded_statevector_training(
+    plan = plan_jax_sharded_statevector_training(
         circuit,
         world_size=4,
         local_world_size=2,
@@ -158,9 +208,9 @@ def test_jax_sharded_statevector_training_plan_requires_device_preflight():
         inspect_devices=False,
     )
     summary = plan.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
-    assert isinstance(plan, fq.JAXShardedStatevectorTrainingPlan)
+    assert isinstance(plan, JAXShardedStatevectorTrainingPlan)
     assert summary["distribution_semantics"] == "sharded_across_ranks"
     assert summary["backward_execution"] == "jax_pmap_backward"
     assert summary["gradient_ready"] is False
@@ -189,7 +239,7 @@ def test_jax_sharded_statevector_training_plan_can_be_claimable_after_explicit_d
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).rxx(2, 3, theta=0.1).cx(2, 3)
 
-    plan = fq.plan_jax_sharded_statevector_training(
+    plan = plan_jax_sharded_statevector_training(
         circuit,
         world_size=4,
         local_world_size=2,
@@ -228,15 +278,15 @@ def test_jax_sharded_statevector_training_plan_can_be_claimable_after_explicit_d
         ]
         is False
     )
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
 
 def test_jax_sharded_statevector_multi_node_plan_reports_transport_boundary():
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).rxx(2, 3, theta=0.1).cx(2, 3)
 
-    plan = fq.plan_jax_sharded_statevector_training(
+    plan = plan_jax_sharded_statevector_training(
         circuit,
         world_size=4,
         local_world_size=2,
@@ -265,7 +315,7 @@ def test_jax_sharded_statevector_training_plan_blocks_shard_map_all_to_all():
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.2).rxx(2, 3, theta=0.1).cx(2, 3)
 
-    plan = fq.plan_jax_sharded_statevector_training(
+    plan = plan_jax_sharded_statevector_training(
         circuit,
         world_size=4,
         local_world_size=4,
@@ -289,7 +339,7 @@ def test_jax_distributed_mps_plan_tracks_site_shards_and_boundary_tiers():
     circuit = fq.Circuit(6)
     circuit.h(0).cx(1, 2).cx(3, 4).rz(5, theta=0.2)
 
-    plan = fq.plan_jax_distributed_quantum_backend(
+    plan = plan_jax_distributed_quantum_backend(
         circuit,
         mode="mps",
         world_size=3,
@@ -317,7 +367,7 @@ def test_jax_sharded_mps_parameter_flow_tracks_rank_local_parameter_gates():
     circuit = fq.Circuit(6)
     circuit.ry(0, theta=0.1).rx(3, theta=-0.2).rz(5, theta=0.3).cx(1, 2)
 
-    plan = fq.plan_jax_sharded_mps_parameter_flow(
+    plan = plan_jax_sharded_mps_parameter_flow(
         circuit,
         world_size=3,
         local_world_size=2,
@@ -325,7 +375,7 @@ def test_jax_sharded_mps_parameter_flow_tracks_rank_local_parameter_gates():
     )
     summary = plan.summary()
 
-    assert isinstance(plan, fq.JAXShardedMPSParameterFlowPlan)
+    assert isinstance(plan, JAXShardedMPSParameterFlowPlan)
     assert summary["planner"] == "jax_sharded_mps_parameter_flow"
     assert summary["parameter_gate_count"] == 3
     assert summary["rank_local_parameter_gate_count"] == 3
@@ -365,7 +415,7 @@ def test_jax_sharded_mps_parameter_flow_marks_boundary_parameter_pullback():
     circuit = fq.Circuit(6)
     circuit.rzz(1, 2, theta=0.4).crz(3, 4, theta=-0.3).rxx(0, 5, theta=0.2)
 
-    plan = fq.plan_jax_sharded_mps_parameter_flow(
+    plan = plan_jax_sharded_mps_parameter_flow(
         circuit,
         world_size=3,
         local_world_size=2,
@@ -402,7 +452,7 @@ def test_jax_sharded_mps_training_plan_fails_closed_with_rank_ownership():
     circuit = fq.Circuit(6)
     circuit.h(0).ry(1, theta=0.2).cx(1, 2).cx(3, 4)
 
-    plan = fq.plan_jax_sharded_mps_training(
+    plan = plan_jax_sharded_mps_training(
         circuit,
         world_size=3,
         local_world_size=2,
@@ -412,9 +462,9 @@ def test_jax_sharded_mps_training_plan_fails_closed_with_rank_ownership():
         backward_backend="pmap",
     )
     summary = plan.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
-    assert isinstance(plan, fq.JAXShardedMPSTrainingPlan)
+    assert isinstance(plan, JAXShardedMPSTrainingPlan)
     assert summary["planner"] == "jax_sharded_mps_training"
     assert summary["distribution_semantics"] == "requires_runtime_summary"
     assert summary["intended_distribution_semantics"] == "sharded_across_ranks"
@@ -463,7 +513,7 @@ def test_jax_sharded_mps_training_plan_marks_local_development_as_non_scaling():
     circuit = fq.Circuit(4)
     circuit.ry(0, theta=0.1).cx(1, 2)
 
-    plan = fq.plan_jax_sharded_mps_training(
+    plan = plan_jax_sharded_mps_training(
         circuit,
         world_size=2,
         local_world_size=2,
@@ -491,7 +541,7 @@ def test_jax_distributed_tensor_network_plan_tracks_slice_tasks():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=torch.tensor(0.2)).rzz(2, 3, theta=-0.4)
 
-    plan = fq.plan_jax_distributed_quantum_backend(
+    plan = plan_jax_distributed_quantum_backend(
         circuit,
         mode="tensor_network",
         world_size=2,
@@ -525,18 +575,18 @@ def test_rank_local_jax_kernel_summary_points_to_distributed_plan():
         circuit.rx(0, theta=theta[0, 0, 0])
         return circuit
 
-    kernel = fq.compile_quantum_kernel(build, params, n_wires=1, mode="statevector")
+    kernel = compile_quantum_kernel(build, params, n_wires=1, mode="statevector")
     summary = kernel.summary()
 
     assert summary["distribution_semantics"] == "rank_local_replicated_kernel"
     assert summary["distributed_integration_role"] == "rank_local_jax_accelerator"
     assert summary["requires_jax_distributed_plan_for_capacity_scaling"] is True
     assert "distributed_statevector" in summary["compatible_distributed_modes"]
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
     assert audit.valid
     assert not audit.scalability_claim_allowed
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
 
 def test_runtime_selection_blocks_preflight_only_jax_statevector_training_recommendation():
@@ -611,11 +661,11 @@ def test_jax_sharded_statevector_executor_matches_native_statevector(monkeypatch
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).rz(1, theta=torch.tensor(0.3)).ry(2, theta=-0.2)
 
-    result = fq.run_jax_sharded_statevector(circuit, world_size=2)
+    result = run_jax_sharded_statevector(circuit, world_size=2)
     summary = result.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
-    assert isinstance(result, fq.JAXShardedStatevectorResult)
+    assert isinstance(result, JAXShardedStatevectorResult)
     assert summary["executor"] == "jax_sharded_statevector_executor"
     assert summary["distribution_semantics"] == "sharded_across_ranks"
     assert summary["communication_execution"] == "jax_rank_local_amplitude_exchange"
@@ -647,7 +697,7 @@ def test_jax_sharded_statevector_executor_uses_development_env_world_size(monkey
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).x(1)
 
-    result = fq.run_jax_sharded_statevector(circuit)
+    result = run_jax_sharded_statevector(circuit)
     summary = result.summary()
 
     assert summary["world_size"] == 4
@@ -666,9 +716,9 @@ def test_jax_sharded_statevector_executor_single_rank_is_not_distributed(monkeyp
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    result = fq.run_jax_sharded_statevector(circuit, world_size=1)
+    result = run_jax_sharded_statevector(circuit, world_size=1)
     summary = result.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
     assert summary["distribution_semantics"] == "replicated_single_rank"
     assert summary["scalability_claim_allowed"] is False
@@ -690,7 +740,7 @@ def test_jax_sharded_statevector_parameter_gradient_matches_jax_kernel(monkeypat
         circuit.rzz(1, 2, theta=theta[2])
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=3,
@@ -698,7 +748,7 @@ def test_jax_sharded_statevector_parameter_gradient_matches_jax_kernel(monkeypat
         observable="z_sum",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=3,
@@ -710,7 +760,7 @@ def test_jax_sharded_statevector_parameter_gradient_matches_jax_kernel(monkeypat
     reference_value.backward()
     summary = sharded.summary()
 
-    assert isinstance(sharded, fq.JAXShardedStatevectorParameterGradientResult)
+    assert isinstance(sharded, JAXShardedStatevectorParameterGradientResult)
     assert (
         summary["gradient_execution"]
         == "jax_reverse_mode_amplitude_sharded_parameter_backprop"
@@ -750,7 +800,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_indexed_all_to_all_fail
     with pytest.raises(
         RuntimeError, match="pmap statevector backward is not production-ready"
     ):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=3,
@@ -783,7 +833,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_requires_d
         return circuit
 
     with pytest.raises(RuntimeError, match="requires at least 2 global JAX devices"):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=3,
@@ -815,7 +865,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_requires_
         return circuit
 
     with pytest.raises(RuntimeError, match="requires at least 2 global JAX devices"):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=3,
@@ -848,7 +898,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_requires_dev
         return circuit
 
     with pytest.raises(RuntimeError, match="requires at least 2 global JAX devices"):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=3,
@@ -902,7 +952,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_matches_ke
         circuit.rz(2, theta=0.1)
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=3,
@@ -911,7 +961,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_matches_ke
         backward_backend="pmap",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=3,
@@ -955,7 +1005,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_matches_k
         circuit.rx(0, theta=theta[1])
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=3,
@@ -964,7 +1014,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_matches_k
         backward_backend="pmap",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=3,
@@ -1009,7 +1059,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_matches_kern
         circuit.rz(2, theta=0.1)
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=3,
@@ -1018,7 +1068,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_matches_kern
         backward_backend="pmap",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=3,
@@ -1064,7 +1114,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_4rank_multi_sharded_all
         circuit.ry(3, theta=theta[3])
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1074,7 +1124,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_4rank_multi_sharded_all
         distributed_profile="production",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=4,
@@ -1100,8 +1150,8 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_4rank_multi_sharded_all
     assert (
         summary["simulated_communication_bytes"] == summary["estimated_transfer_bytes"]
     )
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
     assert torch.allclose(
         sharded.torch_value(like=reference_params), reference_value.detach(), atol=1e-5
     )
@@ -1136,7 +1186,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_8rank_multi_sharded_all
         circuit.rxx(2, 3, theta=theta[5])
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=5,
@@ -1146,7 +1196,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_8rank_multi_sharded_all
         distributed_profile="production",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=5,
@@ -1170,8 +1220,8 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_8rank_multi_sharded_all
     assert (
         summary["simulated_communication_bytes"] == summary["estimated_transfer_bytes"]
     )
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
     assert torch.allclose(
         sharded.torch_value(like=reference_params), reference_value.detach(), atol=1e-5
     )
@@ -1206,7 +1256,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_multiprocess_fails
     with pytest.raises(
         RuntimeError, match="multiple JAX processes requires global-array input"
     ):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=4,
@@ -1243,7 +1293,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_all_to_all_fails_c
     with pytest.raises(
         RuntimeError, match="shard_map_statevector_multi_sharded_wire_transport_pending"
     ):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=4,
@@ -1273,7 +1323,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_pair_exchange_matc
         circuit.rx(1, theta=theta[2])
         return circuit
 
-    sharded = fq.jax_sharded_statevector_parameter_value_and_grad(
+    sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1283,7 +1333,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_pair_exchange_matc
         distributed_profile="production",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=4,
@@ -1318,8 +1368,8 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_pair_exchange_matc
         is False
     )
     assert summary["distributed_gate_count"] >= 1
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
     assert torch.allclose(
         sharded.torch_value(like=reference_params), reference_value.detach(), atol=1e-5
     )
@@ -1352,7 +1402,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_requires_local_mes
         return circuit
 
     with pytest.raises(RuntimeError, match="requires at least 4 local JAX devices"):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=4,
@@ -1387,7 +1437,7 @@ def test_jax_sharded_statevector_parameter_gradient_production_auto_fails_closed
         return circuit
 
     with pytest.raises(RuntimeError, match="requires at least 2 global JAX devices"):
-        fq.jax_sharded_statevector_parameter_value_and_grad(
+        jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
             n_wires=3,
@@ -1403,11 +1453,11 @@ def test_jax_sharded_mps_executor_matches_native_mps_without_statevector_fallbac
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).ry(2, theta=torch.tensor(0.2)).cx(1, 2).rz(3, theta=-0.3)
 
-    result = fq.run_jax_sharded_mps(circuit, world_size=2, max_bond=8)
+    result = run_jax_sharded_mps(circuit, world_size=2, max_bond=8)
     summary = result.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
-    assert isinstance(result, fq.JAXShardedMPSResult)
+    assert isinstance(result, JAXShardedMPSResult)
     assert summary["executor"] == "jax_sharded_mps_executor"
     assert summary["distribution_semantics"] == "sharded_across_ranks"
     assert summary["boundary_sync_count"] == 1
@@ -1457,7 +1507,7 @@ def test_jax_sharded_mps_rejects_remote_gate_without_fallback(monkeypatch):
     circuit.h(0).cx(0, 3)
 
     with pytest.raises(RuntimeError, match="without a full-MPS/statevector fallback"):
-        fq.run_jax_sharded_mps(circuit, world_size=2, max_bond=8)
+        run_jax_sharded_mps(circuit, world_size=2, max_bond=8)
 
 
 def test_jax_sharded_mps_parameter_gradient_matches_jax_mps_kernel_without_statevector(
@@ -1476,7 +1526,7 @@ def test_jax_sharded_mps_parameter_gradient_matches_jax_mps_kernel_without_state
         circuit.cx(2, 3)
         return circuit
 
-    sharded = fq.jax_sharded_mps_parameter_value_and_grad(
+    sharded = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1485,7 +1535,7 @@ def test_jax_sharded_mps_parameter_gradient_matches_jax_mps_kernel_without_state
         observable="z_sum",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
         n_wires=4,
@@ -1498,7 +1548,7 @@ def test_jax_sharded_mps_parameter_gradient_matches_jax_mps_kernel_without_state
     reference_value.backward()
     summary = sharded.summary()
 
-    assert isinstance(sharded, fq.JAXShardedMPSParameterGradientResult)
+    assert isinstance(sharded, JAXShardedMPSParameterGradientResult)
     assert (
         summary["gradient_execution"]
         == "jax_reverse_mode_site_sharded_mps_parameter_backprop"
@@ -1573,7 +1623,7 @@ def test_jax_sharded_mps_parameter_gradient_emits_rank_owned_attribution(monkeyp
         circuit.rz(3, theta=theta[1])
         return circuit
 
-    result = fq.jax_sharded_mps_parameter_value_and_grad(
+    result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1636,8 +1686,8 @@ def test_jax_sharded_mps_parameter_gradient_emits_rank_owned_attribution(monkeyp
     )
     assert summary["mps_backward_readiness_status"] == "blocked"
     assert summary["scalability_claim_allowed"] is False
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
     stepped = result.with_sharded_optimizer_step_evidence(learning_rate=0.05)
     stepped_summary = stepped.summary()
@@ -1694,8 +1744,8 @@ def test_jax_sharded_mps_parameter_gradient_emits_rank_owned_attribution(monkeyp
     )
     assert stepped_summary["distributed_evidence_contract"]["fail_closed"] is True
     assert stepped_summary["scalability_claim_allowed"] is False
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(stepped_summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(stepped_summary)
 
 
 @pytest.mark.parametrize("bad_learning_rate", (0.0, -0.1, float("inf"), "not-a-rate"))
@@ -1712,7 +1762,7 @@ def test_jax_sharded_mps_optimizer_evidence_rejects_invalid_learning_rate(
         circuit.rx(2, theta=theta[1])
         return circuit
 
-    result = fq.jax_sharded_mps_parameter_value_and_grad(
+    result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1740,7 +1790,7 @@ def test_jax_sharded_mps_optimizer_evidence_rejects_incomplete_owner_records(
         circuit.rx(2, theta=theta[1])
         return circuit
 
-    result = fq.jax_sharded_mps_parameter_value_and_grad(
+    result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1774,7 +1824,7 @@ def test_jax_sharded_mps_parameter_gradient_shared_cross_rank_owner_fails_closed
         circuit.rx(2, theta=theta[0])
         return circuit
 
-    result = fq.jax_sharded_mps_parameter_value_and_grad(
+    result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1831,7 +1881,7 @@ def test_jax_sharded_mps_parameter_gradient_dependency_mapping_fails_closed(
             circuit.ry(0, theta=theta[0] * 0.0 + 0.25)
         return circuit
 
-    result = fq.jax_sharded_mps_parameter_value_and_grad(
+    result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1873,7 +1923,7 @@ def test_jax_sharded_mps_backward_resource_evidence_accounts_every_rank(
         circuit.rzz(1, 2, theta=theta[2])
         return circuit
 
-    result = fq.jax_sharded_mps_parameter_value_and_grad(
+    result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
         n_wires=4,
@@ -1915,8 +1965,8 @@ def test_jax_sharded_mps_backward_resource_evidence_accounts_every_rank(
     assert edge["topology_dependent"] is False
     assert edge["execution_status"] == "executed"
     assert summary["mps_backward_readiness_status"] == "blocked"
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
 
 def test_jax_sharded_mps_training_resource_plan_marks_inter_node_route_topology_dependent():
@@ -1925,7 +1975,7 @@ def test_jax_sharded_mps_training_resource_plan_marks_inter_node_route_topology_
     circuit.rzz(1, 2, theta=0.2)
     circuit.rzz(3, 4, theta=0.3)
 
-    summary = fq.plan_jax_sharded_mps_training(
+    summary = plan_jax_sharded_mps_training(
         circuit,
         world_size=4,
         local_world_size=2,
@@ -2115,7 +2165,7 @@ def test_jax_sharded_mps_parameter_gradient_pmap_fails_closed(monkeypatch):
         return circuit
 
     with pytest.raises(RuntimeError, match="pmap mps backward is not production-ready"):
-        fq.jax_sharded_mps_parameter_value_and_grad(
+        jax_sharded_mps_parameter_value_and_grad(
             build,
             params,
             n_wires=4,
@@ -2138,7 +2188,7 @@ def test_jax_sharded_mps_parameter_gradient_shard_map_fails_closed(monkeypatch):
     with pytest.raises(
         RuntimeError, match="JAX shard_map mps backward is not production-ready"
     ):
-        fq.jax_sharded_mps_parameter_value_and_grad(
+        jax_sharded_mps_parameter_value_and_grad(
             build,
             params,
             n_wires=4,
@@ -2161,7 +2211,7 @@ def test_jax_sharded_mps_parameter_gradient_production_auto_fails_closed(monkeyp
         return circuit
 
     with pytest.raises(RuntimeError, match="pmap mps backward is not production-ready"):
-        fq.jax_sharded_mps_parameter_value_and_grad(
+        jax_sharded_mps_parameter_value_and_grad(
             build,
             params,
             n_wires=4,
@@ -2179,13 +2229,13 @@ def test_jax_sharded_tensor_network_executor_matches_native_without_full_fallbac
     circuit.h(0).cx(0, 2).ry(1, theta=torch.tensor(0.2))
     sliced_label = _first_internal_tn_label(circuit)
 
-    result = fq.run_jax_sharded_tensor_network(
+    result = run_jax_sharded_tensor_network(
         circuit, world_size=2, sliced_labels=(sliced_label,)
     )
     summary = result.summary()
-    audit = fq.audit_distributed_scalability(summary)
+    audit = audit_distributed_scalability(summary)
 
-    assert isinstance(result, fq.JAXShardedTensorNetworkResult)
+    assert isinstance(result, JAXShardedTensorNetworkResult)
     assert summary["executor"] == "jax_sharded_tensor_network_executor"
     assert summary["distribution_semantics"] == "sharded_across_ranks"
     assert summary["slice_task_count"] == 2
@@ -2237,7 +2287,7 @@ def test_jax_sharded_tensor_network_rejects_unsliced_multi_rank(monkeypatch):
     circuit.h(0).cx(0, 2)
 
     with pytest.raises(RuntimeError, match="requires at least two slice tasks"):
-        fq.run_jax_sharded_tensor_network(circuit, world_size=2)
+        run_jax_sharded_tensor_network(circuit, world_size=2)
 
 
 def test_jax_sharded_tensor_network_pmap_collective_fails_closed_without_devices(
@@ -2254,7 +2304,7 @@ def test_jax_sharded_tensor_network_pmap_collective_fails_closed_without_devices
     sliced_label = _first_internal_tn_label(circuit)
 
     with pytest.raises(RuntimeError, match="requires at least 2 local JAX devices"):
-        fq.run_jax_sharded_tensor_network(
+        run_jax_sharded_tensor_network(
             circuit,
             world_size=2,
             sliced_labels=(sliced_label,),
@@ -2278,7 +2328,7 @@ def test_jax_sharded_tensor_network_pmap_compute_fails_closed_without_devices(
     with pytest.raises(
         RuntimeError, match="slice compute requires at least 2 local JAX devices"
     ):
-        fq.run_jax_sharded_tensor_network(
+        run_jax_sharded_tensor_network(
             circuit,
             world_size=2,
             sliced_labels=(sliced_label,),
@@ -2293,13 +2343,13 @@ def test_jax_sliced_tensor_network_reverse_mode_matches_single_rank_sliced(monke
     circuit.h(0).cx(0, 2).ry(1, theta=torch.tensor(0.2))
     sliced_label = _first_internal_tn_label(circuit)
 
-    sharded = fq.jax_sliced_tensor_network_value_and_grad(
+    sharded = jax_sliced_tensor_network_value_and_grad(
         circuit,
         world_size=2,
         sliced_labels=(sliced_label,),
         observable="z_sum",
     )
-    single_rank = fq.jax_sliced_tensor_network_value_and_grad(
+    single_rank = jax_sliced_tensor_network_value_and_grad(
         circuit,
         world_size=1,
         sliced_labels=(sliced_label,),
@@ -2307,7 +2357,7 @@ def test_jax_sliced_tensor_network_reverse_mode_matches_single_rank_sliced(monke
     )
     summary = sharded.summary()
 
-    assert isinstance(sharded, fq.JAXSlicedTensorNetworkGradientResult)
+    assert isinstance(sharded, JAXSlicedTensorNetworkGradientResult)
     assert summary["gradient_execution"] == "jax_reverse_mode_sliced_contraction"
     assert summary["distribution_semantics"] == "sharded_across_ranks"
     assert summary["gradient_target"] == "tensor_network_node_tensors"
@@ -2335,7 +2385,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_matches_jax_tn_kernel(
         return circuit
 
     sliced_label = _first_internal_tn_expectation_label(build(params.detach()))
-    sharded = fq.jax_sliced_tensor_network_parameter_value_and_grad(
+    sharded = jax_sliced_tensor_network_parameter_value_and_grad(
         build,
         params,
         n_wires=3,
@@ -2344,7 +2394,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_matches_jax_tn_kernel(
         observable="z_sum",
         jit=False,
     )
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params.detach(),
         n_wires=3,
@@ -2356,7 +2406,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_matches_jax_tn_kernel(
     reference_value.backward()
     summary = sharded.summary()
 
-    assert isinstance(sharded, fq.JAXSlicedTensorNetworkParameterGradientResult)
+    assert isinstance(sharded, JAXSlicedTensorNetworkParameterGradientResult)
     assert summary["gradient_target"] == "parameterized_gate_tensors"
     assert (
         summary["gradient_execution"] == "jax_reverse_mode_sliced_parameter_contraction"
@@ -2393,7 +2443,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_pmap_compute_fails_closed_
     with pytest.raises(
         RuntimeError, match="slice compute requires at least 2 local JAX devices"
     ):
-        fq.jax_sliced_tensor_network_parameter_value_and_grad(
+        jax_sliced_tensor_network_parameter_value_and_grad(
             build,
             params,
             n_wires=3,
@@ -2548,8 +2598,8 @@ def test_minimal_mps_sharded_backward_skeleton_executes_without_full_replay():
     )
     assert summary["mps_backward_readiness_gate"]["fail_closed"] is True
     assert summary["scalability_claim_allowed"] is False
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
 
 @pytest.mark.parametrize(
@@ -2620,8 +2670,8 @@ def test_mps_owner_rank_parameter_vjp_executes_one_and_same_shard_two_site_gates
         == "sharded_across_ranks"
     )
     assert summary["mps_backward_readiness_status"] == "blocked"
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
 
 def test_mps_owner_rank_parameter_vjp_rejects_boundary_crossing_gate():

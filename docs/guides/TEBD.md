@@ -5,8 +5,9 @@ single-device MPS path for second-order imaginary-time evolution.
 
 ```python
 import flagquantum as fq
+from flagquantum.algorithms import transverse_field_ising
 
-hamiltonian = fq.transverse_field_ising(8, coupling=1.0, field=0.7)
+hamiltonian = transverse_field_ising(8, coupling=1.0, field=0.7)
 result = fq.experimental.simulation.run_tebd(
     hamiltonian,
     n_wires=8,

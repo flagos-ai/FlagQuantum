@@ -17,6 +17,7 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_contraction_dag,
     plan_multi_axis_tn_peak_sharding,
 )
+from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
 
 
 def _arguments() -> argparse.Namespace:
@@ -39,7 +40,7 @@ def _expectation(qubits: int, layers: int):
     for layer in range(layers):
         for qubit in range(layer % 2, qubits - 1, 2):
             circuit.cx(qubit, qubit + 1)
-    return fq.build_tensor_network_expectation(circuit, z=list(range(qubits)))
+    return build_tensor_network_expectation(circuit, z=list(range(qubits)))
 
 
 def main() -> None:

@@ -255,7 +255,7 @@ rg -o --no-filename "torch\.[A-Za-z_][A-Za-z0-9_]*" flagquantum -g "*.py" \
 验证 FlagGems 对某个 dtype 的实际支持：
 
 ```python
-import flagquantum as fq
+from flagquantum.runtime.operator_backends import validate_flaggems_ops
 
 ops = [
     "mm", "bmm", "sum", "mul", "abs", "add", "addmm",
@@ -264,7 +264,7 @@ ops = [
 ]
 
 for dtype in ["float32", "float16", "bfloat16", "complex64", "complex128"]:
-    result = fq.validate_flaggems_ops(ops, device="cuda", dtype=dtype)
+    result = validate_flaggems_ops(ops, device="cuda", dtype=dtype)
     print("\n==", dtype, "==")
     print("passed:", result.passed_ops)
     print("failed:", result.failed_ops)

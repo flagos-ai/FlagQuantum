@@ -9,14 +9,21 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
+from flagquantum.runtime.backends.jax import compile_quantum_kernel
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import flagquantum as fq  # noqa: E402
-from common import jax_available, print_section, print_training_summary, speedup, time_forward  # noqa: E402
+from common import (  # noqa: E402
+    jax_available,
+    print_section,
+    print_training_summary,
+    speedup,
+    time_forward,
+)
 
+import flagquantum as fq  # noqa: E402
 
 TEACHER_WEIGHTS = torch.tensor([0.7, -0.4, 1.1, -0.8], dtype=torch.float32)
 
@@ -85,10 +92,12 @@ def main() -> None:
     )
     has_jax, jax_error = jax_available()
     if args.backend == "jax" and not has_jax:
-        raise SystemExit(f"JAX backend requested but unavailable: {jax_error}. Use --backend torch to run the native path.")
+        raise SystemExit(
+            f"JAX backend requested but unavailable: {jax_error}. Use --backend torch to run the native path."
+        )
     jax_kernel = None
     if has_jax:
-        jax_kernel = fq.compile_quantum_kernel(
+        jax_kernel = compile_quantum_kernel(
             packed_classifier_circuit,
             packed_features[0],
             backend="jax",
@@ -116,9 +125,19 @@ def main() -> None:
         loss = F.binary_cross_entropy_with_logits(logits, y)
         loss.backward()
         optimizer.step()
-        if step == 0 or step == args.steps - 1 or (step + 1) % max(1, args.steps // 5) == 0:
+        if (
+            step == 0
+            or step == args.steps - 1
+            or (step + 1) % max(1, args.steps // 5) == 0
+        ):
             accuracy = ((torch.sigmoid(logits) > 0.5) == y.bool()).float().mean()
-            print({"step": step + 1, "loss": float(loss.detach()), "accuracy": float(accuracy.detach())})
+            print(
+                {
+                    "step": step + 1,
+                    "loss": float(loss.detach()),
+                    "accuracy": float(accuracy.detach()),
+                }
+            )
 
     final_logits = active_logits(weights.detach())
     final_accuracy = ((torch.sigmoid(final_logits) > 0.5) == y.bool()).float().mean()
@@ -130,12 +149,16 @@ def main() -> None:
             iters=args.bench_iters,
             device=args.device,
         )
-    jax_speed = time_forward(
-        jax_logits,
-        weights.detach(),
-        iters=args.bench_iters,
-        device=args.device,
-    ) if jax_kernel is not None else None
+    jax_speed = (
+        time_forward(
+            jax_logits,
+            weights.detach(),
+            iters=args.bench_iters,
+            device=args.device,
+        )
+        if jax_kernel is not None
+        else None
+    )
     print_training_summary(
         title="Single-Machine Quantum Classifier",
         example="single_machine_quantum_classifier",
@@ -144,13 +167,19 @@ def main() -> None:
             "training_backend": args.backend,
             "teacher_loss": float(teacher_loss.detach()),
             "teacher_accuracy": 1.0,
-            "final_loss": float(F.binary_cross_entropy_with_logits(final_logits, y).detach()),
+            "final_loss": float(
+                F.binary_cross_entropy_with_logits(final_logits, y).detach()
+            ),
             "final_accuracy": float(final_accuracy),
             "trained_weight_norm": float(weights.detach().norm()),
         },
         speed_compare={
-            "pytorch_native_forward": native_speed if native_speed is not None else {"status": "unavailable", "reason": "run with --compare-torch"},
-            "jax_kernel_forward": jax_speed if jax_speed is not None else {"status": "unavailable", "reason": jax_error},
+            "pytorch_native_forward": native_speed
+            if native_speed is not None
+            else {"status": "unavailable", "reason": "run with --compare-torch"},
+            "jax_kernel_forward": jax_speed
+            if jax_speed is not None
+            else {"status": "unavailable", "reason": jax_error},
             "speedup_jax_over_pytorch": speedup(
                 native_speed["avg_seconds"] if native_speed else None,
                 jax_speed["avg_seconds"] if jax_speed else None,
@@ -158,7 +187,10 @@ def main() -> None:
         },
     )
     print_section("Known Teacher Parameters")
-    print("  teacher_weights :", [round(float(value), 6) for value in teacher_weights.detach().cpu()])
+    print(
+        "  teacher_weights :",
+        [round(float(value), 6) for value in teacher_weights.detach().cpu()],
+    )
 
 
 if __name__ == "__main__":

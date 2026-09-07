@@ -7,6 +7,9 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+from flagquantum.algorithms import Hamiltonian, pauli_term, zz_chain_hamiltonian
+from flagquantum.runtime.backends.jax import compile_quantum_kernel
+from flagquantum.runtime.backends.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
 
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("jax") is None, reason="jax is not installed"
@@ -25,7 +28,7 @@ def test_jax_quantum_kernel_torch_autograd_matches_statevector():
         circuit.rz(0, theta=values[2])
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -40,7 +43,7 @@ def test_jax_quantum_kernel_torch_autograd_matches_statevector():
     ref_loss = build(ref_params).expectation_z().sum()
     ref_loss.backward()
 
-    assert isinstance(kernel, fq.JAXQuantumKernel)
+    assert isinstance(kernel, JAXQuantumKernel)
     assert params.grad is not None
     assert ref_params.grad is not None
     assert torch.allclose(loss.detach(), ref_loss.detach(), atol=1e-6)
@@ -56,7 +59,7 @@ def test_jax_quantum_kernel_parameters_can_update_between_calls():
         circuit.rx(0, theta=values[0]).ry(1, theta=values[1]).cx(0, 1)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(build, params, n_wires=2, observable_wires=(0,))
+    kernel = compile_quantum_kernel(build, params, n_wires=2, observable_wires=(0,))
     loss = kernel(params)
     shifted_loss = kernel(params + 0.3)
 
@@ -84,7 +87,7 @@ def test_jax_quantum_kernel_common_training_gate_set_matches_statevector():
         circuit.cz(0, 1)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -111,7 +114,7 @@ def test_quantum_torch_layer_participates_in_optimizer_step():
         circuit.rx(0, theta=values[0]).ry(1, theta=values[1]).cx(0, 1)
         return circuit
 
-    layer = fq.QuantumTorchLayer(
+    layer = QuantumTorchLayer(
         build,
         2,
         n_wires=2,
@@ -145,7 +148,7 @@ def test_jax_quantum_kernel_batched_parameters_match_per_sample_statevector():
         circuit.rz(0, theta=values[2])
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params[0].detach(),
         backend="jax",
@@ -177,12 +180,12 @@ def test_jax_quantum_kernel_batched_parameters_match_per_sample_statevector():
 def test_jax_quantum_kernel_hamiltonian_observable_matches_native_gradient():
     params = torch.tensor([0.2, -0.1, 0.3, 0.17], requires_grad=True)
     ref_params = params.detach().clone().requires_grad_(True)
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(0.7, "ZZ", (0, 1)),
-            fq.pauli_term(-0.2, "X", (0,)),
-            fq.pauli_term(0.13, "YY", (1, 2)),
-            fq.pauli_term(0.05, "I", (0,)),
+            pauli_term(0.7, "ZZ", (0, 1)),
+            pauli_term(-0.2, "X", (0,)),
+            pauli_term(0.13, "YY", (1, 2)),
+            pauli_term(0.05, "I", (0,)),
         ]
     )
 
@@ -195,7 +198,7 @@ def test_jax_quantum_kernel_hamiltonian_observable_matches_native_gradient():
         circuit.rxx(1, 2, theta=values[3])
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         n_wires=3,
@@ -214,8 +217,8 @@ def test_jax_quantum_kernel_hamiltonian_observable_matches_native_gradient():
 
 
 def test_quantum_torch_layer_accepts_hamiltonian_observable():
-    hamiltonian = fq.Hamiltonian(
-        [fq.pauli_term(1.0, "Z", (0,)), fq.pauli_term(0.2, "XX", (0, 1))]
+    hamiltonian = Hamiltonian(
+        [pauli_term(1.0, "Z", (0,)), pauli_term(0.2, "XX", (0, 1))]
     )
 
     def build(values):
@@ -223,7 +226,7 @@ def test_quantum_torch_layer_accepts_hamiltonian_observable():
         circuit.rx(0, theta=values[0]).ry(1, theta=values[1]).cx(0, 1)
         return circuit
 
-    layer = fq.QuantumTorchLayer(build, 2, n_wires=2, hamiltonian=hamiltonian)
+    layer = QuantumTorchLayer(build, 2, n_wires=2, hamiltonian=hamiltonian)
     value = layer()
     value.backward()
 
@@ -245,7 +248,7 @@ def test_jax_mps_kernel_matches_native_mps_gradient():
         circuit.cx(1, 2)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -289,7 +292,7 @@ def test_jax_mps_z_sum_does_not_materialize_statevector(monkeypatch):
         raise AssertionError("JAX MPS observable must not materialize a statevector")
 
     monkeypatch.setattr(hybrid, "_jax_mps_to_statevector", forbidden)
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -317,11 +320,11 @@ def test_jax_mps_local_pauli_zz_chain_hamiltonian_uses_fastpath_and_matches_nati
     params = (0.15 * torch.arange(1, 13, dtype=torch.float32)).requires_grad_(False)
     terms = []
     for wire in range(5):
-        terms.append(fq.pauli_term(-1.0, "ZZ", (wire, wire + 1)))
+        terms.append(pauli_term(-1.0, "ZZ", (wire, wire + 1)))
     for wire in range(6):
-        terms.append(fq.pauli_term(0.1, "Z", (wire,)))
-        terms.append(fq.pauli_term(-0.2, "X", (wire,)))
-    hamiltonian = fq.Hamiltonian(terms)
+        terms.append(pauli_term(0.1, "Z", (wire,)))
+        terms.append(pauli_term(-0.2, "X", (wire,)))
+    hamiltonian = Hamiltonian(terms)
 
     def build(values):
         circuit = fq.Circuit(6)
@@ -334,7 +337,7 @@ def test_jax_mps_local_pauli_zz_chain_hamiltonian_uses_fastpath_and_matches_nati
                 circuit.cx(wire, wire + 1)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -367,7 +370,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
     from flagquantum.runtime import compatibility as hybrid
 
     params = (0.11 * torch.arange(1, 25, dtype=torch.float32)).requires_grad_(False)
-    hamiltonian = fq.zz_chain_hamiltonian(6, coupling=-1.0, field=0.1)
+    hamiltonian = zz_chain_hamiltonian(6, coupling=-1.0, field=0.1)
 
     def build(values):
         circuit = fq.Circuit(6)
@@ -382,7 +385,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
                 circuit.cx(wire, wire + 1)
         return circuit
 
-    stable_kernel = fq.compile_quantum_kernel(
+    stable_kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -405,7 +408,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
 
     monkeypatch.delenv("FQ_DISABLE_JAX_MPS_CX_SCAN")
     monkeypatch.setattr(hybrid, "_jax_mps_apply_two_remote", forbidden)
-    scan_kernel = fq.compile_quantum_kernel(
+    scan_kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -440,7 +443,7 @@ def test_jax_mps_kernel_supports_complex128_compute_dtype():
         circuit.cx(1, 2)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -477,7 +480,7 @@ def test_jax_tensor_network_kernel_matches_native_tn_gradient():
         circuit.cx(0, 2)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -520,7 +523,7 @@ def test_jax_tensor_network_z_sum_does_not_materialize_statevector(monkeypatch):
         )
 
     monkeypatch.setattr(jax_kernel_module, "_jax_statevector_from_circuit", forbidden)
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -553,11 +556,11 @@ def test_jax_tensor_network_kernel_remote_hamiltonian_gradient_precision():
         ],
         requires_grad=False,
     )
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(0.7, "ZZ", (0, 3)),
-            fq.pauli_term(-0.2, "X", (1,)),
-            fq.pauli_term(0.05, "Z", (2,)),
+            pauli_term(0.7, "ZZ", (0, 3)),
+            pauli_term(-0.2, "X", (1,)),
+            pauli_term(0.05, "Z", (2,)),
         ]
     )
 
@@ -572,7 +575,7 @@ def test_jax_tensor_network_kernel_remote_hamiltonian_gradient_precision():
         circuit.ryy(1, 3, theta=values[1, 1] * -0.5)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",
@@ -614,7 +617,7 @@ def test_jax_tensor_network_kernel_supports_complex128_compute_dtype():
         circuit.cx(1, 2)
         return circuit
 
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         build,
         params,
         backend="jax",

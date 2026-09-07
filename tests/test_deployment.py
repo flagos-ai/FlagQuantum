@@ -7,12 +7,20 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.deployment as deployment
 import flagquantum.deployment as fqd
+from flagquantum.algorithms import Hamiltonian, pauli_term, run_vqe
+from flagquantum.compiler import CouplingMap
 from flagquantum.deployment import (
+    CloudBackendProfile,
     DeploymentPackageIdentityError,
+    LocalSimulatorProvider,
+    expectation_z_from_counts,
+    hamiltonian_expectation_from_counts,
     validate_deployment_package,
     validate_deployment_result,
 )
+from flagquantum.utils.qcis_exporter import export_to_qcis_str
 
 
 def test_create_deployment_package_exports_qasm_and_metadata():
@@ -21,7 +29,7 @@ def test_create_deployment_package_exports_qasm_and_metadata():
 
     package = fqd.create_deployment_package(
         circuit,
-        backend=fq.CloudBackendProfile.simulator(2),
+        backend=CloudBackendProfile.simulator(2),
         name="bell_inference",
         shots=128,
         qasm_version=2.0,
@@ -39,11 +47,11 @@ def test_create_deployment_package_exports_qasm_and_metadata():
 def test_deployment_package_uses_backend_topology():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider="local",
         name="line3",
         n_wires=3,
-        coupling_map=fq.CouplingMap.line(3),
+        coupling_map=CouplingMap.line(3),
         is_simulator=True,
     )
 
@@ -58,11 +66,11 @@ def test_deployment_package_uses_backend_topology():
 def test_deployment_package_preserves_auto_routing_selection_evidence():
     circuit = fq.Circuit(5)
     circuit.cx(0, 4).h(4).cx(0, 4)
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider="local",
         name="line5",
         n_wires=5,
-        coupling_map=fq.CouplingMap.line(5),
+        coupling_map=CouplingMap.line(5),
         is_simulator=True,
     )
 
@@ -90,12 +98,12 @@ def test_deployment_package_preserves_auto_routing_selection_evidence():
 def test_deployment_reuses_compatible_compiled_routing_plan():
     circuit = fq.Circuit(4)
     circuit.x(3).cx(0, 3).h(0).cx(0, 3)
-    coupling = fq.CouplingMap.line(4)
+    coupling = CouplingMap.line(4)
     compiled = circuit.compile(
         coupling_map=coupling,
         routing_strategy="persistent_layout",
     )
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider="local",
         name="line4",
         n_wires=4,
@@ -120,7 +128,7 @@ def test_qcis_exporter_uses_native_gate_decomposition():
     circuit = fq.Circuit(2)
     circuit.h(0).rx(1, theta=theta).cx(0, 1).rzz(0, 1, theta=0.5)
 
-    qcis = fq.export_to_qcis_str(circuit)
+    qcis = export_to_qcis_str(circuit)
     lines = qcis.splitlines()
 
     assert lines[0] == "Y2M Q0"
@@ -135,7 +143,7 @@ def test_qcis_exporter_uses_native_gate_decomposition():
 def test_qcis_backend_package_gets_qcis_metadata_automatically():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider="tianyan",
         name="tianyan176",
         n_wires=8,
@@ -154,7 +162,7 @@ def test_qcis_backend_package_gets_qcis_metadata_automatically():
 def test_local_provider_runs_packaged_circuit():
     circuit = fq.Circuit(2)
     circuit.x(0).x(1)
-    provider = fq.LocalSimulatorProvider()
+    provider = LocalSimulatorProvider()
     backend = provider.discover_backends(2)[0]
 
     result = fqd.deploy_circuit(circuit, provider, backend=backend, shots=32)
@@ -169,13 +177,11 @@ def test_local_provider_runs_packaged_circuit():
         == result.metadata["routing_evidence_sha256"]
     )
     assert result.counts == {"11": 32}
+    assert torch.allclose(expectation_z_from_counts(result.counts), -torch.ones(1, 2))
     assert torch.allclose(
-        fq.expectation_z_from_counts(result.counts), -torch.ones(1, 2)
-    )
-    assert torch.allclose(
-        fq.hamiltonian_expectation_from_counts(
+        hamiltonian_expectation_from_counts(
             result.counts,
-            fq.Hamiltonian([fq.pauli_term(0.5, "ZZ", (0, 1))]),
+            Hamiltonian([pauli_term(0.5, "ZZ", (0, 1))]),
         ),
         torch.tensor([0.5]),
     )
@@ -183,10 +189,10 @@ def test_local_provider_runs_packaged_circuit():
 
 def test_trained_circuit_can_be_packaged_for_inference():
     theta = torch.tensor([0.4, -0.2], requires_grad=True)
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(1.0, "Z", (0,)),
-            fq.pauli_term(0.1, "Z", (1,)),
+            pauli_term(1.0, "Z", (0,)),
+            pauli_term(0.1, "Z", (1,)),
         ]
     )
 
@@ -197,12 +203,12 @@ def test_trained_circuit_can_be_packaged_for_inference():
         circuit.cx(0, 1)
         return circuit
 
-    result = fq.run_vqe(builder, theta, hamiltonian, steps=5, lr=0.1)
+    result = run_vqe(builder, theta, hamiltonian, steps=5, lr=0.1)
     trained_circuit = builder(result.parameters)
     optimized = result.parameters.detach()
     package = fqd.create_deployment_package(
         trained_circuit,
-        backend=fq.CloudBackendProfile.simulator(2),
+        backend=CloudBackendProfile.simulator(2),
         name="trained_vqe_inference",
         metadata={"optimized_parameters": optimized.tolist()},
     )
@@ -227,7 +233,7 @@ def test_symbolic_parameter_template_binds_optimized_values_for_deployment():
             "theta1": optimized[1],
         }
     )
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider="guodun",
         name="gd_qc1",
         n_wires=8,
@@ -248,13 +254,13 @@ def test_symbolic_parameter_template_binds_optimized_values_for_deployment():
 
 
 def test_deployment_subsystem_is_top_level_easy_to_use():
-    assert fq.deployment.CloudBackendProfile is fq.CloudBackendProfile
-    assert fq.deployment.LocalSimulatorProvider is fq.LocalSimulatorProvider
+    assert deployment.CloudBackendProfile is CloudBackendProfile
+    assert deployment.LocalSimulatorProvider is LocalSimulatorProvider
 
 
 @pytest.mark.parametrize("field", ("qasm", "shots", "routing_evidence"))
 def test_provider_rejects_tampered_deployment_package(field):
-    provider = fq.LocalSimulatorProvider()
+    provider = LocalSimulatorProvider()
     backend = provider.discover_backends(2)[0]
     package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
@@ -275,7 +281,7 @@ def test_provider_rejects_tampered_deployment_package(field):
 
 
 def test_qcis_native_program_is_bound_to_deployment_identity():
-    backend = fq.CloudBackendProfile(
+    backend = CloudBackendProfile(
         provider="tianyan",
         name="qpu",
         n_wires=2,
@@ -296,7 +302,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
 
 @pytest.mark.parametrize("field", ("identity", "shots"))
 def test_deployment_result_rejects_broken_receipt_chain(field):
-    provider = fq.LocalSimulatorProvider()
+    provider = LocalSimulatorProvider()
     backend = provider.discover_backends(2)[0]
     result = fqd.deploy_circuit(
         fq.Circuit(2).x(0),

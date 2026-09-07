@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pytest
 
-import flagquantum as fq
+from flagquantum.runtime.distributed import require_verified_flagcx
 from flagquantum.runtime.distributed.conformance import (
     REQUIRED_FLAGOS_COLLECTIVES,
     REQUIRED_FLAGOS_DTYPES,
@@ -100,7 +100,7 @@ def test_flagos_mechanical_conformance_remains_fail_closed_for_flagcx():
     assert "single_node_conformance_not_scalability_evidence" in payload["blockers"]
 
     with pytest.raises(DistributedIdentityError, match="not verified"):
-        fq.require_verified_flagcx(report.identity)
+        require_verified_flagcx(report.identity)
 
 
 def test_flagos_conformance_rejects_incomplete_collective_matrix():

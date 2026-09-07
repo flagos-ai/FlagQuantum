@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum import Circuit, bit_flip_channel
+from flagquantum import Circuit
 from flagquantum.compiler import lower_noise_model
-from flagquantum.noise import NoiseModel
+from flagquantum.noise import NoiseModel, bit_flip_channel
 from flagquantum.simulation.noisy_statevector import (
     apply_amplitude_damping_batched,
     apply_kraus_batched,

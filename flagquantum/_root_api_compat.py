@@ -1,15 +1,4 @@
-"""Internal policy tables for root API convergence."""
-
-DEPRECATED_INTERNAL_ROOT_EXPORTS = {
-    "DistributedEvidenceContract",
-    "DistributedTransportEvidence",
-    "JAXDistributedQuantumPlan",
-    "JAXMPSRankShardState",
-    "JAXStatevectorShardState",
-    "JAXTNSliceRankState",
-    "StatevectorShard",
-    "StatevectorShardState",
-}
+"""Actionable errors for root names removed during pre-release convergence."""
 
 MIGRATED_ROOT_EXPORTS = {
     "GateInfo": "flagquantum.operators.GateInfo",

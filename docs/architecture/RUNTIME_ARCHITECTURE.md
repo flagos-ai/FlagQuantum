@@ -44,7 +44,7 @@ optimizer ownership remains blocked for subsequent work.
 
 ## Sharded Statevector Training Service
 
-`fq.train_distributed_statevector(...)` is the PyTorch-facing multi-step entry
+`flagquantum.experimental.distributed.train_distributed_statevector(...)` is the PyTorch-facing multi-step entry
 point. It calls ordinary `loss.backward()` and native `torch.optim.SGD` or
 `torch.optim.Adam`. Each parameter has one deterministic owner; only that rank
 constructs its optimizer state, then broadcasts the updated parameter. Gradient

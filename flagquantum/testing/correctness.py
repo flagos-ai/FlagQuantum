@@ -10,7 +10,17 @@ from typing import Any, Callable
 
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.noise import (
+    amplitude_damping_channel,
+    bit_flip_channel,
+    depolarizing_channel,
+    phase_flip_channel,
+)
 from flagquantum.ops.lowering import DEFAULT_LOWERING_REGISTRY
+from flagquantum.runtime.backends.jax import run_jax_sharded_statevector
+from flagquantum.simulation.density_matrix import density_matrix_from_ir
+from flagquantum.utils.qasm_exporter import export_to_qasm_str
+from flagquantum.utils.qcis_exporter import export_to_qcis_str
 
 CERTIFICATION_VERSION = "flagquantum_correctness_v1"
 
@@ -107,10 +117,10 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
     DEFAULT_LOWERING_REGISTRY.validate_ir(case.backend, ir)
     if schema.channel:
         factories = {
-            "bit_flip": fq.bit_flip_channel,
-            "phase_flip": fq.phase_flip_channel,
-            "depolarizing": fq.depolarizing_channel,
-            "amplitude_damping": fq.amplitude_damping_channel,
+            "bit_flip": bit_flip_channel,
+            "phase_flip": phase_flip_channel,
+            "depolarizing": depolarizing_channel,
+            "amplitude_damping": amplitude_damping_channel,
         }
         channel = factories[case.operator](0.23)
         channel_ir = CircuitIR(
@@ -124,7 +134,7 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
                 ),
             ),
         )
-        rho = fq.density_matrix_from_ir(channel_ir)
+        rho = density_matrix_from_ir(channel_ir)
         passed = torch.allclose(
             torch.diagonal(rho, dim1=-2, dim2=-1).sum(-1).real,
             torch.ones(1),
@@ -139,13 +149,13 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
         elif case.backend == "tensor_network":
             candidate = fqb.run_tensor_network(ir).state()
         elif case.backend == "jax":
-            candidate = fq.run_jax_sharded_statevector(ir, world_size=1).state()
+            candidate = run_jax_sharded_statevector(ir, world_size=1).state()
         elif case.backend == "qasm":
-            text = fq.export_to_qasm_str(fq.Circuit.from_ir(ir))
+            text = export_to_qasm_str(fq.Circuit.from_ir(ir))
             passed = bool(text.strip())
             return CertificationResult(case, True, passed, "qasm_serialization")
         elif case.backend == "qcis":
-            text = fq.export_to_qcis_str(ir)
+            text = export_to_qcis_str(ir)
             passed = bool(text.strip())
             return CertificationResult(case, True, passed, "qcis_serialization")
         elif case.backend == "provider":

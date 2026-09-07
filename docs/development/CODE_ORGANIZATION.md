@@ -21,11 +21,9 @@ Provider boundaries; numerical kernels remain in Simulation.
 
 Canonical audit wildcard exports use capability vocabulary. Historical
 milestone-numbered names remain available only as lazy explicit-import aliases.
-The compatibility-heavy `flagquantum.api` wildcard surface follows the same
-rule while preserving explicit attribute access. Its symbol wiring remains in
-`flagquantum.api`, while the frozen wildcard manifest is isolated in
-`flagquantum._compat_api_exports`; this keeps compatibility behavior auditable
-without mixing the two responsibilities.
+The pre-release `flagquantum.api` aggregator and implicit root fallback have
+been removed. Maintained extension APIs are imported from their owning domain
+packages, so the root has no second export manifest or duplicate symbol wiring.
 The canonical audit schema and vocabulary submodules also exclude phase labels
 from wildcard exports.
 
@@ -49,9 +47,10 @@ from flagquantum.runtime.backends import statevector
 from flagquantum.runtime.audit import DistributedEvidenceContract
 ```
 
-User code must stay on the root `flagquantum` API. Internal runtime,
-backend, and audit imports are implementation boundaries and carry no public
-compatibility guarantee.
+User code uses the stable root for the primary Circuit/plan/run workflow and
+explicit maintained extension packages such as `flagquantum.compiler`,
+`flagquantum.noise`, and `flagquantum.deployment`. Deep runtime implementation
+modules carry no public compatibility guarantee.
 
 `flagquantum.runtime.backends` is a lazy namespace registry. Inspecting or
 importing it does not initialize any backend; requesting one backend package
@@ -103,9 +102,8 @@ plugins, benchmarks, or serialized artifacts.
 - `flagquantum.runtime.planner` uses the narrow
   `flagquantum.runtime.planner_adapter` seam and cannot import execution
   implementations.
-- `flagquantum.api` remains the frozen v1 compatibility aggregator and resolves
-  runtime symbols from canonical modules. Its export manifest is isolated from
-  symbol wiring, and the former module-size exception has been removed.
+- The historical `flagquantum.api` aggregator and implicit root fallback are
+  removed; the root resolves only the snapshot-governed stable API.
 - Reintroducing the removed runtime compatibility package fails architecture
   checks.
 - Backend capability registration and runtime backend/dtype configuration have

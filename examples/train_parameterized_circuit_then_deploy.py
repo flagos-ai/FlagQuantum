@@ -13,11 +13,14 @@ from pathlib import Path
 
 import torch
 
+from flagquantum.algorithms import Hamiltonian, pauli_term, run_vqe
+from flagquantum.compiler import CouplingMap
+from flagquantum.deployment import hamiltonian_expectation_from_counts
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-
 
 PARAMETERS = (fq.Parameter("theta_0"), fq.Parameter("theta_1"), fq.Parameter("theta_2"))
 
@@ -43,14 +46,14 @@ def ansatz(parameters: torch.Tensor) -> fq.Circuit:
 
 def main() -> None:
     initial_parameters = torch.tensor([0.2, -0.1, 0.3], requires_grad=True)
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(1.0, "ZZ", (0, 1)),
-            fq.pauli_term(0.2, "Z", (0,)),
+            pauli_term(1.0, "ZZ", (0, 1)),
+            pauli_term(0.2, "Z", (0,)),
         ]
     )
 
-    training_result = fq.run_vqe(
+    training_result = run_vqe(
         ansatz,
         initial_parameters,
         hamiltonian,
@@ -70,7 +73,7 @@ def main() -> None:
         provider="local",
         name="line2",
         n_wires=2,
-        coupling_map=fq.CouplingMap.line(2),
+        coupling_map=CouplingMap.line(2),
         is_simulator=True,
     )
     package = fqd.create_deployment_package(
@@ -84,7 +87,7 @@ def main() -> None:
         },
     )
     inference_result = provider.run(package)
-    deployed_energy = fq.hamiltonian_expectation_from_counts(
+    deployed_energy = hamiltonian_expectation_from_counts(
         inference_result.counts,
         hamiltonian,
     )
@@ -96,11 +99,11 @@ def main() -> None:
     print("qasm:")
     print(package.qasm)
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("THEORETICAL EXACT DIAGONALIZATION:")
-    print(f"  Ground state energy: -1.2")
-    print(f"  Full spectrum: [-1.2, -0.8, 0.8, 1.2]")
-    print("="*60)
+    print("  Ground state energy: -1.2")
+    print("  Full spectrum: [-1.2, -0.8, 0.8, 1.2]")
+    print("=" * 60)
 
     print("\nVALIDATION:")
     gap = float(deployed_energy) - (-1.2)

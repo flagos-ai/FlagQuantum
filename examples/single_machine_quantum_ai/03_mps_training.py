@@ -13,13 +13,18 @@ from pathlib import Path
 
 import torch
 
+from flagquantum.algorithms import (
+    Hamiltonian,
+    hardware_efficient_parameter_count,
+    zz_chain_hamiltonian,
+)
+from flagquantum.runtime.backends.jax import compile_quantum_kernel
+from flagquantum.runtime.backends.jax.kernel import JAXQuantumKernel
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
 from common import (  # noqa: E402
     configure_jax_compilation_cache,
     exact_ground_energy,
@@ -33,8 +38,13 @@ from common import (  # noqa: E402
     time_value_and_grad,
 )
 
+import flagquantum as fq  # noqa: E402
+import flagquantum.backends as fqb  # noqa: E402
 
-def build_ansatz(theta: torch.Tensor, *, n_wires: int, layers: int, device: str) -> fq.Circuit:
+
+def build_ansatz(
+    theta: torch.Tensor, *, n_wires: int, layers: int, device: str
+) -> fq.Circuit:
     circuit = fq.Circuit(n_wires, device=device)
     cursor = 0
     for _ in range(layers):
@@ -54,11 +64,13 @@ def make_jax_mps_kernel(
     n_wires: int,
     layers: int,
     device: str,
-    hamiltonian: fq.Hamiltonian,
+    hamiltonian: Hamiltonian,
     max_bond: int,
-) -> fq.JAXQuantumKernel:
-    return fq.compile_quantum_kernel(
-        lambda theta: build_ansatz(theta, n_wires=n_wires, layers=layers, device=device),
+) -> JAXQuantumKernel:
+    return compile_quantum_kernel(
+        lambda theta: build_ansatz(
+            theta, n_wires=n_wires, layers=layers, device=device
+        ),
         parameters.detach(),
         backend="jax",
         interface="torch",
@@ -70,7 +82,9 @@ def make_jax_mps_kernel(
     )
 
 
-def value_and_grad_once(loss_fn, parameters: torch.Tensor, *, device: str) -> tuple[float, float, float]:
+def value_and_grad_once(
+    loss_fn, parameters: torch.Tensor, *, device: str
+) -> tuple[float, float, float]:
     params = parameters.detach().clone().requires_grad_(True)
     sync_if_needed(device)
     start = time.perf_counter()
@@ -96,14 +110,18 @@ def run_scale_report(args: argparse.Namespace) -> None:
     cache_report = configure_jax_compilation_cache(args.jax_cache_dir)
     has_jax, jax_error = jax_available()
     if not has_jax:
-        raise SystemExit(f"JAX backend requested for scale report but unavailable: {jax_error}.")
+        raise SystemExit(
+            f"JAX backend requested for scale report but unavailable: {jax_error}."
+        )
 
     rows = []
     for n_wires in parse_wire_list(args.scale_report):
         torch.manual_seed(19)
-        n_params = fq.hardware_efficient_parameter_count(n_wires, args.layers)
-        parameters = (0.15 * torch.randn(n_params, device=args.device)).requires_grad_(True)
-        hamiltonian = fq.zz_chain_hamiltonian(n_wires, coupling=-1.0, field=0.1)
+        n_params = hardware_efficient_parameter_count(n_wires, args.layers)
+        parameters = (0.15 * torch.randn(n_params, device=args.device)).requires_grad_(
+            True
+        )
+        hamiltonian = zz_chain_hamiltonian(n_wires, coupling=-1.0, field=0.1)
 
         compile_start = time.perf_counter()
         kernel = make_jax_mps_kernel(
@@ -119,7 +137,9 @@ def run_scale_report(args: argparse.Namespace) -> None:
         def loss_fn(theta: torch.Tensor) -> torch.Tensor:
             return kernel(theta).sum()
 
-        first_seconds, first_loss, first_grad_norm = value_and_grad_once(loss_fn, parameters, device=args.device)
+        first_seconds, first_loss, first_grad_norm = value_and_grad_once(
+            loss_fn, parameters, device=args.device
+        )
         steady = time_value_and_grad(
             loss_fn,
             parameters,
@@ -181,9 +201,15 @@ def main() -> None:
     parser.add_argument("--bench-iters", type=int, default=5)
     parser.add_argument("--backend", choices=("jax", "torch"), default="torch")
     parser.add_argument("--compare-torch", action="store_true")
-    parser.add_argument("--reference", choices=("auto", "small_exact", "none"), default="auto")
+    parser.add_argument(
+        "--reference", choices=("auto", "small_exact", "none"), default="auto"
+    )
     parser.add_argument("--small-exact-max-wires", type=int, default=12)
-    parser.add_argument("--scale-report", default=None, help="Comma-separated wire counts, for example 60,120,300,600.")
+    parser.add_argument(
+        "--scale-report",
+        default=None,
+        help="Comma-separated wire counts, for example 60,120,300,600.",
+    )
     parser.add_argument("--scale-iters", type=int, default=3)
     parser.add_argument("--scale-warmup", type=int, default=1)
     parser.add_argument(
@@ -200,13 +226,15 @@ def main() -> None:
     cache_report = configure_jax_compilation_cache(args.jax_cache_dir)
 
     torch.manual_seed(19)
-    n_params = fq.hardware_efficient_parameter_count(args.n_qubits, args.layers)
+    n_params = hardware_efficient_parameter_count(args.n_qubits, args.layers)
     parameters = (0.15 * torch.randn(n_params, device=args.device)).requires_grad_(True)
     optimizer = torch.optim.Adam([parameters], lr=args.lr)
-    hamiltonian = fq.zz_chain_hamiltonian(args.n_qubits, coupling=-1.0, field=0.1)
+    hamiltonian = zz_chain_hamiltonian(args.n_qubits, coupling=-1.0, field=0.1)
 
     def build(theta: torch.Tensor) -> fq.Circuit:
-        return build_ansatz(theta, n_wires=args.n_qubits, layers=args.layers, device=args.device)
+        return build_ansatz(
+            theta, n_wires=args.n_qubits, layers=args.layers, device=args.device
+        )
 
     def native_mps_loss(theta: torch.Tensor) -> torch.Tensor:
         mps = fqb.run_mps(build(theta), max_bond=args.max_bond)
@@ -214,7 +242,9 @@ def main() -> None:
 
     has_jax, jax_error = jax_available()
     if args.backend == "jax" and not has_jax:
-        raise SystemExit(f"JAX backend requested but unavailable: {jax_error}. Use --backend torch to run the native path.")
+        raise SystemExit(
+            f"JAX backend requested but unavailable: {jax_error}. Use --backend torch to run the native path."
+        )
     jax_kernel = None
     if has_jax:
         jax_kernel = make_jax_mps_kernel(
@@ -242,7 +272,11 @@ def main() -> None:
         loss = training_loss(parameters)
         loss.backward()
         optimizer.step()
-        if step == 0 or step == args.steps - 1 or (step + 1) % max(1, args.steps // 5) == 0:
+        if (
+            step == 0
+            or step == args.steps - 1
+            or (step + 1) % max(1, args.steps // 5) == 0
+        ):
             print({"step": step + 1, "energy": float(loss.detach())})
 
     trained_mps = fqb.run_mps(build(parameters.detach()), max_bond=args.max_bond)
@@ -254,12 +288,16 @@ def main() -> None:
             iters=args.bench_iters,
             device=args.device,
         )
-    jax_speed = time_value_and_grad(
-        lambda theta: jax_kernel(theta).sum(),
-        parameters.detach(),
-        iters=args.bench_iters,
-        device=args.device,
-    ) if jax_kernel is not None else None
+    jax_speed = (
+        time_value_and_grad(
+            lambda theta: jax_kernel(theta).sum(),
+            parameters.detach(),
+            iters=args.bench_iters,
+            device=args.device,
+        )
+        if jax_kernel is not None
+        else None
+    )
     final_energy = float(training_loss(parameters).detach())
     print_training_summary(
         title="Single-Machine Quantum AI (MPS)",
@@ -269,17 +307,29 @@ def main() -> None:
             "reference": (
                 f"exact diagonalization <= {args.small_exact_max_wires} wires"
                 if exact_energy is not None
-                else ("disabled" if args.reference == "none" else "n/a for this wire count")
+                else (
+                    "disabled"
+                    if args.reference == "none"
+                    else "n/a for this wire count"
+                )
             ),
-            "jax_cache": cache_report.get("cache_dir") if cache_report.get("enabled") else "disabled",
+            "jax_cache": cache_report.get("cache_dir")
+            if cache_report.get("enabled")
+            else "disabled",
             "training_backend": args.backend,
             "initial_energy": initial,
             "final_energy": final_energy,
-            "gap_to_theory": None if exact_energy is None else final_energy - exact_energy,
+            "gap_to_theory": None
+            if exact_energy is None
+            else final_energy - exact_energy,
         },
         speed_compare={
-            "pytorch_native_mps": native_speed if native_speed is not None else {"status": "unavailable", "reason": "run with --compare-torch"},
-            "jax_kernel_mps": jax_speed if jax_speed is not None else {"status": "unavailable", "reason": jax_error},
+            "pytorch_native_mps": native_speed
+            if native_speed is not None
+            else {"status": "unavailable", "reason": "run with --compare-torch"},
+            "jax_kernel_mps": jax_speed
+            if jax_speed is not None
+            else {"status": "unavailable", "reason": jax_error},
             "speedup_jax_over_pytorch": speedup(
                 native_speed["avg_seconds"] if native_speed else None,
                 jax_speed["avg_seconds"] if jax_speed else None,

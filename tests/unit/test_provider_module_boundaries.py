@@ -1,6 +1,6 @@
 import pytest
 
-from flagquantum import deployment
+import flagquantum.deployment as deployment
 from flagquantum.deployment import providers
 from flagquantum.providers.execution import (
     braket,

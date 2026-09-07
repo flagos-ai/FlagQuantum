@@ -10,8 +10,9 @@ Use an explicit configuration for long-lived or distributed work:
 
 ```python
 import flagquantum as fq
+from flagquantum.runtime.configuration import RuntimeConfig, runtime_config
 
-config = fq.RuntimeConfig(device="cuda")
+config = RuntimeConfig(device="cuda")
 circuit = fq.Circuit(4, config=config)
 ```
 
@@ -21,7 +22,7 @@ threads start with their own default context, and processes reconstruct from the
 manifest rather than inheriting mutable state.
 
 ```python
-with fq.runtime_config(complex_dtype="complex128"):
+with runtime_config(complex_dtype="complex128"):
     circuit = fq.Circuit(2)  # captures complex128
 ```
 

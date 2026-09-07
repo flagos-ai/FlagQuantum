@@ -8,6 +8,7 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.training as fqt
+from flagquantum.algorithms import zz_chain_hamiltonian
 
 pytestmark = pytest.mark.unit
 
@@ -65,7 +66,7 @@ def test_quantum_module_supports_named_parameter_groups() -> None:
 
 
 def test_quantum_module_mps_hamiltonian_uses_policy_and_reports_bonds() -> None:
-    hamiltonian = fq.zz_chain_hamiltonian(4, coupling=-1.0, field=0.1)
+    hamiltonian = zz_chain_hamiltonian(4, coupling=-1.0, field=0.1)
 
     def build(parameters):
         circuit = fq.Circuit(4)

@@ -31,7 +31,8 @@ stale job, and verify process-group/child cleanup. Explicit compile and
 checkpoint budgets prevent false positives during bounded legitimate work.
 
 Release-grade scalability evidence requires a promoted benchmark payload that
-passes `fq.require_distributed_scalability(...)` and the benchmark audit commands
+passes `flagquantum.runtime.audit.release_policy.require_distributed_scalability(...)`
+and the benchmark audit commands
 for `benchmarks/results/scalability/`.
 
 ## Current Runnable Commands

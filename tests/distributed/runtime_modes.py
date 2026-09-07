@@ -13,6 +13,8 @@ from pathlib import Path
 
 import torch
 
+from flagquantum.runtime.distributed import destroy_torch_distributed
+
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -109,7 +111,7 @@ def main() -> None:
         f"mps_boundary_transfer_bytes={dmps.summary()['boundary_transfer_bytes']} "
         f"mps_boundary_protocols={dmps.summary()['boundary_protocols']}"
     )
-    fq.destroy_torch_distributed()
+    destroy_torch_distributed()
 
 
 if __name__ == "__main__":

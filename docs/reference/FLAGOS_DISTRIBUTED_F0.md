@@ -9,9 +9,9 @@ CUDA/NCCL imports and execution remain unchanged.
 Typical `torchrun` code is:
 
 ```python
-import flagquantum as fq
+from flagquantum.runtime.distributed import init_torch_distributed
 
-context = fq.init_torch_distributed(
+context = init_torch_distributed(
     device="flagos",
     backend="flagos",
 )
@@ -47,7 +47,7 @@ fields remain fail-closed:
 - `host_staging_observed=None`;
 - `communication_claim_allowed=False`.
 
-`fq.require_verified_flagcx(identity)` therefore raises for every F0-created
+`flagquantum.runtime.distributed.require_verified_flagcx(identity)` therefore raises for every F0-created
 FlagOS identity. Merely completing a collective through `backend="flagos"`
 does not prove that FlagCX was selected, that data avoided host staging, or
 that multi-card correctness/performance has been certified.

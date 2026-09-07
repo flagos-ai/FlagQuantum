@@ -1,13 +1,11 @@
-"""FlagQuantum stable API with lazy compatibility exports."""
+"""FlagQuantum stable public API."""
 
 from __future__ import annotations
 
-import warnings
 from importlib import import_module
 from typing import Any
 
 from ._root_api_compat import (
-    DEPRECATED_INTERNAL_ROOT_EXPORTS,
     MIGRATED_ROOT_EXPORTS,
     REMOVED_ROOT_EXPORTS,
 )
@@ -16,9 +14,8 @@ from .version import __version__
 __author__ = "FlagQuantum Team"
 __license__ = "Apache-2.0"
 
-# Stable root surface for the first public alpha. Historical attributes may
-# remain lazily importable during repository convergence, but names absent from
-# this tuple are not stable API and are intentionally excluded from discovery.
+# Stable root surface for the first public alpha. Names absent from this tuple
+# are not available from the package root.
 __all__ = (
     "Circuit",
     "CircuitIR",
@@ -44,13 +41,6 @@ __all__ = (
     "experimental",
 )
 
-COMPATIBILITY_EXPORT_OWNER = "FlagQuantum core maintainers"
-COMPATIBILITY_EXPORT_REMOVAL_VERSION = "0.3.0"
-
-
-def _compat_api() -> Any:
-    return import_module(".api", __name__)
-
 
 def __getattr__(name: str) -> Any:
     if name in MIGRATED_ROOT_EXPORTS:
@@ -69,6 +59,18 @@ def __getattr__(name: str) -> Any:
         return import_module(".experimental", __name__)
     if name == "Circuit":
         return getattr(import_module(".circuit", __name__), name)
+    if name in {
+        "CircuitIR",
+        "IRSerializationError",
+        "IRValidationError",
+        "IR_VERSION",
+        "Instruction",
+        "MeasurementNode",
+        "ObservableNode",
+    }:
+        return getattr(import_module(".core.ir", __name__), name)
+    if name in {"Parameter", "ParameterExpression"}:
+        return getattr(import_module(".core.parameters", __name__), name)
     if name == "ExecutionPlan":
         return getattr(import_module(".runtime.execution_plan", __name__), name)
     if name in {
@@ -83,19 +85,9 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module(".runtime.execution", __name__), name)
     if name in {"TrainingResult", "train"}:
         return getattr(import_module(".runtime.training", __name__), name)
-    if name in DEPRECATED_INTERNAL_ROOT_EXPORTS:
-        warnings.warn(
-            f"flagquantum.{name} is an internal compatibility record with no "
-            f"public replacement. Root access will be removed in "
-            f"version {COMPATIBILITY_EXPORT_REMOVAL_VERSION}.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-    api = _compat_api()
-    try:
-        return getattr(api, name)
-    except AttributeError as exc:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
+    if name == "plan":
+        return getattr(import_module(".runtime.planner", __name__), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__() -> list[str]:

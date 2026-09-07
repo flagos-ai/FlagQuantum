@@ -1,5 +1,5 @@
-import flagquantum as fq
 from benchmarks.runners.tn.tn_sliced_reverse_nccl import _audit_evidence_fields
+from flagquantum.runtime.audit import audit_distributed_scalability
 
 
 def _rank(rank: int) -> dict[str, object]:
@@ -32,6 +32,6 @@ def test_tn_rank_evidence_is_auditable_and_single_rank_is_not_sharded():
     }
 
     assert single["distribution_semantics"] == "single_device_fast_path"
-    assert fq.audit_distributed_scalability(single).valid
+    assert audit_distributed_scalability(single).valid
     assert distributed["distribution_semantics"] == "sharded_across_ranks"
-    assert fq.audit_distributed_scalability(distributed).valid
+    assert audit_distributed_scalability(distributed).valid

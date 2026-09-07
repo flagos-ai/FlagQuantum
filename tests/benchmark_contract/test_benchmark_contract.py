@@ -4,8 +4,12 @@ from pathlib import Path
 
 import pytest
 
-import flagquantum as fq
 from benchmarks.audit_results import _json_files, audit_paths
+from flagquantum.runtime.audit import (
+    DistributedScalabilityError,
+    audit_distributed_scalability,
+)
+from flagquantum.runtime.audit.release_policy import require_distributed_scalability
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 
@@ -181,8 +185,8 @@ def test_scalability_release_payload_fails_closed_when_required_evidence_is_remo
     payload = deepcopy(_statevector_release_candidate())
     payload[field] = value
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert message in str(excinfo.value)
 
@@ -195,12 +199,12 @@ def test_non_release_payloads_do_not_pass_scalability_release_gate():
     assert non_release_paths
     for path in non_release_paths:
         payload = _load(path)
-        audit = fq.audit_distributed_scalability(payload)
+        audit = audit_distributed_scalability(payload)
         assert audit.valid, path
         assert not audit.release_gate_allowed, path
         assert payload["scalability_claim_allowed"] is False, path
-        with pytest.raises(fq.DistributedScalabilityError):
-            fq.require_distributed_scalability(payload)
+        with pytest.raises(DistributedScalabilityError):
+            require_distributed_scalability(payload)
 
 
 def test_require_scalability_scanner_rejects_non_release_payloads_when_required():
@@ -405,7 +409,7 @@ def _prepared_mps_release_payload() -> dict:
 def test_mps_release_payload_contract_accepts_complete_synthetic_schema():
     payload = _prepared_mps_release_payload()
 
-    audit = fq.require_distributed_scalability(payload)
+    audit = require_distributed_scalability(payload)
 
     assert audit.valid
     assert audit.release_gate_allowed
@@ -509,8 +513,8 @@ def test_mps_release_payload_contract_fails_closed(case, message):
     else:
         raise AssertionError(case)
 
-    with pytest.raises(fq.DistributedScalabilityError) as excinfo:
-        fq.require_distributed_scalability(payload)
+    with pytest.raises(DistributedScalabilityError) as excinfo:
+        require_distributed_scalability(payload)
 
     assert message in str(excinfo.value)
 

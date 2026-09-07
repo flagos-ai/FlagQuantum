@@ -1,6 +1,8 @@
 import pytest
 import torch
 
+from flagquantum.algorithms import zz_chain_hamiltonian
+
 pytest.importorskip("triton")
 
 import flagquantum as fq
@@ -155,13 +157,13 @@ def test_circuit_ir_rx_rz_fusion_matches_eager_state_and_vqe_gradients(
     monkeypatch.setenv("FQ_TRITON_SINGLE_QUBIT_LOOP", "1")
     circuit = build(parameters)
     actual = circuit.state(refresh=True)
-    actual_loss = fq.zz_chain_hamiltonian(3).expectation(circuit).sum()
+    actual_loss = zz_chain_hamiltonian(3).expectation(circuit).sum()
     actual_gradient = torch.autograd.grad(actual_loss, parameters)[0]
 
     monkeypatch.setenv("FQ_TRITON_SINGLE_QUBIT_LOOP", "0")
     reference_circuit = build(reference_parameters)
     reference = reference_circuit.state(refresh=True)
-    reference_loss = fq.zz_chain_hamiltonian(3).expectation(reference_circuit).sum()
+    reference_loss = zz_chain_hamiltonian(3).expectation(reference_circuit).sum()
     reference_gradient = torch.autograd.grad(reference_loss, reference_parameters)[0]
 
     torch.testing.assert_close(actual, reference, atol=5e-6, rtol=5e-6)

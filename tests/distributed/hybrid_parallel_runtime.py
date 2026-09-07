@@ -7,6 +7,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 
 import flagquantum as fq
+from flagquantum.runtime.parallel import plan_hybrid_parallel
 
 
 def build(parameters: torch.Tensor, inputs: torch.Tensor | None) -> fq.Circuit:
@@ -24,7 +25,7 @@ def main() -> None:
     dist.init_process_group("gloo")
     rank = dist.get_rank()
     try:
-        plan = fq.plan_hybrid_parallel(
+        plan = plan_hybrid_parallel(
             world_size=4,
             data_parallel_size=2,
             state_parallel_size=2,

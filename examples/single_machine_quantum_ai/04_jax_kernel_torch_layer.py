@@ -8,6 +8,8 @@ from pathlib import Path
 
 import torch
 
+from flagquantum.algorithms import Hamiltonian, pauli_term
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -59,11 +61,11 @@ def main() -> None:
         )
         return
 
-    hamiltonian = fq.Hamiltonian(
+    hamiltonian = Hamiltonian(
         [
-            fq.pauli_term(0.7, "ZZ", (0, 1)),
-            fq.pauli_term(-0.3, "X", (0,)),
-            fq.pauli_term(0.2, "YY", (1, 2)),
+            pauli_term(0.7, "ZZ", (0, 1)),
+            pauli_term(-0.3, "X", (0,)),
+            pauli_term(0.2, "YY", (1, 2)),
         ]
     )
     exact_energy = exact_ground_energy(hamiltonian, 3)

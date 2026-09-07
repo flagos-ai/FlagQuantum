@@ -8,15 +8,48 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.noise as fqn
+import flagquantum.noise as noise
 import flagquantum.runtime.planner as fqxp
+from flagquantum.compiler import lower_noise_model
+from flagquantum.noise import (
+    CorrelatedReadoutError,
+    DeviceNoiseProfile,
+    GateDuration,
+    KrausChannel,
+    NoiseRule,
+    QubitNoiseCalibration,
+    ReadoutError,
+    amplitude_damping_channel,
+    bit_flip_channel,
+    coherent_overrotation_channel,
+    depolarizing_channel,
+    phase_damping_channel,
+    reset_error_channel,
+    thermal_relaxation_channel,
+)
+from flagquantum.runtime.backends.statevector import (
+    merge_noisy_statevector_results,
+    run_noisy_statevector,
+)
 from flagquantum.runtime.execution import run_advanced
+from flagquantum.runtime.planner import (
+    NOISE_SELECTOR_CALIBRATION_SCHEMA,
+    estimate_density_bytes,
+    plan_noise_execution_selection,
+    select_execution_mode,
+)
+from flagquantum.simulation.density_matrix import (
+    apply_kraus_density,
+    density_matrix_from_ir,
+    expectation_z_density,
+)
 
 
 def test_batched_statevector_trajectory_is_batch_size_invariant():
     circuit = fq.Circuit(2).h(0).cx(0, 1)
-    model = fqn.NoiseModel().add("cx", fq.depolarizing_channel(0.2))
+    model = fqn.NoiseModel().add("cx", depolarizing_channel(0.2))
 
-    serial = fq.run_noisy_statevector(
+    serial = run_noisy_statevector(
         circuit,
         model,
         trajectories=37,
@@ -24,7 +57,7 @@ def test_batched_statevector_trajectory_is_batch_size_invariant():
         seed=19,
         retain_trajectories=True,
     )
-    batched = fq.run_noisy_statevector(
+    batched = run_noisy_statevector(
         circuit,
         model,
         trajectories=37,
@@ -41,16 +74,16 @@ def test_batched_statevector_trajectory_is_batch_size_invariant():
 
 def test_batched_statevector_generic_kraus_matches_density_matrix():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.amplitude_damping_channel(0.3))
+    model = fqn.NoiseModel().add("x", amplitude_damping_channel(0.3))
 
-    sampled = fq.run_noisy_statevector(
+    sampled = run_noisy_statevector(
         circuit,
         model,
         trajectories=4000,
         trajectory_batch_size=128,
         seed=23,
     )
-    exact = fq.expectation_z_density(fqn.noisy_density_matrix(circuit, model))
+    exact = expectation_z_density(fqn.noisy_density_matrix(circuit, model))
 
     assert torch.allclose(sampled.expectation_z, exact, atol=0.04)
     assert sampled.amplitude_damping_fast_path_events == 4000
@@ -61,9 +94,9 @@ def test_batched_statevector_generic_kraus_matches_density_matrix():
 def test_batched_statevector_applies_readout_and_preserves_circuit_batch():
     inputs = torch.tensor([[1, 0], [0, 1]], dtype=torch.complex64)
     circuit = fq.Circuit(1, bsz=2, inputs=inputs)
-    model = fqn.NoiseModel().add_readout(0, fq.ReadoutError(((0.75, 0.25), (0.1, 0.9))))
+    model = fqn.NoiseModel().add_readout(0, ReadoutError(((0.75, 0.25), (0.1, 0.9))))
 
-    result = fq.run_noisy_statevector(
+    result = run_noisy_statevector(
         circuit, model, trajectories=3, trajectory_batch_size=2, seed=5
     )
 
@@ -75,7 +108,7 @@ def test_batched_statevector_two_wire_kraus_matches_density_and_batching():
     probability = 0.3
     identity = torch.eye(4, dtype=torch.complex64)
     x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64)
-    channel = fq.KrausChannel(
+    channel = KrausChannel(
         "correlated_flip",
         (
             (1 - probability) ** 0.5 * identity,
@@ -85,7 +118,7 @@ def test_batched_statevector_two_wire_kraus_matches_density_and_batching():
     model = fqn.NoiseModel().add("cx", channel)
     circuit = fq.Circuit(2).x(0).cx(0, 1)
 
-    serial = fq.run_noisy_statevector(
+    serial = run_noisy_statevector(
         circuit,
         model,
         trajectories=4000,
@@ -93,7 +126,7 @@ def test_batched_statevector_two_wire_kraus_matches_density_and_batching():
         seed=17,
         retain_trajectories=True,
     )
-    batched = fq.run_noisy_statevector(
+    batched = run_noisy_statevector(
         circuit,
         model,
         trajectories=4000,
@@ -101,7 +134,7 @@ def test_batched_statevector_two_wire_kraus_matches_density_and_batching():
         seed=17,
         retain_trajectories=True,
     )
-    exact = fq.expectation_z_density(fqn.noisy_density_matrix(circuit, model))
+    exact = expectation_z_density(fqn.noisy_density_matrix(circuit, model))
 
     assert torch.equal(serial.retained_states, batched.retained_states)
     assert torch.allclose(batched.expectation_z, exact, atol=0.04)
@@ -110,7 +143,7 @@ def test_batched_statevector_two_wire_kraus_matches_density_and_batching():
 
 def test_public_run_reports_noisy_statevector_runtime_mode():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))
 
     result = run_advanced(circuit, noise_model=model, trajectories=4, seed=3)
 
@@ -120,8 +153,8 @@ def test_public_run_reports_noisy_statevector_runtime_mode():
 
 def test_rank_local_batched_statevector_results_merge_by_global_id():
     circuit = fq.Circuit(2).h(0).cx(0, 1)
-    model = fqn.NoiseModel().add("cx", fq.depolarizing_channel(0.2))
-    single = fq.run_noisy_statevector(
+    model = fqn.NoiseModel().add("cx", depolarizing_channel(0.2))
+    single = run_noisy_statevector(
         circuit,
         model,
         trajectories=31,
@@ -130,7 +163,7 @@ def test_rank_local_batched_statevector_results_merge_by_global_id():
         retain_trajectories=True,
     )
     local = tuple(
-        fq.run_noisy_statevector(
+        run_noisy_statevector(
             circuit,
             model,
             trajectories=31,
@@ -143,7 +176,7 @@ def test_rank_local_batched_statevector_results_merge_by_global_id():
         for rank in range(4)
     )
 
-    merged = fq.merge_noisy_statevector_results(local)
+    merged = merge_noisy_statevector_results(local)
 
     assert tuple(sorted(i for item in local for i in item.trajectory_ids)) == tuple(
         range(31)
@@ -156,20 +189,20 @@ def test_rank_local_batched_statevector_results_merge_by_global_id():
 
 def test_rank_local_batched_statevector_merge_rejects_incomplete_set():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5))
-    rank_zero = fq.run_noisy_statevector(
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.5))
+    rank_zero = run_noisy_statevector(
         circuit, model, trajectories=4, seed=9, rank=0, world_size=2
     )
 
     with pytest.raises(ValueError, match="incomplete"):
-        fq.merge_noisy_statevector_results((rank_zero,))
+        merge_noisy_statevector_results((rank_zero,))
 
 
 def test_batched_statevector_adaptive_stops_on_batch_boundary():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
-    result = fq.run_noisy_statevector(
+    result = run_noisy_statevector(
         circuit,
         model,
         trajectories=100,
@@ -187,9 +220,9 @@ def test_batched_statevector_adaptive_stops_on_batch_boundary():
 
 def test_batched_statevector_adaptive_reports_unmet_target():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.5))
 
-    result = fq.run_noisy_statevector(
+    result = run_noisy_statevector(
         circuit,
         model,
         trajectories=12,
@@ -206,7 +239,7 @@ def test_batched_statevector_adaptive_reports_unmet_target():
 
 def test_public_batched_statevector_plan_records_adaptive_policy():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     result = run_advanced(
         circuit,
@@ -227,13 +260,13 @@ def test_public_batched_statevector_plan_records_adaptive_policy():
 
 def test_batched_statevector_checkpoint_resume_matches_continuous(tmp_path):
     circuit = fq.Circuit(2).h(0).cx(0, 1)
-    model = fqn.NoiseModel().add("cx", fq.depolarizing_channel(0.2))
+    model = fqn.NoiseModel().add("cx", depolarizing_channel(0.2))
     checkpoint_path = tmp_path / "statevector.pt"
-    continuous = fq.run_noisy_statevector(
+    continuous = run_noisy_statevector(
         circuit, model, trajectories=24, trajectory_batch_size=4, seed=43
     )
 
-    partial = fq.run_noisy_statevector(
+    partial = run_noisy_statevector(
         circuit,
         model,
         trajectories=24,
@@ -242,7 +275,7 @@ def test_batched_statevector_checkpoint_resume_matches_continuous(tmp_path):
         checkpoint_path=checkpoint_path,
         max_batches_per_run=2,
     )
-    resumed = fq.run_noisy_statevector(
+    resumed = run_noisy_statevector(
         circuit,
         model,
         trajectories=24,
@@ -261,9 +294,9 @@ def test_batched_statevector_checkpoint_resume_matches_continuous(tmp_path):
 
 def test_batched_statevector_checkpoint_rejects_changed_identity(tmp_path):
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.2))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.2))
     checkpoint_path = tmp_path / "statevector.pt"
-    fq.run_noisy_statevector(
+    run_noisy_statevector(
         circuit,
         model,
         trajectories=8,
@@ -273,9 +306,9 @@ def test_batched_statevector_checkpoint_rejects_changed_identity(tmp_path):
         max_batches_per_run=1,
     )
 
-    changed_noise = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.3))
+    changed_noise = fqn.NoiseModel().add("x", bit_flip_channel(0.3))
     with pytest.raises(ValueError, match="noise model identity"):
-        fq.run_noisy_statevector(
+        run_noisy_statevector(
             circuit,
             changed_noise,
             trajectories=8,
@@ -285,7 +318,7 @@ def test_batched_statevector_checkpoint_rejects_changed_identity(tmp_path):
             resume=True,
         )
     with pytest.raises(ValueError, match="circuit digest"):
-        fq.run_noisy_statevector(
+        run_noisy_statevector(
             fq.Circuit(1).h(0),
             model,
             trajectories=8,
@@ -302,7 +335,7 @@ def test_batched_statevector_isolates_failure_and_retries_from_checkpoint(
     from flagquantum.runtime.backends.statevector import noisy
 
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))
     checkpoint_path = tmp_path / "failure.pt"
     original = noisy._execute_trajectory_batch
 
@@ -314,7 +347,7 @@ def test_batched_statevector_isolates_failure_and_retries_from_checkpoint(
         return original(initial, ids, **kwargs)
 
     monkeypatch.setattr(noisy, "_execute_trajectory_batch", injected_failure)
-    partial = fq.run_noisy_statevector(
+    partial = run_noisy_statevector(
         circuit,
         model,
         trajectories=8,
@@ -331,7 +364,7 @@ def test_batched_statevector_isolates_failure_and_retries_from_checkpoint(
     assert partial.failures[0].error_type == "RuntimeError"
 
     monkeypatch.setattr(noisy, "_execute_trajectory_batch", original)
-    resumed = fq.run_noisy_statevector(
+    resumed = run_noisy_statevector(
         circuit,
         model,
         trajectories=8,
@@ -349,7 +382,7 @@ def test_batched_statevector_isolates_failure_and_retries_from_checkpoint(
 
 def test_kraus_channel_rejects_non_trace_preserving_operators():
     with pytest.raises(ValueError, match="trace-preserving"):
-        fq.KrausChannel(
+        KrausChannel(
             "invalid",
             (torch.eye(2, dtype=torch.complex64) * 0.5,),
         )
@@ -358,9 +391,9 @@ def test_kraus_channel_rejects_non_trace_preserving_operators():
 def test_noise_model_round_trip_preserves_stable_identity():
     model = (
         fqn.NoiseModel()
-        .add(("x", "sx"), fq.phase_damping_channel(0.2), wires=1)
-        .add("cx", fq.depolarizing_channel(0.03))
-        .add_readout(0, fq.ReadoutError(((0.98, 0.02), (0.07, 0.93))))
+        .add(("x", "sx"), phase_damping_channel(0.2), wires=1)
+        .add("cx", depolarizing_channel(0.03))
+        .add_readout(0, ReadoutError(((0.98, 0.02), (0.07, 0.93))))
     )
 
     restored = fqn.NoiseModel.from_dict(model.to_dict())
@@ -373,7 +406,7 @@ def test_noise_model_round_trip_preserves_stable_identity():
 def test_readout_confusion_is_classical_and_wire_local():
     model = fqn.NoiseModel().add_readout(
         1,
-        fq.ReadoutError(((0.9, 0.1), (0.2, 0.8))),
+        ReadoutError(((0.9, 0.1), (0.2, 0.8))),
     )
     ideal = torch.tensor([[0.0, 1.0, 0.0, 0.0]])  # true |01>
 
@@ -388,7 +421,7 @@ def test_readout_confusion_is_classical_and_wire_local():
 def test_noisy_mps_aggregates_post_readout_z_expectation():
     model = fqn.NoiseModel().add_readout(
         0,
-        fq.ReadoutError(((0.75, 0.25), (0.1, 0.9))),
+        ReadoutError(((0.75, 0.25), (0.1, 0.9))),
     )
 
     result = fqb.run_noisy_mps(
@@ -404,10 +437,10 @@ def test_noisy_mps_aggregates_post_readout_z_expectation():
 
 def test_readout_confusion_rejects_invalid_rows_and_duplicate_wires():
     with pytest.raises(ValueError, match="sum to 1"):
-        fq.ReadoutError(((0.8, 0.3), (0.0, 1.0)))
-    model = fqn.NoiseModel().add_readout(0, fq.ReadoutError(((1.0, 0.0), (0.0, 1.0))))
+        ReadoutError(((0.8, 0.3), (0.0, 1.0)))
+    model = fqn.NoiseModel().add_readout(0, ReadoutError(((1.0, 0.0), (0.0, 1.0))))
     with pytest.raises(ValueError, match="only one"):
-        model.add_readout(0, fq.ReadoutError(((0.9, 0.1), (0.1, 0.9))))
+        model.add_readout(0, ReadoutError(((0.9, 0.1), (0.1, 0.9))))
 
 
 def test_correlated_readout_confusion_preserves_joint_assignment_errors():
@@ -418,7 +451,7 @@ def test_correlated_readout_confusion_preserves_joint_assignment_errors():
         (0.01, 0.07, 0.08, 0.84),
     )
     model = fqn.NoiseModel().add_correlated_readout(
-        (0, 1), fq.CorrelatedReadoutError(matrix)
+        (0, 1), CorrelatedReadoutError(matrix)
     )
 
     observed = model.apply_readout_probabilities(
@@ -432,7 +465,7 @@ def test_correlated_readout_confusion_preserves_joint_assignment_errors():
 
 def test_phase_damping_matches_analytic_coherence():
     circuit = fq.Circuit(1).h(0)
-    model = fqn.NoiseModel().add("h", fq.phase_damping_channel(0.75))
+    model = fqn.NoiseModel().add("h", phase_damping_channel(0.75))
 
     rho = fqn.noisy_density_matrix(circuit, model)
 
@@ -441,19 +474,17 @@ def test_phase_damping_matches_analytic_coherence():
 
 
 def test_reset_error_and_coherent_overrotation_have_expected_limits():
-    reset = fqn.NoiseModel().add("x", fq.reset_error_channel(1.0))
+    reset = fqn.NoiseModel().add("x", reset_error_channel(1.0))
     reset_rho = fqn.noisy_density_matrix(fq.Circuit(1).x(0), reset)
     assert torch.allclose(
-        fq.expectation_z_density(reset_rho, 0), torch.ones(1, 1), atol=1e-6
+        expectation_z_density(reset_rho, 0), torch.ones(1, 1), atol=1e-6
     )
 
     angle = 0.37
-    rotation = fqn.NoiseModel().add(
-        "x", fq.coherent_overrotation_channel(angle, axis="x")
-    )
+    rotation = fqn.NoiseModel().add("x", coherent_overrotation_channel(angle, axis="x"))
     rotation_rho = fqn.noisy_density_matrix(fq.Circuit(1).x(0), rotation)
     assert torch.allclose(
-        fq.expectation_z_density(rotation_rho, 0),
+        expectation_z_density(rotation_rho, 0),
         torch.tensor([[-math.cos(angle)]]),
         atol=1e-6,
     )
@@ -461,9 +492,7 @@ def test_reset_error_and_coherent_overrotation_have_expected_limits():
 
 def test_thermal_relaxation_matches_t1_population_decay():
     t1, duration = 10.0, 2.5
-    model = fqn.NoiseModel().add(
-        "x", fq.thermal_relaxation_channel(t1, 2 * t1, duration)
-    )
+    model = fqn.NoiseModel().add("x", thermal_relaxation_channel(t1, 2 * t1, duration))
 
     rho = fqn.noisy_density_matrix(fq.Circuit(1).x(0), model)
 
@@ -472,20 +501,20 @@ def test_thermal_relaxation_matches_t1_population_decay():
 
 
 def _device_profile(*, x0_duration=20.0, x1_duration=10.0):
-    return fq.DeviceNoiseProfile(
+    return DeviceNoiseProfile(
         qubits=(
-            fq.QubitNoiseCalibration(
+            QubitNoiseCalibration(
                 0,
                 t1=100.0,
                 t2=150.0,
-                readout_error=fq.ReadoutError(((0.98, 0.02), (0.05, 0.95))),
+                readout_error=ReadoutError(((0.98, 0.02), (0.05, 0.95))),
             ),
-            fq.QubitNoiseCalibration(1, t1=110.0, t2=170.0),
+            QubitNoiseCalibration(1, t1=110.0, t2=170.0),
         ),
         gate_durations=(
-            fq.GateDuration("x", x0_duration, wires=(0,)),
-            fq.GateDuration("x", x1_duration, wires=(1,)),
-            fq.GateDuration("cx", 30.0),
+            GateDuration("x", x0_duration, wires=(0,)),
+            GateDuration("x", x1_duration, wires=(1,)),
+            GateDuration("cx", 30.0),
         ),
         source="test-calibration",
         captured_at="2026-08-06T12:00:00+08:00",
@@ -495,7 +524,7 @@ def _device_profile(*, x0_duration=20.0, x1_duration=10.0):
 
 def test_device_noise_profile_round_trip_and_model_identity():
     profile = _device_profile()
-    restored = fq.DeviceNoiseProfile.from_dict(profile.to_dict())
+    restored = DeviceNoiseProfile.from_dict(profile.to_dict())
     model = fqn.NoiseModel.from_device_profile(restored)
     model_round_trip = fqn.NoiseModel.from_dict(model.to_dict())
 
@@ -510,7 +539,7 @@ def test_device_profile_lowers_gate_and_idle_relaxation_with_provenance():
     model = fqn.NoiseModel.from_device_profile(profile)
     circuit = fq.Circuit(2).x(0).x(1).cx(0, 1)
 
-    lowered = fq.lower_noise_model(circuit, model)
+    lowered = lower_noise_model(circuit, model)
     channels = [item for item in lowered if item.metadata.get("is_channel")]
     placements = [item.metadata["placement"] for item in channels]
 
@@ -528,9 +557,9 @@ def test_device_profile_lowers_gate_and_idle_relaxation_with_provenance():
 def test_device_profile_relaxation_executes_on_density_backend():
     t1 = 10.0
     duration = math.log(2) * t1
-    profile = fq.DeviceNoiseProfile(
-        qubits=(fq.QubitNoiseCalibration(0, t1=t1, t2=2 * t1),),
-        gate_durations=(fq.GateDuration("x", duration),),
+    profile = DeviceNoiseProfile(
+        qubits=(QubitNoiseCalibration(0, t1=t1, t2=2 * t1),),
+        gate_durations=(GateDuration("x", duration),),
         source="analytic",
         captured_at="2026-08-06T12:00:00+08:00",
     )
@@ -539,9 +568,7 @@ def test_device_profile_relaxation_executes_on_density_backend():
         fq.Circuit(1).x(0), fqn.NoiseModel.from_device_profile(profile)
     )
 
-    assert torch.allclose(
-        fq.expectation_z_density(rho, 0), torch.zeros(1, 1), atol=1e-6
-    )
+    assert torch.allclose(expectation_z_density(rho, 0), torch.zeros(1, 1), atol=1e-6)
 
     model = fqn.NoiseModel.from_device_profile(profile)
     _, plan = fqb.run_native(
@@ -554,23 +581,23 @@ def test_device_profile_relaxation_executes_on_density_backend():
 
 
 def test_device_profile_missing_gate_duration_fails_closed():
-    profile = fq.DeviceNoiseProfile(
-        qubits=(fq.QubitNoiseCalibration(0, t1=10.0, t2=15.0),),
-        gate_durations=(fq.GateDuration("x", 1.0),),
+    profile = DeviceNoiseProfile(
+        qubits=(QubitNoiseCalibration(0, t1=10.0, t2=15.0),),
+        gate_durations=(GateDuration("x", 1.0),),
         source="incomplete",
         captured_at="2026-08-06T12:00:00+08:00",
     )
     with pytest.raises(ValueError, match="no duration for gate 'h'"):
-        fq.lower_noise_model(
+        lower_noise_model(
             fq.Circuit(1).h(0), fqn.NoiseModel.from_device_profile(profile)
         )
 
 
 def test_device_profile_requires_timestamped_provenance():
     with pytest.raises(ValueError, match="timezone"):
-        fq.DeviceNoiseProfile(
-            qubits=(fq.QubitNoiseCalibration(0, t1=10.0, t2=15.0),),
-            gate_durations=(fq.GateDuration("x", 1.0),),
+        DeviceNoiseProfile(
+            qubits=(QubitNoiseCalibration(0, t1=10.0, t2=15.0),),
+            gate_durations=(GateDuration("x", 1.0),),
             source="device",
             captured_at="2026-08-06T12:00:00",
         )
@@ -583,7 +610,7 @@ def test_two_qubit_mps_trajectory_samples_kraus_branches():
         torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64),
         torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64),
     )
-    channel = fq.KrausChannel(
+    channel = KrausChannel(
         "correlated_flip",
         (
             (1 - probability) ** 0.5 * identity,
@@ -593,7 +620,7 @@ def test_two_qubit_mps_trajectory_samples_kraus_branches():
     circuit = fq.Circuit(2).x(0).cx(0, 1)
     model = fqn.NoiseModel().add("cx", channel)
 
-    exact = fq.expectation_z_density(fqn.noisy_density_matrix(circuit, model))
+    exact = expectation_z_density(fqn.noisy_density_matrix(circuit, model))
     sampled = fqb.run_noisy_mps(
         circuit,
         model,
@@ -609,11 +636,11 @@ def test_noise_semantics_have_one_canonical_public_identity():
     import flagquantum.compiler as noise_compiler
     import flagquantum.simulation.density_matrix as density_backend
 
-    assert fq.noise.NoiseModel is fqn.NoiseModel
-    assert fq.noise.NoiseRule is fq.NoiseRule
-    assert fq.noise.KrausChannel is fq.KrausChannel
-    assert fq.lower_noise_model is noise_compiler.lower_noise_model
-    assert fq.density_matrix_from_ir is density_backend.density_matrix_from_ir
+    assert noise.NoiseModel is fqn.NoiseModel
+    assert noise.NoiseRule is NoiseRule
+    assert noise.KrausChannel is KrausChannel
+    assert lower_noise_model is noise_compiler.lower_noise_model
+    assert density_matrix_from_ir is density_backend.density_matrix_from_ir
 
 
 def test_noisy_density_runtime_delegates_numerics_to_simulation(monkeypatch):
@@ -691,7 +718,7 @@ def test_density_noise_executor_is_resolved_through_registry(monkeypatch):
     )
 
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
     lowered = lower_noise_model(circuit, model)
     execution_plan = fqxp.plan_advanced(circuit, noise_model=model)
     noisy_plan = build_noisy_execution_plan(
@@ -707,7 +734,7 @@ def test_density_noise_executor_is_resolved_through_registry(monkeypatch):
 
     rho = execute_noisy_plan(lowered, noisy_plan)
 
-    assert torch.allclose(fq.expectation_z_density(rho, 0), torch.ones(1, 1))
+    assert torch.allclose(expectation_z_density(rho, 0), torch.ones(1, 1))
 
 
 def test_density_matrix_from_native_circuit():
@@ -720,41 +747,39 @@ def test_density_matrix_from_native_circuit():
     assert torch.allclose(
         torch.real(torch.diagonal(rho, dim1=-2, dim2=-1).sum(-1)), torch.ones(1)
     )
-    assert torch.allclose(fq.expectation_z_density(rho), torch.zeros(1, 2), atol=1e-6)
+    assert torch.allclose(expectation_z_density(rho), torch.zeros(1, 2), atol=1e-6)
 
 
 def test_bit_flip_channel_on_density_matrix():
     circuit = fq.Circuit(1)
-    rho = fq.apply_kraus_density(
+    rho = apply_kraus_density(
         circuit.density_matrix(),
-        fq.bit_flip_channel(1.0),
+        bit_flip_channel(1.0),
         (0,),
         circuit.n_wires,
     )
 
-    assert torch.allclose(
-        fq.expectation_z_density(rho, 0), -torch.ones(1, 1), atol=1e-6
-    )
+    assert torch.allclose(expectation_z_density(rho, 0), -torch.ones(1, 1), atol=1e-6)
 
 
 def test_noisy_density_matrix_gate_noise_model():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     rho = circuit.noisy_density_matrix(model)
 
-    assert torch.allclose(fq.expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
+    assert torch.allclose(expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
 
 
 def test_amplitude_damping_channel():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.amplitude_damping_channel(1.0))
+    model = fqn.NoiseModel().add("x", amplitude_damping_channel(1.0))
 
     rho = fqn.noisy_density_matrix(circuit, model)
 
-    assert torch.allclose(fq.expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
+    assert torch.allclose(expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
 
 
 def test_density_matrix_matches_statevector_expectation():
@@ -764,7 +789,7 @@ def test_density_matrix_matches_statevector_expectation():
     rho = fqn.noisy_density_matrix(circuit)
 
     assert torch.allclose(
-        fq.expectation_z_density(rho),
+        expectation_z_density(rho),
         circuit.expectation_z(),
         atol=1e-6,
     )
@@ -773,9 +798,9 @@ def test_density_matrix_matches_statevector_expectation():
 def test_noise_model_lowers_to_unified_ir_and_planner():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
-    lowered = fq.lower_noise_model(circuit, model)
+    lowered = lower_noise_model(circuit, model)
     plan = fqxp.plan_advanced(circuit, noise_model=model)
 
     assert [inst.name for inst in lowered] == ["x", "bit_flip"]
@@ -784,18 +809,18 @@ def test_noise_model_lowers_to_unified_ir_and_planner():
     assert plan.analysis.has_noise is True
     assert plan.state_mode == "density_matrix"
     assert plan.recommended_mode == "density"
-    assert plan.state_bytes == fq.estimate_density_bytes(1)
+    assert plan.state_bytes == estimate_density_bytes(1)
 
 
 def test_circuit_run_uses_density_matrix_for_noise():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     result = circuit.run(noise_model=model)
     rho = result.state
     plan = result.plan
-    rho_from_ir = fq.density_matrix_from_ir(fq.lower_noise_model(circuit, model))
+    rho_from_ir = density_matrix_from_ir(lower_noise_model(circuit, model))
 
     assert torch.allclose(rho, rho_from_ir)
     assert plan.state_mode == "density_matrix"
@@ -803,7 +828,7 @@ def test_circuit_run_uses_density_matrix_for_noise():
     assert plan.noisy_execution_plan.representation == "density_matrix"
     assert plan.noisy_execution_plan.evolution == "exact_channel"
     assert plan.noisy_execution_plan.noise_model_identity == model.identity
-    assert torch.allclose(fq.expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
+    assert torch.allclose(expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
 
 
 def test_run_native_statevector_path():
@@ -820,19 +845,19 @@ def test_run_native_statevector_path():
 def test_auto_mode_selects_density_matrix_for_noise():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     rho, plan = fqb.run_native(circuit, noise_model=model, return_plan=True)
 
     assert plan.state_mode == "density_matrix"
-    assert fq.select_execution_mode(circuit, noise_model=model) == "density_matrix"
-    assert torch.allclose(fq.expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
+    assert select_execution_mode(circuit, noise_model=model) == "density_matrix"
+    assert torch.allclose(expectation_z_density(rho, 0), torch.ones(1, 1), atol=1e-6)
 
 
 def test_auto_mode_selects_batched_statevector_when_trajectory_controls_fit():
     circuit = fq.Circuit(1)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     result, plan = fqb.run_native(
         circuit,
@@ -842,7 +867,7 @@ def test_auto_mode_selects_batched_statevector_when_trajectory_controls_fit():
     )
 
     assert (
-        fq.select_execution_mode(circuit, noise_model=model, trajectories=4)
+        select_execution_mode(circuit, noise_model=model, trajectories=4)
         == "noisy_statevector"
     )
     assert plan.state_mode == "statevector"
@@ -856,7 +881,7 @@ def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
     monkeypatch: pytest.MonkeyPatch,
 ):
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
     expected, plan = fqb.run_native(
         circuit,
         noise_model=model,
@@ -865,7 +890,7 @@ def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
         seed=7,
         return_plan=True,
     )
-    lowered = fq.lower_noise_model(circuit, model)
+    lowered = lower_noise_model(circuit, model)
 
     def forbidden(*args, **kwargs):
         raise AssertionError("planned noisy execution must not lower noise again")
@@ -892,7 +917,7 @@ def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
 def test_auto_mode_fails_when_every_noisy_candidate_exceeds_memory():
     circuit = fq.Circuit(2)
     circuit.x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     with pytest.raises(ValueError, match="no noisy execution candidate"):
         fqb.run_native(
@@ -906,9 +931,9 @@ def test_auto_mode_fails_when_every_noisy_candidate_exceeds_memory():
 
 def test_noise_selector_reports_candidates_and_rejection_reasons():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
-    selection = fq.plan_noise_execution_selection(
+    selection = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=8,
@@ -929,9 +954,9 @@ def test_noise_selector_reports_candidates_and_rejection_reasons():
 
 def test_distributed_selector_rejects_public_noisy_mps_candidate():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
-    selection = fq.plan_noise_execution_selection(
+    selection = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=8,
@@ -953,10 +978,10 @@ def test_distributed_selector_rejects_public_noisy_mps_candidate():
 
 def test_explicit_distributed_noisy_mps_request_fails_closed():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
     with pytest.raises(ValueError, match="requested noisy execution candidate"):
-        fq.plan_noise_execution_selection(
+        plan_noise_execution_selection(
             circuit,
             model,
             trajectories=8,
@@ -976,10 +1001,10 @@ def test_explicit_distributed_noisy_mps_request_fails_closed():
 
 def test_noise_selector_respects_exact_and_explicit_mps_policy():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
-    exact = fq.plan_noise_execution_selection(circuit, model, exact_noise=True)
-    compressed = fq.plan_noise_execution_selection(
+    exact = plan_noise_execution_selection(circuit, model, exact_noise=True)
+    compressed = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=8,
@@ -1007,7 +1032,7 @@ def _selector_calibration(
         "executed_trajectories": 8,
     }
     return {
-        "schema": fq.NOISE_SELECTOR_CALIBRATION_SCHEMA,
+        "schema": NOISE_SELECTOR_CALIBRATION_SCHEMA,
         "device_name": "test accelerator",
         "torch_version": torch.__version__,
         "trajectory_batch_size": 4,
@@ -1032,26 +1057,26 @@ def _selector_calibration(
 
 def test_noise_selector_uses_only_exact_device_calibration_matches():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
     calibration = _selector_calibration(
         circuit, model, statevector_seconds=10.0, mps_seconds=1.0
     )
 
-    calibrated = fq.plan_noise_execution_selection(
+    calibrated = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=8,
         trajectory_batch_size=4,
         calibration=calibration,
     )
-    fallback = fq.plan_noise_execution_selection(
+    fallback = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=8,
         trajectory_batch_size=2,
         calibration=calibration,
     )
-    distributed_fallback = fq.plan_noise_execution_selection(
+    distributed_fallback = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=8,
@@ -1070,7 +1095,7 @@ def test_noise_selector_uses_only_exact_device_calibration_matches():
 
 def test_run_native_consumes_selector_calibration_option():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
     calibration = _selector_calibration(
         circuit, model, statevector_seconds=1.0, mps_seconds=10.0
     )
@@ -1090,10 +1115,10 @@ def test_run_native_consumes_selector_calibration_option():
 
 def test_noise_selector_rejects_unknown_calibration_schema():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
     with pytest.raises(ValueError, match="unsupported noise selector calibration"):
-        fq.plan_noise_execution_selection(
+        plan_noise_execution_selection(
             circuit,
             model,
             trajectories=8,
@@ -1103,16 +1128,16 @@ def test_noise_selector_rejects_unknown_calibration_schema():
 
 def test_noise_selector_reports_time_to_target_trajectory_evidence():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
-    selection = fq.plan_noise_execution_selection(
+    selection = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=128,
         min_trajectories=16,
         target_standard_error=0.1,
     )
-    insufficient = fq.plan_noise_execution_selection(
+    insufficient = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=32,
@@ -1130,10 +1155,10 @@ def test_noise_selector_reports_time_to_target_trajectory_evidence():
 
 def test_noise_selector_target_error_requires_trajectory_ceiling():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
     with pytest.raises(ValueError, match="explicit trajectory ceiling"):
-        fq.plan_noise_execution_selection(
+        plan_noise_execution_selection(
             circuit,
             model,
             target_standard_error=0.1,
@@ -1142,9 +1167,9 @@ def test_noise_selector_target_error_requires_trajectory_ceiling():
 
 def test_noise_selector_uses_reproducible_pilot_variance_evidence():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
-    selection = fq.plan_noise_execution_selection(
+    selection = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=128,
@@ -1164,9 +1189,9 @@ def test_noise_selector_uses_reproducible_pilot_variance_evidence():
 
 def test_noise_selector_uses_simultaneous_pilot_variance_upper_bound():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
-    selection = fq.plan_noise_execution_selection(
+    selection = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=4096,
@@ -1187,7 +1212,7 @@ def test_noise_selector_uses_simultaneous_pilot_variance_upper_bound():
 
 def test_target_error_cost_can_select_faster_exact_density_backend():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
     calibration = _selector_calibration(
         circuit,
         model,
@@ -1196,7 +1221,7 @@ def test_target_error_cost_can_select_faster_exact_density_backend():
         density_seconds=2.0,
     )
 
-    selection = fq.plan_noise_execution_selection(
+    selection = plan_noise_execution_selection(
         circuit,
         model,
         trajectories=128,
@@ -1218,10 +1243,10 @@ def test_noise_selector_validates_pilot_variance_evidence(
     pilot_variance, pilot_trajectories, message
 ):
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
     with pytest.raises(ValueError, match=message):
-        fq.plan_noise_execution_selection(
+        plan_noise_execution_selection(
             circuit,
             model,
             trajectories=128,
@@ -1233,10 +1258,10 @@ def test_noise_selector_validates_pilot_variance_evidence(
 
 def test_noise_selector_validates_pilot_confidence_evidence():
     circuit = fq.Circuit(2).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.1))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 
     with pytest.raises(ValueError, match="between zero and one"):
-        fq.plan_noise_execution_selection(
+        plan_noise_execution_selection(
             circuit,
             model,
             trajectories=128,

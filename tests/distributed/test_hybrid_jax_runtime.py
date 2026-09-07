@@ -6,6 +6,9 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.runtime.backends.jax import compile_quantum_kernel
+from flagquantum.runtime.distributed import init_torch_distributed
 
 pytestmark = [
     pytest.mark.distributed,
@@ -39,12 +42,12 @@ def _build_hybrid_circuit(values: torch.Tensor) -> fq.Circuit:
     return circuit
 
 
-def _hamiltonian() -> fq.Hamiltonian:
-    return fq.Hamiltonian(
+def _hamiltonian() -> Hamiltonian:
+    return Hamiltonian(
         [
-            fq.pauli_term(0.7, "ZZ", (0, 1)),
-            fq.pauli_term(-0.2, "X", (0,)),
-            fq.pauli_term(0.13, "YY", (1, 2)),
+            pauli_term(0.7, "ZZ", (0, 1)),
+            pauli_term(-0.2, "X", (0,)),
+            pauli_term(0.13, "YY", (1, 2)),
         ]
     )
 
@@ -53,14 +56,14 @@ def test_rank_local_jax_kernel_gradients_allreduce_match_reference():
     device = _device()
     world_size = _world_size()
     if not dist.is_initialized():
-        fq.init_torch_distributed(
+        init_torch_distributed(
             backend="nccl" if torch.cuda.is_available() else "gloo",
             world_size=world_size,
             device=device,
             force_initialize=True,
         )
     params = torch.tensor([0.2, -0.1, 0.3, 0.17], device=device, requires_grad=True)
-    kernel = fq.compile_quantum_kernel(
+    kernel = compile_quantum_kernel(
         _build_hybrid_circuit,
         params.detach(),
         backend="jax",

@@ -15,6 +15,9 @@ from flagquantum.core.ir import (
     MeasurementNode,
     ObservableNode,
 )
+from flagquantum.runtime.backends.jax.statevector_records import (
+    JAXStatevectorShardState,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -121,7 +124,7 @@ def test_executor_boundary_rejects_non_ir_input_before_dispatch():
         fqb.run_native(InvalidProgram())
 
 
-def test_public_api_snapshot_and_experimental_deprecation_path():
+def test_public_api_snapshot_and_internal_root_exports_are_closed():
     snapshot = json.loads(
         (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
     )
@@ -129,8 +132,9 @@ def test_public_api_snapshot_and_experimental_deprecation_path():
     assert "JAXStatevectorShardState" not in fq.__all__
     with pytest.raises(AttributeError):
         getattr(fq.experimental.distributed, "JAXStatevectorShardState")
-    with pytest.warns(DeprecationWarning, match="no public replacement"):
-        assert fq.JAXStatevectorShardState is not None
+    with pytest.raises(AttributeError):
+        getattr(fq, "JAXStatevectorShardState")
+    assert JAXStatevectorShardState is not None
 
 
 def test_large_mps_circuit_ir_uses_symbolic_amplitude_shape():

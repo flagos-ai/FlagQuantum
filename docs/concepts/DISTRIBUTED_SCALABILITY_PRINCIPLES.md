@@ -52,7 +52,7 @@ Local development distributed execution is valid only when it preserves
 production semantics. A CPU LocalTensor or local pmap simulator must use the
 same Circuit/IR, rank ownership, shard/task layout, and communication signature
 as the production distributed backend. Treat
-`fq.require_development_production_parity(...)` as the guardrail before relying
+`flagquantum.runtime.parity.require_development_production_parity(...)` as the guardrail before relying
 on a local distributed test to predict production behavior.
 
 ## Required Evidence For Scalability Claims
@@ -105,7 +105,7 @@ inventing exact inter-node bytes.
 
 ## Fail-Closed Audit
 
-Use `fq.require_distributed_scalability(payload)` when a CI job, release note,
+Use `flagquantum.runtime.audit.release_policy.require_distributed_scalability(payload)` when a CI job, release note,
 or benchmark promotion requires release-grade sharded scalability evidence. It
 raises if the payload is replicated, incomplete, missing communication evidence,
 not allowed to make a scalability claim, or only plan/preflight evidence.

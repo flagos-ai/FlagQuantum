@@ -7,12 +7,13 @@ import torch
 
 import flagquantum as fq
 import flagquantum.algorithms as fqa
+from flagquantum.algorithms import Hamiltonian, pauli_term, vqe_loss
 from flagquantum.algorithms.optimization import OptimizationStage, optimize_hybrid
 from flagquantum.ops import get_global_precision, set_global_precision
 
 
 def _one_qubit_problem():
-    hamiltonian = fq.Hamiltonian([fq.pauli_term(1.0, "Z", (0,))])
+    hamiltonian = Hamiltonian([pauli_term(1.0, "Z", (0,))])
 
     def builder(parameters):
         return fq.Circuit(1).rx(0, theta=parameters[0])
@@ -78,7 +79,7 @@ def test_qng_uses_state_geometry_and_reduces_energy():
         stages=(OptimizationStage("quantum", "qng", steps=4, lr=0.2, damping=1e-3),),
     )
 
-    assert result.history[-1] < float(fq.vqe_loss(builder, initial, hamiltonian))
+    assert result.history[-1] < float(vqe_loss(builder, initial, hamiltonian))
     assert all(record.gradient_norm is not None for record in result.records)
     assert all(record.wall_time_seconds > 0 for record in result.records)
     assert all(record.objective_gradient_seconds > 0 for record in result.records)

@@ -21,11 +21,10 @@ import sys
 import flagquantum
 forbidden = ('flagquantum.runtime_stack', 'flagquantum.deployment', 'flagquantum.drawer', 'jax', 'jaxlib')
 assert not any(name.startswith(forbidden) for name in sys.modules), sorted(sys.modules)
-# The v1 public surface is snapshot-governed in public_api_v1.json. Keep this
-# guard as a coarse emergency ceiling without contradicting that frozen API.
+# The public surface is snapshot-governed in public_api_v1.json. Keep this
+# guard as a coarse emergency ceiling without contradicting that snapshot.
 assert len(flagquantum.__all__) <= 64
-assert flagquantum.COMPATIBILITY_EXPORT_OWNER
-assert flagquantum.COMPATIBILITY_EXPORT_REMOVAL_VERSION == '0.3.0'
+assert 'flagquantum.api' not in sys.modules
 """
     subprocess.run([sys.executable, "-c", code], cwd=ROOT, check=True)
 

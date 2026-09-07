@@ -31,6 +31,7 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_tn_adjoint_layouts,
     validate_tn_adjoint_tensors,
 )
+from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
 
 
 def _expectation(parameters: torch.Tensor):
@@ -40,7 +41,7 @@ def _expectation(parameters: torch.Tensor):
     for layer in range(3):
         for qubit in range(layer % 2, 7, 2):
             circuit.cx(qubit, qubit + 1)
-    return fq.build_tensor_network_expectation(circuit, z=list(range(8)))
+    return build_tensor_network_expectation(circuit, z=list(range(8)))
 
 
 def main() -> None:

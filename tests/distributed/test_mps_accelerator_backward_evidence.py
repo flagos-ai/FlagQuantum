@@ -1,6 +1,7 @@
 import pytest
 
-import flagquantum as fq
+from flagquantum.runtime.audit import DistributedScalabilityError
+from flagquantum.runtime.audit.release_policy import require_distributed_scalability
 from flagquantum.runtime.backends.jax.mps_backward import (
     _execute_minimal_mps_sharded_backward,
 )
@@ -73,8 +74,8 @@ def test_mps_accelerator_backward_evidence_uses_shared_fail_closed_contract():
         "mps_accelerator_probe_not_full_sharded_backward_executor" in gate["blockers"]
     )
     assert summary["scalability_claim_allowed"] is False
-    with pytest.raises(fq.DistributedScalabilityError):
-        fq.require_distributed_scalability(summary)
+    with pytest.raises(DistributedScalabilityError):
+        require_distributed_scalability(summary)
 
 
 def test_minimal_mps_sharded_backward_skeleton_runs_on_accelerators():

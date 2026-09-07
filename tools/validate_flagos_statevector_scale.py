@@ -23,6 +23,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+from flagquantum.runtime.distributed import (
+    destroy_torch_distributed,
+    init_torch_distributed,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -341,7 +346,7 @@ def _worker(*, output: Path, timeout_seconds: float, capacity_wires: int) -> int
         FlagOSStatevectorScaleRun,
     )
 
-    context = fq.init_torch_distributed(
+    context = init_torch_distributed(
         backend="flagos", device="flagos", timeout_seconds=timeout_seconds
     )
     try:
@@ -411,7 +416,7 @@ def _worker(*, output: Path, timeout_seconds: float, capacity_wires: int) -> int
         return 0 if report.accepted else 1
     finally:
         if torch.distributed.is_available() and torch.distributed.is_initialized():
-            fq.destroy_torch_distributed()
+            destroy_torch_distributed()
 
 
 def _controller(

@@ -10,13 +10,35 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+import flagquantum.compiler as compiler
 import flagquantum.runtime.planner as fqxp
+from flagquantum.compiler import CouplingMap
+from flagquantum.gradients import parameter_shift_gradient
 from flagquantum.ops.matrices import GATE_MAT_DICT
+from flagquantum.runtime.audit import audit_distributed_scalability
+from flagquantum.runtime.backend_registry import get_backend_capabilities
+from flagquantum.runtime.configuration import get_backend, set_backend
+from flagquantum.runtime.distributed import (
+    DistributedBoundaryProtocol,
+    DistributedBoundarySync,
+    DistributedShardPlan,
+    destroy_torch_distributed,
+)
+from flagquantum.runtime.distributed.models import (
+    DistributedMPSState,
+    DistributedTensorNetworkState,
+    ShardedMPSState,
+)
+from flagquantum.runtime.planner import estimate_state_bytes, select_execution_mode
+from flagquantum.simulation.mps_state import MPSState
 from flagquantum.simulation.statevector_ops import (
     _apply_matrix,
     _compose_gate_matrices,
     _gate_matrix,
 )
+from flagquantum.simulation.tensor_execution import build_tensor_network
+from flagquantum.utils.qasm_exporter import export_to_qasm_str
+from flagquantum.utils.qcis_exporter import export_to_qcis_str
 
 pytestmark = pytest.mark.integration
 
@@ -241,7 +263,7 @@ def test_parameter_shift_gradient_matches_autograd_for_training_loss():
 
     autograd_loss = loss_fn(build(autograd_params))
     autograd_loss.backward()
-    shift_grad = fq.parameter_shift_gradient(build, params, loss_fn)
+    shift_grad = parameter_shift_gradient(build, params, loss_fn)
 
     assert autograd_params.grad is not None
     assert torch.allclose(shift_grad, autograd_params.grad.detach(), atol=1e-5)
@@ -258,7 +280,7 @@ def test_native_named_parameters_bind_before_execution_and_export():
     with pytest.raises(ValueError, match="bind_parameters"):
         circuit.state()
     with pytest.raises(ValueError, match="bind_parameters"):
-        fq.export_to_qasm_str(circuit)
+        export_to_qasm_str(circuit)
 
     bound = circuit.bind_parameters({"theta": 0.3, phi: torch.tensor(0.2)})
 
@@ -267,8 +289,8 @@ def test_native_named_parameters_bind_before_execution_and_export():
     assert torch.allclose(
         bound.expectation_z(0), torch.cos(torch.tensor([[0.3]])), atol=1e-6
     )
-    assert "rx(0.3)" in fq.export_to_qasm_str(bound, version=2.0)
-    assert "RZ Q0 0.3" in fq.export_to_qcis_str(bound)
+    assert "rx(0.3)" in export_to_qasm_str(bound, version=2.0)
+    assert "RZ Q0 0.3" in export_to_qcis_str(bound)
 
 
 def test_native_ir_and_compiler():
@@ -276,7 +298,7 @@ def test_native_ir_and_compiler():
     circuit.x(0).x(0).h(0)
 
     ir = circuit.to_ir()
-    compiled = fq.compiler.optimize(ir)
+    compiled = compiler.optimize(ir)
 
     assert len(ir) == 3
     assert len(compiled) == 1
@@ -305,7 +327,7 @@ def test_native_compiler_rotation_merge_and_layers():
 def test_native_compiler_routes_to_line_topology():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(2, theta=0.2).rzz(3, 1, theta=0.4)
-    coupling = fq.CouplingMap.line(4)
+    coupling = CouplingMap.line(4)
 
     compiled = circuit.compile(coupling_map=coupling)
     instructions = compiled.to_ir().instructions
@@ -319,9 +341,9 @@ def test_native_compiler_routes_to_line_topology():
 
 
 def test_native_compiler_topology_helpers():
-    line = fq.CouplingMap.line(4)
-    ring = fq.CouplingMap.ring(4)
-    grid = fq.CouplingMap.grid(2, 2)
+    line = CouplingMap.line(4)
+    ring = CouplingMap.ring(4)
+    grid = CouplingMap.grid(2, 2)
 
     assert line.shortest_path(0, 3) == (0, 1, 2, 3)
     assert ring.has_edge(0, 3)
@@ -330,8 +352,8 @@ def test_native_compiler_topology_helpers():
 
 
 def test_top_level_uses_native_runtime():
-    assert fq.get_backend() == "pytorch"
-    assert fq.set_backend("torch") == "pytorch"
+    assert get_backend() == "pytorch"
+    assert set_backend("torch") == "pytorch"
 
 
 def test_native_multi_parameter_and_ising_gates():
@@ -363,7 +385,7 @@ def test_native_qasm_export():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1).rx(1, theta=0.25)
 
-    qasm = fq.export_to_qasm_str(circuit, version=3.0)
+    qasm = export_to_qasm_str(circuit, version=3.0)
 
     assert "OPENQASM 3.0;" in qasm
     assert "qubit[2] q;" in qasm
@@ -453,7 +475,7 @@ def test_native_planner_analysis_and_execution_plan():
     assert plan.world_size == 2
     assert plan.user_tier == "production_distributed"
     assert plan.usability_contract == "single_api_distributed_scale_out"
-    assert plan.state_bytes == fq.estimate_state_bytes(3, bsz=2)
+    assert plan.state_bytes == estimate_state_bytes(3, bsz=2)
     assert len(plan.layers) == analysis.depth
     assert plan.layers[0].wires == (0, 2)
 
@@ -462,7 +484,7 @@ def test_native_planner_accepts_coupling_map():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)
 
-    plan = fqxp.plan_advanced(circuit, coupling_map=fq.CouplingMap.line(3))
+    plan = fqxp.plan_advanced(circuit, coupling_map=CouplingMap.line(3))
 
     assert plan.analysis.gate_counts["swap"] == 2
     assert plan.analysis.gate_counts["cx"] == 1
@@ -483,9 +505,9 @@ def test_auto_mode_selects_statevector_by_default():
     assert plan.usability_contract == "single_api_fast_path"
     assert plan.summary()["distribution_semantics"] == "single_device_fast_path"
     assert plan.summary()["scalability_claim_allowed"] is False
-    assert fq.audit_distributed_scalability(plan.summary()).valid
+    assert audit_distributed_scalability(plan.summary()).valid
     assert torch.allclose(result, circuit.state(), atol=1e-6)
-    assert fq.select_execution_mode(circuit) == "statevector"
+    assert select_execution_mode(circuit) == "statevector"
 
 
 def test_run_native_uses_one_resolved_precision_for_execution_and_plan():
@@ -537,7 +559,7 @@ def test_auto_mode_selects_mps_for_bond_control_and_preserves_full_state_contrac
     assert result.summary()["state_mode"] == "mps"
     assert memory_plan.state_mode == "statevector"
     assert torch.allclose(memory_result, circuit.state(), atol=1e-6)
-    assert fq.select_execution_mode(circuit, max_bond=2) == "mps"
+    assert select_execution_mode(circuit, max_bond=2) == "mps"
 
 
 def test_runtime_selection_prefers_local_jax_mps_training_fast_path():
@@ -608,7 +630,7 @@ def test_runtime_selection_includes_memory_communication_gradient_deployment_pla
         node_count=2,
         prefer_jax=True,
         require_gradients=True,
-        memory_limit_bytes=fq.estimate_state_bytes(5, complex_bytes=8) // 2,
+        memory_limit_bytes=estimate_state_bytes(5, complex_bytes=8) // 2,
     )
     summary = selection.summary()
     candidates = {
@@ -1023,7 +1045,7 @@ def test_run_native_executes_routed_statevector():
 
     result, plan = fqb.run_native(
         circuit,
-        coupling_map=fq.CouplingMap.line(3),
+        coupling_map=CouplingMap.line(3),
         return_plan=True,
     )
 
@@ -1048,7 +1070,7 @@ def test_auto_mode_can_dispatch_to_distributed_cpu():
     assert plan.recommended_mode == "local"
     assert result.plan.world_size == 1
     assert torch.allclose(result.state, circuit.state(), atol=1e-6)
-    assert fq.select_execution_mode(circuit, world_size=2) == "distributed_statevector"
+    assert select_execution_mode(circuit, world_size=2) == "distributed_statevector"
 
 
 def test_distributed_mode_alias_and_plan_name_are_explicit_statevector():
@@ -1091,7 +1113,7 @@ def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
         circuit, mode="distributed_mps", world_size=2, max_bond=4, return_plan=True
     )
 
-    assert isinstance(result, fq.DistributedMPSState)
+    assert isinstance(result, DistributedMPSState)
     assert plan.state_mode == "mps"
     assert plan.recommended_mode == "distributed_mps"
     assert plan.summary()["distribution_semantics"] == "requires_runtime_summary"
@@ -1108,9 +1130,7 @@ def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
         fqb.run_native(circuit, mode="mps").to_statevector(),
         atol=1e-6,
     )
-    assert (
-        fq.select_execution_mode(circuit, world_size=2, max_bond=4) == "distributed_mps"
-    )
+    assert select_execution_mode(circuit, world_size=2, max_bond=4) == "distributed_mps"
 
 
 def test_distributed_mps_accepts_adaptive_bond_policy():
@@ -1129,7 +1149,7 @@ def test_distributed_mps_accepts_adaptive_bond_policy():
     )
     summary = result.summary()
 
-    assert isinstance(result, fq.DistributedMPSState)
+    assert isinstance(result, DistributedMPSState)
     assert plan.state_mode == "mps"
     assert summary["adaptive"]
     assert summary["adaptive_rerun"]
@@ -1220,7 +1240,7 @@ def test_distributed_mps_strict_sharded_rejects_nonlocal_gate():
 def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    local_plan = fq.build_tensor_network(circuit)
+    local_plan = build_tensor_network(circuit)
     target_peak = local_plan.contraction_cost()["peak_size"]
     label_counts = Counter(label for node in local_plan.nodes for label in node.labels)
     sliced_label = next(
@@ -1238,7 +1258,7 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
         return_plan=True,
     )
 
-    assert isinstance(result, fq.DistributedTensorNetworkState)
+    assert isinstance(result, DistributedTensorNetworkState)
     assert plan.state_mode == "tensor_network"
     assert plan.recommended_mode == "distributed_tensor_network"
     assert result.summary()["state_mode"] == "distributed_tensor_network"
@@ -1255,7 +1275,7 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
 def test_distributed_tensor_network_local_tensor_simulates_slice_parallel_state():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    local_plan = fq.build_tensor_network(circuit)
+    local_plan = build_tensor_network(circuit)
     target_peak = local_plan.contraction_cost()["peak_size"]
     label_counts = Counter(label for node in local_plan.nodes for label in node.labels)
     sliced_label = next(
@@ -1299,9 +1319,9 @@ def test_distributed_tensor_network_alias_and_backend_capability():
         circuit, mode="distributed_tn", world_size=2, max_intermediate_size=4
     )
 
-    assert isinstance(result, fq.DistributedTensorNetworkState)
-    assert fq.get_backend_capabilities().supports_mode("distributed_mps")
-    assert fq.get_backend_capabilities().supports_mode("distributed_tensor_network")
+    assert isinstance(result, DistributedTensorNetworkState)
+    assert get_backend_capabilities().supports_mode("distributed_mps")
+    assert get_backend_capabilities().supports_mode("distributed_tensor_network")
 
 
 def test_distributed_tensor_network_torch_executor_single_rank():
@@ -1344,7 +1364,7 @@ def test_distributed_tensor_network_torch_executor_single_rank():
             atol=1e-6,
         )
     finally:
-        fq.destroy_torch_distributed()
+        destroy_torch_distributed()
 
 
 def test_distributed_mps_torch_executor_single_rank():
@@ -1396,7 +1416,7 @@ def test_distributed_mps_torch_executor_single_rank():
         assert result.summary()["boundary_transfer_bytes"] == 0
         assert result.summary()["storage"] == "sharded"
         assert set(result.local_shard_tensors) == {0, 1, 2}
-        assert isinstance(result.sharded_state, fq.ShardedMPSState)
+        assert isinstance(result.sharded_state, ShardedMPSState)
         assert result.sharded_state.summary()["local_tensor_wires"] == (0, 1, 2)
         assert torch.allclose(
             result.to_statevector(),
@@ -1412,7 +1432,7 @@ def test_distributed_mps_torch_executor_single_rank():
         loss.backward()
         assert theta.grad is not None
     finally:
-        fq.destroy_torch_distributed()
+        destroy_torch_distributed()
 
 
 def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
@@ -1443,18 +1463,18 @@ def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
             atol=1e-6,
         )
     finally:
-        fq.destroy_torch_distributed()
+        destroy_torch_distributed()
 
 
 def test_sharded_mps_apply_one_local_matches_mps_kernel():
-    mps = fq.MPSState.zero(2)
-    sharded = fq.ShardedMPSState(
+    mps = MPSState.zero(2)
+    sharded = ShardedMPSState(
         n_wires=2,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0]},
         shards=(
-            fq.DistributedShardPlan(
+            DistributedShardPlan(
                 rank=0, world_size=1, wires=(0,), left_boundary=None, right_boundary=0
             ),
         ),
@@ -1468,14 +1488,14 @@ def test_sharded_mps_apply_one_local_matches_mps_kernel():
 
 
 def test_sharded_mps_apply_two_local_matches_mps_kernel():
-    mps = fq.MPSState.zero(2)
-    sharded = fq.ShardedMPSState(
+    mps = MPSState.zero(2)
+    sharded = ShardedMPSState(
         n_wires=2,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0], 1: mps.tensors[1]},
         shards=(
-            fq.DistributedShardPlan(
+            DistributedShardPlan(
                 rank=0, world_size=1, wires=(0, 1), left_boundary=None, right_boundary=1
             ),
         ),
@@ -1510,15 +1530,15 @@ def test_distributed_mps_identifies_cross_shard_boundary_gate():
     assert not dist_runtime._instruction_is_site_local(instruction, shards)
     assert dist_runtime._boundary_touched_wires(instruction) == (1, 2)
     record = dist_runtime._boundary_sync_record(instruction, shards)
-    assert isinstance(record, fq.DistributedBoundarySync)
+    assert isinstance(record, DistributedBoundarySync)
     assert record.left_wire == 1
     assert record.right_wire == 2
     assert record.left_rank == 0
     assert record.right_rank == 1
     assert record.owner_rank == 0
-    mps = fq.MPSState.zero(4)
+    mps = MPSState.zero(4)
     protocol = dist_runtime._boundary_protocol_record(mps, record)
-    assert isinstance(protocol, fq.DistributedBoundaryProtocol)
+    assert isinstance(protocol, DistributedBoundaryProtocol)
     assert protocol.stages == (
         "isend_boundary_to_owner",
         "apply_two_site_update",

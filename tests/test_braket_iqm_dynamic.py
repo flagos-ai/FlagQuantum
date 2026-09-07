@@ -4,6 +4,8 @@ from math import pi
 import pytest
 
 import flagquantum as fq
+import flagquantum.deployment as deployment
+from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
     create_dynamic_deployment_package,
@@ -13,7 +15,7 @@ from flagquantum.runtime.dynamic import (
 pytestmark = pytest.mark.braket
 
 
-def _iqm_backend(**overrides) -> fq.CloudBackendProfile:
+def _iqm_backend(**overrides) -> CloudBackendProfile:
     values = {
         "provider": "amazon-braket",
         "name": "iqm-test",
@@ -25,7 +27,7 @@ def _iqm_backend(**overrides) -> fq.CloudBackendProfile:
         "metadata": {"dynamic_qubit_groups": ((0, 1), (2, 3))},
     }
     values.update(overrides)
-    return fq.CloudBackendProfile(**values)
+    return CloudBackendProfile(**values)
 
 
 def test_braket_iqm_export_lowers_feedback_and_active_reset() -> None:
@@ -134,7 +136,7 @@ def test_braket_iqm_deployment_is_dialect_sealed() -> None:
         circuit, backend=_iqm_backend(n_wires=2), shots=25
     )
 
-    assert fq.deployment.validate_deployment_package(package) is package
+    assert deployment.validate_deployment_package(package) is package
     assert package.metadata["dynamic_dialect"] == "braket_iqm"
     assert package.metadata["mid_circuit_measurements_returned"] is False
     assert package.metadata["dynamic_backend_compatibility"]["dynamic_dialect"] == (
@@ -143,5 +145,5 @@ def test_braket_iqm_deployment_is_dialect_sealed() -> None:
 
     generic_backend = replace(package.backend, dynamic_dialect=None)
     tampered = replace(package, backend=generic_backend)
-    with pytest.raises(fq.deployment.DeploymentPackageIdentityError, match="QASM"):
-        fq.deployment.validate_deployment_package(tampered)
+    with pytest.raises(deployment.DeploymentPackageIdentityError, match="QASM"):
+        deployment.validate_deployment_package(tampered)

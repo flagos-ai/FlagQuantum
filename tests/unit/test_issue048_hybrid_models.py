@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.training as fqt
+from flagquantum.models import HybridQuantumClassifier, VariationalEnergyModel
 from flagquantum.runtime.observability.acceptance import HybridAcceptanceReport
 from flagquantum.runtime.training_state import (
     load_training_checkpoint,
@@ -20,7 +21,7 @@ TARGETS = torch.tensor([-1.0, -1.0, 1.0, 1.0])
 
 
 def train_classifier(
-    model: fq.HybridQuantumClassifier, optimizer: torch.optim.Optimizer, steps: int
+    model: HybridQuantumClassifier, optimizer: torch.optim.Optimizer, steps: int
 ) -> tuple[float, float]:
     first = 0.0
     for index in range(steps):
@@ -37,7 +38,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
     tmp_path,
 ) -> None:
     seed = fqt.seed_everything(48)
-    model = fq.HybridQuantumClassifier(
+    model = HybridQuantumClassifier(
         deployment_binding={"provider": "local", "target": "simulator"}
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.08)
@@ -56,7 +57,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
         precision=model.quantum.precision,
         step=20,
     )
-    restored = fq.HybridQuantumClassifier(
+    restored = HybridQuantumClassifier(
         deployment_binding={"provider": "different", "target": "discarded"}
     )
     restored_optimizer = torch.optim.Adam(restored.parameters(), lr=0.08)
@@ -96,7 +97,7 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
 
 
 def test_classifier_deployment_binds_encoded_inputs_to_final_quantum_ir() -> None:
-    model = fq.HybridQuantumClassifier(
+    model = HybridQuantumClassifier(
         deployment_binding={"provider": "local", "target": "simulator"}
     )
     payload = model.deployment_parameters(INPUTS[:2])
@@ -117,14 +118,14 @@ def test_classifier_deployment_binds_encoded_inputs_to_final_quantum_ir() -> Non
 def test_variational_energy_same_model_switches_native_and_jax_policy() -> None:
     pytest.importorskip("jax", reason="JAX is an optional backend")
 
-    native = fq.VariationalEnergyModel()
+    native = VariationalEnergyModel()
     native.quantum.parameters_tensor.data.copy_(torch.tensor([0.21, -0.32]))
     native_value = native()
     native_gradient = torch.autograd.grad(
         native_value, native.quantum.parameters_tensor
     )[0]
 
-    jax = fq.VariationalEnergyModel(
+    jax = VariationalEnergyModel(
         policy=fq.RuntimePolicy(
             execution_options=fq.ExecutionOptions(
                 backend="jax", allow_backend_fallback=False
@@ -143,7 +144,7 @@ def test_variational_energy_same_model_switches_native_and_jax_policy() -> None:
 
 
 def test_classifier_policy_switch_does_not_change_model_class() -> None:
-    model = fq.HybridQuantumClassifier()
+    model = HybridQuantumClassifier()
     assert model.quantum.policy.mode == "statevector"
     model.set_runtime_policy(
         fq.RuntimePolicy(
@@ -151,12 +152,12 @@ def test_classifier_policy_switch_does_not_change_model_class() -> None:
             observable_wires=(1,),
         )
     )
-    assert isinstance(model, fq.HybridQuantumClassifier)
+    assert isinstance(model, HybridQuantumClassifier)
     assert model.quantum.policy.mode == "statevector"
 
 
 def test_hybrid_policy_switch_synchronizes_jax_cache_and_debug_hook() -> None:
-    model = fq.HybridQuantumClassifier()
+    model = HybridQuantumClassifier()
     model.quantum._jax_kernel = object()
     model.quantum._jax_kernel_signature = ("stale",)
     model.set_runtime_policy(fq.RuntimePolicy(correctness_debug=True))

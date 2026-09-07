@@ -4,6 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.circuit import expectation
 from flagquantum.runtime.execution import run_native
 
 pytestmark = pytest.mark.integration
@@ -86,6 +87,6 @@ def test_dense_expectation_public_facade_uses_statevector_numerics():
     state = torch.tensor([2**-0.5, 2**-0.5], dtype=torch.complex128)
     pauli_x = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128)
 
-    value = fq.expectation((pauli_x, (0,)), ket=state)
+    value = expectation((pauli_x, (0,)), ket=state)
 
     assert torch.allclose(value, torch.ones(1, dtype=torch.complex128))

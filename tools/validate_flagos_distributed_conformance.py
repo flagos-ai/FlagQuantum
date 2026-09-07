@@ -21,6 +21,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
+from flagquantum.runtime.distributed import init_torch_distributed
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -352,7 +354,7 @@ def run(*, timeout_seconds: float) -> Any:
         FlagOSDistributedConformanceReport,
     )
 
-    context = fq.init_torch_distributed(
+    context = init_torch_distributed(
         backend="flagos",
         device="flagos",
         timeout_seconds=timeout_seconds,

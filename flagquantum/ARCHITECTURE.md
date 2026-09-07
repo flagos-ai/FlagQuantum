@@ -1,6 +1,6 @@
 # FlagQuantum Package Architecture
 
-FlagQuantum keeps public compatibility at the package root while organizing
+FlagQuantum keeps a small stable package root while organizing extension and
 implementation code by product layer.
 
 ## Layers
@@ -12,7 +12,7 @@ implementation code by product layer.
 - `simulation/`: statevector-adjacent kernels, MPS, noise, tensor contraction, and graph utilities.
 - `algorithms/`: VQE, QAOA, Hamiltonians, ansatz builders, and quantum AI workflows.
 - `deployment/`: trained-circuit packaging, quantum-cloud provider contracts, and inference results.
-- `devices/`, `ops/`, `measurement/`, `encoding/`, `drawer/`, `utils/`: established FlagQuantum subsystems.
+- `operators/`, `drawer/`, `utils/`: operator metadata and developer utilities.
 
 ## Public API Policy
 
@@ -22,33 +22,32 @@ The top-level public style is:
 import flagquantum as fq
 ```
 
-User-facing subsystems are also exposed as attributes, for example
-`fq.compiler`, `fq.noise`, `fq.mps`, `fq.algorithms`, and `fq.deployment`.
-Implementation files live in the organized layer directories rather than as
-duplicate root modules.
+The root exposes only the snapshot-governed stable workflow. Maintained
+extensions use explicit namespaces such as `flagquantum.compiler`,
+`flagquantum.noise`, `flagquantum.algorithms`, and `flagquantum.deployment`.
 
 ## Train-To-Deploy Flow
 
 FlagQuantum treats a trained circuit as a portable asset:
 
-1. Build and train with `fq.Circuit`, `fq.algorithms`, and the native runtime.
+1. Build with `fq.Circuit` and train through the native runtime and `flagquantum.algorithms`.
 2. Bind the optimized parameter tensor back into the parameterized quantum gates.
-3. Compile with `fq.compiler` and optional backend topology.
+3. Compile with `flagquantum.compiler` and optional backend topology.
 4. Package with `flagquantum.deployment.create_deployment_package`.
-5. Submit through a `fq.QuantumProvider` implementation.
+5. Submit through a `flagquantum.deployment.QuantumProvider` implementation.
 6. Fetch counts or expectation values for quantum-computer inference.
 
 ## Quantum Cloud Providers
 
 FlagQuantum exposes provider adapters through one common deployment protocol:
 
-- `fq.QuafuProvider`
-- `fq.OriginQProvider`
-- `fq.TencentQuantumProvider`
-- `fq.TianyanProvider`
-- `fq.GuodunProvider`
-- `fq.FieldQuantumProvider`
-- `fq.HttpQuantumProvider` for custom OpenQASM-style services
+- `flagquantum.deployment.QuafuProvider`
+- `flagquantum.deployment.OriginQProvider`
+- `flagquantum.deployment.TencentQuantumProvider`
+- `flagquantum.deployment.TianyanProvider`
+- `flagquantum.deployment.GuodunProvider`
+- `flagquantum.deployment.FieldQuantumProvider`
+- `flagquantum.deployment.HttpQuantumProvider` for custom OpenQASM-style services
 
 These adapters share `submit`, `query_status`, `fetch_result`, and
 `discover_backends`. Production deployments configure each adapter with the

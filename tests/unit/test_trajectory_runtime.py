@@ -4,6 +4,8 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.noise as fqn
+from flagquantum.compiler import lower_noise_model
+from flagquantum.noise import bit_flip_channel
 from flagquantum.runtime.trajectories import (
     TensorWelford,
     TrajectoryCheckpoint,
@@ -14,6 +16,8 @@ from flagquantum.runtime.trajectories import (
     owned_trajectory_ids,
     save_trajectory_checkpoint,
 )
+from flagquantum.simulation.mps_execution import merge_noisy_mps_results
+from flagquantum.simulation.mps_models import MPSMonteCarloResult
 
 pytestmark = pytest.mark.unit
 
@@ -30,7 +34,7 @@ def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
 
     monkeypatch.setattr(mps_runtime, "run_noisy_mps_runtime", replacement)
     circuit = fq.Circuit(1).x(0)
-    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.25))
+    noise_model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))
 
     assert fqb.run_noisy_mps(circuit, noise_model, trajectories=3, seed=7) is expected
     assert calls[0][0] is circuit
@@ -38,7 +42,7 @@ def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
     assert calls[0][2]["trajectories"] == 3
     assert calls[0][2]["seed"] == 7
     assert callable(calls[0][2]["trajectory_executor"])
-    assert calls[0][2]["result_factory"] is fq.MPSMonteCarloResult
+    assert calls[0][2]["result_factory"] is MPSMonteCarloResult
 
 
 def test_run_native_uses_lowered_mps_entrypoints(monkeypatch):
@@ -50,7 +54,7 @@ def test_run_native_uses_lowered_mps_entrypoints(monkeypatch):
     monkeypatch.setattr(mps_execution, "run_noisy_mps_trajectory", legacy_entrypoint)
     monkeypatch.setattr(mps_execution, "run_noisy_mps", legacy_entrypoint)
     circuit = fq.Circuit(1).x(0)
-    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    noise_model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     single = fqb.run_native(circuit, noise_model=noise_model, mode="mps_trajectory")
     sampled = fqb.run_native(
@@ -79,7 +83,7 @@ def test_planned_mps_noise_execution_preserves_lowering_and_plan_identity(
     options: dict[str, int],
 ):
     circuit = fq.Circuit(1).x(0)
-    noise_model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    noise_model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
     expected, plan = fqb.run_native(
         circuit,
         noise_model=noise_model,
@@ -88,7 +92,7 @@ def test_planned_mps_noise_execution_preserves_lowering_and_plan_identity(
         dtype=torch.complex64,
         **options,
     )
-    lowered = fq.lower_noise_model(circuit, noise_model)
+    lowered = lower_noise_model(circuit, noise_model)
 
     def forbidden(*args, **kwargs):
         raise AssertionError("planned MPS noise execution must not lower noise again")
@@ -173,7 +177,7 @@ def test_tensor_welford_matches_population_statistics():
 
 def test_seeded_noisy_mps_is_reproducible_by_global_trajectory_id():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.37))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.37))
 
     first = fqb.run_noisy_mps(circuit, model, trajectories=12, seed=101)
     second = fqb.run_noisy_mps(circuit, model, trajectories=12, seed=101)
@@ -188,7 +192,7 @@ def test_seeded_noisy_mps_is_reproducible_by_global_trajectory_id():
 
 def test_adaptive_noisy_mps_stops_at_minimum_for_deterministic_channel():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     result = fqb.run_noisy_mps(
         circuit,
@@ -208,7 +212,7 @@ def test_adaptive_noisy_mps_stops_at_minimum_for_deterministic_channel():
 
 def test_adaptive_noisy_mps_reports_unmet_target_at_maximum():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.5))
 
     result = fqb.run_noisy_mps(
         circuit,
@@ -229,7 +233,7 @@ def test_adaptive_noisy_mps_distributed_path_fails_closed():
     with pytest.raises(ValueError, match="collective statistics reduction"):
         fqb.run_noisy_mps(
             fq.Circuit(1).x(0),
-            fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5)),
+            fqn.NoiseModel().add("x", bit_flip_channel(0.5)),
             trajectories=8,
             min_trajectories=4,
             target_standard_error=0.1,
@@ -250,7 +254,7 @@ def test_adaptive_checkpoint_resume_does_not_run_after_target_is_met(tmp_path):
         "retain_trajectories": False,
     }
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     first = fqb.run_noisy_mps(circuit, model, **options)
     resumed = fqb.run_noisy_mps(circuit, model, resume=True, **options)
@@ -266,7 +270,7 @@ def test_noisy_checkpoint_rejects_changed_noise_model(tmp_path):
     circuit = fq.Circuit(1).x(0)
     fqb.run_noisy_mps(
         circuit,
-        fqn.NoiseModel().add("x", fq.bit_flip_channel(0.2)),
+        fqn.NoiseModel().add("x", bit_flip_channel(0.2)),
         trajectories=4,
         seed=43,
         checkpoint_path=checkpoint,
@@ -277,7 +281,7 @@ def test_noisy_checkpoint_rejects_changed_noise_model(tmp_path):
     with pytest.raises(ValueError, match="noise model identity"):
         fqb.run_noisy_mps(
             circuit,
-            fqn.NoiseModel().add("x", fq.bit_flip_channel(0.3)),
+            fqn.NoiseModel().add("x", bit_flip_channel(0.3)),
             trajectories=4,
             seed=43,
             checkpoint_path=checkpoint,
@@ -289,7 +293,7 @@ def test_noisy_checkpoint_rejects_changed_noise_model(tmp_path):
 def test_run_native_exposes_adaptive_trajectory_controls_in_plan():
     result, plan = fqb.run_native(
         fq.Circuit(1).x(0),
-        noise_model=fqn.NoiseModel().add("x", fq.bit_flip_channel(1.0)),
+        noise_model=fqn.NoiseModel().add("x", bit_flip_channel(1.0)),
         mode="noisy_mps",
         trajectories=20,
         min_trajectories=5,
@@ -310,7 +314,7 @@ def test_noisy_mps_rejects_ambiguous_random_stream_configuration():
     with pytest.raises(ValueError, match="either generator or seed"):
         fqb.run_noisy_mps(
             fq.Circuit(1).x(0),
-            fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5)),
+            fqn.NoiseModel().add("x", bit_flip_channel(0.5)),
             trajectories=2,
             generator=torch.Generator(),
             seed=3,
@@ -418,7 +422,7 @@ def test_checkpoint_rejects_statistics_count_mismatch():
 
 def test_noisy_mps_checkpoint_resume_matches_single_pass(tmp_path):
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.37))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.37))
     checkpoint_path = tmp_path / "mps-trajectories.pt"
 
     reference = fqb.run_noisy_mps(
@@ -474,7 +478,7 @@ def test_noisy_mps_checkpoint_resume_matches_single_pass(tmp_path):
 
 def test_resumed_noisy_mps_rejects_state_retention(tmp_path):
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.5))
     checkpoint_path = tmp_path / "mps-trajectories.pt"
     fqb.run_noisy_mps(
         circuit,
@@ -499,7 +503,7 @@ def test_resumed_noisy_mps_rejects_state_retention(tmp_path):
 
 def test_rank_local_noisy_mps_merge_matches_single_rank():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.37))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.37))
 
     reference = fqb.run_noisy_mps(circuit, model, trajectories=12, seed=113)
     shards = tuple(
@@ -513,7 +517,7 @@ def test_rank_local_noisy_mps_merge_matches_single_rank():
         )
         for rank in range(3)
     )
-    merged = fq.merge_noisy_mps_results(shards)
+    merged = merge_noisy_mps_results(shards)
 
     assert tuple(item.trajectory_ids for item in shards) == (
         (0, 3, 6, 9),
@@ -538,7 +542,7 @@ def test_rank_local_noisy_mps_merge_matches_single_rank():
 
 def test_rank_local_checkpoint_paths_must_be_isolated(tmp_path):
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.5))
 
     with pytest.raises(ValueError, match=r"\{rank\}"):
         fqb.run_noisy_mps(
@@ -568,7 +572,7 @@ def test_rank_local_checkpoint_paths_must_be_isolated(tmp_path):
 
 def test_run_native_exposes_rank_local_parallel_noisy_plan():
     circuit = fq.Circuit(1).x(0)
-    model = fqn.NoiseModel().add("x", fq.bit_flip_channel(0.5))
+    model = fqn.NoiseModel().add("x", bit_flip_channel(0.5))
 
     result, plan = fqb.run_native(
         circuit,

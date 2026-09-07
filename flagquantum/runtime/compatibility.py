@@ -1,8 +1,7 @@
-"""Private bridge for the frozen :mod:`flagquantum.api` surface.
+"""Private lazy bridge used by remaining runtime compatibility tests.
 
-This module is not a public runtime API. It centralizes legacy symbol lookup so
-the compatibility aggregator does not depend on implementation paths. New code
-must import from the explicit modules under :mod:`flagquantum.runtime`.
+This module is not a public runtime API. New code must import from the explicit
+modules under :mod:`flagquantum.runtime`.
 """
 
 from __future__ import annotations
