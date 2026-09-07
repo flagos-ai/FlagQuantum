@@ -17,7 +17,6 @@ from ..array_conversions import (
     _parameterized_gate_matrix_as_jax,
 )
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
-from ..mps_canonicalization import _jax_mps_boundary_protocol
 from ..planning_core import _as_ir
 from ..runtime_environment import (
     _jax_array_nbytes,
@@ -30,6 +29,7 @@ from ..runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
+from .canonicalization import _jax_mps_boundary_protocol
 from .result import JAXShardedMPSResult
 from .shards import (
     _initialize_jax_mps_rank_tensors,

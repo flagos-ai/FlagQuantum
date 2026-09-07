@@ -12,7 +12,6 @@ from flagquantum.runtime.backends.jax import (
     JAXDistributedQuantumPlan,
     compile_quantum_kernel,
     mps_backward,
-    mps_canonicalization,
     mps_evidence,
     mps_gradient_ownership,
     plan_jax_distributed_quantum_backend,
@@ -25,6 +24,9 @@ from flagquantum.runtime.backends.jax import (
 )
 from flagquantum.runtime.backends.jax.mps import (
     boundary_exchange as mps_boundary_exchange,
+)
+from flagquantum.runtime.backends.jax.mps import (
+    canonicalization as mps_canonicalization,
 )
 from flagquantum.runtime.backends.jax.mps import pullbacks as mps_pullbacks
 from flagquantum.runtime.backends.jax.mps import shards as mps_shards

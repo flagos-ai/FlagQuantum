@@ -14,7 +14,7 @@ updates, contraction, and observable evaluation to Simulation.
 
 For MPS differentiation, local parameter VJPs, boundary-gate adjoints, and
 QR/SVD pullbacks live in `simulation/jax/mps/pullbacks.py`. The Runtime modules
-`mps_backward.py`, `mps/pullbacks.py`, and `mps_canonicalization.py` retain the
+`mps_backward.py`, `mps/pullbacks.py`, and `mps/canonicalization.py` retain the
 constrained rank protocol, device placement, parameter ownership, collective
 exchange, truncation policy, optimizer lifecycle, and evidence records. This
 is the MPS backward stopping point: the small analytic checks and tensor shapes
