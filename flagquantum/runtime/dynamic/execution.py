@@ -7,7 +7,7 @@ import torch
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
-from ...ops.gate_matrix import gate_matrix
+from ...simulation.gate_matrix import gate_matrix
 from ...simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_matrix,

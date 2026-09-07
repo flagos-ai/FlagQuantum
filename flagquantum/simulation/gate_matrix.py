@@ -9,7 +9,7 @@ import torch
 from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import value_to_tensor
-from .matrices import GATE_MAT_DICT, get_global_precision
+from ..ops.matrices import GATE_MAT_DICT, get_global_precision
 
 _FIXED_GATE_CACHE: dict[tuple[str, str, torch.dtype], torch.Tensor] = {}
 

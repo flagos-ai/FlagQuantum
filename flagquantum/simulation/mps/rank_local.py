@@ -8,7 +8,7 @@ import torch
 from torch.profiler import record_function
 
 from ...core.ir import Instruction
-from ...ops.gate_matrix import gate_matrix
+from ..gate_matrix import gate_matrix
 from .factorization import _split_pair_matrix
 from .models import MPSConfig
 

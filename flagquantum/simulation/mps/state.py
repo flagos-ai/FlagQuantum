@@ -8,7 +8,7 @@ from typing import Any, Iterable, Sequence
 import torch
 
 from ...core.ir import Instruction
-from ...ops.gate_matrix import gate_matrix
+from ..gate_matrix import gate_matrix
 from ...ops.matrices import GATE_MAT_DICT, get_global_precision
 from ..real_imag_kernels import complex_einsum_pair
 from ..statevector.operations import _apply_matrix, _bits_from_indices

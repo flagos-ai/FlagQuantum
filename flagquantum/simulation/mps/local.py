@@ -7,7 +7,7 @@ from typing import Any
 import torch
 
 from ...core.ir import CircuitIR
-from ...ops.gate_matrix import gate_matrix
+from ..gate_matrix import gate_matrix
 from .models import CompiledMPSProgram
 from .state import MPSState
 

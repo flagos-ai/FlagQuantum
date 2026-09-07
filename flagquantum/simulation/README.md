@@ -4,6 +4,10 @@ This directory owns FlagQuantum's numerical simulation algorithms: dense
 statevector, MPS, tensor-network, noise evolution, and their differentiable
 kernels.
 
+`gate_matrix.py` converts backend-neutral IR instructions into PyTorch gate
+matrices shared by the simulation engines; it does not perform compilation or
+Runtime dispatch.
+
 It does not own user policy, device selection, distributed lifecycle, provider
 identity, fallback decisions, durable jobs, or public result assembly. Those
 belong to Runtime and Providers. Simulation consumes Core IR and operator

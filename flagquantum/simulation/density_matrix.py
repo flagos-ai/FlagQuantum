@@ -8,7 +8,7 @@ import torch
 
 from ..core.ir import CircuitIR
 from ..noise import KrausChannel
-from ..ops.gate_matrix import gate_matrix
+from .gate_matrix import gate_matrix
 from ..ops.matrices import get_global_precision
 
 

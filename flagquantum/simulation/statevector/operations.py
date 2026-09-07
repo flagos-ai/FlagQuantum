@@ -12,10 +12,8 @@ import torch
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..numerics.complex_arithmetic import complex_mul
-from ...ops.gate_matrix import (
+from ..gate_matrix import (
     gate_matrix as _gate_matrix,
-)
-from ...ops.gate_matrix import (
     parameter_tensor as _parameter_tensor,
 )
 from ...ops.matrices import GATE_MAT_DICT

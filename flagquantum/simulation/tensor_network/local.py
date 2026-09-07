@@ -7,7 +7,7 @@ from typing import Any, Sequence
 import torch
 
 from ...circuit import Circuit
-from ...ops.gate_matrix import gate_matrix
+from ..gate_matrix import gate_matrix
 from .contraction import _as_ir
 from .models import (
     CompiledTNProgram,

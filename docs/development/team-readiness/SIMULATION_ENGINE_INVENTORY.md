@@ -411,5 +411,5 @@ wire 顺序和结果一致性。
 ## 19. v0.1 分布式设备退役（2026-09-07）
 
 v0.1 DTensor 设备、设备定向门函数、编码与测量路径已在首个公开 alpha 前删除，
-不保留兼容层。现代执行唯一使用 `ops.gate_matrix.parameter_tensor()` 和
+不保留兼容层。现代执行唯一使用 `simulation.gate_matrix.parameter_tensor()` 和
 `gate_matrix()` 将 IR 指令转换为设备驻留、批次化、精度感知且保留梯度的门矩阵。
