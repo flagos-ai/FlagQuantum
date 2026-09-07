@@ -1,200 +1,85 @@
-# FlagQuantum Package Architecture
+# FlagQuantum package map
 
-FlagQuantum keeps a small stable package root while organizing extension and
-implementation code by product layer.
+This file is the short guide to the source tree. The architecture contract and
+long-term rationale live in
+[`docs/architecture/LONG_HORIZON_ARCHITECTURE.md`](../docs/architecture/LONG_HORIZON_ARCHITECTURE.md).
 
-## Layers
+## Normal execution path
 
-- `core/`: circuit API and unified intermediate representation.
-- `compilation/`: compiler passes, topology routing, scheduling, and planning.
-- `runtime/`: stable runtime contracts, configuration, execution, training,
-  backend boundaries, and distributed protocols.
-- `simulation/`: statevector-adjacent kernels, MPS, noise, tensor contraction, and graph utilities.
-- `algorithms/`: VQE, QAOA, Hamiltonians, ansatz builders, and quantum AI workflows.
-- `deployment/`: trained-circuit packaging, quantum-cloud provider contracts, and inference results.
-- `operators/`, `drawer/`, `utils/`: operator metadata and developer utilities.
-
-## Public API Policy
-
-The top-level public style is:
-
-```python
-import flagquantum as fq
+```text
+fq.Circuit / fq.Module
+        |
+        v
+Core IR -> Compiler -> Runtime -> Simulation -> result
+                         |
+                         +-> Execution Provider -> QPU or remote service
 ```
 
-The root exposes only the snapshot-governed stable workflow. Maintained
-extensions use explicit namespaces such as `flagquantum.compiler`,
-`flagquantum.noise`, `flagquantum.algorithms`, and `flagquantum.deployment`.
+Core supplies the shared vocabulary throughout this path; it is not an
+orchestration service. Runtime chooses and organizes execution. Simulation owns
+numerical methods. Providers isolate external systems.
 
-## Train-To-Deploy Flow
+## Source domains
 
-FlagQuantum treats a trained circuit as a portable asset:
+| Directory | Owns | Does not own | Start here |
+| --- | --- | --- | --- |
+| `core/` | IR, operator semantics, artifacts, capabilities, shared configuration | execution policy, kernels, vendor SDKs | `core/README.md` |
+| `compiler/` | validation, optimization, lowering, routing, code generation | device lifecycle, execution, simulation | `compiler/README.md` |
+| `runtime/` | planning, execution lifecycle, backend selection, distributed coordination, results | compiler passes, numerical algorithms, vendor integration | `runtime/README.md` |
+| `simulation/` | statevector, MPS, tensor-network, noise and precision kernels | resource policy, credentials, remote jobs | `simulation/README.md` |
+| `providers/` | QPU, remote-service and compute-platform adapters | common IR, scheduling policy, simulator algorithms | `providers/README.md` |
+| `ecosystem/` | PyTorch, JAX, Qiskit and format boundary adapters | a second IR or runtime | `ecosystem/README.md` |
+| `agent_services/` | deterministic planning, validation and execution services | MCP transport or LLM policy | `agent_services/README.md` |
+| `algorithms/` | user-facing algorithm composition | runtime or backend internals | `algorithms/README.md` |
+| `benchmarking/` | reproducible measurements and evidence generation | alternate execution paths | `benchmarking/README.md` |
+| `testing/` | reusable conformance and certification helpers | production execution | package modules and `tests/` scenarios |
 
-1. Build with `fq.Circuit` and train through the native runtime and `flagquantum.algorithms`.
-2. Bind the optimized parameter tensor back into the parameterized quantum gates.
-3. Compile with `flagquantum.compiler` and optional backend topology.
-4. Package with `flagquantum.deployment.create_deployment_package`.
-5. Submit through a `flagquantum.deployment.QuantumProvider` implementation.
-6. Fetch counts or expectation values for quantum-computer inference.
+## Public facades and supporting namespaces
 
-## Quantum Cloud Providers
+The package root is deliberately small: normal use starts with
+`import flagquantum as fq`. The root-level `circuit.py`, `training.py`,
+`models.py`, `operators.py`, `gradients.py`, `dynamic.py`, and `errors.py`
+preserve reviewed user-facing concepts; they are not general implementation
+directories.
 
-FlagQuantum exposes provider adapters through one common deployment protocol:
+These explicit namespaces also remain intentional:
 
-- `flagquantum.deployment.QuafuProvider`
-- `flagquantum.deployment.OriginQProvider`
-- `flagquantum.deployment.TencentQuantumProvider`
-- `flagquantum.deployment.TianyanProvider`
-- `flagquantum.deployment.GuodunProvider`
-- `flagquantum.deployment.FieldQuantumProvider`
-- `flagquantum.deployment.HttpQuantumProvider` for custom OpenQASM-style services
+- `backends/` is the stable expert facade for backend-native results. Its
+  implementations live in Runtime or Simulation.
+- `noise/` owns backend-neutral channel and noise-model semantics.
+- `deployment/` owns the reviewed packaging and cloud-deployment API while
+  concrete external adapters converge under Providers.
+- `drawer/` owns visualization and IR-to-drawing adaptation.
+- `experimental/` contains APIs with no compatibility guarantee.
+- `utils/` contains the existing QASM/QCIS exporters until Compiler covers
+  their full behavior and an approved migration can remove the namespace.
 
-These adapters share `submit`, `query_status`, `fetch_result`, and
-`discover_backends`. Production deployments configure each adapter with the
-target platform endpoint, credentials, and endpoint mapping while the training
-and packaging code remains unchanged.
+Do not create another top-level domain to hold code that already has an owner.
+Generated directories such as `__pycache__` are not part of the architecture.
 
+## Where to make a change
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         用户输入 (量子AI任务 / 参数化电路)                    │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      ★ 规划与中间表示层 (IR & Planner)                       │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                     FlagQuantum IR (统一表示)                        │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                      │                                      │
-│                                      ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      统一规划器 (Unified Planner)                    │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                      │                                      │
-│          ┌───────────┬───────────┬───────────┬───────────┬───────────┐     │
-│          ▼           ▼           ▼           ▼           ▼           ▼     │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ │
-│  │ 执行计划   │ │ 内存规划   │ │ 通信规划   │ │ 可观测量   │ │ 梯度规划   │ │ 编译/部署  │ │
-│  │Exec Plan   │ │Mem Plan   │ │Comm Plan  │ │Obs Plan   │ │Grad Plan  │ │Deploy Plan│ │
-│  └───────────┘ └───────────┘ └───────────┘ └───────────┘ └───────────┘ └───────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    ★ 分布式运行时与执行引擎 (Runtime)                        │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                   执行语义 (必须显式声明)                            │   │
-│  │  ┌───────────────────────┐  ┌───────────────────────────────────┐  │   │
-│  │  │ ⭐ sharded_across_ranks │  │  replicated_per_rank             │  │   │
-│  │  │  (唯一可声明扩展性)     │  │  (仅限Smoke测试,不可声明扩展)     │  │   │
-│  │  └───────────────────────┘  └───────────────────────────────────┘  │   │
-│  │  ┌───────────────────────────────────────────────────────────────┐ │   │
-│  │  │  data_parallel_replicated / observable_term_parallel / 其它   │ │   │
-│  │  └───────────────────────────────────────────────────────────────┘ │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                      │                                      │
-│                                      ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │              分片执行后端 (Sharded-First)                           │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐      │   │
-│  │  │ 分布式态矢量│ │ 分布式MPS  │ │ 分布式TN   │ │ 分布式噪声  │      │   │
-│  │  │(振幅/比特  │ │(格点/键    │ │(图分割/    │ │(密度矩阵/   │      │   │
-│  │  │  分片)     │ │  分片)     │ │  切片)     │ │  轨迹分片)  │      │   │
-│  │  └────────────┘ └────────────┘ └────────────┘ └────────────┘      │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ★ 关键约束: 若执行路径静默降级为复制 → 系统必须 Fail Closed               │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                  ★ 分布与通信策略 (Distribution & Comm)                     │
-│                                                                             │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌────────────┐  │
-│  │  分片策略      │  │  拓扑感知      │  │  通信原语      │  │ 计算/通信   │  │
-│  │ (张量块/子图/  │  │ (节点内/节点间/ │  │ (P2P/AllReduce │  │  重叠       │  │
-│  │  状态段)       │  │  存储/检查点)  │  │ /ReduceScatter)│  │ (掩盖延迟)  │  │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └────────────┘  │
-│                                                                             │
-│  ★ 高频边界通信 → 保持在节点内 (NVLink/NVSwitch)                           │
-│  ★ 跨节点通信 → 显式规划,低频化 (通过切片/批处理/检查点聚合)               │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                ★ 混合框架集成 (PyTorch + JAX Hybrid)                        │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                                                                     │   │
-│  │   ┌─────────────┐    DLPack (零拷贝)    ┌─────────────┐           │   │
-│  │   │  PyTorch    │ ◄──────────────────► │    JAX      │           │   │
-│  │   │  (主训练接口)│                      │ (量子核加速) │           │   │
-│  │   └─────────────┘                      └─────────────┘           │   │
-│  │         │                                      │                  │   │
-│  │         ▼                                      ▼                  │   │
-│  │   ┌─────────────────────────────────────────────────────┐        │   │
-│  │   │        torch.autograd.Function                      │        │   │
-│  │   │        (跨框架梯度边界控制)                          │        │   │
-│  │   └─────────────────────────────────────────────────────┘        │   │
-│  │                                                                     │   │
-│  │   ┌─────────────────────────────────────────────────────┐        │   │
-│  │   │  分布式训练集成: torchrun / DDP / FSDP / DTensor   │        │   │
-│  │   └─────────────────────────────────────────────────────┘        │   │
-│  │                                                                     │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ★ JAX 单卡加速不等于分布式容量扩展                                         │
-│  ★ 只有量子态/收缩本身跨秩分片才算分布式扩展                                 │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                     ★ 硬件与部署闭环 (Deployment Loop)                      │
-│                                                                             │
-│  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │
-│  │     计算集群 (多节点)        │    │       量子硬件部署              │   │
-│  │  ┌──────────┐ ┌──────────┐  │    │  ┌─────────────────────────┐  │   │
-│  │  │ 节点 1   │ │ 节点 2   │  │    │  │  量子编译器              │  │   │
-│  │  │ GPU 0..N │ │ GPU 0..N │  │    │  │  (布局/路由/校准感知)    │  │   │
-│  │  └──────────┘ └──────────┘  │    │  └─────────────────────────┘  │   │
-│  └─────────────────────────────┘    │              │                  │   │
-│              │                       │              ▼                  │   │
-│              │                       │  ┌─────────────────────────┐  │   │
-│              └───────────────────────┼─►│  真实量子硬件 (QPU)     │  │   │
-│                                      │  │  超导/离子阱/光量子等   │  │   │
-│                                      │  └─────────────────────────┘  │   │
-│                                      │              │                  │   │
-│                                      │              ▼                  │   │
-│                                      │  ┌─────────────────────────┐  │   │
-│                                      │  │  测量结果/校准反馈      │  │   │
-│                                      │  │  (闭环回到IR/Planner)   │  │   │
-│                                      │  └─────────────────────────┘  │   │
-│                                      └─────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      ★ 质量门禁与基准测试 (Quality Gates)                    │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  预检诊断 (Preflight)                                               │   │
-│  │  • NCCL/Gloo 可达性  • 带宽健康检查  • 超时行为  • 集合通信正确性  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  基准测试 JSON (必须包含)                                           │   │
-│  │  {                                                                  │   │
-│  │    "distribution_semantics": "sharded_across_ranks",               │   │
-│  │    "scalability_claim_allowed": true,                              │   │
-│  │    "local_memory_bytes_by_rank": [...],                            │   │
-│  │    "communication_bytes": 0,                                       │   │
-│  │    "single_gpu_expected_oom": true,                                │   │
-│  │    "intra_node_communication_bytes": 0,                            │   │
-│  │    "inter_node_communication_bytes": 0,                            │   │
-│  │    "collective_counts": {...}                                      │   │
-│  │  }                                                                  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ★ 复制模式必须设置 scalability_claim_allowed: false                        │
-└─────────────────────────────────────────────────────────────────────────────┘
+- Change a gate's meaning or IR validation in Core.
+- Change program transformation, routing or emission in Compiler.
+- Change target selection, retries, distributed ownership or result assembly
+  in Runtime.
+- Change tensor math, precision kernels or simulator behavior in Simulation.
+- Add a QPU, remote service or accelerator integration in Providers.
+- Add support for an external framework or format in Ecosystem.
+
+An ordinary feature should normally change one primary domain. If it repeatedly
+needs edits across four or more domains, stop and review the boundary instead of
+adding pass-through objects.
+
+## Required checks
+
+Run focused scenario tests for the changed behavior, then run:
+
+```bash
+python tools/check_architecture.py
+python tools/check_dependency_policy.py
+PYTHONPATH=. python tools/public_api_snapshot.py
+```
+
+Public API and serialized-contract changes require the process in
+[`docs/development/PUBLIC_API_PROTECTION.md`](../docs/development/PUBLIC_API_PROTECTION.md).
