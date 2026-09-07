@@ -21,7 +21,7 @@ from ....numerics.double_single import (
     DoubleSingleTensor,
     double_single_sum,
 )
-from ....simulation.split_real_imag_statevector import (
+from ....simulation.statevector.split_real_imag import (
     double_single_pauli_term_expectation,
 )
 from .split_real_imag import (

@@ -47,7 +47,7 @@ unchanged until an approved compatibility migration can relocate it.
 validation, parameter binding and shift scheduling, observable parsing,
 platform preflight, precision/result records, and conformance reporting. The
 FP32 real/imag gate matrices, state evolution, and Pauli-term expectation live
-in `simulation.split_real_imag_statevector`. This is the P1 stopping point: do
+in `simulation.statevector.split_real_imag`. This is the P1 stopping point: do
 not move Runtime result types into Simulation or create a parallel observable
 contract merely to shorten the adapter.
 
@@ -56,7 +56,7 @@ of the fixed precision plan and certified accuracy envelope, parameter-shift
 scheduling, result records, host-side report reconstruction, and conformance
 comparison. It composes the established Double-Single value type and reduction
 primitives; Pauli-term tensor mathematics remains in
-`simulation.split_real_imag_statevector`. This is the P2 stopping point: do not
+`simulation.statevector.split_real_imag`. This is the P2 stopping point: do not
 move precision contracts, result schemas, reference comparisons, or
 conformance reports into Simulation, and do not duplicate the Double-Single
 term kernel in Runtime.

@@ -60,7 +60,7 @@ The executor rejects accuracy requirements stricter than its measured envelope.
 Runtime retains precision authorization, platform selection, execution evidence,
 and conformance reporting.
 
-`split_real_imag_statevector.py` owns P0/P1/P2's FP32 real/imag gate matrices,
+`statevector/split_real_imag.py` owns P0/P1/P2's FP32 real/imag gate matrices,
 gate application, FP32 and Double-Single Pauli-term reductions, and the local
 zero-state execution loop. Runtime retains parameter binding, preflight,
 platform selection, observable parsing, result construction, and conformance

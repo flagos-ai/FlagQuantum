@@ -12,7 +12,7 @@ from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.operator_probes import (
     preflight_split_real_imag_statevector_p0,
 )
-from flagquantum.simulation.split_real_imag_statevector import (
+from flagquantum.simulation.statevector.split_real_imag import (
     double_single_pauli_term_expectation,
     pauli_term_expectation,
     run_split_real_imag_statevector,

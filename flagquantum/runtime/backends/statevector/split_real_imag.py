@@ -18,7 +18,7 @@ from ....core.parameters import (
     value_to_tensor,
 )
 from ....providers.platform import get_platform_runtime, resolve_platform_device
-from ....simulation.split_real_imag_statevector import (
+from ....simulation.statevector.split_real_imag import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
     pauli_term_expectation,
     run_split_real_imag_statevector,
