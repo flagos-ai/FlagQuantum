@@ -29,16 +29,16 @@ from ..runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
-from ..statevector_kernels import (
+from .gradient_records import (
+    JAXShardedStatevectorParameterGradientResult,
+    _initialize_jax_statevector_shard,
+)
+from .kernels import (
     _jax_pmap_statevector_parameter_loss,
     _jax_shard_map_statevector_parameter_loss,
     _jax_sharded_statevector_loss_from_shards,
     _statevector_pmap_backward_blockers,
     _statevector_shard_map_backward_blockers,
-)
-from .gradient_records import (
-    JAXShardedStatevectorParameterGradientResult,
-    _initialize_jax_statevector_shard,
 )
 from .records import JAXShardedStatevectorResult, JAXStatevectorShardState
 

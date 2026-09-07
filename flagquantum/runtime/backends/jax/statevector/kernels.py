@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Sequence
 
-from ....simulation.jax.statevector import (
+from .....simulation.jax.statevector import (
     jax_accumulate_all_to_all_statevector_delta,
     jax_apply_local_statevector_gate,
     jax_combine_pair_exchanged_statevector,
@@ -12,20 +12,20 @@ from ....simulation.jax.statevector import (
     jax_rank_mask_for_touched_delta,
     jax_sharded_statevector_loss,
 )
-from ....simulation.jax.statevector import (
+from .....simulation.jax.statevector import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
 )
-from .array_conversions import (
+from ..array_conversions import (
     _jax_basis_indices_for_wires,
     _parameterized_gate_matrix_as_jax,
 )
-from .planning_core import _jax_global_indices_by_rank_for_plan
-from .runtime_environment import (
+from ..planning_core import _jax_global_indices_by_rank_for_plan
+from ..runtime_environment import (
     _jax_complex_dtype,
     _jax_pmap_device_assignment,
     _require_jax,
 )
-from .statevector.records import JAXStatevectorShardState
+from .records import JAXStatevectorShardState
 
 
 def _jax_sharded_statevector_loss_from_shards(
@@ -189,7 +189,7 @@ def _jax_pmap_statevector_parameter_loss(
     jax, jnp = _require_jax()
     import numpy as np
 
-    from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
     local_size = int(plan.shards[0].local_amplitudes)
@@ -312,7 +312,7 @@ def _jax_shard_map_statevector_parameter_loss(
     from jax.sharding import Mesh
     from jax.sharding import PartitionSpec as P
 
-    from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
     local_size = int(plan.shards[0].local_amplitudes)

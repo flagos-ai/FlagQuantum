@@ -141,7 +141,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 `mps_gradient_ownership.py` 跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算已迁入
 `simulation/jax/mps/kernels.py`，Runtime 仅保留 rank 张量记录到数值参数的适配。
 
-Statevector 复核确认 `statevector_kernels.py` 只剩指令/计划适配、collective 置换与
+Statevector 复核确认 `statevector/kernels.py` 只剩指令/计划适配、collective 置换与
 `pmap`/`shard_map` 编排；初态、局部门、pair 合并、all-to-all delta 和 observable/loss
 数学均已委托 `simulation/jax/statevector.py`。该路径已到停止点，不为移动文件而复制
 Runtime shard/plan 类型。
