@@ -31,13 +31,13 @@ from .tensor_network.contraction import (
     _jax_contract_tensor_slices_by_backend,
     _pauli_ops_from_term,
 )
+from .tensor_network.execution import _resolve_tn_compute_backend
 from .tensor_network.planning import _tn_tasks
 from .tensor_network.records import (
     JAXSlicedTensorNetworkGradientResult,
     JAXSlicedTensorNetworkParameterGradientResult,
     JAXTensorNetworkNode,
 )
-from .tensor_network_execution import _resolve_tn_compute_backend
 
 
 def _jax_parameterized_tn_state_nodes(

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .array_conversions import _jax_nodes_from_torch_nodes
-from .backend_dispatch import plan_jax_distributed_quantum_backend
-from .common import node_count as _node_count
-from .runtime_environment import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..array_conversions import _jax_nodes_from_torch_nodes
+from ..backend_dispatch import plan_jax_distributed_quantum_backend
+from ..common import node_count as _node_count
+from ..runtime_environment import (
     _jax_complex_dtype,
     _jnp_device_put,
     _require_torch,
@@ -19,9 +19,9 @@ from .runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
-from .tensor_network.contraction import _jax_contract_tensor_slices_by_backend
-from .tensor_network.planning import _tn_tasks
-from .tensor_network.records import (
+from .contraction import _jax_contract_tensor_slices_by_backend
+from .planning import _tn_tasks
+from .records import (
     JAXShardedTensorNetworkResult,
     JAXTNSliceRankState,
 )
@@ -85,7 +85,7 @@ def run_jax_sharded_tensor_network(
 ) -> JAXShardedTensorNetworkResult:
     """Execute JAX tensor-network contraction with slice tasks sharded by rank."""
 
-    from ....simulation.tensor_network.entrypoints import build_tensor_network
+    from .....simulation.tensor_network.entrypoints import build_tensor_network
 
     torch = _require_torch()
     policy = _resolve_policy(
