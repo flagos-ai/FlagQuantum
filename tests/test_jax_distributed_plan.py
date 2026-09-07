@@ -47,12 +47,12 @@ from flagquantum.runtime.backends.jax.statevector import (
 from flagquantum.runtime.backends.jax.statevector.execution import (
     jax_sharded_statevector_parameter_value_and_grad,
 )
+from flagquantum.runtime.backends.jax.statevector.gradient_records import (
+    JAXShardedStatevectorParameterGradientResult,
+)
 from flagquantum.runtime.backends.jax.statevector.records import (
     JAXShardedStatevectorResult,
     JAXShardedStatevectorTrainingPlan,
-)
-from flagquantum.runtime.backends.jax.statevector_gradient_records import (
-    JAXShardedStatevectorParameterGradientResult,
 )
 from flagquantum.runtime.backends.jax.tensor_network_gradients import (
     jax_sliced_tensor_network_parameter_value_and_grad,

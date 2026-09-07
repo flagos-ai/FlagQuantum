@@ -5,16 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
-from ....core.ir import CircuitIR
-from ....simulation.jax.statevector import jax_initial_statevector_shard
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .common import node_count as _node_count
-from .planning_core import JAXDistributedQuantumPlan
-from .release_policy import (
+from .....core.ir import CircuitIR
+from .....simulation.jax.statevector import jax_initial_statevector_shard
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..common import node_count as _node_count
+from ..planning_core import JAXDistributedQuantumPlan
+from ..release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
-from .runtime_environment import _jnp_device_put, _require_jax, _require_torch
-from .statevector.records import (
+from ..runtime_environment import _jnp_device_put, _require_jax, _require_torch
+from .records import (
     JAXStatevectorShardState,
     _statevector_communication_plan_for_claimability,
     _statevector_memory_plan_for_claimability,
@@ -365,7 +365,7 @@ def _statevector_plan(
     bsz: int,
     complex_bytes: int,
 ) -> JAXDistributedQuantumPlan:
-    from ..statevector.planning import plan_distributed_statevector
+    from ...statevector.planning import plan_distributed_statevector
 
     state_plan = plan_distributed_statevector(
         ir,
@@ -426,7 +426,7 @@ def _statevector_plan(
 def _initialize_jax_statevector_shard(
     plan: Any, *, rank: int, dtype: Any, device: Any | None
 ) -> JAXStatevectorShardState:
-    from ..statevector.local_execution import _rank_global_indices, _shard_by_rank
+    from ...statevector.local_execution import _rank_global_indices, _shard_by_rank
 
     jax, jnp = _require_jax()
     torch = _require_torch()
