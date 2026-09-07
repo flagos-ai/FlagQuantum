@@ -540,7 +540,7 @@ def run_native(
         ):
             result = circuit_or_ir.state()
         else:
-            from ..simulation.statevector import run_local_statevector
+            from ..simulation.statevector.local import run_local_statevector
 
             resolved_device = resolve_device(options.get("device"))
             result = run_local_statevector(

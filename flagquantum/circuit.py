@@ -288,7 +288,7 @@ class Circuit:
         return circuit
 
     def initial_state(self) -> torch.Tensor:
-        from .simulation.statevector import _initial_state
+        from .simulation.statevector.local import _initial_state
 
         # Statevector/TN kernels are functional: they never mutate this leaf.
         # It is therefore safe to share it across autograd graphs and avoid a
@@ -296,7 +296,7 @@ class Circuit:
         return _initial_state(self)
 
     def state(self, *, refresh: bool = False) -> torch.Tensor:
-        from .simulation.statevector import state
+        from .simulation.statevector.local import state
 
         return state(self, refresh=refresh)
 
@@ -341,7 +341,7 @@ class Circuit:
         )
 
     def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
-        from .simulation.statevector import _expectation_z
+        from .simulation.statevector.local import _expectation_z
 
         if wires is None:
             wires = range(self.n_wires)
@@ -354,7 +354,7 @@ class Circuit:
         x: Sequence[int] | None = None,
         y: Sequence[int] | None = None,
     ) -> torch.Tensor:
-        from .simulation.statevector import _expectation_pauli_string
+        from .simulation.statevector.local import _expectation_pauli_string
 
         x_set = set(x or ())
         y_set = set(y or ())
@@ -378,7 +378,7 @@ class Circuit:
     ) -> torch.Tensor:
         """Sample computational-basis bitstrings from the circuit state."""
 
-        from .simulation.statevector import _sample_statevector
+        from .simulation.statevector.local import _sample_statevector
 
         if format not in {"bits", "index"}:
             raise ValidationError("sample format must be 'bits' or 'index'.")
@@ -484,7 +484,7 @@ class Circuit:
 def expectation(*ops: tuple[Any, Sequence[int]], ket: torch.Tensor) -> torch.Tensor:
     """Compute a small dense expectation value with native PyTorch tensors."""
 
-    from .simulation.statevector import _expectation_from_operators
+    from .simulation.statevector.local import _expectation_from_operators
 
     return _expectation_from_operators(*ops, ket=ket)
 

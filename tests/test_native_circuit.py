@@ -102,7 +102,7 @@ def test_native_parameter_gradient():
 
 
 def test_diagonal_statevector_gates_avoid_dense_bmm_and_preserve_gradients(monkeypatch):
-    import flagquantum.simulation.statevector as statevector_runtime
+    import flagquantum.simulation.statevector.local as statevector_runtime
 
     diagonal_gates = statevector_runtime._DIAGONAL_STATEVECTOR_GATES
     reference_theta = torch.tensor(0.31, requires_grad=True)

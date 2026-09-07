@@ -42,7 +42,7 @@ def test_program_execution_plans_compiles_and_launches_numerics_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import flagquantum.runtime.planner as runtime_planner
-    from flagquantum.simulation import statevector as statevector_simulation
+    from flagquantum.simulation.statevector import local as statevector_simulation
 
     original_plan = runtime_planner.plan
     original_compile = runtime_planner.compile_program
@@ -167,7 +167,7 @@ def test_validated_plan_executes_once_without_replanning_or_recompiling(
 ) -> None:
     plan = fq.plan(_bell(), options=fq.ExecutionOptions(mode="statevector"))
     from flagquantum.runtime.execution_plan_contract import plan_execution_program
-    from flagquantum.simulation import statevector as statevector_simulation
+    from flagquantum.simulation.statevector import local as statevector_simulation
 
     expected_program = plan_execution_program(plan).to_dict()
     original_execute = statevector_simulation.run_local_statevector

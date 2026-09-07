@@ -11,12 +11,12 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
 
-from ..core.ir import CircuitIR, Instruction
-from ..core.operator_schema import canonical_opcode
-from ..core.runtime_config import runtime_config
-from ..ops.complex_ops import complex_conj, complex_mul
-from ..ops.matrices import GATE_MAT_DICT
-from .statevector_ops import (
+from ...core.ir import CircuitIR, Instruction
+from ...core.operator_schema import canonical_opcode
+from ...core.runtime_config import runtime_config
+from ...ops.complex_ops import complex_conj, complex_mul
+from ...ops.matrices import GATE_MAT_DICT
+from ..statevector_ops import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
     _apply_diagonal_matrix,
@@ -42,7 +42,7 @@ from .statevector_ops import (
 )
 
 if TYPE_CHECKING:
-    from ..circuit import Circuit
+    from ...circuit import Circuit
 
 
 def _initial_state(circuit: Circuit) -> torch.Tensor:
@@ -312,7 +312,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         for step in program:
             if isinstance(step, _StatevectorCXSequenceStep):
                 if output.is_cuda and output.dtype == torch.complex64:
-                    from .triton_kernels import cx_sequence
+                    from ..triton_kernels import cx_sequence
 
                     (
                         control_masks,
@@ -370,7 +370,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                         and not ry_angles.requires_grad
                         and not rz_angles.requires_grad
                     ):
-                        from .triton_kernels import ry_rz_pair
+                        from ..triton_kernels import ry_rz_pair
 
                         output = ry_rz_pair(
                             output,
@@ -392,7 +392,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     and output.dtype == torch.complex64
                     and _triton_single_qubit_matrix_enabled()
                 ):
-                    from .triton_kernels import single_qubit_matrix
+                    from ..triton_kernels import single_qubit_matrix
 
                     output = single_qubit_matrix(
                         output,
@@ -425,7 +425,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                         or _triton_parameterized_single_qubit_matrix_enabled()
                     )
                 ):
-                    from .triton_kernels import single_qubit_matrix
+                    from ..triton_kernels import single_qubit_matrix
 
                     output = single_qubit_matrix(
                         output,
@@ -553,7 +553,7 @@ def _expectation_from_operators(
 ) -> torch.Tensor:
     """Evaluate a dense operator product against an explicit statevector."""
 
-    from ..circuit import Circuit
+    from ...circuit import Circuit
 
     input_state = ket.reshape(1, -1) if ket.ndim == 1 else ket
     n_wires = int(
@@ -584,7 +584,7 @@ def run_local_statevector(
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
 
-    from ..circuit import Circuit
+    from ...circuit import Circuit
 
     return Circuit.from_ir(
         program,

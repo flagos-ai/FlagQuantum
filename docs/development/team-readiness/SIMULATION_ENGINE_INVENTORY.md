@@ -26,7 +26,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 ## 1. 结论
 
 当前数值实现尚未全部以可替换 Simulation Engine 为边界收敛：稳定的本地 PyTorch
-状态向量执行循环已位于 `flagquantum/simulation/statevector.py`，底层门作用与融合位于
+状态向量执行循环已位于 `flagquantum/simulation/statevector/local.py`，底层门作用与融合位于
 `flagquantum/simulation/statevector_ops.py`；本地 MPS/TN 主要位于
 `flagquantum/simulation/`；密度矩阵及大量分布式数值实现位于过渡目录
 `flagquantum/runtime/backends/`。两个过渡目录都混合了数值算法、Kernel 调用、执行适配、
@@ -64,7 +64,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 
 | 能力 | 当前数值权威位置 | 编排/消费者位置 | 现状 |
 | --- | --- | --- | --- |
-| 本地状态向量 | `simulation/statevector.py` 的执行循环；`simulation/statevector_ops.py` 的布局、门作用、门矩阵组合、压缩基态索引展开和融合；`simulation/triton_kernels/statevector_gates.py` 的本地门及跨分片 CX control-one pack/unpack CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用门矩阵组合与索引数值函数，仍负责通信策略与传输 |
+| 本地状态向量 | `simulation/statevector/local.py` 的执行循环；`simulation/statevector_ops.py` 的布局、门作用、门矩阵组合、压缩基态索引展开和融合；`simulation/triton_kernels/statevector_gates.py` 的本地门及跨分片 CX control-one pack/unpack CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用门矩阵组合与索引数值函数，仍负责通信策略与传输 |
 | 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `simulation/statevector_ops.py`、`statevector_adjoint.py` 和 `simulation/triton_kernels/statevector_*` 的 rank-local 数值原语 | `runtime/backends/statevector/` 的 planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime 保留 amplitude/qubit-address 所有权、通信、chunk 和生命周期；不再实现局部门矩阵数学 |
 | Split real/imag 与 Double-Single | `simulation/split_real_imag_statevector.py` 的 P0/P1/P2 门矩阵、门作用、零态执行循环和 Pauli-term 数值归约；`simulation/double_single_host_gates.py` 与 `double_single_device_gates.py` 的隔离门矩阵生成；`simulation/double_single_statevector.py` 的 P3/P4 零态初始化、门执行、归一化和 Pauli-term 归约 | Runtime 文件中的参数绑定、平台身份、精度计划与授权、编码策略、observables、参数移位调度、P5 autograd/SGD 边界、conformance/result | P0--P4 的基础数值实现已归 Simulation；Runtime 只组合既有数值原语；P3/P4 适配器因主机摄取与路径证据不同而保持分离；P5 单行 SGD 更新尚不构成独立数值核，不为搬移而新增 helper；实验路径不得成为首切片默认实现或被描述为等价 FP64 |

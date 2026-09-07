@@ -12,7 +12,7 @@ import torch
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR
 from flagquantum.runtime.execution import run_native
-from flagquantum.simulation.statevector import run_local_statevector
+from flagquantum.simulation.statevector.local import run_local_statevector
 
 pytestmark = pytest.mark.integration
 
@@ -72,7 +72,7 @@ def _program_for(
 
 
 def test_circuit_state_facade_delegates_to_simulation(monkeypatch):
-    import flagquantum.simulation.statevector as statevector
+    import flagquantum.simulation.statevector.local as statevector
 
     circuit = fq.Circuit(1)
     expected = torch.tensor([[0.0, 1.0j]], dtype=torch.complex64)

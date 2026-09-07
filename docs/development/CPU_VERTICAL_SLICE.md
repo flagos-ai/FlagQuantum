@@ -22,7 +22,7 @@ Simulation owns the numerical statevector call. The CPU Platform Provider owns
 device availability and identity. Compiler remains the only stage that changes
 the program.
 
-`simulation.statevector` now owns the local numerical loop and dense Z/Pauli
+`simulation.statevector.local` now owns the local numerical loop and dense Z/Pauli
 observables. `Circuit.state()`, `Circuit.expectation_z()`,
 `Circuit.expectation_ps()`, and the public `expectation(...)` helper are thin
 facades; `Circuit.sample()` retains public format validation while Simulation
@@ -68,7 +68,7 @@ python -m pytest tests/integration/test_cpu_vertical_slice.py -q
 ```
 
 Start with `flagquantum/runtime/execution.py` for dispatch or result assembly,
-`flagquantum/simulation/statevector.py` for the numerical entry, and
+`flagquantum/simulation/statevector/local.py` for the numerical entry, and
 `flagquantum/providers/platform/pytorch.py` for CPU lifecycle behavior. Changes
 to one concern should normally remain in its owning domain.
 

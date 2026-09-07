@@ -11,7 +11,7 @@ semantics and may use PyTorch or isolated accelerator kernels.
 
 ## Local statevector path
 
-`statevector.py` owns local initial-state construction, the execution loop,
+`statevector/local.py` owns local initial-state construction, the execution loop,
 dense Z/Pauli observables, computational-basis sampling, and the numerical body
 behind the public dense `expectation(...)` helper;
 `statevector_ops.py` owns its private layouts, gate application, gate-matrix
@@ -136,7 +136,7 @@ or result model.
 
 For a local statevector behavior change:
 
-1. start in `statevector.py` for execution order or dispatch;
+1. start in `statevector/local.py` for execution order or dispatch;
 2. change `statevector_ops.py` only for numerical tensor behavior;
 3. run the statevector characterization and CPU vertical-slice tests.
 
