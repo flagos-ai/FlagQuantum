@@ -49,8 +49,6 @@ from .state import (
     initial_mps_ownership,
 )
 
-_initial_ownership = initial_mps_ownership
-
 _apply_boundary_gate = apply_rank_boundary_gate
 
 _require_layer_cache_drained = require_layer_cache_drained
@@ -107,7 +105,7 @@ def execute_torch_distributed_mps_forward(
                 f"instruction {index}:{instruction.name} on wires {wires} is "
                 "not one-site or adjacent two-site; route it before MPS execution"
             )
-    ownership = _initial_ownership(ir.n_wires, world_size)
+    ownership = initial_mps_ownership(ir.n_wires, world_size)
     local_tensors = {}
     for wire in ownership[rank]:
         tensor = torch.zeros((bsz, 1, 2, 1), dtype=dtype, device=resolved_device)

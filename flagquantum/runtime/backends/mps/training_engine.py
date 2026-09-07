@@ -35,7 +35,6 @@ from .training import (
     ShardedMPSTrainingResult,
 )
 
-_initial_ownership = initial_mps_ownership
 _parameter_layout = build_mps_parameter_layout
 
 # Preserve the historical internal import surface while checkpoint ownership
@@ -525,7 +524,7 @@ def train_distributed_mps(
         )
         resolved_site_ownership_policy = "topology_aware"
     else:
-        resolved_site_ownership = _initial_ownership(ir.n_wires, world_size)
+        resolved_site_ownership = initial_mps_ownership(ir.n_wires, world_size)
         resolved_site_ownership_policy = "balanced"
     backend = str(dist.get_backend()).strip().lower()
     if device is None and backend == "nccl":

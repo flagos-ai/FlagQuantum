@@ -74,12 +74,10 @@ from .reverse_z_observables import (
     site_sharded_z_zz_observations,
 )
 from .state import (
-    initial_mps_ownership,
     initialize_reverse_mps_state,
     normalize_rank_owned_initial_tensors,
 )
 
-_initial_ownership = initial_mps_ownership
 _rank_owned_initial_tensors = normalize_rank_owned_initial_tensors
 _broadcast_record = broadcast_reverse_record
 _all_reduce_layer_records = all_reduce_reverse_layer_records
