@@ -13,4 +13,5 @@ Runtime records, and evidence. Numerical MPS operations remain in
 - Start in `shards.py` for rank initialization, packaging, and reconstruction.
 - Start in `lowering.py` for Runtime-side circuit lowering.
 - Start in `boundary_exchange.py` for boundary-adjoint transport evidence.
+- Start in `pullbacks.py` for owner-rank VJP and boundary-adjoint orchestration.
 - Import the owning module directly; this package does not add another facade.

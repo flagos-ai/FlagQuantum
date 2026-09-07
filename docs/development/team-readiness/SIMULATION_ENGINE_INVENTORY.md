@@ -155,7 +155,7 @@ Runtime 计划、任务、记录、策略和 collective，且具有独立复用�
 
 JAX MPS 反向路径复核确认，参数局部 VJP、边界 RXX adjoint 以及 QR/SVD
 canonicalization/truncation pullback 已由 `simulation/jax/mps/pullbacks.py` 统一负责。
-`mps_backward.py`、`mps_pullbacks.py` 和 `mps/canonicalization.py` 剩余逻辑属于受限 rank
+`mps_backward.py`、`mps/pullbacks.py` 和 `mps/canonicalization.py` 剩余逻辑属于受限 rank
 协议：设备放置、参数所有权、collective 交换、截断策略、优化器生命周期和证据记录。
 其中少量解析解校验与张量 shape 用于验证协议证据，不是第二套通用 MPS 数值权威；在没有
 第二条脱离 Runtime 策略和记录的生产路径复用前，不继续拆成细碎 helper。该路径已到停止点。

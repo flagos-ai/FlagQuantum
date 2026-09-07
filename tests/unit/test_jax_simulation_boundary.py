@@ -7,10 +7,10 @@ from flagquantum.runtime.backends.jax import (
     kernel,
     mps_canonicalization,
     mps_gradient_ownership,
-    mps_pullbacks,
 )
 from flagquantum.runtime.backends.jax.mps import execution as mps_execution
 from flagquantum.runtime.backends.jax.mps import lowering as mps_lowering
+from flagquantum.runtime.backends.jax.mps import pullbacks as mps_pullbacks
 from flagquantum.runtime.backends.jax.statevector import (
     gradient_records as statevector_gradient_records,
 )
