@@ -65,7 +65,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | 能力 | 当前数值权威位置 | 编排/消费者位置 | 现状 |
 | --- | --- | --- | --- |
 | 本地状态向量 | `simulation/statevector/local.py` 的执行循环；`simulation/statevector/operations.py` 的布局、门作用、门矩阵组合、压缩基态索引展开和融合；`simulation/triton_kernels/statevector_gates.py` 的本地门及跨分片 CX control-one pack/unpack CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用门矩阵组合与索引数值函数，仍负责通信策略与传输 |
-| 小规模专用状态向量 | `simulation/small_statevector.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
+| 小规模专用状态向量 | `simulation/statevector/small.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
 | 分布式状态向量 | `simulation/statevector/operations.py`、`simulation/statevector/adjoint.py` 和 `simulation/triton_kernels/statevector_*` 的 rank-local 数值原语 | `runtime/backends/statevector/` 的 planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime 保留 amplitude/qubit-address 所有权、通信、chunk 和生命周期；不再实现局部门矩阵数学 |
 | Split real/imag 与 Double-Single | `simulation/statevector/split_real_imag.py` 的 P0/P1/P2 门矩阵、门作用、零态执行循环和 Pauli-term 数值归约；`simulation/statevector/double_single_host_gates.py` 与 `simulation/statevector/double_single_device_gates.py` 的隔离门矩阵生成；`simulation/statevector/double_single.py` 的 P3/P4 零态初始化、门执行、归一化和 Pauli-term 归约 | Runtime 文件中的参数绑定、平台身份、精度计划与授权、编码策略、observables、参数移位调度、P5 autograd/SGD 边界、conformance/result | P0--P4 的基础数值实现已归 Simulation；Runtime 只组合既有数值原语；P3/P4 适配器因主机摄取与路径证据不同而保持分离；P5 单行 SGD 更新尚不构成独立数值核，不为搬移而新增 helper；实验路径不得成为首切片默认实现或被描述为等价 FP64 |
 | 本地 MPS | `simulation/mps/local.py` 的无噪声指令循环；`mps/noisy.py` 的已降低单轨迹数值循环；`mps/models.py`、`mps/state.py`、`mps/factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps/brickwork.py` | `mps/entrypoints.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
@@ -82,7 +82,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | 路径 | 主分类 | Simulation 应拥有 | 应拆出的混合点 |
 | --- | --- | --- | --- |
 | `linalg.py` | 纯数值算法 | PyTorch 线性代数工具 | 无明显 Runtime 策略 |
-| `small_statevector.py` | 纯数值算法 | 小规模精确演化与 Z 期望 | 常量缓存键含 device 合理；它不是通用执行契约 |
+| `statevector/small.py` | 纯数值算法 | 小规模精确演化与 Z 期望 | 常量缓存键含 device 合理；它不是通用执行契约 |
 | `mps/state.py`、`mps/factorization.py`、`mps/low_rank.py` | 纯数值算法 | MPS 状态、门作用、分解、截断和误差 | 环境变量控制 kernel/分解策略应由请求/Runtime 决策后显式传入；dense correctness fallback 必须可见 |
 | `static_mps.py`、`mps/brickwork.py`、`tebd.py`、`dense_island.py` | 数值算法 + Kernel 调用 | 固定形状图、TEBD、dense island、局部编译核 | 编译/缓存策略和能力选择需与 Runtime/Compiler 的决定区分 |
 | `mps/local.py` | 纯数值执行 | 已初始化 MPS 上的 IR 门作用、融合与 bucket kernel 调用 | 无 Runtime 生命周期所有权 |

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from . import small_statevector
+from .statevector import small as small_statevector
 
 _EXPORT_MODULES = (small_statevector,)
 __all__ = list(

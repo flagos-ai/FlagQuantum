@@ -18,4 +18,6 @@ evidence.
   encoding.
 - Start in `double_single_device_gates.py` for device-resident FP32 gate
   encoding without host fallback.
+- Start in `small.py` for specialized exact kernels limited to very small,
+  deep statevector workloads.
 - The stable user entry points remain `fq.Circuit`, `fq.plan`, and `fq.run`.

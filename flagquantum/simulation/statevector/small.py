@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from ..ops.complex_ops import complex_mul
+from ...ops.complex_ops import complex_mul
 
 _CONSTANT_CACHE: dict[
     tuple[int, str, torch.dtype], tuple[torch.Tensor, torch.Tensor]
