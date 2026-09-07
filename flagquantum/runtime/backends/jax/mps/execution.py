@@ -63,12 +63,12 @@ def run_jax_sharded_mps(
     replicated MPS.
     """
 
-    from ....distributed.engine import (
+    from ...mps.distributed_state import _mps_shards
+    from ...mps.planning import (
         _boundary_sync_record,
         _instruction_is_boundary_local,
         _instruction_is_site_local,
         _instruction_owner,
-        _mps_shards,
     )
 
     torch = _require_torch()
@@ -266,7 +266,7 @@ def _jax_parameterized_mps_rank_tensors(
     list[dict[str, Any]],
     list[dict[str, Any]],
 ]:
-    from ....distributed.engine import (
+    from ...mps.planning import (
         _boundary_sync_record,
         _instruction_is_boundary_local,
         _instruction_is_site_local,

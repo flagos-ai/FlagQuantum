@@ -60,7 +60,8 @@ def jax_sharded_mps_parameter_value_and_grad(
 ) -> JAXShardedMPSParameterGradientResult:
     """Reverse-mode value/gradient for a site-sharded parameterized MPS circuit."""
 
-    from ....distributed.engine import _instruction_is_boundary_local, _mps_shards
+    from ...mps.distributed_state import _mps_shards
+    from ...mps.planning import _instruction_is_boundary_local
 
     torch = _require_torch()
     jax, jnp = _require_jax()

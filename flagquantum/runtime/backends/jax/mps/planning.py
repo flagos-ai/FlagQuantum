@@ -97,14 +97,14 @@ def plan_jax_sharded_mps_parameter_flow(
 ) -> JAXShardedMPSParameterFlowPlan:
     """Plan parameter ownership and gradient routes for sharded MPS backward."""
 
-    from ....distributed.engine import (
+    from ...mps.distributed_state import _mps_shards
+    from ...mps.planning import (
         _boundary_sync_record,
         _instruction_is_boundary_local,
         _instruction_is_site_local,
         _instruction_owner,
-        _mps_shards,
     )
-    from ....distributed.engine import (
+    from ...mps.planning import (
         _rank_for_wire as _distributed_rank_for_wire,
     )
 
@@ -278,7 +278,8 @@ def plan_jax_sharded_mps_training(
     executor is being completed.
     """
 
-    from ....distributed.engine import _instruction_is_boundary_local, _mps_shards
+    from ...mps.distributed_state import _mps_shards
+    from ...mps.planning import _instruction_is_boundary_local
 
     policy = _resolve_policy(
         distributed_backend_policy=distributed_backend_policy,

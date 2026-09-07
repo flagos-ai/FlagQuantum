@@ -62,6 +62,12 @@ from .distributed_state import (
     _broadcast_mps_site_tensor,
     _mps_shards,
 )
+from .planning import (
+    _boundary_sync_record,
+    _instruction_is_boundary_local,
+    _instruction_is_site_local,
+    _instruction_owner,
+)
 from .transport import (
     _recv_tensor_async_p2p,
     _recv_tensor_p2p,
@@ -376,21 +382,6 @@ def _allreduce_adaptive_plan(
     )
 
 
-def _rank_for_wire(wire: int, shards: Sequence[DistributedShardPlan]) -> int:
-    for shard in shards:
-        if int(wire) in shard.wires:
-            return shard.rank
-    return 0
-
-
-def _instruction_owner(
-    instruction: Instruction, shards: Sequence[DistributedShardPlan]
-) -> int:
-    if not instruction.wires:
-        return 0
-    return _rank_for_wire(min(int(wire) for wire in instruction.wires), shards)
-
-
 def _is_one_qubit_unitary(instruction: Instruction) -> bool:
     return len(instruction.wires) == 1 and not instruction.metadata.get("is_channel")
 
@@ -417,49 +408,6 @@ def _truncation_record_from_split_info(
 def _refresh_sharded_from_mps(sharded: ShardedMPSState, mps: MPSState) -> None:
     for wire in tuple(sharded.local_tensors):
         sharded.local_tensors[wire] = mps.tensors[wire]
-
-
-def _instruction_is_site_local(
-    instruction: Instruction, shards: Sequence[DistributedShardPlan]
-) -> bool:
-    wires = tuple(int(wire) for wire in instruction.wires)
-    if instruction.metadata.get("is_channel"):
-        return False
-    if len(wires) == 1:
-        return True
-    if len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
-        return _rank_for_wire(wires[0], shards) == _rank_for_wire(wires[1], shards)
-    return False
-
-
-def _instruction_is_boundary_local(
-    instruction: Instruction, shards: Sequence[DistributedShardPlan]
-) -> bool:
-    wires = tuple(int(wire) for wire in instruction.wires)
-    if instruction.metadata.get("is_channel"):
-        return False
-    if len(wires) != 2 or abs(wires[0] - wires[1]) != 1:
-        return False
-    return _rank_for_wire(wires[0], shards) != _rank_for_wire(wires[1], shards)
-
-
-def _boundary_sync_record(
-    instruction: Instruction,
-    shards: Sequence[DistributedShardPlan],
-) -> DistributedBoundarySync:
-    wires = tuple(sorted(int(wire) for wire in instruction.wires))
-    if len(wires) != 2:
-        raise ValueError("Boundary MPS sync requires a two-wire instruction.")
-    left_wire, right_wire = wires
-    left_rank = _rank_for_wire(left_wire, shards)
-    right_rank = _rank_for_wire(right_wire, shards)
-    return DistributedBoundarySync(
-        left_wire=left_wire,
-        right_wire=right_wire,
-        left_rank=left_rank,
-        right_rank=right_rank,
-        owner_rank=left_rank,
-    )
 
 
 def _mps_tensors_nbytes(mps: MPSState, wires: Sequence[int]) -> int:
