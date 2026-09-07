@@ -14,6 +14,8 @@ evidence.
   and bounded-optimal contraction-order search.
 - Start in `contraction.py` for slicing-plan construction, contraction profiles,
   and sliced contraction execution.
+- Start in `local.py` for Circuit/IR adaptation, local plan construction, and
+  local numerical execution.
 - Import the owning submodule directly; this package does not re-export a
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local

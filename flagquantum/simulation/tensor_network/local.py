@@ -6,16 +6,16 @@ from typing import Any, Sequence
 
 import torch
 
-from ..circuit import Circuit
-from ..ops.gate_matrix import gate_matrix
-from .tensor_network.contraction import _as_ir
-from .tensor_network.models import (
+from ...circuit import Circuit
+from ...ops.gate_matrix import gate_matrix
+from .contraction import _as_ir
+from .models import (
     CompiledTNProgram,
     ContractionPathStep,
     TensorNetworkContractionPlan,
     TensorNetworkNode,
 )
-from .tensor_network.state import TensorNetworkState
+from .state import TensorNetworkState
 
 
 def _initial_wire_tensors(
