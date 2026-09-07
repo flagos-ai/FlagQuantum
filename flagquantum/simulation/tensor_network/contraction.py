@@ -15,9 +15,7 @@ from .models import (
     TensorNetworkSlicingPlan,
 )
 from .path_search import (
-    _QUALITY_MULTISTART_PATH_CACHE as _QUALITY_MULTISTART_PATH_CACHE,
-)
-from .path_search import (
+    _QUALITY_MULTISTART_PATH_CACHE,
     _contract_nodes_beam,
     _contract_nodes_greedy,
     _contract_nodes_optimal,
@@ -27,15 +25,11 @@ from .path_search import (
     _estimate_pair,
     _label_counts,
     _label_dims,
+    _linearize_contraction_tree,
     _product,
     _profile_cache_key,
     _quality_multistart_cache_key,
-)
-from .path_search import (
-    _linearize_contraction_tree as _linearize_contraction_tree,
-)
-from .path_search import (
-    _tree_from_steps as _tree_from_steps,
+    _tree_from_steps,
 )
 from .stages import execute_pair_steps as _execute_pair_steps
 
