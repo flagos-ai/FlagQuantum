@@ -46,7 +46,7 @@ _EXPORTS = {
         "run_jax_sharded_mps",
     ),
     "run_jax_sharded_statevector": (
-        "flagquantum.runtime.backends.jax.statevector_execution",
+        "flagquantum.runtime.backends.jax.statevector.execution",
         "run_jax_sharded_statevector",
     ),
     "run_jax_sharded_tensor_network": (

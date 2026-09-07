@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from typing import Any, Callable, Sequence
 
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .array_conversions import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..array_conversions import (
     _apply_gate_to_jax_shards,
     _gate_matrix_as_jax,
     _jax_parameter_array_from_input,
     _parameterized_gate_matrix_as_jax,
     _torch_parameters_for_static_build,
 )
-from .backend_dispatch import plan_jax_distributed_quantum_backend
-from .planning_core import _as_ir
-from .runtime_environment import (
+from ..backend_dispatch import plan_jax_distributed_quantum_backend
+from ..planning_core import _as_ir
+from ..runtime_environment import (
     _jax_complex_dtype,
     _jax_device_count_summary,
     _jax_real_dtype,
@@ -29,18 +29,18 @@ from .runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
-from .statevector_gradient_records import (
+from ..statevector_gradient_records import (
     JAXShardedStatevectorParameterGradientResult,
     _initialize_jax_statevector_shard,
 )
-from .statevector_kernels import (
+from ..statevector_kernels import (
     _jax_pmap_statevector_parameter_loss,
     _jax_shard_map_statevector_parameter_loss,
     _jax_sharded_statevector_loss_from_shards,
     _statevector_pmap_backward_blockers,
     _statevector_shard_map_backward_blockers,
 )
-from .statevector_records import JAXShardedStatevectorResult, JAXStatevectorShardState
+from ..statevector_records import JAXShardedStatevectorResult, JAXStatevectorShardState
 
 
 def run_jax_sharded_statevector(
@@ -65,7 +65,7 @@ def run_jax_sharded_statevector(
     transport and sharded backward are reported as blockers until implemented.
     """
 
-    from ..statevector.planning import plan_distributed_statevector
+    from ...statevector.planning import plan_distributed_statevector
 
     policy = _resolve_policy(
         distributed_backend_policy=distributed_backend_policy,
@@ -200,7 +200,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
 
     import numpy as np
 
-    from ..statevector.planning import plan_distributed_statevector
+    from ...statevector.planning import plan_distributed_statevector
 
     torch = _require_torch()
     jax, jnp = _require_jax()
@@ -294,7 +294,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
 
     def _loss(parameter_array: Any) -> Any:
-        from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+        from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
         previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
         try:
@@ -350,7 +350,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
         value_and_grad = jax.jit(value_and_grad)
     value, gradient = value_and_grad(jax_parameters)
 
-    from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
     previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
     try:

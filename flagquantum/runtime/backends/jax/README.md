@@ -23,7 +23,8 @@ general MPS implementation. Do not extract them into generic helpers unless a
 second production numerical path consumes the same operation independently of
 Runtime policy and records.
 
-For sharded statevectors, `statevector_kernels.py` is a Runtime transport
+For sharded statevectors, start in `statevector/execution.py`.
+`statevector_kernels.py` is a Runtime transport
 adapter, despite its historical name. It converts instructions and Runtime
 plans, selects local, pair-exchange, all-to-all, `pmap`, or `shard_map`
 execution, and owns collective sequencing. Initial-state, local-gate,

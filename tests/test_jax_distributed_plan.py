@@ -25,7 +25,6 @@ from flagquantum.runtime.backends.jax import (
     run_jax_sharded_statevector,
     run_jax_sharded_tensor_network,
     runtime_environment,
-    statevector_execution,
     tensor_network_contraction,
 )
 from flagquantum.runtime.backends.jax.mps_gradient_result import (
@@ -42,7 +41,10 @@ from flagquantum.runtime.backends.jax.mps_training_records import (
     JAXShardedMPSParameterFlowPlan,
     JAXShardedMPSTrainingPlan,
 )
-from flagquantum.runtime.backends.jax.statevector_execution import (
+from flagquantum.runtime.backends.jax.statevector import (
+    execution as statevector_execution,
+)
+from flagquantum.runtime.backends.jax.statevector.execution import (
     jax_sharded_statevector_parameter_value_and_grad,
 )
 from flagquantum.runtime.backends.jax.statevector_gradient_records import (
