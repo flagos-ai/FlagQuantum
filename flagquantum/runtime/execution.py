@@ -10,17 +10,14 @@ import torch
 
 from ..compiler import compile as compile_program
 from ..compiler import lower_noise_model
-from ..core.ir import CircuitIR, Instruction, MeasurementNode, ensure_circuit_ir
+from ..core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
-from ..core.parameters import value_to_tensor
 from ..core.runtime_config import (
     RuntimeConfig,
     get_runtime_config,
     runtime_config,
 )
 from ..errors import ExecutionError
-from ..measurement import measure_allZ
-from ..ops import functional
 from ..runtime.backend_registry import resolve_device, resolve_dtype
 from ..runtime.distributed.backend_policy import (
     DistributedBackendPolicy,
@@ -35,7 +32,10 @@ from .backends.statevector import (
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
-from .backends.statevector.legacy_device import DistributedQuantumDevice
+from .backends.statevector.legacy_execution import (
+    DistributedExecutor,
+    run_legacy_distributed,
+)
 from .execution_plan import ExecutionPlan
 from .planner import build_noisy_execution_plan, select_execution_mode
 from .planner import plan_advanced as build_plan
@@ -45,69 +45,6 @@ if TYPE_CHECKING:
     from ..noise import NoiseModel
     from .options import ExecutionOptions
     from .result import ExecutionResult
-
-_GATE_ALIASES = {
-    "cnot": "cx",
-    "ccnot": "ccx",
-    "toffoli": "ccx",
-    "fredkin": "cswap",
-    "sd": "sdg",
-    "td": "tdg",
-    "p": "phase",
-}
-
-_PARAM_ALIASES = {
-    "rx": ("theta",),
-    "ry": ("theta",),
-    "rz": ("theta",),
-    "phase": ("theta",),
-    "p": ("theta",),
-    "u1": ("theta",),
-    "u2": ("phi", "lbd"),
-    "u3": ("theta", "phi", "lbd"),
-    "crx": ("theta",),
-    "cry": ("theta",),
-    "crz": ("theta",),
-    "cphase": ("theta",),
-    "rxx": ("theta",),
-    "ryy": ("theta",),
-    "rzz": ("theta",),
-}
-
-
-def _as_parameter_tensor(
-    instruction: Instruction,
-    *,
-    device: torch.device | str,
-    dtype: torch.dtype,
-) -> torch.Tensor | None:
-    """Adapt IR parameters to the legacy distributed-device gate signature."""
-
-    names = _PARAM_ALIASES.get(instruction.name)
-    if not names:
-        return None
-    values = [instruction.params.get(name) for name in names]
-    if any(value is None for value in values):
-        return None
-    tensors = [value_to_tensor(value) for value in values]
-    params = torch.stack(
-        [tensor.reshape(()) if tensor.ndim == 0 else tensor for tensor in tensors],
-        dim=-1,
-    )
-    return params.to(device=device, dtype=dtype)
-
-
-def _matrix_to_torch(
-    matrix: Any, device: torch.device | str, *, dtype: torch.dtype
-) -> torch.Tensor:
-    """Adapt a custom matrix without changing the selected execution precision."""
-
-    tensor = getattr(matrix, "tensor", matrix)
-    if hasattr(tensor, "detach"):
-        tensor = tensor.detach()
-    tensor = torch.as_tensor(tensor, dtype=dtype, device=device).reshape(-1)
-    width = int(tensor.numel() ** 0.5)
-    return tensor.reshape(width, width)
 
 
 def _resolve_policy_from_options(
@@ -270,53 +207,10 @@ def _distributed_local_world_size(
     return max(1, int(world_size))
 
 
-class DistributedExecutor:
-    """Run unified circuit IR on the native distributed statevector device."""
-
-    def __init__(self, device: DistributedQuantumDevice):
-        self.device = device
-
-    def apply(self, instruction: Instruction) -> None:
-        if instruction.metadata.get("is_channel"):
-            raise NotImplementedError(
-                "Distributed execution currently supports unitary instructions."
-            )
-        if instruction.metadata.get("mpo") or instruction.metadata.get("diagonal"):
-            raise NotImplementedError(
-                "MPO and diagonal tensor-network instructions require tensor-network execution."
-            )
-
-        name = _GATE_ALIASES.get(instruction.name, instruction.name)
-        params = _as_parameter_tensor(
-            instruction,
-            device=self.device.device,
-            dtype=self.device.real_dtype,
-        )
-        if hasattr(self.device, name):
-            getattr(self.device, name)(wires=list(instruction.wires), params=params)
-            return
-
-        if instruction.matrix is None:
-            raise KeyError(f"No native distributed implementation for gate {name!r}.")
-        matrix = _matrix_to_torch(
-            instruction.matrix,
-            self.device.device,
-            dtype=self.device.complex_dtype,
-        )
-        functional.gate(
-            matrix, self.device, wires=list(instruction.wires), params=params
-        )
-
-    def run(self, ir: CircuitIR) -> DistributedQuantumDevice:
-        for instruction in ir:
-            self.apply(instruction)
-        return self.device
-
-
 def run_distributed(
     ir: CircuitIR,
     *,
-    device: DistributedQuantumDevice | torch.device | str | None = None,
+    device: Any = None,
     measure: bool = False,
     optimize: bool = True,
     return_plan: bool = False,
@@ -406,30 +300,17 @@ def run_distributed(
             return result, execution_plan
         return result
 
-    if isinstance(device, DistributedQuantumDevice):
-        qdev = device
-        if qdev.complex_dtype != execution_precision:
-            raise ValueError(
-                "existing distributed device precision conflicts with execution: "
-                f"{qdev.complex_dtype} != {execution_precision}"
-            )
-    else:
-        if device is not None:
-            device_options["device"] = str(device)
-        device_options["precision"] = execution_precision
-        qdev = DistributedQuantumDevice(n_wires=execution_ir.n_wires, **device_options)
-    DistributedExecutor(qdev).run(execution_ir)
-    qdev.execution_ir = execution_ir
-    qdev.execution_plan = execution_plan
-    qdev.distributed_statevector_plan = statevector_plan
-    qdev.distributed_statevector_summary = statevector_plan.summary()
-    qdev.distributed_backend_policy = backend_policy
-    qdev.distributed_statevector_summary["distributed_backend_policy"] = (
-        backend_policy.summary()
+    result = run_legacy_distributed(
+        execution_ir,
+        device=device,
+        device_options=device_options,
+        precision=execution_precision,
+        execution_plan=execution_plan,
+        statevector_plan=statevector_plan,
+        backend_policy=backend_policy,
+        jax_distributed_plan=jax_distributed_plan,
+        measure=measure,
     )
-    qdev.distributed_statevector_summary["jax_distributed_plan"] = jax_distributed_plan
-
-    result = measure_allZ(qdev) if measure else qdev
     if return_plan:
         return result, execution_plan
     return result
