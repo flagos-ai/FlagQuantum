@@ -1,4 +1,4 @@
-# Distributed MPS Runtime
+# MPS Runtime
 
 This directory owns rank-local state lifecycle, ownership and distribution,
 transport sequencing, memory/workspace policy, checkpoint and restart,
@@ -20,10 +20,12 @@ live in `simulation/mps/canonicalization.py`.
 
 ## Ten-minute change path
 
-- Change the development distributed MPS path, rank ownership, or boundary
-  synchronization in `execution.py`.
-- Change rank ownership or communication order in `state.py`,
-  `distribution.py`, or `communication.py`.
+- Change the development distributed MPS lifecycle in `execution.py`.
+- Change contiguous shard planning or instruction placement in `planning.py`.
+- Change the development result facade or sharded-state behavior in
+  `distributed_state.py`.
+- Change production rank-owned state in `state.py`, ownership migration in
+  `distribution.py`, or transport sequencing in `communication.py`.
 - Change canonicalization sweep ownership or transport in `canonicalization.py`;
   change its tensor math in `simulation/mps/canonicalization.py`.
 - Change forward ownership, communication, lifecycle, or evidence in
