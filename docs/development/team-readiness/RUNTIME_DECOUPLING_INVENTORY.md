@@ -255,3 +255,20 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 `runtime.execution.__all__`，也不得新增产品调用方。函数暂留是为了避免一次性重写大量底层测试，
 不代表新的公共执行入口；后续应按真实消费者逐步改用稳定 `fq.run()` 或所属 backend facade，
 消费者清零后再删除实现。
+
+## 8. `backends` 命名空间边界复核（2026-09-08）
+
+`flagquantum/backends/` 当前只有 58 行公开转发代码，不包含数值核、调度策略或厂商适配；
+它是经 API 提案确认的 backend-native 专家入口。其名称与以下实现目录相近，但职责不同：
+
+| 路径 | 唯一职责 | 不负责 |
+| --- | --- | --- |
+| `flagquantum/backends/` | 稳定专家 API，转发 `run_native`、MPS、TN 和设备解析入口 | 实现执行、数值算法或设备 SDK |
+| `flagquantum/runtime/backends/` | 后端执行计划、生命周期、分布与结果组织 | 稳定公共命名空间或外部系统适配 |
+| `flagquantum/providers/` | 真实 QPU、远程服务和计算平台的边界适配 | 模拟数值核或 Runtime 调度策略 |
+
+仓内测试、示例和参考文档均直接使用 `flagquantum.backends`，且命名空间一致性测试要求
+转发对象保持实现身份。因此本轮结论是：**不迁移、不合并这三个目录，也不在
+`providers` 下复制模拟后端**。后续删除工作应先审计根命名空间历史别名
+`flagquantum/_root_api_compat.py`；只有真实消费者归零且公共 API 快照同步收口的条目，
+才可无兼容层删除。
