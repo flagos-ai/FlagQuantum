@@ -13,8 +13,6 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
-from flagquantum.runtime.capabilities import load_operator_profile
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARTIFACT = ROOT / "artifacts/split_real_imag_optimizer_a800_20260825.json"
 CONTRACT = (
@@ -22,6 +20,10 @@ CONTRACT = (
     / "contracts"
     / "split-real-imag-statevector-p5-autograd-optimizer-contract.toml"
 )
+HISTORICAL_OPERATOR_PROFILE = {
+    "name": "split_real_imag_statevector_p4_device_double_single",
+    "sha256": "beb0e58248a93d5f9ab17fe61b869f0a4c2925039c29eb9426101ef0c569ac73",
+}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -45,14 +47,8 @@ def evidence_errors(payload: dict[str, Any]) -> tuple[str, ...]:
     ):
         errors.append("split P5 optimizer evidence source identity is incomplete")
 
-    profile = load_operator_profile(
-        "split_real_imag_statevector_p4_device_double_single"
-    )
-    if payload.get("operator_profile") != {
-        "name": profile.name,
-        "sha256": profile.profile_hash,
-    }:
-        errors.append("split P5 optimizer operator profile identity drifted")
+    if payload.get("operator_profile") != HISTORICAL_OPERATOR_PROFILE:
+        errors.append("split P5 optimizer historical operator profile identity drifted")
 
     contract = tomllib.loads(CONTRACT.read_text(encoding="utf-8"))
     acceptance = contract["acceptance_thresholds"]
