@@ -23,7 +23,10 @@ from flagquantum.runtime.backends.mps.distributed_state import (
     DistributedShardPlan,
     ShardedMPSState,
 )
-from flagquantum.runtime.backends.tensor_network import DistributedTensorNetworkState
+from flagquantum.runtime.backends.tensor_network import (
+    DistributedTensorNetworkState,
+    DistributedTNSliceTask,
+)
 from flagquantum.runtime.configuration import get_backend, set_backend
 from flagquantum.runtime.distributed import (
     destroy_torch_distributed,
@@ -1266,6 +1269,7 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
     assert result.summary()["world_size"] == 2
     assert result.summary()["slice_tasks"] == len(result.tasks)
     assert set(result.summary()["tasks_by_rank"]) == {0, 1}
+    assert all(isinstance(task, DistributedTNSliceTask) for task in result.tasks)
     assert torch.allclose(
         result.state(),
         fqb.run_native(circuit, mode="tensor_network").state(),

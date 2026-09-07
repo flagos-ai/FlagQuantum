@@ -13,7 +13,6 @@ import hashlib
 import json
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from itertools import product
 from math import ceil
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -65,39 +64,25 @@ from ...planner.tn_calibration import TNWorkingSetCalibration
 from .joint_planning import (
     DistributedTNWorkingSetPolicy,
 )
+from .sliced_tasks import DistributedTNSliceTask, plan_distributed_tn_slice_tasks
 
 _PERSISTENT_PLAN_SCHEMA = "flagquantum.distributed_tn_plan.v1"
 
 
-@dataclass(frozen=True)
-class DistributedSliceTask:
-    """A tensor-network slice task assigned to one distributed rank."""
-
-    rank: int
-    world_size: int
-    task_index: int
-    assignments: tuple[tuple[int, int], ...]
-
-
-def _tensor_slice_tasks(
-    sliced_labels: Sequence[int],
-    slice_shape: Sequence[int],
+def _execution_slice_tasks(
+    slicing: TensorNetworkSlicingPlan,
+    *,
     world_size: int,
-) -> tuple[DistributedSliceTask, ...]:
-    tasks = []
-    labels = tuple(int(label) for label in sliced_labels)
-    ranges = [range(int(size)) for size in slice_shape]
-    for task_index, values in enumerate(product(*ranges) if ranges else [()]):
-        rank = task_index % max(1, int(world_size))
-        tasks.append(
-            DistributedSliceTask(
-                rank=rank,
-                world_size=int(world_size),
-                task_index=task_index,
-                assignments=tuple(zip(labels, tuple(int(value) for value in values))),
-            )
-        )
-    return tuple(tasks)
+    context: TorchDistributedContext | None,
+) -> tuple[DistributedTNSliceTask, ...]:
+    """Use the canonical topology-aware task plan for TN execution."""
+
+    local_world_size = context.local_world_size if context is not None else world_size
+    return plan_distributed_tn_slice_tasks(
+        slicing,
+        world_size=world_size,
+        local_world_size=local_world_size,
+    ).tasks
 
 
 @contextmanager
@@ -263,7 +248,7 @@ def _zero_for_output(
 def _contract_assigned_tensor_slices(
     nodes: Sequence[TensorNetworkNode],
     output_labels: Sequence[int],
-    tasks: Sequence[DistributedSliceTask],
+    tasks: Sequence[DistributedTNSliceTask],
     *,
     steps: Sequence[PairContractionStep] | None = None,
 ) -> torch.Tensor:
@@ -290,7 +275,7 @@ class DistributedTensorNetworkState:
         local_state: TensorNetworkState,
         *,
         world_size: int,
-        tasks: Sequence[DistributedSliceTask],
+        tasks: Sequence[DistributedTNSliceTask],
         context: TorchDistributedContext | None = None,
         state_cache: torch.Tensor | None = None,
         backend_policy: DistributedBackendPolicy | None = None,
@@ -404,7 +389,7 @@ class DistributedTensorNetworkState:
                 },
                 "slice_tasks": len(self.tasks),
                 "tasks_by_rank": {
-                    rank: sum(1 for task in self.tasks if task.rank == rank)
+                    rank: sum(1 for task in self.tasks if task.owner_rank == rank)
                     for rank in range(self.world_size)
                 },
                 "rank_partial_bytes_by_rank": {
@@ -430,7 +415,7 @@ class DistributedTensorNetworkAmplitude:
 
     value: torch.Tensor
     world_size: int
-    tasks: tuple[DistributedSliceTask, ...]
+    tasks: tuple[DistributedTNSliceTask, ...]
     rank_partial_bytes: Mapping[int, int]
     distribution_semantics: str
     working_set_preflight: Mapping[str, Any]
@@ -438,7 +423,9 @@ class DistributedTensorNetworkAmplitude:
     def summary(self) -> dict[str, Any]:
         tasks_by_rank: dict[int, int] = {}
         for task in self.tasks:
-            tasks_by_rank[task.rank] = tasks_by_rank.get(task.rank, 0) + 1
+            tasks_by_rank[task.owner_rank] = (
+                tasks_by_rank.get(task.owner_rank, 0) + 1
+            )
         return {
             "state_mode": "distributed_tensor_network_amplitude",
             "output_target": "single_amplitude",
@@ -459,7 +446,7 @@ class DistributedTensorNetworkExpectation:
 
     value: torch.Tensor
     world_size: int
-    tasks: tuple[DistributedSliceTask, ...]
+    tasks: tuple[DistributedTNSliceTask, ...]
     rank_partial_bytes: Mapping[int, int]
     observable_wires: tuple[int, ...]
     distribution_semantics: str
@@ -468,7 +455,9 @@ class DistributedTensorNetworkExpectation:
     def summary(self) -> dict[str, Any]:
         tasks_by_rank: dict[int, int] = {}
         for task in self.tasks:
-            tasks_by_rank[task.rank] = tasks_by_rank.get(task.rank, 0) + 1
+            tasks_by_rank[task.owner_rank] = (
+                tasks_by_rank.get(task.owner_rank, 0) + 1
+            )
         return {
             "state_mode": "distributed_tensor_network_expectation",
             "output_target": "local_observables",
@@ -490,7 +479,7 @@ class DistributedTensorNetworkAmplitudes:
 
     values: torch.Tensor
     world_size: int
-    tasks: tuple[DistributedSliceTask, ...]
+    tasks: tuple[DistributedTNSliceTask, ...]
     rank_partial_bytes: Mapping[int, int]
     target_count: int
     distribution_semantics: str
@@ -499,7 +488,9 @@ class DistributedTensorNetworkAmplitudes:
     def summary(self) -> dict[str, Any]:
         tasks_by_rank: dict[int, int] = {}
         for task in self.tasks:
-            tasks_by_rank[task.rank] = tasks_by_rank.get(task.rank, 0) + 1
+            tasks_by_rank[task.owner_rank] = (
+                tasks_by_rank.get(task.owner_rank, 0) + 1
+            )
         return {
             "state_mode": "distributed_tensor_network_amplitudes",
             "output_target": "few_amplitudes",
@@ -522,7 +513,7 @@ class DistributedTensorNetworkExpectations:
 
     values: torch.Tensor
     world_size: int
-    tasks: tuple[DistributedSliceTask, ...]
+    tasks: tuple[DistributedTNSliceTask, ...]
     rank_partial_bytes: Mapping[int, int]
     observable_count: int
     distribution_semantics: str
@@ -531,7 +522,9 @@ class DistributedTensorNetworkExpectations:
     def summary(self) -> dict[str, Any]:
         tasks_by_rank: dict[int, int] = {}
         for task in self.tasks:
-            tasks_by_rank[task.rank] = tasks_by_rank.get(task.rank, 0) + 1
+            tasks_by_rank[task.owner_rank] = (
+                tasks_by_rank.get(task.owner_rank, 0) + 1
+            )
         return {
             "state_mode": "distributed_tensor_network_expectations",
             "output_target": "local_observables",
@@ -655,7 +648,7 @@ def _distributed_sparse_contraction(
     max_recomputation_factor: float | None,
 ) -> tuple[
     torch.Tensor,
-    tuple[DistributedSliceTask, ...],
+    tuple[DistributedTNSliceTask, ...],
     dict[int, int],
     str,
     dict[str, Any],
@@ -709,10 +702,10 @@ def _distributed_sparse_contraction(
                     max_intermediate_bytes=max_intermediate_bytes,
                     sliced_labels=sliced_labels,
                 )
-                representative_tasks = _tensor_slice_tasks(
-                    slicing.sliced_labels,
-                    slicing.slice_shape,
-                    world_size,
+                representative_tasks = _execution_slice_tasks(
+                    slicing,
+                    world_size=world_size,
+                    context=context,
                 )
                 representative = _slice_nodes(
                     nodes,
@@ -757,14 +750,20 @@ def _distributed_sparse_contraction(
         memory_calibration=memory_calibration,
         world_size=world_size,
     )
-    tasks = _tensor_slice_tasks(slicing.sliced_labels, slicing.slice_shape, world_size)
+    tasks = _execution_slice_tasks(
+        slicing,
+        world_size=world_size,
+        context=context,
+    )
     partial_bytes: dict[int, int] = {}
     if context is not None and context.initialized:
         if tasks and shared_steps is None:
             raise RuntimeError(
                 "rank-zero tensor-network contraction DAG was not broadcast"
             )
-        local_tasks = tuple(task for task in tasks if task.rank == context.rank)
+        local_tasks = tuple(
+            task for task in tasks if task.owner_rank == context.rank
+        )
         value = _contract_assigned_tensor_slices(
             nodes,
             output_labels,
@@ -777,7 +776,9 @@ def _distributed_sparse_contraction(
     else:
         partials = []
         for task_rank in range(world_size):
-            local_tasks = tuple(task for task in tasks if task.rank == task_rank)
+            local_tasks = tuple(
+                task for task in tasks if task.owner_rank == task_rank
+            )
             partial = _contract_assigned_tensor_slices(
                 nodes, output_labels, local_tasks
             )
@@ -1149,12 +1150,18 @@ def run_distributed_tensor_network(
     slicing = plan.slicing_plan(
         max_intermediate_size=max_intermediate_size, sliced_labels=sliced_labels
     )
-    tasks = _tensor_slice_tasks(slicing.sliced_labels, slicing.slice_shape, world_size)
+    tasks = _execution_slice_tasks(
+        slicing,
+        world_size=world_size,
+        context=context,
+    )
     state_cache = None
     local_simulation = False
     rank_partial_bytes: dict[int, int] = {}
     if context is not None and context.initialized:
-        local_tasks = tuple(task for task in tasks if task.rank == context.rank)
+        local_tasks = tuple(
+            task for task in tasks if task.owner_rank == context.rank
+        )
         partial = _contract_assigned_tensor_slices(
             plan.nodes, plan.output_labels, local_tasks
         )
@@ -1164,7 +1171,9 @@ def run_distributed_tensor_network(
     elif world_size > 1 and backend_policy.torch_backend == "local_tensor":
         partials = []
         for task_rank in range(world_size):
-            local_tasks = tuple(task for task in tasks if task.rank == task_rank)
+            local_tasks = tuple(
+                task for task in tasks if task.owner_rank == task_rank
+            )
             partial = _contract_assigned_tensor_slices(
                 plan.nodes, plan.output_labels, local_tasks
             )
