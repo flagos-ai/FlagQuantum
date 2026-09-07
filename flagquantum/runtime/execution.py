@@ -271,7 +271,7 @@ def run_distributed(
         backend_policy.profile == "development"
         and backend_policy.torch_backend == "local_tensor"
     ):
-        from ..simulation.noisy_statevector import expectation_z
+        from ..simulation.statevector.noisy import expectation_z
 
         local_result = simulate_distributed_statevector_local(
             execution_ir,

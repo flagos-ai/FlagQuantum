@@ -11,7 +11,7 @@ import torch
 from ....circuit import Circuit
 from ....core.ir import CircuitIR
 from ....noise import NoiseModel
-from ....simulation.noisy_statevector import (
+from ....simulation.statevector.noisy import (
     run_noisy_trajectory_batch,
 )
 from ...trajectories.ownership import owned_trajectory_ids

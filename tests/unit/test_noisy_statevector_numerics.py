@@ -6,7 +6,7 @@ import torch
 from flagquantum import Circuit
 from flagquantum.compiler import lower_noise_model
 from flagquantum.noise import NoiseModel, bit_flip_channel
-from flagquantum.simulation.noisy_statevector import (
+from flagquantum.simulation.statevector.noisy import (
     apply_amplitude_damping_batched,
     apply_kraus_batched,
     expectation_z,

@@ -39,7 +39,7 @@ collectives, communication, and backward evidence.
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.
 
-`noisy_statevector.py` owns batched gate application, Pauli fast-path matrix
+`statevector/noisy.py` owns batched gate application, Pauli fast-path matrix
 construction, Kraus sampling, amplitude-damping evolution, normalization, and
 Z-expectation numerics for the statevector trajectory backend, including the
 instruction loop for one already-lowered trajectory batch. Runtime retains
@@ -146,7 +146,7 @@ For a local density-matrix change, start in `density_matrix.py` and run:
 python -m pytest tests/test_noise.py -k density_matrix -q
 ```
 
-For batched noisy-statevector numerics, start in `noisy_statevector.py` and run:
+For batched noisy-statevector numerics, start in `statevector/noisy.py` and run:
 
 ```bash
 python -m pytest tests/unit/test_noisy_statevector_numerics.py tests/test_noise.py -q

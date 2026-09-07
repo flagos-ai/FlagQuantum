@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import torch
 
-from ..core.ir import CircuitIR
-from ..ops.gate_matrix import gate_matrix
-from ..ops.matrices import GATE_MAT_DICT
+from ...core.ir import CircuitIR
+from ...ops.gate_matrix import gate_matrix
+from ...ops.matrices import GATE_MAT_DICT
 
 
 def apply_matrix_batched(

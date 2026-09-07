@@ -73,8 +73,8 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | 本地张量网络 | `simulation/tensor_network/local.py` 的计划构建与数值状态入口；`tensor_network/observables.py` 的观测量计划与 MPO；`tensor_network/state.py`、`tensor_network/contraction.py`、`tensor_network/stages.py`、`real_imag_kernels.py` | `tensor_network/entrypoints.py` 的稳定入口与振幅实现、`tensor_network/path_search.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
 | 分布式张量网络 | `simulation/tensor_network/stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/backends/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime；旧 `simulation.noise` 门面已退出 |
-| 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps/state.py`/`mps/entrypoints.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
-| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/noisy_statevector.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps/entrypoints.py`/`mps/state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
+| 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/statevector/noisy.py`、`simulation/mps/state.py`/`mps/entrypoints.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
+| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/statevector/noisy.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps/entrypoints.py`/`mps/state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
 | 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作、Triton autograd 和已拆出的 JAX MPS pullback 在 `simulation/`；其余显式 sharded adjoint/reverse 仍在各 backend | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
 
 ## 4. `simulation` 代码归属矩阵
@@ -403,7 +403,7 @@ Simulation 会引入 Runtime 模型或第二套分片契约，因此当前前向
 ## 18. 本地分布式测量数值收口（2026-09-06）
 
 Runtime 的本地分布式开发路径不再维护一份 reshape、边缘化和逐 wire 组装的 Z 期望值实现，
-而是直接复用 `simulation/noisy_statevector.py` 中支持批次维度的 `expectation_z()`。Simulation
+而是直接复用 `simulation/statevector/noisy.py` 中支持批次维度的 `expectation_z()`。Simulation
 继续唯一拥有从完整 statevector 计算全 wire Z 期望值的纯数值语义；Runtime 只决定是否执行
 测量以及何时把本地分布式结果交给该数值入口。现有开发 profile 测试覆盖 Bell 态的批次形状、
 wire 顺序和结果一致性。

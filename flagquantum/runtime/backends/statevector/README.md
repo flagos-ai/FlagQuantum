@@ -34,7 +34,7 @@ They are not the default local CPU vertical slice.
 validation, global trajectory ownership and random streams, batching,
 checkpoint/restart, retry, online and collective statistics, readout-result
 processing, and result/evidence assembly. It invokes one already-lowered batch
-through `simulation.noisy_statevector`; all gate, channel, normalization,
+through `simulation.statevector.noisy`; all gate, channel, normalization,
 observable, and Pauli fast-path numerics are implemented there. Do not move the
 remaining lifecycle code into Simulation or split it into pass-through helper
 objects. The direct raw-program entry retains Compiler lowering only for its
