@@ -18,6 +18,8 @@ Simulation owns numerical kernels; Core owns cross-domain contracts.
 - Change the observed single-CUDA statevector projection in
   `cuda_target_capabilities.py`; generate evidence with
   `tools/probe_cuda_target_capabilities.py` under one-device visibility.
+- Change the deterministic remote-style capability fixture in
+  `synthetic_remote.py`; it is test evidence, not a real hardware claim.
 
 Run the platform unit and team tests, followed by the CPU vertical-slice test.
 An ordinary platform change should remain inside this directory unless an

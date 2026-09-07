@@ -23,14 +23,14 @@ from flagquantum.core.target_capabilities import (
     RequirementStrength,
     SupportStatus,
 )
-from flagquantum.deployment.synthetic_remote_target_capabilities import (
-    SyntheticRemoteCapabilityFixture,
-    synthetic_remote_target_capability_snapshot,
-)
 from flagquantum.providers.platform.cpu_target_capabilities import (
     CPUCapabilityObservation,
     CPUPrecisionObservation,
     cpu_platform_to_target_capability_snapshot,
+)
+from flagquantum.providers.platform.synthetic_remote import (
+    SyntheticRemoteCapabilityFixture,
+    synthetic_remote_target_capability_snapshot,
 )
 from flagquantum.runtime.target_capability_matching import (
     CandidateProvenance,

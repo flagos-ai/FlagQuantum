@@ -218,7 +218,7 @@ unsupported capability 和 identity mismatch 必须是可机器识别的 Core er
 
 ## Phase 2 第二生产者替换证据
 
-`flagquantum/deployment/synthetic_remote_target_capabilities.py` 增加了一个仅供内部
+`flagquantum/providers/platform/synthetic_remote.py` 提供一个仅供内部
 conformance 使用的 synthetic remote-style producer。它接收匿名、JSON-safe、显式提供的
 fixture，直接生成 Core Target Capabilities v1 snapshot；不建立 provider registry，不提交或
 轮询任务，不读取凭据，不调用网络或 vendor SDK，也不声明真实 QPU、硬件或生产能力。

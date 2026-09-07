@@ -214,6 +214,9 @@ plugins, benchmarks, or serialized artifacts.
   live under `providers.execution`. The
   `deployment.providers` import surface re-exports the same objects and is now
   below the default module-size ceiling, so its size exception has been removed.
+- Deterministic remote-style target capability fixtures live in
+  `providers.platform.synthetic_remote`; deployment no longer owns platform
+  capability producers.
 - The optional JAX backend is a lazy package boundary under
   `flagquantum.runtime.backends.jax`; importing the namespace loads neither JAX
   nor its execution adapters.
