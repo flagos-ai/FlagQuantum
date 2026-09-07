@@ -11,7 +11,7 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ....simulation.real_imag_kernels import complex_einsum_pair
-from ....simulation.tensor_stages import (
+from ....simulation.tensor_network.stages import (
     batched_pair_equation,
     einsum_pair_by_labels,
     einsum_pair_pullback,

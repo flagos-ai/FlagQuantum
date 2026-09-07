@@ -8,13 +8,14 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from . import tensor_stages as _tensor_stages
+from .tensor_network import stages as _tensor_stages
 from .tensor_network.models import (
     PairContractionStep,
     TensorNetworkContractionProfile,
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
+from .tensor_network.stages import execute_pair_steps as _execute_pair_steps
 from .tensor_path_search import (
     _CONTRACTION_PATH_CACHE as _CONTRACTION_PATH_CACHE,
 )
@@ -48,7 +49,6 @@ from .tensor_path_search import (
 from .tensor_path_search import (
     _tree_from_steps as _tree_from_steps,
 )
-from .tensor_stages import execute_pair_steps as _execute_pair_steps
 
 # Compatibility names retained for internal consumers of the historical
 # aggregation module. Canonical implementations live in ``tensor_stages``.

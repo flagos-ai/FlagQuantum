@@ -200,7 +200,7 @@ plugins, benchmarks, or serialized artifacts.
   `flagquantum.runtime.backends.tensor_network`; local simulation and
   distributed execution remain unloaded until their entry point is requested.
   Integer-labelled pair contraction and compiled stage execution live in the
-  dependency-light `simulation.tensor_stages` primitive module. Runtime TN
+  dependency-light `simulation.tensor_network.stages` primitive module. Runtime TN
   modules consume that narrow boundary instead of the compatibility-heavy local
   contraction planner. Greedy, multistart, tree-reconfiguration, beam, and
   bounded-optimal path search live in `simulation.tensor_path_search`; the

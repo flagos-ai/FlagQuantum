@@ -12,7 +12,7 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_stages import einsum_pair_by_labels
+from ....simulation.tensor_network.stages import einsum_pair_by_labels
 from .distributed_dag import DistributedTNValueLayout
 
 TN_PARTIAL_MESH_VERSION = "flagquantum.distributed_tn_partial_mesh.v1"

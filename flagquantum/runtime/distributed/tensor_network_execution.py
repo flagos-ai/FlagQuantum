@@ -36,11 +36,13 @@ from ...simulation.tensor import (
     build_tensor_network_expectation,
     run_tensor_network,
 )
+from ...simulation.tensor_network.stages import (
+    execute_pair_steps as _execute_pair_steps,
+)
 from ...simulation.tensor_path_search import (
     _contract_nodes_quality_multistart,
     _label_dims,
 )
-from ...simulation.tensor_stages import execute_pair_steps as _execute_pair_steps
 from ...version import __version__
 from ..backends.jax import plan_jax_distributed_quantum_backend
 from ..backends.tensor_network.joint_planning import (

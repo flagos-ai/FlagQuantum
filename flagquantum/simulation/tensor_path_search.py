@@ -15,19 +15,19 @@ from .tensor_network.models import (
     PairContractionStep,
     TensorNetworkNode,
 )
-from .tensor_stages import (
+from .tensor_network.stages import (
     compile_contraction_stages as _compile_contraction_stages,
 )
-from .tensor_stages import (
+from .tensor_network.stages import (
     einsum_pair_by_labels as _einsum_pair_by_labels,
 )
-from .tensor_stages import (
+from .tensor_network.stages import (
     einsum_reorder_by_labels as _einsum_reorder_by_labels,
 )
-from .tensor_stages import (
+from .tensor_network.stages import (
     execute_contraction_stages as _execute_contraction_stages,
 )
-from .tensor_stages import (
+from .tensor_network.stages import (
     pair_equation as _pair_equation,
 )
 

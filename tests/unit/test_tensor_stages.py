@@ -8,7 +8,7 @@ from flagquantum.simulation.tensor_network.models import (
     PairContractionStep,
     TensorNetworkNode,
 )
-from flagquantum.simulation.tensor_stages import (
+from flagquantum.simulation.tensor_network.stages import (
     compile_contraction_stages,
     einsum_pair_by_labels,
     einsum_pair_by_labels_with_fallback,
@@ -61,7 +61,7 @@ def test_pair_fallback_is_owned_by_simulation(monkeypatch):
         raise ValueError("layout-aware fused BMM supports at most 8 axes per group")
 
     monkeypatch.setattr(
-        "flagquantum.simulation.tensor_stages.einsum_pair_by_labels",
+        "flagquantum.simulation.tensor_network.stages.einsum_pair_by_labels",
         reject_fused_layout,
     )
     left, right = _matrix_nodes()

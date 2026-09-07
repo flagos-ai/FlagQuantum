@@ -6,8 +6,8 @@ from typing import Any, Sequence
 
 import torch
 
-from .real_imag_kernels import complex_einsum_pair
-from .tensor_network.models import (
+from ..real_imag_kernels import complex_einsum_pair
+from .models import (
     CompiledTNContractionBucket,
     CompiledTNContractionStage,
     CompiledTNStagePlan,

@@ -8,6 +8,8 @@ evidence.
   slicing plans, and local expectation plans.
 - Start in `state.py` for the local tensor-network state, cached contractions,
   observables, amplitudes, sampling, and numerical diagnostics.
+- Start in `stages.py` for pair contraction, pair pullback, compiled-stage
+  execution, high-rank fallback, and compensated accumulation.
 - Import the owning submodule directly; this package does not re-export a
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local

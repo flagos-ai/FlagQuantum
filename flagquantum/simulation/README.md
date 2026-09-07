@@ -89,7 +89,7 @@ state entry point. `tensor_observables.py` owns Pauli/Hamiltonian plan assembly,
 MPO compression, and batched observable contraction. `tensor_execution.py`
 preserves the public wrappers and amplitude entry points; distributed
 scheduling, rank lifecycle, and communication remain outside these paths.
-`tensor_stages.py` owns pair-contraction and pair-pullback execution, high-rank
+`tensor_network/stages.py` owns pair-contraction and pair-pullback execution, high-rank
 fallback, and compensated numerical accumulation used by sliced execution.
 `jax_gate_primitives.py` owns JAX dtype selection, instruction matrices, local
 statevector execution, gate application, and observable kernels. Runtime retains

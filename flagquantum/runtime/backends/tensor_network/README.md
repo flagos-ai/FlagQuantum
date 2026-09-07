@@ -6,7 +6,7 @@ execution evidence for tensor-network backends.
 
 It does not own pair-contraction, pair-pullback, high-rank fallback, or
 compensated-accumulation mathematics. Those numerical primitives live in
-`flagquantum/simulation/tensor_stages.py`; complex real/imaginary kernels live
+`flagquantum/simulation/tensor_network/stages.py`; complex real/imaginary kernels live
 in `flagquantum/simulation/real_imag_kernels.py`.
 
 For a reverse-mode change, start with `reverse_dag.py` for DAG/tape execution or

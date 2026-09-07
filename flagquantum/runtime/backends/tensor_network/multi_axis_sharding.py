@@ -12,7 +12,7 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_stages import einsum_pair_by_labels_with_fallback
+from ....simulation.tensor_network.stages import einsum_pair_by_labels_with_fallback
 from .distributed_dag import (
     DistributedTNContractionDAG,
     DistributedTNValueLayout,

@@ -8,7 +8,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
-from ....simulation.tensor_stages import einsum_pair_by_labels
+from ....simulation.tensor_network.stages import einsum_pair_by_labels
 from ...distributed.flagos_runtime import current_flagos_device
 from .distributed_dag import (
     DistributedTNContractionDAG,
