@@ -17,6 +17,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "flagquantum"
 MAINTAINED_ENTRYPOINTS = ("benchmarks", "examples", "tools")
 DEVELOPMENT_MILESTONE_TOKENS = ("phase4", "phase5", "phase_4", "phase_5")
+NON_JAX_EXECUTION_BACKENDS = (
+    "flagquantum/runtime/backends/statevector/",
+    "flagquantum/runtime/backends/mps/",
+    "flagquantum/runtime/backends/tensor_network/",
+)
 CONFIG = tomllib.loads((ROOT / "architecture.toml").read_text(encoding="utf-8"))
 LONG_HORIZON_CONTRACT = ROOT / "contracts" / "long-horizon-architecture-v1.json"
 
@@ -107,6 +112,31 @@ def _torch_cuda_use_count(path: Path) -> int:
         and node.attr == "cuda"
         for node in ast.walk(tree)
     )
+
+
+def _imports_jax_backend(path: Path) -> bool:
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    module_parts = path.relative_to(ROOT).with_suffix("").parts[:-1]
+    target = "flagquantum.runtime.backends.jax"
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            if any(
+                item.name == target or item.name.startswith(f"{target}.")
+                for item in node.names
+            ):
+                return True
+        elif isinstance(node, ast.ImportFrom):
+            imported = node.module or ""
+            if node.level:
+                keep = max(0, len(module_parts) - (node.level - 1))
+                imported = ".".join((*module_parts[:keep], *imported.split(".")))
+            if imported == target or imported.startswith(f"{target}."):
+                return True
+            if imported == "flagquantum.runtime.backends" and any(
+                item.name == "jax" for item in node.names
+            ):
+                return True
+    return False
 
 
 def architecture_errors() -> tuple[str, ...]:
@@ -258,6 +288,13 @@ def architecture_errors() -> tuple[str, ...]:
     for path in sorted(PACKAGE.rglob("*.py")):
         relative = path.relative_to(ROOT).as_posix()
         imports = _imports(path)
+        if relative.startswith(NON_JAX_EXECUTION_BACKENDS) and _imports_jax_backend(
+            path
+        ):
+            errors.append(
+                f"{relative}: non-JAX execution backends must not import the JAX "
+                "backend; cross-backend comparison belongs in Runtime Planner"
+            )
         cuda_use_count = _torch_cuda_use_count(path)
         cuda_ceiling = direct_cuda_call_ceiling.get(relative, 0)
         if relative not in direct_cuda_allowed and cuda_use_count > cuda_ceiling:
