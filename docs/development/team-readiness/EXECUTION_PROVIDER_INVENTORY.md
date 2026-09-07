@@ -21,7 +21,7 @@ release certification。
 | --- | --- | --- | --- | --- |
 | `fq.run` / `Circuit.run` / `runtime/execution.py` | 本地或分布式 Runtime 主路径，生成稳定 `ExecutionResult` | `ExecutionResult` | 本地默认是 `single_device_fast_path`；具体分布式语义由计划和 runtime evidence 决定 | 不是远程任务 API |
 | `runtime/target_execution.py::run_target` | 按 full state、amplitude 或 local observable 的输出成本选择 statevector/MPS/TN | `TargetExecutionResult` | 本地 statevector/MPS/TN 为 `single_device_fast_path`；多 rank TN 稀疏切片按仓库规范应归为 `manual_sliced_tensor_contraction` | 当前内部 summary 使用更细的实现字符串，不能据此声称 `sharded_across_ranks` |
-| `deployment/cloud.py::LocalSimulatorProvider` | 在无网络条件下验证 deployment package、提交句柄、counts 与身份链 | `DeploymentResult` | `single_device_fast_path` | 合同假实现/本地模拟，不是真实 QPU 证据 |
+| `providers/execution/local.py::LocalSimulatorProvider` | 在无网络条件下验证 deployment package、提交句柄、counts 与身份链 | `DeploymentResult` | `single_device_fast_path` | 合同假实现/本地模拟，不是真实 QPU 证据 |
 | `HttpQuantumProvider` | 通用 OpenQASM HTTP 远程任务适配 | `DeploymentResult` | `remote_service_job`（不属于 rank 分布式分类） | 后端发现失败会生成 fallback profile；这不是已验证目标能力 |
 | `QuafuProvider` | Quafu HTTP 提交、轮询、取消、counts 解码、芯片信息抓取 | `DeploymentResult` | `qpu_job_candidate` | 只有 mock 合同证据；无真实任务、五态、幂等或硬件证据 |
 | `AmazonBraketProvider` | Braket device profile、dry-run、OpenQASM 3 提交和结果读取 | `DeploymentResult` | `qpu_or_remote_simulator_job`，取决于 device properties | 当前测试只使用 fake device/task，不证明 AWS 或 QPU 可用 |

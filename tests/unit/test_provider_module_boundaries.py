@@ -7,6 +7,7 @@ from flagquantum.providers.execution import (
     cqlib,
     fieldquantum,
     http,
+    local,
     originq,
     quafu,
     quafu_calibration,
@@ -52,6 +53,10 @@ def test_deployment_preserves_quafu_calibration_object_identity():
         deployment.quafu_noise_model_from_chip_info
         is quafu_calibration.quafu_noise_model_from_chip_info
     )
+
+
+def test_deployment_preserves_local_provider_object_identity():
+    assert deployment.LocalSimulatorProvider is local.LocalSimulatorProvider
 
 
 def test_provider_aggregator_preserves_originq_object_identity():
