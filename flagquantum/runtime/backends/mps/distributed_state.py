@@ -15,28 +15,28 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...simulation.mps.models import (
+from ....simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     apply_two_mps_tensors as _apply_two_mps_tensors,
 )
-from ...simulation.mps.rank_local import (
+from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...simulation.mps.state import MPSState
-from .backend_policy import DistributedBackendPolicy
-from .context import (
+from ....simulation.mps.state import MPSState
+from ...distributed.backend_policy import DistributedBackendPolicy
+from ...distributed.context import (
     TorchDistributedContext,
     _communication_tier,
     _node_count,
     _rank_placement_summary,
 )
-from .identity import backend_uses_accelerator_tensors
+from ...distributed.identity import backend_uses_accelerator_tensors
 
 _PARAM_ALIASES = {
     "rx": ("theta",),
@@ -565,7 +565,7 @@ class DistributedMPSState:
                 "backward_execution": summary.get("gradient_execution", "incomplete"),
             }
         )
-        from ..audit import attach_mps_runtime_summary
+        from ...audit import attach_mps_runtime_summary
 
         return attach_mps_runtime_summary(summary)
 

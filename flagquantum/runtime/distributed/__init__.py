@@ -7,8 +7,6 @@ from typing import Any
 
 __all__ = (
     "DistributedBackendPolicy",
-    "DistributedBoundaryProtocol",
-    "DistributedBoundarySync",
     "DistributedExecutionRecord",
     "DistributedExecutionRequest",
     "DistributedExecutor",
@@ -17,7 +15,6 @@ __all__ = (
     "FlagOSWorkloadCapability",
     "FlagOSWorkloadCapabilityError",
     "FlagOSWorkloadCapabilityMatrix",
-    "DistributedShardPlan",
     "LocalTensor",
     "LocalTensorShard",
     "TorchDistributedContext",
@@ -53,11 +50,6 @@ _WORKLOAD_CAPABILITY_EXPORTS = {
     "FlagOSWorkloadCapabilityMatrix",
     "build_flagos_workload_capability_matrix",
 }
-_MODEL_EXPORTS = {
-    "DistributedBoundaryProtocol",
-    "DistributedBoundarySync",
-    "DistributedShardPlan",
-}
 _CONTEXT_EXPORTS = {
     "TorchDistributedContext",
     "destroy_torch_distributed",
@@ -77,8 +69,6 @@ def __getattr__(name: str) -> Any:
         module = import_module("flagquantum.runtime.distributed.workload_capability")
     elif name in _CONTEXT_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.context")
-    elif name in _MODEL_EXPORTS:
-        module = import_module("flagquantum.runtime.distributed.models")
     else:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     return getattr(module, name)

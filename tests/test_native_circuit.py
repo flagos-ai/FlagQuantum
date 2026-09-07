@@ -16,17 +16,17 @@ from flagquantum.compiler import CouplingMap
 from flagquantum.gradients import parameter_shift_gradient
 from flagquantum.runtime.audit import audit_distributed_scalability
 from flagquantum.runtime.backend_registry import get_backend_capabilities
-from flagquantum.runtime.configuration import get_backend, set_backend
-from flagquantum.runtime.distributed import (
+from flagquantum.runtime.backends.mps.distributed_state import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
+    DistributedMPSState,
     DistributedShardPlan,
-    destroy_torch_distributed,
+    ShardedMPSState,
 )
 from flagquantum.runtime.backends.tensor_network import DistributedTensorNetworkState
-from flagquantum.runtime.distributed.models import (
-    DistributedMPSState,
-    ShardedMPSState,
+from flagquantum.runtime.configuration import get_backend, set_backend
+from flagquantum.runtime.distributed import (
+    destroy_torch_distributed,
 )
 from flagquantum.runtime.planner import estimate_state_bytes, select_execution_mode
 from flagquantum.simulation.matrices import GATE_MAT_DICT

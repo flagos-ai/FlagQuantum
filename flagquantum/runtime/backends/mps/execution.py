@@ -52,7 +52,8 @@ from ...distributed.identity import (
     backend_uses_accelerator_tensors,
     require_verified_flagcx,
 )
-from ...distributed.models import (
+from ..jax import plan_jax_distributed_quantum_backend
+from .distributed_state import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
     DistributedMPSState,
@@ -61,7 +62,6 @@ from ...distributed.models import (
     _broadcast_mps_site_tensor,
     _mps_shards,
 )
-from ..jax import plan_jax_distributed_quantum_backend
 from .transport import (
     _recv_tensor_async_p2p,
     _recv_tensor_p2p,

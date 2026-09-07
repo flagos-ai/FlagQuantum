@@ -8,6 +8,10 @@ import torch
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
+from flagquantum.runtime.backends.mps.distributed_state import (
+    DistributedShardPlan,
+    ShardedMPSState,
+)
 from flagquantum.runtime.backends.mps.reverse import _qr_forward
 from flagquantum.runtime.backends.mps.training import (
     MPSStepMetrics,
@@ -24,11 +28,7 @@ from flagquantum.runtime.backends.mps.training_engine import (
     _resolve_compile_site_kernels,
     _save_checkpoint,
 )
-from flagquantum.runtime.distributed.models import (
-    DistributedShardPlan,
-    ShardedMPSState,
-    TorchDistributedContext,
-)
+from flagquantum.runtime.distributed.context import TorchDistributedContext
 from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit
