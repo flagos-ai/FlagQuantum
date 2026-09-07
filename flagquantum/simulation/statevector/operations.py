@@ -9,16 +9,16 @@ from typing import Sequence
 
 import torch
 
-from ..core.ir import Instruction
-from ..core.operator_schema import canonical_opcode
-from ..ops.complex_ops import complex_mul
-from ..ops.gate_matrix import (
+from ...core.ir import Instruction
+from ...core.operator_schema import canonical_opcode
+from ...ops.complex_ops import complex_mul
+from ...ops.gate_matrix import (
     gate_matrix as _gate_matrix,
 )
-from ..ops.gate_matrix import (
+from ...ops.gate_matrix import (
     parameter_tensor as _parameter_tensor,
 )
-from ..ops.matrices import GATE_MAT_DICT
+from ...ops.matrices import GATE_MAT_DICT
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]
@@ -426,7 +426,7 @@ def _apply_rx_rz_loop(
     n_wires: int,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
-    from .triton_kernels import repeated_rx_rz
+    from ..triton_kernels import repeated_rx_rz
 
     rx_angles = []
     rz_angles = []

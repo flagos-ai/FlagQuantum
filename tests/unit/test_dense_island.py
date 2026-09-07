@@ -1,7 +1,7 @@
 import torch
 
 from flagquantum.simulation.dense_island import DenseIslandPlan, DenseIslandState
-from flagquantum.simulation.statevector_ops import _apply_matrix
+from flagquantum.simulation.statevector.operations import _apply_matrix
 
 
 def test_equal_width_plan_and_zero_state():

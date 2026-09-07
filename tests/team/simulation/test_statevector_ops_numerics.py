@@ -3,9 +3,9 @@
 import pytest
 import torch
 
-import flagquantum.simulation.statevector_ops as statevector_ops
+import flagquantum.simulation.statevector.operations as statevector_ops
 from flagquantum.core import Instruction
-from flagquantum.simulation.statevector_ops import (
+from flagquantum.simulation.statevector.operations import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
     _basis_indices_for_wires,

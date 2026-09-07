@@ -14,7 +14,7 @@ semantics and may use PyTorch or isolated accelerator kernels.
 `statevector/local.py` owns local initial-state construction, the execution loop,
 dense Z/Pauli observables, computational-basis sampling, and the numerical body
 behind the public dense `expectation(...)` helper;
-`statevector_ops.py` owns its private layouts, gate application, gate-matrix
+`statevector/operations.py` owns its private layouts, gate application, gate-matrix
 composition, fusion, and tensor operations, including basis-bit extraction,
 global gate-basis offset expansion, compressed-to-local index expansion, and
 the rank-local PyTorch eager gate, diagonal-gate, rank-pair, and gate-basis
@@ -137,7 +137,7 @@ or result model.
 For a local statevector behavior change:
 
 1. start in `statevector/local.py` for execution order or dispatch;
-2. change `statevector_ops.py` only for numerical tensor behavior;
+2. change `statevector/operations.py` only for numerical tensor behavior;
 3. run the statevector characterization and CPU vertical-slice tests.
 
 For a local density-matrix change, start in `density_matrix.py` and run:

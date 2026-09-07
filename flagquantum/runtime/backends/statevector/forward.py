@@ -12,7 +12,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
-from ....simulation.statevector_ops import (
+from ....simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,

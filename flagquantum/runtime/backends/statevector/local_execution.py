@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
-from ....simulation.statevector_ops import (
+from ....simulation.statevector.operations import (
     _apply_diagonal_gate_eager,
     _apply_gate_basis_vectors_eager,
     _basis_offset,

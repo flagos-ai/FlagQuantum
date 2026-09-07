@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 from ....simulation.jax.statevector import (
     jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
 )
-from ....simulation.statevector_ops import _basis_offset, _wire_mask
+from ....simulation.statevector.operations import _basis_offset, _wire_mask
 from .runtime_environment import (
     _jax_complex_dtype,
     _jax_real_dtype,

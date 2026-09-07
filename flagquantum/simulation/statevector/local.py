@@ -16,7 +16,7 @@ from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
 from ...ops.complex_ops import complex_conj, complex_mul
 from ...ops.matrices import GATE_MAT_DICT
-from ..statevector_ops import (
+from .operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_cx_permutation,
     _apply_diagonal_matrix,

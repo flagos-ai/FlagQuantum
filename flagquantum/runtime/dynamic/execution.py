@@ -8,7 +8,7 @@ import torch
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ...ops.gate_matrix import gate_matrix
-from ...simulation.statevector_ops import (
+from ...simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_matrix,
     _apply_fixed_permutation,

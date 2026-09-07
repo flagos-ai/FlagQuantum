@@ -6,7 +6,7 @@ from typing import Any, Sequence
 
 import torch
 
-from ..statevector_ops import _bits_from_indices
+from ..statevector.operations import _bits_from_indices
 
 _CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
 _CONTRACTION_PATH_CACHE: dict[

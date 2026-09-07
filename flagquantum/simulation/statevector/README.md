@@ -6,6 +6,6 @@ evidence.
 
 - Start in `local.py` for initial-state construction, the local execution loop,
   dense observables, and sampling.
-- Gate application, layout, matrix composition, and fusion remain in
-  `../statevector_ops.py` until their own verified migration slice.
+- Start in `operations.py` for gate application, layout, matrix composition,
+  fusion, and rank-local tensor operations.
 - The stable user entry points remain `fq.Circuit`, `fq.plan`, and `fq.run`.

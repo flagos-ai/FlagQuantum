@@ -85,7 +85,7 @@ optimizer abstraction until a second concrete consumer requires one.
 `local_execution.py` is not a second numerical-kernel authority. Its shard
 initialization and global-index construction interpret Runtime-owned plan and
 ownership records; its gate helpers adapt those records to the tensor kernels
-in `simulation.statevector_ops`; its local simulator, dry run, launch spec, and
+in `simulation.statevector.operations`; its local simulator, dry run, launch spec, and
 transport probe assemble Runtime-owned results and evidence. The shared wire
 mask, gate-basis offset, diagonal application, and basis-vector update math live
 only in Simulation.

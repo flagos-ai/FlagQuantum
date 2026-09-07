@@ -21,7 +21,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.ops.gate_matrix import gate_matrix
-from flagquantum.simulation.statevector_ops import _apply_matrix
+from flagquantum.simulation.statevector.operations import _apply_matrix
 
 SCHEMA = "flagquantum.statevector.local_performance.v1"
 

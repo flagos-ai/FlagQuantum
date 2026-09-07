@@ -31,7 +31,7 @@ from flagquantum.runtime.distributed.models import (
 )
 from flagquantum.runtime.planner import estimate_state_bytes, select_execution_mode
 from flagquantum.simulation.mps.state import MPSState
-from flagquantum.simulation.statevector_ops import (
+from flagquantum.simulation.statevector.operations import (
     _apply_matrix,
     _compose_gate_matrices,
     _gate_matrix,
