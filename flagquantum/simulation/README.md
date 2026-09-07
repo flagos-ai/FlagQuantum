@@ -67,7 +67,7 @@ platform selection, observable parsing, result construction, and conformance
 reporting.
 
 `mps/local.py` owns the single-device, noiseless MPS instruction loop.
-`mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory
+`mps/noisy.py` owns the numerical loop for one already-lowered noisy trajectory
 and accepts an initialized MPS plus an explicit random generator.
 `mps_execution.py` preserves the public wrappers and adapts legacy Circuit
 inputs. Multi-trajectory ownership, random streams, convergence, retry,
@@ -151,7 +151,7 @@ python -m pytest tests/unit/test_noisy_statevector_numerics.py tests/test_noise.
 ```
 
 For the local noiseless MPS loop, start in `mps/local.py`; for one lowered noisy
-trajectory, start in `mps_noisy.py`. Run:
+trajectory, start in `mps/noisy.py`. Run:
 
 ```bash
 python -m pytest tests/test_mps.py -q

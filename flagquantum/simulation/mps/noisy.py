@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import torch
 
-from ..core.ir import CircuitIR
-from .mps.state import MPSState
+from ...core.ir import CircuitIR
+from .state import MPSState
 
 
 def run_local_noisy_mps_trajectory(

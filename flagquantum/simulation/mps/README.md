@@ -12,6 +12,8 @@ evidence.
   weight, and factorization fallback behavior.
 - Start in `local.py` for the local noiseless IR execution loop and instruction
   fusion.
+- Start in `noisy.py` for one already-lowered noisy trajectory with an explicit
+  random generator.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.
