@@ -105,7 +105,7 @@ Simulation-owned.
 observable and contracted-output loss evaluation, and contraction; Runtime
 retains backend selection and execution policy.
 
-`mps_rank_local.py` owns rank-local MPS instruction dispatch, gate application,
+`mps/rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.
 `mps_site_kernels.py` owns eager/compiled site kernels and their bounded
 compile cache. `mps_compiled_layers.py` owns equal-shape instruction packing,
@@ -165,7 +165,7 @@ Run:
 python -m pytest tests/test_tensor_network.py -q
 ```
 
-For rank-local distributed-MPS math, start in `mps_rank_local.py`; for compiled
+For rank-local distributed-MPS math, start in `mps/rank_local.py`; for compiled
 layer numerics, start in `mps_compiled_layers.py`; for compiled site kernels,
 start in `mps_site_kernels.py`; for QR/SVD behavior, start in
 `mps/factorization.py`; for canonicalization math, start in

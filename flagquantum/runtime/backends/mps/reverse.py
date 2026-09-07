@@ -9,17 +9,17 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import Instruction, ensure_circuit_ir
-from ....simulation.mps_compiled_layers import (
-    apply_compiled_mps_one_site_bucket,
-    contract_mps_two_site_bucket,
-)
-from ....simulation.mps_observables import transfer_mps_operator_environment
-from ....simulation.mps_rank_local import (
+from ....simulation.mps.rank_local import (
     apply_one_mps_tensor,
     apply_rank_local_mps_instruction,
     instruction_matrix_for_mps,
     tensor_nbytes,
 )
+from ....simulation.mps_compiled_layers import (
+    apply_compiled_mps_one_site_bucket,
+    contract_mps_two_site_bucket,
+)
+from ....simulation.mps_observables import transfer_mps_operator_environment
 from ....simulation.mps_reverse import (
     factor_mps_reverse_pair,
     factor_mps_reverse_pair_bucket,

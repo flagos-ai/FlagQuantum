@@ -7,10 +7,10 @@ from typing import Any, Mapping, Sequence
 import torch
 from torch.profiler import record_function
 
-from ..core.ir import Instruction
-from ..ops.gate_matrix import gate_matrix
-from .mps.factorization import _split_pair_matrix
-from .mps.models import MPSConfig
+from ...core.ir import Instruction
+from ...ops.gate_matrix import gate_matrix
+from .factorization import _split_pair_matrix
+from .models import MPSConfig
 
 
 def instruction_matrix_for_mps(

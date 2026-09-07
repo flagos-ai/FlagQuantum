@@ -9,11 +9,11 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....simulation.mps.rank_local import apply_rank_local_mps_instruction
 from ....simulation.mps_compiled_layers import (
     apply_mps_one_site_bucket,
     contract_mps_two_site_bucket,
 )
-from ....simulation.mps_rank_local import apply_rank_local_mps_instruction
 from ....simulation.mps_reverse import mps_vjp as _mps_vjp
 from .errors import MPSReverseContractError
 from .factorization import mps_qr_forward

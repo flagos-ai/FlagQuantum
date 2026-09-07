@@ -20,7 +20,7 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...simulation.mps_rank_local import (
+from ...simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
 from ...simulation.tensor import (

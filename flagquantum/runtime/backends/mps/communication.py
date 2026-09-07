@@ -4,16 +4,16 @@ This stable internal boundary combines canonical MPS tensor operations with
 the state-owning distributed transport API.
 """
 
-from ....simulation.mps_rank_local import (
+from ....simulation.mps.rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
-from ....simulation.mps_rank_local import (
+from ....simulation.mps.rank_local import (
     apply_two_mps_tensors_with_info as _apply_two_mps_tensors_with_info,
 )
-from ....simulation.mps_rank_local import (
+from ....simulation.mps.rank_local import (
     instruction_matrix_for_mps as _instruction_matrix_for_mps,
 )
-from ....simulation.mps_rank_local import (
+from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
 from ...distributed.mps_transport import (

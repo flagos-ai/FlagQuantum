@@ -22,20 +22,20 @@ from ...simulation.mps.models import (
     MPSConfig,
     MPSTruncationRecord,
 )
-from ...simulation.mps.state import MPSState
-from ...simulation.mps_execution import run_mps
-from ...simulation.mps_rank_local import (
+from ...simulation.mps.rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
-from ...simulation.mps_rank_local import (
+from ...simulation.mps.rank_local import (
     apply_two_mps_tensors_with_info as _apply_two_mps_tensors_with_info,
 )
-from ...simulation.mps_rank_local import (
+from ...simulation.mps.rank_local import (
     instruction_matrix_for_mps as _instruction_matrix_for_mps,
 )
-from ...simulation.mps_rank_local import (
+from ...simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
+from ...simulation.mps.state import MPSState
+from ...simulation.mps_execution import run_mps
 from ..backends.jax import plan_jax_distributed_quantum_backend
 from .identity import (
     DistributedIdentity,

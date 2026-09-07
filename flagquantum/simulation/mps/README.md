@@ -16,6 +16,8 @@ evidence.
   random generator.
 - Start in `planning.py` for bond profiles, adaptive bond growth, local
   refinement plans, and state summaries.
+- Start in `rank_local.py` for rank-local instruction dispatch, gate
+  application, and tensor sizing.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.

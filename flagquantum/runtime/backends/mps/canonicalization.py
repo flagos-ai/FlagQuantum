@@ -8,6 +8,7 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from ....simulation.mps.rank_local import tensor_nbytes
 from ....simulation.mps_canonicalization import (
     absorb_left_canonical_transfer,
     absorb_right_canonical_transfer,
@@ -16,7 +17,6 @@ from ....simulation.mps_canonicalization import (
     local_mixed_canonical_residual,
     mps_center_norms,
 )
-from ....simulation.mps_rank_local import tensor_nbytes
 from .communication import _recv_tensor_p2p, _send_tensor_p2p
 
 

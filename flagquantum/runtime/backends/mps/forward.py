@@ -9,10 +9,10 @@ import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
 from ....simulation.mps.models import MPSConfig
-from ....simulation.mps.state import MPSState
-from ....simulation.mps_rank_local import (
+from ....simulation.mps.rank_local import (
     apply_rank_local_mps_instruction as _apply_rank_local_instruction,
 )
+from ....simulation.mps.state import MPSState
 from .canonicalization import canonicalize_rank_owned_mps
 from .communication import (
     _instruction_matrix_for_mps,
