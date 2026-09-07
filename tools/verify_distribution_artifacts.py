@@ -29,7 +29,7 @@ FORBIDDEN_SUFFIXES = {
 }
 MAX_DISTRIBUTION_BYTES = 5_000_000
 REQUIRED_MEMBER_SUFFIXES = (
-    "flagquantum/numerics/double-single-contract.toml",
+    "flagquantum/simulation/numerics/double-single-contract.toml",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p1.json",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p2_precision.json",

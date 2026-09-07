@@ -19,7 +19,7 @@ def test_double_single_contract_is_current() -> None:
 
 def test_packaged_double_single_contract_matches_repository_source() -> None:
     packaged = (
-        resources.files("flagquantum.numerics")
+        resources.files("flagquantum.simulation.numerics")
         .joinpath("double-single-contract.toml")
         .read_bytes()
     )

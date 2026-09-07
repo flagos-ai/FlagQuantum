@@ -4,7 +4,10 @@ import json
 
 import pytest
 
-from flagquantum.numerics.conformance import _case, run_double_single_conformance
+from flagquantum.simulation.numerics.conformance import (
+    _case,
+    run_double_single_conformance,
+)
 
 pytestmark = pytest.mark.integration
 

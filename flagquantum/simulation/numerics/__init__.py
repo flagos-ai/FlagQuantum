@@ -1,4 +1,4 @@
-"""Experimental portable numerical building blocks.
+"""Experimental simulation numerical building blocks.
 
 These primitives do not select a runtime or claim that float32 hardware can
 execute a FlagQuantum complex128 workload. Runtime adoption requires a

@@ -17,7 +17,7 @@ from ....core.numerics import (
     RefinementStrategy,
 )
 from ....core.parameters import Parameter
-from ....numerics.double_single import (
+from ....simulation.numerics.double_single import (
     DoubleSingleTensor,
     double_single_sum,
 )

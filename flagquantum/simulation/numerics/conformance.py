@@ -87,7 +87,7 @@ class DoubleSingleConformanceReport:
 
 def _thresholds() -> dict[str, dict[str, float]]:
     contract = tomllib.loads(
-        resources.files("flagquantum.numerics")
+        resources.files("flagquantum.simulation.numerics")
         .joinpath(_CONTRACT_RESOURCE)
         .read_text(encoding="utf-8")
     )

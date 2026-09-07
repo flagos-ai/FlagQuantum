@@ -28,7 +28,7 @@ from ....core.parameters import (
     ParameterExpression,
     bind_parameter_value,
 )
-from ....numerics.double_single import (
+from ....simulation.numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
     double_single_sum,

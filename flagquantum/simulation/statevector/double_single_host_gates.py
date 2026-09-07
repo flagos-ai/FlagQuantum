@@ -8,7 +8,7 @@ from collections.abc import Sequence
 import torch
 
 from ...core.ir import Instruction
-from ...numerics.double_single import DoubleSingleComplexTensor
+from ..numerics.double_single import DoubleSingleComplexTensor
 from ...ops.matrices import GATE_MAT_DICT
 
 _PARAMETER_ORDER: dict[str, tuple[str, ...]] = {

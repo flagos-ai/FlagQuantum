@@ -10,7 +10,7 @@ import torch
 
 from ...core.ir import CircuitIR, Instruction
 from ...core.parameters import value_to_tensor
-from ...numerics.double_single import DoubleSingleTensor, double_single_dot
+from ..numerics.double_single import DoubleSingleTensor, double_single_dot
 
 SPLIT_REAL_IMAG_SUPPORTED_GATES = frozenset(
     {

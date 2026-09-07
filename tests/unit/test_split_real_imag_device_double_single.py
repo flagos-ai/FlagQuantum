@@ -8,7 +8,7 @@ import torch
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import pauli_term
 from flagquantum.core.numerics import default_accuracy_requirement
-from flagquantum.numerics.double_single import (
+from flagquantum.simulation.numerics.double_single import (
     DoubleSingleTensor,
     double_single_sin_cos,
 )

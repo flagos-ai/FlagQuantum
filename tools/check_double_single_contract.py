@@ -14,7 +14,7 @@ except ModuleNotFoundError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "double-single-contract.toml"
-IMPLEMENTATION = ROOT / "flagquantum/numerics/double_single.py"
+IMPLEMENTATION = ROOT / "flagquantum/simulation/numerics/double_single.py"
 EXPECTED_SUPPORTED = {
     "real_add",
     "real_subtract",
@@ -56,7 +56,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     expected_scalars = {
         "schema": "flagquantum_double_single_contract_v1",
         "maturity": "experimental",
-        "implementation": "flagquantum.numerics.double_single",
+        "implementation": "flagquantum.simulation.numerics.double_single",
         "storage_dtype": "float32",
         "compute_dtype": "float32",
         "reference_dtype": "float64_and_complex128_cpu_only",

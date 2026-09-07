@@ -1,7 +1,7 @@
 # Repository contract; see contracts/README.md for ownership and stability.
 schema = "flagquantum_double_single_contract_v1"
 maturity = "experimental"
-implementation = "flagquantum.numerics.double_single"
+implementation = "flagquantum.simulation.numerics.double_single"
 storage_dtype = "float32"
 compute_dtype = "float32"
 reference_dtype = "float64_and_complex128_cpu_only"

@@ -9,7 +9,7 @@ import torch
 
 from ...core.ir import Instruction
 from ...core.parameters import Parameter, ParameterExpression
-from ...numerics.double_single import (
+from ..numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
     _require_device_true,

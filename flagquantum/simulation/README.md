@@ -52,6 +52,8 @@ gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
 `statevector/double_single.py` owns the shared gate application and state
 initialization, local execution, normalization, and Pauli-term reduction used
 by the P3 and P4 executors.
+`numerics/double_single.py` owns the reusable Double-Single FP32 representation
+and arithmetic primitives consumed by those statevector implementations.
 
 P4 result summaries identify Double-Single as emulated high
 precision, include the exact precision plan and storage dtype, and explicitly

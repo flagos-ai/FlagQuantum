@@ -9,7 +9,10 @@ import torch
 
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import Parameter
-from ....numerics.double_single import DoubleSingleTensor, _require_device_true
+from ....simulation.numerics.double_single import (
+    DoubleSingleTensor,
+    _require_device_true,
+)
 from .split_real_imag import _canonical_parameter_bindings
 from .split_real_imag_device_double_single import (
     SplitRealImagDeviceDoubleSingleGradientResult,

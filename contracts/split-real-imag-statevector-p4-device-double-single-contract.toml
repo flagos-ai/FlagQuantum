@@ -2,7 +2,7 @@
 schema = "flagquantum_split_real_imag_statevector_p4_device_double_single_contract_v1"
 maturity = "experimental"
 implementation = "flagquantum.runtime.backends.statevector.split_real_imag_device_double_single"
-gate_implementation = "flagquantum.simulation.double_single_device_gates"
+gate_implementation = "flagquantum.simulation.statevector.double_single_device_gates"
 operator_profile = "split_real_imag_statevector_p4_device_double_single"
 base_executor = "split_real_imag_statevector_p3_double_single"
 representation = "double_single_fp32_complex"

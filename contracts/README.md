@@ -50,6 +50,6 @@ contract only with all tool, test, and documentation references updated in the
 same change. New capability contracts belong here, not at the repository root.
 
 `double-single-contract.toml` is also shipped byte-for-byte as
-`flagquantum/numerics/double-single-contract.toml` so installed conformance
+`flagquantum/simulation/numerics/double-single-contract.toml` so installed conformance
 checks do not depend on a repository checkout. Unit and distribution-artifact
 checks reject drift or omission of that packaged mirror.

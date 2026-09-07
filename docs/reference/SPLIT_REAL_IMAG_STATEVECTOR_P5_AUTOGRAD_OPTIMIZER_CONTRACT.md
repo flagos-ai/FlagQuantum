@@ -51,7 +51,7 @@ from flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer
     initialize_split_real_imag_double_single_sgd,
     split_real_imag_double_single_sgd_step,
 )
-from flagquantum.numerics.double_single import DoubleSingleTensor
+from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 
 device = torch.device("cpu")
 master = torch.tensor(0.23, dtype=torch.float64)

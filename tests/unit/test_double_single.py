@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.numerics import (
+from flagquantum.simulation.numerics import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
     double_single_dot,

@@ -110,7 +110,7 @@ exclude = ["tests*", "docs*", "scripts*", "examples*"]
 
 [tool.setuptools.package-data]
 flagquantum = [
-    "numerics/double-single-contract.toml",
+    "simulation/numerics/double-single-contract.toml",
     "runtime/profiles/*.json",
 ]
 

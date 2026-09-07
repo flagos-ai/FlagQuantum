@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable, Sequence
 
 import torch
 
-from ...numerics.double_single import (
+from ..numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
     double_single_sum,

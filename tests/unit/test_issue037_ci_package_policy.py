@@ -59,7 +59,7 @@ def test_distribution_quarantine_rejects_repo_only_members():
 def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None:
     assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES) == ()
     assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES[1:]) == (
-        "flagquantum/numerics/double-single-contract.toml",
+        "flagquantum/simulation/numerics/double-single-contract.toml",
     )
 
 

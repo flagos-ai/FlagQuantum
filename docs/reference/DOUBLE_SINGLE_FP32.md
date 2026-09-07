@@ -1,7 +1,7 @@
 # Double-Single FP32 numerical foundation
 
 FlagQuantum provides an experimental, device-generic Double-Single foundation
-under `flagquantum.numerics`. A real value is represented as the unevaluated
+under `flagquantum.simulation.numerics`. A real value is represented as the unevaluated
 sum of two `torch.float32` tensors, conventionally called the high and low
 words. Error-free transformations retain arithmetic residuals that ordinary
 FP32 discards.
