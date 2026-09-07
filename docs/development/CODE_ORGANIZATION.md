@@ -210,7 +210,7 @@ plugins, benchmarks, or serialized artifacts.
 - Provider-neutral deployment contracts remain in `deployment.cloud`.
   Stateless counts/QASM parsing lives in `deployment.provider_utils`, and the
   Amazon Braket discovery, dynamic-circuit preflight, submission, and result
-  adapter lives in `deployment.braket_provider`. The historical
+  adapter lives in `providers.execution.braket`. The historical
   `deployment.providers` import surface re-exports the same objects and is now
   below the default module-size ceiling, so its size exception has been removed.
 - The optional JAX backend is a lazy package boundary under

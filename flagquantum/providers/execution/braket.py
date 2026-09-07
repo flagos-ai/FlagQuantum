@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from .cloud import (
+from ...deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
     DeploymentResult,
@@ -16,7 +16,7 @@ from .cloud import (
     validate_deployment_package,
     validate_deployment_result,
 )
-from .provider_utils import _normalize_counts
+from ...deployment.provider_utils import _normalize_counts
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,7 @@ def _first_property(value: Any, paths: tuple[tuple[str, ...], ...]) -> Any:
 
 
 def _braket_coupling_map(properties: Any, n_wires: int) -> Any:
-    from ..compiler import CouplingMap
+    from ...compiler import CouplingMap
 
     graph = _first_property(
         properties,

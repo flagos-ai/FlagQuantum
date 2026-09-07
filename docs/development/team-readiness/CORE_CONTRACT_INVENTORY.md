@@ -203,7 +203,7 @@ Provider 层合成一个含大量可选方法的接口。
 | D8 | provenance 双轨 | Core `ProvenanceContract` ↔ Runtime `RuntimeProvenance` | 先制定字段兼容和 identity 规则，再由 Runtime 生成 Core envelope；不可直接删字段较多的一侧。 |
 | D9 | evidence 多轨 | Core execution record ↔ Runtime evidence artifact ↔ audit distributed schema | 区分原始证据、观察记录和审核结论，使用引用/哈希连接，而不是合成万能 Evidence。 |
 | D10 | Runtime 依赖 Compiler 计划类型 | `runtime/result.py`、`runtime/execution.py`、`runtime/plan_execution.py` 等列于 `architecture.toml` 白名单 | Core plan/artifact 合同落地后逐项减少白名单；禁止新增项。 |
-| D11 | Deployment provider 原生异常泄漏 | `deployment/providers.py`、`braket_provider.py`、`cloud.py` | adapter 将 provider 状态/异常映射为 Core failure category；保留原异常为 cause/private diagnostics。 |
+| D11 | Deployment provider 原生异常泄漏 | `deployment/providers.py`、`providers/execution/braket.py`、`deployment/cloud.py` | adapter 将 provider 状态/异常映射为 Core failure category；保留原异常为 cause/private diagnostics。 |
 | D12 | `Mapping[str, Any]` 跨边界 | distributed request options、ExecutionResult diagnostics/metrics/provenance | 请求语义改为 typed contract；结果的 namespaced additive diagnostics 可保留 mapping，但不得承载稳定核心字段。 |
 
 可在契约获批和调用者清零后删除/合并的是 D2 私有同名 extension、D4

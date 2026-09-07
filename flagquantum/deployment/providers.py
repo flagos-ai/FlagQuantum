@@ -10,12 +10,12 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, cast
 from urllib import parse, request
 
-from . import provider_utils as _provider_utils
-from .braket_provider import (
+from ..providers.execution.braket import (
     AmazonBraketProvider,
     BraketSubmissionPreview,
     braket_backend_profile,
 )
+from . import provider_utils as _provider_utils
 from .cloud import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     CloudBackendProfile,

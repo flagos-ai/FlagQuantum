@@ -80,12 +80,12 @@
       "name": "execution_provider_convergence",
       "owner": "runtime-provider-maintainers",
       "target_milestone": "vnext-phase-3",
-      "current_authority": ["flagquantum/runtime/backends", "flagquantum/deployment"],
+      "current_authority": ["flagquantum/providers/execution", "flagquantum/runtime/backends", "flagquantum/deployment"],
       "target_authority": "flagquantum/providers/execution",
       "compatibility_adapter": "Runtime provider facade",
       "completion_evidence": "simulation and QPU or remote-service implementations pass one execution-result contract",
       "retirement_condition": "backend selection and vendor result decoding exist only behind execution-provider contracts",
-      "status": "planned"
+      "status": "in_progress"
     },
     {
       "name": "ecosystem_convergence",

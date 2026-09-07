@@ -76,6 +76,7 @@ owns = [
 branch = "codex/vnext-team-execution-providers"
 worktree = "FlagQuantum-vNext-execution"
 owns = [
+    "flagquantum/providers/execution/**",
     "flagquantum/deployment/**",
     "flagquantum/runtime/target_execution.py",
 ]
