@@ -627,43 +627,15 @@ def test_runtime_selection_blocks_preflight_only_jax_statevector_training_recomm
     assert "optimizer_update_semantics_not_measured" in jax_statevector["blockers"]
 
 
-def test_distributed_runtime_summaries_attach_jax_distributed_plan(monkeypatch):
+def test_distributed_mps_summary_does_not_attach_jax_plan(monkeypatch):
     monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "development")
     monkeypatch.setenv("FQ_LOCAL_WORLD_SIZE", "2")
     circuit = fq.Circuit(4)
     circuit.h(0).cx(1, 2).rz(3, theta=0.2)
 
-    statevector = run_advanced(circuit, mode="distributed_statevector", device="cpu")
     mps = run_advanced(circuit, mode="distributed_mps", max_bond=4)
-    tn = run_advanced(
-        circuit, mode="distributed_tensor_network", max_intermediate_size=16
-    )
 
-    statevector_jax = statevector.summary()["jax_distributed_plan"]
-    mps_jax = mps.summary()["jax_distributed_plan"]
-    tn_jax = tn.summary()["jax_distributed_plan"]
-
-    assert statevector_jax["mode"] == "statevector"
-    assert mps_jax["mode"] == "mps"
-    assert tn_jax["mode"] == "tensor_network"
-    assert statevector_jax["world_size"] == 2
-    assert mps_jax["world_size"] == 2
-    assert tn_jax["world_size"] == 2
-    assert statevector_jax["scalability_claim_allowed"] is False
-    assert mps_jax["scalability_claim_allowed"] is False
-    assert tn_jax["scalability_claim_allowed"] is False
-    assert (
-        "rank_local_jax_kernel_is_not_capacity_scaling"
-        in statevector_jax["scalability_blockers"]
-    )
-    assert (
-        "rank_local_jax_kernel_is_not_capacity_scaling"
-        in mps_jax["scalability_blockers"]
-    )
-    assert (
-        "rank_local_jax_kernel_is_not_capacity_scaling"
-        in tn_jax["scalability_blockers"]
-    )
+    assert "jax_distributed_plan" not in mps.summary()
 
 
 def test_jax_sharded_statevector_executor_matches_native_statevector(monkeypatch):

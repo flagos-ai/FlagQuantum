@@ -190,7 +190,6 @@ class DistributedMPSState:
         full_mps_reconstruction_count: int = 0,
         unsupported_instruction_count: int = 0,
         strict_sharded: bool = False,
-        jax_distributed_plan: Mapping[str, Any] | None = None,
     ) -> None:
         self.local_state = local_state
         self.world_size = int(world_size)
@@ -221,9 +220,6 @@ class DistributedMPSState:
         self.full_mps_reconstruction_count = int(full_mps_reconstruction_count)
         self.unsupported_instruction_count = int(unsupported_instruction_count)
         self.strict_sharded = bool(strict_sharded)
-        self.jax_distributed_plan = (
-            dict(jax_distributed_plan) if jax_distributed_plan is not None else None
-        )
 
     @property
     def n_wires(self) -> int:
@@ -391,7 +387,6 @@ class DistributedMPSState:
                 "full_mps_reconstruction_count": self.full_mps_reconstruction_count,
                 "unsupported_instruction_count": self.unsupported_instruction_count,
                 "strict_sharded": self.strict_sharded,
-                "jax_distributed_plan": self.jax_distributed_plan,
                 "adaptive": self.adaptive_initial_plan is not None,
                 "adaptive_rerun": self.adaptive_rerun,
                 "adaptive_initial_plan": (

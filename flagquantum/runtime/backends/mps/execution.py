@@ -52,7 +52,6 @@ from ...distributed.identity import (
     backend_uses_accelerator_tensors,
     require_verified_flagcx,
 )
-from ..jax import plan_jax_distributed_quantum_backend
 from .distributed_state import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
@@ -221,24 +220,6 @@ def run_distributed_mps(
         shards=shards,
         context=context,
     )
-    jax_local_world_size = (
-        context.local_world_size
-        if context is not None
-        else (
-            max(1, min(int(world_size), int(backend_policy.local_world_size)))
-            if backend_policy.local_world_size > 1
-            else int(world_size)
-        )
-    )
-    jax_distributed_plan = plan_jax_distributed_quantum_backend(
-        circuit_or_ir,
-        mode="mps",
-        world_size=world_size,
-        local_world_size=jax_local_world_size,
-        bsz=local.bsz,
-        max_bond=options.get("max_bond"),
-        distributed_backend_policy=backend_policy,
-    ).summary()
     return DistributedMPSState(
         local,
         world_size=world_size,
@@ -269,7 +250,6 @@ def run_distributed_mps(
             mps_stats.get("unsupported_instruction_count", 0)
         ),
         strict_sharded=strict_sharded,
-        jax_distributed_plan=jax_distributed_plan,
     )
 
 
