@@ -13,7 +13,6 @@ import datetime
 import os
 import socket
 from dataclasses import dataclass, replace
-from itertools import product
 from typing import Any, Mapping, Sequence
 
 import torch
@@ -101,16 +100,6 @@ class DistributedShardPlan:
     wires: tuple[int, ...]
     left_boundary: int | None
     right_boundary: int | None
-
-
-@dataclass(frozen=True)
-class DistributedSliceTask:
-    """A tensor-network slice task assigned to one distributed rank."""
-
-    rank: int
-    world_size: int
-    task_index: int
-    assignments: tuple[tuple[int, int], ...]
 
 
 @dataclass(frozen=True)
@@ -455,27 +444,6 @@ def _mps_shards(n_wires: int, world_size: int) -> tuple[DistributedShardPlan, ..
             )
         )
     return tuple(shards)
-
-
-def _tensor_slice_tasks(
-    sliced_labels: Sequence[int],
-    slice_shape: Sequence[int],
-    world_size: int,
-) -> tuple[DistributedSliceTask, ...]:
-    tasks = []
-    labels = tuple(int(label) for label in sliced_labels)
-    ranges = [range(int(size)) for size in slice_shape]
-    for task_index, values in enumerate(product(*ranges) if ranges else [()]):
-        rank = task_index % max(1, int(world_size))
-        tasks.append(
-            DistributedSliceTask(
-                rank=rank,
-                world_size=int(world_size),
-                task_index=task_index,
-                assignments=tuple(zip(labels, tuple(int(value) for value in values))),
-            )
-        )
-    return tuple(tasks)
 
 
 class DistributedMPSState:

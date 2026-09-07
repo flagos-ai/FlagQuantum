@@ -13,6 +13,7 @@ import hashlib
 import json
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from itertools import product
 from math import ceil
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -57,16 +58,45 @@ from .joint_planning import (
 from ...distributed.backend_policy import DistributedBackendPolicy
 from ...planner.tn_calibration import TNWorkingSetCalibration
 from ...distributed.models import (
-    DistributedSliceTask,
     TorchDistributedContext,
     _rank_placement_summary,
     _resolve_backend_policy,
     _should_use_torch_distributed,
-    _tensor_slice_tasks,
     init_torch_distributed,
 )
 
 _PERSISTENT_PLAN_SCHEMA = "flagquantum.distributed_tn_plan.v1"
+
+
+@dataclass(frozen=True)
+class DistributedSliceTask:
+    """A tensor-network slice task assigned to one distributed rank."""
+
+    rank: int
+    world_size: int
+    task_index: int
+    assignments: tuple[tuple[int, int], ...]
+
+
+def _tensor_slice_tasks(
+    sliced_labels: Sequence[int],
+    slice_shape: Sequence[int],
+    world_size: int,
+) -> tuple[DistributedSliceTask, ...]:
+    tasks = []
+    labels = tuple(int(label) for label in sliced_labels)
+    ranges = [range(int(size)) for size in slice_shape]
+    for task_index, values in enumerate(product(*ranges) if ranges else [()]):
+        rank = task_index % max(1, int(world_size))
+        tasks.append(
+            DistributedSliceTask(
+                rank=rank,
+                world_size=int(world_size),
+                task_index=task_index,
+                assignments=tuple(zip(labels, tuple(int(value) for value in values))),
+            )
+        )
+    return tuple(tasks)
 
 
 @contextmanager
