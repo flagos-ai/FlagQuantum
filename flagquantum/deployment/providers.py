@@ -10,12 +10,12 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, cast
 from urllib import parse, request
 
+from ..providers.execution import result_parsing as _result_parsing
 from ..providers.execution.braket import (
     AmazonBraketProvider,
     BraketSubmissionPreview,
     braket_backend_profile,
 )
-from . import provider_utils as _provider_utils
 from .cloud import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     CloudBackendProfile,
@@ -29,12 +29,12 @@ from .cloud import (
     validate_deployment_result,
 )
 
-_extract_counts = _provider_utils._extract_counts
-_flip_counts = _provider_utils._flip_counts
-_format_circuit_source = _provider_utils._format_circuit_source
-_normalize_counts = _provider_utils._normalize_counts
-_strip_barrier = _provider_utils._strip_barrier
-_unwrap_result_envelope = _provider_utils._unwrap_result_envelope
+_extract_counts = _result_parsing._extract_counts
+_flip_counts = _result_parsing._flip_counts
+_format_circuit_source = _result_parsing._format_circuit_source
+_normalize_counts = _result_parsing._normalize_counts
+_strip_barrier = _result_parsing._strip_barrier
+_unwrap_result_envelope = _result_parsing._unwrap_result_envelope
 
 
 class QuantumCloudTransport(Protocol):

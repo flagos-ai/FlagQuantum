@@ -1,7 +1,7 @@
 import pytest
 
-from flagquantum.deployment import provider_utils, providers
-from flagquantum.providers.execution import braket
+from flagquantum.deployment import providers
+from flagquantum.providers.execution import braket, result_parsing
 
 pytestmark = pytest.mark.unit
 
@@ -30,4 +30,4 @@ def test_provider_aggregator_preserves_braket_object_identity(name):
     ),
 )
 def test_provider_aggregator_preserves_utility_function_identity(name):
-    assert getattr(providers, name) is getattr(provider_utils, name)
+    assert getattr(providers, name) is getattr(result_parsing, name)

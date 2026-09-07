@@ -208,7 +208,7 @@ plugins, benchmarks, or serialized artifacts.
   historical oversized `simulation.tensor_contraction` exception has been
   removed.
 - Provider-neutral deployment contracts remain in `deployment.cloud`.
-  Stateless counts/QASM parsing lives in `deployment.provider_utils`, and the
+  Stateless counts/QASM parsing lives in `providers.execution.result_parsing`, and the
   Amazon Braket discovery, dynamic-circuit preflight, submission, and result
   adapter lives in `providers.execution.braket`. The historical
   `deployment.providers` import surface re-exports the same objects and is now

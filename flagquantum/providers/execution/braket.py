@@ -16,7 +16,7 @@ from ...deployment.cloud import (
     validate_deployment_package,
     validate_deployment_result,
 )
-from ...deployment.provider_utils import _normalize_counts
+from .result_parsing import _normalize_counts
 
 
 @dataclass(frozen=True)
