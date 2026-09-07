@@ -10,7 +10,7 @@ from ...core.ir import Instruction
 from .factorization import _split_pair_matrix, _split_pair_matrix_bucket
 from .models import MPSConfig
 from .rank_local import apply_one_mps_tensor, instruction_matrix_for_mps
-from .site_kernels import apply_rxx_contraction_bucket, apply_ry_bucket
+from .site_kernels import apply_ry_bucket, apply_two_site_gate_contraction_bucket
 
 
 def _packed_instruction_matrices(
@@ -108,7 +108,7 @@ def contract_mps_two_site_bucket(
         device=device,
         dtype=dtype,
     )
-    return apply_rxx_contraction_bucket(
+    return apply_two_site_gate_contraction_bucket(
         torch.stack(tuple(left_tensors)),
         torch.stack(tuple(right_tensors)),
         matrices,

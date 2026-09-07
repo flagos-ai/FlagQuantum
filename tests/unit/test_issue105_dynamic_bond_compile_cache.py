@@ -4,8 +4,8 @@ import torch
 from flagquantum.simulation.mps.site_kernels import (
     SiteKernelBucket,
     SiteKernelCachePolicy,
-    apply_rxx_contraction_bucket,
     apply_ry_bucket,
+    apply_two_site_gate_contraction_bucket,
     clear_site_kernel_cache,
     configure_site_kernel_cache,
     prewarm_site_kernel_buckets,
@@ -78,7 +78,9 @@ def test_exact_shape_cache_can_compile_more_than_dynamo_default_recompile_limit(
             .reshape(1, 1, 4, 4)
             .expand(bucket_size, -1, -1, -1)
         )
-        output = apply_rxx_contraction_bucket(left, right, matrix, compiled=True)
+        output = apply_two_site_gate_contraction_bucket(
+            left, right, matrix, compiled=True
+        )
         assert output.shape == (bucket_size, 1, 2, 2)
     stats = site_kernel_stats()
     assert stats["cache_misses"] == 9

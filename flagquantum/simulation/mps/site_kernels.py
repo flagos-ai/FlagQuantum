@@ -403,14 +403,10 @@ def _rxx_contraction_real(
     )
 
 
-def apply_rxx_contraction_bucket(
+def apply_two_site_gate_contraction_bucket(
     left: torch.Tensor, right: torch.Tensor, matrices: torch.Tensor, *, compiled: bool
 ) -> torch.Tensor:
-    """Contract equal-shape local two-site gates.
-
-    The historical name is retained for API compatibility; ``matrices`` makes
-    the kernel gate-agnostic and callers use it for RXX, RYY, and RZZ.
-    """
+    """Contract equal-shape local two-site gates."""
 
     _STATS.rxx_bucket_calls += 1
     if matrices.ndim == 3:
@@ -662,7 +658,7 @@ __all__ = (
     "SiteKernelBucket",
     "SiteKernelCachePolicy",
     "apply_ry_bucket",
-    "apply_rxx_contraction_bucket",
+    "apply_two_site_gate_contraction_bucket",
     "clear_site_kernel_cache",
     "configure_site_kernel_cache",
     "environment_transfer",

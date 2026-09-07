@@ -3,8 +3,8 @@ import torch
 
 from flagquantum.simulation.mps import site_kernels
 from flagquantum.simulation.mps.site_kernels import (
-    apply_rxx_contraction_bucket,
     apply_ry_bucket,
+    apply_two_site_gate_contraction_bucket,
     environment_transfer,
     environment_transfer_channels,
     reset_site_kernel_stats,
@@ -71,7 +71,7 @@ def test_rank_local_rxx_bucket_matches_individual_contractions():
     left = torch.randn(3, 2, 2, 2, 3, dtype=torch.complex64)
     right = torch.randn(3, 2, 3, 2, 2, dtype=torch.complex64)
     matrix = torch.randn(3, 2, 4, 4, dtype=torch.complex64)
-    actual = apply_rxx_contraction_bucket(left, right, matrix, compiled=False)
+    actual = apply_two_site_gate_contraction_bucket(left, right, matrix, compiled=False)
     expected = []
     for bond in range(3):
         theta = torch.einsum("blsm,bmtr->blstr", left[bond], right[bond])
@@ -92,7 +92,7 @@ def test_compiled_rxx_nonfinite_output_recovers_with_eager_kernel(monkeypatch):
 
     monkeypatch.setattr(site_kernels, "_run", nonfinite_compiled)
     reset_site_kernel_stats()
-    actual = apply_rxx_contraction_bucket(left, right, matrix, compiled=True)
+    actual = apply_two_site_gate_contraction_bucket(left, right, matrix, compiled=True)
     assert torch.isfinite(actual).all()
     stats = site_kernel_stats()
     assert stats["nonfinite_compiled_outputs"] == 1
@@ -109,7 +109,7 @@ def test_compiled_rxx_norm_bound_violation_recovers_with_eager_kernel(monkeypatc
 
     monkeypatch.setattr(site_kernels, "_run", corrupted_compiled)
     reset_site_kernel_stats()
-    actual = apply_rxx_contraction_bucket(left, right, matrix, compiled=True)
+    actual = apply_two_site_gate_contraction_bucket(left, right, matrix, compiled=True)
     assert torch.isfinite(actual).all()
     assert site_kernel_stats()["nonfinite_eager_recoveries"] == 1
 

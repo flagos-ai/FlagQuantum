@@ -25,8 +25,9 @@ from flagquantum.simulation.mps.factorization import (
     _split_pair_matrix_bucket,
 )
 from flagquantum.simulation.mps.models import MPSConfig
-from flagquantum.simulation.mps.site_kernels import apply_rxx_contraction_bucket
-
+from flagquantum.simulation.mps.site_kernels import (
+    apply_two_site_gate_contraction_bucket,
+)
 
 SCHEMA = "flagquantum.issue108.factorization_calibration.v1"
 
@@ -46,7 +47,7 @@ def _run_policy(
         packed_left = torch.stack(lefts[start : start + chunk_size])
         packed_right = torch.stack(rights[start : start + chunk_size])
         packed_matrix = torch.stack(matrices[start : start + chunk_size])
-        pairs = apply_rxx_contraction_bucket(
+        pairs = apply_two_site_gate_contraction_bucket(
             packed_left, packed_right, packed_matrix, compiled=False
         )
         if strategy in {"batched", "exact_gesvd"}:
