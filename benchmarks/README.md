@@ -34,6 +34,17 @@ python benchmarks/dynamic_trajectory.py \
   --json-output benchmarks/results/smoke/dynamic-trajectory.json
 ```
 
+Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
+
+```bash
+python benchmarks/internal/evidence/train_host_sync.py \
+  --device cuda:0 --parameters 1024 --steps 2000 --repeats 9 \
+  --output benchmarks/results/local/train_host_sync.json
+```
+
+Use `--workload quantum_statevector --wires 12 --parameters 24` to validate the
+same behavior through a real `fq.Module` statevector training path.
+
 Use `--device cuda` for the local statevector benchmark on a GPU host.
 Distributed measurements are launched with the usual `torchrun` environment;
 the maintained report builders are also exposed by the same command:

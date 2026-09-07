@@ -357,6 +357,20 @@ def test_fq_train_owns_the_optimizer_loop_and_returns_training_result(
     assert detach_calls == 1
 
 
+def test_fq_train_snapshots_a_loss_that_aliases_trainable_storage() -> None:
+    module = fq.Module(build_circuit, 2, init=torch.tensor([0.2, -0.3]))
+    optimizer = torch.optim.SGD(module.parameters(), lr=0.1)
+
+    result = fq.train(
+        module,
+        optimizer=optimizer,
+        objective=lambda _: module.parameters_tensor[0],
+        steps=3,
+    )
+
+    assert result.losses == pytest.approx((0.1, 0.0, -0.1), abs=1e-6)
+
+
 def test_fq_train_log_interval_and_callback_are_unambiguous(capsys) -> None:
     module = fq.Module(build_circuit, 2)
     optimizer = torch.optim.SGD(module.parameters(), lr=0.01)

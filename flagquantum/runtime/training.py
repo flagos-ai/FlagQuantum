@@ -113,7 +113,10 @@ def train(
         optimizer.step()
         detached_loss = loss.detach()
         if defer_loss_history:
-            deferred_losses.append(detached_loss.clone())
+            shares_mutable_storage = loss.is_leaf or loss._base is not None
+            deferred_losses.append(
+                detached_loss.clone() if shares_mutable_storage else detached_loss
+            )
             loss_value = None
         else:
             loss_value = float(detached_loss)
