@@ -210,7 +210,7 @@ plugins, benchmarks, or serialized artifacts.
 - Provider-neutral deployment contracts remain in `deployment.cloud`.
   Shared HTTP transport lives in `providers.execution.http`, stateless
   counts/QASM parsing lives in `providers.execution.result_parsing`, and the
-  Amazon Braket, Origin Quantum, Quafu, and Tencent adapters live under
+  Amazon Braket, FieldQuantum, Origin Quantum, Quafu, and Tencent adapters live under
   `providers.execution`. The historical
   `deployment.providers` import surface re-exports the same objects and is now
   below the default module-size ceiling, so its size exception has been removed.
