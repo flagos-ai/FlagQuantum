@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 from torch.profiler import ProfilerActivity,profile
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.distributed.mps_transport import (
+from flagquantum.runtime.backends.mps.transport import (
     clear_mps_static_descriptor_cache,
     mps_p2p_stats,
     reset_mps_p2p_stats,

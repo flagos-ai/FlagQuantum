@@ -16,7 +16,7 @@ from ....simulation.mps.rank_local import (
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...distributed.mps_transport import (
+from .transport import (
     _recv_tensor_batch_p2p,
     _recv_tensor_p2p,
     _recv_tensor_static_p2p,

@@ -24,14 +24,9 @@ __all__ = (
     "destroy_torch_distributed",
     "distributed_backend_env_help",
     "init_torch_distributed",
-    "clear_mps_static_descriptor_cache",
-    "mps_p2p_stats",
-    "mps_static_descriptor_cache_entries",
-    "reset_mps_p2p_stats",
     "resolve_distributed_backend_policy",
     "require_verified_flagcx",
     "torch_distributed_is_available",
-    "warmup_mps_neighbor_communicators",
     "build_flagos_workload_capability_matrix",
 )
 
@@ -58,13 +53,6 @@ _WORKLOAD_CAPABILITY_EXPORTS = {
     "FlagOSWorkloadCapabilityMatrix",
     "build_flagos_workload_capability_matrix",
 }
-_MPS_TRANSPORT_EXPORTS = {
-    "clear_mps_static_descriptor_cache",
-    "mps_p2p_stats",
-    "mps_static_descriptor_cache_entries",
-    "reset_mps_p2p_stats",
-    "warmup_mps_neighbor_communicators",
-}
 _MODEL_EXPORTS = {
     "DistributedBoundaryProtocol",
     "DistributedBoundarySync",
@@ -83,8 +71,6 @@ def __getattr__(name: str) -> Any:
         module = import_module("flagquantum.runtime.distributed.protocols")
     elif name in _IDENTITY_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.identity")
-    elif name in _MPS_TRANSPORT_EXPORTS:
-        module = import_module("flagquantum.runtime.distributed.mps_transport")
     elif name in _WORKLOAD_CAPABILITY_EXPORTS:
         module = import_module("flagquantum.runtime.distributed.workload_capability")
     elif name in _MODEL_EXPORTS:

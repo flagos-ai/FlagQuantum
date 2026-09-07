@@ -58,7 +58,7 @@ from ...distributed.models import (
     init_torch_distributed,
     torch_distributed_is_available,
 )
-from ...distributed.mps_transport import (
+from .transport import (
     _recv_tensor_async_p2p,
     _recv_tensor_p2p,
     _send_tensor_async_p2p,
@@ -1187,7 +1187,7 @@ def __getattr__(name: str) -> Any:
     """Preserve private transport probes after distributed decomposition."""
     if name.startswith("__"):
         raise AttributeError(name)
-    module = import_module("flagquantum.runtime.distributed.mps_transport")
+    module = import_module("flagquantum.runtime.backends.mps.transport")
     try:
         return getattr(module, name)
     except AttributeError as exc:

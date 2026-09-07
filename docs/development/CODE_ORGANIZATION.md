@@ -165,7 +165,7 @@ plugins, benchmarks, or serialized artifacts.
   through the canonical `mps.communication` adapter.
   The state-owning P2P subsystem—including diagnostics, stream ownership,
   buffer pools, descriptor caches, and statistics—lives in
-  `runtime.distributed.mps_transport`. MPS has no implementation bridges.
+  `runtime.backends.mps.transport`. MPS has no implementation bridges.
   `mps.communication` is now a stable internal primitive boundary rather than
   a temporary compatibility adapter.
   Transport statistics, cache controls, and communicator warmup are lazily
