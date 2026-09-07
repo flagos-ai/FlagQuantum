@@ -6,10 +6,10 @@ from typing import Any
 
 import torch
 
-from ..core.ir import CircuitIR
-from ..ops.gate_matrix import gate_matrix
-from .mps.models import CompiledMPSProgram
-from .mps.state import MPSState
+from ...core.ir import CircuitIR
+from ...ops.gate_matrix import gate_matrix
+from .models import CompiledMPSProgram
+from .state import MPSState
 
 
 def _compose_one_qubit_matrices(

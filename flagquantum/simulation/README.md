@@ -66,7 +66,7 @@ zero-state execution loop. Runtime retains parameter binding, preflight,
 platform selection, observable parsing, result construction, and conformance
 reporting.
 
-`mps_local.py` owns the single-device, noiseless MPS instruction loop.
+`mps/local.py` owns the single-device, noiseless MPS instruction loop.
 `mps_noisy.py` owns the numerical loop for one already-lowered noisy trajectory
 and accepts an initialized MPS plus an explicit random generator.
 `mps_execution.py` preserves the public wrappers and adapts legacy Circuit
@@ -150,7 +150,7 @@ For batched noisy-statevector numerics, start in `noisy_statevector.py` and run:
 python -m pytest tests/unit/test_noisy_statevector_numerics.py tests/test_noise.py -q
 ```
 
-For the local noiseless MPS loop, start in `mps_local.py`; for one lowered noisy
+For the local noiseless MPS loop, start in `mps/local.py`; for one lowered noisy
 trajectory, start in `mps_noisy.py`. Run:
 
 ```bash

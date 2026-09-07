@@ -8,13 +8,13 @@ from typing import Any
 import torch
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
+from .mps.local import run_local_mps
 from .mps.models import (
     MPSAdaptiveRunResult,
     MPSConfig,
     MPSMonteCarloResult,
 )
 from .mps.state import MPSState
-from .mps_local import run_local_mps
 from .mps_noisy import run_local_noisy_mps_trajectory
 
 

@@ -10,6 +10,8 @@ evidence.
   operations, observables, and truncation diagnostics.
 - Start in `factorization.py` for QR/SVD execution, rank selection, discarded
   weight, and factorization fallback behavior.
+- Start in `local.py` for the local noiseless IR execution loop and instruction
+  fusion.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.
