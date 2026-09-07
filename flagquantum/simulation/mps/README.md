@@ -23,6 +23,7 @@ evidence.
 - Start in `compiled_layers.py` for equal-shape instruction packing, batched
   contraction, and factorization.
 - Start in `brickwork.py` for shape-bucketed nearest-neighbour sweeps.
+- Start in `static.py` for fixed-shape MPS programs and compiled VQE losses.
 - Start in `canonicalization.py` for canonical-site factorization, transfer
   absorption, residuals, and center norms.
 - Start in `low_rank.py` for fixed-rank factorization primitives.

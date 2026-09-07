@@ -9,7 +9,7 @@ from functools import lru_cache
 
 import torch
 
-from ..core.ir import CircuitIR, ensure_circuit_ir
+from ...core.ir import CircuitIR, ensure_circuit_ir
 
 TensorTuple = tuple[torch.Tensor, ...]
 RealImagTuple = tuple[torch.Tensor, ...]

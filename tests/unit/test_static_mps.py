@@ -2,8 +2,7 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.simulation.statevector.operations import _apply_matrix
-from flagquantum.simulation.static_mps import (
+from flagquantum.simulation.mps.static import (
     CX,
     StaticMPSProgram,
     build_bucketed_static_vqe_loss,
@@ -14,6 +13,7 @@ from flagquantum.simulation.static_mps import (
     ry_matrix,
     rz_matrix,
 )
+from flagquantum.simulation.statevector.operations import _apply_matrix
 
 
 def test_static_bond_profile_and_zero_state():
