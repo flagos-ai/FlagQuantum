@@ -23,6 +23,7 @@ __all__ = (
     "DistributedTNExecutionResult",
     "DistributedTNJointPlan",
     "DistributedTNWorkingSetPolicy",
+    "DistributedTensorNetworkState",
     "DistributedTNMemoryEvidence",
     "DistributedTNRankMemoryMeasurement",
     "DistributedTNMultiAxisContractionResult",
@@ -124,6 +125,10 @@ __all__ = (
 )
 
 _EXPORTS = {
+    "DistributedTensorNetworkState": (
+        "flagquantum.runtime.backends.tensor_network.execution",
+        "DistributedTensorNetworkState",
+    ),
     "CompiledTNForwardBucket": (
         "flagquantum.runtime.backends.tensor_network.reverse_dag",
         "CompiledTNForwardBucket",

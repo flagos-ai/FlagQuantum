@@ -23,9 +23,9 @@ from flagquantum.runtime.distributed import (
     DistributedShardPlan,
     destroy_torch_distributed,
 )
+from flagquantum.runtime.backends.tensor_network import DistributedTensorNetworkState
 from flagquantum.runtime.distributed.models import (
     DistributedMPSState,
-    DistributedTensorNetworkState,
     ShardedMPSState,
 )
 from flagquantum.runtime.planner import estimate_state_bytes, select_execution_mode
