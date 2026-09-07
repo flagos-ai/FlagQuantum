@@ -24,7 +24,7 @@ def test_system_identification_prediction_is_differentiable_and_mps_native(monke
     field = field.clone().requires_grad_(True)
     probe = core.Probe(time_steps=1, flipped_sites=(1,))
 
-    from flagquantum.simulation.mps_state import MPSState
+    from flagquantum.simulation.mps.state import MPSState
 
     monkeypatch.setattr(
         MPSState,

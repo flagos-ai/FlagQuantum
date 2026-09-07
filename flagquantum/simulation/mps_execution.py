@@ -13,9 +13,9 @@ from .mps.models import (
     MPSConfig,
     MPSMonteCarloResult,
 )
+from .mps.state import MPSState
 from .mps_local import run_local_mps
 from .mps_noisy import run_local_noisy_mps_trajectory
-from .mps_state import MPSState
 
 
 def run_mps(

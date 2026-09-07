@@ -23,6 +23,7 @@ from ...simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
 )
+from ...simulation.mps.state import MPSState
 from ...simulation.mps_rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )
@@ -32,7 +33,6 @@ from ...simulation.mps_rank_local import (
 from ...simulation.mps_rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...simulation.mps_state import MPSState
 from ...simulation.tensor import (
     TensorNetworkState,
 )

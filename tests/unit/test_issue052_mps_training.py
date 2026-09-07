@@ -29,7 +29,7 @@ from flagquantum.runtime.distributed.models import (
     ShardedMPSState,
     TorchDistributedContext,
 )
-from flagquantum.simulation.mps_state import MPSState
+from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit
 

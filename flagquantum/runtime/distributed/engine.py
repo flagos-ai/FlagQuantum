@@ -22,6 +22,7 @@ from ...simulation.mps.models import (
     MPSConfig,
     MPSTruncationRecord,
 )
+from ...simulation.mps.state import MPSState
 from ...simulation.mps_execution import run_mps
 from ...simulation.mps_rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
@@ -35,7 +36,6 @@ from ...simulation.mps_rank_local import (
 from ...simulation.mps_rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...simulation.mps_state import MPSState
 from ..backends.jax import plan_jax_distributed_quantum_backend
 from .identity import (
     DistributedIdentity,

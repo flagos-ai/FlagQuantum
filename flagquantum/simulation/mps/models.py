@@ -22,7 +22,7 @@ class MPSConfig:
 
 if TYPE_CHECKING:
     from ...runtime.trajectories import TrajectoryFailure, TrajectoryStatistics
-    from ..mps_state import MPSState
+    from .state import MPSState
 
 
 def _mps_instruction_schedule(

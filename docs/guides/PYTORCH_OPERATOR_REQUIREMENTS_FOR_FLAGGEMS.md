@@ -53,7 +53,7 @@ FlagQuantum 当前 PyTorch 后端对外承诺的量子核心精度是：
 主要文件：
 
 - `flagquantum/simulation/mps/`
-- `flagquantum/simulation/mps_state.py`
+- `flagquantum/simulation/mps/state.py`
 - `flagquantum/simulation/mps_factorization.py`
 
 核心形状：

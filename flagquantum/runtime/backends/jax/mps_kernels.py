@@ -60,7 +60,7 @@ def _reconstruct_torch_mps_from_jax_rank_shards(
 
     torch = _require_torch()
     from ....simulation.mps.models import MPSConfig, MPSTruncationRecord
-    from ....simulation.mps_state import MPSState
+    from ....simulation.mps.state import MPSState
 
     dtype = _torch_complex_dtype(complex_bytes)
     tensors_by_wire: dict[int, Any] = {}

@@ -16,7 +16,7 @@ import torch
 
 from ..circuit import Circuit
 from ..ops.matrices import get_global_precision
-from ..simulation.mps_state import MPSState
+from ..simulation.mps.state import MPSState
 from ..simulation.pauli import (
     infer_n_wires_from_dense_state,
     pauli_product_density_expectation,

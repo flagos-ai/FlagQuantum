@@ -9,7 +9,7 @@ import torch
 from ..core.ir import CircuitIR
 from ..ops.gate_matrix import gate_matrix
 from .mps.models import CompiledMPSProgram
-from .mps_state import MPSState
+from .mps.state import MPSState
 
 
 def _compose_one_qubit_matrices(

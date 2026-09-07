@@ -18,7 +18,7 @@ import torch
 from ..algorithms.core import Hamiltonian
 from ..ops.matrices import GATE_MAT_DICT
 from .mps.models import MPSConfig
-from .mps_state import MPSState
+from .mps.state import MPSState
 
 _SUPPORTED_INITIAL_STATES = {"+x", "+z", "-z", "neel_z", "domain_wall"}
 _MAX_STEPS = 100_000

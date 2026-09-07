@@ -115,7 +115,7 @@ def test_tebd_rejects_unsupported_or_ambiguous_contracts(
 
 
 def test_tebd_does_not_materialize_a_dense_state(monkeypatch) -> None:
-    from flagquantum.simulation.mps_state import MPSState
+    from flagquantum.simulation.mps.state import MPSState
 
     def reject_dense_materialization(self):
         raise AssertionError("TEBD must not materialize a statevector")
