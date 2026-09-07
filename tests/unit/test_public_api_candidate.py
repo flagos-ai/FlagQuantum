@@ -118,7 +118,7 @@ def test_migrated_exports_are_not_discoverable_at_root() -> None:
     assert migrated.isdisjoint(dir(fq))
 
 
-def test_migrated_and_removed_exports_are_not_accessible_at_root() -> None:
+def test_non_root_exports_are_not_accessible_at_root() -> None:
     candidate = _load(CANDIDATE)
     replacements = {
         symbol
@@ -144,16 +144,8 @@ def test_migrated_and_removed_exports_are_not_accessible_at_root() -> None:
         replacement.rsplit(".", 1)[-1] for replacement in pre_public_renames.values()
     )
 
-    for name in sorted(replacements - new_namespace_only):
-        with pytest.raises(AttributeError, match="moved before the first public alpha"):
-            getattr(fq, name)
-    for name in sorted(new_namespace_only):
+    for name in sorted(replacements | removals | new_namespace_only):
         with pytest.raises(AttributeError):
-            getattr(fq, name)
-    for name in sorted(removals):
-        with pytest.raises(
-            AttributeError, match="removed before the first public alpha"
-        ):
             getattr(fq, name)
 
 

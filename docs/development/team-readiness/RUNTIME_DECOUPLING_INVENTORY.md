@@ -269,6 +269,6 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 
 仓内测试、示例和参考文档均直接使用 `flagquantum.backends`，且命名空间一致性测试要求
 转发对象保持实现身份。因此本轮结论是：**不迁移、不合并这三个目录，也不在
-`providers` 下复制模拟后端**。后续删除工作应先审计根命名空间历史别名
-`flagquantum/_root_api_compat.py`；只有真实消费者归零且公共 API 快照同步收口的条目，
-才可无兼容层删除。
+`providers` 下复制模拟后端**。根命名空间历史别名没有真实消费者；其专用错误转发层
+`flagquantum/_root_api_compat.py` 已删除。旧名称继续由 Python 的标准 `AttributeError`
+拒绝，迁移目标只保留在 API 提案和静态使用检查器中，不再进入运行时代码。

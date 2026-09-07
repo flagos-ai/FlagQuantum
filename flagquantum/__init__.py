@@ -5,10 +5,6 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-from ._root_api_compat import (
-    MIGRATED_ROOT_EXPORTS,
-    REMOVED_ROOT_EXPORTS,
-)
 from .version import __version__
 
 __author__ = "FlagQuantum Team"
@@ -43,18 +39,6 @@ __all__ = (
 
 
 def __getattr__(name: str) -> Any:
-    if name in MIGRATED_ROOT_EXPORTS:
-        replacement = MIGRATED_ROOT_EXPORTS[name]
-        raise AttributeError(
-            f"flagquantum.{name} moved before the first public alpha; "
-            f"use {replacement}"
-        )
-    if name in REMOVED_ROOT_EXPORTS:
-        replacement = REMOVED_ROOT_EXPORTS[name]
-        guidance = f"; use {replacement}" if replacement is not None else ""
-        raise AttributeError(
-            f"flagquantum.{name} was removed before the first public alpha{guidance}"
-        )
     if name == "experimental":
         return import_module(".experimental", __name__)
     if name == "Circuit":

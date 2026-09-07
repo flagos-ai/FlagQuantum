@@ -129,7 +129,5 @@ def test_training_namespace_is_stable_without_root_clutter() -> None:
         "load_training_checkpoint",
         "save_training_checkpoint",
     ):
-        with pytest.raises(
-            AttributeError, match="removed before the first public alpha"
-        ):
+        with pytest.raises(AttributeError):
             getattr(fq, name)
