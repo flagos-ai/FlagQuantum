@@ -8,9 +8,9 @@ from typing import Any, Iterable, Sequence
 import torch
 
 from ...core.ir import Instruction
-from ..gate_matrix import gate_matrix
 from ...core.runtime_config import get_runtime_config
-from ...ops.matrices import GATE_MAT_DICT
+from ..gate_matrix import gate_matrix
+from ..matrices import GATE_MAT_DICT
 from ..real_imag_kernels import complex_einsum_pair
 from ..statevector.operations import _apply_matrix, _bits_from_indices
 from .factorization import (

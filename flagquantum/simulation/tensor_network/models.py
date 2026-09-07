@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ...ops.matrices import GATE_MAT_DICT
+from ..matrices import GATE_MAT_DICT
 
 _CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
 _CONTRACTION_PATH_CACHE: dict[

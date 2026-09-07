@@ -6,7 +6,7 @@ import torch
 
 from ...core.ir import CircuitIR
 from ..gate_matrix import gate_matrix
-from ...ops.matrices import GATE_MAT_DICT
+from ..matrices import GATE_MAT_DICT
 
 
 def apply_matrix_batched(

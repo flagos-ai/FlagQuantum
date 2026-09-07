@@ -11,12 +11,14 @@ import torch
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
-from ..numerics.complex_arithmetic import complex_mul
 from ..gate_matrix import (
     gate_matrix as _gate_matrix,
+)
+from ..gate_matrix import (
     parameter_tensor as _parameter_tensor,
 )
-from ...ops.matrices import GATE_MAT_DICT
+from ..matrices import GATE_MAT_DICT
+from ..numerics.complex_arithmetic import complex_mul
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
     tuple[int, tuple[int, ...]], tuple[tuple[int, ...], tuple[int, ...]]

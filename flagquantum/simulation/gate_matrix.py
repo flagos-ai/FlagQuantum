@@ -10,7 +10,7 @@ from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import value_to_tensor
 from ..core.runtime_config import get_runtime_config
-from ..ops.matrices import GATE_MAT_DICT
+from .matrices import GATE_MAT_DICT
 
 _FIXED_GATE_CACHE: dict[tuple[str, str, torch.dtype], torch.Tensor] = {}
 

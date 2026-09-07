@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 import torch
 
-from ..ops.matrices import GATE_MAT_DICT
+from .matrices import GATE_MAT_DICT
 from .statevector.operations import _apply_matrix
 
 PauliProduct = Sequence[tuple[int, str]]

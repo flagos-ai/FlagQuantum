@@ -12,7 +12,6 @@ from typing import Any, Mapping
 import torch
 
 from ..core.runtime_config import get_runtime_config
-from ..ops.matrices import GATE_MAT_DICT
 
 
 def _as_probability(value: float | torch.Tensor, name: str) -> torch.Tensor:
@@ -30,6 +29,24 @@ def _complex_dtype(dtype: torch.dtype | None = None) -> torch.dtype:
 
 def _real_dtype(dtype: torch.dtype) -> torch.dtype:
     return torch.float64 if dtype == torch.complex128 else torch.float32
+
+
+def _pauli_basis(
+    *,
+    dtype: torch.dtype,
+    device: torch.device | str | None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Build the one-qubit Pauli basis owned by the noise model."""
+
+    return tuple(
+        torch.tensor(values, dtype=dtype, device=device)
+        for values in (
+            ((1, 0), (0, 1)),
+            ((0, 1), (1, 0)),
+            ((0, -1j), (1j, 0)),
+            ((1, 0), (0, -1)),
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -151,8 +168,7 @@ def bit_flip_channel(
     p = _as_probability(probability, "probability").to(
         dtype=_real_dtype(_complex_dtype(dtype)), device=device
     )
-    identity = GATE_MAT_DICT["i"].to(device=device, dtype=_complex_dtype(dtype))
-    x = GATE_MAT_DICT["x"].to(device=device, dtype=_complex_dtype(dtype))
+    identity, x, _, _ = _pauli_basis(dtype=_complex_dtype(dtype), device=device)
     return KrausChannel(
         "bit_flip",
         (torch.sqrt(1 - p) * identity, torch.sqrt(p) * x),
@@ -169,8 +185,7 @@ def phase_flip_channel(
     p = _as_probability(probability, "probability").to(
         dtype=_real_dtype(_complex_dtype(dtype)), device=device
     )
-    identity = GATE_MAT_DICT["i"].to(device=device, dtype=_complex_dtype(dtype))
-    z = GATE_MAT_DICT["z"].to(device=device, dtype=_complex_dtype(dtype))
+    identity, _, _, z = _pauli_basis(dtype=_complex_dtype(dtype), device=device)
     return KrausChannel(
         "phase_flip",
         (torch.sqrt(1 - p) * identity, torch.sqrt(p) * z),
@@ -189,13 +204,14 @@ def depolarizing_channel(
     )
     out_dtype = _complex_dtype(dtype)
     scale = torch.sqrt(p / 3)
+    identity, x, y, z = _pauli_basis(dtype=out_dtype, device=device)
     return KrausChannel(
         "depolarizing",
         (
-            torch.sqrt(1 - p) * GATE_MAT_DICT["i"].to(device=device, dtype=out_dtype),
-            scale * GATE_MAT_DICT["x"].to(device=device, dtype=out_dtype),
-            scale * GATE_MAT_DICT["y"].to(device=device, dtype=out_dtype),
-            scale * GATE_MAT_DICT["z"].to(device=device, dtype=out_dtype),
+            torch.sqrt(1 - p) * identity,
+            scale * x,
+            scale * y,
+            scale * z,
         ),
         (("probability", float(p.detach().cpu().item())),),
     )
@@ -218,10 +234,7 @@ def two_qubit_depolarizing_channel(
         dtype=_real_dtype(_complex_dtype(dtype)), device=device
     )
     out_dtype = _complex_dtype(dtype)
-    paulis = tuple(
-        GATE_MAT_DICT[name].to(device=device, dtype=out_dtype)
-        for name in ("i", "x", "y", "z")
-    )
+    paulis = _pauli_basis(dtype=out_dtype, device=device)
     identity = torch.kron(paulis[0], paulis[0])
     errors = tuple(
         torch.kron(left, right)
@@ -334,8 +347,8 @@ def coherent_overrotation_channel(
         raise ValueError("axis must be 'x', 'y', or 'z'")
     out_dtype = _complex_dtype(dtype)
     real_dtype = _real_dtype(out_dtype)
-    identity = GATE_MAT_DICT["i"].to(device=device, dtype=out_dtype)
-    pauli = GATE_MAT_DICT[axis].to(device=device, dtype=out_dtype)
+    identity, x, y, z = _pauli_basis(dtype=out_dtype, device=device)
+    pauli = {"x": x, "y": y, "z": z}[axis]
     value = float(angle)
     half_angle = torch.tensor(value / 2, device=device, dtype=real_dtype)
     unitary = torch.cos(half_angle) * identity

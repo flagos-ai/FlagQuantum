@@ -11,6 +11,7 @@ from ..core.runtime_config import get_runtime_config
 # Precision Configuration
 # ============================================================================
 
+
 def _complex_dtype() -> torch.dtype:
     return getattr(torch, get_runtime_config().complex_dtype)
 
@@ -437,27 +438,13 @@ SDAG_MATRIX = _fixed_gate([[1, 0], [0, -1j]])
 TDAG_MATRIX = _fixed_gate(
     [[1, 0], [0, complex(math.cos(math.pi / 4), -math.sin(math.pi / 4))]]
 )
-SX_MATRIX = _fixed_gate(
-    [[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]]
-)
-SXDAG_MATRIX = _fixed_gate(
-    [[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]]
-)
-CX_MATRIX = _fixed_gate(
-    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
-)
-CY_MATRIX = _fixed_gate(
-    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]
-)
-CZ_MATRIX = _fixed_gate(
-    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-)
-SWAP_MATRIX = _fixed_gate(
-    [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
-)
-CPHASE_MATRIX = _fixed_gate(
-    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-)
+SX_MATRIX = _fixed_gate([[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]])
+SXDAG_MATRIX = _fixed_gate([[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]])
+CX_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+CY_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
+CZ_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+SWAP_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+CPHASE_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 TOFFOLI_MATRIX = torch.eye(8, dtype=torch.complex128)
 TOFFOLI_MATRIX[6:8, 6:8] = _fixed_gate([[0, 1], [1, 0]])
 FREDKIN_MATRIX = torch.eye(8, dtype=torch.complex128)

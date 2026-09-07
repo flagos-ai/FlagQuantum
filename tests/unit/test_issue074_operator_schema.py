@@ -5,19 +5,19 @@ import torch
 
 import flagquantum.operators as fqo
 from flagquantum import Circuit
-from flagquantum.core import (
-    OPERATOR_ALIASES,
-    OPERATOR_SCHEMAS,
-    OperatorSchema,
-    canonical_opcode,
-)
 from flagquantum.compiler.operator_lowering import (
     DEFAULT_LOWERING_REGISTRY,
     OperatorLoweringRegistry,
     UnsupportedLoweringError,
     validate_lowering,
 )
-from flagquantum.ops import matrices
+from flagquantum.core import (
+    OPERATOR_ALIASES,
+    OPERATOR_SCHEMAS,
+    OperatorSchema,
+    canonical_opcode,
+)
+from flagquantum.simulation import matrices
 
 pytestmark = pytest.mark.unit
 

@@ -14,7 +14,6 @@ import flagquantum.compiler as compiler
 import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler import CouplingMap
 from flagquantum.gradients import parameter_shift_gradient
-from flagquantum.ops.matrices import GATE_MAT_DICT
 from flagquantum.runtime.audit import audit_distributed_scalability
 from flagquantum.runtime.backend_registry import get_backend_capabilities
 from flagquantum.runtime.configuration import get_backend, set_backend
@@ -30,6 +29,7 @@ from flagquantum.runtime.distributed.models import (
     ShardedMPSState,
 )
 from flagquantum.runtime.planner import estimate_state_bytes, select_execution_mode
+from flagquantum.simulation.matrices import GATE_MAT_DICT
 from flagquantum.simulation.mps.state import MPSState
 from flagquantum.simulation.statevector.operations import (
     _apply_matrix,

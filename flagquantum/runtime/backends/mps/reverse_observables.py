@@ -9,7 +9,7 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
-from ....ops.matrices import GATE_MAT_DICT
+from ....simulation.matrices import GATE_MAT_DICT
 from ....simulation.mps.observables import (
     mps_heisenberg_local_scan,
     mps_local_observable_adjoint,
