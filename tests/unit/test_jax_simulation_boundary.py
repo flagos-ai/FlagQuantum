@@ -16,13 +16,13 @@ from flagquantum.runtime.backends.jax import (
     tensor_network_gradients,
 )
 from flagquantum.simulation import (
-    jax_gate_primitives,
     jax_mps,
     jax_mps_batched,
     jax_mps_pullbacks,
     jax_statevector,
     jax_tensor_network,
 )
+from flagquantum.simulation.jax import primitives as jax_gate_primitives
 
 pytestmark = pytest.mark.unit
 

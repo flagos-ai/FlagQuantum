@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-from .jax_gate_primitives import (
+from .jax.primitives import (
     _jax_complex_dtype,
     _jax_pauli_matrix,
     _jax_real_dtype,

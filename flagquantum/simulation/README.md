@@ -91,7 +91,7 @@ preserves the public wrappers and amplitude entry points; distributed
 scheduling, rank lifecycle, and communication remain outside these paths.
 `tensor_network/stages.py` owns pair-contraction and pair-pullback execution, high-rank
 fallback, and compensated numerical accumulation used by sliced execution.
-`jax_gate_primitives.py` owns JAX dtype selection, instruction matrices, local
+`jax/primitives.py` owns JAX dtype selection, instruction matrices, local
 statevector execution, gate application, and observable kernels. Runtime retains
 JAX backend selection, PyTorch bridging, compilation, sharding, and evidence.
 `jax_mps.py` owns local one- and two-site MPS updates, pair splitting, remote-gate

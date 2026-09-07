@@ -1,4 +1,4 @@
-"""Canonical JAX kernels exposed through the PyTorch interface."""
+"""Shared JAX numerical primitives exposed through the PyTorch interface."""
 
 from __future__ import annotations
 

@@ -42,7 +42,7 @@ def _gate_matrix_as_jax(
 def _parameterized_gate_matrix_as_jax(
     instruction: Any, *, complex_bytes: int
 ) -> tuple[Any, bool]:
-    from ....simulation.jax_gate_primitives import _jax_instruction_matrix
+    from ....simulation.jax.primitives import _jax_instruction_matrix
 
     _, jnp = _require_jax()
     matrix = _jax_instruction_matrix(instruction).astype(

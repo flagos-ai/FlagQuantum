@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from ....simulation.jax_gate_primitives import (
+from ....simulation.jax.primitives import (
     _jax_hamiltonian_expectation,
     _jax_real_dtype,
     _jax_statevector_from_circuit,

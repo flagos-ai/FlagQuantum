@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Sequence
 
-from ....simulation.jax_gate_primitives import _jax_pauli_matrix
+from ....simulation.jax.primitives import _jax_pauli_matrix
 from ....simulation.jax_tensor_network import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
@@ -51,7 +51,7 @@ def _jax_parameterized_tn_state_nodes(
     conjugate: bool,
 ) -> tuple[list[JAXTensorNetworkNode], list[int], int]:
     _, jnp = _require_jax()
-    from ....simulation.jax_gate_primitives import _jax_instruction_matrix
+    from ....simulation.jax.primitives import _jax_instruction_matrix
 
     next_label = int(start_label)
     current_labels: list[int] = []

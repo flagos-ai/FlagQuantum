@@ -9,7 +9,7 @@ from typing import Any
 TorchCircuitBuilder = Callable[..., Any]
 
 
-from ....simulation.jax_gate_primitives import (  # noqa: E402
+from ....simulation.jax.primitives import (  # noqa: E402
     _jax_cx,
     _jax_instruction_matrix,
     _jax_pauli_matrix,
