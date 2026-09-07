@@ -26,6 +26,10 @@ class _FakeLocalStatevectorProgram:
     calls: int = 0
     device: str = "cpu"
 
+    @property
+    def dtype(self) -> torch.dtype:
+        return self.output.dtype
+
     def to_ir(self) -> CircuitIR:
         return self.ir
 
