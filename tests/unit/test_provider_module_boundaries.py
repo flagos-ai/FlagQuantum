@@ -1,7 +1,7 @@
 import pytest
 
 from flagquantum.deployment import providers
-from flagquantum.providers.execution import braket, result_parsing
+from flagquantum.providers.execution import braket, http, result_parsing
 
 pytestmark = pytest.mark.unit
 
@@ -16,6 +16,20 @@ pytestmark = pytest.mark.unit
 )
 def test_provider_aggregator_preserves_braket_object_identity(name):
     assert getattr(providers, name) is getattr(braket, name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "HttpQuantumProvider",
+        "ProviderCredentials",
+        "ProviderEndpoints",
+        "QuantumCloudTransport",
+        "UrllibTransport",
+    ),
+)
+def test_provider_aggregator_preserves_http_object_identity(name):
+    assert getattr(providers, name) is getattr(http, name)
 
 
 @pytest.mark.parametrize(
