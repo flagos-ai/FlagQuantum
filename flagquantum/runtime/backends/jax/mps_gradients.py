@@ -10,6 +10,7 @@ from .array_conversions import (
     _torch_parameters_for_static_build,
 )
 from .backend_dispatch import plan_jax_distributed_quantum_backend
+from .mps.gradient_result import JAXShardedMPSParameterGradientResult
 from .mps.planning import (
     _mps_pmap_backward_blockers,
     plan_jax_sharded_mps_parameter_flow,
@@ -20,7 +21,6 @@ from .mps_gradient_ownership import (
     _execute_local_mps_parameter_gradient_ownership,
     _jax_sharded_mps_z_sum_from_rank_tensors,
 )
-from .mps_gradient_result import JAXShardedMPSParameterGradientResult
 from .mps_kernels import _rank_shards_from_jax_mps_tensors
 from .planning_core import _as_ir
 from .runtime_environment import (
