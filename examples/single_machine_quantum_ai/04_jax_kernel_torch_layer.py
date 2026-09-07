@@ -8,8 +8,6 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, pauli_term
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -23,6 +21,7 @@ from common import (  # noqa: E402
 
 import flagquantum as fq  # noqa: E402
 import flagquantum.backends as fqb  # noqa: E402
+from flagquantum.algorithms import Hamiltonian, pauli_term  # noqa: E402
 
 
 def circuit_builder(theta: torch.Tensor) -> fq.Circuit:
