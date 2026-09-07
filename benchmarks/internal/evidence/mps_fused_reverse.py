@@ -12,8 +12,10 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.forward import _initial_ownership
-from flagquantum.runtime.backends.mps.reverse import execute_torch_distributed_mps_reverse
+from flagquantum.runtime.backends.mps.reverse import (
+    execute_torch_distributed_mps_reverse,
+)
+from flagquantum.runtime.backends.mps.state import initial_mps_ownership
 from flagquantum.simulation.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,
@@ -26,7 +28,7 @@ def make_case(theta, wires, layers, device):
         for wire in range(wires):
             circuit.ry(wire, theta + (layer + wire) * 1e-4)
     rank, world = dist.get_rank(), dist.get_world_size()
-    ownership = _initial_ownership(wires, world)
+    ownership = initial_mps_ownership(wires, world)
     initial = {}
     for wire in ownership[rank]:
         tensor = torch.zeros(1, 1, 2, 1, dtype=torch.complex64, device=device)

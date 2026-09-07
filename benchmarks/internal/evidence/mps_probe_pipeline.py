@@ -12,17 +12,21 @@ import torch
 import torch.distributed as dist
 from torch.profiler import ProfilerActivity, profile
 
-from flagquantum.runtime.backends.mps.forward import RankOwnedMPSState, _initial_ownership
 from flagquantum.runtime.backends.mps.reverse import (
-    _fused_z_zz_mse_and_adjoints, _parse_z_zz_terms,
+    _fused_z_zz_mse_and_adjoints,
+    _parse_z_zz_terms,
     site_sharded_z_zz_objective_pipeline,
+)
+from flagquantum.runtime.backends.mps.state import (
+    RankOwnedMPSState,
+    initial_mps_ownership,
 )
 from flagquantum.simulation.mps.models import MPSConfig
 
 
 def states(count: int, wires: int, batch: int, bond: int, device: torch.device):
     rank, world = dist.get_rank(), dist.get_world_size()
-    ownership = _initial_ownership(wires, world)
+    ownership = initial_mps_ownership(wires, world)
     result = []
     for slot in range(count):
         local = {}

@@ -7,21 +7,21 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.mps.forward import (
-    RankOwnedMPSState,
-    _initial_ownership,
-)
 from flagquantum.runtime.backends.mps.reverse import (
     _fused_z_zz_mse_and_adjoints,
     _parse_z_zz_terms,
     site_sharded_z_zz_objective_pipeline,
+)
+from flagquantum.runtime.backends.mps.state import (
+    RankOwnedMPSState,
+    initial_mps_ownership,
 )
 from flagquantum.simulation.mps.models import MPSConfig
 
 
 def _states(slots: int, *, device: torch.device):
     rank, world, wires, batch = dist.get_rank(), dist.get_world_size(), 8, 3
-    ownership = _initial_ownership(wires, world)
+    ownership = initial_mps_ownership(wires, world)
     output = []
     for slot in range(slots):
         local = {}

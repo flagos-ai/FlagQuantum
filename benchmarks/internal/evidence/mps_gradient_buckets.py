@@ -1,22 +1,29 @@
 """Audit owner gradient buckets with one thousand MPS parameters."""
 from __future__ import annotations
 
-import argparse, json, os, socket, time
+import argparse
+import json
+import os
+import socket
+import time
 from pathlib import Path
+
 import torch
 import torch.distributed as dist
 from torch.profiler import ProfilerActivity, profile
 
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.forward import _initial_ownership
-from flagquantum.runtime.backends.mps.reverse import execute_torch_distributed_mps_reverse
+from flagquantum.runtime.backends.mps.reverse import (
+    execute_torch_distributed_mps_reverse,
+)
+from flagquantum.runtime.backends.mps.state import initial_mps_ownership
 
 
 def build(count, wires, device):
     values = tuple(torch.tensor(.001 * (index % 17), device=device, requires_grad=True) for index in range(count))
     circuit = Circuit(wires, device=device)
     for index, value in enumerate(values): circuit.ry(index % wires, value)
-    ownership = _initial_ownership(wires, dist.get_world_size())
+    ownership = initial_mps_ownership(wires, dist.get_world_size())
     initial = {}
     for wire in ownership[dist.get_rank()]:
         tensor=torch.zeros(1,1,2,1,dtype=torch.complex64,device=device); tensor[:,:,0,:]=1; initial[wire]=tensor
