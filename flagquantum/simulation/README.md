@@ -103,7 +103,7 @@ It also owns recognition and coefficient parsing for the optimized ZZ/Z-chain
 Hamiltonian path and its local Pauli/adjacent-ZZ environment contractions.
 The padded environment scan and generic Hamiltonian evaluation are also
 Simulation-owned.
-`jax_tensor_network.py` owns dependency-light local JAX node construction,
+`jax/tensor_network.py` owns dependency-light local JAX node construction,
 observable and contracted-output loss evaluation, and contraction; Runtime
 retains backend selection and execution policy.
 

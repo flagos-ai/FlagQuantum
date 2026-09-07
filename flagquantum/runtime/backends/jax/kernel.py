@@ -16,6 +16,15 @@ from ....simulation.jax.primitives import (
     _jax_z_values,
     _set_active_jax_compute_dtype,
 )
+from ....simulation.jax.tensor_network import (
+    jax_tensor_network_hamiltonian_expectation as _jax_tensor_network_hamiltonian_expectation,
+)
+from ....simulation.jax.tensor_network import (
+    jax_tensor_network_z_sum as _jax_tensor_network_z_sum,
+)
+from ....simulation.jax.tensor_network import (
+    jax_tensor_network_z_values as _jax_tensor_network_z_values,
+)
 from ....simulation.jax_mps import (
     is_zz_z_chain_hamiltonian as _is_zz_z_chain_hamiltonian,
 )
@@ -27,15 +36,6 @@ from ....simulation.jax_mps import (
 )
 from ....simulation.jax_mps import (
     jax_mps_z_values as _jax_mps_z_values,
-)
-from ....simulation.jax_tensor_network import (
-    jax_tensor_network_hamiltonian_expectation as _jax_tensor_network_hamiltonian_expectation,
-)
-from ....simulation.jax_tensor_network import (
-    jax_tensor_network_z_sum as _jax_tensor_network_z_sum,
-)
-from ....simulation.jax_tensor_network import (
-    jax_tensor_network_z_values as _jax_tensor_network_z_values,
 )
 
 TorchCircuitBuilder = Callable[..., Any]
