@@ -14,4 +14,6 @@ evidence.
   Double-Single numerical primitives.
 - Start in `double_single.py` for full Double-Single state evolution,
   normalization, and observable reduction.
+- Start in `double_single_host_gates.py` for explicit CPU reference gate
+  encoding.
 - The stable user entry points remain `fq.Circuit`, `fq.plan`, and `fq.run`.
