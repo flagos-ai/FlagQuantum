@@ -10,7 +10,6 @@ import flagquantum.compiler as compiler
 import flagquantum.noise as fqn
 import flagquantum.noise as noise
 import flagquantum.runtime.execution as execution
-import flagquantum.simulation.mps as mps
 from flagquantum.algorithms import Hamiltonian
 from flagquantum.compiler import CouplingMap
 from flagquantum.runtime.backend_registry import (
@@ -24,7 +23,6 @@ from flagquantum.runtime.backend_registry import (
 )
 from flagquantum.runtime.configuration import get_backend, set_backend, set_dtype
 from flagquantum.runtime.planner import estimate_state_bytes, plan_for_backend
-from flagquantum.simulation.mps_state import MPSState
 
 pytestmark = pytest.mark.integration
 
@@ -128,5 +126,4 @@ def test_top_level_subsystems_remain_easy_to_use():
     assert algorithms.Hamiltonian is Hamiltonian
     assert compiler.CouplingMap is CouplingMap
     assert execution.run_native is fqb.run_native
-    assert mps.MPSState is MPSState
     assert noise.NoiseModel is fqn.NoiseModel

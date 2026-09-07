@@ -62,9 +62,8 @@ local numerical algorithms and dependency-light tensor/kernel primitives.
 distributed semantics, training records, and evidence. Runtime backends may
 consume narrow simulation primitives; simulation modules may not import runtime
 or deployment code except for the explicitly registered legacy façades in
-`architecture.toml`. Historical `flagquantum.simulation.mps` and
-`flagquantum.simulation.tensor` access remains for v1 compatibility, but new
-user code stays on the root `flagquantum` API.
+`architecture.toml`. User code stays on the root `flagquantum` API; internal
+callers import the narrow numerical module that owns the required operation.
 
 The architecture checker rejects reintroduction of the removed compatibility
 package or imports from it.

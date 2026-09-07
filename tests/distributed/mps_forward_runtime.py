@@ -22,7 +22,7 @@ from flagquantum.runtime.distributed.models import (
     ShardedMPSState,
     TorchDistributedContext,
 )
-from flagquantum.simulation.mps import run_mps
+from flagquantum.simulation.mps_execution import run_mps
 from flagquantum.simulation.mps_site_kernels import (
     configure_site_kernel_cache,
     reset_site_kernel_stats,

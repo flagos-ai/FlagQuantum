@@ -24,10 +24,10 @@ def test_system_identification_prediction_is_differentiable_and_mps_native(monke
     field = field.clone().requires_grad_(True)
     probe = core.Probe(time_steps=1, flipped_sites=(1,))
 
-    import flagquantum.simulation.mps as mps_module
+    from flagquantum.simulation.mps_state import MPSState
 
     monkeypatch.setattr(
-        mps_module.MPSState,
+        MPSState,
         "to_statevector",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("dense fallback")

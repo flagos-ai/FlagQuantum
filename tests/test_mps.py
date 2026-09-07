@@ -5,7 +5,7 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.noise as fqn
-import flagquantum.simulation.mps as mps_runtime
+import flagquantum.simulation.mps_models as mps_models
 from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
 from flagquantum.runtime.mps_training import MPSTrainingStep, compile_mps_training_step
 from flagquantum.runtime.planner import estimate_mps_bytes
@@ -64,18 +64,18 @@ def test_mps_bell_state_matches_statevector():
 
 
 def test_mps_instruction_schedule_is_reused_for_dynamic_parameters():
-    mps_runtime._MPS_INSTRUCTION_SCHEDULE_CACHE.clear()
+    mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE.clear()
     theta = torch.tensor(0.2, requires_grad=True)
     first = fqb.run_mps(fq.Circuit(2).ry(0, theta).rz(0, theta).cx(0, 1))
     first.expectation_z(0).sum().backward()
-    cache_size = len(mps_runtime._MPS_INSTRUCTION_SCHEDULE_CACHE)
+    cache_size = len(mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE)
 
     phi = torch.tensor(-0.3, requires_grad=True)
     second = fqb.run_mps(fq.Circuit(2).ry(0, phi).rz(0, phi).cx(0, 1))
     second.expectation_z(0).sum().backward()
 
     assert cache_size == 1
-    assert len(mps_runtime._MPS_INSTRUCTION_SCHEDULE_CACHE) == cache_size
+    assert len(mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE) == cache_size
     assert theta.grad is not None and phi.grad is not None
 
 
@@ -91,7 +91,7 @@ def test_mps_program_is_shape_and_truncation_specialized():
         value for key, value in circuit._backend_programs.items() if key[0] == "mps"
     ]
 
-    assert isinstance(first_program, mps_runtime.CompiledMPSProgram)
+    assert isinstance(first_program, mps_models.CompiledMPSProgram)
     assert len(programs) == 2
     assert programs[0].signature != programs[1].signature
     assert {operation.kind for operation in first_program.operations} >= {

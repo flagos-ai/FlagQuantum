@@ -16,7 +16,7 @@ from flagquantum.runtime.backends.mps.reverse import (
     _parse_z_zz_terms,
     site_sharded_z_zz_objective_pipeline,
 )
-from flagquantum.simulation.mps import MPSConfig
+from flagquantum.simulation.mps_models import MPSConfig
 
 
 def _states(slots: int, *, device: torch.device):

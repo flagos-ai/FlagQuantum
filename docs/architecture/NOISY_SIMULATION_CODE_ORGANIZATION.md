@@ -281,7 +281,7 @@ api/circuit
 ```python
 from flagquantum.circuit import _gate_matrix
 from flagquantum.simulation.tensor_contraction import _einsum_pair_by_labels
-from flagquantum.simulation.mps import _split_pair_matrix
+from flagquantum.simulation.mps_factorization import _split_pair_matrix
 ```
 
 ## 5. Noise 开发前的架构准备

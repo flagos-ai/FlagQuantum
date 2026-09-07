@@ -16,7 +16,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 from flagquantum.runtime.backends.mps.reverse import execute_torch_distributed_mps_reverse
-from flagquantum.simulation.mps import run_mps
+from flagquantum.simulation.mps_execution import run_mps
 
 SEED = 91_052
 TOLERANCES = {
