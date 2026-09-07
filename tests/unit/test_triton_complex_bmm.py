@@ -3,7 +3,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.simulation.triton_complex_bmm import fused_complex_bmm
+from flagquantum.simulation.triton_kernels.complex_bmm import fused_complex_bmm
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
