@@ -111,6 +111,25 @@ def _torch_cuda_use_count(path: Path) -> int:
 
 def architecture_errors() -> tuple[str, ...]:
     errors = list(_long_horizon_contract_errors())
+    allowed_package_directories = set(
+        CONFIG.get("package_layout", {}).get("allowed_top_level_directories", ())
+    )
+    actual_package_directories = {
+        path.name
+        for path in PACKAGE.iterdir()
+        if path.is_dir()
+        and any(
+            candidate.is_file() and "__pycache__" not in candidate.parts
+            for candidate in path.rglob("*.py")
+        )
+    }
+    for name in sorted(actual_package_directories - allowed_package_directories):
+        errors.append(
+            f"flagquantum/{name}: unreviewed top-level package directory is forbidden"
+        )
+    for name in sorted(allowed_package_directories - actual_package_directories):
+        errors.append(f"flagquantum/{name}: stale allowed top-level package directory")
+
     boundaries = CONFIG["boundaries"]
     exceptions = CONFIG.get("legacy_exceptions", {})
     legacy_subsystems = CONFIG.get("legacy_subsystems", {})

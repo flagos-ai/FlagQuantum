@@ -1,6 +1,26 @@
 [layers]
 order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "executor_protocols", "planner", "compiler", "ir"]
 
+[package_layout]
+allowed_top_level_directories = [
+    "agent_services",
+    "algorithms",
+    "backends",
+    "benchmarking",
+    "compiler",
+    "core",
+    "deployment",
+    "drawer",
+    "ecosystem",
+    "experimental",
+    "noise",
+    "providers",
+    "runtime",
+    "simulation",
+    "testing",
+    "utils",
+]
+
 [boundaries]
 core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
 compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simulation", "providers"]

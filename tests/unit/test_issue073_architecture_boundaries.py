@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_architecture import architecture_errors
+from tools.check_architecture import CONFIG, architecture_errors
 
 pytestmark = pytest.mark.unit
 
@@ -13,6 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_checked_architecture_boundaries_pass():
     assert architecture_errors() == ()
+
+
+def test_top_level_package_layout_is_explicitly_frozen():
+    allowed = set(CONFIG["package_layout"]["allowed_top_level_directories"])
+    assert {"core", "compiler", "runtime", "simulation", "providers"} <= allowed
+    assert {"ops", "numerics", "compilation", "_compiler"}.isdisjoint(allowed)
 
 
 def test_stable_root_import_is_lazy_and_does_not_initialize_runtimes():
