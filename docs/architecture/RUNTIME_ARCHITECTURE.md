@@ -77,7 +77,7 @@ Execution and classification are separate:
 JAX implementation modules have a 500-line maintainability ceiling. Statevector,
 MPS, tensor-network, transport, planning, and common definitions live in
 semantic modules such as `statevector/kernels`, `mps_pullbacks`, and
-`tensor_network_contraction`; the bounded `jax_distributed.py` module is
+`tensor_network/contraction`; the bounded `jax_distributed.py` module is
 only a compatibility re-export and monkeypatch bridge. Its compatibility
 surface has a removal date of 2027-01-01. No removal occurs without a separately
 reviewed API migration.

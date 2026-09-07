@@ -19,12 +19,12 @@ from .runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
+from .tensor_network.contraction import _jax_contract_tensor_slices_by_backend
 from .tensor_network.planning import _tn_tasks
 from .tensor_network.records import (
     JAXShardedTensorNetworkResult,
     JAXTNSliceRankState,
 )
-from .tensor_network_contraction import _jax_contract_tensor_slices_by_backend
 
 
 def _jax_tn_task_summary(

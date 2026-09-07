@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from ....simulation.jax.tensor_network import (
+from .....simulation.jax.tensor_network import (
     _jax_einsum_by_labels,
     _jax_einsum_reorder,
     jax_slice_tensor_by_labels,
 )
-from .common import product_int as _product
-from .runtime_environment import (
+from ..common import product_int as _product
+from ..runtime_environment import (
     _jax_available_local_devices,
     _require_jax,
 )
-from .tensor_network.records import JAXTensorNetworkNode
+from .records import JAXTensorNetworkNode
 
 
 def _jax_tn_label_dims(nodes: Sequence[JAXTensorNetworkNode]) -> dict[int, int]:
