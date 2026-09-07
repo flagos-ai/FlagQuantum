@@ -5,11 +5,11 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from ..mps_evidence import _summarize_minimal_mps_measured_runtime_evidence
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
 from ..runtime_environment import _require_jax
+from .evidence import _summarize_minimal_mps_measured_runtime_evidence
 
 
 def _execute_minimal_mps_sharded_backward(

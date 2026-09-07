@@ -8,7 +8,7 @@ from flagquantum.runtime.backends.jax.mps.backward import (
 from flagquantum.runtime.backends.jax.mps.canonicalization import (
     _execute_minimal_mps_sharded_optimizer_step,
 )
-from flagquantum.runtime.backends.jax.mps_evidence import (
+from flagquantum.runtime.backends.jax.mps.evidence import (
     _collect_jax_mps_accelerator_backward_evidence,
 )
 

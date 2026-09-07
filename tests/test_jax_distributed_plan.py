@@ -11,7 +11,6 @@ from flagquantum.runtime.audit.release_policy import require_distributed_scalabi
 from flagquantum.runtime.backends.jax import (
     JAXDistributedQuantumPlan,
     compile_quantum_kernel,
-    mps_evidence,
     mps_gradient_ownership,
     plan_jax_distributed_quantum_backend,
     plan_jax_sharded_mps_training,
@@ -28,6 +27,7 @@ from flagquantum.runtime.backends.jax.mps import (
 from flagquantum.runtime.backends.jax.mps import (
     canonicalization as mps_canonicalization,
 )
+from flagquantum.runtime.backends.jax.mps import evidence as mps_evidence
 from flagquantum.runtime.backends.jax.mps import pullbacks as mps_pullbacks
 from flagquantum.runtime.backends.jax.mps import shards as mps_shards
 from flagquantum.runtime.backends.jax.mps.gradient_result import (

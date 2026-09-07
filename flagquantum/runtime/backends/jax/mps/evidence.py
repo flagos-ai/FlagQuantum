@@ -5,11 +5,11 @@ from __future__ import annotations
 import time
 from typing import Any, Mapping, Sequence
 
-from .common import communication_tier as _communication_tier
-from .release_policy import (
+from ..common import communication_tier as _communication_tier
+from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
-from .runtime_environment import _require_jax
+from ..runtime_environment import _require_jax
 
 
 def _mps_accelerator_probe_classification() -> dict[str, Any]:
