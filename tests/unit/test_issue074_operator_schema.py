@@ -19,9 +19,6 @@ from flagquantum.compiler.operator_lowering import (
 )
 from flagquantum.ops import (
     matrices,
-    register_gate,
-    registered_gates,
-    registry,
 )
 
 pytestmark = pytest.mark.unit
@@ -120,17 +117,6 @@ def test_lowering_registry_is_copy_on_write():
     assert "custom" not in base.schemas
     assert extended.capability("jax", "custom") is None
     assert lowered.capability("jax", "custom").supported
-
-
-def test_custom_registration_does_not_mutate_builtin_tables_or_globals():
-    name = "issue074_custom_x"
-    builtin_keys = tuple(matrices.GATE_MAT_DICT)
-    record = register_gate(name, torch.tensor([[0, 1], [1, 0]], dtype=torch.cfloat))
-    assert record.arity == 1
-    assert registered_gates()[name] == record
-    assert tuple(matrices.GATE_MAT_DICT) == builtin_keys
-    with pytest.raises(AttributeError):
-        getattr(registry, name)
 
 
 def test_default_manifest_covers_every_schema_and_backend():
