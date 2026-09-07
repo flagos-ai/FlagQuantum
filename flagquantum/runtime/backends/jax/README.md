@@ -7,6 +7,20 @@ It does not own statevector, MPS, or tensor-network numerical kernels. Local
 numerical operations live under `flagquantum/simulation/` and are imported
 explicitly; this boundary does not proxy Simulation internals dynamically.
 
+## Layout
+
+- `statevector/`, `mps/`, and `tensor_network/` own representation-specific
+  planning, execution, records, and evidence.
+- `kernel.py` owns the shared local JAX compilation entrypoint.
+- `backend_dispatch.py` and `planning_core.py` own cross-representation
+  dispatch and plan vocabulary.
+- `array_conversions.py`, `runtime_environment.py`, `release_policy.py`, and
+  `common.py` contain only helpers used across representation subpackages.
+
+Representation-specific modules do not belong in this directory root. Move a
+helper into a subpackage when only that representation consumes it; do not add
+a forwarding module at the old path.
+
 For local execution, start with `kernel.py`. For MPS circuit lowering and the
 nearest-neighbor CX fast-path decision, start with `mps/lowering.py`. The latter
 may recognize and lower circuit structure, but delegates tensor initialization,
