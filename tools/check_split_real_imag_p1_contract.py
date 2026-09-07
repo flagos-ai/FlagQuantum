@@ -16,7 +16,7 @@ except ModuleNotFoundError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "split-real-imag-statevector-p1-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum/runtime/backends/statevector/split_real_imag.py"
-SIMULATION = ROOT / "flagquantum/simulation/split_real_imag_statevector.py"
+SIMULATION = ROOT / "flagquantum/simulation/statevector/split_real_imag.py"
 PROFILE = ROOT / "flagquantum/runtime/profiles/split_real_imag_statevector_p1.json"
 
 
