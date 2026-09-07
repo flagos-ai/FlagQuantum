@@ -1,48 +1,4 @@
-"""
-Quantum gate matrices for statevector simulation.
-
-This module provides quantum gate matrices and precision control utilities.
-
-Examples
---------
-Basic usage:
-
->>> from flagquantum.ops import GATE_MAT_DICT, get_gate_matrix
->>>
->>> # Get a fixed gate
->>> x_gate = GATE_MAT_DICT["x"]
->>> print(x_gate.shape)
-torch.Size([2, 2])
->>>
->>> # Get a parameterized gate
->>> rx_func = GATE_MAT_DICT["rx"]
->>> theta = torch.tensor([0.5, 1.0])  # batch of angles
->>> rx_matrix = rx_func(theta)
->>> print(rx_matrix.shape)
-torch.Size([2, 2, 2])
-
-Precision control:
-
->>> from flagquantum.ops import set_global_precision, get_global_precision
->>> import torch
->>>
->>> # Switch to double precision
->>> set_global_precision(torch.complex128)
->>> print(get_global_precision())
-torch.complex128
->>>
->>> # All gates now use double precision
->>> x_gate = GATE_MAT_DICT["x"]
->>> print(x_gate.dtype)
-torch.complex128
->>>
->>> # Switch back to single precision
->>> set_global_precision(torch.complex64)
-
-Note: When precision is changed, all fixed gates are automatically
-reconverted to the new precision. Parameterized gates generate matrices
-with the current precision at call time.
-"""
+"""PyTorch gate matrices used by FlagQuantum simulation engines."""
 
 import math
 from typing import Any, Callable, Dict, Union
@@ -55,169 +11,32 @@ from ..core.runtime_config import get_runtime_config, set_runtime_config
 # Precision Configuration
 # ============================================================================
 
-GATE_MAT_DICT: Dict[str, Union[torch.Tensor, Callable]] = {}
+def _complex_dtype() -> torch.dtype:
+    return getattr(torch, get_runtime_config().complex_dtype)
 
 
-class PrecisionConfig:
-    """Compatibility facade over the task-local runtime configuration."""
-
-    @classmethod
-    def set_precision(cls, dtype: torch.dtype):
-        """Set the global complex precision for quantum operations."""
-        if dtype not in [torch.complex64, torch.complex128]:
-            raise ValueError(
-                f"Unsupported complex dtype: {dtype}. Use complex64 or complex128."
-            )
-        name = str(dtype).removeprefix("torch.")
-        set_runtime_config(get_runtime_config().with_overrides(complex_dtype=name))
-
-    @classmethod
-    def get_dtype(cls) -> torch.dtype:
-        """Get the current global complex precision."""
-        return getattr(torch, get_runtime_config().complex_dtype)
-
-    @classmethod
-    def get_real_dtype(cls) -> torch.dtype:
-        """Get the corresponding real precision for the current complex precision."""
-        return getattr(torch, get_runtime_config().real_dtype)
-
-    @classmethod
-    def to_dtype(cls, tensor: torch.Tensor) -> torch.Tensor:
-        """Convert a tensor to the current global precision."""
-        return tensor.to(dtype=cls.get_dtype())
-
-    @classmethod
-    def _create_fixed_gate(cls, matrix):
-        """Create a lossless master matrix for execution-time casting.
-
-        Fixed gates must never be materialized in complex64 and later promoted
-        to complex128: irrational constants such as ``1 / sqrt(2)`` have
-        already lost information by then.  The matrices are tiny, immutable
-        masters; execution paths cast them to the requested state dtype.
-        """
-        if isinstance(matrix, torch.Tensor):
-            return matrix.to(dtype=torch.complex128)
-        return torch.tensor(matrix, dtype=torch.complex128)
-
-    @classmethod
-    def _reconvert_fixed_gates(cls):
-        """Reconvert all fixed gate matrices to the current precision."""
-        global I_MATRIX, X_MATRIX, Y_MATRIX, Z_MATRIX, H_MATRIX
-        global S_MATRIX, T_MATRIX, SDAG_MATRIX, TDAG_MATRIX
-        global SX_MATRIX, SXDAG_MATRIX
-        global CX_MATRIX, CY_MATRIX, CZ_MATRIX, SWAP_MATRIX
-        global CPHASE_MATRIX
-        global TOFFOLI_MATRIX, FREDKIN_MATRIX
-        global GATE_MAT_DICT
-
-        # Single-qubit gates
-        I_MATRIX = cls._create_fixed_gate([[1, 0], [0, 1]])
-        X_MATRIX = cls._create_fixed_gate([[0, 1], [1, 0]])
-        Y_MATRIX = cls._create_fixed_gate([[0, -1j], [1j, 0]])
-        Z_MATRIX = cls._create_fixed_gate([[1, 0], [0, -1]])
-        H_MATRIX = cls._create_fixed_gate([[1, 1], [1, -1]]) * (1.0 / math.sqrt(2))
-        S_MATRIX = cls._create_fixed_gate([[1, 0], [0, 1j]])
-        T_MATRIX = cls._create_fixed_gate(
-            [[1, 0], [0, complex(math.cos(math.pi / 4), math.sin(math.pi / 4))]]
-        )
-        SDAG_MATRIX = cls._create_fixed_gate([[1, 0], [0, -1j]])
-        TDAG_MATRIX = cls._create_fixed_gate(
-            [[1, 0], [0, complex(math.cos(math.pi / 4), -math.sin(math.pi / 4))]]
-        )
-
-        # SX gate (√X)
-        SX_MATRIX = cls._create_fixed_gate(
-            [
-                [0.5 + 0.5j, 0.5 - 0.5j],
-                [0.5 - 0.5j, 0.5 + 0.5j],
-            ]
-        )
-        # SX† (SX dagger)
-        SXDAG_MATRIX = cls._create_fixed_gate(
-            [
-                [0.5 - 0.5j, 0.5 + 0.5j],
-                [0.5 + 0.5j, 0.5 - 0.5j],
-            ]
-        )
-
-        # Two-qubit gates
-        CX_MATRIX = cls._create_fixed_gate(
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
-        )
-        CY_MATRIX = cls._create_fixed_gate(
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]
-        )
-        CZ_MATRIX = cls._create_fixed_gate(
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-        )
-        SWAP_MATRIX = cls._create_fixed_gate(
-            [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
-        )
-        # CPhase gate (|0⟩ control, phase on |1⟩)
-        CPHASE_MATRIX = cls._create_fixed_gate(
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-        )
-
-        # Three-qubit gates
-        toffoli = torch.eye(8, dtype=torch.complex128)
-        toffoli[6, 6] = 0
-        toffoli[6, 7] = 1
-        toffoli[7, 6] = 1
-        toffoli[7, 7] = 0
-        TOFFOLI_MATRIX = toffoli
-
-        fredkin = torch.eye(8, dtype=torch.complex128)
-        fredkin[5, 5] = 0
-        fredkin[5, 6] = 1
-        fredkin[6, 5] = 1
-        fredkin[6, 6] = 0
-        FREDKIN_MATRIX = fredkin
-
-        cls._update_gate_dict()
-
-    @classmethod
-    def _update_gate_dict(cls):
-        """Update the global gate dictionary with current precision matrices."""
-        global GATE_MAT_DICT
-        GATE_MAT_DICT.update(
-            {
-                "i": I_MATRIX,
-                "x": X_MATRIX,
-                "y": Y_MATRIX,
-                "z": Z_MATRIX,
-                "h": H_MATRIX,
-                "s": S_MATRIX,
-                "sdg": SDAG_MATRIX,
-                "t": T_MATRIX,
-                "tdg": TDAG_MATRIX,
-                "sx": SX_MATRIX,
-                "sxdg": SXDAG_MATRIX,
-                "cx": CX_MATRIX,
-                "cy": CY_MATRIX,
-                "cz": CZ_MATRIX,
-                "swap": SWAP_MATRIX,
-                "cphase": CPHASE_MATRIX,
-                "ccx": TOFFOLI_MATRIX,
-                "cswap": FREDKIN_MATRIX,
-            }
-        )
+def _real_dtype() -> torch.dtype:
+    return getattr(torch, get_runtime_config().real_dtype)
 
 
-_precision = PrecisionConfig()
+def _fixed_gate(matrix: Any) -> torch.Tensor:
+    """Create a complex128 master matrix for lossless execution-time casting."""
+    return torch.as_tensor(matrix, dtype=torch.complex128)
 
 
 def set_global_precision(dtype: torch.dtype):
-    """Set precision in the current task context (legacy API)."""
-    _precision.set_precision(dtype)
+    """Set the task-local default complex precision."""
+    if dtype not in {torch.complex64, torch.complex128}:
+        raise ValueError(
+            f"Unsupported complex dtype: {dtype}. Use complex64 or complex128."
+        )
+    name = str(dtype).removeprefix("torch.")
+    set_runtime_config(get_runtime_config().with_overrides(complex_dtype=name))
 
 
 def get_global_precision() -> torch.dtype:
-    """Get the current global precision setting."""
-    return _precision.get_dtype()
-
-
-def reconvert_gates() -> None:
-    """Retained compatibility no-op; matrices are cast at execution time."""
+    """Return the task-local default complex precision."""
+    return _complex_dtype()
 
 
 # ============================================================================
@@ -231,7 +50,7 @@ def _to_complex(
     """Convert a tensor to the current global complex precision."""
     if not isinstance(tensor, torch.Tensor):
         tensor = torch.tensor(tensor)
-    return tensor.to(dtype=_precision.get_dtype())
+    return tensor.to(dtype=_complex_dtype())
 
 
 def _create_2x2_matrix(a, b, c, d) -> torch.Tensor:
@@ -258,7 +77,7 @@ def _real_parameters(params: torch.Tensor | Any) -> torch.Tensor:
     """Keep rotation-angle math real until complex matrix assembly."""
 
     if not isinstance(params, torch.Tensor):
-        return torch.as_tensor(params, dtype=_precision.get_real_dtype())
+        return torch.as_tensor(params, dtype=_real_dtype())
     return params.real if params.is_complex() else params
 
 
@@ -620,26 +439,44 @@ def rzz_mat(params: torch.Tensor) -> torch.Tensor:
 # Fixed Gate Matrices
 # ============================================================================
 
-I_MATRIX = None
-X_MATRIX = None
-Y_MATRIX = None
-Z_MATRIX = None
-H_MATRIX = None
-S_MATRIX = None
-T_MATRIX = None
-SDAG_MATRIX = None
-TDAG_MATRIX = None
-SX_MATRIX = None
-SXDAG_MATRIX = None
-CX_MATRIX = None
-CY_MATRIX = None
-CZ_MATRIX = None
-SWAP_MATRIX = None
-CPHASE_MATRIX = None
-TOFFOLI_MATRIX = None
-FREDKIN_MATRIX = None
-
-_precision._reconvert_fixed_gates()
+I_MATRIX = _fixed_gate([[1, 0], [0, 1]])
+X_MATRIX = _fixed_gate([[0, 1], [1, 0]])
+Y_MATRIX = _fixed_gate([[0, -1j], [1j, 0]])
+Z_MATRIX = _fixed_gate([[1, 0], [0, -1]])
+H_MATRIX = _fixed_gate([[1, 1], [1, -1]]) / math.sqrt(2)
+S_MATRIX = _fixed_gate([[1, 0], [0, 1j]])
+T_MATRIX = _fixed_gate(
+    [[1, 0], [0, complex(math.cos(math.pi / 4), math.sin(math.pi / 4))]]
+)
+SDAG_MATRIX = _fixed_gate([[1, 0], [0, -1j]])
+TDAG_MATRIX = _fixed_gate(
+    [[1, 0], [0, complex(math.cos(math.pi / 4), -math.sin(math.pi / 4))]]
+)
+SX_MATRIX = _fixed_gate(
+    [[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]]
+)
+SXDAG_MATRIX = _fixed_gate(
+    [[0.5 - 0.5j, 0.5 + 0.5j], [0.5 + 0.5j, 0.5 - 0.5j]]
+)
+CX_MATRIX = _fixed_gate(
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
+)
+CY_MATRIX = _fixed_gate(
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]
+)
+CZ_MATRIX = _fixed_gate(
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
+)
+SWAP_MATRIX = _fixed_gate(
+    [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
+)
+CPHASE_MATRIX = _fixed_gate(
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
+)
+TOFFOLI_MATRIX = torch.eye(8, dtype=torch.complex128)
+TOFFOLI_MATRIX[6:8, 6:8] = _fixed_gate([[0, 1], [1, 0]])
+FREDKIN_MATRIX = torch.eye(8, dtype=torch.complex128)
+FREDKIN_MATRIX[5:7, 5:7] = _fixed_gate([[0, 1], [1, 0]])
 
 
 # ============================================================================
@@ -702,8 +539,8 @@ GATE_MAT_DICT: Dict[str, Union[torch.Tensor, Callable]] = {
 def qft_matrix(n_qubits: int) -> torch.Tensor:
     """Generate QFT matrix for n qubits."""
     n = 2**n_qubits
-    complex_dtype = _precision.get_dtype()
-    real_dtype = _precision.get_real_dtype()
+    complex_dtype = _complex_dtype()
+    real_dtype = _real_dtype()
 
     k = torch.arange(n, dtype=real_dtype)
     phase_angles = (2 * torch.pi / n) * torch.outer(k, k)
@@ -717,45 +554,9 @@ def qft_matrix(n_qubits: int) -> torch.Tensor:
 # ============================================================================
 
 
-def get_gate_matrix(gate_name: str) -> Union[torch.Tensor, Callable]:
-    """Retrieve the gate matrix or matrix generation function for a given gate name."""
-    if gate_name not in GATE_MAT_DICT:
-        available = ", ".join(GATE_MAT_DICT.keys())
-        raise KeyError(f"Gate '{gate_name}' not found. Available gates: {available}")
-    return GATE_MAT_DICT[gate_name]
-
-
-def list_available_gates() -> list:
-    """Return a sorted list of all available gate names."""
-    return sorted(GATE_MAT_DICT.keys())
-
-
-def is_parameterized_gate(gate_name: str) -> bool:
-    """Check if a gate is parameterized (requires parameters at call time)."""
-    gate = GATE_MAT_DICT.get(gate_name)
-    return callable(gate) if gate is not None else False
-
-
-def get_gate_size(gate_name: str) -> int:
-    """Get the number of qubits a gate acts on."""
-    gate = get_gate_matrix(gate_name)
-    if callable(gate):
-        if gate_name in ["crx", "cry", "crz", "cphase", "rxx", "ryy", "rzz"]:
-            return 2
-        return 1
-    n = gate.shape[-1]
-    return int(math.log2(n))
-
-
-# ============================================================================
-# Module Exports
-# ============================================================================
-
 __all__ = [
     "set_global_precision",
     "get_global_precision",
-    "reconvert_gates",
-    "PrecisionConfig",
     "GATE_MAT_DICT",
     "rx_mat",
     "ry_mat",
@@ -772,8 +573,4 @@ __all__ = [
     "ryy_mat",
     "rzz_mat",
     "qft_matrix",
-    "get_gate_matrix",
-    "list_available_gates",
-    "is_parameterized_gate",
-    "get_gate_size",
 ]
