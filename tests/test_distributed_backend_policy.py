@@ -3,6 +3,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
+from flagquantum.errors import ExecutionError
 from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [
@@ -169,7 +170,7 @@ def test_circuit_run_development_distributed_statevector_measure(monkeypatch):
     assert torch.allclose(measured, circuit.expectation_z(), atol=1e-6)
 
 
-def test_circuit_run_single_rank_keeps_native_device_path(monkeypatch):
+def test_circuit_run_single_rank_uses_statevector_backend_result(monkeypatch):
     monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "development")
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
@@ -183,12 +184,9 @@ def test_circuit_run_single_rank_keeps_native_device_path(monkeypatch):
     qdev = result.native()
     plan = result.plan
 
-    assert not isinstance(qdev, fq.LocalDistributedStatevectorResult)
-    assert qdev.distributed_backend_policy.profile == "development"
-    assert (
-        qdev.distributed_statevector_summary["distributed_backend_policy"]["profile"]
-        == "development"
-    )
+    assert isinstance(qdev, fq.LocalDistributedStatevectorResult)
+    assert qdev.backend_policy.profile == "development"
+    assert torch.allclose(qdev.state, circuit.state(), atol=1e-6)
     assert plan.recommended_mode == "local"
 
 
@@ -210,10 +208,53 @@ def test_distributed_statevector_backend_override_is_consumed_before_device(
     qdev = result.native()
     plan = result.plan
 
-    assert qdev.distributed_backend_policy.torch_backend == "local_tensor"
-    assert qdev.distributed_backend_policy.jax_backend == "pmap_local_cpu"
-    assert qdev.distributed_statevector_plan.world_size == 1
+    assert qdev.backend_policy.torch_backend == "local_tensor"
+    assert qdev.backend_policy.jax_backend == "pmap_local_cpu"
+    assert qdev.plan.world_size == 1
     assert plan.world_size == 1
+
+
+def test_production_statevector_uses_torch_distributed_executor(monkeypatch):
+    monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "production")
+    circuit = fq.Circuit(1).x(0)
+    sentinel = object()
+    captured = {}
+
+    def execute(program, **options):
+        captured["program"] = program
+        captured["options"] = options
+        return sentinel
+
+    monkeypatch.setattr(
+        "flagquantum.runtime.execution.execute_torch_distributed_statevector",
+        execute,
+    )
+
+    result, plan = fqb.run_native(
+        circuit,
+        mode="distributed_statevector",
+        world_size=1,
+        device="cpu",
+        return_plan=True,
+    )
+
+    assert result is sentinel
+    assert captured["program"].n_wires == 1
+    assert captured["options"]["device"] == "cpu"
+    assert captured["options"]["dtype"] == torch.complex64
+    assert plan.world_size == 1
+
+
+def test_production_statevector_requires_initialized_process_group(monkeypatch):
+    monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "production")
+
+    with pytest.raises(ExecutionError, match="initialized torch.distributed"):
+        fqb.run_native(
+            fq.Circuit(2).h(0),
+            mode="distributed_statevector",
+            world_size=2,
+            device="cpu",
+        )
 
 
 def test_distributed_mps_run_uses_backend_policy_transparently(monkeypatch):

@@ -546,24 +546,19 @@ def test_run_distributed_attaches_statevector_plan_summary():
     assert isinstance(result, fq.ExecutionResult)
     assert result.plan.state_mode == "statevector"
     assert result.runtime["mode"] == "distributed_statevector"
-    assert result.compatibility["source_type"] == "DistributedQuantumDevice"
+    assert result.compatibility["source_type"] == "LocalDistributedStatevectorResult"
     assert result.compatibility["full_state_materialized_by_adapter"] is False
 
     # Backend-native inspection remains available explicitly without weakening
     # the stable ExecutionResult contract of Circuit.run().
-    qdev = fqb.run_native(
+    native = fqb.run_native(
         circuit,
         mode="distributed_statevector",
         device="cpu",
         world_size=1,
     )
 
-    assert qdev.distributed_statevector_plan.world_size == 1
-    assert qdev.distributed_statevector_plan.validate().valid
-    assert (
-        qdev.distributed_statevector_summary["state_mode"] == "distributed_statevector"
-    )
-    assert (
-        qdev.distributed_statevector_summary["distribution"] == "replicated_single_rank"
-    )
-    assert torch.allclose(fq.measure_allZ(qdev), circuit.expectation_z(), atol=1e-6)
+    assert native.plan.world_size == 1
+    assert native.plan.validate().valid
+    assert native.summary()["distribution_semantics"] == "replicated_single_rank"
+    assert torch.allclose(native.state, circuit.state(), atol=1e-6)

@@ -29,11 +29,13 @@ from .backends.jax import (
     run_jax_sharded_tensor_network,
 )
 from .backends.statevector import (
+    execute_torch_distributed_statevector,
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
 from .backends.statevector.legacy_execution import (
     DistributedExecutor,
+    is_legacy_distributed_device,
     run_legacy_distributed,
 )
 from .execution_plan import ExecutionPlan
@@ -260,12 +262,6 @@ def run_distributed(
         complex_bytes=execution_precision.itemsize,
         optimize=False,
     )
-    statevector_plan = plan_distributed_statevector(
-        execution_ir,
-        bsz=batch_size,
-        world_size=world_size,
-        local_world_size=local_world_size,
-    )
     jax_distributed_plan = plan_jax_distributed_quantum_backend(
         execution_ir,
         mode="statevector",
@@ -275,9 +271,26 @@ def run_distributed(
         distributed_backend_policy=backend_policy,
     ).summary()
 
-    if (
-        world_size > 1
-        and backend_policy.profile == "development"
+    if is_legacy_distributed_device(device):
+        statevector_plan = plan_distributed_statevector(
+            execution_ir,
+            bsz=batch_size,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+        result = run_legacy_distributed(
+            execution_ir,
+            device=device,
+            device_options=device_options,
+            precision=execution_precision,
+            execution_plan=execution_plan,
+            statevector_plan=statevector_plan,
+            backend_policy=backend_policy,
+            jax_distributed_plan=jax_distributed_plan,
+            measure=measure,
+        )
+    elif (
+        backend_policy.profile == "development"
         and backend_policy.torch_backend == "local_tensor"
     ):
         from ..simulation.noisy_statevector import expectation_z
@@ -296,21 +309,58 @@ def run_distributed(
             if measure
             else local_result
         )
-        if return_plan:
-            return result, execution_plan
-        return result
-
-    result = run_legacy_distributed(
-        execution_ir,
-        device=device,
-        device_options=device_options,
-        precision=execution_precision,
-        execution_plan=execution_plan,
-        statevector_plan=statevector_plan,
-        backend_policy=backend_policy,
-        jax_distributed_plan=jax_distributed_plan,
-        measure=measure,
-    )
+    elif (
+        backend_policy.profile == "production"
+        and backend_policy.torch_backend == "torch_distributed"
+    ):
+        if world_size > 1 and not torch.distributed.is_initialized():
+            raise ExecutionError(
+                "production distributed statevector execution requires an initialized "
+                "torch.distributed process group"
+            )
+        process_group = device_options.get("process_group")
+        actual_world_size = (
+            torch.distributed.get_world_size(process_group)
+            if torch.distributed.is_initialized()
+            else 1
+        )
+        if actual_world_size != world_size:
+            raise ExecutionError(
+                "planned distributed world size does not match the active process group: "
+                f"{world_size} != {actual_world_size}"
+            )
+        if measure:
+            raise ExecutionError(
+                "measure=True is not supported by the rank-local production result; "
+                "use a supported distributed observable execution path"
+            )
+        executor_option_names = {
+            "exchange_buffer_bytes",
+            "compact_index_threshold",
+            "process_group",
+            "fuse_cross_shard_gates",
+            "pipeline_pair_exchange",
+            "wire_layout",
+            "preferred_local_wires",
+            "persistent_wire_layout",
+        }
+        executor_options = {
+            name: device_options[name]
+            for name in executor_option_names
+            if name in device_options
+        }
+        result = execute_torch_distributed_statevector(
+            execution_ir,
+            device=device,
+            dtype=execution_precision,
+            local_world_size=local_world_size,
+            **executor_options,
+        )
+    else:
+        raise ExecutionError(
+            "unsupported distributed statevector backend policy: "
+            f"{backend_policy.profile}/{backend_policy.torch_backend}"
+        )
     if return_plan:
         return result, execution_plan
     return result

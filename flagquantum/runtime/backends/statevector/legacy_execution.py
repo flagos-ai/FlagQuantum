@@ -120,6 +120,12 @@ class DistributedExecutor:
         return self.device
 
 
+def is_legacy_distributed_device(value: Any) -> bool:
+    """Return whether a caller explicitly supplied the historical device."""
+
+    return isinstance(value, DistributedQuantumDevice)
+
+
 def run_legacy_distributed(
     ir: CircuitIR,
     *,
@@ -161,4 +167,8 @@ def run_legacy_distributed(
     return measure_allZ(qdev) if measure else qdev
 
 
-__all__ = ["DistributedExecutor", "run_legacy_distributed"]
+__all__ = [
+    "DistributedExecutor",
+    "is_legacy_distributed_device",
+    "run_legacy_distributed",
+]

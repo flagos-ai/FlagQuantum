@@ -376,8 +376,7 @@ def test_native_distributed_bridge_cpu():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    qdev = circuit.run_distributed(device="cpu", world_sz=1)
-    measured = fq.measure_allZ(qdev)
+    measured = circuit.run_distributed(device="cpu", world_sz=1, measure=True)
 
     assert torch.allclose(measured, torch.zeros(1, 2), atol=1e-5)
 
@@ -386,22 +385,16 @@ def test_native_distributed_bridge_uses_compiled_plan():
     circuit = fq.Circuit(1)
     circuit.x(0).x(0).rx(0, theta=0.1).rx(0, theta=0.2)
 
-    qdev, plan = circuit.run_distributed(
+    result, plan = circuit.run_distributed(
         device="cpu",
         world_size=1,
         return_plan=True,
     )
 
-    assert len(qdev.execution_ir) == 1
-    assert qdev.execution_ir.instructions[0].name == "rx"
-    assert torch.allclose(
-        torch.as_tensor(qdev.execution_ir.instructions[0].params["theta"]),
-        torch.tensor(0.3),
-    )
-    assert qdev.execution_plan == plan
+    assert result.plan.gate_plans[0].name == "rx"
     assert plan.analysis.n_instructions == 1
-    assert qdev.world_sz == 1
-    assert torch.allclose(fq.measure_allZ(qdev), circuit.expectation_z(), atol=1e-5)
+    assert result.plan.world_size == 1
+    assert torch.allclose(result.state, circuit.state(), atol=1e-5)
 
 
 def test_native_distributed_bridge_preserves_complex128_end_to_end():
@@ -410,18 +403,15 @@ def test_native_distributed_bridge_preserves_complex128_end_to_end():
     circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta=theta)
     circuit.any(0, unitary=custom)
 
-    qdev, plan = circuit.run_distributed(
+    result, plan = circuit.run_distributed(
         device="cpu",
         world_size=1,
         return_plan=True,
     )
 
-    assert qdev.real_dtype == torch.float64
-    assert qdev.complex_dtype == torch.complex128
-    assert qdev.states.dtype == torch.float64
+    assert result.state.dtype == torch.complex128
     assert plan.state_bytes == 2 * torch.complex128.itemsize
-    actual = torch.view_as_complex(qdev.states).reshape(1, -1)
-    torch.testing.assert_close(actual, circuit.state(), atol=1e-15, rtol=1e-15)
+    torch.testing.assert_close(result.state, circuit.state(), atol=1e-15, rtol=1e-15)
 
 
 def test_native_distributed_bridge_rejects_device_precision_conflict():
@@ -1060,7 +1050,7 @@ def test_auto_mode_can_dispatch_to_distributed_cpu():
     circuit = fq.Circuit(1)
     circuit.x(0)
 
-    qdev, plan = fqb.run_native(
+    result, plan = fqb.run_native(
         circuit,
         world_size=1,
         mode="distributed_statevector",
@@ -1069,8 +1059,8 @@ def test_auto_mode_can_dispatch_to_distributed_cpu():
     )
 
     assert plan.recommended_mode == "local"
-    assert qdev.world_sz == 1
-    assert torch.allclose(fq.measure_allZ(qdev), circuit.expectation_z(), atol=1e-6)
+    assert result.plan.world_size == 1
+    assert torch.allclose(result.state, circuit.state(), atol=1e-6)
     assert fq.select_execution_mode(circuit, world_size=2) == "distributed_statevector"
 
 
@@ -1103,9 +1093,7 @@ def test_distributed_mode_alias_and_plan_name_are_explicit_statevector():
     assert planned.summary()["scalability_claim_allowed"] is False
     assert planned.summary()["sharding_plan_available"] is True
     assert planned.state_mode == "statevector"
-    assert torch.allclose(
-        fq.measure_allZ(qdev_alias), fq.measure_allZ(qdev_explicit), atol=1e-6
-    )
+    assert torch.allclose(qdev_alias.state, qdev_explicit.state, atol=1e-6)
 
 
 def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
