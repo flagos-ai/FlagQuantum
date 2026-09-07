@@ -33,7 +33,7 @@ pair-combination, all-to-all delta, and observable/loss mathematics live in
 move plan-aware collective code into Simulation or create mirror shard records
 just to empty the Runtime file.
 
-For sliced parameterized tensor networks, `tensor_network_gradients.py` owns
+For sliced parameterized tensor networks, `tensor_network/gradients.py` owns
 the Runtime-facing circuit/parameter adaptation, `JAXTensorNetworkNode`
 records, slicing tasks, backend and collective selection, gradient lifecycle,
 and result evidence. Raw node construction, contraction, slicing, and

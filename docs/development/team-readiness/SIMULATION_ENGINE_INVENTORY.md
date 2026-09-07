@@ -126,7 +126,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | `simulation/jax/mps/kernels.py`、`simulation/jax/mps/batched.py`、`simulation/jax/mps/pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
 | `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、slice 与 contraction 编排 | backend/device 是否选择 JAX 由 Runtime/Platform；标签切片与基础 einsum 数学归 Simulation |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
-| `jax/*execution.py`、`backend_dispatch.py`、`statevector/training.py`、`mps_gradients.py`、`tensor_network_gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
+| `jax/*execution.py`、`backend_dispatch.py`、`statevector/training.py`、`mps_gradients.py`、`tensor_network/gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
 | `jax/*planning.py`、`planning_core.py`、`runtime_environment.py`、`transport.py` | 资源或通信编排 | 算法约束/代价输入 | Runtime/Platform topology、environment、transport 和 device lifecycle |
 | `jax/*records.py`、`*result.py`、`evidence_collector.py`、`release_policy.py` | 结果转换/门面 | 算法内部 diagnostics | Core result/evidence、Runtime 汇总和 release policy |
 
@@ -147,7 +147,7 @@ Statevector 复核确认 `statevector/kernels.py` 只剩指令/计划适配、co
 Runtime shard/plan 类型。
 
 参数化张量网络复核确认，通用节点构造、标签切片、einsum 收缩以及输出 observable/loss
-数学已由 `simulation/jax/tensor_network.py` 统一负责；`tensor_network_gradients.py` 中
+数学已由 `simulation/jax/tensor_network.py` 统一负责；`tensor_network/gradients.py` 中
 剩余节点组装直接消费 Runtime 的 `JAXTensorNetworkNode`、切片任务、后端和 collective
 选择，并参与梯度生命周期与结果证据，因此继续属于 Runtime 适配。该路径已到停止点：
 不得为消除 Runtime 中的 `jnp` 调用而复制节点记录或新增 node factory；只有不依赖

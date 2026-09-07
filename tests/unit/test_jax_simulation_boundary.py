@@ -10,7 +10,6 @@ from flagquantum.runtime.backends.jax import (
     mps_gradient_ownership,
     mps_kernel,
     mps_pullbacks,
-    tensor_network_gradients,
 )
 from flagquantum.runtime.backends.jax.statevector import (
     gradient_records as statevector_gradient_records,
@@ -18,6 +17,9 @@ from flagquantum.runtime.backends.jax.statevector import (
 from flagquantum.runtime.backends.jax.statevector import kernels as statevector_kernels
 from flagquantum.runtime.backends.jax.tensor_network import (
     contraction as tensor_network_contraction,
+)
+from flagquantum.runtime.backends.jax.tensor_network import (
+    gradients as tensor_network_gradients,
 )
 from flagquantum.simulation.jax import primitives as jax_gate_primitives
 from flagquantum.simulation.jax import statevector as jax_statevector

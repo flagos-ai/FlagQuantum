@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Sequence
 
-from ....simulation.jax.primitives import _jax_pauli_matrix
-from ....simulation.jax.tensor_network import (
+from .....simulation.jax.primitives import _jax_pauli_matrix
+from .....simulation.jax.tensor_network import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .array_conversions import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..array_conversions import (
     _jax_nodes_from_torch_nodes,
     _jax_parameter_array_from_input,
     _torch_parameters_for_static_build,
 )
-from .backend_dispatch import plan_jax_distributed_quantum_backend
-from .common import node_count as _node_count
-from .runtime_environment import (
+from ..backend_dispatch import plan_jax_distributed_quantum_backend
+from ..common import node_count as _node_count
+from ..runtime_environment import (
     _jax_complex_dtype,
     _jax_real_dtype,
     _require_jax,
@@ -27,13 +27,13 @@ from .runtime_environment import (
     _resolve_world_size,
     _torch_complex_dtype,
 )
-from .tensor_network.contraction import (
+from .contraction import (
     _jax_contract_tensor_slices_by_backend,
     _pauli_ops_from_term,
 )
-from .tensor_network.execution import _resolve_tn_compute_backend
-from .tensor_network.planning import _tn_tasks
-from .tensor_network.records import (
+from .execution import _resolve_tn_compute_backend
+from .planning import _tn_tasks
+from .records import (
     JAXSlicedTensorNetworkGradientResult,
     JAXSlicedTensorNetworkParameterGradientResult,
     JAXTensorNetworkNode,
@@ -51,7 +51,7 @@ def _jax_parameterized_tn_state_nodes(
     conjugate: bool,
 ) -> tuple[list[JAXTensorNetworkNode], list[int], int]:
     _, jnp = _require_jax()
-    from ....simulation.jax.primitives import _jax_instruction_matrix
+    from .....simulation.jax.primitives import _jax_instruction_matrix
 
     next_label = int(start_label)
     current_labels: list[int] = []
@@ -160,7 +160,7 @@ def _static_expectation_plan_for_parameterized_tn(
     observable_wires: Sequence[int] | None,
     hamiltonian_terms: Sequence[tuple[float, Sequence[tuple[int, str]]]],
 ) -> Any:
-    from ....simulation.tensor_network.entrypoints import (
+    from .....simulation.tensor_network.entrypoints import (
         build_tensor_network,
         build_tensor_network_expectation,
     )
@@ -327,7 +327,7 @@ def jax_sliced_tensor_network_value_and_grad(
     being implied by node-level VJP coverage.
     """
 
-    from ....simulation.tensor_network.entrypoints import build_tensor_network
+    from .....simulation.tensor_network.entrypoints import build_tensor_network
 
     torch = _require_torch()
     jax, _ = _require_jax()
@@ -525,7 +525,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
 
     def _loss(parameter_array: Any) -> Any:
-        from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+        from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
         previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
         try:
@@ -565,7 +565,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
         sliced_labels=slicing.sliced_labels,
         distributed_backend_policy=policy,
     )
-    from .kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
 
     previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
     try:

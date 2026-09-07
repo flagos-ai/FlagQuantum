@@ -8,4 +8,5 @@ operations remain in `simulation/jax/tensor_network.py`.
 - Start in `planning.py` for slice-task and representation planning.
 - Start in `contraction.py` for plan-aware slice contraction and collectives.
 - Start in `execution.py` for sharded forward execution.
+- Start in `gradients.py` for sliced reverse mode and parameter gradients.
 - Import the owning module directly; this package does not add another facade.
