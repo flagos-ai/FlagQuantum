@@ -17,12 +17,11 @@ import torch
 import torch.distributed as dist
 
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...simulation.mps import (
+from ...simulation.mps_execution import run_mps
+from ...simulation.mps_models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
-    MPSState,
     MPSTruncationRecord,
-    run_mps,
 )
 from ...simulation.mps_rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
@@ -36,6 +35,7 @@ from ...simulation.mps_rank_local import (
 from ...simulation.mps_rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
+from ...simulation.mps_state import MPSState
 from ..backends.jax import plan_jax_distributed_quantum_backend
 from .identity import (
     DistributedIdentity,

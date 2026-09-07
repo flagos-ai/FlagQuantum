@@ -606,7 +606,7 @@ def run_native(
     elif mode == "mps":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from ..simulation.mps import run_mps
+        from ..simulation.mps_execution import run_mps
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)
@@ -626,7 +626,7 @@ def run_native(
     elif mode == "adaptive_mps":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from ..simulation.mps import run_mps_adaptive
+        from ..simulation.mps_execution import run_mps_adaptive
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)

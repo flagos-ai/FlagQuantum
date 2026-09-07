@@ -19,10 +19,9 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...simulation.mps import (
+from ...simulation.mps_models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
-    MPSState,
 )
 from ...simulation.mps_rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
@@ -33,6 +32,7 @@ from ...simulation.mps_rank_local import (
 from ...simulation.mps_rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
+from ...simulation.mps_state import MPSState
 from ...simulation.tensor import (
     TensorNetworkState,
 )
