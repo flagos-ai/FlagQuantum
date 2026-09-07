@@ -40,7 +40,7 @@ from ..statevector_kernels import (
     _statevector_pmap_backward_blockers,
     _statevector_shard_map_backward_blockers,
 )
-from ..statevector_records import JAXShardedStatevectorResult, JAXStatevectorShardState
+from .records import JAXShardedStatevectorResult, JAXStatevectorShardState
 
 
 def run_jax_sharded_statevector(

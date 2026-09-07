@@ -14,7 +14,7 @@ from .release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
 from .runtime_environment import _jnp_device_put, _require_jax, _require_torch
-from .statevector_records import (
+from .statevector.records import (
     JAXStatevectorShardState,
     _statevector_communication_plan_for_claimability,
     _statevector_memory_plan_for_claimability,

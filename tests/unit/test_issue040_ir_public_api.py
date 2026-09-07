@@ -15,7 +15,7 @@ from flagquantum.core.ir import (
     MeasurementNode,
     ObservableNode,
 )
-from flagquantum.runtime.backends.jax.statevector_records import (
+from flagquantum.runtime.backends.jax.statevector.records import (
     JAXStatevectorShardState,
 )
 

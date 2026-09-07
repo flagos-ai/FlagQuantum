@@ -14,11 +14,11 @@ from .runtime_environment import (
     _resolve_policy,
     _resolve_world_size,
 )
+from .statevector.records import JAXShardedStatevectorTrainingPlan
 from .statevector_kernels import (
     _statevector_pmap_backward_blockers,
     _statevector_shard_map_backward_blockers,
 )
-from .statevector_records import JAXShardedStatevectorTrainingPlan
 
 
 def _statevector_training_device_blockers(

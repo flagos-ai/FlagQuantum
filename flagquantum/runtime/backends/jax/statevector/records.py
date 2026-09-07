@@ -5,12 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .planning_core import JAXDistributedQuantumPlan
-from .release_policy import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..planning_core import JAXDistributedQuantumPlan
+from ..release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
 )
-from .runtime_environment import (
+from ..runtime_environment import (
     _jax_array_device_name,
     _require_torch,
     _torch_complex_dtype,

@@ -15,7 +15,7 @@ from .runtime_environment import (
     _require_jax,
     _require_torch,
 )
-from .statevector_records import JAXStatevectorShardState
+from .statevector.records import JAXStatevectorShardState
 from .tensor_network_records import JAXTensorNetworkNode
 
 

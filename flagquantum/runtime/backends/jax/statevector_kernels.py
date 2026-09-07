@@ -25,7 +25,7 @@ from .runtime_environment import (
     _jax_pmap_device_assignment,
     _require_jax,
 )
-from .statevector_records import JAXStatevectorShardState
+from .statevector.records import JAXStatevectorShardState
 
 
 def _jax_sharded_statevector_loss_from_shards(
