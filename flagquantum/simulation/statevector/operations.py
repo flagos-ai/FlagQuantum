@@ -11,7 +11,7 @@ import torch
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
-from ...ops.complex_ops import complex_mul
+from ..numerics.complex_arithmetic import complex_mul
 from ...ops.gate_matrix import (
     gate_matrix as _gate_matrix,
 )

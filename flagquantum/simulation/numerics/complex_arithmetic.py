@@ -1,4 +1,4 @@
-"""Portable complex primitives built from real PyTorch operations."""
+"""Portable complex arithmetic built from real PyTorch operations."""
 
 from __future__ import annotations
 

@@ -14,7 +14,7 @@ import torch
 from ...core.ir import CircuitIR, Instruction
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
-from ...ops.complex_ops import complex_conj, complex_mul
+from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from ...ops.matrices import GATE_MAT_DICT
 from .operations import (
     _DIAGONAL_STATEVECTOR_GATES,
