@@ -88,8 +88,8 @@ The migration reused the existing `PlatformRuntime`, registry, Core capability
 values, Runtime plan/result types, and Simulation engine. It added only the
 target package marker, concise ownership documentation, and a vertical-slice
 test proving that a tampered plan fails before numerical execution. It removed
-the old directory and froze `extensions/sdk` as a separate extension lifecycle
-until replacement evidence justifies further convergence.
+the old platform directory; the independent extension lifecycle now belongs to
+`ecosystem/extensions`.
 
 This is directory ownership evidence, not a new CUDA, FlagOS, domestic-device,
 communication, or performance claim. Platform convergence remains in progress

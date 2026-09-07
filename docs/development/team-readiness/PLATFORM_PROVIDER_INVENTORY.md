@@ -16,7 +16,7 @@
 `flagquantum.providers.platform.PlatformRuntime` 负责设备发现、激活、同步、
 内存快照、流/事件、RNG 和运行时身份；内建实现只有 PyTorch CPU、PyTorch CUDA
 与懒加载的 Torch-FL FlagOS。扩展侧的唯一权威注册与生命周期机制仍是
-`flagquantum.extensions.sdk.ExtensionRegistry`。本轮没有新增 Provider 注册体系，
+`flagquantum.ecosystem.extensions.sdk.ExtensionRegistry`。本轮没有新增 Provider 注册体系，
 也没有修改受保护契约。
 
 必须区分接口、软件执行证据与真实硬件认证：

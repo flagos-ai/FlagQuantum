@@ -40,7 +40,7 @@ made.
 | Format interoperability | Qiskit circuit, PennyLane script, OpenQASM/QCIS text | `CircuitIR`, compiler target IR, typed conversion report | Explicit exported circuit/script/text artifact | Ecosystem for framework conversion; Compiler for target text emission |
 | Machine-learning frontend | PyTorch tensors/modules; future framework-native frontend object | `CircuitIR`, named parameters, `RuntimePolicy` | PyTorch tensor/result by stable design | PyTorch Runtime; Ecosystem only for non-native frontend translation |
 | Optional quantum kernel | PyTorch tensor at autograd bridge | Kernel-local JAX arrays | PyTorch tensor and gradient | Runtime optional JAX backend |
-| Plugin extension | Extension implementation and manifest | Capability request/response and owned configuration | Extension result behind negotiated handle | `extensions/sdk/**` Platform during transition; ecosystem-facing facade elsewhere |
+| Plugin extension | Extension implementation and manifest | Capability request/response and owned configuration | Extension result behind negotiated handle | `ecosystem/extensions/**` |
 | Backend execution | Owned program/plan or deployment package | Provider-neutral execution/deployment contract | Owned execution result plus serializable provenance | Runtime or Execution Provider, never format interop |
 | Algorithm example/benchmark | Library-specific demo object | No production contract | Benchmark-only payload with explicit methodology | `examples/**` or `benchmarks/**` |
 
@@ -111,7 +111,7 @@ optional JAX backend.
 
 ### Extension SDK and registry
 
-`flagquantum.extensions` exposes manifests, capability negotiation, scoped
+`flagquantum.ecosystem.extensions` exposes manifests, capability negotiation, scoped
 registration, lifecycle containment, and conformance helpers. There is one
 registry (`ExtensionRegistry` with a task-local `ContextVar`), so no second
 plugin registry should be introduced.
@@ -119,10 +119,9 @@ plugin registry should be introduced.
 The protocols currently use broad `Any` values for program, parameter, result,
 compiler transform, and planner hooks. This is a deliberate transitional risk:
 an extension could pass a vendor object through a handle even though the built-in
-framework adapters do not. `extensions/sdk/**` is Platform-owned and was not
-modified. Tightening these methods requires a Platform/integration contract
-change using FlagQuantum-owned program, plan, result, and serialized provider
-payload types.
+framework adapters do not. Tightening these methods requires an Ecosystem and
+integration contract change using FlagQuantum-owned program, plan, result, and
+serialized provider payload types.
 
 ### Algorithms, examples, and benchmarks
 
@@ -151,7 +150,7 @@ adapter or alternate IR.
 | Severity | Location | Finding | Why it matters | Required owner/action |
 | --- | --- | --- | --- | --- |
 | P1 | `interop/qiskit/conversion.py` source provenance copy | Recognized `flagquantum_*` metadata values are copied recursively without an owned scalar/container validator. A caller can place an arbitrary external object under one of those keys and carry it into `CircuitIR.metadata`. | Potential real object leakage through an otherwise correct adapter. | Core must define canonical metadata value types and validation; Ecosystem then rejects or explicitly serializes unsupported values with an approved issue code. |
-| P1 | `extensions/sdk.py` protocols | `execute`, `value_and_grad`, `transform`, and `plan` accept/return `Any`. | Third-party objects can cross layers through a negotiated extension. | Platform/integration must replace `Any` at cross-layer points with approved owned contracts; Ecosystem supplies conformance cases. |
+| P1 | `ecosystem/extensions/sdk.py` protocols | `execute`, `value_and_grad`, `transform`, and `plan` accept/return `Any`. | Third-party objects can cross layers through a negotiated extension. | Ecosystem/integration must replace `Any` at cross-layer points with approved owned contracts. |
 | P2 | `runtime/dynamic_conformance.py` | Runtime compatibility wrappers import `interop.qiskit.execution`. | Dependency direction is Runtime -> Ecosystem. | Move Qiskit Aer implementation to Execution Provider; keep an Ecosystem format converter and a compatibility shim with an owned removal plan. |
 | P2 | `_compiler/importers/circuit_ir.py` | Compiler provenance allowlist names `qiskit_label`. | No external object leaks, but vendor vocabulary has entered Compiler. | Core defines vendor-neutral operation label/provenance semantics; Qiskit maps at the edge. |
 | P2 | `runtime/dynamic/dialects/braket_iqm.py` | Vendor-specific Braket/IQM lowering is implemented under Runtime. | Runtime owns orchestration, not vendor artifact dialects. | Execution Provider migration after a dynamic artifact contract is approved. |

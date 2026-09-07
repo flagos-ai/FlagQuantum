@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.extensions import (
+from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     CapabilityResponse,
     ExtensionConfig,

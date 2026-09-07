@@ -24,12 +24,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   Qiskit golden path to use the diagnostic `export_qiskit()` /
   `import_qiskit()` pair rather than treating the concise conversion return as
   a report wrapper.
-- Promoted the isolated `flagquantum.extensions` protocol to a first-alpha
+- Promoted the isolated `flagquantum.ecosystem.extensions` protocol to a first-alpha
   candidate with a machine-readable contract and root-surface guard. Public
   conformance entry points and a third-party-style backend example now prove
   that extensions need no runtime or core internals. Individual extensions are
-  still experimental by default. The extension protocol contract is now
-  frozen; the overall first-alpha API freeze remains pending.
+  still experimental by default. Before public release, the protocol moved to
+  `flagquantum.ecosystem.extensions` without a compatibility namespace; its
+  freeze and the overall first-alpha API freeze remain pending.
   The audit also retains `noise_model` and keeps local `ExecutionPlan` separate
   from provider-facing `DeploymentPackage`.
 - Added the stable `flagquantum.errors` lifecycle categories while preserving

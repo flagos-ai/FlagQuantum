@@ -29,7 +29,7 @@ release certification。
 | `TencentQuantumProvider` | Tencent HTTP 任务提交、状态与 counts | `DeploymentResult` | `qpu_or_remote_service_job_candidate` | mock transport 证据，不代表真实设备 |
 | `TianyanProvider` / `GuodunProvider` | QCIS 提交、结果矩阵转 counts | `DeploymentResult` | `qpu_job_candidate` | 状态仅以“是否已有结果项”推断，无失败/取消路径 |
 | `FieldQuantumProvider` | 远程 sample 模拟服务 | `DeploymentResult` | `remote_service_job` | 静态 simulator profile；不是本地 Simulation Provider |
-| `flagquantum.extensions.ProviderExtension` | 第三方扩展注册、协商、启动、隔离和清理 | `submit -> str`、`status -> str` | 扩展控制面，不是完整执行目标 | 没有 result、cancel、evidence 或标准错误合同 |
+| `flagquantum.ecosystem.extensions.ProviderExtension` | 第三方扩展注册、协商、启动、隔离和清理 | `submit -> str`、`status -> str` | 扩展控制面，不是完整执行目标 | 没有 result、cancel、evidence 或标准错误合同 |
 
 表中的 `remote_service_job`、`qpu_job_candidate` 等只是本次盘点使用的目标家族描述，不是
 新的公开枚举或合同值。外部任务本身不具有 rank 分布分类；只有其背后的具体模拟执行若

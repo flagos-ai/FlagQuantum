@@ -86,8 +86,7 @@ python tools/check_team_scope.py \
 - `runtime/backends/**` 过渡期属于 Simulation；
 - `providers/platform/**` 属于 Platform；
 - `runtime/target_execution.py` 过渡期属于 Execution Provider；
-- `extensions/**` 默认属于 Ecosystem；
-- `extensions/sdk/**` 过渡期属于 Platform。
+- `ecosystem/**` 属于 Ecosystem，包括扩展协议。
 
 这使当前代码在尚未移动目录时也只有一个责任团队。迁移到目标目录后，应同步删除旧规则。
 

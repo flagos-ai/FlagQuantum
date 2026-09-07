@@ -98,7 +98,7 @@
 | `BackendCapabilities` | `flagquantum/runtime/backend_registry.py` | backend selection、API compatibility exports | **Runtime 内部运行环境能力**。包含实时 accelerator discovery，不应直接变成可移植 Target snapshot。 |
 | `CloudBackendProfile` | `flagquantum/deployment/cloud.py` | package creation、QuantumProvider implementations | **临时 Deployment 能力对象**。门集、拓扑、动态线路和格式字段与 `TargetCapabilities` 重叠。 |
 | `CapabilityEvidence` | `flagquantum/runtime/capabilities.py` | operator probes/preflight | **Runtime 证据记录**，不是 target declaration；应在 Core capability schema 中通过 evidence reference 关联而非合并字段。 |
-| `CapabilityRequest/Response` | `flagquantum/extensions/sdk.py` | extension registry/conformance | **受保护扩展协议**。是能力协商消息，不是 Target snapshot。 |
+| `CapabilityRequest/Response` | `flagquantum/ecosystem/extensions/sdk.py` | extension registry/conformance | **待冻结扩展协议**。是能力协商消息，不是 Target snapshot。 |
 | `SolverWorkspaceCapabilities` | `runtime/backends/mps/solver_workspace.py` | MPS solver workspace | **算法本地对象**，保留在 Simulation/Provider 内部。 |
 
 建议权威位置：`flagquantum/core/capabilities/` 中的可移植、不可变
@@ -176,7 +176,7 @@ Simulation 与一个 QPU/remote provider 可互换，之后再讨论实现搬迁
 | --- | --- | --- |
 | 云/QPU execution provider | `deployment.cloud.QuantumProvider`、`ProviderTaskHandle`、`DeploymentResult` | 具体可用但返回字符串状态、内置异常和 Deployment 专用结果；不是 Core 契约。 |
 | sealed artifact runtime adapter | `_compiler.runtime_abi.RuntimeAdapter`、`ExecutionHandle`、`RuntimeCallStatus`、`RuntimeDiagnostic` | 私有且 provider-neutral，状态/身份设计可复用，但错误没有映射到 Core `FailureContract`。 |
-| Extension provider | `extensions.sdk.ProviderExtension`、`Extension*Error` | `flagquantum.extensions` 的受保护扩展协议；生命周期和 capability negotiation 与 execution provider 不同。 |
+| Extension provider | `extensions.sdk.ProviderExtension`、`Extension*Error` | `flagquantum.ecosystem.extensions` 的受保护扩展协议；生命周期和 capability negotiation 与 execution provider 不同。 |
 | Platform provider | `providers.platform` contracts 与 `Platform*Error` | 平台层专用，必须与完整 execution provider 分开。 |
 | Compiler conformance metadata | `_compiler.provider_conformance.ProviderExtension` | 与公开 `extensions.sdk.ProviderExtension` **同名不同义**；前者只是 namespaced non-semantic metadata，应改名并最终留在 conformance 内部。 |
 
@@ -194,7 +194,7 @@ Provider 层合成一个含大量可选方法的接口。
 | 编号 | 重复/转换/泄漏 | 当前路径 | 处理建议 |
 | --- | --- | --- | --- |
 | D1 | 稳定 `ExecutionOptions` 与私有运行时绑定曾同名 | `runtime/options.py` ↔ `_compiler/runtime_abi.py` | **已完成名称消歧**：稳定类型保持不动；私有 ABI 使用 `RuntimeBindings`，且不保留同名兼容别名。后续只在 adapter 边界接收稳定请求。 |
-| D2 | 两个 `ProviderExtension` | `extensions/sdk.py` ↔ `_compiler/provider_conformance.py` | 私有 metadata 类型改名；不得影响稳定扩展协议。 |
+| D2 | `ProviderExtension` 命名冲突 | `ecosystem/extensions/sdk.py`；原 `_compiler` 实现已删除 | **已消除**：扩展协议保留唯一公开定义。 |
 | D3 | artifact 三轨 | Core `ProgramArtifact` ↔ compiler `SealedExecutableArtifact` ↔ Deployment `DeploymentPackage` | Core 定义 program/executable 信封；Deployment 仅做 provider wire adapter。 |
 | D4 | target capability 三轨 | `_compiler.TargetCapabilities` ↔ Runtime `BackendCapabilities` ↔ Deployment `CloudBackendProfile` | Core snapshot 为跨领域权威；dynamic discovery 和 cloud profile 都显式投影。 |
 | D5 | request 多轨 | `RequestedExecution` ↔ `InternalExecutionRequest` ↔ `DistributedExecutionRequest` ↔ 两套 options | 新 Core request 落地后按职责保留 importer-local request，其余 adapter 化或删除。 |

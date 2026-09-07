@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "status": "frozen",
+  "status": "approved",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_007_ALPHA_FREEZE_READINESS.md",
   "target": "first-public-alpha",
   "implementation_authorized": true,
   "root_manifest_change": false,
   "stable_extensions": [
     {
-      "namespace": "flagquantum.extensions",
+      "namespace": "flagquantum.ecosystem.extensions",
       "additions": [
         "SDK_API_VERSION",
         "CapabilityRequest",
@@ -89,7 +89,7 @@
     "golden_paths": "tests/api_contract/test_open_source_golden_paths.py"
   },
   "rules": {
-    "candidate_is_frozen_contract": true,
+    "candidate_is_frozen_contract": false,
     "whole_api_freeze_implied": false,
     "future_breaking_changes_require_api_owner_approval": true
   }

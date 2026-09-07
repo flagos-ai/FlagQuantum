@@ -515,10 +515,10 @@ focused_tests = "tests/test_dynamic_conformance.py"
 
 [capabilities.extension_sdk]
 title = "Extension SDK"
-summary = "Build against the frozen extension protocol while qualifying each extension independently."
+summary = "Build and qualify optional extensions through the Ecosystem extension protocol."
 category = "deployment_and_extension"
 user_goals = ["Prototype a FlagQuantum extension", "Register custom framework behavior"]
-public_apis = ["flagquantum.extensions"]
+public_apis = ["flagquantum.ecosystem.extensions"]
 runtime_modes = ["extension_defined"]
 hardware = ["extension_defined"]
 gradient_support = "extension_defined"
@@ -527,5 +527,5 @@ quick_start = "examples/extensions/reference_extensions.py"
 documentation = "docs/reference/EXTENSION_SDK.md"
 level = "experimental"
 owner = "extension maintainers"
-limitations = "The SDK protocol contract is frozen; individual extensions remain experimental until separately qualified."
+limitations = "The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified."
 focused_tests = "tests/unit/test_issue080_extension_sdk.py"

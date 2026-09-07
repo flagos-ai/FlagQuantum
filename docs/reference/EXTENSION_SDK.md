@@ -1,10 +1,12 @@
 # FlagQuantum Extension SDK
 
-The frozen first-public-alpha SDK contract lives under
-`flagquantum.extensions`; it does not add root exports. Extensions declare a
+The approved, pre-freeze SDK contract lives under
+`flagquantum.ecosystem.extensions`; it does not add root exports. Extensions declare a
 versioned manifest, negotiate capabilities before activation, and are installed
 into a task-local immutable registry.
-The protocol contract was separately frozen by the API owner on 2026-09-01.
+The API owner authorized its direct pre-release move from the former
+`flagquantum.extensions` namespace on 2026-09-07; no compatibility layer is
+provided.
 Individual extensions remain experimental by default and require independent
 qualification.
 
@@ -41,7 +43,7 @@ only trusted packages should be installed.
 
 ## Conformance
 
-`flagquantum.extensions` supplies reusable backend and provider checks covering
+`flagquantum.ecosystem.extensions` supplies reusable backend and provider checks covering
 manifest/payload serialization, capability honesty, PyTorch gradients,
 dtype/device preservation, isolated errors, and cleanup. The conformance
 submodule remains an equivalent explicit import path. Reference extensions are

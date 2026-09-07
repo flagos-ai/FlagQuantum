@@ -70,7 +70,6 @@ worktree = "FlagQuantum-vNext-platform"
 owns = [
     "flagquantum/providers/platform/**",
     "flagquantum/devices/**",
-    "flagquantum/extensions/sdk/**",
 ]
 
 [teams.execution]
@@ -85,8 +84,7 @@ owns = [
 branch = "codex/vnext-team-ecosystem"
 worktree = "FlagQuantum-vNext-ecosystem"
 owns = [
-    "flagquantum/interop/**",
-    "flagquantum/extensions/**",
+    "flagquantum/ecosystem/**",
     "flagquantum/encoding/**",
 ]
 
@@ -94,8 +92,7 @@ owns = [
 branch = "codex/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
-    "flagquantum/_agent_services/**",
-    "flagquantum/_gateways/**",
+    "flagquantum/agent_services/**",
     "flagquantum/agent.py",
 ]
 

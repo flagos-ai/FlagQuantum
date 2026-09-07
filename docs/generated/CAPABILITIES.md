@@ -443,17 +443,17 @@ Execute dynamic circuits locally and assess whether a backend can support their 
 
 ### Extension SDK
 
-Build against the frozen extension protocol while qualifying each extension independently.
+Build and qualify optional extensions through the Ecosystem extension protocol.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.extensions`
+- **Public API:** `flagquantum.ecosystem.extensions`
 - **Runtime modes:** `extension_defined`
 - **Hardware:** `extension_defined`
 - **Gradient support:** `extension_defined`
 - **Distribution semantics:** `extension_defined`
 - **Start:** [quick example](../../examples/extensions/reference_extensions.py)
 - **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
-- **Known boundary:** The SDK protocol contract is frozen; individual extensions remain experimental until separately qualified.
+- **Known boundary:** The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified.
 
 
 ## Validated public performance claims

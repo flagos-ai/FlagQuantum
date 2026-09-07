@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-from flagquantum.extensions import (
+from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     ExtensionCompatibilityError,
     ExtensionConfig,
@@ -17,7 +17,7 @@ from flagquantum.extensions import (
     ExtensionRegistry,
     extension_scope,
 )
-from flagquantum.extensions.conformance import (
+from flagquantum.ecosystem.extensions.conformance import (
     run_backend_conformance,
     run_provider_conformance,
 )
@@ -98,7 +98,7 @@ def test_failed_extension_is_contained_and_cleanup_is_attempted():
 
 def test_all_protocol_kinds_are_declared_without_import_side_effects():
     before = set(sys.modules)
-    import flagquantum.extensions as extensions
+    import flagquantum.ecosystem.extensions as extensions
 
     expected = {
         "ExecutionBackendExtension",

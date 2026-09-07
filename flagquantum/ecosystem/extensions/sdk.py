@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Iterator, Mapping, Protocol, Sequence, runtime_checkable
 
-from ..errors import CapabilityError, ExecutionError, FlagQuantumError
+from ...errors import CapabilityError, ExecutionError, FlagQuantumError
 
 SDK_API_VERSION = "1.0"
 EXTENSION_KINDS = frozenset(

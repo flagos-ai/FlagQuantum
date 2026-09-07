@@ -83,7 +83,7 @@
       ]
     },
     {
-      "namespace": "flagquantum.extensions",
+      "namespace": "flagquantum.ecosystem.extensions",
       "symbols": [
         "SDK_API_VERSION",
         "CapabilityRequest",

@@ -6,7 +6,7 @@ from typing import Any, Mapping
 
 import torch
 
-from flagquantum.extensions import (
+from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     CapabilityResponse,
     ExtensionConfig,

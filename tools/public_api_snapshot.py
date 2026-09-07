@@ -441,7 +441,7 @@ def _validate_authorized_errors_module(contract: dict[str, Any]) -> list[str]:
 
 def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[str]:
     import flagquantum as fq
-    import flagquantum.extensions as extensions
+    import flagquantum.ecosystem.extensions as extensions
     from flagquantum.errors import CapabilityError, ExecutionError, FlagQuantumError
 
     errors: list[str] = []
@@ -449,11 +449,13 @@ def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[st
     expected = {
         str(name)
         for section in declared
-        if section["namespace"] == "flagquantum.extensions"
+        if section["namespace"] == "flagquantum.ecosystem.extensions"
         for name in section["additions"]
     }
     if set(extensions.__all__) != expected:
-        errors.append("flagquantum.extensions exports differ from Proposal 007")
+        errors.append(
+            "flagquantum.ecosystem.extensions exports differ from Proposal 007"
+        )
     leaked = sorted(expected & set(fq.__all__))
     if leaked:
         errors.append(

@@ -71,8 +71,8 @@ Provider 只能消费或实现这些契约，不得复制定义。
 
 - 本决策当前只改变候选架构契约、文档和架构检查，不改变 Stable Core 公共 API；
 - 现有 Runtime→Compiler 导入暂时保留在有界清单中；
-- 原 `runtime/platforms` 已随首条 CPU 纵向链路迁入 `providers/platform`；`extensions/sdk`
-  仍须在替换证据完成后收口，不能形成第二套平台注册权威；
+- 原 `runtime/platforms` 已随首条 CPU 纵向链路迁入 `providers/platform`；扩展协议已归入
+  `ecosystem/extensions`，不再作为平台注册权威；
 - 每次迁移只处理一条完整纵向路径，通过后才关闭对应旧入口。
 
 ## 验收

@@ -69,9 +69,9 @@
       "name": "platform_provider_convergence",
       "owner": "platform-maintainers",
       "target_milestone": "vnext-phase-3",
-      "current_authority": ["flagquantum/providers/platform", "flagquantum/extensions/sdk"],
+      "current_authority": ["flagquantum/providers/platform"],
       "target_authority": "flagquantum/providers/platform",
-      "compatibility_adapter": "evolved PlatformRuntime and extension SDK contracts",
+      "compatibility_adapter": "PlatformRuntime contract",
       "completion_evidence": "two platform implementations pass capability, precision, communication, fallback, and replacement tests",
       "retirement_condition": "no general-purpose module imports a concrete vendor runtime",
       "status": "in_progress"
@@ -91,9 +91,9 @@
       "name": "ecosystem_convergence",
       "owner": "ecosystem-maintainers",
       "target_milestone": "vnext-phase-4",
-      "current_authority": ["flagquantum/ecosystem", "flagquantum/extensions"],
+      "current_authority": ["flagquantum/ecosystem"],
       "target_authority": "flagquantum/ecosystem",
-      "compatibility_adapter": "existing interop and extension entry points",
+      "compatibility_adapter": "none",
       "completion_evidence": "external objects are converted at the boundary and round-trip conformance tests pass",
       "retirement_condition": "external framework objects no longer cross into Core, Compiler, Runtime, or Simulation",
       "status": "in_progress"

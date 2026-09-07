@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-import flagquantum.extensions as fqx
+import flagquantum.ecosystem.extensions as fqx
 
 pytestmark = pytest.mark.unit
 
@@ -35,7 +35,7 @@ def test_third_party_backend_uses_only_the_public_extension_namespace() -> None:
         and node.module.startswith("flagquantum")
     }
 
-    assert flagquantum_imports == {"flagquantum.extensions"}
+    assert flagquantum_imports == {"flagquantum.ecosystem.extensions"}
 
     reference = _load_reference_extensions()
     backend = reference.ReferenceTorchBackend()

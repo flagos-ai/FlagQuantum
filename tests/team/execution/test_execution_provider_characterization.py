@@ -15,7 +15,7 @@ import pytest
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.deployment as fqd
-from flagquantum.extensions import ProviderExtension
+from flagquantum.ecosystem.extensions import ProviderExtension
 from flagquantum.runtime.result import ExecutionResult
 from flagquantum.runtime.target_execution import TargetExecutionResult
 
