@@ -9,7 +9,7 @@ from typing import Callable, Sequence
 import torch
 from torch.profiler import record_function
 
-from ....simulation.mps_factorization import (
+from ....simulation.mps.factorization import (
     mps_qr_forward as _simulation_mps_qr_forward,
 )
 from .records import MPSReverseContractError

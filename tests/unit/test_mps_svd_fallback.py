@@ -1,6 +1,6 @@
 import torch
 
-from flagquantum.simulation import mps_factorization
+from flagquantum.simulation.mps import factorization as mps_factorization
 
 
 def test_batched_gesvd_failure_retries_isolated_matrices(monkeypatch):

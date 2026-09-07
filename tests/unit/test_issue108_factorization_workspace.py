@@ -10,11 +10,11 @@ from flagquantum.runtime.backends.mps.factorization import (
     estimate_rxx_factorization_working_set,
     plan_rxx_factorization_microbatch,
 )
-from flagquantum.simulation.mps.models import MPSConfig
-from flagquantum.simulation.mps_factorization import (
+from flagquantum.simulation.mps.factorization import (
     _split_pair_matrix,
     _split_pair_matrix_bucket,
 )
+from flagquantum.simulation.mps.models import MPSConfig
 
 pytestmark = pytest.mark.unit
 
@@ -189,7 +189,7 @@ def test_batched_factorization_matches_individual_pair_splits(max_bond) -> None:
 
 
 def test_regular_pair_split_uses_one_batched_qr_launch(monkeypatch) -> None:
-    import flagquantum.simulation.mps_factorization as factorization
+    import flagquantum.simulation.mps.factorization as factorization
 
     calls = []
     original = torch.linalg.qr
@@ -215,7 +215,7 @@ def test_regular_pair_split_uses_one_batched_qr_launch(monkeypatch) -> None:
 
 
 def test_regular_pair_split_uses_one_batched_svd_launch(monkeypatch) -> None:
-    import flagquantum.simulation.mps_factorization as factorization
+    import flagquantum.simulation.mps.factorization as factorization
 
     calls = []
     original = factorization._cuda_svd

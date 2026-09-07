@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.simulation.mps_factorization import (
+from flagquantum.simulation.mps.factorization import (
     _split_pair_matrix,
     _split_pair_matrix_bucket,
 )

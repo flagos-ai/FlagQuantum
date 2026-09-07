@@ -1,4 +1,4 @@
-"""Native matrix-product-state execution for FlagQuantum."""
+"""QR/SVD factorization and truncation numerics for MPS tensors."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _SVD_FALLBACK_STATS = {
     "cpu_lapack_matrices": 0,
     "nonfinite_svd_outputs": 0,
 }
-from .mps.models import (  # noqa: E402
+from .models import (  # noqa: E402
     MPSConfig,
 )
 

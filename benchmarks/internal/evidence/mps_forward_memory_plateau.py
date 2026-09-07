@@ -35,7 +35,7 @@ from flagquantum.simulation.mps_site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,
 )
-from flagquantum.simulation.mps_factorization import (
+from flagquantum.simulation.mps.factorization import (
     mps_svd_fallback_stats,
     reset_mps_svd_fallback_stats,
 )

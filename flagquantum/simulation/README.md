@@ -109,7 +109,7 @@ retains backend selection and execution policy.
 and tensor sizing.
 `mps_site_kernels.py` owns eager/compiled site kernels and their bounded
 compile cache. `mps_compiled_layers.py` owns equal-shape instruction packing,
-batched contraction, and factorization. `mps_factorization.py` owns QR/SVD
+batched contraction, and factorization. `mps/factorization.py` owns QR/SVD
 numerical routines; `mps_canonicalization.py` owns canonical-site factorization,
 transfer absorption, residuals, and center norms; and
 `mps_reverse.py` owns reverse pair factorization, truncated-subspace projection,
@@ -168,7 +168,7 @@ python -m pytest tests/test_tensor_network.py -q
 For rank-local distributed-MPS math, start in `mps_rank_local.py`; for compiled
 layer numerics, start in `mps_compiled_layers.py`; for compiled site kernels,
 start in `mps_site_kernels.py`; for QR/SVD behavior, start in
-`mps_factorization.py`; for canonicalization math, start in
+`mps/factorization.py`; for canonicalization math, start in
 `mps_canonicalization.py`; for local VJP behavior, start in `mps_reverse.py`.
 For observable contraction math, start in `mps_observables.py`. Run:
 

@@ -9,8 +9,8 @@ from torch.profiler import record_function
 
 from ..core.ir import Instruction
 from ..ops.gate_matrix import gate_matrix
+from .mps.factorization import _split_pair_matrix
 from .mps.models import MPSConfig
-from .mps_factorization import _split_pair_matrix
 
 
 def instruction_matrix_for_mps(

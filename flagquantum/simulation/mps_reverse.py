@@ -6,8 +6,8 @@ from typing import Sequence
 
 import torch
 
+from .mps.factorization import _split_pair_matrix, _split_pair_matrix_bucket
 from .mps.models import MPSConfig
-from .mps_factorization import _split_pair_matrix, _split_pair_matrix_bucket
 
 
 def factor_mps_reverse_pair(

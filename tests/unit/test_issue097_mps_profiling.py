@@ -9,8 +9,8 @@ from flagquantum.runtime.backends.mps.profiling import (
     build_mps_critical_path_report,
     workload_fingerprint,
 )
+from flagquantum.simulation.mps.factorization import _split_pair_matrix
 from flagquantum.simulation.mps.models import MPSConfig
-from flagquantum.simulation.mps_factorization import _split_pair_matrix
 
 
 def _rank(rank, forward, reverse, optimizer, total):

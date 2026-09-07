@@ -8,6 +8,8 @@ evidence.
   numerical result records.
 - Start in `state.py` for the batched MPS representation, local state
   operations, observables, and truncation diagnostics.
+- Start in `factorization.py` for QR/SVD execution, rank selection, discarded
+  weight, and factorization fallback behavior.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.

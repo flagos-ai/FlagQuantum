@@ -7,8 +7,8 @@ from typing import Sequence
 import torch
 
 from ..core.ir import Instruction
+from .mps.factorization import _split_pair_matrix, _split_pair_matrix_bucket
 from .mps.models import MPSConfig
-from .mps_factorization import _split_pair_matrix, _split_pair_matrix_bucket
 from .mps_rank_local import apply_one_mps_tensor, instruction_matrix_for_mps
 from .mps_site_kernels import apply_rxx_contraction_bucket, apply_ry_bucket
 
