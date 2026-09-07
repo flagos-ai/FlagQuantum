@@ -6,6 +6,8 @@ distributed collectives, or produce execution evidence.
 
 - Start in `primitives.py` for compute dtype, instruction matrices, local gate
   application, and basic observable kernels.
+- Start in `statevector.py` for rank-local initialization, gate updates,
+  pair-exchange assembly, and sharded observable loss.
 - Import the owning submodule directly; this package does not re-export a JAX
   simulation facade.
 - Run `python -m pytest tests/unit/test_jax_simulation_boundary.py -q` after a

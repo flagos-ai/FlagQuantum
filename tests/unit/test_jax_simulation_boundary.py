@@ -19,10 +19,10 @@ from flagquantum.simulation import (
     jax_mps,
     jax_mps_batched,
     jax_mps_pullbacks,
-    jax_statevector,
     jax_tensor_network,
 )
 from flagquantum.simulation.jax import primitives as jax_gate_primitives
+from flagquantum.simulation.jax import statevector as jax_statevector
 
 pytestmark = pytest.mark.unit
 

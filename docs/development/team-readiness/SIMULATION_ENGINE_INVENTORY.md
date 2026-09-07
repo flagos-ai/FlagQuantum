@@ -122,7 +122,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_network/distributed_execution.py`、`distributed_sliced_reverse.py`、`redistribution.py`、`partial_mesh.py` | 通信/执行适配（混合） | 局部 contraction 调用 | process group、P2P/all-to-all、rank 生命周期与聚合 |
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
-| `simulation/jax/primitives.py`、`simulation/jax_statevector.py`、`simulation/jax_tensor_network.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
+| `simulation/jax/primitives.py`、`simulation/jax/statevector.py`、`simulation/jax_tensor_network.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
 | `simulation/jax_mps.py`、`simulation/jax_mps_batched.py`、`simulation/jax_mps_pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
 | `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、slice 与 contraction 编排 | backend/device 是否选择 JAX 由 Runtime/Platform；标签切片与基础 einsum 数学归 Simulation |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
@@ -143,7 +143,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 
 Statevector 复核确认 `statevector_kernels.py` 只剩指令/计划适配、collective 置换与
 `pmap`/`shard_map` 编排；初态、局部门、pair 合并、all-to-all delta 和 observable/loss
-数学均已委托 `simulation/jax_statevector.py`。该路径已到停止点，不为移动文件而复制
+数学均已委托 `simulation/jax/statevector.py`。该路径已到停止点，不为移动文件而复制
 Runtime shard/plan 类型。
 
 参数化张量网络复核确认，通用节点构造、标签切片、einsum 收缩以及输出 observable/loss

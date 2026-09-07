@@ -1,4 +1,4 @@
-"""Dependency-light local JAX statevector numerics."""
+"""Dependency-light JAX statevector numerics."""
 
 from __future__ import annotations
 

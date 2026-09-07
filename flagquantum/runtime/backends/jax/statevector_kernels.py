@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Sequence
 
-from ....simulation.jax_statevector import (
+from ....simulation.jax.statevector import (
     jax_accumulate_all_to_all_statevector_delta,
     jax_apply_local_statevector_gate,
     jax_combine_pair_exchanged_statevector,
@@ -12,7 +12,7 @@ from ....simulation.jax_statevector import (
     jax_rank_mask_for_touched_delta,
     jax_sharded_statevector_loss,
 )
-from ....simulation.jax_statevector import (
+from ....simulation.jax.statevector import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
 )
 from .array_conversions import (

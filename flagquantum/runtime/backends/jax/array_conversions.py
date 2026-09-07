@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from ....simulation.jax_statevector import (
+from ....simulation.jax.statevector import (
     jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
 )
 from ....simulation.statevector_ops import _basis_offset, _wire_mask
