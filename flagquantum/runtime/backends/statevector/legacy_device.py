@@ -7,10 +7,10 @@ import torch.distributed
 from torch.distributed.device_mesh import init_device_mesh
 from torch.distributed.tensor import DTensor, Shard
 
-from ..ops import functional, matrices
-from ..ops.matrices import get_global_precision
-from ..utils.interchange import interchange_qubits
-from ..utils.maybe_dtensor import maybe_distribute_tensor, maybe_get_dtensor_info
+from ....ops import functional, matrices
+from ....ops.matrices import get_global_precision
+from ....utils.interchange import interchange_qubits
+from ....utils.maybe_dtensor import maybe_distribute_tensor, maybe_get_dtensor_info
 
 
 class DistributedQuantumDevice:

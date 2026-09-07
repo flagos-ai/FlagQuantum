@@ -18,7 +18,6 @@ from ..core.runtime_config import (
     get_runtime_config,
     runtime_config,
 )
-from ..devices import DistributedQuantumDevice
 from ..errors import ExecutionError
 from ..measurement import measure_allZ
 from ..ops import functional
@@ -36,6 +35,7 @@ from .backends.statevector import (
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
+from .backends.statevector.legacy_device import DistributedQuantumDevice
 from .execution_plan import ExecutionPlan
 from .planner import build_noisy_execution_plan, select_execution_mode
 from .planner import plan_advanced as build_plan

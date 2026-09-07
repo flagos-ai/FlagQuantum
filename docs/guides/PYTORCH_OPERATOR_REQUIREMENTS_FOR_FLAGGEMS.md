@@ -160,7 +160,7 @@ TN 需求重点：
 
 主要文件：
 
-- `flagquantum/devices/distributed_device.py`
+- `flagquantum/runtime/backends/statevector/legacy_device.py`
 - `flagquantum/ops/functional.py`
 - `flagquantum/utils/interchange.py`
 - `flagquantum/utils/maybe_dtensor.py`
