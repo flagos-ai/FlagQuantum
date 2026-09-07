@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from ....simulation.jax_mps_pullbacks import (
+from ....simulation.jax.mps.pullbacks import (
     jax_mps_boundary_rxx_pullback,
     jax_mps_owner_local_vjp,
 )

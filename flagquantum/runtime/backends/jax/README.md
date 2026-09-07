@@ -13,7 +13,7 @@ may recognize and lower circuit structure, but delegates tensor initialization,
 updates, contraction, and observable evaluation to Simulation.
 
 For MPS differentiation, local parameter VJPs, boundary-gate adjoints, and
-QR/SVD pullbacks live in `simulation/jax_mps_pullbacks.py`. The Runtime modules
+QR/SVD pullbacks live in `simulation/jax/mps/pullbacks.py`. The Runtime modules
 `mps_backward.py`, `mps_pullbacks.py`, and `mps_canonicalization.py` retain the
 constrained rank protocol, device placement, parameter ownership, collective
 exchange, truncation policy, optimizer lifecycle, and evidence records. This

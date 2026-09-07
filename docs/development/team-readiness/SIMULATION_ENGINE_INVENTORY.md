@@ -123,7 +123,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
 | `simulation/jax/primitives.py`、`simulation/jax/statevector.py`、`simulation/jax/tensor_network.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
-| `simulation/jax/mps/kernels.py`、`simulation/jax/mps/batched.py`、`simulation/jax_mps_pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
+| `simulation/jax/mps/kernels.py`、`simulation/jax/mps/batched.py`、`simulation/jax/mps/pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
 | `jax/kernel.py`、`mps_kernel.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、slice 与 contraction 编排 | backend/device 是否选择 JAX 由 Runtime/Platform；标签切片与基础 einsum 数学归 Simulation |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
 | `jax/*execution.py`、`backend_dispatch.py`、`statevector_training.py`、`mps_gradients.py`、`tensor_network_gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
@@ -154,7 +154,7 @@ Runtime shard/plan 类型。
 Runtime 计划、任务、记录、策略和 collective，且具有独立复用价值的数值操作才继续下沉。
 
 JAX MPS 反向路径复核确认，参数局部 VJP、边界 RXX adjoint 以及 QR/SVD
-canonicalization/truncation pullback 已由 `simulation/jax_mps_pullbacks.py` 统一负责。
+canonicalization/truncation pullback 已由 `simulation/jax/mps/pullbacks.py` 统一负责。
 `mps_backward.py`、`mps_pullbacks.py` 和 `mps/canonicalization.py` 剩余逻辑属于受限 rank
 协议：设备放置、参数所有权、collective 交换、截断策略、优化器生命周期和证据记录。
 其中少量解析解校验与张量 shape 用于验证协议证据，不是第二套通用 MPS 数值权威；在没有
