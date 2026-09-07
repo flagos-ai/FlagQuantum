@@ -3,6 +3,7 @@ import pytest
 from flagquantum.deployment import providers
 from flagquantum.providers.execution import (
     braket,
+    cqlib,
     fieldquantum,
     http,
     originq,
@@ -54,6 +55,11 @@ def test_provider_aggregator_preserves_tencent_object_identity():
 
 def test_provider_aggregator_preserves_fieldquantum_object_identity():
     assert providers.FieldQuantumProvider is fieldquantum.FieldQuantumProvider
+
+
+@pytest.mark.parametrize("name", ("TianyanProvider", "GuodunProvider"))
+def test_provider_aggregator_preserves_cqlib_object_identity(name):
+    assert getattr(providers, name) is getattr(cqlib, name)
 
 
 @pytest.mark.parametrize(
