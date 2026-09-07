@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from flagquantum.simulation import mps_site_kernels as site_kernels
-from flagquantum.simulation.mps_site_kernels import (
+from flagquantum.simulation.mps import site_kernels
+from flagquantum.simulation.mps.site_kernels import (
     apply_rxx_contraction_bucket,
     apply_ry_bucket,
     environment_transfer,

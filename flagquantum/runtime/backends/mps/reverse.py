@@ -15,6 +15,7 @@ from ....simulation.mps.rank_local import (
     instruction_matrix_for_mps,
     tensor_nbytes,
 )
+from ....simulation.mps.site_kernels import site_kernel_bucket_capacity
 from ....simulation.mps_compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     contract_mps_two_site_bucket,
@@ -24,7 +25,6 @@ from ....simulation.mps_reverse import (
     factor_mps_reverse_pair,
     factor_mps_reverse_pair_bucket,
 )
-from ....simulation.mps_site_kernels import site_kernel_bucket_capacity
 from .errors import NonlocalMPSCompilationError
 from .factorization import mps_qr_forward
 from .records import (

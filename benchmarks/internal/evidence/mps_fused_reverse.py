@@ -14,7 +14,7 @@ import torch.distributed as dist
 from flagquantum.circuit import Circuit
 from flagquantum.runtime.backends.mps.forward import _initial_ownership
 from flagquantum.runtime.backends.mps.reverse import execute_torch_distributed_mps_reverse
-from flagquantum.simulation.mps_site_kernels import (
+from flagquantum.simulation.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,
 )

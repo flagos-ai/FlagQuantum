@@ -7,11 +7,11 @@ from typing import Any, Sequence
 import torch
 
 from ....core.ir import Instruction
+from ....simulation.mps.site_kernels import site_kernel_bucket_capacity
 from ....simulation.mps_compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     apply_compiled_mps_two_site_bucket,
 )
-from ....simulation.mps_site_kernels import site_kernel_bucket_capacity
 from .communication import _instruction_matrix_for_mps
 from .errors import MPSForwardLifetimeError
 from .factorization import (

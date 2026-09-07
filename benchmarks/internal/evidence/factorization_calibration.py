@@ -25,7 +25,7 @@ from flagquantum.simulation.mps.factorization import (
     _split_pair_matrix_bucket,
 )
 from flagquantum.simulation.mps.models import MPSConfig
-from flagquantum.simulation.mps_site_kernels import apply_rxx_contraction_bucket
+from flagquantum.simulation.mps.site_kernels import apply_rxx_contraction_bucket
 
 
 SCHEMA = "flagquantum.issue108.factorization_calibration.v1"

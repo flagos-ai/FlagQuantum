@@ -1,4 +1,4 @@
-"""Audited eager/compiled kernels for MPS site computation."""
+"""Audited eager and compiled kernels for MPS site computation."""
 
 from __future__ import annotations
 

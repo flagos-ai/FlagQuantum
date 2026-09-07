@@ -31,7 +31,7 @@ from flagquantum.runtime.backends.mps.reverse import (  # noqa: E402
     execute_torch_distributed_mps_reverse,
     site_sharded_z_zz_observations,
 )
-from flagquantum.simulation.mps_site_kernels import (  # noqa: E402
+from flagquantum.simulation.mps.site_kernels import (  # noqa: E402
     reset_site_kernel_stats,
     site_kernel_stats,
 )

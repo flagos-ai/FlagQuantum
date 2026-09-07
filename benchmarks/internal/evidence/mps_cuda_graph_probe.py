@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.simulation.mps_site_kernels import (  # noqa: E402
+from flagquantum.simulation.mps.site_kernels import (  # noqa: E402
     _rxx_contraction_real,
 )
 
