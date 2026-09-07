@@ -23,13 +23,13 @@ from ....numerics.double_single import (
     double_single_sum,
 )
 from ....providers.platform import resolve_platform_device
-from ....simulation.double_single_device_gates import (
-    P4_PARAMETER_GATES,
-    encode_device_double_single_matrix,
-)
 from ....simulation.statevector.double_single import (
     double_single_pauli_term_expectation,
     run_double_single_statevector,
+)
+from ....simulation.statevector.double_single_device_gates import (
+    P4_PARAMETER_GATES,
+    encode_device_double_single_matrix,
 )
 from .split_real_imag import (
     _canonical_parameter_bindings,

@@ -16,4 +16,6 @@ evidence.
   normalization, and observable reduction.
 - Start in `double_single_host_gates.py` for explicit CPU reference gate
   encoding.
+- Start in `double_single_device_gates.py` for device-resident FP32 gate
+  encoding without host fallback.
 - The stable user entry points remain `fq.Circuit`, `fq.plan`, and `fq.run`.

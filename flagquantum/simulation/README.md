@@ -47,7 +47,7 @@ trajectory IDs and random-stream construction, readout-error handling,
 convergence, retry, checkpointing, collectives, and result assembly.
 
 `statevector/double_single_host_gates.py` owns P3's explicit CPU reference encoding;
-`double_single_device_gates.py` separately owns P4's device-resident FP32
+`statevector/double_single_device_gates.py` separately owns P4's device-resident FP32
 gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
 `statevector/double_single.py` owns the shared gate application and state
 initialization, local execution, normalization, and Pauli-term reduction used
