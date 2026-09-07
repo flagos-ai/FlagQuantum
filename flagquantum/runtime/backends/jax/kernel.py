@@ -28,13 +28,13 @@ from ....simulation.jax.primitives import (
     _jax_z_values,
     _set_active_jax_compute_dtype,
 )
-from ....simulation.jax.tensor_network import (
+from ....simulation.jax.tensor_network.kernels import (
     jax_tensor_network_hamiltonian_expectation as _jax_tensor_network_hamiltonian_expectation,
 )
-from ....simulation.jax.tensor_network import (
+from ....simulation.jax.tensor_network.kernels import (
     jax_tensor_network_z_sum as _jax_tensor_network_z_sum,
 )
-from ....simulation.jax.tensor_network import (
+from ....simulation.jax.tensor_network.kernels import (
     jax_tensor_network_z_values as _jax_tensor_network_z_values,
 )
 

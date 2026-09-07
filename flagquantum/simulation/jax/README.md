@@ -8,7 +8,7 @@ distributed collectives, or produce execution evidence.
   application, and basic observable kernels.
 - Start in `statevector/kernels.py` for rank-local initialization, gate updates,
   pair-exchange assembly, and sharded observable loss.
-- Start in `tensor_network.py` for JAX node construction, contraction,
+- Start in `tensor_network/kernels.py` for JAX node construction, contraction,
   observables, slicing, and contracted-output loss.
 - Start in `mps/` for JAX matrix-product-state kernels and differentiation.
 - Import the owning submodule directly; this package does not re-export a JAX

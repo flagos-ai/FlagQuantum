@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping, Sequence
 
 from .....simulation.jax.primitives import _jax_pauli_matrix
-from .....simulation.jax.tensor_network import (
+from .....simulation.jax.tensor_network.kernels import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
 from ....distributed.backend_policy import DistributedBackendPolicy

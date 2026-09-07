@@ -26,11 +26,11 @@ from flagquantum.runtime.backends.jax.tensor_network import (
     gradients as tensor_network_gradients,
 )
 from flagquantum.simulation.jax import primitives as jax_gate_primitives
-from flagquantum.simulation.jax import tensor_network as jax_tensor_network
 from flagquantum.simulation.jax.mps import batched as jax_mps_batched
 from flagquantum.simulation.jax.mps import kernels as jax_mps
 from flagquantum.simulation.jax.mps import pullbacks as jax_mps_pullbacks
 from flagquantum.simulation.jax.statevector import kernels as jax_statevector
+from flagquantum.simulation.jax.tensor_network import kernels as jax_tensor_network
 
 pytestmark = pytest.mark.unit
 
