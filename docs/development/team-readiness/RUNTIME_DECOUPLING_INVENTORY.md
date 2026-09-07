@@ -81,7 +81,7 @@ Provider 的暂管区域。
   与汇总元数据。
 - `runtime.distributed.engine.run_distributed_mps()` 组织 MPS 分布式执行；数值算法目录的
   归属迁移仍需与 Simulation 团队分开处理。
-- `runtime.distributed.tensor_network_execution` 组织切片任务和归约，但仍直接依赖
+- `runtime.backends.tensor_network.execution` 组织切片任务和归约，但仍直接依赖
   Compiler 的 TN 内存校准记录。
 - 分布式结果必须继续报告 `world_size`、`local_world_size`、`node_count`、rank ownership、
   memory、communication、`distribution_semantics`、`scalability_claim_allowed` 和 blockers。
@@ -139,7 +139,7 @@ Provider 的暂管区域。
 | --- | --- | --- | --- |
 | `runtime/backends/statevector/noisy.py` | `lower_noise_model()` | 噪声历史耦合（编译服务调用） | 轨迹执行器接收已 lowering IR；由 Compiler 服务生成，Simulation 不直接导入 Compiler |
 | `runtime/backends/statevector/planning.py` | `schedule_layers()` | 公共 raw-program 规划入口保留的编译服务调用 | 当前入口直接接收 Circuit/IR，继续通过 Compiler facade 获得 layer schedule；只有经批准的 executable-plan 契约能够携带该结果后，计划执行路径才可改为直接消费，Runtime 不复制调度算法 |
-| `runtime/distributed/tensor_network_execution.py` | `TNWorkingSetCalibration` | 共享数据契约 | 将版本化校准记录的最小只读契约置于 Core；校准构建仍由 Compiler/benchmark owning service 完成，Runtime 只验证适用范围并消费记录 |
+| `runtime/backends/tensor_network/execution.py` | `TNWorkingSetCalibration` | 共享数据契约 | 将版本化校准记录的最小只读契约置于 Core；校准构建仍由 Compiler/benchmark owning service 完成，Runtime 只验证适用范围并消费记录 |
 | `runtime/dynamic/routing.py` | `CouplingMap`、`route_to_topology()` | 路由历史耦合（共享契约 + 编译服务） | Core 提供 topology/coupling 数据契约；Compiler routing service 接收动态 IR 并返回已路由 IR，Runtime 只执行 |
 | `runtime/execution.py` | `ExecutionPlan`、`compiler.compile()`、`select_execution_mode()`、`plan_advanced()`、`plan()`；noise plan/lowering helpers | 编译服务调用（复合） | 把便捷的 program→plan 调用收束到一个 Compiler service port；attempt path 只接收 Core-owned executable plan view。自动模式、编译、噪声 lowering 均在尝试开始前完成 |
 | `runtime/noise_registry.py` | `EvolutionSemantics`、`StateRepresentation`、`NoisyExecutionPlan` | 噪声历史耦合（共享契约） | Core 提供 backend-neutral noise execution decision/enum 契约；registry 只按契约解析执行器，不认识 Compiler 类型 |

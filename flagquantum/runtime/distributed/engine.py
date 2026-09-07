@@ -66,7 +66,7 @@ from .mps_transport import (
     _send_tensor_async_p2p,
     _send_tensor_p2p,
 )
-from .tensor_network_execution import (
+from ..backends.tensor_network.execution import (
     DistributedTensorNetworkAmplitude,
     DistributedTensorNetworkAmplitudes,
     DistributedTensorNetworkExpectation,

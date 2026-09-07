@@ -117,7 +117,7 @@ return result_adapter.normalize(raw, plan)
 当前热点包括：
 
 - `simulation/tensor_network/contraction.py` 曾超过 1800 行；
-- `runtime/distributed/tensor_network_execution.py` 超过 1000 行；
+- `runtime/backends/tensor_network/execution.py` 超过 1000 行；
 - TN backend facade 暴露大量内部类型和 kernel；
 - 多个 TN backend 模块在 600–800 行之间。
 
@@ -127,7 +127,7 @@ Noise 开发期间应冻结以下增长：
 - 不向 TN `__init__.py` 增加新的内部导出；
 - 新 pair kernel 放到有明确所有权的模块；
 - SV/MPS trajectory 稳定前不启动 noisy TN；
-- 逐步将 `runtime/distributed/tensor_network_execution.py` 收敛为 facade。
+- 逐步按执行职责拆分 `runtime/backends/tensor_network/execution.py`，不增加公共概念。
 
 ### 2.6 P2：现有 Noise 模块混合多层职责
 

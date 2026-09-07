@@ -20,40 +20,41 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...simulation.mps.rank_local import (
+from ....providers.platform import resolve_platform_device
+from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...simulation.tensor_network.contraction import (
+from ....simulation.tensor_network.contraction import (
     _build_slicing_plan,
     _slice_nodes,
 )
-from ...simulation.tensor_network.entrypoints import (
+from ....simulation.tensor_network.entrypoints import (
     _amplitude_batch_projection,
     _amplitude_projection,
     build_tensor_network,
     build_tensor_network_expectation,
     run_tensor_network,
 )
-from ...simulation.tensor_network.models import (
+from ....simulation.tensor_network.models import (
     PairContractionStep,
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
-from ...simulation.tensor_network.observables import _expectation_batch_projection
-from ...simulation.tensor_network.path_search import (
+from ....simulation.tensor_network.observables import _expectation_batch_projection
+from ....simulation.tensor_network.path_search import (
     _contract_nodes_quality_multistart,
     _label_dims,
 )
-from ...simulation.tensor_network.stages import (
+from ....simulation.tensor_network.stages import (
     execute_pair_steps as _execute_pair_steps,
 )
-from ...version import __version__
-from ..backends.jax import plan_jax_distributed_quantum_backend
-from ..backends.tensor_network.joint_planning import (
+from ....version import __version__
+from ..jax import plan_jax_distributed_quantum_backend
+from .joint_planning import (
     DistributedTNWorkingSetPolicy,
 )
-from ..planner.tn_calibration import TNWorkingSetCalibration
-from .models import (
+from ...planner.tn_calibration import TNWorkingSetCalibration
+from ...distributed.models import (
     DistributedSliceTask,
     DistributedTensorNetworkState,
     _resolve_backend_policy,
@@ -393,7 +394,7 @@ def _sparse_working_set_preflight(
         )
     reference = nodes[0].tensor
     accelerator_name = (
-        torch.cuda.get_device_name(reference.device) if reference.is_cuda else "cpu"
+        resolve_platform_device(reference.device).name if reference.is_cuda else "cpu"
     )
     if memory_calibration is not None:
         if not memory_calibration.applies_to(

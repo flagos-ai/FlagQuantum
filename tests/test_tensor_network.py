@@ -6,7 +6,7 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.backends.tensor_network as fqbtn
-import flagquantum.runtime.distributed.tensor_network_execution as fqxd
+import flagquantum.runtime.backends.tensor_network.execution as fqxd
 import flagquantum.runtime.planner as fqxp
 import flagquantum.simulation.tensor_network.entrypoints as tensor_execution
 import flagquantum.simulation.tensor_network.observables as tensor_observables
@@ -14,7 +14,7 @@ from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.runtime.backends.tensor_network import (
     DistributedTNWorkingSetPolicy,
 )
-from flagquantum.runtime.distributed import tensor_network_execution as distributed_tn
+from flagquantum.runtime.backends.tensor_network import execution as distributed_tn
 from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,
     estimate_tensor_network_bytes,

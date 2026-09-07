@@ -577,7 +577,7 @@ _EXPORTS = {
         "with_sharded_tn_input",
     ),
     "run_distributed_tensor_network": (
-        "flagquantum.runtime.distributed.engine",
+        "flagquantum.runtime.backends.tensor_network.execution",
         "run_distributed_tensor_network",
     ),
     "run_tensor_network": (

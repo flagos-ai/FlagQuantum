@@ -16,6 +16,10 @@ checkpoint selection, cotangent lifecycle, batching schedules, collectives,
 and evidence here. Do not move them into Simulation merely because they
 manipulate tensors.
 
+For end-to-end distributed tensor-network execution, start with `execution.py`.
+It owns slice planning, rank-local execution, reduction, and runtime results;
+the numerical contractions it invokes remain in Simulation.
+
 This boundary has reached its current stopping point. Forward contractions and
 reverse pullbacks already call Simulation-owned primitives. Tensor stacking
 for schedule batches, shard slicing/combining, cotangent-map accumulation, and

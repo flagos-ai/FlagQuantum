@@ -94,6 +94,5 @@ runtime_compiler_import_allowed = [
 "flagquantum/runtime/backends/tensor_network/distributed_sliced_reverse.py" = 6
 "flagquantum/runtime/distributed/models.py" = 4
 "flagquantum/runtime/distributed/mps_transport.py" = 8
-"flagquantum/runtime/distributed/tensor_network_execution.py" = 1
 "flagquantum/runtime/operator_backends.py" = 2
 "flagquantum/runtime/training_state.py" = 8
