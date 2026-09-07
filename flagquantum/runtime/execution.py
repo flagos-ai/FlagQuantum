@@ -723,7 +723,7 @@ def run_native(
     elif mode == "distributed_tensor_network":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from .distributed import run_distributed_tensor_network
+        from .backends.tensor_network import run_distributed_tensor_network
 
         tn_options = dict(options)
         world_size = _distributed_world_size_from_options(

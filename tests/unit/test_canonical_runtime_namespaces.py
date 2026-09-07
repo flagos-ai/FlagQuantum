@@ -46,3 +46,11 @@ def test_canonical_runtime_does_not_reference_removed_namespace() -> None:
     root = Path(__file__).resolve().parents[2] / "flagquantum" / "runtime"
     for path in root.rglob("*.py"):
         assert "runtime_stack" not in path.read_text(encoding="utf-8"), path
+
+
+def test_tensor_network_execution_is_owned_by_its_backend() -> None:
+    from flagquantum.runtime import distributed
+    from flagquantum.runtime.backends import tensor_network
+
+    assert callable(tensor_network.run_distributed_tensor_network)
+    assert not hasattr(distributed, "run_distributed_tensor_network")
