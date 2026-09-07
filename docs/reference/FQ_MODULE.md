@@ -132,3 +132,6 @@ result = fq.train(
 
 The first and last steps are always printed when logging is enabled. The
 callback runs after every optimizer step and is independent of `log_interval`.
+The silent default keeps the loss history on the execution device and transfers
+it once after training. Logging and callbacks materialize the reported loss on
+the host, so leave both disabled on synchronization-sensitive fast paths.

@@ -119,6 +119,9 @@ Module—and never updates parameters.
 
 `fq.train` is intentionally a minimal, caller-owned PyTorch optimizer loop. It
 performs `zero_grad`, `backward`, and `step`, then returns `fq.TrainingResult`.
+Without logging or a callback, loss history is transferred from the execution
+device only once, after the optimizer loop. Observing a loss through logging or
+a callback requires host synchronization for that step.
 Checkpoint and resume belong to `Module.save_checkpoint()` and
 `Module.load_checkpoint()` or to an application-owned training loop; they are
 not hidden options of `fq.train`. Training lifecycle types such as

@@ -18,6 +18,15 @@ TrainingInputs: TypeAlias = torch.Tensor | Callable[[int], torch.Tensor | None] 
 TrainingCallback: TypeAlias = Callable[[int, float, ExecutionResult], None]
 
 
+def _materialize_losses(losses: list[torch.Tensor]) -> tuple[float, ...]:
+    """Transfer a device-side loss history to Python once after training."""
+
+    first_device = losses[0].device
+    if all(loss.device == first_device for loss in losses):
+        return tuple(torch.stack(losses).cpu().tolist())
+    return tuple(float(loss.cpu()) for loss in losses)
+
+
 @dataclass(frozen=True)
 class TrainingResult:
     """Stable summary returned by :func:`flagquantum.train`."""
@@ -89,7 +98,9 @@ def train(
         raise TypeError("fq.train() callback must be callable or None")
 
     module.train()
-    losses: list[float] = []
+    defer_loss_history = callback is None and log_interval is None
+    loss_values: list[float] = []
+    deferred_losses: list[torch.Tensor] = []
     last_execution: ExecutionResult | None = None
     for step_index in range(steps):
         step_inputs = inputs(step_index) if callable(inputs) else inputs
@@ -100,20 +111,37 @@ def train(
             raise ValidationError("fq.train() objective must return a scalar tensor")
         loss.backward()
         optimizer.step()
-        loss_value = float(loss.detach())
-        losses.append(loss_value)
-        last_execution = execution.detach()
+        detached_loss = loss.detach()
+        if defer_loss_history:
+            deferred_losses.append(detached_loss.clone())
+            loss_value = None
+        else:
+            loss_value = float(detached_loss)
+            loss_values.append(loss_value)
         step = step_index + 1
-        if callback is not None:
-            callback(step, loss_value, last_execution)
-        if log_interval is not None and (
+        should_log = log_interval is not None and (
             step == 1 or step == steps or step % log_interval == 0
-        ):
+        )
+        if callback is not None:
+            assert loss_value is not None
+            callback_execution = execution.detach()
+            callback(step, loss_value, callback_execution)
+            if step == steps:
+                last_execution = callback_execution
+        elif step == steps:
+            last_execution = execution.detach()
+        if should_log:
+            assert loss_value is not None
             print(f"step {step}/{steps} loss={loss_value:.8g}")
 
     assert last_execution is not None
+    losses = (
+        _materialize_losses(deferred_losses)
+        if defer_loss_history
+        else tuple(loss_values)
+    )
     return TrainingResult(
-        losses=tuple(losses),
+        losses=losses,
         completed_steps=steps,
         last_execution=last_execution,
         optimizer=type(optimizer).__name__,

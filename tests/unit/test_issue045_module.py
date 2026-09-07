@@ -323,10 +323,21 @@ def test_fq_run_normalizes_local_backend_result_types(mode: str) -> None:
     assert result.runtime["mode"] == mode
 
 
-def test_fq_train_owns_the_optimizer_loop_and_returns_training_result() -> None:
+def test_fq_train_owns_the_optimizer_loop_and_returns_training_result(
+    monkeypatch,
+) -> None:
     module = fq.Module(build_circuit, 2, init=torch.tensor([0.2, -0.3]))
     optimizer = torch.optim.SGD(module.parameters(), lr=0.1)
     before = module.parameters_tensor.detach().clone()
+    detach_calls = 0
+    original_detach = fq.ExecutionResult.detach
+
+    def count_detach(execution):
+        nonlocal detach_calls
+        detach_calls += 1
+        return original_detach(execution)
+
+    monkeypatch.setattr(fq.ExecutionResult, "detach", count_detach)
 
     result = fq.train(
         module,
@@ -343,6 +354,7 @@ def test_fq_train_owns_the_optimizer_loop_and_returns_training_result() -> None:
     assert result.last_execution.value is not None
     assert not result.last_execution.value.requires_grad
     assert not torch.equal(before, module.parameters_tensor)
+    assert detach_calls == 1
 
 
 def test_fq_train_log_interval_and_callback_are_unambiguous(capsys) -> None:
