@@ -9,8 +9,8 @@ from time import perf_counter
 from typing import Any, Callable
 
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.ecosystem.qiskit import run_qiskit_aer_dynamic
 from flagquantum.runtime.dynamic import DynamicExecutionResult, run_dynamic
-from flagquantum.runtime.dynamic_conformance import run_qiskit_aer_dynamic
 
 
 def _workload(mid_circuit_measurements: int) -> DynamicCircuit:
