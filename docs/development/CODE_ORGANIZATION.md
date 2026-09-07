@@ -197,11 +197,11 @@ plugins, benchmarks, or serialized artifacts.
 - The Statevector backend is a lazy package boundary under
   `flagquantum.runtime.backends.statevector`; importing the namespace does not
   initialize forward, reverse, or training engines.
-  Its `legacy_device.py` and `legacy_execution.py` modules contain the v0.1
-  DTensor compatibility route, used only when a caller explicitly supplies the
-  historical device. Default distributed execution uses the statevector
-  backend's local development simulator or torch-distributed executor. The main
-  Runtime execution module no longer implements device-specific gates;
+  Its `legacy_device.py` module contains the standalone v0.1 DTensor
+  compatibility device. It is not accepted by the Runtime execution path.
+  Default distributed execution uses the statevector backend's local
+  development simulator or torch-distributed executor. The main Runtime
+  execution module contains no device-specific gates;
   `flagquantum.devices` is only the documented compatibility entry and must not
   gain new implementations.
 - The Tensor Network backend is a lazy package boundary under

@@ -30,13 +30,7 @@ from .backends.jax import (
 )
 from .backends.statevector import (
     execute_torch_distributed_statevector,
-    plan_distributed_statevector,
     simulate_distributed_statevector_local,
-)
-from .backends.statevector.legacy_execution import (
-    DistributedExecutor,
-    is_legacy_distributed_device,
-    run_legacy_distributed,
 )
 from .execution_plan import ExecutionPlan
 from .planner import build_noisy_execution_plan, select_execution_mode
@@ -212,7 +206,7 @@ def _distributed_local_world_size(
 def run_distributed(
     ir: CircuitIR,
     *,
-    device: Any = None,
+    device: torch.device | str | None = None,
     measure: bool = False,
     optimize: bool = True,
     return_plan: bool = False,
@@ -221,6 +215,8 @@ def run_distributed(
 ) -> Any:
     """Execute a FlagQuantum IR on a native distributed device."""
 
+    if device is not None and not isinstance(device, (str, torch.device)):
+        raise TypeError("device must be a torch.device, device string, or None")
     provided_execution_plan = device_options.pop("_execution_plan", None)
     execution_ir = (
         ir
@@ -271,25 +267,7 @@ def run_distributed(
         distributed_backend_policy=backend_policy,
     ).summary()
 
-    if is_legacy_distributed_device(device):
-        statevector_plan = plan_distributed_statevector(
-            execution_ir,
-            bsz=batch_size,
-            world_size=world_size,
-            local_world_size=local_world_size,
-        )
-        result = run_legacy_distributed(
-            execution_ir,
-            device=device,
-            device_options=device_options,
-            precision=execution_precision,
-            execution_plan=execution_plan,
-            statevector_plan=statevector_plan,
-            backend_policy=backend_policy,
-            jax_distributed_plan=jax_distributed_plan,
-            measure=measure,
-        )
-    elif (
+    if (
         backend_policy.profile == "development"
         and backend_policy.torch_backend == "local_tensor"
     ):
@@ -1133,7 +1111,6 @@ def _normalize_execution_output(
 
 
 __all__ = [
-    "DistributedExecutor",
     "ExecutionPlan",
     "run",
     "run_distributed",

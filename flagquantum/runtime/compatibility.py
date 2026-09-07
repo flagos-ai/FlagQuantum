@@ -24,6 +24,10 @@ _MODULE_ALIASES = {
 }
 
 _SYMBOL_ALIASES = {
+    "DistributedExecutor": (
+        "flagquantum.runtime.distributed.protocols",
+        "DistributedExecutor",
+    ),
     "Phase4StatevectorClaimabilityGate": (
         "flagquantum.runtime.audit.schema",
         "StatevectorTrainingClaimabilityGate",

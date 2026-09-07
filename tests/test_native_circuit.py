@@ -414,7 +414,7 @@ def test_native_distributed_bridge_preserves_complex128_end_to_end():
     torch.testing.assert_close(result.state, circuit.state(), atol=1e-15, rtol=1e-15)
 
 
-def test_native_distributed_bridge_rejects_device_precision_conflict():
+def test_native_distributed_bridge_rejects_historical_device_object():
     circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
     qdev = fq.DistributedQuantumDevice(
         n_wires=1,
@@ -423,7 +423,7 @@ def test_native_distributed_bridge_rejects_device_precision_conflict():
         precision=torch.complex64,
     )
 
-    with pytest.raises(ValueError, match="device precision conflicts"):
+    with pytest.raises(TypeError, match="device must be"):
         circuit.run_distributed(device=qdev)
 
 

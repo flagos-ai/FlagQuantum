@@ -84,7 +84,6 @@ classification = "internal_compatibility_adapter"
 public_api = false
 new_dependencies_allowed = false
 modules = [
-    "flagquantum/runtime/backends/statevector/legacy_execution.py",
     "flagquantum/runtime/backends/statevector/legacy_device.py",
     "flagquantum/encoding/encoder.py",
     "flagquantum/measurement/measure.py",
@@ -96,7 +95,6 @@ allowed_importers = [
     "flagquantum/api.py",
     "flagquantum/devices/__init__.py",
     "flagquantum/runtime/backends/statevector/legacy_device.py",
-    "flagquantum/runtime/backends/statevector/legacy_execution.py",
     "flagquantum/encoding/__init__.py",
     "flagquantum/encoding/encoder.py",
     "flagquantum/measurement/__init__.py",
