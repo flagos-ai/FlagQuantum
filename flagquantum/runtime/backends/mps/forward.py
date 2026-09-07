@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
-from ....simulation.mps_models import MPSConfig
+from ....simulation.mps.models import MPSConfig
 from ....simulation.mps_rank_local import (
     apply_rank_local_mps_instruction as _apply_rank_local_instruction,
 )

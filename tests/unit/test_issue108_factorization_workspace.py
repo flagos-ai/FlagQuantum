@@ -10,11 +10,11 @@ from flagquantum.runtime.backends.mps.factorization import (
     estimate_rxx_factorization_working_set,
     plan_rxx_factorization_microbatch,
 )
+from flagquantum.simulation.mps.models import MPSConfig
 from flagquantum.simulation.mps_factorization import (
     _split_pair_matrix,
     _split_pair_matrix_bucket,
 )
-from flagquantum.simulation.mps_models import MPSConfig
 
 pytestmark = pytest.mark.unit
 

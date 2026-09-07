@@ -13,7 +13,7 @@ from flagquantum.runtime.distributed.engine import (
     mps_p2p_stats,
     reset_mps_p2p_stats,
 )
-from flagquantum.simulation.mps_models import MPSConfig
+from flagquantum.simulation.mps.models import MPSConfig
 
 
 def main():

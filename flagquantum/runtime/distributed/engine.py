@@ -17,12 +17,12 @@ import torch
 import torch.distributed as dist
 
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...simulation.mps_execution import run_mps
-from ...simulation.mps_models import (
+from ...simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
     MPSTruncationRecord,
 )
+from ...simulation.mps_execution import run_mps
 from ...simulation.mps_rank_local import (
     apply_one_mps_tensor as _apply_one_mps_tensor,
 )

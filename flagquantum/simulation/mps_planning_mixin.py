@@ -7,7 +7,7 @@ from typing import Any
 
 import torch
 
-from .mps_models import (
+from .mps.models import (
     MPSAdaptiveBondPlan,
     MPSBondProfile,
     MPSLocalRefinementPlan,

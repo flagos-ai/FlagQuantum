@@ -8,7 +8,7 @@ import torch
 
 from ..core.ir import CircuitIR
 from ..ops.gate_matrix import gate_matrix
-from .mps_models import CompiledMPSProgram
+from .mps.models import CompiledMPSProgram
 from .mps_state import MPSState
 
 

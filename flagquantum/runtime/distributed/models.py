@@ -19,7 +19,7 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ...simulation.mps_models import (
+from ...simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
 )

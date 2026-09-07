@@ -9,7 +9,7 @@ from typing import Sequence
 import torch
 import torch.nn.functional as functional
 
-from .mps_models import MPSConfig
+from .mps.models import MPSConfig
 from .mps_state import MPSState
 
 # Compiling tiny edge buckets costs more than it saves and, for long chains,

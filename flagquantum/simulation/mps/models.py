@@ -1,4 +1,4 @@
-"""Native matrix-product-state execution for FlagQuantum."""
+"""Configuration, compiled schedules, and results for MPS numerics."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from ..core.ir import Instruction
+from ...core.ir import Instruction
 
 _MPS_INSTRUCTION_SCHEDULE_CACHE: dict[tuple[Any, ...], tuple[tuple[int, ...], ...]] = {}
 
@@ -21,8 +21,8 @@ class MPSConfig:
 
 
 if TYPE_CHECKING:
-    from ..runtime.trajectories import TrajectoryFailure, TrajectoryStatistics
-    from .mps_state import MPSState
+    from ...runtime.trajectories import TrajectoryFailure, TrajectoryStatistics
+    from ..mps_state import MPSState
 
 
 def _mps_instruction_schedule(

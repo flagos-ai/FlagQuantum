@@ -42,7 +42,7 @@ def _source_snapshot() -> dict[str, object]:
         "flagquantum/runtime/backends/mps/profiling.py",
         "flagquantum/runtime/backends/mps/training.py",
         "flagquantum/runtime/backends/mps/reverse.py",
-        "flagquantum/simulation/mps.py",
+        "flagquantum/simulation/mps/models.py",
         "benchmarks/internal/evidence/mps_critical_path.py",
         "benchmarks/manifests/mps_critical_path_v1.json",
     )

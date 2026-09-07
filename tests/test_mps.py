@@ -5,21 +5,21 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.noise as fqn
-import flagquantum.simulation.mps_models as mps_models
+import flagquantum.simulation.mps.models as mps_models
 from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
 from flagquantum.runtime.mps_training import MPSTrainingStep, compile_mps_training_step
 from flagquantum.runtime.planner import estimate_mps_bytes
 from flagquantum.simulation.density_matrix import expectation_z_density
-from flagquantum.simulation.mps_execution import (
-    run_mps_adaptive,
-    run_noisy_mps_trajectory,
-)
-from flagquantum.simulation.mps_models import (
+from flagquantum.simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSAdaptiveRunResult,
     MPSBondProfile,
     MPSLocalRefinementPlan,
     MPSTruncationRecord,
+)
+from flagquantum.simulation.mps_execution import (
+    run_mps_adaptive,
+    run_noisy_mps_trajectory,
 )
 
 

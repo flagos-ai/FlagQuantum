@@ -10,16 +10,16 @@ import torch
 from ..core.ir import Instruction
 from ..ops.gate_matrix import gate_matrix
 from ..ops.matrices import GATE_MAT_DICT, get_global_precision
+from .mps.models import (
+    MPSConfig,
+    MPSTruncationRecord,
+)
 from .mps_factorization import (
     _discarded_weight,
     _select_rank,
     _split_pair_matrix,
     _split_pair_matrix_bucket,
     _z_sum_dense_weights,
-)
-from .mps_models import (
-    MPSConfig,
-    MPSTruncationRecord,
 )
 from .mps_planning_mixin import MPSPlanningMixin
 from .real_imag_kernels import complex_einsum_pair

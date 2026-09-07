@@ -17,7 +17,7 @@ _SVD_FALLBACK_STATS = {
     "cpu_lapack_matrices": 0,
     "nonfinite_svd_outputs": 0,
 }
-from .mps_models import (  # noqa: E402
+from .mps.models import (  # noqa: E402
     MPSConfig,
 )
 

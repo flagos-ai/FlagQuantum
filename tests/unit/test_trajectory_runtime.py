@@ -16,8 +16,8 @@ from flagquantum.runtime.trajectories import (
     owned_trajectory_ids,
     save_trajectory_checkpoint,
 )
+from flagquantum.simulation.mps.models import MPSMonteCarloResult
 from flagquantum.simulation.mps_execution import merge_noisy_mps_results
-from flagquantum.simulation.mps_models import MPSMonteCarloResult
 
 pytestmark = pytest.mark.unit
 
