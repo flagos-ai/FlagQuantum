@@ -36,7 +36,7 @@ from benchmarks.sc27_metadata import (
     topology_snapshot,
 )
 from examples.distributed_mps.variable_bond_capacity_8gpu import bond_dimensions
-from flagquantum.ops import set_global_precision
+from flagquantum.core.runtime_config import get_runtime_config, set_runtime_config
 from flagquantum.runtime.backends.mps.forward import (
     _initial_ownership,
     cost_aware_mps_ownership,
@@ -345,8 +345,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     real_dtype = torch.float64 if args.precision == "float64" else torch.float32
-    set_global_precision(
-        torch.complex128 if real_dtype == torch.float64 else torch.complex64
+    set_runtime_config(
+        get_runtime_config().with_overrides(
+            complex_dtype="complex128" if real_dtype == torch.float64 else "complex64"
+        )
     )
     if args.n_sites < 2 or args.depth < 1 or args.max_bond < 1 or args.steps < 1:
         parser.error("n-sites >= 2 and depth, max-bond, steps >= 1 are required")
@@ -383,9 +385,7 @@ def main() -> None:
     elif args.partition_policy == "cost_aware":
         site_ownership = cost_aware_mps_ownership(predicted_bonds, world)
     else:
-        site_ownership = gate_aligned_cost_aware_mps_ownership(
-            predicted_bonds, world
-        )
+        site_ownership = gate_aligned_cost_aware_mps_ownership(predicted_bonds, world)
 
     parameter_count = (
         6 * args.depth
@@ -619,10 +619,17 @@ def main() -> None:
             )
             for steps in step_metrics_by_rank
         ]
-        discarded_weight_by_step = [
-            max(float(rank_steps[index]["discarded_weight"]) for rank_steps in step_metrics_by_rank)
-            for index in range(args.steps)
-        ] if passed else []
+        discarded_weight_by_step = (
+            [
+                max(
+                    float(rank_steps[index]["discarded_weight"])
+                    for rank_steps in step_metrics_by_rank
+                )
+                for index in range(args.steps)
+            ]
+            if passed
+            else []
+        )
         step_seconds = (
             [
                 max(
@@ -670,9 +677,7 @@ def main() -> None:
                 "method": reference_method,
                 "energy": reference_energy,
                 "artifact_sha256": (
-                    args.reference_artifact_sha256
-                    if exact_energy is None
-                    else None
+                    args.reference_artifact_sha256 if exact_energy is None else None
                 ),
                 "independent_of_flagquantum": exact_energy is None
                 and args.reference_energy is not None,
@@ -723,7 +728,9 @@ def main() -> None:
             "compile_observables": device.type == "cuda" and not args.disable_compile,
             "svd_driver": args.svd_driver,
             "numerical_mode": (
-                "fast_approximate_svd" if args.svd_driver == "gesvda" else "standard_svd"
+                "fast_approximate_svd"
+                if args.svd_driver == "gesvda"
+                else "standard_svd"
             ),
             "compiled_layer_budget_reservation": (
                 args.svd_driver == "gesvda" and not args.disable_compile
@@ -813,10 +820,18 @@ def main() -> None:
                 "driver_version": driver_version(),
             },
             "ownership": {
-                "primal_state": "sharded_across_ranks" if world > 1 else "single_device",
-                "adjoint_state": "sharded_across_ranks" if world > 1 else "single_device",
-                "parameter_gradient": "owner_sharded_across_ranks" if world > 1 else "single_device",
-                "optimizer_state": "owner_sharded_across_ranks" if world > 1 else "single_device",
+                "primal_state": "sharded_across_ranks"
+                if world > 1
+                else "single_device",
+                "adjoint_state": "sharded_across_ranks"
+                if world > 1
+                else "single_device",
+                "parameter_gradient": "owner_sharded_across_ranks"
+                if world > 1
+                else "single_device",
+                "optimizer_state": "owner_sharded_across_ranks"
+                if world > 1
+                else "single_device",
                 "full_mps_materialized": False,
                 "optimizer_bytes_per_rank": optimizer_bytes_by_rank,
             },

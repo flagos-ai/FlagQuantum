@@ -12,7 +12,7 @@ import torch
 
 import flagquantum.algorithms as fqa
 from flagquantum.algorithms.optimization import OptimizationStage
-from flagquantum.ops import get_global_precision, set_global_precision
+from flagquantum.core.runtime_config import runtime_config
 
 
 def main() -> None:
@@ -27,9 +27,7 @@ def main() -> None:
     if args.device == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA profiling requested but CUDA is unavailable")
     device = torch.device(args.device)
-    previous = get_global_precision()
-    set_global_precision(torch.complex128)
-    try:
+    with runtime_config(complex_dtype="complex128"):
         count = fqa.heisenberg_hva_parameter_count(args.n_wires, args.depth)
         generator = torch.Generator(device=device).manual_seed(args.seed)
         initial = 0.02 * torch.randn(
@@ -87,22 +85,31 @@ def main() -> None:
             "parameter_count": count,
             "precision": "complex128",
             "device": str(device),
-            "device_name": platform.processor() if device.type == "cpu" else torch.cuda.get_device_name(device),
+            "device_name": platform.processor()
+            if device.type == "cpu"
+            else torch.cuda.get_device_name(device),
             "seed": args.seed,
             "exact_ground_energy": exact,
             "records": records,
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print(json.dumps({
-            "output": str(args.output),
-            "total_seconds": cumulative,
-            "mean_metric_fraction": sum(
-                r["quantum_metric_seconds"] / r["wall_time_seconds"] for r in records
-            ) / len(records),
-        }, indent=2))
-    finally:
-        set_global_precision(previous)
+        args.output.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(
+            json.dumps(
+                {
+                    "output": str(args.output),
+                    "total_seconds": cumulative,
+                    "mean_metric_fraction": sum(
+                        r["quantum_metric_seconds"] / r["wall_time_seconds"]
+                        for r in records
+                    )
+                    / len(records),
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":

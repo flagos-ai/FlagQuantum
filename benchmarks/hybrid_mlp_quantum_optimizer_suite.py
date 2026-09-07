@@ -15,13 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import flagquantum.algorithms as fqa
 from benchmarks.hybrid_classical_quantum_optimizer import (
     CircuitCounter,
     _block_quantum_metric,
 )
-import flagquantum.algorithms as fqa
-from flagquantum.ops import get_global_precision, set_global_precision
-
+from flagquantum.core.runtime_config import runtime_config
 
 METHODS = ("adam", "block_qng", "lbfgs", "spsa")
 
@@ -76,7 +75,11 @@ def conditioned_angles(
 
 
 def _best_at_budget(trace: list[dict], budget: int) -> float | None:
-    eligible = [point["relative_error"] for point in trace if point["circuit_evaluations"] <= budget]
+    eligible = [
+        point["relative_error"]
+        for point in trace
+        if point["circuit_evaluations"] <= budget
+    ]
     return min(eligible) if eligible else None
 
 
@@ -107,7 +110,9 @@ def run_method(
         raise AssertionError("MLP features do not align with HVA parameters")
     per_layer = count // depth
     generator = torch.Generator().manual_seed(seed)
-    quantum = (0.02 * torch.randn(count, generator=generator, dtype=dtype)).requires_grad_()
+    quantum = (
+        0.02 * torch.randn(count, generator=generator, dtype=dtype)
+    ).requires_grad_()
     conditioner = make_conditioner(dtype, seed, hidden)
     classical_optimizer = torch.optim.Adam(conditioner.parameters(), lr=classical_lr)
     quantum_optimizer = (
@@ -118,16 +123,22 @@ def run_method(
     counter = CircuitCounter()
 
     def state_from_angles(angles: torch.Tensor) -> torch.Tensor:
-        return fqa.heisenberg_hva(
-            n_wires,
-            depth,
-            angles,
-            parameterization="bond_resolved_phase",
-            initial_state="dimer_singlet",
-        ).state().reshape(-1)
+        return (
+            fqa.heisenberg_hva(
+                n_wires,
+                depth,
+                angles,
+                parameterization="bond_resolved_phase",
+                initial_state="dimer_singlet",
+            )
+            .state()
+            .reshape(-1)
+        )
 
     def energy_from_angles(angles: torch.Tensor) -> torch.Tensor:
-        return counter.call(lambda: hamiltonian.expectation(state_from_angles(angles)).sum().real)
+        return counter.call(
+            lambda: hamiltonian.expectation(state_from_angles(angles)).sum().real
+        )
 
     def live_energy() -> torch.Tensor:
         angles, _, _ = conditioned_angles(conditioner, features, quantum)
@@ -161,7 +172,9 @@ def run_method(
 
         # All quantum optimizers use the same pre-update MLP transformation.
         with torch.no_grad():
-            _, frozen_gain, frozen_bias = conditioned_angles(conditioner, features, quantum)
+            _, frozen_gain, frozen_bias = conditioned_angles(
+                conditioner, features, quantum
+            )
             frozen_gain = frozen_gain.clone()
             frozen_bias = frozen_bias.clone()
         classical_optimizer.step()
@@ -173,6 +186,7 @@ def run_method(
             quantum.grad = quantum_gradient
             quantum_optimizer.step()
         elif method == "block_qng":
+
             def counted_state(value: torch.Tensor) -> torch.Tensor:
                 return counter.call(
                     lambda: state_from_angles(frozen_gain * value + frozen_bias)
@@ -180,7 +194,9 @@ def run_method(
 
             metric = _block_quantum_metric(counted_state, quantum, block_size=per_layer)
             identity = torch.eye(count, dtype=metric.dtype, device=metric.device)
-            direction = torch.linalg.solve(metric + damping * identity, quantum_gradient)
+            direction = torch.linalg.solve(
+                metric + damping * identity, quantum_gradient
+            )
             with torch.no_grad():
                 quantum.add_(-quantum_lr * direction)
         elif method == "lbfgs":
@@ -204,9 +220,14 @@ def run_method(
 
             local_lbfgs.step(closure)
         else:
-            signs = torch.randint(
-                0, 2, quantum.shape, generator=spsa_generator, dtype=torch.int64
-            ).to(dtype=dtype).mul_(2).sub_(1)
+            signs = (
+                torch.randint(
+                    0, 2, quantum.shape, generator=spsa_generator, dtype=torch.int64
+                )
+                .to(dtype=dtype)
+                .mul_(2)
+                .sub_(1)
+            )
             plus = frozen_energy(quantum + spsa_perturbation * signs)
             minus = frozen_energy(quantum - spsa_perturbation * signs)
             estimate = (plus - minus) * signs / (2.0 * spsa_perturbation)
@@ -242,15 +263,16 @@ def main() -> None:
     parser.add_argument("--damping", type=float, default=1e-3)
     parser.add_argument("--spsa-perturbation", type=float, default=0.08)
     parser.add_argument("--lbfgs-max-iter", type=int, default=4)
-    parser.add_argument("--precision", choices=("float32", "float64"), default="float64")
+    parser.add_argument(
+        "--precision", choices=("float32", "float64"), default="float64"
+    )
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=METHODS)
     parser.add_argument("--json-output", type=Path, required=True)
     parser.add_argument("--csv-output", type=Path, required=True)
     args = parser.parse_args()
     dtype = torch.float64 if args.precision == "float64" else torch.float32
-    previous = get_global_precision()
-    set_global_precision(torch.complex128 if dtype == torch.float64 else torch.complex64)
-    try:
+    complex_dtype = "complex128" if dtype == torch.float64 else "complex64"
+    with runtime_config(complex_dtype=complex_dtype):
         experiments = [
             run_method(
                 method=method,
@@ -268,7 +290,9 @@ def main() -> None:
             )
             for method in args.methods
         ]
-        budgets = sorted({50, 100, 150, *[e["total_circuit_evaluations"] for e in experiments]})
+        budgets = sorted(
+            {50, 100, 150, *[e["total_circuit_evaluations"] for e in experiments]}
+        )
         payload = {
             "schema": "flagquantum.hybrid_mlp_quantum_optimizer_suite.v1",
             "workload": "mlp_conditioned_heisenberg_hva_vqe",
@@ -281,10 +305,22 @@ def main() -> None:
             "seed": args.seed,
             "initial_state": "dimer_singlet",
             "parameterization": "bond_resolved_phase",
-            "classical_model": {"type": "mlp", "features": 8, "hidden": args.hidden, "outputs": 2},
-            "classical_parameter_count": 8 * args.hidden + args.hidden + 2 * args.hidden + 2,
-            "quantum_parameter_count": fqa.heisenberg_hva_parameter_count(args.n_wires, args.depth),
-            "exact_ground_energy": float(fqa.heisenberg_chain_hamiltonian(args.n_wires).ground_energy()),
+            "classical_model": {
+                "type": "mlp",
+                "features": 8,
+                "hidden": args.hidden,
+                "outputs": 2,
+            },
+            "classical_parameter_count": 8 * args.hidden
+            + args.hidden
+            + 2 * args.hidden
+            + 2,
+            "quantum_parameter_count": fqa.heisenberg_hva_parameter_count(
+                args.n_wires, args.depth
+            ),
+            "exact_ground_energy": float(
+                fqa.heisenberg_chain_hamiltonian(args.n_wires).ground_energy()
+            ),
             "circuit_evaluation_definition": "one objective-state or QNG metric-state construction",
             "wall_time_definition": "forward, backward, metric/closure, optimizer, and recording",
             "equal_evaluation_budget_best_error": {
@@ -298,7 +334,9 @@ def main() -> None:
         }
         args.json_output.parent.mkdir(parents=True, exist_ok=True)
         args.csv_output.parent.mkdir(parents=True, exist_ok=True)
-        args.json_output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        args.json_output.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         rows = [
             {"method": experiment["method"], **point}
             for experiment in experiments
@@ -308,13 +346,19 @@ def main() -> None:
             writer = csv.DictWriter(stream, fieldnames=tuple(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
-        print(json.dumps({e["method"]: {
-            "best_relative_error": e["best_relative_error"],
-            "evaluations": e["total_circuit_evaluations"],
-            "seconds": e["total_wall_time_seconds"],
-        } for e in experiments}, indent=2))
-    finally:
-        set_global_precision(previous)
+        print(
+            json.dumps(
+                {
+                    e["method"]: {
+                        "best_relative_error": e["best_relative_error"],
+                        "evaluations": e["total_circuit_evaluations"],
+                        "seconds": e["total_wall_time_seconds"],
+                    }
+                    for e in experiments
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":

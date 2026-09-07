@@ -20,7 +20,7 @@ from typing import Callable
 import torch
 
 import flagquantum.algorithms as fqa
-from flagquantum.ops import get_global_precision, set_global_precision
+from flagquantum.core.runtime_config import runtime_config
 
 
 @dataclass
@@ -110,24 +110,24 @@ def run_experiment(
 
     def state(c: torch.Tensor, q: torch.Tensor) -> torch.Tensor:
         angles = effective_angles(c, q, depth=depth)
-        return fqa.heisenberg_hva(
-            n_wires,
-            depth,
-            angles,
-            parameterization="bond_resolved_phase",
-            initial_state="dimer_singlet",
-        ).state().reshape(-1)
+        return (
+            fqa.heisenberg_hva(
+                n_wires,
+                depth,
+                angles,
+                parameterization="bond_resolved_phase",
+                initial_state="dimer_singlet",
+            )
+            .state()
+            .reshape(-1)
+        )
 
     def energy(c: torch.Tensor, q: torch.Tensor) -> torch.Tensor:
-        return counter.call(
-            lambda: hamiltonian.expectation(state(c, q)).sum().real
-        )
+        return counter.call(lambda: hamiltonian.expectation(state(c, q)).sum().real)
 
     classical_optimizer = torch.optim.Adam([classical], lr=classical_lr)
     quantum_optimizer = (
-        torch.optim.Adam([quantum], lr=quantum_lr)
-        if method == "all_adam"
-        else None
+        torch.optim.Adam([quantum], lr=quantum_lr) if method == "all_adam" else None
     )
     started = time.perf_counter()
 
@@ -165,9 +165,7 @@ def run_experiment(
             def counted_state(value: torch.Tensor) -> torch.Tensor:
                 return counter.call(lambda: state(frozen_classical, value))
 
-            metric = _block_quantum_metric(
-                counted_state, quantum, block_size=per_layer
-            )
+            metric = _block_quantum_metric(counted_state, quantum, block_size=per_layer)
             identity = torch.eye(
                 parameter_count, dtype=metric.dtype, device=metric.device
             )
@@ -220,15 +218,16 @@ def main() -> None:
     parser.add_argument("--classical-lr", type=float, default=0.03)
     parser.add_argument("--quantum-lr", type=float, default=0.05)
     parser.add_argument("--damping", type=float, default=1e-3)
-    parser.add_argument("--precision", choices=("float32", "float64"), default="float64")
+    parser.add_argument(
+        "--precision", choices=("float32", "float64"), default="float64"
+    )
     parser.add_argument("--json-output", type=Path, required=True)
     parser.add_argument("--csv-output", type=Path, required=True)
     args = parser.parse_args()
 
     dtype = torch.float64 if args.precision == "float64" else torch.float32
-    previous_precision = get_global_precision()
-    set_global_precision(torch.complex128 if dtype == torch.float64 else torch.complex64)
-    try:
+    complex_dtype = "complex128" if dtype == torch.float64 else "complex64"
+    with runtime_config(complex_dtype=complex_dtype):
         experiments = [
             run_experiment(
                 method=method,
@@ -272,16 +271,19 @@ def main() -> None:
             "experiments": experiments,
         }
         write_outputs(payload, args.json_output, args.csv_output)
-        print(json.dumps({
-            experiment["method"]: {
-                "final_relative_error": experiment["final_relative_error"],
-                "circuit_evaluations": experiment["total_circuit_evaluations"],
-                "wall_time_seconds": experiment["total_wall_time_seconds"],
-            }
-            for experiment in experiments
-        }, indent=2))
-    finally:
-        set_global_precision(previous_precision)
+        print(
+            json.dumps(
+                {
+                    experiment["method"]: {
+                        "final_relative_error": experiment["final_relative_error"],
+                        "circuit_evaluations": experiment["total_circuit_evaluations"],
+                        "wall_time_seconds": experiment["total_wall_time_seconds"],
+                    }
+                    for experiment in experiments
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":

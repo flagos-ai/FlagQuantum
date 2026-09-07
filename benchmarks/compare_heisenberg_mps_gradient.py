@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 
 import flagquantum.algorithms as fqa
-from flagquantum.ops import set_global_precision
+from flagquantum.core.runtime_config import get_runtime_config, set_runtime_config
 
 
 def main() -> None:
@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument("artifact", type=Path)
     args = parser.parse_args()
     payload = json.loads(args.artifact.read_text(encoding="utf-8"))
-    set_global_precision(torch.complex128)
+    set_runtime_config(get_runtime_config().with_overrides(complex_dtype="complex128"))
 
     parameter_count = int(payload["parameter_count"])
     values: list[float | None] = [None] * parameter_count
