@@ -1,4 +1,4 @@
-"""Native matrix-product-state execution for FlagQuantum."""
+"""Adaptive bond planning and state diagnostics for MPS numerics."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 
 import torch
 
-from .mps.models import (
+from .models import (
     MPSAdaptiveBondPlan,
     MPSBondProfile,
     MPSLocalRefinementPlan,

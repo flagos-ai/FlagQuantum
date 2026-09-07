@@ -89,7 +89,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `mps/noisy.py` | 纯数值执行 | 已降低 IR 上的 unitary/Kraus MPS 单轨迹演化 | 不导入 Compiler 或 Runtime，不派生 seed，不拥有 checkpoint |
 | `mps_execution.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、lowered IR 内部入口、adaptive bond rerun | 正式 `run_native` 路径由 Runtime 先调用 Compiler lowering；受保护的 legacy 直接入口仍保留同签名 lowering |
 | `runtime/trajectories/mps.py` | Runtime 生命周期 | 多轨迹 ownership、随机流、统计收敛、失败重试、checkpoint/restart 和 rank 结果合并 | 通过调用方提供的单轨迹执行器调用 Simulation，不实现 MPS 门或 Kraus 数值算法 |
-| `mps_planning_mixin.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
+| `mps/planning.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
 | `mps/models.py` | MPS 配置、编译调度和结果模型 | 算法内部配置、不可变调度及诊断结果 | 长期跨领域结果契约必须由 Core；模型不得承担执行或设备策略 |
 | `tensor_state.py`、`tensor_contraction.py`、`tensor_stages.py` | 纯数值算法 | 网络表示、局部/分片收缩、显式反向、Kahan 等数值方法 | 执行计划和持久记录需由 Runtime/Core 契约提供 |
 | `tensor_path_search.py` | 算法规划（混合） | contraction-order 搜索作为数值算法 | 设备/编译策略、全局资源预算决定属于 Runtime/Compiler 输入 |

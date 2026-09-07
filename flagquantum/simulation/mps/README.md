@@ -14,6 +14,8 @@ evidence.
   fusion.
 - Start in `noisy.py` for one already-lowered noisy trajectory with an explicit
   random generator.
+- Start in `planning.py` for bond profiles, adaptive bond growth, local
+  refinement plans, and state summaries.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.
