@@ -8,13 +8,13 @@ import torch
 
 from ...circuit import Circuit
 from ..gate_matrix import gate_matrix
-from .contraction import _as_ir
 from .models import (
     CompiledTNProgram,
     ContractionPathStep,
     TensorNetworkContractionPlan,
     TensorNetworkNode,
 )
+from .path_search import _as_ir
 from .state import TensorNetworkState
 
 

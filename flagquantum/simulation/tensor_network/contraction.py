@@ -15,17 +15,7 @@ from .models import (
     TensorNetworkSlicingPlan,
 )
 from .path_search import (
-    _CONTRACTION_PATH_CACHE as _CONTRACTION_PATH_CACHE,
-)
-from .path_search import (
-    _CONTRACTION_STAGE_CACHE as _CONTRACTION_STAGE_CACHE,
-)
-from .path_search import (
     _QUALITY_MULTISTART_PATH_CACHE as _QUALITY_MULTISTART_PATH_CACHE,
-)
-from .path_search import _as_ir as _as_ir
-from .path_search import (
-    _choose_greedy_pair as _choose_greedy_pair,
 )
 from .path_search import (
     _contract_nodes_beam,
