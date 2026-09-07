@@ -6,6 +6,8 @@ evidence.
 
 - Start in `models.py` for tensor nodes, contraction plans, compiled schedules,
   slicing plans, and local expectation plans.
+- Start in `state.py` for the local tensor-network state, cached contractions,
+  observables, amplitudes, sampling, and numerical diagnostics.
 - Import the owning submodule directly; this package does not re-export a
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local

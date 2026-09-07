@@ -37,7 +37,7 @@ from .tensor_observables import (
 from .tensor_observables import (
     tensor_network_expectations as _tensor_network_expectations,
 )
-from .tensor_state import (  # noqa: E402
+from .tensor_network.state import (  # noqa: E402
     TensorNetworkState,
 )
 

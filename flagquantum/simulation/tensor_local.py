@@ -15,7 +15,7 @@ from .tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkNode,
 )
-from .tensor_state import TensorNetworkState
+from .tensor_network.state import TensorNetworkState
 
 
 def _initial_wire_tensors(

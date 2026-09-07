@@ -6,7 +6,7 @@ from typing import Any, Sequence
 
 import torch
 
-from .statevector_ops import _bits_from_indices
+from ..statevector_ops import _bits_from_indices
 
 _CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
 _CONTRACTION_PATH_CACHE: dict[
@@ -21,7 +21,7 @@ _Z_OBSERVABLE_NODE_CACHE: dict[
 ] = {}
 
 
-from .tensor_network.models import (  # noqa: E402
+from .models import (  # noqa: E402
     CompiledTNObservableProgram,
     CompiledTNStagePlan,
     TensorNetworkContractionPlan,
@@ -234,6 +234,6 @@ class TensorNetworkState:
 
 
 def tensor_network_expectation_ps(*args: Any, **kwargs: Any) -> torch.Tensor:
-    from .tensor_execution import tensor_network_expectation_ps as execute
+    from ..tensor_execution import tensor_network_expectation_ps as execute
 
     return execute(*args, **kwargs)

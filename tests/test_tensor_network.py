@@ -34,7 +34,7 @@ from flagquantum.simulation.tensor_network.models import (
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
-from flagquantum.simulation.tensor_state import (
+from flagquantum.simulation.tensor_network.state import (
     TensorNetworkState,
     tensor_network_expectation_ps,
 )
