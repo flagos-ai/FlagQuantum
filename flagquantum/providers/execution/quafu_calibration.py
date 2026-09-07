@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Mapping, Sequence
 
-from ..noise import (
+from ...noise import (
     CorrelatedReadoutError,
     DeviceNoiseProfile,
     GateDuration,

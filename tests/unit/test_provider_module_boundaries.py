@@ -1,5 +1,6 @@
 import pytest
 
+from flagquantum import deployment
 from flagquantum.deployment import providers
 from flagquantum.providers.execution import (
     braket,
@@ -8,6 +9,7 @@ from flagquantum.providers.execution import (
     http,
     originq,
     quafu,
+    quafu_calibration,
     result_parsing,
     tencent,
 )
@@ -43,6 +45,13 @@ def test_provider_aggregator_preserves_http_object_identity(name):
 
 def test_provider_aggregator_preserves_quafu_object_identity():
     assert providers.QuafuProvider is quafu.QuafuProvider
+
+
+def test_deployment_preserves_quafu_calibration_object_identity():
+    assert (
+        deployment.quafu_noise_model_from_chip_info
+        is quafu_calibration.quafu_noise_model_from_chip_info
+    )
 
 
 def test_provider_aggregator_preserves_originq_object_identity():

@@ -1,5 +1,6 @@
 """Quantum cloud deployment interfaces for FlagQuantum."""
 
+from ..providers.execution.quafu_calibration import quafu_noise_model_from_chip_info
 from .cloud import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     CloudBackendProfile,
@@ -37,7 +38,6 @@ from .providers import (
     UrllibTransport,
     braket_backend_profile,
 )
-from .quafu_calibration import quafu_noise_model_from_chip_info
 
 __all__ = [
     "CloudBackendProfile",

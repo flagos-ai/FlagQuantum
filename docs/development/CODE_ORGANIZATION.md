@@ -210,7 +210,8 @@ plugins, benchmarks, or serialized artifacts.
 - Provider-neutral deployment contracts remain in `deployment.cloud`.
   Shared HTTP transport lives in `providers.execution.http`, stateless
   counts/QASM parsing lives in `providers.execution.result_parsing`, and the
-  All remote execution adapters live under `providers.execution`. The
+  All remote execution adapters and provider-specific calibration conversion
+  live under `providers.execution`. The
   `deployment.providers` import surface re-exports the same objects and is now
   below the default module-size ceiling, so its size exception has been removed.
 - The optional JAX backend is a lazy package boundary under
