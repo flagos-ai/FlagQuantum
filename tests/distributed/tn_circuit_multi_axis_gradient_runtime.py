@@ -31,7 +31,9 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_tn_adjoint_layouts,
     validate_tn_adjoint_tensors,
 )
-from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
+from flagquantum.simulation.tensor_network.entrypoints import (
+    build_tensor_network_expectation,
+)
 
 
 def _expectation(parameters: torch.Tensor):

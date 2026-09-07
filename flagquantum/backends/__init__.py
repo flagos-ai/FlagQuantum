@@ -25,7 +25,7 @@ _EXPORTS = {
     "run_noisy_mps": ("flagquantum.simulation.mps.entrypoints", "run_noisy_mps"),
     "run_target": ("flagquantum.runtime.target_execution", "run_target"),
     "run_tensor_network": (
-        "flagquantum.simulation.tensor_execution",
+        "flagquantum.simulation.tensor_network.entrypoints",
         "run_tensor_network",
     ),
 }

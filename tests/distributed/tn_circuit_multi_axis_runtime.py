@@ -17,7 +17,9 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_contraction_dag,
     plan_multi_axis_tn_peak_sharding,
 )
-from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
+from flagquantum.simulation.tensor_network.entrypoints import (
+    build_tensor_network_expectation,
+)
 
 
 def _arguments() -> argparse.Namespace:

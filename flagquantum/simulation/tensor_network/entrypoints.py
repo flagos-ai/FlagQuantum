@@ -6,38 +6,38 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ..circuit import Circuit
-from .tensor_network.contraction import (  # noqa: E402
+from ...circuit import Circuit
+from .contraction import (  # noqa: E402
     _build_slicing_plan,
     _contract_nodes_greedy,
     _contract_nodes_sliced,
 )
-from .tensor_network.local import (  # noqa: E402
+from .local import (  # noqa: E402
     build_local_tensor_network,
     ensure_local_tensor_network_plan,
     run_local_tensor_network,
 )
-from .tensor_network.models import (  # noqa: E402
+from .models import (  # noqa: E402
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkNode,
 )
-from .tensor_network.observables import (  # noqa: E402
+from .observables import (  # noqa: E402
     build_tensor_network_expectation as _build_tensor_network_expectation,
 )
-from .tensor_network.observables import (
+from .observables import (
     build_tensor_network_hamiltonian_expectation as _build_tensor_network_hamiltonian_expectation,
 )
-from .tensor_network.observables import (
+from .observables import (
     build_tensor_network_hamiltonian_expectations as _build_tensor_network_hamiltonian_expectations,
 )
-from .tensor_network.observables import (
+from .observables import (
     tensor_network_expectation_ps as _tensor_network_expectation_ps,
 )
-from .tensor_network.observables import (
+from .observables import (
     tensor_network_expectations as _tensor_network_expectations,
 )
-from .tensor_network.state import (  # noqa: E402
+from .state import (  # noqa: E402
     TensorNetworkState,
 )
 

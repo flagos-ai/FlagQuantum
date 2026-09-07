@@ -62,7 +62,7 @@ from flagquantum.runtime.backends.jax.tensor_network_records import (
     JAXSlicedTensorNetworkParameterGradientResult,
 )
 from flagquantum.runtime.execution import run_advanced
-from flagquantum.simulation.tensor_execution import (
+from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     build_tensor_network_expectation,
 )

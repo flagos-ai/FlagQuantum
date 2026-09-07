@@ -12,7 +12,9 @@ from flagquantum.runtime.backends.tensor_network import (
     plan_distributed_tn_slice_tasks,
     plan_sliced_tn_checkpoint_memory,
 )
-from flagquantum.simulation.tensor_execution import build_tensor_network_expectation
+from flagquantum.simulation.tensor_network.entrypoints import (
+    build_tensor_network_expectation,
+)
 from flagquantum.simulation.tensor_network.models import TensorNetworkSlicingPlan
 
 

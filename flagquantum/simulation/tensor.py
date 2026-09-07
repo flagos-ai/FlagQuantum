@@ -7,7 +7,7 @@ _MODULES = (
     "flagquantum.simulation.tensor_network.contraction",
     "flagquantum.simulation.tensor_network.models",
     "flagquantum.simulation.tensor_network.state",
-    "flagquantum.simulation.tensor_execution",
+    "flagquantum.simulation.tensor_network.entrypoints",
     "flagquantum.simulation.tensor_network.observables",
 )
 

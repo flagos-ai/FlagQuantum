@@ -59,7 +59,7 @@ from flagquantum.runtime.backends.tensor_network import (
     with_sharded_tn_input,
     with_sharded_tn_intermediate,
 )
-from flagquantum.simulation.tensor_execution import (
+from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     build_tensor_network_expectation,
 )

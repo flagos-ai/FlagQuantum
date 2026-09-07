@@ -234,6 +234,6 @@ class TensorNetworkState:
 
 
 def tensor_network_expectation_ps(*args: Any, **kwargs: Any) -> torch.Tensor:
-    from ..tensor_execution import tensor_network_expectation_ps as execute
+    from .entrypoints import tensor_network_expectation_ps as execute
 
     return execute(*args, **kwargs)

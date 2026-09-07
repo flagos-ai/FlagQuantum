@@ -9,7 +9,7 @@ import flagquantum.backends.tensor_network as fqbtn
 import flagquantum.runtime.distributed.tensor_network_execution as fqxd
 import flagquantum.runtime.planner as fqxp
 import flagquantum.simulation.tensor as tensor_runtime
-import flagquantum.simulation.tensor_execution as tensor_execution
+import flagquantum.simulation.tensor_network.entrypoints as tensor_execution
 import flagquantum.simulation.tensor_network.observables as tensor_observables
 from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.runtime.backends.tensor_network import (
@@ -20,7 +20,7 @@ from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,
     estimate_tensor_network_bytes,
 )
-from flagquantum.simulation.tensor_execution import (
+from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     build_tensor_network_expectation,
     build_tensor_network_hamiltonian_expectation,

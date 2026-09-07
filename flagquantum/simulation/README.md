@@ -86,7 +86,7 @@ public API migration for the wrapper functions and result type.
 schedules, slicing plans, and local expectation plans. `tensor_network/local.py` owns
 local tensor-network plan construction and the numerical
 state entry point. `tensor_network/observables.py` owns Pauli/Hamiltonian plan assembly,
-MPO compression, and batched observable contraction. `tensor_execution.py`
+MPO compression, and batched observable contraction. `tensor_network/entrypoints.py`
 preserves the public wrappers and amplitude entry points; distributed
 scheduling, rank lifecycle, and communication remain outside these paths.
 `tensor_network/stages.py` owns pair-contraction and pair-pullback execution, high-rank

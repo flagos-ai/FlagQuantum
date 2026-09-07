@@ -5,7 +5,7 @@
 集成进展（2026-09-04）：本地状态向量、密度矩阵、无噪声 MPS 和张量网络计划构建已归入
 各自的 Simulation 实现。本地 TN 的计划构建与状态入口位于
 `flagquantum/simulation/tensor_network/local.py`，Pauli/Hamiltonian 观测量计划与 MPO 构造位于
-`tensor_network/observables.py`，`tensor_execution.py` 仅保留兼容门面和振幅入口；
+`tensor_network/observables.py`，`tensor_network/entrypoints.py` 保留稳定入口和振幅实现；
 初态与生命周期缓存仍暂由 `Circuit` 持有，迁移不得改变 `fq.Circuit`、Runtime 或结果契约。
 
 复核进展（2026-09-05）：Statevector 的门矩阵作用、对角门数值作用、基态块合并和
@@ -70,7 +70,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | Split real/imag 与 Double-Single | `simulation/split_real_imag_statevector.py` 的 P0/P1/P2 门矩阵、门作用、零态执行循环和 Pauli-term 数值归约；`simulation/double_single_host_gates.py` 与 `double_single_device_gates.py` 的隔离门矩阵生成；`simulation/double_single_statevector.py` 的 P3/P4 零态初始化、门执行、归一化和 Pauli-term 归约 | Runtime 文件中的参数绑定、平台身份、精度计划与授权、编码策略、observables、参数移位调度、P5 autograd/SGD 边界、conformance/result | P0--P4 的基础数值实现已归 Simulation；Runtime 只组合既有数值原语；P3/P4 适配器因主机摄取与路径证据不同而保持分离；P5 单行 SGD 更新尚不构成独立数值核，不为搬移而新增 helper；实验路径不得成为首切片默认实现或被描述为等价 FP64 |
 | 本地 MPS | `simulation/mps/local.py` 的无噪声指令循环；`mps/noisy.py` 的已降低单轨迹数值循环；`mps/models.py`、`mps/state.py`、`mps/factorization.py`、`static_mps.py`、`tebd.py`、`dense_island.py`、`mps/brickwork.py` | `mps/entrypoints.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
 | 分布式 MPS | `simulation/mps/rank_local.py`、`mps/site_kernels.py`、`mps/compiled_layers.py`、`mps/factorization.py`、`mps/canonicalization.py`、`mps/reverse.py`、`mps/observables.py` | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
-| 本地张量网络 | `simulation/tensor_network/local.py` 的计划构建与数值状态入口；`tensor_network/observables.py` 的观测量计划与 MPO；`tensor_network/state.py`、`tensor_network/contraction.py`、`tensor_network/stages.py`、`real_imag_kernels.py` | `tensor_execution.py` 的兼容门面与振幅入口、`tensor_network/path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
+| 本地张量网络 | `simulation/tensor_network/local.py` 的计划构建与数值状态入口；`tensor_network/observables.py` 的观测量计划与 MPO；`tensor_network/state.py`、`tensor_network/contraction.py`、`tensor_network/stages.py`、`real_imag_kernels.py` | `tensor_network/entrypoints.py` 的稳定入口与振幅实现、`tensor_network/path_search.py`、`tensor.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
 | 分布式张量网络 | `simulation/tensor_network/stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/backends/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime；旧 `simulation.noise` 门面已退出 |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/noisy_statevector.py`、`simulation/mps/state.py`/`mps/entrypoints.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
@@ -95,7 +95,7 @@ adjoint 局部数学已由 `simulation/statevector_ops.py` 与
 | `tensor_network/path_search.py` | 算法规划（混合） | contraction-order 搜索作为数值算法 | 设备/编译策略、全局资源预算决定属于 Runtime/Compiler 输入 |
 | `tensor_network/local.py` | 纯数值执行 | IR 到本地 contraction plan、状态入口和局部编译模板复用 | 无 Runtime/Provider 依赖；初态和程序缓存仍消费现有 Circuit 生命周期容器 |
 | `tensor_network/observables.py` | 纯数值算法 | Pauli/Hamiltonian 计划、MPO 压缩和批量观测量 contraction | 压缩设备由调用方显式给定，不读取 rank 或集群环境 |
-| `tensor_execution.py` | 兼容入口与振幅执行 | 公开入口薄适配、振幅投影与 contraction 调用 | 不拥有 Runtime/Provider 策略；振幅代码可在收益明确时再独立 |
+| `tensor_network/entrypoints.py` | 稳定入口与振幅执行 | 公开入口薄适配、振幅投影与 contraction 调用 | 不拥有 Runtime/Provider 策略；振幅代码可在收益明确时再独立 |
 | `tensor_network/models.py`、`tensor.py` | 结果转换/兼容门面 | 算法内部结构 | 跨层结果与稳定类型应由 Core 提案定义 |
 | `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
 | `graph.py` | 受保护兼容工具 | 当前仅由根 API 兼容导出，无 Compiler 调用方 | 不复制到 Compiler，不形成第二权威；只有出现具体 Compiler 消费者并批准公共 API 迁移后才归位 |

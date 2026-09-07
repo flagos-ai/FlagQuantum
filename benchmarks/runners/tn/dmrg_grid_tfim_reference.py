@@ -10,9 +10,9 @@ from time import perf_counter
 import numpy as np
 import quimb.tensor as qtn
 import torch
-
 from adapt_vqe_tn_contract import grid_edges, mean_field_angles
-from flagquantum.simulation.tensor_execution import _compress_pauli_sum_mpo
+
+from flagquantum.simulation.tensor_network.entrypoints import _compress_pauli_sum_mpo
 
 
 def arguments() -> argparse.Namespace:

@@ -36,7 +36,7 @@ from flagquantum.simulation.statevector_ops import (
     _compose_gate_matrices,
     _gate_matrix,
 )
-from flagquantum.simulation.tensor_execution import build_tensor_network
+from flagquantum.simulation.tensor_network.entrypoints import build_tensor_network
 from flagquantum.utils.qasm_exporter import export_to_qasm_str
 from flagquantum.utils.qcis_exporter import export_to_qcis_str
 

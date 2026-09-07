@@ -1,6 +1,6 @@
 """Stable expert interfaces for tensor-network-specific outputs."""
 
-from ..simulation.tensor_execution import (
+from ..simulation.tensor_network.entrypoints import (
     tensor_network_amplitude,
     tensor_network_amplitudes,
     tensor_network_expectations,

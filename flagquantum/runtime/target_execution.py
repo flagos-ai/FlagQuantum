@@ -45,7 +45,7 @@ def _statevector_target(
     if target == "full_state":
         return state
     if target in {"single_amplitude", "few_amplitudes"}:
-        from ..simulation.tensor_execution import _normalize_bitstring
+        from ..simulation.tensor_network.entrypoints import _normalize_bitstring
 
         n_wires = int(circuit.to_ir().n_wires)
         indices = torch.tensor(
@@ -133,11 +133,13 @@ def run_target(
         )
     elif backend == "tensor_network":
         if target == "single_amplitude":
-            from ..simulation.tensor_execution import tensor_network_amplitude
+            from ..simulation.tensor_network.entrypoints import tensor_network_amplitude
 
             values = tensor_network_amplitude(circuit_or_ir, targets[0], **options)
         elif target == "few_amplitudes" and world_size == 1:
-            from ..simulation.tensor_execution import tensor_network_amplitudes
+            from ..simulation.tensor_network.entrypoints import (
+                tensor_network_amplitudes,
+            )
 
             values = tensor_network_amplitudes(circuit_or_ir, targets, **options)
         elif target == "few_amplitudes":
@@ -150,7 +152,9 @@ def run_target(
             )
             values, execution_summary = result.values, result.summary()
         elif target == "local_observables" and world_size == 1:
-            from ..simulation.tensor_execution import tensor_network_expectations
+            from ..simulation.tensor_network.entrypoints import (
+                tensor_network_expectations,
+            )
 
             values = tensor_network_expectations(
                 circuit_or_ir, observable_batch, **options

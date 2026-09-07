@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 from benchmarks.runners.tn.tn_gap_common import make_workload, write_workload
-from flagquantum.simulation.tensor_execution import _amplitude_projection
+from flagquantum.simulation.tensor_network.entrypoints import _amplitude_projection
 
 
 def main() -> None:
