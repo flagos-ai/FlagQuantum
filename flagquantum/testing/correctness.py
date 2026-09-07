@@ -16,7 +16,7 @@ from flagquantum.noise import (
     depolarizing_channel,
     phase_flip_channel,
 )
-from flagquantum.ops.lowering import DEFAULT_LOWERING_REGISTRY
+from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
 from flagquantum.runtime.backends.jax import run_jax_sharded_statevector
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 from flagquantum.utils.qasm_exporter import export_to_qasm_str

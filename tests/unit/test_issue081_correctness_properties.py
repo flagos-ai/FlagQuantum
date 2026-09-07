@@ -11,7 +11,8 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR
-from flagquantum.ops import DEFAULT_LOWERING_REGISTRY, matrices
+from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
+from flagquantum.ops import matrices
 from flagquantum.testing import (
     FailureArtifact,
     PhaseAwareWatchdog,

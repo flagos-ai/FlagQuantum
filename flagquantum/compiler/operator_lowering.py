@@ -1,4 +1,4 @@
-"""Immutable backend lowering capability registry."""
+"""Immutable operator-lowering capability registry."""
 
 from __future__ import annotations
 

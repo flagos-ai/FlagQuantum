@@ -209,7 +209,7 @@ def export_to_qcis_str(program: Any) -> str:
     """Export a FlagQuantum circuit or IR to a QCIS instruction string."""
 
     ir = _as_ir(program)
-    from ..ops.lowering import validate_lowering
+    from ..compiler.operator_lowering import validate_lowering
 
     validate_lowering(ir, "qcis")
     lines: list[str] = []

@@ -11,15 +11,17 @@ from flagquantum.core import (
     OperatorSchema,
     canonical_opcode,
 )
-from flagquantum.ops import (
+from flagquantum.compiler.operator_lowering import (
     DEFAULT_LOWERING_REGISTRY,
     OperatorLoweringRegistry,
     UnsupportedLoweringError,
+    validate_lowering,
+)
+from flagquantum.ops import (
     matrices,
     register_gate,
     registered_gates,
     registry,
-    validate_lowering,
 )
 
 pytestmark = pytest.mark.unit

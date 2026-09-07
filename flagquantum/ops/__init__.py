@@ -1,4 +1,4 @@
-"""Gate matrices and backend-lowering capabilities."""
+"""Gate matrices and context-local custom gate registration."""
 
 from __future__ import annotations
 
@@ -6,21 +6,13 @@ import logging
 from importlib import import_module
 from typing import Any
 
-from . import lowering, matrices
+from . import matrices
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 _MODULE_EXPORTS = {
     "matrices": tuple(matrices.__all__),
     "registry": ("RegisteredGate", "register_gate", "registered_gates"),
-    "lowering": (
-        "BACKENDS",
-        "DEFAULT_LOWERING_REGISTRY",
-        "LoweringCapability",
-        "OperatorLoweringRegistry",
-        "UnsupportedLoweringError",
-        "validate_lowering",
-    ),
 }
 _NAME_TO_MODULE = {
     name: module_name
@@ -34,8 +26,6 @@ def __getattr__(name: str) -> Any:
     if name in _MODULE_EXPORTS:
         if name == "matrices":
             module = matrices
-        elif name == "lowering":
-            module = lowering
         else:
             module = import_module(".registry", __name__)
         globals()[name] = module
@@ -45,8 +35,6 @@ def __getattr__(name: str) -> Any:
         raise AttributeError(name)
     if module_name == "matrices":
         module = matrices
-    elif module_name == "lowering":
-        module = lowering
     else:
         module = import_module(".registry", __name__)
     value = getattr(module, name)

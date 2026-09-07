@@ -64,7 +64,7 @@ skipped hardware test 和 CPU 分布式语义测试最多提供各自范围内�
 | `providers.platform.PlatformDevice/Identity/MemorySnapshot` | CPU/CUDA/FlagOS platform provider | Runtime discovery、诊断 | 设备/运行时身份与可能未知的内存 | Identity 单向 `to_dict`；metadata 自由；无 snapshot hash | platform facts 输入；available 不等于 workload support |
 | `deployment.CloudBackendProfile` | cloud/provider adapter | package creation、QPU providers | provider/name/wires/gates/coupling/formats/dynamic/simulator/metadata | 无严格 `from_dict`、无独立 identity | Deployment 临时投影；metadata 不可直接进入 Core semantic root |
 | `extensions.CapabilityRequest/Response` | extension caller/provider negotiate | extension registry/conformance | required names、dtype/device/gradient；accepted/supported/blockers | 无标准 `to_dict/from_dict` 或 identity | 受保护协商消息，不是 requirement/snapshot 权威 |
-| `ops.LoweringCapability` | lowering registry | compiler/backend lowering validation | backend/opcode/strategy/implementation/supported/reason | manifest 投影；registry-local | 编译实现可用性，不是运行目标支持 |
+| `compiler.operator_lowering.LoweringCapability` | lowering registry | compiler/backend lowering validation | backend/opcode/strategy/implementation/supported/reason | manifest 投影；registry-local | 编译实现可用性，不是运行目标支持 |
 | `runtime.FlagOSWorkloadCapability` | F1/F2/F3 evidence aggregation | benchmark contract/docs | workload status、collectives、world sizes、dtype、distribution、evidence level | 专用 v1 matrix 单向 dict | 审核派生结论，不是通用 snapshot |
 | Core `ExecutionObservation` 与 Runtime evidence/route/fallback records | 一次执行/审计组装 | result、record、audit | elapsed/memory/communication/completed 及 runtime 专用路径事实 | 各自 version/hash 不统一 | workload observation；只以引用连接 snapshot |
 
