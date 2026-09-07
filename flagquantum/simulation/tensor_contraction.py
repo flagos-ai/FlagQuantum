@@ -15,21 +15,20 @@ from .tensor_network.models import (
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
-from .tensor_network.stages import execute_pair_steps as _execute_pair_steps
-from .tensor_path_search import (
+from .tensor_network.path_search import (
     _CONTRACTION_PATH_CACHE as _CONTRACTION_PATH_CACHE,
 )
-from .tensor_path_search import (
+from .tensor_network.path_search import (
     _CONTRACTION_STAGE_CACHE as _CONTRACTION_STAGE_CACHE,
 )
-from .tensor_path_search import (
+from .tensor_network.path_search import (
     _QUALITY_MULTISTART_PATH_CACHE as _QUALITY_MULTISTART_PATH_CACHE,
 )
-from .tensor_path_search import _as_ir as _as_ir
-from .tensor_path_search import (
+from .tensor_network.path_search import _as_ir as _as_ir
+from .tensor_network.path_search import (
     _choose_greedy_pair as _choose_greedy_pair,
 )
-from .tensor_path_search import (
+from .tensor_network.path_search import (
     _contract_nodes_beam,
     _contract_nodes_greedy,
     _contract_nodes_optimal,
@@ -43,12 +42,13 @@ from .tensor_path_search import (
     _profile_cache_key,
     _quality_multistart_cache_key,
 )
-from .tensor_path_search import (
+from .tensor_network.path_search import (
     _linearize_contraction_tree as _linearize_contraction_tree,
 )
-from .tensor_path_search import (
+from .tensor_network.path_search import (
     _tree_from_steps as _tree_from_steps,
 )
+from .tensor_network.stages import execute_pair_steps as _execute_pair_steps
 
 # Compatibility names retained for internal consumers of the historical
 # aggregation module. Canonical implementations live in ``tensor_stages``.

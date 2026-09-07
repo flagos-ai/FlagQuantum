@@ -8,26 +8,26 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ..core.ir import CircuitIR, ensure_circuit_ir
-from .real_imag_kernels import complex_einsum_pair
-from .tensor_network.models import (
+from ...core.ir import CircuitIR, ensure_circuit_ir
+from ..real_imag_kernels import complex_einsum_pair
+from .models import (
     CompiledTNStagePlan,
     PairContractionStep,
     TensorNetworkNode,
 )
-from .tensor_network.stages import (
+from .stages import (
     compile_contraction_stages as _compile_contraction_stages,
 )
-from .tensor_network.stages import (
+from .stages import (
     einsum_pair_by_labels as _einsum_pair_by_labels,
 )
-from .tensor_network.stages import (
+from .stages import (
     einsum_reorder_by_labels as _einsum_reorder_by_labels,
 )
-from .tensor_network.stages import (
+from .stages import (
     execute_contraction_stages as _execute_contraction_stages,
 )
-from .tensor_network.stages import (
+from .stages import (
     pair_equation as _pair_equation,
 )
 

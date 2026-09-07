@@ -19,8 +19,8 @@ from ....simulation.tensor_network.models import (
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
+from ....simulation.tensor_network.path_search import _label_dims
 from ....simulation.tensor_network.stages import kahan_add
-from ....simulation.tensor_path_search import _label_dims
 from .distributed_dag import plan_distributed_tn_contraction_dag
 from .joint_planning import (
     _predict_rematerialization_peak,

@@ -10,6 +10,8 @@ evidence.
   observables, amplitudes, sampling, and numerical diagnostics.
 - Start in `stages.py` for pair contraction, pair pullback, compiled-stage
   execution, high-rank fallback, and compensated accumulation.
+- Start in `path_search.py` for greedy, multistart, tree-reconfiguration, beam,
+  and bounded-optimal contraction-order search.
 - Import the owning submodule directly; this package does not re-export a
   tensor-network facade.
 - Run `python -m pytest tests/test_tensor_network.py -q` after a typical local

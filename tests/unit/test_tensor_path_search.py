@@ -1,7 +1,8 @@
 import pytest
 import torch
 
-from flagquantum.simulation import tensor_contraction, tensor_path_search
+from flagquantum.simulation import tensor_contraction
+from flagquantum.simulation.tensor_network import path_search
 from flagquantum.simulation.tensor_network.models import TensorNetworkNode
 
 pytestmark = pytest.mark.unit
@@ -27,16 +28,16 @@ def _nodes() -> tuple[TensorNetworkNode, ...]:
     ),
 )
 def test_compatibility_names_preserve_path_search_function_identity(name):
-    assert getattr(tensor_contraction, name) is getattr(tensor_path_search, name)
+        assert getattr(tensor_contraction, name) is getattr(path_search, name)
 
 
 def test_extracted_path_search_modes_preserve_contraction_result():
     nodes = _nodes()
     expected = nodes[0].tensor @ nodes[1].tensor
 
-    greedy, greedy_steps = tensor_path_search._contract_nodes_greedy(nodes, (0, 2))
-    beam, beam_steps = tensor_path_search._contract_nodes_beam(nodes, (0, 2))
-    optimal, optimal_steps = tensor_path_search._contract_nodes_optimal(nodes, (0, 2))
+    greedy, greedy_steps = path_search._contract_nodes_greedy(nodes, (0, 2))
+    beam, beam_steps = path_search._contract_nodes_beam(nodes, (0, 2))
+    optimal, optimal_steps = path_search._contract_nodes_optimal(nodes, (0, 2))
 
     assert torch.equal(greedy, expected)
     assert torch.equal(beam, expected)
