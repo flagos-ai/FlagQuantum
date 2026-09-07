@@ -43,6 +43,10 @@ from ...distributed.identity import (
     backend_uses_accelerator_tensors,
     require_verified_flagcx,
 )
+from ...distributed.backend_policy import (
+    _resolve_backend_policy,
+    _should_use_torch_distributed,
+)
 from ...distributed.models import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
@@ -52,8 +56,6 @@ from ...distributed.models import (
     TorchDistributedContext,
     _broadcast_mps_site_tensor,
     _mps_shards,
-    _resolve_backend_policy,
-    _should_use_torch_distributed,
     destroy_torch_distributed,
     init_torch_distributed,
     torch_distributed_is_available,

@@ -11,7 +11,7 @@ production deployments to use different distributed backends:
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 import torch
@@ -208,6 +208,51 @@ def resolve_distributed_backend_policy(
             _LOCAL_WORLD_SIZE_ENV: _env(_LOCAL_WORLD_SIZE_ENV, env),
             "WORLD_SIZE": _env("WORLD_SIZE", env),
         },
+    )
+
+
+def _resolve_backend_policy(options: dict[str, Any]) -> DistributedBackendPolicy:
+    backend_policy = options.pop("distributed_backend_policy", None)
+    distributed_profile = options.pop("distributed_profile", None)
+    jax_backend = options.pop("jax_backend", None)
+    torch_backend = options.pop("torch_backend", None)
+    policy = (
+        backend_policy
+        if backend_policy is not None
+        else resolve_distributed_backend_policy(profile=distributed_profile)
+    )
+    if jax_backend is None and torch_backend is None:
+        return policy
+    source = dict(policy.source)
+    if jax_backend is not None:
+        source["runtime_jax_backend"] = str(jax_backend)
+    if torch_backend is not None:
+        source["runtime_torch_backend"] = str(torch_backend)
+    return replace(
+        policy,
+        jax_backend=str(jax_backend or policy.jax_backend),
+        torch_backend=str(torch_backend or policy.torch_backend),
+        source=source,
+    )
+
+
+def _should_use_torch_distributed(
+    distributed_executor: str,
+    policy: DistributedBackendPolicy,
+    *,
+    world_size: int,
+) -> bool:
+    if distributed_executor == "torch":
+        return True
+    if distributed_executor not in {"auto", None}:
+        return False
+    if dist.is_available() and dist.is_initialized():
+        return True
+    env_world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    return (
+        policy.profile == "production"
+        and policy.torch_backend == "torch_distributed"
+        and max(int(world_size), env_world_size) > 1
     )
 
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 import datetime
 import os
 import socket
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 import torch
@@ -34,7 +34,6 @@ from ...simulation.mps.rank_local import (
 from ...simulation.mps.state import MPSState
 from .backend_policy import (
     DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
 )
 from .flagos_runtime import activate_flagos_device, is_flagos_request
 from .identity import (
@@ -224,50 +223,6 @@ def _rank_placement_summary(
             else None
         ),
     }
-
-
-def _resolve_backend_policy(options: dict[str, Any]) -> DistributedBackendPolicy:
-    backend_policy = options.pop("distributed_backend_policy", None)
-    distributed_profile = options.pop("distributed_profile", None)
-    jax_backend = options.pop("jax_backend", None)
-    torch_backend = options.pop("torch_backend", None)
-    if backend_policy is not None:
-        policy = backend_policy
-    else:
-        policy = resolve_distributed_backend_policy(profile=distributed_profile)
-    if jax_backend is None and torch_backend is None:
-        return policy
-    source = dict(policy.source)
-    if jax_backend is not None:
-        source["runtime_jax_backend"] = str(jax_backend)
-    if torch_backend is not None:
-        source["runtime_torch_backend"] = str(torch_backend)
-    return replace(
-        policy,
-        jax_backend=str(jax_backend or policy.jax_backend),
-        torch_backend=str(torch_backend or policy.torch_backend),
-        source=source,
-    )
-
-
-def _should_use_torch_distributed(
-    distributed_executor: str,
-    policy: DistributedBackendPolicy,
-    *,
-    world_size: int,
-) -> bool:
-    if distributed_executor == "torch":
-        return True
-    if distributed_executor not in {"auto", None}:
-        return False
-    if dist.is_available() and dist.is_initialized():
-        return True
-    env_world_size = int(os.environ.get("WORLD_SIZE", "1"))
-    return (
-        policy.profile == "production"
-        and policy.torch_backend == "torch_distributed"
-        and max(int(world_size), env_world_size) > 1
-    )
 
 
 def _boundary_communication_tiers(
