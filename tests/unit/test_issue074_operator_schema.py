@@ -17,9 +17,7 @@ from flagquantum.compiler.operator_lowering import (
     UnsupportedLoweringError,
     validate_lowering,
 )
-from flagquantum.ops import (
-    matrices,
-)
+from flagquantum.ops import matrices
 
 pytestmark = pytest.mark.unit
 
@@ -51,6 +49,11 @@ def test_schema_drives_circuit_methods_and_parameter_order():
     instructions = circuit.to_ir().instructions
     assert [item.name for item in instructions] == ["phase", "u3", "cx"]
     assert tuple(instructions[1].params) == OPERATOR_SCHEMAS["u3"].parameters
+
+
+def test_schema_and_aliases_define_the_complete_circuit_method_set():
+    for name in set(OPERATOR_SCHEMAS) | set(OPERATOR_ALIASES):
+        assert callable(getattr(Circuit, name))
 
 
 def test_generated_gate_methods_accept_semantic_qubit_keywords():

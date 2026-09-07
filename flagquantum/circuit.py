@@ -25,7 +25,6 @@ from .core.parameters import (
 )
 from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
-from .ops.matrices import GATE_MAT_DICT
 
 if TYPE_CHECKING:
     from .noise import NoiseModel
@@ -562,9 +561,7 @@ def _install_gate_method(name: str) -> None:
     setattr(Circuit, name.upper(), method)
 
 
-for _gate_name in sorted(
-    set(GATE_MAT_DICT) | set(OPERATOR_SCHEMAS) | set(OPERATOR_ALIASES)
-):
+for _gate_name in sorted(set(OPERATOR_SCHEMAS) | set(OPERATOR_ALIASES)):
     _install_gate_method(_gate_name)
 
 
