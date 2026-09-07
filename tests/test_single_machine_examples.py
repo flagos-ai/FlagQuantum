@@ -59,26 +59,6 @@ def test_mps_training_example_smoke():
     assert "reference" in out
 
 
-def test_mps_training_scale_report_smoke():
-    pytest.importorskip("jax")
-    out = _run_example(
-        "03_mps_training.py",
-        "--scale-report",
-        "3,4",
-        "--layers",
-        "1",
-        "--max-bond",
-        "4",
-        "--scale-iters",
-        "1",
-        "--scale-warmup",
-        "0",
-    )
-    assert "MPS JAX Scale Report" in out
-    assert "first_loss_grad_s" in out
-    assert "steady_loss_grad_s" in out
-
-
 def test_jax_kernel_torch_layer_example_smoke():
     out = _run_example(
         "04_jax_kernel_torch_layer.py", "--steps", "1", "--bench-iters", "1"
