@@ -6,7 +6,7 @@ distributed collectives, or produce execution evidence.
 
 - Start in `primitives.py` for compute dtype, instruction matrices, local gate
   application, and basic observable kernels.
-- Start in `statevector.py` for rank-local initialization, gate updates,
+- Start in `statevector/kernels.py` for rank-local initialization, gate updates,
   pair-exchange assembly, and sharded observable loss.
 - Start in `tensor_network.py` for JAX node construction, contraction,
   observables, slicing, and contracted-output loss.

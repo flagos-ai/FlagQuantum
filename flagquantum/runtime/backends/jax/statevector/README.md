@@ -2,7 +2,7 @@
 
 This package owns JAX statevector execution orchestration, distributed
 collectives, Runtime records, and evidence. Numerical statevector operations
-remain in `simulation/jax/statevector.py`.
+remain in `simulation/jax/statevector/kernels.py`.
 
 - Start in `execution.py` for sharded execution and parameter gradients.
 - Start in `records.py` for statevector shard, execution, and training records.

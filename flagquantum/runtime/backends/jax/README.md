@@ -43,7 +43,7 @@ adapter, despite its historical name. It converts instructions and Runtime
 plans, selects local, pair-exchange, all-to-all, `pmap`, or `shard_map`
 execution, and owns collective sequencing. Initial-state, local-gate,
 pair-combination, all-to-all delta, and observable/loss mathematics live in
-`simulation/jax/statevector.py`. This is the statevector stopping point: do not
+`simulation/jax/statevector/kernels.py`. This is the statevector stopping point: do not
 move plan-aware collective code into Simulation or create mirror shard records
 just to empty the Runtime file.
 

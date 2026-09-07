@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from .....core.ir import CircuitIR
-from .....simulation.jax.statevector import jax_initial_statevector_shard
+from .....simulation.jax.statevector.kernels import jax_initial_statevector_shard
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import node_count as _node_count
 from ..planning_core import JAXDistributedQuantumPlan
