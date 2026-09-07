@@ -8,7 +8,6 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from . import stages as _tensor_stages
 from .models import (
     PairContractionStep,
     TensorNetworkContractionProfile,
@@ -49,15 +48,6 @@ from .path_search import (
     _tree_from_steps as _tree_from_steps,
 )
 from .stages import execute_pair_steps as _execute_pair_steps
-
-# Compatibility names retained for internal consumers of the historical
-# aggregation module. Canonical implementations live in ``stages``.
-_batched_pair_equation = _tensor_stages.batched_pair_equation
-_compile_contraction_stages = _tensor_stages.compile_contraction_stages
-_einsum_pair_by_labels = _tensor_stages.einsum_pair_by_labels
-_einsum_reorder_by_labels = _tensor_stages.einsum_reorder_by_labels
-_execute_contraction_stages = _tensor_stages.execute_contraction_stages
-_pair_equation = _tensor_stages.pair_equation
 
 _CONTRACTION_PROFILE_CACHE: dict[tuple[Any, ...], TensorNetworkContractionProfile] = {}
 _DENSE_Z_OBSERVABLE_CACHE: dict[
@@ -882,7 +872,7 @@ def _build_slicing_plan(
 ) -> TensorNetworkSlicingPlan:
     if contraction_strategy not in {"greedy", "beam", "quality_multistart"}:
         raise ValueError(
-            "contraction_strategy must be 'greedy', 'beam', or " "'quality_multistart'."
+            "contraction_strategy must be 'greedy', 'beam', or 'quality_multistart'."
         )
     if max_intermediate_size is not None and int(max_intermediate_size) < 1:
         raise ValueError("max_intermediate_size must be >= 1 element.")

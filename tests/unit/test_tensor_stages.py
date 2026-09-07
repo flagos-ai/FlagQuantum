@@ -1,16 +1,12 @@
 import pytest
 import torch
 
-from flagquantum.simulation.tensor_network.contraction import (
-    _einsum_pair_by_labels as compatibility_einsum_pair,
-)
 from flagquantum.simulation.tensor_network.models import (
     PairContractionStep,
     TensorNetworkNode,
 )
 from flagquantum.simulation.tensor_network.stages import (
     compile_contraction_stages,
-    einsum_pair_by_labels,
     einsum_pair_by_labels_with_fallback,
     einsum_pair_pullback,
     einsum_pair_pullback_by_equations,
@@ -27,10 +23,6 @@ def _matrix_nodes() -> tuple[TensorNetworkNode, TensorNetworkNode]:
         TensorNetworkNode(torch.arange(6.0).reshape(2, 3), (0, 1), name="left"),
         TensorNetworkNode(torch.arange(12.0).reshape(3, 4), (1, 2), name="right"),
     )
-
-
-def test_legacy_pair_contraction_name_preserves_function_identity():
-    assert compatibility_einsum_pair is einsum_pair_by_labels
 
 
 def test_pair_steps_and_compiled_stages_match_matmul():
