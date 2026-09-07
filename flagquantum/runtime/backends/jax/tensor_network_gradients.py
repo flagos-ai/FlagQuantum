@@ -160,7 +160,7 @@ def _static_expectation_plan_for_parameterized_tn(
     observable_wires: Sequence[int] | None,
     hamiltonian_terms: Sequence[tuple[float, Sequence[tuple[int, str]]]],
 ) -> Any:
-    from ....simulation.tensor import (
+    from ....simulation.tensor_network.entrypoints import (
         build_tensor_network,
         build_tensor_network_expectation,
     )
@@ -327,7 +327,7 @@ def jax_sliced_tensor_network_value_and_grad(
     being implied by node-level VJP coverage.
     """
 
-    from ....simulation.tensor import build_tensor_network
+    from ....simulation.tensor_network.entrypoints import build_tensor_network
 
     torch = _require_torch()
     jax, _ = _require_jax()

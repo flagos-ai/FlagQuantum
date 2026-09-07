@@ -33,9 +33,7 @@ from ...simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
 from ...simulation.mps.state import MPSState
-from ...simulation.tensor import (
-    TensorNetworkState,
-)
+from ...simulation.tensor_network.state import TensorNetworkState
 from .backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,

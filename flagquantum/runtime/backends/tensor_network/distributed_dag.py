@@ -13,7 +13,10 @@ import json
 from dataclasses import asdict, dataclass, replace
 from typing import Any, Literal, Sequence
 
-from ....simulation.tensor import PairContractionStep, TensorNetworkContractionPlan
+from ....simulation.tensor_network.models import (
+    PairContractionStep,
+    TensorNetworkContractionPlan,
+)
 
 TN_DAG_VERSION = "flagquantum.distributed_tn_dag.v1"
 

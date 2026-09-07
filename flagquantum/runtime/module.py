@@ -870,7 +870,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 program_runtime = {**program_runtime, **backend_state.summary()}
                 executor = "pytorch_native_mps"
             elif self.policy.mode == "tensor_network":
-                from ..simulation.tensor import run_tensor_network
+                from ..simulation.tensor_network.entrypoints import run_tensor_network
 
                 state = None
                 backend_state = run_tensor_network(circuit, dense_observable_wires=12)
@@ -1016,7 +1016,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 )
                 values = backend_state.expectation_z(wires)
             else:
-                from ..simulation.tensor import run_tensor_network
+                from ..simulation.tensor_network.entrypoints import run_tensor_network
 
                 backend_state = run_tensor_network(circuit, dense_observable_wires=12)
                 values = backend_state.expectation_z(wires)

@@ -581,7 +581,7 @@ _EXPORTS = {
         "run_distributed_tensor_network",
     ),
     "run_tensor_network": (
-        "flagquantum.simulation.tensor",
+        "flagquantum.simulation.tensor_network.entrypoints",
         "run_tensor_network",
     ),
 }

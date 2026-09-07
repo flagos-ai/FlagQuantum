@@ -8,7 +8,6 @@ import flagquantum.backends as fqb
 import flagquantum.backends.tensor_network as fqbtn
 import flagquantum.runtime.distributed.tensor_network_execution as fqxd
 import flagquantum.runtime.planner as fqxp
-import flagquantum.simulation.tensor as tensor_runtime
 import flagquantum.simulation.tensor_network.entrypoints as tensor_execution
 import flagquantum.simulation.tensor_network.observables as tensor_observables
 from flagquantum.algorithms import Hamiltonian, pauli_term
@@ -20,6 +19,12 @@ from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,
     estimate_tensor_network_bytes,
 )
+from flagquantum.simulation.tensor_network.contraction import (
+    _build_slicing_plan,
+    _cost_for_sliced_labels,
+    _internal_slice_candidates,
+    _parallel_slice_labels,
+)
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     build_tensor_network_expectation,
@@ -27,12 +32,21 @@ from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network_hamiltonian_expectations,
 )
 from flagquantum.simulation.tensor_network.models import (
+    CompiledTNObservableProgram,
+    CompiledTNProgram,
     PairContractionStep,
     TensorNetworkContractionPlan,
     TensorNetworkContractionProfile,
     TensorNetworkExpectationPlan,
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
+)
+from flagquantum.simulation.tensor_network.path_search import (
+    _CONTRACTION_PATH_CACHE,
+    _contract_nodes_quality_multistart,
+)
+from flagquantum.simulation.tensor_network.stages import (
+    compile_contraction_stages as _compile_contraction_stages,
 )
 from flagquantum.simulation.tensor_network.state import (
     TensorNetworkState,
@@ -81,9 +95,9 @@ def test_hamiltonian_mpo_compression_is_reused_for_static_observable(monkeypatch
 
 def test_persistent_distributed_plan_round_trip(tmp_path):
     plan = build_tensor_network(fq.Circuit(3).h(0).cx(0, 2))
-    nodes, outputs = tensor_runtime._amplitude_projection(plan, "101")
-    slicing = tensor_runtime._build_slicing_plan(nodes, outputs)
-    steps = tensor_runtime._contract_nodes_quality_multistart(nodes, outputs)
+    nodes, outputs = tensor_execution._amplitude_projection(plan, "101")
+    slicing = _build_slicing_plan(nodes, outputs)
+    steps = _contract_nodes_quality_multistart(nodes, outputs)
     key = distributed_tn._persistent_plan_key(
         nodes,
         outputs,
@@ -176,7 +190,7 @@ def test_compiled_tn_program_reuses_topology_with_new_tensor_slots():
     second = fqb.run_tensor_network(circuit)
     rebound = program.bind(tuple(node.tensor for node in first.plan.nodes))
 
-    assert isinstance(program, tensor_runtime.CompiledTNProgram)
+    assert isinstance(program, CompiledTNProgram)
     assert circuit._backend_programs[("tensor_network", 1)] is program
     assert rebound.path is program.path
     assert first.plan.nodes is not second.plan.nodes
@@ -776,27 +790,27 @@ def test_tensor_network_run_accepts_sliced_strategy_options():
 
 
 def test_greedy_contraction_path_is_reused_for_dynamic_parameters():
-    tensor_runtime._CONTRACTION_PATH_CACHE.clear()
+    _CONTRACTION_PATH_CACHE.clear()
     theta = torch.tensor(0.2, requires_grad=True)
     first = fqb.run_tensor_network(fq.Circuit(2).ry(0, theta).cx(0, 1))
     first.expectation_z(0).sum().backward()
-    cache_size = len(tensor_runtime._CONTRACTION_PATH_CACHE)
+    cache_size = len(_CONTRACTION_PATH_CACHE)
 
     phi = torch.tensor(-0.3, requires_grad=True)
     second = fqb.run_tensor_network(fq.Circuit(2).ry(0, phi).cx(0, 1))
     second.expectation_z(0).sum().backward()
 
     assert cache_size > 0
-    assert len(tensor_runtime._CONTRACTION_PATH_CACHE) == cache_size
+    assert len(_CONTRACTION_PATH_CACHE) == cache_size
     assert theta.grad is not None and phi.grad is not None
 
 
 def test_compiled_contraction_stage_plan_prebuckets_matching_operations():
     nodes = (
-        tensor_runtime.TensorNetworkNode(torch.ones(2, 2), (0, 1)),
-        tensor_runtime.TensorNetworkNode(torch.ones(2, 2), (1, 2)),
-        tensor_runtime.TensorNetworkNode(torch.ones(2, 2), (0, 3)),
-        tensor_runtime.TensorNetworkNode(torch.ones(2, 2), (3, 4)),
+        TensorNetworkNode(torch.ones(2, 2), (0, 1)),
+        TensorNetworkNode(torch.ones(2, 2), (1, 2)),
+        TensorNetworkNode(torch.ones(2, 2), (0, 3)),
+        TensorNetworkNode(torch.ones(2, 2), (3, 4)),
     )
     path = (
         (0, 1, (0, 2)),
@@ -804,7 +818,7 @@ def test_compiled_contraction_stage_plan_prebuckets_matching_operations():
         (0, 1, (2, 4)),
     )
 
-    plan = tensor_runtime._compile_contraction_stages(nodes, path)
+    plan = _compile_contraction_stages(nodes, path)
 
     assert plan.output_labels == (2, 4)
     assert len(plan.stages) == 2
@@ -844,7 +858,7 @@ def test_compiled_z_observable_batch_avoids_full_state_materialization():
     assert state.summary()["observable_execution"] == "memory_first_direct_batch"
     assert isinstance(
         state._observable_programs[(0, 1, 2)],
-        tensor_runtime.CompiledTNObservableProgram,
+        CompiledTNObservableProgram,
     )
     assert theta.grad is not None
 
@@ -1332,20 +1346,20 @@ def test_parallel_slice_planner_reduces_rank_local_cost_vs_label_order():
         for wire in range(layer % 2, 11, 2):
             circuit.cx(wire, wire + 1)
     plan = build_tensor_network(circuit)
-    nodes, outputs = tensor_runtime._amplitude_batch_projection(
+    nodes, outputs = tensor_execution._amplitude_batch_projection(
         plan,
         ("0" * 12,),
     )
-    candidates = tensor_runtime._internal_slice_candidates(nodes, outputs)
+    candidates = _internal_slice_candidates(nodes, outputs)
 
-    selected = tensor_runtime._parallel_slice_labels(nodes, outputs, 8)
-    selected_cost = tensor_runtime._cost_for_sliced_labels(
+    selected = _parallel_slice_labels(nodes, outputs, 8)
+    selected_cost = _cost_for_sliced_labels(
         nodes,
         outputs,
         selected,
         contraction_strategy="quality_multistart",
     )
-    label_order_cost = tensor_runtime._cost_for_sliced_labels(
+    label_order_cost = _cost_for_sliced_labels(
         nodes,
         outputs,
         candidates[:3],

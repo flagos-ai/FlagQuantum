@@ -48,7 +48,7 @@ def _tensor_network_plan(
     max_intermediate_size: int | None,
     sliced_labels: Sequence[int] | None,
 ) -> JAXDistributedQuantumPlan:
-    from ....simulation.tensor import build_tensor_network
+    from ....simulation.tensor_network.entrypoints import build_tensor_network
 
     contraction_plan = build_tensor_network(ir, bsz=bsz, device="cpu")
     slicing = contraction_plan.slicing_plan(

@@ -703,7 +703,7 @@ def run_native(
     elif mode == "tensor_network":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from ..simulation.tensor import run_tensor_network
+        from ..simulation.tensor_network.entrypoints import run_tensor_network
 
         tn_options = dict(options)
         tn_options.pop("memory_limit_bytes", None)

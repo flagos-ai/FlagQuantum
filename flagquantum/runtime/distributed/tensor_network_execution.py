@@ -23,19 +23,23 @@ import torch.distributed as dist
 from ...simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )
-from ...simulation.tensor import (
-    PairContractionStep,
-    TensorNetworkNode,
-    TensorNetworkSlicingPlan,
+from ...simulation.tensor_network.contraction import (
+    _build_slicing_plan,
+    _slice_nodes,
+)
+from ...simulation.tensor_network.entrypoints import (
     _amplitude_batch_projection,
     _amplitude_projection,
-    _build_slicing_plan,
-    _expectation_batch_projection,
-    _slice_nodes,
     build_tensor_network,
     build_tensor_network_expectation,
     run_tensor_network,
 )
+from ...simulation.tensor_network.models import (
+    PairContractionStep,
+    TensorNetworkNode,
+    TensorNetworkSlicingPlan,
+)
+from ...simulation.tensor_network.observables import _expectation_batch_projection
 from ...simulation.tensor_network.path_search import (
     _contract_nodes_quality_multistart,
     _label_dims,

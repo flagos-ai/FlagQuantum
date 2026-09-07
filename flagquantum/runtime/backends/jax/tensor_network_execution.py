@@ -85,7 +85,7 @@ def run_jax_sharded_tensor_network(
 ) -> JAXShardedTensorNetworkResult:
     """Execute JAX tensor-network contraction with slice tasks sharded by rank."""
 
-    from ....simulation.tensor import build_tensor_network
+    from ....simulation.tensor_network.entrypoints import build_tensor_network
 
     torch = _require_torch()
     policy = _resolve_policy(
