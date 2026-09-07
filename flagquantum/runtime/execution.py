@@ -24,7 +24,6 @@ from ..runtime.distributed.backend_policy import (
     resolve_distributed_backend_policy,
 )
 from .backends.jax import (
-    plan_jax_distributed_quantum_backend,
     run_jax_sharded_mps,
     run_jax_sharded_tensor_network,
 )
@@ -258,15 +257,6 @@ def run_distributed(
         complex_bytes=execution_precision.itemsize,
         optimize=False,
     )
-    jax_distributed_plan = plan_jax_distributed_quantum_backend(
-        execution_ir,
-        mode="statevector",
-        world_size=world_size,
-        local_world_size=local_world_size,
-        bsz=batch_size,
-        distributed_backend_policy=backend_policy,
-    ).summary()
-
     if (
         backend_policy.profile == "development"
         and backend_policy.torch_backend == "local_tensor"
@@ -280,7 +270,6 @@ def run_distributed(
             device=device,
             dtype=execution_precision,
             backend_policy=backend_policy,
-            jax_distributed_plan=jax_distributed_plan,
         )
         result = (
             expectation_z(local_result.state, execution_ir.n_wires)

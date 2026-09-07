@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from typing import Any, Sequence
 
 import torch
 import torch.distributed as dist
@@ -311,7 +311,6 @@ def simulate_distributed_statevector_local(
     device: torch.device | str = "cpu",
     dtype: torch.dtype = torch.complex64,
     backend_policy: DistributedBackendPolicy | None = None,
-    jax_distributed_plan: Mapping[str, Any] | None = None,
 ) -> LocalDistributedStatevectorResult:
     """Simulate distributed statevector execution in one CPU/GPU process.
 
@@ -368,7 +367,6 @@ def simulate_distributed_statevector_local(
         simulated_communication_bytes=simulated_comm_bytes,
         full_state_reconstruction_count=1,
         backend_policy=backend_policy,
-        jax_distributed_plan=jax_distributed_plan,
     )
 
 

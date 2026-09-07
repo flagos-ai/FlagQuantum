@@ -471,6 +471,7 @@ def test_local_distributed_statevector_simulator_matches_single_device_state():
     assert result.summary()["executor"] == "local_cpu_distributed_simulator"
     assert result.summary()["distribution_semantics"] == "sharded_across_ranks"
     assert result.summary()["scalability_claim_allowed"] is False
+    assert "jax_distributed_plan" not in result.summary()
     assert result.local_gate_count > 0
     assert result.distributed_gate_count > 0
     assert result.simulated_communication_count > 0

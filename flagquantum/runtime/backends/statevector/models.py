@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
@@ -59,7 +59,6 @@ class LocalDistributedStatevectorResult:
     simulated_communication_bytes: int
     full_state_reconstruction_count: int
     backend_policy: DistributedBackendPolicy
-    jax_distributed_plan: Mapping[str, Any] | None = None
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -88,7 +87,6 @@ class LocalDistributedStatevectorResult:
             "simulated_communication_bytes": self.simulated_communication_bytes,
             "communication_execution": "rank_local_amplitude_exchange",
             "full_state_reconstruction_count": self.full_state_reconstruction_count,
-            "jax_distributed_plan": self.jax_distributed_plan,
             "rank_shards": tuple(shard.summary() for shard in self.shards),
         }
 
