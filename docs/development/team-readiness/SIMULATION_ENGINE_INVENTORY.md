@@ -138,7 +138,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 设备放置、结果整形和证据探针属于执行语义，继续留在 Runtime；参数化张量网络的节点
 记录组装依赖 Runtime 记录，暂不为搬迁而引入 node factory。单行零值分配或矩阵组合仅在
 形成重复算法权威时下沉，不拆成细碎公共函数。审计识别出的实质算法
-`mps_gradient_ownership.py` 跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算已迁入
+`mps/gradient_ownership.py` 跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算已迁入
 `simulation/jax/mps/kernels.py`，Runtime 仅保留 rank 张量记录到数值参数的适配。
 
 Statevector 复核确认 `statevector/kernels.py` 只剩指令/计划适配、collective 置换与

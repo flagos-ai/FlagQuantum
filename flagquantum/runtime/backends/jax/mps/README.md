@@ -17,4 +17,5 @@ Runtime records, and evidence. Numerical MPS operations remain in
 - Start in `canonicalization.py` for truncation and optimizer pullback protocols.
 - Start in `backward.py` for the constrained sharded backward executor.
 - Start in `evidence.py` for accelerator probes and backward evidence summaries.
+- Start in `gradient_ownership.py` for parameter-gradient routing and ownership.
 - Import the owning module directly; this package does not add another facade.

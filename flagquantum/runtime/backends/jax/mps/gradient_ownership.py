@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Sequence
 
-from ....simulation.jax.mps.kernels import jax_sharded_mps_z_sum
-from .mps.training_records import JAXShardedMPSParameterFlowPlan
-from .runtime_environment import (
+from .....simulation.jax.mps.kernels import jax_sharded_mps_z_sum
+from ..runtime_environment import (
     _jax_complex_dtype,
     _require_jax,
 )
+from .training_records import JAXShardedMPSParameterFlowPlan
 
 
 def _execute_local_mps_parameter_gradient_ownership(
@@ -24,7 +24,7 @@ def _execute_local_mps_parameter_gradient_ownership(
     import numpy as np
 
     jax, jnp = _require_jax()
-    from .kernel import _JAXParameterProxy
+    from ..kernel import _JAXParameterProxy
 
     assignments = tuple(parameter_flow_plan.assignments)
     occurrences = tuple(
