@@ -14,7 +14,7 @@ from .runtime_environment import (
     _jax_available_local_devices,
     _require_jax,
 )
-from .tensor_network_records import JAXTensorNetworkNode
+from .tensor_network.records import JAXTensorNetworkNode
 
 
 def _jax_tn_label_dims(nodes: Sequence[JAXTensorNetworkNode]) -> dict[int, int]:

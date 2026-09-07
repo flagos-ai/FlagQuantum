@@ -16,7 +16,7 @@ from .runtime_environment import (
     _require_torch,
 )
 from .statevector.records import JAXStatevectorShardState
-from .tensor_network_records import JAXTensorNetworkNode
+from .tensor_network.records import JAXTensorNetworkNode
 
 
 def _gate_matrix_as_jax(

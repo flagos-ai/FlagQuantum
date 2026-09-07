@@ -5,18 +5,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from ...distributed.backend_policy import DistributedBackendPolicy
-from .common import communication_tier as _communication_tier
-from .planning_core import JAXDistributedQuantumPlan
-from .release_policy import (
+from ....distributed.backend_policy import DistributedBackendPolicy
+from ..common import communication_tier as _communication_tier
+from ..planning_core import JAXDistributedQuantumPlan
+from ..release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
 )
-from .runtime_environment import (
+from ..runtime_environment import (
     _jax_array_nbytes,
     _require_torch,
     _torch_complex_dtype,
 )
-from .tensor_network_planning import _tasks_by_rank_from_slicing
+from ..tensor_network_planning import _tasks_by_rank_from_slicing
 
 
 @dataclass(frozen=True)
