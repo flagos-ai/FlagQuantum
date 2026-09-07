@@ -9,7 +9,7 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ..simulation.mps.entrypoints import run_mps
+from ....simulation.mps.entrypoints import run_mps
 
 CircuitBuilder = Callable[[torch.Tensor], Any]
 LossBuilder = Callable[[Any], torch.Tensor]

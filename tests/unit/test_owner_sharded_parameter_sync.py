@@ -1,6 +1,8 @@
 import torch
 
-from flagquantum.runtime.mps_training import OwnerShardedParameterSynchronizer
+from flagquantum.runtime.backends.mps.compiled_training import (
+    OwnerShardedParameterSynchronizer,
+)
 
 
 def test_owner_sharded_parameter_synchronizer_preserves_tensor_identity(monkeypatch):

@@ -39,6 +39,9 @@ live in `simulation/mps/canonicalization.py`.
   it must not wrap rank-local gate application or duplicate QR/SVD numerics.
 - Change numerical tensor behavior in the corresponding Simulation module,
   not here.
+- Change reusable local compiled training steps or owner-sharded parameter
+  synchronization in `compiled_training.py`; multi-step distributed training
+  lifecycle remains in `training_engine.py`.
 
 Run the focused MPS unit tests first, then the CPU vertical slice and
 architecture checks. An ordinary numerical change should not require edits in

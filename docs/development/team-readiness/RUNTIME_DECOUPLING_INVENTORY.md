@@ -92,7 +92,7 @@ Provider 的暂管区域。
 - 稳定入口 `fq.train()` / `runtime.training.train()` 组织 PyTorch 优化循环：
   `Module.execute()` → objective → backward → optimizer step → detached result/callback。
 - `runtime.module.Module.execute()` 是 PyTorch-facing 单步执行入口。
-- `runtime.mps_training` 和各后端训练实现存在并行路径；`runtime/backends/**` 暂归
+- `runtime.backends.mps.compiled_training` 和各后端训练实现存在并行路径；`runtime/backends/**` 暂归
   Simulation，本轮不修改。
 - 当前训练入口没有统一生成 `ExecutionRecordContract`，也没有把每个训练 step 明确关联
   到一次 `attempt_id`。这是生命周期证据的主要缺口。
