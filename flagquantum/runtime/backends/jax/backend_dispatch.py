@@ -13,7 +13,7 @@ from .runtime_environment import (
     _resolve_world_size,
 )
 from .statevector.gradient_records import _statevector_plan
-from .tensor_network_planning import _tensor_network_plan
+from .tensor_network.planning import _tensor_network_plan
 
 
 def plan_jax_distributed_quantum_backend(

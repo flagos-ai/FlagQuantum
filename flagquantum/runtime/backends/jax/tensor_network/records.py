@@ -16,7 +16,7 @@ from ..runtime_environment import (
     _require_torch,
     _torch_complex_dtype,
 )
-from ..tensor_network_planning import _tasks_by_rank_from_slicing
+from .planning import _tasks_by_rank_from_slicing
 
 
 @dataclass(frozen=True)
