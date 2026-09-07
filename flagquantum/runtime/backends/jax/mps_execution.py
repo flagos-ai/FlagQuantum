@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from ....simulation.jax_mps_batched import (
+from ....simulation.jax.mps.batched import (
     jax_mps_apply_one_batched as _apply_one_jax_mps_tensor,
 )
-from ....simulation.jax_mps_batched import (
+from ....simulation.jax.mps.batched import (
     jax_mps_apply_two_batched as _apply_two_jax_mps_tensors,
 )
 from ...distributed.backend_policy import DistributedBackendPolicy

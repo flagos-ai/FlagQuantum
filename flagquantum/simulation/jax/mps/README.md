@@ -6,5 +6,6 @@ communication, or produce execution evidence.
 
 - Start in `kernels.py` for MPS initialization, gate updates, observables, and
   statevector conversion.
+- Start in `batched.py` for batched site updates and pair splitting.
 - Import the owning submodule directly; this package does not re-export a
   facade.
