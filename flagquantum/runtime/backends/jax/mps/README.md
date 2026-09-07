@@ -12,4 +12,5 @@ Runtime records, and evidence. Numerical MPS operations remain in
 - Start in `gradients.py` for parameter-gradient execution.
 - Start in `shards.py` for rank initialization, packaging, and reconstruction.
 - Start in `lowering.py` for Runtime-side circuit lowering.
+- Start in `boundary_exchange.py` for boundary-adjoint transport evidence.
 - Import the owning module directly; this package does not add another facade.

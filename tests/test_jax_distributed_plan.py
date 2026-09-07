@@ -12,7 +12,6 @@ from flagquantum.runtime.backends.jax import (
     JAXDistributedQuantumPlan,
     compile_quantum_kernel,
     mps_backward,
-    mps_boundary_exchange,
     mps_canonicalization,
     mps_evidence,
     mps_gradient_ownership,
@@ -24,6 +23,9 @@ from flagquantum.runtime.backends.jax import (
     run_jax_sharded_statevector,
     run_jax_sharded_tensor_network,
     runtime_environment,
+)
+from flagquantum.runtime.backends.jax.mps import (
+    boundary_exchange as mps_boundary_exchange,
 )
 from flagquantum.runtime.backends.jax.mps import shards as mps_shards
 from flagquantum.runtime.backends.jax.mps.gradient_result import (
