@@ -108,7 +108,7 @@ retains backend selection and execution policy.
 `mps/rank_local.py` owns rank-local MPS instruction dispatch, gate application,
 and tensor sizing.
 `mps/site_kernels.py` owns eager/compiled site kernels and their bounded
-compile cache. `mps_compiled_layers.py` owns equal-shape instruction packing,
+compile cache. `mps/compiled_layers.py` owns equal-shape instruction packing,
 batched contraction, and factorization. `mps/factorization.py` owns QR/SVD
 numerical routines; `mps_canonicalization.py` owns canonical-site factorization,
 transfer absorption, residuals, and center norms; and
@@ -166,7 +166,7 @@ python -m pytest tests/test_tensor_network.py -q
 ```
 
 For rank-local distributed-MPS math, start in `mps/rank_local.py`; for compiled
-layer numerics, start in `mps_compiled_layers.py`; for compiled site kernels,
+layer numerics, start in `mps/compiled_layers.py`; for compiled site kernels,
 start in `mps/site_kernels.py`; for QR/SVD behavior, start in
 `mps/factorization.py`; for canonicalization math, start in
 `mps_canonicalization.py`; for local VJP behavior, start in `mps_reverse.py`.

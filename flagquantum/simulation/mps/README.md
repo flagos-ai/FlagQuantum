@@ -20,6 +20,8 @@ evidence.
   application, and tensor sizing.
 - Start in `site_kernels.py` for eager and compiled site kernels and their
   bounded compile cache.
+- Start in `compiled_layers.py` for equal-shape instruction packing, batched
+  contraction, and factorization.
 - Import the owning submodule directly; this package does not re-export an MPS
   facade.
 - Run `python -m pytest tests/test_mps.py -q` after a typical local change.

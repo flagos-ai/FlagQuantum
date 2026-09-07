@@ -6,11 +6,11 @@ from typing import Sequence
 
 import torch
 
-from ..core.ir import Instruction
-from .mps.factorization import _split_pair_matrix, _split_pair_matrix_bucket
-from .mps.models import MPSConfig
-from .mps.rank_local import apply_one_mps_tensor, instruction_matrix_for_mps
-from .mps.site_kernels import apply_rxx_contraction_bucket, apply_ry_bucket
+from ...core.ir import Instruction
+from .factorization import _split_pair_matrix, _split_pair_matrix_bucket
+from .models import MPSConfig
+from .rank_local import apply_one_mps_tensor, instruction_matrix_for_mps
+from .site_kernels import apply_rxx_contraction_bucket, apply_ry_bucket
 
 
 def _packed_instruction_matrices(

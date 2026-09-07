@@ -7,7 +7,7 @@ production gates, profiling, and Runtime-facing result records.
 It does not own tensor algebra or numerical kernels. Rank-local gate math lives
 in `simulation/mps/rank_local.py`, compiled site kernels live in
 `simulation/mps/site_kernels.py`, compiled layer contraction and factorization
-live in `simulation/mps_compiled_layers.py`, and QR/SVD math lives in
+live in `simulation/mps/compiled_layers.py`, and QR/SVD math lives in
 `simulation/mps/factorization.py`. Reverse pair factorization,
 truncated-subspace projection, rank-local adjoint projection, and VJP
 evaluation live in `simulation/mps_reverse.py`. Import these numerical owners
@@ -27,7 +27,7 @@ live in `simulation/mps_canonicalization.py`.
 - Change forward ownership, communication, lifecycle, or evidence in
   `forward.py`; change reverse lifecycle in `reverse.py` or
   `reverse_replay.py`. Their local instruction buckets call
-  `simulation/mps_compiled_layers.py` rather than owning tensor contraction.
+  `simulation/mps/compiled_layers.py` rather than owning tensor contraction.
 - Change reverse pair factorization, truncated-subspace projection, rank-local
   adjoint projection, or VJP evaluation in
   `simulation/mps_reverse.py`.
