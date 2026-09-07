@@ -210,8 +210,8 @@ plugins, benchmarks, or serialized artifacts.
 - Provider-neutral deployment contracts remain in `deployment.cloud`.
   Shared HTTP transport lives in `providers.execution.http`, stateless
   counts/QASM parsing lives in `providers.execution.result_parsing`, and the
-  Amazon Braket and Quafu adapters live in `providers.execution.braket` and
-  `providers.execution.quafu`. The historical
+  Amazon Braket, Origin Quantum, and Quafu adapters live under
+  `providers.execution`. The historical
   `deployment.providers` import surface re-exports the same objects and is now
   below the default module-size ceiling, so its size exception has been removed.
 - The optional JAX backend is a lazy package boundary under
