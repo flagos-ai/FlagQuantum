@@ -62,7 +62,6 @@ from ...distributed.context import (
     init_torch_distributed,
 )
 from ...planner.tn_calibration import TNWorkingSetCalibration
-from ..jax import plan_jax_distributed_quantum_backend
 from .joint_planning import (
     DistributedTNWorkingSetPolicy,
 )
@@ -297,7 +296,6 @@ class DistributedTensorNetworkState:
         backend_policy: DistributedBackendPolicy | None = None,
         local_simulation: bool = False,
         rank_partial_bytes: Mapping[int, int] | None = None,
-        jax_distributed_plan: Mapping[str, Any] | None = None,
     ) -> None:
         self.local_state = local_state
         self.world_size = int(world_size)
@@ -310,9 +308,6 @@ class DistributedTensorNetworkState:
         self.rank_partial_bytes = {
             int(rank): int(value) for rank, value in (rank_partial_bytes or {}).items()
         }
-        self.jax_distributed_plan = (
-            dict(jax_distributed_plan) if jax_distributed_plan is not None else None
-        )
 
     @property
     def n_wires(self) -> int:
@@ -424,7 +419,6 @@ class DistributedTensorNetworkState:
                     if self.rank_partial_bytes
                     else None
                 ),
-                "jax_distributed_plan": self.jax_distributed_plan,
             }
         )
         return summary
@@ -1193,25 +1187,6 @@ def run_distributed_tensor_network(
     )
     if state_cache is not None:
         local._state_cache = state_cache
-    jax_local_world_size = (
-        context.local_world_size
-        if context is not None
-        else (
-            max(1, min(int(world_size), int(backend_policy.local_world_size)))
-            if backend_policy.local_world_size > 1
-            else int(world_size)
-        )
-    )
-    jax_distributed_plan = plan_jax_distributed_quantum_backend(
-        circuit_or_ir,
-        mode="tensor_network",
-        world_size=world_size,
-        local_world_size=jax_local_world_size,
-        bsz=local.bsz,
-        max_intermediate_size=max_intermediate_size,
-        sliced_labels=slicing.sliced_labels,
-        distributed_backend_policy=backend_policy,
-    ).summary()
     return DistributedTensorNetworkState(
         local,
         world_size=world_size,
@@ -1221,7 +1196,6 @@ def run_distributed_tensor_network(
         backend_policy=backend_policy,
         local_simulation=local_simulation,
         rank_partial_bytes=rank_partial_bytes,
-        jax_distributed_plan=jax_distributed_plan,
     )
 
 

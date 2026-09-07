@@ -1262,6 +1262,7 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
     assert plan.state_mode == "tensor_network"
     assert plan.recommended_mode == "distributed_tensor_network"
     assert result.summary()["state_mode"] == "distributed_tensor_network"
+    assert "jax_distributed_plan" not in result.summary()
     assert result.summary()["world_size"] == 2
     assert result.summary()["slice_tasks"] == len(result.tasks)
     assert set(result.summary()["tasks_by_rank"]) == {0, 1}
