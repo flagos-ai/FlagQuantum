@@ -14,8 +14,6 @@ from typing import Any
 
 import numpy as np
 import torch
-from scipy.sparse import csr_matrix, eye, kron
-from scipy.sparse.linalg import eigsh
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -50,6 +48,9 @@ def _circuit(values: torch.Tensor) -> fq.Circuit:
 
 
 def _exact_ground_energy(n_wires: int, coupling: float, field: float) -> float:
+    from scipy.sparse import csr_matrix, eye, kron
+    from scipy.sparse.linalg import eigsh
+
     identity = eye(2, format="csr", dtype=np.float64)
     x = csr_matrix(np.array([[0.0, 1.0], [1.0, 0.0]]))
     z = csr_matrix(np.array([[1.0, 0.0], [0.0, -1.0]]))
