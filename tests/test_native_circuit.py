@@ -13,6 +13,7 @@ import flagquantum.backends as fqb
 import flagquantum.compiler as compiler
 import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler import CouplingMap
+from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.gradients import parameter_shift_gradient
 from flagquantum.runtime.audit import audit_distributed_scalability
 from flagquantum.runtime.backend_registry import get_backend_capabilities
@@ -41,7 +42,6 @@ from flagquantum.simulation.statevector.operations import (
 )
 from flagquantum.simulation.tensor_network.entrypoints import build_tensor_network
 from flagquantum.utils.qasm_exporter import export_to_qasm_str
-from flagquantum.utils.qcis_exporter import export_to_qcis_str
 
 pytestmark = pytest.mark.integration
 
@@ -293,7 +293,7 @@ def test_native_named_parameters_bind_before_execution_and_export():
         bound.expectation_z(0), torch.cos(torch.tensor([[0.3]])), atol=1e-6
     )
     assert "rx(0.3)" in export_to_qasm_str(bound, version=2.0)
-    assert "RZ Q0 0.3" in export_to_qcis_str(bound)
+    assert "RZ Q0 0.3" in emit_qcis(bound)
 
 
 def test_native_ir_and_compiler():

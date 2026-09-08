@@ -11,6 +11,7 @@ import flagquantum.deployment as deployment
 import flagquantum.deployment as fqd
 from flagquantum.algorithms import Hamiltonian, pauli_term, run_vqe
 from flagquantum.compiler import CouplingMap
+from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.deployment import (
     CloudBackendProfile,
     DeploymentPackageIdentityError,
@@ -20,7 +21,6 @@ from flagquantum.deployment import (
     validate_deployment_package,
     validate_deployment_result,
 )
-from flagquantum.utils.qcis_exporter import export_to_qcis_str
 
 
 def test_create_deployment_package_exports_qasm_and_metadata():
@@ -123,12 +123,12 @@ def test_deployment_reuses_compatible_compiled_routing_plan():
     )
 
 
-def test_qcis_exporter_uses_native_gate_decomposition():
+def test_qcis_emitter_uses_native_gate_decomposition():
     theta = torch.tensor(0.25)
     circuit = fq.Circuit(2)
     circuit.h(0).rx(1, theta=theta).cx(0, 1).rzz(0, 1, theta=0.5)
 
-    qcis = export_to_qcis_str(circuit)
+    qcis = emit_qcis(circuit)
     lines = qcis.splitlines()
 
     assert lines[0] == "Y2M Q0"

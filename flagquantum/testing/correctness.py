@@ -8,6 +8,8 @@ import random
 from dataclasses import asdict, dataclass
 from typing import Any, Callable
 
+from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
+from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.noise import (
@@ -16,11 +18,9 @@ from flagquantum.noise import (
     depolarizing_channel,
     phase_flip_channel,
 )
-from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
 from flagquantum.runtime.backends.jax import run_jax_sharded_statevector
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 from flagquantum.utils.qasm_exporter import export_to_qasm_str
-from flagquantum.utils.qcis_exporter import export_to_qcis_str
 
 CERTIFICATION_VERSION = "flagquantum_correctness_v1"
 
@@ -155,7 +155,7 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
             passed = bool(text.strip())
             return CertificationResult(case, True, passed, "qasm_serialization")
         elif case.backend == "qcis":
-            text = export_to_qcis_str(ir)
+            text = emit_qcis(ir)
             passed = bool(text.strip())
             return CertificationResult(case, True, passed, "qcis_serialization")
         elif case.backend == "provider":

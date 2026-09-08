@@ -3,7 +3,7 @@
 This package transforms a Core-owned `CircuitIR` without executing it.
 `pipeline.py` owns the stable optimization, layer scheduling, and topology-aware
 compilation entry points. `routing.py` owns coupling maps and SWAP
-routing. `noise.py` owns the deterministic `CircuitIR + NoiseModel` to
+routing. `qcis.py` owns QCIS target emission. `noise.py` owns the deterministic `CircuitIR + NoiseModel` to
 channel-bearing `CircuitIR` transformation. `operator_lowering.py` owns the
 internal backend/operator capability registry used before lowering or
 serialization. `__init__.py` is the stable
@@ -23,6 +23,7 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change instruction layer scheduling in `pipeline.py`.
 - Change coupling maps or SWAP routing in `routing.py`.
 - Change noise-model lowering in `noise.py`.
+- Change QCIS target emission in `qcis.py`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Run the compiler fixed-point, trainable-parameter, scheduler, routing, public
   namespace, noise, and CPU vertical-slice tests.

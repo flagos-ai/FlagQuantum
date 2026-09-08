@@ -329,9 +329,8 @@ DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、col
 
 - `runtime/backends` 中的私有定义均仍有代码或测试消费者；其余张量操作属于计划、所有权、
   通信、checkpoint 或证据组装，不能仅因位于 Runtime 就认定为死代码；
-- `utils.qasm_exporter` 与 `utils.qcis_exporter` 仍由公开 API、Deployment 和测试使用。Compiler
-  emitter 是受限静态目标的权威实现，但尚不能覆盖旧 exporter 的完整 gate 集和失败语义，
-  因而本轮不以简单转发或删除制造兼容性回归；
+- `utils.qasm_exporter` 仍由公开 API、Deployment 和测试使用，尚不能无损删除；QCIS 导出
+  已整体归位到 `compiler/qcis.py`，内部调用完成切换，旧 utils 实现及导出已删除；
 - `compilation` 剩余模块承载受保护的执行计划、序列化和校准语义，须先经过公共契约迁移；
 - `_gateways/mcp` 没有已跟踪的生产实现可删除。
 

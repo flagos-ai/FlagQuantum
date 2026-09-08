@@ -47,7 +47,7 @@ FlagQuantum 当前并非没有 IR，而是已经具备一个稳定、实用的�
 - `flagquantum/runtime/dynamic/`
 - `flagquantum/deployment/cloud.py`
 - `flagquantum/utils/qasm_exporter.py`
-- `flagquantum/utils/qcis_exporter.py`
+- `flagquantum/compiler/qcis.py`
 
 ### 2.2 当前主要限制
 

@@ -1,4 +1,4 @@
-"""QCIS exporter for FlagQuantum circuits and IR.
+"""Compile FlagQuantum circuits and IR to QCIS text.
 
 QCIS-native cloud backends consume a small native instruction set. This module
 serializes FlagQuantum's unified IR directly to that native form without a QASM
@@ -205,8 +205,8 @@ def _decompose(
     raise NotImplementedError(f"Gate {name!r} has no QCIS decomposition.")
 
 
-def export_to_qcis_str(program: Any) -> str:
-    """Export a FlagQuantum circuit or IR to a QCIS instruction string."""
+def emit_qcis(program: Any) -> str:
+    """Compile a FlagQuantum circuit or IR to QCIS text."""
 
     ir = _as_ir(program)
     from ..compiler.operator_lowering import validate_lowering
@@ -225,4 +225,4 @@ def export_to_qcis_str(program: Any) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["QCISInstruction", "export_to_qcis_str"]
+__all__ = ("emit_qcis",)

@@ -17,10 +17,10 @@ from ..algorithms import Hamiltonian
 from ..circuit import Circuit
 from ..compiler import CouplingMap
 from ..compiler import compile as compile_program
+from ..compiler.qcis import emit_qcis
 from ..core.ir import CircuitIR, Instruction, MeasurementNode
 from ..runtime.parallel import ObservableGroup, group_observables
 from ..utils.qasm_exporter import export_to_qasm_str
-from ..utils.qcis_exporter import export_to_qcis_str
 from .routing_evidence import (
     DEPLOYMENT_PACKAGE_SCHEMA,
     build_deployment_routing_evidence,
@@ -376,7 +376,7 @@ def create_deployment_package(
     package_metadata["deployment_package_schema"] = DEPLOYMENT_PACKAGE_SCHEMA
     package_metadata["routing_evidence_sha256"] = routing_evidence_sha256
     if backend.supports_qcis and "qcis" not in package_metadata:
-        package_metadata["qcis"] = export_to_qcis_str(compiled_ir)
+        package_metadata["qcis"] = emit_qcis(compiled_ir)
     program_format = (
         "qcis"
         if backend.supports_qcis and not backend.supports_openqasm

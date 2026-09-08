@@ -4,11 +4,11 @@
 import logging
 from typing import Any
 
-from . import qasm_exporter, qcis_exporter
+from . import qasm_exporter
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-_EXPORT_MODULES = (qasm_exporter, qcis_exporter)
+_EXPORT_MODULES = (qasm_exporter,)
 __all__ = list(
     dict.fromkeys(name for module in _EXPORT_MODULES for name in module.__all__)
 )
