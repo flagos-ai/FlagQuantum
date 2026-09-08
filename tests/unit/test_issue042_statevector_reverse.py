@@ -275,6 +275,26 @@ def test_auto_checkpoint_fails_over_to_rematerialization_when_budget_is_tight():
     assert policy.estimated_required_bytes == 4096
 
 
+def test_auto_checkpoint_uses_platform_memory_snapshot(monkeypatch):
+    platform = SimpleNamespace(
+        is_available=lambda: True,
+        memory_snapshot=lambda device: SimpleNamespace(free_bytes=10_000),
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.backends.statevector.checkpointing.get_platform_runtime",
+        lambda device_type: platform,
+    )
+
+    policy = resolve_checkpoint_policy(
+        StatevectorCheckpointPolicy(),
+        local_state_bytes=2_000,
+        device=torch.device("cuda:0"),
+    )
+
+    assert policy.memory_budget_bytes == 7_000
+    assert policy.strategy == "full_rematerialization"
+
+
 def test_explicit_checkpoint_strategy_has_priority_over_auto_budget():
     policy = resolve_checkpoint_policy(
         StatevectorCheckpointPolicy(

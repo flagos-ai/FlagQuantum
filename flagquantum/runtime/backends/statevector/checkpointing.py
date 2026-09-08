@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, replace
 from typing import Any
 
-import torch
+from ....providers.platform import get_platform_runtime
 
 
 @dataclass(frozen=True)
@@ -46,9 +46,12 @@ def _checkpoint_memory_budget(
         if budget <= 0:
             raise ValueError("FQ_STATEVECTOR_CHECKPOINT_BUDGET_BYTES must be positive")
         return budget
-    if device.type == "cuda" and torch.cuda.is_available():
-        free_bytes, _ = torch.cuda.mem_get_info(device)
-        return int(free_bytes * 0.7)
+    if device.type == "cuda":
+        platform = get_platform_runtime(device.type)
+        if platform.is_available():
+            free_bytes = platform.memory_snapshot(device).free_bytes
+            if free_bytes is not None:
+                return int(free_bytes * 0.7)
     return 512 << 20
 
 
