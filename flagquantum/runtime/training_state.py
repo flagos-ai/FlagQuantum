@@ -16,6 +16,7 @@ import torch
 
 from ..core.ir import IR_VERSION, ensure_circuit_ir
 from ..errors import ExecutionError
+from ..providers.platform import get_platform_runtime
 
 TRAINING_STATE_VERSION = "flagquantum.training_state.v1"
 TRAINING_RESTORE_SCHEMA = "flagquantum.training_checkpoint_restore"
@@ -118,7 +119,8 @@ def seed_everything(
         raise ValueError("seed must be non-negative")
     random.seed(seed)
     torch.manual_seed(seed)
-    if torch.cuda.is_available():
+    cuda_platform = get_platform_runtime("cuda")
+    if cuda_platform.is_available():
         torch.cuda.manual_seed_all(seed)
     torch.use_deterministic_algorithms(deterministic_algorithms)
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -131,12 +133,15 @@ def seed_everything(
 
 
 def _rng_state(seed: SeedContract) -> dict[str, Any]:
-    cuda_device = torch.cuda.current_device() if torch.cuda.is_available() else None
+    cuda_platform = get_platform_runtime("cuda")
+    cuda_device = torch.cuda.current_device() if cuda_platform.is_available() else None
     return {
         "contract": seed.__dict__,
         "torch_cpu": torch.get_rng_state(),
         "torch_cuda": (
-            torch.cuda.get_rng_state(cuda_device) if cuda_device is not None else None
+            cuda_platform.rng_state(torch.device("cuda", cuda_device))
+            if cuda_device is not None
+            else None
         ),
         "cuda_device": cuda_device,
         "python": random.getstate(),
@@ -149,8 +154,11 @@ def _restore_rng(payload: Mapping[str, Any]) -> SeedContract:
     random.setstate(tuple(payload["python"]))
     torch.set_rng_state(payload["torch_cpu"])
     cuda_state = payload.get("torch_cuda")
-    if cuda_state is not None and torch.cuda.is_available():
-        torch.cuda.set_rng_state(cuda_state, torch.cuda.current_device())
+    cuda_platform = get_platform_runtime("cuda")
+    if cuda_state is not None and cuda_platform.is_available():
+        cuda_platform.restore_rng_state(
+            torch.device("cuda", torch.cuda.current_device()), cuda_state
+        )
     torch.use_deterministic_algorithms(bool(payload["deterministic_algorithms"]))
     return contract
 
