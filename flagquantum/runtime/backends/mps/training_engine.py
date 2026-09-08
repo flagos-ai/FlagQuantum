@@ -16,6 +16,7 @@ import torch.distributed as dist
 from torch.profiler import record_function
 
 from ....core.ir import ensure_circuit_ir
+from ....providers.platform import get_platform_runtime
 from . import checkpointing as _checkpointing
 from .communication import warmup_mps_neighbor_communicators
 from .device_resolution import resolve_distributed_mps_device
@@ -530,6 +531,7 @@ def train_distributed_mps(
     if device is None and backend == "nccl":
         device = torch.device("cuda", torch.cuda.current_device())
     resolved_device = resolve_distributed_mps_device(backend, device)
+    platform = get_platform_runtime(resolved_device.type)
     resolved_compile_site_kernels, site_kernel_selection_reason = (
         _resolve_compile_site_kernels(
             compile_site_kernels,
@@ -677,7 +679,7 @@ def train_distributed_mps(
             )
             checkpoint_writer_lease_heartbeat_count += 1
         if resolved_device.type == "cuda":
-            torch.cuda.synchronize(resolved_device)
+            platform.synchronize(resolved_device)
             torch.cuda.reset_peak_memory_stats(resolved_device)
         step_started = time.perf_counter()
         forward_started = step_started
@@ -719,7 +721,7 @@ def train_distributed_mps(
                 svd_driver=svd_driver,
             )
         if resolved_device.type == "cuda":
-            torch.cuda.synchronize(resolved_device)
+            platform.synchronize(resolved_device)
             forward_peak_memory = int(torch.cuda.max_memory_allocated(resolved_device))
             torch.cuda.reset_peak_memory_stats(resolved_device)
         else:
@@ -734,7 +736,7 @@ def train_distributed_mps(
         ):
             reverse.backward()
         if resolved_device.type == "cuda":
-            torch.cuda.synchronize(resolved_device)
+            platform.synchronize(resolved_device)
             reverse_peak_memory = int(torch.cuda.max_memory_allocated(resolved_device))
         else:
             reverse_peak_memory = 0
@@ -802,15 +804,16 @@ def train_distributed_mps(
             optimizer_collective_count += parameter_collectives
             optimizer_collective_bytes += parameter_bytes
         if resolved_device.type == "cuda":
-            torch.cuda.synchronize(resolved_device)
+            platform.synchronize(resolved_device)
         optimizer_seconds = time.perf_counter() - optimizer_started
         diagnostics_started = time.perf_counter()
         training_compute_seconds = diagnostics_started - step_started
         if resolved_device.type == "cuda":
-            torch.cuda.synchronize(resolved_device)
+            platform.synchronize(resolved_device)
             memory = max(forward_peak_memory, reverse_peak_memory)
-            allocated_memory = int(torch.cuda.memory_allocated(resolved_device))
-            reserved_memory = int(torch.cuda.memory_reserved(resolved_device))
+            memory_snapshot = platform.memory_snapshot(resolved_device)
+            allocated_memory = int(memory_snapshot.allocated_bytes or 0)
+            reserved_memory = int(memory_snapshot.reserved_bytes or 0)
         else:
             memory = sum(
                 parameter.numel() * parameter.element_size() for parameter in owned
