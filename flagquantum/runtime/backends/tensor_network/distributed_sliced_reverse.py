@@ -9,6 +9,7 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
+from ....providers.platform import get_platform_runtime
 from ....simulation.tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
@@ -125,8 +126,9 @@ def execute_distributed_sliced_tn_explicit_reverse(
             "distributed sliced TN reverse requires at least one task per rank"
         )
 
-    if torch.cuda.is_available() and any(parameter.is_cuda for parameter in parameters):
-        torch.cuda.synchronize()
+    cuda_parameter = next((parameter for parameter in parameters if parameter.is_cuda), None)
+    if cuda_parameter is not None:
+        get_platform_runtime("cuda").synchronize(cuda_parameter.device)
     local_start = perf_counter()
     local = execute_sliced_tn_explicit_reverse(
         plan,
@@ -139,8 +141,8 @@ def execute_distributed_sliced_tn_explicit_reverse(
         slice_batch_size=slice_batch_size,
         _task_assignments=tuple(task.assignments for task in local_tasks),
     )
-    if torch.cuda.is_available() and local.value.is_cuda:
-        torch.cuda.synchronize(local.value.device)
+    if local.value.is_cuda:
+        get_platform_runtime("cuda").synchronize(local.value.device)
     local_seconds = perf_counter() - local_start
 
     gradients = tuple(
@@ -149,7 +151,7 @@ def execute_distributed_sliced_tn_explicit_reverse(
     )
     value = local.value.clone()
     if value.is_cuda:
-        torch.cuda.synchronize(value.device)
+        get_platform_runtime("cuda").synchronize(value.device)
     collective_start = perf_counter()
     dist.all_reduce(value, op=dist.ReduceOp.SUM, group=process_group)
     gradient_owners = (
@@ -196,7 +198,7 @@ def execute_distributed_sliced_tn_explicit_reverse(
     else:
         gradient_collective_count = 0
     if value.is_cuda:
-        torch.cuda.synchronize(value.device)
+        get_platform_runtime("cuda").synchronize(value.device)
     collective_seconds = perf_counter() - collective_start
     payload_bytes = int(value.numel()) * int(value.element_size()) + sum(
         int(gradient.numel()) * int(gradient.element_size()) for gradient in gradients
