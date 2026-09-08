@@ -8,7 +8,7 @@ from ..deployment.cloud import (
     DeploymentPackage,
     validate_deployment_package,
 )
-from ..remote.contracts import (
+from ..remote.quantum import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,

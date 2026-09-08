@@ -1,4 +1,4 @@
-"""Provider-neutral contracts for externally controlled tasks."""
+"""Remote task contracts for quantum execution providers."""
 
 from __future__ import annotations
 

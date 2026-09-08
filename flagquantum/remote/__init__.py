@@ -10,15 +10,6 @@ from .braket import (
     BraketSubmissionPreview,
     braket_backend_profile,
 )
-from .contracts import (
-    DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
-    DeploymentResult,
-    ProviderTaskHandle,
-    QuantumProvider,
-    build_result_metadata,
-    build_submission_receipt,
-    validate_deployment_result,
-)
 from .http import (
     HttpQuantumProvider,
     ProviderCredentials,
@@ -28,6 +19,15 @@ from .http import (
 )
 from .quafu import QuafuProvider
 from .quafu_calibration import quafu_noise_model_from_chip_info
+from .quantum import (
+    DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
+    DeploymentResult,
+    ProviderTaskHandle,
+    QuantumProvider,
+    build_result_metadata,
+    build_submission_receipt,
+    validate_deployment_result,
+)
 
 __all__ = (
     "AmazonBraketProvider",

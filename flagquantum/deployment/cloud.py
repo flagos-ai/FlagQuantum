@@ -29,7 +29,7 @@ from .routing_evidence import (
 )
 
 if TYPE_CHECKING:
-    from ..remote.contracts import DeploymentResult, QuantumProvider
+    from ..remote.quantum import DeploymentResult, QuantumProvider
 
 
 @dataclass(frozen=True)

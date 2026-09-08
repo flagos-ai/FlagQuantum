@@ -10,7 +10,7 @@ from ..deployment.cloud import (
     DeploymentPackage,
     validate_deployment_package,
 )
-from .contracts import (
+from .quantum import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,

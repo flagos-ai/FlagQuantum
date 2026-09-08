@@ -13,7 +13,8 @@ from ..deployment.cloud import (
     DeploymentPackage,
     validate_deployment_package,
 )
-from .contracts import (
+from .http import HttpQuantumProvider, ProviderCredentials
+from .quantum import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     DeploymentResult,
     ProviderTaskHandle,
@@ -21,7 +22,6 @@ from .contracts import (
     build_submission_receipt,
     validate_deployment_result,
 )
-from .http import HttpQuantumProvider, ProviderCredentials
 from .result_parsing import _extract_counts
 
 
