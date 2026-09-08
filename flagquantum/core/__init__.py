@@ -19,7 +19,6 @@ from .contracts import (
     RequestedExecution,
     RuntimePlanContract,
     UnknownContractFieldError,
-    migrate_contract,
 )
 from .ir import (
     IR_VERSION,
@@ -86,7 +85,6 @@ __all__ = [
     "RequestedExecution",
     "RuntimePlanContract",
     "UnknownContractFieldError",
-    "migrate_contract",
     "CircuitIR",
     "IR_VERSION",
     "IRSerializationError",

@@ -266,42 +266,6 @@ class AuditRecordContract(VersionedContract):
         return cls(**values)
 
 
-def migrate_contract(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Explicitly migrate the documented 0.9 plan envelope to version 1.0."""
-
-    source = dict(payload)
-    if source.get("version") != "0.9" or source.get("kind") != "runtime_plan":
-        raise ContractVersionError(
-            "no migration is registered; supported legacy input is runtime_plan 0.9"
-        )
-    required = {"kind", "version", "plan_id", "request", "estimate", "capability"}
-    unknown = sorted(set(source) - required)
-    if unknown:
-        raise UnknownContractFieldError(
-            f"unknown legacy runtime_plan field(s): {', '.join(unknown)}"
-        )
-    return {
-        "kind": "runtime_plan",
-        "version": CONTRACT_VERSION,
-        "plan_id": source["plan_id"],
-        "requested": {
-            "kind": "requested_execution",
-            **source["request"],
-            "version": CONTRACT_VERSION,
-        },
-        "estimated": {
-            "kind": "estimated_resources",
-            **source["estimate"],
-            "version": CONTRACT_VERSION,
-        },
-        "capability": {
-            "kind": "capability",
-            **source["capability"],
-            "version": CONTRACT_VERSION,
-        },
-    }
-
-
 CONTRACT_TYPES = (
     CapabilityContract,
     RequestedExecution,
@@ -326,5 +290,4 @@ __all__ = [item.__name__ for item in CONTRACT_TYPES] + [
     "ContractVersionError",
     "DistributionSemantics",
     "UnknownContractFieldError",
-    "migrate_contract",
 ]

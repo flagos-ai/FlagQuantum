@@ -18,7 +18,6 @@ from flagquantum.core.contracts import (
     RequestedExecution,
     RuntimePlanContract,
     UnknownContractFieldError,
-    migrate_contract,
 )
 from flagquantum.runtime.audit.contracts import audit_execution_record
 from flagquantum.runtime.records import record_execution
@@ -81,7 +80,12 @@ def test_production_parser_rejects_unknown_outer_and_nested_fields():
         RuntimePlanContract.from_dict({**payload, "requested": requested})
 
 
-def test_legacy_contract_requires_explicit_supported_migration():
+def test_unreleased_legacy_contract_is_rejected():
+    unsupported_version = _plan().to_dict()
+    unsupported_version["version"] = "0.9"
+    with pytest.raises(ContractVersionError, match="unsupported runtime_plan"):
+        RuntimePlanContract.from_dict(unsupported_version)
+
     legacy = {
         "kind": "runtime_plan",
         "version": "0.9",
@@ -90,12 +94,8 @@ def test_legacy_contract_requires_explicit_supported_migration():
         "estimate": _plan().estimated.to_dict(),
         "capability": _plan().capability.to_dict(),
     }
-    for item in (legacy["request"], legacy["estimate"], legacy["capability"]):
-        item.pop("version")
-    migrated = RuntimePlanContract.from_dict(migrate_contract(legacy))
-    assert migrated.plan_id == "old"
-    with pytest.raises(ContractVersionError, match="no migration"):
-        migrate_contract({**legacy, "version": "0.8"})
+    with pytest.raises(UnknownContractFieldError, match="estimate, request"):
+        RuntimePlanContract.from_dict(legacy)
 
 
 def test_planner_contract_cannot_contain_measured_or_validated_fields():
