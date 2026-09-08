@@ -13,9 +13,9 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 `simulation/statevector/adjoint.py` 统一持有；本地分片调试路径仅处理索引、所有权和
 结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_network/stages.py`；JAX 的 dtype、
 门矩阵、状态作用、分片局部 observable/loss、MPS 批量更新和 pullback 已归
-`simulation/jax/` 下的表示子目录。剩余候选集中在仍与分布式 MPS/TN 记录和调度交织的路径，且真实
-本地 Engine 与测试 fake 现已通过同一套首切片 conformance，但最终 Core Engine 契约尚未批准。
-因此 `simulation_extraction` 必须保持 `in_progress`，不得以目录数量或单一 CPU 测试代替退出条件。
+`simulation/jax/` 下的表示子目录。分布式 MPS/TN 的局部数值原语已归 Simulation，Runtime
+保留记录、调度、通信、检查点和证据；真实本地 Engine 与测试 fake 已通过同一套首切片
+conformance。退出条件经逐路径审计和完整门禁验证，`simulation_extraction` 已完成。
 
 首次盘点日期：2026-09-03；最近复核日期：2026-09-05
 
@@ -25,12 +25,11 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 
 ## 1. 结论
 
-当前数值实现尚未全部以可替换 Simulation Engine 为边界收敛：稳定的本地 PyTorch
+当前数值实现已按可替换 Simulation Engine 边界收敛：稳定的本地 PyTorch
 状态向量执行循环已位于 `flagquantum/simulation/statevector/local.py`，底层门作用与融合位于
 `flagquantum/simulation/statevector/operations.py`；本地 MPS/TN 主要位于
-`flagquantum/simulation/`；密度矩阵及大量分布式数值实现位于过渡目录
-`flagquantum/runtime/executors/`。两个过渡目录都混合了数值算法、Kernel 调用、执行适配、
-资源/通信编排和结果转换。
+`flagquantum/simulation/`；密度矩阵也由 Simulation 持有。`flagquantum/runtime/executors/`
+保留计划感知的执行适配、资源/通信编排和结果转换，并调用 Simulation 的数值原语。
 
 首个候选应是现有本地 PyTorch 状态向量的 `single_device_fast_path`：执行已经校验的
 `CircuitIR`，从调用方提供或规范零态出发，返回保持 PyTorch autograd 图的完整批量状态。
@@ -280,9 +279,9 @@ Simulation→Runtime 类型引用均已删除；`mps/entrypoints.py` 也已无 R
 `simulation/noise.py` 已在更早迁移中删除。Simulation→Runtime 白名单现为空，MPS 数值边界
 已达到停止继续横向抽象的条件；后续优先推进最小纵向链路和目录归位。
 
-## 11. 退出条件复核（2026-09-05）
+## 11. 退出条件复核（2026-09-08）
 
-`simulation_extraction` 完成前必须同时满足：
+`simulation_extraction` 的完成条件：
 
 1. 真实本地 Engine 与 contract fake 运行同一套 conformance，Runtime 消费者无需修改；
 2. `runtime/executors/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
@@ -290,8 +289,9 @@ Simulation→Runtime 类型引用均已删除；`mps/entrypoints.py` 也已无 R
 4. Simulation→Runtime 反向依赖和对应架构白名单全部退出；
 5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
 
-当前第 1、4 项已完成，第 2、3 项已达到各自审计停止点，第 5 项仍需随集成门禁持续复核。
-`runtime/executors/` 下仍有待逐项判定的数值所有权，因此不修改机器可读状态。
+五项条件均已满足：真实/替身替换测试、JAX 数值核归位、TN 反向数值原语归位、反向依赖
+清零以及完整门禁均已有证据。`runtime/executors/` 中剩余张量操作均直接服务所有权、通信、
+检查点、结果或证据语义，不构成第二套数值算法权威；机器可读状态更新为 `complete`。
 
 ## 12. TN 编译前向边界复核（2026-09-05）
 

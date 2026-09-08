@@ -99,7 +99,6 @@
 | `CloudBackendProfile` | `flagquantum/deployment/cloud.py` | package creation、QuantumProvider implementations | **临时 Deployment 能力对象**。门集、拓扑、动态线路和格式字段与 `TargetCapabilities` 重叠。 |
 | `CapabilityEvidence` | `flagquantum/runtime/capabilities.py` | operator probes/preflight | **Runtime 证据记录**，不是 target declaration；应在 Core capability schema 中通过 evidence reference 关联而非合并字段。 |
 | `CapabilityRequest/Response` | `flagquantum/ecosystem/extensions/sdk.py` | extension registry/conformance | **待冻结扩展协议**。是能力协商消息，不是 Target snapshot。 |
-| `SolverWorkspaceCapabilities` | `runtime/executors/mps/solver_workspace.py` | MPS solver workspace | **算法本地对象**，保留在 Simulation/Provider 内部。 |
 
 建议权威位置：`flagquantum/core/capabilities/` 中的可移植、不可变
 `TargetCapabilities`；Runtime 的动态探测通过 adapter 生成 snapshot，`CloudBackendProfile`

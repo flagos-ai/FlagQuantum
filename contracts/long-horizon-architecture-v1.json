@@ -58,12 +58,12 @@
       "name": "simulation_extraction",
       "owner": "simulation-maintainers",
       "target_milestone": "vnext-phase-2",
-      "current_authority": ["flagquantum/simulation", "flagquantum/runtime/executors"],
+      "current_authority": ["flagquantum/simulation"],
       "target_authority": "flagquantum/simulation",
       "compatibility_adapter": "Runtime execution-provider adapter",
       "completion_evidence": "a real engine and a contract fake pass the same conformance suite without Runtime consumer changes",
       "retirement_condition": "numerical algorithm ownership under runtime/executors reaches zero",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "name": "platform_provider_convergence",

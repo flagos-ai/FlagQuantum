@@ -32,6 +32,11 @@ def test_architecture_contract_declares_independent_domains() -> None:
     assert len(migration_tracks) == 7
     assert all(track["completion_evidence"] for track in migration_tracks)
     assert all(track["retirement_condition"] for track in migration_tracks)
+    simulation = next(
+        track for track in migration_tracks if track["name"] == "simulation_extraction"
+    )
+    assert simulation["status"] == "complete"
+    assert simulation["current_authority"] == [simulation["target_authority"]]
 
 
 def test_program_artifact_wraps_circuit_without_replacing_circuit_ir() -> None:
