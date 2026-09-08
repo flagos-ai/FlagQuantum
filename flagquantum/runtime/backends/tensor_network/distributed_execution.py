@@ -1,4 +1,9 @@
-"""Ownership-enforcing execution for a planned distributed TN contraction DAG."""
+"""Ownership-enforcing execution for a distributed TN contraction DAG.
+
+This path transfers or shards intermediate tensors according to a planned DAG.
+It does not schedule complete independent slices or perform the differentiable
+slice-output reduction owned by :mod:`execution`.
+"""
 
 from __future__ import annotations
 

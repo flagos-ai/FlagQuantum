@@ -22,6 +22,19 @@ result objects and their evidence summaries. The numerical contractions invoked
 by execution remain in Simulation. Persistent plan serialization and locking
 are isolated in `plan_cache.py`.
 
+There are two intentionally separate distributed execution paths:
+
+- `execution.py` assigns complete, independent slice contractions to ranks and
+  sums their outputs. It supports the local development mirror and a
+  differentiable all-reduce.
+- `distributed_execution.py` executes a planned contraction DAG whose
+  intermediate tensors have explicit owners or shards. It performs point-to-
+  point transfers, redistribution, and small-result replication.
+
+They share numerical contraction primitives, but not scheduling or reduction
+semantics. Do not route one through the other merely because both use
+`torch.distributed`.
+
 This boundary has reached its current stopping point. Forward contractions and
 reverse pullbacks already call Simulation-owned primitives. Tensor stacking
 for schedule batches, shard slicing/combining, cotangent-map accumulation, and

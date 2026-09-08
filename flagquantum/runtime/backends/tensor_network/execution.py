@@ -1,10 +1,9 @@
-"""Distributed tensor-network reduction execution.
+"""Independent-slice tensor-network execution and output reduction.
 
-This module provides FlagQuantum-native distributed result objects without
-depending on an external graph or tensor-network package. Development backends
-must preserve the same rank ownership and communication semantics as production
-backends, while production backends are expected to execute one logical workload
-across rank-local shards instead of replicating the full circuit per rank.
+Each rank contracts complete, disjoint slice assignments and the resulting
+outputs are summed. This path supports differentiable reductions and a local
+development mirror. It does not execute the owned or sharded intermediate DAG
+handled by :mod:`distributed_execution`.
 """
 
 from __future__ import annotations
