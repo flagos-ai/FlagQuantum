@@ -19,7 +19,8 @@ manipulate tensors.
 For end-to-end distributed tensor-network execution, start with `execution.py`.
 It owns slice planning, rank-local execution, and reduction; `state.py` owns the
 result objects and their evidence summaries. The numerical contractions invoked
-by execution remain in Simulation.
+by execution remain in Simulation. Persistent plan serialization and locking
+are isolated in `plan_cache.py`.
 
 This boundary has reached its current stopping point. Forward contractions and
 reverse pullbacks already call Simulation-owned primitives. Tensor stacking

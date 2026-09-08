@@ -14,7 +14,9 @@ from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.runtime.backends.tensor_network import (
     DistributedTNWorkingSetPolicy,
 )
-from flagquantum.runtime.backends.tensor_network import execution as distributed_tn
+from flagquantum.runtime.backends.tensor_network import (
+    plan_cache as distributed_plan_cache,
+)
 from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,
     estimate_tensor_network_bytes,
@@ -98,7 +100,7 @@ def test_persistent_distributed_plan_round_trip(tmp_path):
     nodes, outputs = tensor_execution._amplitude_projection(plan, "101")
     slicing = _build_slicing_plan(nodes, outputs)
     steps = _contract_nodes_quality_multistart(nodes, outputs)
-    key = distributed_tn._persistent_plan_key(
+    key = distributed_plan_cache._persistent_plan_key(
         nodes,
         outputs,
         max_intermediate_size=None,
@@ -107,22 +109,25 @@ def test_persistent_distributed_plan_round_trip(tmp_path):
     )
     path = tmp_path / "plan.json"
 
-    distributed_tn._write_persistent_plan(
+    distributed_plan_cache._write_persistent_plan(
         path,
         cache_key=key,
         slicing=slicing,
         steps=steps,
     )
-    restored = distributed_tn._load_persistent_plan(path, expected_key=key)
+    restored = distributed_plan_cache._load_persistent_plan(path, expected_key=key)
 
     assert restored == (slicing, steps)
     assert isinstance(restored[0].contraction_path, tuple)
     assert all(
         isinstance(step, PairContractionStep) for step in restored[0].contraction_path
     )
-    assert distributed_tn._load_persistent_plan(path, expected_key="different") is None
+    assert (
+        distributed_plan_cache._load_persistent_plan(path, expected_key="different")
+        is None
+    )
     path.write_text("{truncated", encoding="utf-8")
-    assert distributed_tn._load_persistent_plan(path, expected_key=key) is None
+    assert distributed_plan_cache._load_persistent_plan(path, expected_key=key) is None
 
 
 def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
