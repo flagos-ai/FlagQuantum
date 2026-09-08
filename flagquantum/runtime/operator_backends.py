@@ -17,6 +17,8 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any, Iterable, Iterator, Mapping, Sequence
 
+from ..providers.platform import get_platform_runtime
+
 FLAGGEMS_SAFE_OPS: tuple[str, ...] = (
     "abs",
     "add",
@@ -798,8 +800,10 @@ def _run_flaggems_op_smoke(op: str, *, device: str, dtype: Any) -> None:
 
     if getattr(objective, "requires_grad", False):
         objective.backward()
-    if torch_device.type == "cuda" and torch.cuda.is_available():
-        torch.cuda.synchronize(torch_device)
+    if torch_device.type == "cuda":
+        cuda_platform = get_platform_runtime("cuda")
+        if cuda_platform.is_available():
+            cuda_platform.synchronize(torch_device)
 
 
 def validate_flaggems_ops(
