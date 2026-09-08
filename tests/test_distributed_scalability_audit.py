@@ -23,7 +23,7 @@ from flagquantum.runtime.audit.release_policy import (
     validate_distributed_claim_evidence,
 )
 from flagquantum.runtime.audit.statistics import attach_distributed_scalability_audit
-from flagquantum.runtime.backends.statevector import plan_distributed_statevector
+from flagquantum.runtime.executors.statevector import plan_distributed_statevector
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 

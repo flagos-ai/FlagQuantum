@@ -2,7 +2,7 @@
 
 import pytest
 
-from flagquantum.runtime.backends.statevector.kernel_dispatch import (
+from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
     select_triton_kernel,
 )

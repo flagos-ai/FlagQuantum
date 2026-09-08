@@ -7,9 +7,9 @@ cross-backend capability evidence.
 
 It does not own state partitioning, numerical kernels, gradient algorithms, or
 backend-specific execution. Statevector code belongs in
-`runtime/backends/statevector`, MPS code in `runtime/backends/mps`, and tensor
-network code in `runtime/backends/tensor_network`. JAX-specific orchestration
-belongs in `runtime/backends/jax`.
+`runtime/executors/statevector`, MPS code in `runtime/executors/mps`, and tensor
+network code in `runtime/executors/tensor_network`. JAX-specific orchestration
+belongs in `runtime/executors/jax`.
 
 ## Ten-minute change path
 

@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.backends.statevector.training import (
+from flagquantum.runtime.executors.statevector.training import (
     DistributedTrainingError,
     _memory_bytes,
     _validate_checkpoint_generations,
@@ -31,7 +31,7 @@ def test_cuda_memory_observation_uses_platform_provider(monkeypatch):
         memory_snapshot=lambda device: SimpleNamespace(allocated_bytes=4096)
     )
     monkeypatch.setattr(
-        "flagquantum.runtime.backends.statevector.training.get_platform_runtime",
+        "flagquantum.runtime.executors.statevector.training.get_platform_runtime",
         lambda device_type: platform,
     )
     assert _memory_bytes(torch.device("cuda:0")) == 4096
@@ -213,7 +213,7 @@ def test_progress_proves_useful_work_and_all_required_phases(tmp_path: Path):
 
 
 def test_backward_operation_is_actively_bounded(monkeypatch):
-    import flagquantum.runtime.backends.statevector.training as training
+    import flagquantum.runtime.executors.statevector.training as training
 
     circuit, _ = _circuit()
     original = training.execute_torch_distributed_statevector_reverse

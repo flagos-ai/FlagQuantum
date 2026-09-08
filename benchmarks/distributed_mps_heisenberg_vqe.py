@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-import flagquantum.runtime.backends.mps.records as fqxm
+import flagquantum.runtime.executors.mps.records as fqxm
 from benchmarks.sc27_metadata import (
     driver_version,
     gpu_identity,
@@ -37,7 +37,7 @@ from benchmarks.sc27_metadata import (
 )
 from examples.distributed_mps.variable_bond_capacity_8gpu import bond_dimensions
 from flagquantum.core.runtime_config import get_runtime_config, set_runtime_config
-from flagquantum.runtime.backends.mps.state import (
+from flagquantum.runtime.executors.mps.state import (
     cost_aware_mps_ownership,
     gate_aligned_cost_aware_mps_ownership,
     initial_mps_ownership,

@@ -12,7 +12,7 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.mps.training_engine import (
+from flagquantum.runtime.executors.mps.training_engine import (
     _broadcast_parameters,
     _parameter_broadcast_buckets,
 )

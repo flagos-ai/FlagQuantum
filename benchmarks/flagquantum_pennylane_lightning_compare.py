@@ -27,7 +27,7 @@ from benchmarks.pennylane_lightning_statevector_training import (  # noqa: E402
 from benchmarks.statevector_training_scaling import (  # noqa: E402
     build_full_width_workload,
 )
-from flagquantum.runtime.backends.statevector.reverse import (  # noqa: E402
+from flagquantum.runtime.executors.statevector.reverse import (  # noqa: E402
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
 )

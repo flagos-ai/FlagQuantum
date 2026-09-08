@@ -17,6 +17,10 @@ def test_removed_core_circuit_shim_is_not_importable() -> None:
     assert importlib.util.find_spec("flagquantum.core.circuit") is None
 
 
+def test_removed_runtime_backends_namespace_is_not_importable() -> None:
+    assert importlib.util.find_spec("flagquantum.runtime.backends") is None
+
+
 def test_public_circuit_uses_canonical_implementation() -> None:
     import flagquantum as fq
     from flagquantum.circuit import Circuit
@@ -26,8 +30,8 @@ def test_public_circuit_uses_canonical_implementation() -> None:
 
 def test_canonical_runtime_namespaces_are_importable() -> None:
     from flagquantum.runtime import audit, execution, training, training_state
-    from flagquantum.runtime.backends import jax, mps, statevector, tensor_network
     from flagquantum.runtime.distributed import protocols
+    from flagquantum.runtime.executors import jax, mps, statevector, tensor_network
 
     assert audit is not None
     assert execution is not None
@@ -48,9 +52,9 @@ def test_canonical_runtime_does_not_reference_removed_namespace() -> None:
         assert "runtime_stack" not in path.read_text(encoding="utf-8"), path
 
 
-def test_tensor_network_execution_is_owned_by_its_backend() -> None:
+def test_tensor_network_execution_is_owned_by_its_executor() -> None:
     from flagquantum.runtime import distributed
-    from flagquantum.runtime.backends.tensor_network.execution import (
+    from flagquantum.runtime.executors.tensor_network.execution import (
         run_distributed_tensor_network,
     )
 

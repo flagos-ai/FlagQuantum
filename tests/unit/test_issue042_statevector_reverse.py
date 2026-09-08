@@ -7,21 +7,21 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.backends.statevector import plan_distributed_statevector
-from flagquantum.runtime.backends.statevector.gradient_reduction import (
+from flagquantum.runtime.executors.statevector import plan_distributed_statevector
+from flagquantum.runtime.executors.statevector.gradient_reduction import (
     AsyncGradientReducer,
 )
-from flagquantum.runtime.backends.statevector.local_execution import (
+from flagquantum.runtime.executors.statevector.local_execution import (
     _rank_global_indices,
     use_compact_global_indices,
 )
-from flagquantum.runtime.backends.statevector.reverse import (
+from flagquantum.runtime.executors.statevector.reverse import (
     BackwardExecutionEvidence,
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
     resolve_checkpoint_policy,
 )
-from flagquantum.runtime.backends.statevector.reverse_adjoint import (
+from flagquantum.runtime.executors.statevector.reverse_adjoint import (
     _compact_reverse_global_indices,
 )
 
@@ -281,7 +281,7 @@ def test_auto_checkpoint_uses_platform_memory_snapshot(monkeypatch):
         memory_snapshot=lambda device: SimpleNamespace(free_bytes=10_000),
     )
     monkeypatch.setattr(
-        "flagquantum.runtime.backends.statevector.checkpointing.get_platform_runtime",
+        "flagquantum.runtime.executors.statevector.checkpointing.get_platform_runtime",
         lambda device_type: platform,
     )
 
@@ -355,7 +355,7 @@ def test_reverse_executor_import_does_not_initialize_jax():
     import sys
 
     code = (
-        "import sys; import flagquantum.runtime.backends.statevector.reverse; "
+        "import sys; import flagquantum.runtime.executors.statevector.reverse; "
         "assert 'jax' not in sys.modules and 'jaxlib' not in sys.modules"
     )
     subprocess.run([sys.executable, "-c", code], check=True)
@@ -381,7 +381,7 @@ def test_reverse_memory_debug_uses_active_platform(monkeypatch, capsys):
 
 
 def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch):
-    import flagquantum.runtime.backends.statevector.reverse_adjoint as reverse_adjoint
+    import flagquantum.runtime.executors.statevector.reverse_adjoint as reverse_adjoint
 
     theta = torch.tensor(0.19, requires_grad=True)
     result = execute_torch_distributed_statevector_reverse(fq.Circuit(1).ry(0, theta))

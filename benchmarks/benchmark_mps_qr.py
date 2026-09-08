@@ -12,7 +12,7 @@ from typing import Any, Callable
 
 import torch
 
-from flagquantum.runtime.backends.mps.factorization import mps_qr_forward
+from flagquantum.runtime.executors.mps.factorization import mps_qr_forward
 
 
 def _measure(operation: Callable[[], Any], warmups: int, samples: int) -> dict[str, Any]:

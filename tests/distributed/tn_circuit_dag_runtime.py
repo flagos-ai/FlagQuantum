@@ -10,11 +10,11 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     plan_distributed_tn_contraction_dag,
     with_sharded_tn_intermediate,
 )
-from flagquantum.runtime.backends.tensor_network.distributed_execution import (
+from flagquantum.runtime.executors.tensor_network.distributed_execution import (
     execute_sharded_tn_contraction_dag,
 )
 from flagquantum.simulation.tensor_network.entrypoints import (

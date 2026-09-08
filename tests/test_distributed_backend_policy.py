@@ -4,17 +4,17 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.errors import ExecutionError
-from flagquantum.runtime.backends.statevector import (
-    simulate_distributed_statevector_local,
-)
-from flagquantum.runtime.backends.statevector.models import (
-    LocalDistributedStatevectorResult,
-)
 from flagquantum.runtime.distributed import (
     LocalTensor,
     resolve_distributed_backend_policy,
 )
 from flagquantum.runtime.execution import run_advanced
+from flagquantum.runtime.executors.statevector import (
+    simulate_distributed_statevector_local,
+)
+from flagquantum.runtime.executors.statevector.models import (
+    LocalDistributedStatevectorResult,
+)
 from flagquantum.runtime.parity import (
     local_distributed_development_preflight,
     require_development_production_parity,

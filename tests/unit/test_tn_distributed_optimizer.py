@@ -1,6 +1,6 @@
 import pytest
 
-from flagquantum.runtime.backends.tensor_network.distributed_optimizer import (
+from flagquantum.runtime.executors.tensor_network.distributed_optimizer import (
     plan_tn_parameter_owners,
 )
 

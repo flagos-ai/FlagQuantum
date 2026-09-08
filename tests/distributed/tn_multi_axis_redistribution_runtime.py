@@ -6,14 +6,14 @@ import os
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     DistributedTNValueLayout,
 )
-from flagquantum.runtime.backends.tensor_network.multi_axis_sharding import (
+from flagquantum.runtime.executors.tensor_network.multi_axis_sharding import (
     partition_tn_tensor_for_multi_axis_shard,
     plan_multi_axis_tn_layout,
 )
-from flagquantum.runtime.backends.tensor_network.redistribution import (
+from flagquantum.runtime.executors.tensor_network.redistribution import (
     execute_multi_axis_tn_redistribution,
     plan_multi_axis_tn_redistribution,
 )

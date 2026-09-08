@@ -19,7 +19,7 @@ from flagquantum.noise import (
     depolarizing_channel,
     phase_flip_channel,
 )
-from flagquantum.runtime.backends.jax import run_jax_sharded_statevector
+from flagquantum.runtime.executors.jax import run_jax_sharded_statevector
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
 CERTIFICATION_VERSION = "flagquantum_correctness_v1"

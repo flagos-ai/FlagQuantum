@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_architecture import CONFIG, _imports_jax_backend, architecture_errors
+from tools.check_architecture import CONFIG, _imports_jax_executor, architecture_errors
 
 pytestmark = pytest.mark.unit
 
@@ -19,21 +19,21 @@ def test_checked_architecture_boundaries_pass():
     "source",
     (
         "from ..jax import plan\n",
-        "from flagquantum.runtime.backends.jax import plan\n",
-        "from flagquantum.runtime.backends import jax\n",
+        "from flagquantum.runtime.executors.jax import plan\n",
+        "from flagquantum.runtime.executors import jax\n",
     ),
 )
 def test_non_jax_backend_import_check_resolves_relative_and_absolute_imports(
     monkeypatch, tmp_path, source
 ):
-    path = tmp_path / "flagquantum/runtime/backends/mps/example.py"
+    path = tmp_path / "flagquantum/runtime/executors/mps/example.py"
     path.parent.mkdir(parents=True)
     path.write_text(source, encoding="utf-8")
 
     import tools.check_architecture as check_architecture
 
     monkeypatch.setattr(check_architecture, "ROOT", tmp_path)
-    assert _imports_jax_backend(path)
+    assert _imports_jax_executor(path)
 
 
 def test_top_level_package_layout_is_explicitly_frozen():

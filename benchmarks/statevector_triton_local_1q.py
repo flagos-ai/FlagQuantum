@@ -10,7 +10,7 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.runtime.backends.statevector.triton import (
+from flagquantum.runtime.executors.statevector.triton import (
     _complex64_local_1q_kernel,
     _complex64_local_1q_vjp_adjoint_kernel,
     apply_complex64_local_1q,

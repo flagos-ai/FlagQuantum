@@ -8,29 +8,29 @@ import torch
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.backends.mps.checkpointing import (
+from flagquantum.runtime.distributed.context import TorchDistributedContext
+from flagquantum.runtime.executors.mps.checkpointing import (
     _checkpoint_capacity_error,
     _checkpoint_start_policy_error,
     _load_checkpoint,
     _prune_checkpoint_generations,
     _save_checkpoint,
 )
-from flagquantum.runtime.backends.mps.distributed_state import (
+from flagquantum.runtime.executors.mps.distributed_state import (
     DistributedShardPlan,
     ShardedMPSState,
 )
-from flagquantum.runtime.backends.mps.reverse import _qr_forward
-from flagquantum.runtime.backends.mps.training import (
+from flagquantum.runtime.executors.mps.reverse import _qr_forward
+from flagquantum.runtime.executors.mps.training import (
     MPSStepMetrics,
     MPSTrainingError,
     ShardedMPSTrainingResult,
 )
-from flagquantum.runtime.backends.mps.training_engine import (
+from flagquantum.runtime.executors.mps.training_engine import (
     _initial_state_contract,
     _parameter_broadcast_buckets,
     _resolve_compile_site_kernels,
 )
-from flagquantum.runtime.distributed.context import TorchDistributedContext
 from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit
@@ -51,7 +51,7 @@ def test_initial_state_contract_hashes_reused_tensor_once(monkeypatch):
     monkeypatch.setattr(torch.Tensor, "numpy", counted_numpy)
     monkeypatch.setattr(torch.distributed, "get_rank", lambda: 0)
     monkeypatch.setattr(
-        "flagquantum.runtime.backends.mps.training_engine.all_gather_json",
+        "flagquantum.runtime.executors.mps.training_engine.all_gather_json",
         lambda payload: (payload,),
     )
     fingerprint, shapes = _initial_state_contract(

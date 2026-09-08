@@ -52,7 +52,7 @@ def validate(
     torch = importlib.import_module("torch")
     platforms = importlib.import_module("flagquantum.providers.platform")
     conformance = importlib.import_module(
-        "flagquantum.runtime.backends.statevector."
+        "flagquantum.runtime.executors.statevector."
         "split_real_imag_double_single_conformance"
     )
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():

@@ -21,15 +21,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.runtime.backends.statevector import (  # noqa: E402
-    plan_distributed_statevector,
-)
-from flagquantum.runtime.backends.statevector.local_execution import (  # noqa: E402
-    execute_distributed_statevector_transport,
-)
 from flagquantum.runtime.distributed import (  # noqa: E402
     destroy_torch_distributed,
     init_torch_distributed,
+)
+from flagquantum.runtime.executors.statevector import (  # noqa: E402
+    plan_distributed_statevector,
+)
+from flagquantum.runtime.executors.statevector.local_execution import (  # noqa: E402
+    execute_distributed_statevector_transport,
 )
 
 

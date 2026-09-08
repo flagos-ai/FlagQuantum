@@ -4,7 +4,7 @@ import ctypes
 
 import pytest
 
-from flagquantum.runtime.backends.mps import solver_workspace
+from flagquantum.runtime.executors.mps import solver_workspace
 
 pytestmark = pytest.mark.unit
 

@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.forward import (
+from flagquantum.runtime.executors.mps.forward import (
     execute_torch_distributed_mps_forward,
     gather_mps_for_validation,
 )

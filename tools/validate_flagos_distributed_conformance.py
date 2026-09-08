@@ -243,11 +243,11 @@ def _statevector_check(
     device: Any,
     rank: int,
 ) -> Any:
-    from flagquantum.runtime.backends.statevector import (
-        execute_torch_distributed_statevector,
-    )
     from flagquantum.runtime.distributed.conformance import (
         FlagOSStatevectorConformanceCheck,
+    )
+    from flagquantum.runtime.executors.statevector import (
+        execute_torch_distributed_statevector,
     )
 
     dtype = getattr(torch, dtype_name)

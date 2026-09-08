@@ -4,7 +4,7 @@ import json
 
 import torch
 
-from flagquantum.runtime.backends.mps import metadata_transport
+from flagquantum.runtime.executors.mps import metadata_transport
 
 
 def test_all_gather_json_uses_variable_length_tensor_payloads(monkeypatch):

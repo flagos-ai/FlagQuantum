@@ -27,7 +27,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402, I001
-from flagquantum.runtime.backends.statevector.forward_executor import (  # noqa: E402
+from flagquantum.runtime.executors.statevector.forward_executor import (  # noqa: E402
     execute_torch_distributed_statevector,
 )
 

@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-import flagquantum.runtime.backends.mps.forward as forward
-from flagquantum.runtime.backends.mps import compiled_layers
+import flagquantum.runtime.executors.mps.forward as forward
+from flagquantum.runtime.executors.mps import compiled_layers
 
 pytestmark = pytest.mark.unit
 

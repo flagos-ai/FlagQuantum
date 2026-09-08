@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.reverse import (
+from flagquantum.runtime.executors.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
 from flagquantum.simulation.mps.entrypoints import run_mps

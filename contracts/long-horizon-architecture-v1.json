@@ -58,11 +58,11 @@
       "name": "simulation_extraction",
       "owner": "simulation-maintainers",
       "target_milestone": "vnext-phase-2",
-      "current_authority": ["flagquantum/simulation", "flagquantum/runtime/backends"],
+      "current_authority": ["flagquantum/simulation", "flagquantum/runtime/executors"],
       "target_authority": "flagquantum/simulation",
       "compatibility_adapter": "Runtime execution-provider adapter",
       "completion_evidence": "a real engine and a contract fake pass the same conformance suite without Runtime consumer changes",
-      "retirement_condition": "numerical algorithm ownership under runtime/backends reaches zero",
+      "retirement_condition": "numerical algorithm ownership under runtime/executors reaches zero",
       "status": "in_progress"
     },
     {
@@ -80,7 +80,7 @@
       "name": "execution_provider_convergence",
       "owner": "runtime-provider-maintainers",
       "target_milestone": "vnext-phase-3",
-      "current_authority": ["flagquantum/providers/execution", "flagquantum/runtime/backends", "flagquantum/deployment"],
+      "current_authority": ["flagquantum/providers/execution", "flagquantum/runtime/executors", "flagquantum/deployment"],
       "target_authority": "flagquantum/providers/execution",
       "compatibility_adapter": "Runtime provider facade",
       "completion_evidence": "simulation and QPU or remote-service implementations pass one execution-result contract",

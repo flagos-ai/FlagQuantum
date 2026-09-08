@@ -51,10 +51,11 @@ def validate(*, device_name: str, checkpoints: tuple[int, ...]) -> dict[str, Any
     torch = importlib.import_module("torch")
     platforms = importlib.import_module("flagquantum.providers.platform")
     optimizer = importlib.import_module(
-        "flagquantum.runtime.backends.statevector." "split_real_imag_autograd_optimizer"
+        "flagquantum.runtime.executors.statevector."
+        "split_real_imag_autograd_optimizer"
     )
     conformance = importlib.import_module(
-        "flagquantum.runtime.backends.statevector."
+        "flagquantum.runtime.executors.statevector."
         "split_real_imag_optimizer_conformance"
     )
     if device_name.startswith("flagos") and (

@@ -82,8 +82,8 @@ repos:
           mypy --strict --no-site-packages --follow-imports skip
           flagquantum/core/contracts.py flagquantum/runtime/records.py
           flagquantum/runtime/audit/contracts.py
-          flagquantum/runtime/backends/statevector/checkpointing.py
-          flagquantum/runtime/backends/statevector/gradient_reduction.py
+          flagquantum/runtime/executors/statevector/checkpointing.py
+          flagquantum/runtime/executors/statevector/gradient_reduction.py
         language: system
         pass_filenames: false
         files: ^(flagquantum|tools)/.*\.py$

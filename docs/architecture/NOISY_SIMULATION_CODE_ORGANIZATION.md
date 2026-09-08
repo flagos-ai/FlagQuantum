@@ -26,14 +26,14 @@ Noise 不应成为与 SV/MPS/TN 平级的状态后端，也不应通过不断增
 core/               IR、contracts、parameters
 compilation/        分析、选择和执行计划
 runtime/            调度、执行、结果和审计
-runtime/backends/   SV、density、MPS、TN、JAX 后端
+runtime/executors/   SV、density、MPS、TN、JAX 后端
 ops/                门语义、矩阵和低层 lowering
 testing/            正确性和能力认证
 benchmarking/       正式基准协议
 docs/               能力、架构和 claim boundary
 ```
 
-按状态表示组织 `runtime/backends/statevector`、`mps` 和
+按状态表示组织 `runtime/executors/statevector`、`mps` 和
 `tensor_network` 的方向应继续保留。
 
 ### 2.2 P0：高层 Circuit 反向进入底层执行
@@ -117,7 +117,7 @@ return result_adapter.normalize(raw, plan)
 当前热点包括：
 
 - `simulation/tensor_network/contraction.py` 曾超过 1800 行；
-- `runtime/backends/tensor_network/execution.py` 超过 1000 行；
+- `runtime/executors/tensor_network/execution.py` 超过 1000 行；
 - TN backend facade 暴露大量内部类型和 kernel；
 - 多个 TN backend 模块在 600–800 行之间。
 
@@ -127,7 +127,7 @@ Noise 开发期间应冻结以下增长：
 - 不向 TN `__init__.py` 增加新的内部导出；
 - 新 pair kernel 放到有明确所有权的模块；
 - SV/MPS trajectory 稳定前不启动 noisy TN；
-- 逐步按执行职责拆分 `runtime/backends/tensor_network/execution.py`，不增加公共概念。
+- 逐步按执行职责拆分 `runtime/executors/tensor_network/execution.py`，不增加公共概念。
 
 ### 2.6 P2：现有 Noise 模块混合多层职责
 
@@ -237,15 +237,15 @@ flagquantum/runtime/trajectories/
 ### 3.5 后端专属 trajectory
 
 ```text
-runtime/backends/statevector/
+runtime/executors/statevector/
 ├── trajectory.py
 └── noisy_kernels.py
 
-runtime/backends/mps/
+runtime/executors/mps/
 ├── trajectory.py
 └── noisy_operations.py
 
-runtime/backends/tensor_network/
+runtime/executors/tensor_network/
 └── trajectory.py       # 后续
 ```
 

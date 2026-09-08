@@ -23,15 +23,15 @@ from ..runtime.distributed.backend_policy import (
     DistributedBackendPolicy,
     resolve_distributed_backend_policy,
 )
-from .backends.jax import (
+from .execution_plan import ExecutionPlan
+from .executors.jax import (
     run_jax_sharded_mps,
     run_jax_sharded_tensor_network,
 )
-from .backends.statevector import (
+from .executors.statevector import (
     execute_torch_distributed_statevector,
     simulate_distributed_statevector_local,
 )
-from .execution_plan import ExecutionPlan
 from .planner import build_noisy_execution_plan, select_execution_mode
 from .planner import plan_advanced as build_plan
 
@@ -637,7 +637,7 @@ def run_native(
     elif mode == "distributed_mps":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from .backends.mps import run_distributed_mps
+        from .executors.mps import run_distributed_mps
 
         mps_options = dict(options)
         world_size = _distributed_world_size_from_options(
@@ -714,7 +714,7 @@ def run_native(
     elif mode == "distributed_tensor_network":
         if noise_model is not None:
             raise ValueError("Noise models require density_matrix mode.")
-        from .backends.tensor_network.execution import run_distributed_tensor_network
+        from .executors.tensor_network.execution import run_distributed_tensor_network
 
         tn_options = dict(options)
         world_size = _distributed_world_size_from_options(
@@ -771,8 +771,8 @@ def run_native(
     elif mode == "noisy_statevector":
         if noise_model is None:
             raise ValueError("noisy_statevector mode requires a noise_model")
-        from .backends.statevector import run_noisy_statevector
-        from .backends.statevector.noisy import _run_lowered_noisy_statevector
+        from .executors.statevector import run_noisy_statevector
+        from .executors.statevector.noisy import _run_lowered_noisy_statevector
 
         statevector_options = dict(options)
         statevector_options.pop("memory_limit_bytes", None)

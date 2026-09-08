@@ -54,14 +54,15 @@ owns = [
 [teams.runtime]
 branch = "codex/vnext-team-runtime"
 worktree = "FlagQuantum-vNext-runtime"
-owns = ["flagquantum/runtime/**"]
+owns = [
+    "flagquantum/runtime/**",
+]
 
 [teams.simulation]
 branch = "codex/vnext-team-simulation"
 worktree = "FlagQuantum-vNext-simulation"
 owns = [
     "flagquantum/simulation/**",
-    "flagquantum/runtime/backends/**",
 ]
 
 [teams.platform]

@@ -18,7 +18,7 @@ to domain code and adapters; numerical code never reaches back into Runtime.
 | Agent services | `flagquantum.agent` | Deterministic services used by MCP and agents |
 
 `flagquantum.backends` is a thin, stable expert API for backend-native entry
-points. Implementations live in `flagquantum.runtime.backends`; external systems
+points. Implementations live in `flagquantum.runtime.executors`; external systems
 live in `flagquantum.providers`. These packages have similar names but do not
 share ownership.
 

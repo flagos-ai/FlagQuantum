@@ -14,7 +14,7 @@
 Service 则接受完整执行请求。同时，原机器契约允许 Runtime 依赖 Compiler Contracts，
 可能使编译器内部类型成为运行时的长期依赖。
 
-决策形成时，代码仍存在 `_compiler`/`compilation`、`simulation`/`runtime/backends`、
+决策形成时，代码仍存在 `_compiler`/`compilation`、`simulation`/`runtime/executors`、
 `runtime/platforms`/`extensions/sdk` 等并行权威入口，迁移若无完成证据和退出条件，可能
 形成永久双轨结构。
 

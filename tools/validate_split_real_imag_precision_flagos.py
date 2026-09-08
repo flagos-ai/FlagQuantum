@@ -52,7 +52,7 @@ def validate(
     torch = importlib.import_module("torch")
     platforms = importlib.import_module("flagquantum.providers.platform")
     precision = importlib.import_module(
-        "flagquantum.runtime.backends.statevector.split_real_imag_precision"
+        "flagquantum.runtime.executors.statevector.split_real_imag_precision"
     )
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():
         raise RuntimeError("Torch-FL did not expose an available flagos device")

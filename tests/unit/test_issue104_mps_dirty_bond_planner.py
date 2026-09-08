@@ -1,6 +1,6 @@
 import pytest
 
-from flagquantum.runtime.backends.mps.reverse import _planned_canonicalization_bonds
+from flagquantum.runtime.executors.mps.reverse import _planned_canonicalization_bonds
 
 pytestmark = pytest.mark.unit
 

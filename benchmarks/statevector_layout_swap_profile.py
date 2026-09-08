@@ -11,7 +11,7 @@ import time
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.statevector.layout import _local_bit_view
+from flagquantum.runtime.executors.statevector.layout import _local_bit_view
 
 
 def timed(fn, device: torch.device) -> float:

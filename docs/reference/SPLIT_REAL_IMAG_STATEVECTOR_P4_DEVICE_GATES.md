@@ -49,7 +49,7 @@ that cannot execute it is rejected before entering the numerical hot path.
 import torch
 import flagquantum as fq
 from flagquantum.algorithms import pauli_term
-from flagquantum.runtime.backends.statevector.split_real_imag_device_double_single import (
+from flagquantum.runtime.executors.statevector.split_real_imag_device_double_single import (
     parameter_shift_split_real_imag_device_double_single_gradient,
 )
 

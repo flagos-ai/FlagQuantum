@@ -7,8 +7,8 @@ import torch.distributed as dist
 
 import flagquantum as fq
 from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.runtime.backends.jax import compile_quantum_kernel
 from flagquantum.runtime.distributed import init_torch_distributed
+from flagquantum.runtime.executors.jax import compile_quantum_kernel
 
 pytestmark = [
     pytest.mark.distributed,

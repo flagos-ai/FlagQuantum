@@ -5,9 +5,9 @@ import json
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.mps.forward import RankOwnedMPSState
-from flagquantum.runtime.backends.mps.reverse import site_sharded_z_zz_observations
-from flagquantum.runtime.backends.mps.transport import (
+from flagquantum.runtime.executors.mps.forward import RankOwnedMPSState
+from flagquantum.runtime.executors.mps.reverse import site_sharded_z_zz_observations
+from flagquantum.runtime.executors.mps.transport import (
     _recv_tensor_batch_p2p,
     _send_tensor_batch_p2p,
     mps_p2p_stats,

@@ -35,10 +35,10 @@ from benchmarks.sc27_metadata import (  # noqa: E402
     tensor_bytes,
     topology_snapshot,
 )
-from flagquantum.runtime.backends.statevector.forward_executor import (  # noqa: E402
+from flagquantum.runtime.executors.statevector.forward_executor import (  # noqa: E402
     execute_torch_distributed_statevector,
 )
-from flagquantum.runtime.backends.statevector.reverse import (  # noqa: E402
+from flagquantum.runtime.executors.statevector.reverse import (  # noqa: E402
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
 )

@@ -27,7 +27,7 @@ FlagQuantum 当前 PyTorch 后端对外承诺的量子核心精度是：
 
 - `flagquantum/circuit.py`
 - `flagquantum/runtime/execution.py`
-- `flagquantum/runtime/backends/statevector/`
+- `flagquantum/runtime/executors/statevector/`
 
 核心形状：
 

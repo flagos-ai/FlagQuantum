@@ -4,11 +4,11 @@ import pytest
 import torch
 
 from flagquantum import Circuit
-from flagquantum.runtime.backends.statevector.split_real_imag import (
+from flagquantum.runtime.capabilities import load_operator_profile
+from flagquantum.runtime.executors.statevector.split_real_imag import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
     execute_split_real_imag_statevector,
 )
-from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.operator_probes import (
     preflight_split_real_imag_statevector_p0,
 )

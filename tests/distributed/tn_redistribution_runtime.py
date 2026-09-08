@@ -8,11 +8,11 @@ import time
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     DistributedTNValueLayout,
     shard_distributed_tn_value_layout,
 )
-from flagquantum.runtime.backends.tensor_network.redistribution import (
+from flagquantum.runtime.executors.tensor_network.redistribution import (
     execute_distributed_tn_redistribution,
     plan_distributed_tn_redistribution,
 )

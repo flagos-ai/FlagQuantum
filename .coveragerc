@@ -1,7 +1,7 @@
 [run]
 omit =
     flagquantum/benchmarking/*
-    flagquantum/runtime/backends/statevector/triton.py
+    flagquantum/runtime/executors/statevector/triton.py
     flagquantum/simulation/triton_kernels/*
 
 [report]

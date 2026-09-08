@@ -23,7 +23,9 @@ def test_team_ownership_policy_is_valid_and_complete() -> None:
 def test_domain_owner_resolution() -> None:
     policy = load_policy()
     assert owner_for("flagquantum/runtime/execution.py", policy) == "runtime"
-    assert owner_for("flagquantum/runtime/backends/mps/core.py", policy) == "simulation"
+    assert (
+        owner_for("flagquantum/runtime/executors/mps/core.py", policy) == "simulation"
+    )
     assert owner_for("flagquantum/providers/platform/flagos.py", policy) == "platform"
     assert owner_for("flagquantum/ecosystem/extensions/sdk.py", policy) == "ecosystem"
 
@@ -46,7 +48,7 @@ def test_protected_and_cross_team_changes_fail_closed() -> None:
         "runtime",
         [
             "contracts/new-contract.json",
-            "flagquantum/runtime/backends/mps/core.py",
+            "flagquantum/runtime/executors/mps/core.py",
             "unknown-root-file.txt",
         ],
         policy,

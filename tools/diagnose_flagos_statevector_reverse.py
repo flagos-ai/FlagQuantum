@@ -163,7 +163,7 @@ def _build_circuit(
 def _reverse_case(
     fq: Any, torch: Any, *, name: str, dtype_name: str, device: Any
 ) -> dict[str, Any]:
-    from flagquantum.runtime.backends.statevector.reverse import (
+    from flagquantum.runtime.executors.statevector.reverse import (
         StatevectorCheckpointPolicy,
         execute_torch_distributed_statevector_reverse,
     )

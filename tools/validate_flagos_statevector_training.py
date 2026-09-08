@@ -205,11 +205,11 @@ def _run_case(
     context: Any,
 ) -> Any:
     from flagquantum.experimental.distributed import train_distributed_statevector
-    from flagquantum.runtime.backends.statevector.reverse import (
+    from flagquantum.runtime.distributed.training_profile import FlagOSTrainingCase
+    from flagquantum.runtime.executors.statevector.reverse import (
         StatevectorCheckpointPolicy,
         execute_torch_distributed_statevector_reverse,
     )
-    from flagquantum.runtime.distributed.training_profile import FlagOSTrainingCase
 
     dtype = getattr(torch, dtype_name)
     real_dtype = torch.float32 if dtype_name == "complex64" else torch.float64

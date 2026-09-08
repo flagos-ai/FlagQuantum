@@ -7,7 +7,7 @@ import flagquantum.backends as fqb
 import flagquantum.noise as fqn
 import flagquantum.simulation.mps.models as mps_models
 from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
-from flagquantum.runtime.backends.mps.compiled_training import (
+from flagquantum.runtime.executors.mps.compiled_training import (
     MPSTrainingStep,
     compile_mps_training_step,
 )

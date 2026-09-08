@@ -8,7 +8,8 @@ from flagquantum.runtime.audit import (
     audit_distributed_scalability,
 )
 from flagquantum.runtime.audit.release_policy import require_distributed_scalability
-from flagquantum.runtime.backends.jax import (
+from flagquantum.runtime.execution import run_advanced
+from flagquantum.runtime.executors.jax import (
     JAXDistributedQuantumPlan,
     compile_quantum_kernel,
     plan_jax_distributed_quantum_backend,
@@ -19,56 +20,55 @@ from flagquantum.runtime.backends.jax import (
     run_jax_sharded_tensor_network,
     runtime_environment,
 )
-from flagquantum.runtime.backends.jax.mps import backward as mps_backward
-from flagquantum.runtime.backends.jax.mps import (
+from flagquantum.runtime.executors.jax.mps import backward as mps_backward
+from flagquantum.runtime.executors.jax.mps import (
     boundary_exchange as mps_boundary_exchange,
 )
-from flagquantum.runtime.backends.jax.mps import (
+from flagquantum.runtime.executors.jax.mps import (
     canonicalization as mps_canonicalization,
 )
-from flagquantum.runtime.backends.jax.mps import evidence as mps_evidence
-from flagquantum.runtime.backends.jax.mps import (
+from flagquantum.runtime.executors.jax.mps import evidence as mps_evidence
+from flagquantum.runtime.executors.jax.mps import (
     gradient_ownership as mps_gradient_ownership,
 )
-from flagquantum.runtime.backends.jax.mps import pullbacks as mps_pullbacks
-from flagquantum.runtime.backends.jax.mps import shards as mps_shards
-from flagquantum.runtime.backends.jax.mps.gradient_result import (
+from flagquantum.runtime.executors.jax.mps import pullbacks as mps_pullbacks
+from flagquantum.runtime.executors.jax.mps import shards as mps_shards
+from flagquantum.runtime.executors.jax.mps.gradient_result import (
     JAXShardedMPSParameterGradientResult,
 )
-from flagquantum.runtime.backends.jax.mps.gradients import (
+from flagquantum.runtime.executors.jax.mps.gradients import (
     jax_sharded_mps_parameter_value_and_grad,
 )
-from flagquantum.runtime.backends.jax.mps.planning import (
+from flagquantum.runtime.executors.jax.mps.planning import (
     plan_jax_sharded_mps_parameter_flow,
 )
-from flagquantum.runtime.backends.jax.mps.result import JAXShardedMPSResult
-from flagquantum.runtime.backends.jax.mps.training_records import (
+from flagquantum.runtime.executors.jax.mps.result import JAXShardedMPSResult
+from flagquantum.runtime.executors.jax.mps.training_records import (
     JAXShardedMPSParameterFlowPlan,
     JAXShardedMPSTrainingPlan,
 )
-from flagquantum.runtime.backends.jax.statevector.execution import (
+from flagquantum.runtime.executors.jax.statevector.execution import (
     jax_sharded_statevector_parameter_value_and_grad,
 )
-from flagquantum.runtime.backends.jax.statevector.gradient_records import (
+from flagquantum.runtime.executors.jax.statevector.gradient_records import (
     JAXShardedStatevectorParameterGradientResult,
 )
-from flagquantum.runtime.backends.jax.statevector.records import (
+from flagquantum.runtime.executors.jax.statevector.records import (
     JAXShardedStatevectorResult,
     JAXShardedStatevectorTrainingPlan,
 )
-from flagquantum.runtime.backends.jax.tensor_network import (
+from flagquantum.runtime.executors.jax.tensor_network import (
     contraction as tensor_network_contraction,
 )
-from flagquantum.runtime.backends.jax.tensor_network.gradients import (
+from flagquantum.runtime.executors.jax.tensor_network.gradients import (
     jax_sliced_tensor_network_parameter_value_and_grad,
     jax_sliced_tensor_network_value_and_grad,
 )
-from flagquantum.runtime.backends.jax.tensor_network.records import (
+from flagquantum.runtime.executors.jax.tensor_network.records import (
     JAXShardedTensorNetworkResult,
     JAXSlicedTensorNetworkGradientResult,
     JAXSlicedTensorNetworkParameterGradientResult,
 )
-from flagquantum.runtime.execution import run_advanced
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     build_tensor_network_expectation,

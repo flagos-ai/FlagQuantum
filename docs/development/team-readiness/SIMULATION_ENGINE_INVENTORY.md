@@ -29,7 +29,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 状态向量执行循环已位于 `flagquantum/simulation/statevector/local.py`，底层门作用与融合位于
 `flagquantum/simulation/statevector/operations.py`；本地 MPS/TN 主要位于
 `flagquantum/simulation/`；密度矩阵及大量分布式数值实现位于过渡目录
-`flagquantum/runtime/backends/`。两个过渡目录都混合了数值算法、Kernel 调用、执行适配、
+`flagquantum/runtime/executors/`。两个过渡目录都混合了数值算法、Kernel 调用、执行适配、
 资源/通信编排和结果转换。
 
 首个候选应是现有本地 PyTorch 状态向量的 `single_device_fast_path`：执行已经校验的
@@ -42,7 +42,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 ## 2. 盘点方法与边界
 
 盘点覆盖 `flagquantum/simulation/**/*.py`、
-`flagquantum/runtime/backends/**/*.py`，并追踪到实际消费者和外置权威实现。分类定义如下：
+`flagquantum/runtime/executors/**/*.py`，并追踪到实际消费者和外置权威实现。分类定义如下：
 
 | 分类 | 判定 |
 | --- | --- |
@@ -66,15 +66,15 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | --- | --- | --- | --- |
 | 本地状态向量 | `simulation/statevector/local.py` 的执行循环；`simulation/statevector/operations.py` 的布局、门作用、门矩阵组合、压缩基态索引展开和融合；`simulation/triton_kernels/statevector_gates.py` 的本地门及跨分片 CX control-one pack/unpack CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用门矩阵组合与索引数值函数，仍负责通信策略与传输 |
 | 小规模专用状态向量 | `simulation/statevector/small.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
-| 分布式状态向量 | `simulation/statevector/operations.py`、`simulation/statevector/adjoint.py` 和 `simulation/triton_kernels/statevector_*` 的 rank-local 数值原语 | `runtime/backends/statevector/` 的 planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime 保留 amplitude/qubit-address 所有权、通信、chunk 和生命周期；不再实现局部门矩阵数学 |
+| 分布式状态向量 | `simulation/statevector/operations.py`、`simulation/statevector/adjoint.py` 和 `simulation/triton_kernels/statevector_*` 的 rank-local 数值原语 | `runtime/executors/statevector/` 的 planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime 保留 amplitude/qubit-address 所有权、通信、chunk 和生命周期；不再实现局部门矩阵数学 |
 | Split real/imag 与 Double-Single | `simulation/statevector/split_real_imag.py` 的 P0/P1/P2 门矩阵、门作用、零态执行循环和 Pauli-term 数值归约；`simulation/statevector/double_single_host_gates.py` 与 `simulation/statevector/double_single_device_gates.py` 的隔离门矩阵生成；`simulation/statevector/double_single.py` 的 P3/P4 零态初始化、门执行、归一化和 Pauli-term 归约 | Runtime 文件中的参数绑定、平台身份、精度计划与授权、编码策略、observables、参数移位调度、P5 autograd/SGD 边界、conformance/result | P0--P4 的基础数值实现已归 Simulation；Runtime 只组合既有数值原语；P3/P4 适配器因主机摄取与路径证据不同而保持分离；P5 单行 SGD 更新尚不构成独立数值核，不为搬移而新增 helper；实验路径不得成为首切片默认实现或被描述为等价 FP64 |
 | 本地 MPS | `simulation/mps/local.py` 的无噪声指令循环；`mps/noisy.py` 的已降低单轨迹数值循环；`mps/models.py`、`mps/state.py`、`mps/factorization.py`、`mps/static.py`、`mps/tebd.py`、`mps/dense_island.py`、`mps/brickwork.py` | `mps/entrypoints.py` 的兼容适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
-| 分布式 MPS | `simulation/mps/rank_local.py`、`mps/site_kernels.py`、`mps/compiled_layers.py`、`mps/factorization.py`、`mps/canonicalization.py`、`mps/reverse.py`、`mps/observables.py` | `runtime/backends/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
+| 分布式 MPS | `simulation/mps/rank_local.py`、`mps/site_kernels.py`、`mps/compiled_layers.py`、`mps/factorization.py`、`mps/canonicalization.py`、`mps/reverse.py`、`mps/observables.py` | `runtime/executors/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
 | 本地张量网络 | `simulation/tensor_network/local.py` 的计划构建与数值状态入口；`tensor_network/observables.py` 的观测量计划与 MPO；`tensor_network/state.py`、`tensor_network/contraction.py`、`tensor_network/stages.py`、`real_imag_kernels.py` | `tensor_network/entrypoints.py` 的稳定入口与振幅实现、`tensor_network/path_search.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
-| 分布式张量网络 | `simulation/tensor_network/stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/backends/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
+| 分布式张量网络 | `simulation/tensor_network/stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/executors/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
 | 密度矩阵 | `simulation/density_matrix.py` | Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime；旧 `simulation.noise` 门面已退出 |
 | 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/statevector/noisy.py`、`simulation/mps/state.py`/`mps/entrypoints.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
-| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/statevector/noisy.py`，编排在 `runtime/backends/statevector/noisy.py`；MPS 分支在 `simulation/mps/entrypoints.py`/`mps/state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
+| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/statevector/noisy.py`，编排在 `runtime/executors/statevector/noisy.py`；MPS 分支在 `simulation/mps/entrypoints.py`/`mps/state.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
 | 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作、Triton autograd 和已拆出的 JAX MPS pullback 在 `simulation/`；其余显式 sharded adjoint/reverse 仍在各 backend | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
 
 ## 4. `simulation` 代码归属矩阵
@@ -100,7 +100,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
 | `graph.py` | 受保护兼容工具 | 当前仅由根 API 兼容导出，无 Compiler 调用方 | 不复制到 Compiler，不形成第二权威；只有出现具体 Compiler 消费者并批准公共 API 迁移后才归位 |
 
-## 5. `runtime/backends` 代码归属矩阵
+## 5. `runtime/executors` 代码归属矩阵
 
 | 路径 | 主分类 | Simulation 应拥有 | Runtime/Provider 应拥有 |
 | --- | --- | --- | --- |
@@ -288,7 +288,7 @@ Runtime，`simulation/mps/models.py` 仅在类型检查时引用 Runtime traject
 `simulation_extraction` 完成前必须同时满足：
 
 1. 真实本地 Engine 与 contract fake 运行同一套 conformance，Runtime 消费者无需修改；
-2. `runtime/backends/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
+2. `runtime/executors/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
 3. 分布式 TN reverse 中不依赖 task ownership、checkpoint 或 process group 的数学移至 Simulation；
 4. 已登记的 `simulation/mps/entrypoints.py`→Runtime 兼容调用和 `simulation/mps/models.py` 类型引用须经公共 API 迁移退出；`simulation/noise.py` 反向依赖已经退出；
 5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
@@ -326,7 +326,7 @@ DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、col
 本轮按“先找无调用项，再进入下一条迁移切片”的顺序复核了现存过渡目录。未发现可在不改变
 受保护 API、序列化产物或执行语义的前提下直接删除的已跟踪实现：
 
-- `runtime/backends` 中的私有定义均仍有代码或测试消费者；其余张量操作属于计划、所有权、
+- `runtime/executors` 中的私有定义均仍有代码或测试消费者；其余张量操作属于计划、所有权、
   通信、checkpoint 或证据组装，不能仅因位于 Runtime 就认定为死代码；
 - OpenQASM 和 QCIS 导出已分别归位到 `compiler/openqasm.py` 和
   `compiler/qcis.py`；内部调用已切换，旧 utils 实现及导出已删除；
@@ -334,7 +334,7 @@ DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、col
 - `_gateways/mcp` 没有已跟踪的生产实现可删除。
 
 结论是删除路径已到当前安全停止点。下一条代码切片应以真实调用链为单位迁移，而不是继续按
-文件名清理：优先选择 `runtime/backends/statevector` 中一段不依赖计划、设备选择、通信、
+文件名清理：优先选择 `runtime/executors/statevector` 中一段不依赖计划、设备选择、通信、
 checkpoint 或证据类型的独立数值行为，迁入 Simulation 并由原入口委托；若不存在这样的完整
 行为，则保留边界，不新增包装层。
 
@@ -376,7 +376,7 @@ FP32 profile 加载、可执行探测和 capability 判定已收口为一个私�
 
 ## 16. Statevector 伴随反向边界复核（2026-09-06）
 
-`runtime/backends/statevector/reverse_adjoint.py` 已将旋转门解析导数、实值复内积以及分块 Z
+`runtime/executors/statevector/reverse_adjoint.py` 已将旋转门解析导数、实值复内积以及分块 Z
 期望值与伴随量计算委托给 `simulation/statevector/adjoint.py`。这些纯数值行为的测试也归入
 Simulation 团队目录，不再借助 Runtime 参数绑定或反向执行对象构造参考结果。
 
@@ -388,7 +388,7 @@ Runtime 文件剩余逻辑直接组织分片索引与 chunk 策略、前向重�
 
 ## 17. Statevector 前向边界复核（2026-09-06）
 
-`runtime/backends/statevector/forward.py` 使用的局部门作用、对角门作用、basis 索引与偏移、rank
+`runtime/executors/statevector/forward.py` 使用的局部门作用、对角门作用、basis 索引与偏移、rank
 pair 合并和 gate-basis block 合并均已由 `simulation/statevector/operations.py` 唯一实现。对应的纯张量
 行为测试已归入 Simulation 团队目录；Runtime 前向测试只保留布局策略、Kernel 路由、设备等待、
 通信 workspace、执行计划和结果证据等职责。

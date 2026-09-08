@@ -99,7 +99,7 @@
 | `CloudBackendProfile` | `flagquantum/deployment/cloud.py` | package creation、QuantumProvider implementations | **临时 Deployment 能力对象**。门集、拓扑、动态线路和格式字段与 `TargetCapabilities` 重叠。 |
 | `CapabilityEvidence` | `flagquantum/runtime/capabilities.py` | operator probes/preflight | **Runtime 证据记录**，不是 target declaration；应在 Core capability schema 中通过 evidence reference 关联而非合并字段。 |
 | `CapabilityRequest/Response` | `flagquantum/ecosystem/extensions/sdk.py` | extension registry/conformance | **待冻结扩展协议**。是能力协商消息，不是 Target snapshot。 |
-| `SolverWorkspaceCapabilities` | `runtime/backends/mps/solver_workspace.py` | MPS solver workspace | **算法本地对象**，保留在 Simulation/Provider 内部。 |
+| `SolverWorkspaceCapabilities` | `runtime/executors/mps/solver_workspace.py` | MPS solver workspace | **算法本地对象**，保留在 Simulation/Provider 内部。 |
 
 建议权威位置：`flagquantum/core/capabilities/` 中的可移植、不可变
 `TargetCapabilities`；Runtime 的动态探测通过 adapter 生成 snapshot，`CloudBackendProfile`
@@ -146,7 +146,7 @@ credentials、process group 或 SDK handle。
 | `DynamicExecutionResult` | `flagquantum/runtime/dynamic/result.py` | dynamic runtime、Qiskit execution | **实验性原生结果**，已有 `to_execution_result()`；这是合理的边界 adapter。 |
 | `DeploymentResult` | `flagquantum/deployment/cloud.py` | `QuantumProvider` 与具体 providers | **临时 Provider 结果**，counts + handle；应在 Provider 边界投影到 Core result/failure。 |
 | `TargetExecutionResult` | `flagquantum/runtime/target_execution.py` | sparse target execution | **Runtime 专用结果**，应作为 native detail 或投影来源，不应成为跨领域并列权威。 |
-| 各种 `*TrainingResult`、`*GradientResult`、`*TNExecutionResult` | `flagquantum/runtime/backends/**` | 对应 backend/tests/benchmarks | **算法/执行引擎本地对象**。只要不跨 Provider 边界且能无损投影，可保留。 |
+| 各种 `*TrainingResult`、`*GradientResult`、`*TNExecutionResult` | `flagquantum/runtime/executors/**` | 对应 backend/tests/benchmarks | **算法/执行引擎本地对象**。只要不跨 Provider 边界且能无损投影，可保留。 |
 
 建议逻辑权威为 Core 所有的 result schema，但稳定 `flagquantum.runtime.result.ExecutionResult`
 实现位置在获批迁移前保持不变。新增 Core 合同应先以 adapter 和 conformance tests 证明

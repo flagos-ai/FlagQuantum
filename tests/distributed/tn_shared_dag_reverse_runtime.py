@@ -9,30 +9,30 @@ from contextlib import nullcontext
 import torch
 import torch.distributed as dist
 
-import flagquantum.runtime.backends.tensor_network.distributed_dag as distributed_dag
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+import flagquantum.runtime.executors.tensor_network.distributed_dag as distributed_dag
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     DistributedTNContractionDAG,
     DistributedTNContractionRecord,
     DistributedTNValueLayout,
 )
-from flagquantum.runtime.backends.tensor_network.dynamic_checkpoint import (
+from flagquantum.runtime.executors.tensor_network.dynamic_checkpoint import (
     load_dynamic_tn_reverse_checkpoint,
     save_dynamic_tn_reverse_checkpoint,
 )
-from flagquantum.runtime.backends.tensor_network.dynamic_reverse import (
+from flagquantum.runtime.executors.tensor_network.dynamic_reverse import (
     execute_dynamic_tn_reverse_segment,
     plan_dynamic_tn_reverse_segment,
 )
-from flagquantum.runtime.backends.tensor_network.partial_mesh import (
+from flagquantum.runtime.executors.tensor_network.partial_mesh import (
     DistributedTNMeshGroupCache,
     execute_partial_mesh_forward_pair,
     partition_tn_tensor_for_partial_mesh,
     plan_partial_mesh_tn_layout,
 )
-from flagquantum.runtime.backends.tensor_network.rematerialization import (
+from flagquantum.runtime.executors.tensor_network.rematerialization import (
     DistributedTNRematerializationProvider,
 )
-from flagquantum.runtime.backends.tensor_network.reverse_dag import (
+from flagquantum.runtime.executors.tensor_network.reverse_dag import (
     execute_explicit_tn_reverse_dag,
     plan_explicit_tn_reverse_dag,
 )

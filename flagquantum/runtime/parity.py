@@ -12,10 +12,12 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from .backends.statevector.local_execution import simulate_distributed_statevector_local
-from .backends.statevector.planning import plan_distributed_statevector
 from .distributed.backend_policy import resolve_distributed_backend_policy
 from .execution import run_native
+from .executors.statevector.local_execution import (
+    simulate_distributed_statevector_local,
+)
+from .executors.statevector.planning import plan_distributed_statevector
 
 
 @dataclass(frozen=True)

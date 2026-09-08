@@ -14,8 +14,8 @@ evidence by itself.
 
 FlagQuantum already has the right control-plane surfaces:
 
-- planner-style summaries in `runtime/backends/statevector`,
-  `runtime/distributed`, and `runtime/backends/jax`
+- planner-style summaries in `runtime/executors/statevector`,
+  `runtime/distributed`, and `runtime/executors/jax`
 - a shared distributed evidence contract in `runtime/audit`
 - Phase 4 and Phase 5 fail-closed gates
 - existing ownership, memory, communication, and blocker vocabularies

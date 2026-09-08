@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 from torch.profiler import ProfilerActivity,profile
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.reverse import execute_torch_distributed_mps_reverse
+from flagquantum.runtime.executors.mps.reverse import execute_torch_distributed_mps_reverse
 
 def circuit(theta,wires,two_site=True):
     c=Circuit(wires,device=theta.device);c.ry(wires-2,theta)

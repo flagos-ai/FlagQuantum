@@ -14,7 +14,7 @@ from .configuration import backend_execution_options
 def plan_jax_statevector_training(*args: Any, **kwargs: Any) -> Any:
     """Plan sharded JAX statevector training without exposing its implementation."""
 
-    from .backends.jax import plan_jax_sharded_statevector_training
+    from .executors.jax import plan_jax_sharded_statevector_training
 
     return plan_jax_sharded_statevector_training(*args, **kwargs)
 
@@ -22,7 +22,7 @@ def plan_jax_statevector_training(*args: Any, **kwargs: Any) -> Any:
 def plan_jax_mps_training(*args: Any, **kwargs: Any) -> Any:
     """Plan sharded JAX MPS training without exposing its implementation."""
 
-    from .backends.jax import plan_jax_sharded_mps_training
+    from .executors.jax import plan_jax_sharded_mps_training
 
     return plan_jax_sharded_mps_training(*args, **kwargs)
 

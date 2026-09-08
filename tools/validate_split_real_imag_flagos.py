@@ -52,7 +52,7 @@ def validate(*, device_name: str, depths: tuple[int, ...]) -> dict[str, Any]:
     fq = importlib.import_module("flagquantum")
     platforms = importlib.import_module("flagquantum.providers.platform")
     split = importlib.import_module(
-        "flagquantum.runtime.backends.statevector.split_real_imag"
+        "flagquantum.runtime.executors.statevector.split_real_imag"
     )
 
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():

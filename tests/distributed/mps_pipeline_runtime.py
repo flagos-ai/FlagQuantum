@@ -7,12 +7,12 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.mps.reverse import (
+from flagquantum.runtime.executors.mps.reverse import (
     _fused_z_zz_mse_and_adjoints,
     _parse_z_zz_terms,
     site_sharded_z_zz_objective_pipeline,
 )
-from flagquantum.runtime.backends.mps.state import (
+from flagquantum.runtime.executors.mps.state import (
     RankOwnedMPSState,
     initial_mps_ownership,
 )

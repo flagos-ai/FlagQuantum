@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.runtime.backends.mps.reverse import _gradient_bucket_layout
+from flagquantum.runtime.executors.mps.reverse import _gradient_bucket_layout
 
 pytestmark = pytest.mark.unit
 

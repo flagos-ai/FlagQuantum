@@ -26,67 +26,67 @@ __all__ = (
 
 _EXPORTS = {
     "MPSAcceptanceGates": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "MPSAcceptanceGates",
     ),
     "MPSCrossoverMeasurement": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "MPSCrossoverMeasurement",
     ),
     "MPSForwardLifetimeError": (
-        "flagquantum.runtime.backends.mps.errors",
+        "flagquantum.runtime.executors.mps.errors",
         "MPSForwardLifetimeError",
     ),
     "MPSFullMaterializationError": (
-        "flagquantum.runtime.backends.mps.errors",
+        "flagquantum.runtime.executors.mps.errors",
         "MPSFullMaterializationError",
     ),
     "MPSProductionAcceptanceError": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "MPSProductionAcceptanceError",
     ),
     "MPSProductionPlan": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "MPSProductionPlan",
     ),
     "MPSProductionSupport": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "MPSProductionSupport",
     ),
     "NonlocalMPSCompilationError": (
-        "flagquantum.runtime.backends.mps.errors",
+        "flagquantum.runtime.executors.mps.errors",
         "NonlocalMPSCompilationError",
     ),
     "build_mps_release_artifact": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "build_mps_release_artifact",
     ),
     "execute_torch_distributed_mps_forward": (
-        "flagquantum.runtime.backends.mps.forward",
+        "flagquantum.runtime.executors.mps.forward",
         "execute_torch_distributed_mps_forward",
     ),
     "execute_torch_distributed_mps_reverse": (
-        "flagquantum.runtime.backends.mps.reverse",
+        "flagquantum.runtime.executors.mps.reverse",
         "execute_torch_distributed_mps_reverse",
     ),
     "plan_production_mps": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "plan_production_mps",
     ),
     "run_distributed_mps": (
-        "flagquantum.runtime.backends.mps.execution",
+        "flagquantum.runtime.executors.mps.execution",
         "run_distributed_mps",
     ),
     "select_mps_crossover_decision": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "select_mps_crossover_decision",
     ),
     "train_distributed_mps": (
-        "flagquantum.runtime.backends.mps.training",
+        "flagquantum.runtime.executors.mps.training",
         "train_distributed_mps",
     ),
     "validate_production_mps_workload": (
-        "flagquantum.runtime.backends.mps.production",
+        "flagquantum.runtime.executors.mps.production",
         "validate_production_mps_workload",
     ),
 }

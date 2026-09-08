@@ -10,7 +10,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.backends.mps.training import MPSTrainingError
+from flagquantum.runtime.executors.mps.training import MPSTrainingError
 
 
 def circuit(device: torch.device, world_size: int):

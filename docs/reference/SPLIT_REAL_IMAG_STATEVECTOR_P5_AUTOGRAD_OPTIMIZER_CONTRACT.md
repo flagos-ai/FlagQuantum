@@ -19,7 +19,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms import pauli_term
-from flagquantum.runtime.backends.statevector.split_real_imag_autograd import (
+from flagquantum.runtime.executors.statevector.split_real_imag_autograd import (
     split_real_imag_device_double_single_autograd_expectation,
 )
 
@@ -47,7 +47,7 @@ parameter state:
 ```python
 import torch
 
-from flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer import (
+from flagquantum.runtime.executors.statevector.split_real_imag_autograd_optimizer import (
     initialize_split_real_imag_double_single_sgd,
     split_real_imag_double_single_sgd_step,
 )

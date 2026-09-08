@@ -7,7 +7,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.reverse import (
+from flagquantum.runtime.executors.mps.reverse import (
     MPSReverseCheckpointPolicy,
     MPSReverseContractError,
     _recv,

@@ -83,7 +83,7 @@ python tools/check_team_scope.py \
 路径采用“最具体规则优先”：
 
 - `runtime/**` 默认属于 Runtime；
-- `runtime/backends/**` 过渡期属于 Simulation；
+- `runtime/executors/**` 过渡期属于 Simulation；
 - `providers/platform/**` 属于 Platform；
 - `runtime/target_execution.py` 过渡期属于 Execution Provider；
 - `ecosystem/**` 属于 Ecosystem，包括扩展协议。

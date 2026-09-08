@@ -82,7 +82,7 @@ by a bare `QuantumScript` and therefore fails closed.
 | Framework | Entrypoints | Classification | Boundary assessment |
 | --- | --- | --- | --- |
 | PyTorch | `fq.Module`, `fq.Circuit` tensor parameters/matrices, `fq.run`, `ExecutionResult`, extension backend conformance | Primary ML frontend and numerical runtime | Intentional owned product surface; not an ecosystem adapter. Other framework objects must not piggyback through tensor-valued fields or metadata. |
-| JAX | `runtime/backends/jax/**`, DLPack helpers in `kernel.py`, PyTorch autograd wrapper | Optional backend execution/kernel acceleration | Imports are confined to the optional JAX backend. JAX arrays are kernel-local and outputs return through PyTorch. |
+| JAX | `runtime/executors/jax/**`, DLPack helpers in `kernel.py`, PyTorch autograd wrapper | Optional backend execution/kernel acceleration | Imports are confined to the optional JAX backend. JAX arrays are kernel-local and outputs return through PyTorch. |
 
 The v0.1 device-coupled encoding API has been removed. Parameterized
 `fq.Circuit`/`fq.Module` construction is the maintained PyTorch frontend.
@@ -139,7 +139,7 @@ adapter or alternate IR.
 - Normal Qiskit/PennyLane import results contain FlagQuantum dataclasses,
   primitives, mappings, tuples, and allowed PyTorch tensors; the external
   circuit/script stays in the explicit export artifact.
-- JAX imports are confined to `flagquantum/runtime/backends/jax/**`; the public
+- JAX imports are confined to `flagquantum/runtime/executors/jax/**`; the public
   training/result side remains PyTorch.
 
 ### Leakage and coupling register
@@ -177,7 +177,7 @@ split:
    provider result decoding behind the approved Execution Provider/deployment
    contracts. A format adapter must not become a hidden backend.
 3. Put a genuine optional numerical kernel under
-   `runtime/backends/<kernel>/` only if it consumes owned lowered data and
+   `runtime/executors/<kernel>/` only if it consumes owned lowered data and
    returns owned PyTorch-facing results. Kernel-local vendor objects must not
    appear in plans, checkpoints, or serialized evidence.
 4. Keep comparison scripts in `benchmarks/**`. They are evidence consumers, not

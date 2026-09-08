@@ -5,25 +5,25 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from flagquantum.runtime.backends.mps.records import (
+from flagquantum.runtime.executors.mps.records import (
     MPSReverseCheckpointPolicy,
     MPSReverseContractError,
     MPSReverseTape,
     MPSReverseTapeRecord,
 )
-from flagquantum.runtime.backends.mps.reverse import (
+from flagquantum.runtime.executors.mps.reverse import (
     _qr_forward,
     _reverse_execution_segments,
     _static_exact_qr_record,
     _validate_svd_gaps,
 )
-from flagquantum.runtime.backends.mps.reverse_planning import (
+from flagquantum.runtime.executors.mps.reverse_planning import (
     cached_mps_reverse_segments,
     clear_mps_reverse_segment_cache,
     mps_reverse_segment_cache_stats,
     plan_mps_canonicalization_bonds,
 )
-from flagquantum.runtime.backends.mps.reverse_transport import (
+from flagquantum.runtime.executors.mps.reverse_transport import (
     all_reduce_reverse_layer_records,
     begin_reverse_layer_halo_prefetch,
     finish_reverse_layer_halo_prefetch,
@@ -69,7 +69,7 @@ def test_none_canonicalization_policy_skips_final_sweep():
 def test_mps_reverse_observable_functions_are_defined_once() -> None:
     path = (
         Path(__file__).resolve().parents[2]
-        / "flagquantum/runtime/backends/mps/reverse_z_observables.py"
+        / "flagquantum/runtime/executors/mps/reverse_z_observables.py"
     )
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     names = [

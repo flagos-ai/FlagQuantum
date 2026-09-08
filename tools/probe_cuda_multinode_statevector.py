@@ -17,7 +17,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.statevector.forward_executor import (
+from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
 

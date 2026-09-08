@@ -5,7 +5,7 @@ import os
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.statevector.layout import (
+from flagquantum.runtime.executors.statevector.layout import (
     distributed_swap_rank_local_bits,
 )
 

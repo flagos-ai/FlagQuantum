@@ -1,7 +1,7 @@
 # Repository contract; see contracts/README.md for ownership and stability.
 schema = "flagquantum_split_real_imag_statevector_contract_v1"
 maturity = "experimental"
-implementation = "flagquantum.runtime.backends.statevector.split_real_imag"
+implementation = "flagquantum.runtime.executors.statevector.split_real_imag"
 gate_implementation = "flagquantum.simulation.statevector.split_real_imag"
 operator_profile = "split_real_imag_statevector_p0"
 representation = "split_real_imag"

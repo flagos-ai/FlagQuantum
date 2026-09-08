@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.runtime.backends.mps import transport as mps_transport
+from flagquantum.runtime.executors.mps import transport as mps_transport
 
 pytestmark = pytest.mark.unit
 

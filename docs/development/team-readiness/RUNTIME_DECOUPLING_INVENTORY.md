@@ -82,7 +82,7 @@ lowering，也不得仅为消除导入新增 `ExecutablePlanContract`、自由�
 - 稳定入口 `fq.train()` / `runtime.training.train()` 组织 PyTorch 优化循环：
   `Module.execute()` → objective → backward → optimizer step → detached result/callback。
 - `runtime.module.Module.execute()` 是 PyTorch-facing 单步执行入口。
-- `runtime.backends.mps.compiled_training` 和各后端训练实现存在并行路径；`runtime/backends/**` 暂归
+- `runtime.backends.mps.compiled_training` 和各后端训练实现存在并行路径；`runtime/executors/**` 暂归
   Simulation，本轮不修改。
 - 当前训练入口没有统一生成 `ExecutionRecordContract`，也没有把每个训练 step 明确关联
   到一次 `attempt_id`。这是生命周期证据的主要缺口。
@@ -127,8 +127,8 @@ lowering，也不得仅为消除导入新增 `ExecutablePlanContract`、自由�
 
 | `architecture.toml` 登记路径 | 实际依赖 | 主要分类 | 目标替代方式 |
 | --- | --- | --- | --- |
-| `runtime/backends/statevector/noisy.py` | `lower_noise_model()` | raw-program 专家入口 | 保留入口行为；主执行链应调用其已 lowering 的内部执行函数 |
-| `runtime/backends/statevector/planning.py` | `schedule_layers()` | raw-program 后端规划入口 | 当前直接接收 Circuit/IR；不复制调度算法，不为此单独新增计划契约 |
+| `runtime/executors/statevector/noisy.py` | `lower_noise_model()` | raw-program 专家入口 | 保留入口行为；主执行链应调用其已 lowering 的内部执行函数 |
+| `runtime/executors/statevector/planning.py` | `schedule_layers()` | raw-program 后端规划入口 | 当前直接接收 Circuit/IR；不复制调度算法，不为此单独新增计划契约 |
 | `runtime/dynamic/routing.py` | `CouplingMap`、`route_to_topology()` | 动态线路编译兼容入口 | 路由必须发生在执行前；待动态线路调用链自然收口时移动编排责任 |
 | `runtime/execution.py` | `compile()`、`lower_noise_model()` | 顶层执行编排 | 合理的 composition root；后端分派不得再次编译已有计划 |
 | `runtime/noise_registry.py` | `lower_noise_model()` | 稳定密度矩阵便捷入口 | 计划执行入口已消费 lowered IR；便捷 raw-program 入口暂时保留 |
@@ -233,7 +233,7 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 | 路径 | 唯一职责 | 不负责 |
 | --- | --- | --- |
 | `flagquantum/backends/` | 稳定专家 API，转发 `run_native`、MPS、TN 和设备解析入口 | 实现执行、数值算法或设备 SDK |
-| `flagquantum/runtime/backends/` | 后端执行计划、生命周期、分布与结果组织 | 稳定公共命名空间或外部系统适配 |
+| `flagquantum/runtime/executors/` | 后端执行计划、生命周期、分布与结果组织 | 稳定公共命名空间或外部系统适配 |
 | `flagquantum/providers/` | 真实 QPU、远程服务和计算平台的边界适配 | 模拟数值核或 Runtime 调度策略 |
 
 仓内测试、示例和参考文档均直接使用 `flagquantum.backends`，且命名空间一致性测试要求

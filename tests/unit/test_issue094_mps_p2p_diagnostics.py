@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from flagquantum.runtime.backends.mps import transport
+from flagquantum.runtime.executors.mps import transport
 
 
 class _TimedOutWork:

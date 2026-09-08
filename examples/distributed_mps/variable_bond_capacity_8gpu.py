@@ -21,7 +21,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-import flagquantum.runtime.backends.mps.records as fqxm
+import flagquantum.runtime.executors.mps.records as fqxm
 
 
 PROFILES = {

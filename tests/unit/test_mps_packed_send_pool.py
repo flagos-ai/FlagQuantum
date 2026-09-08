@@ -1,6 +1,6 @@
 import torch
 
-from flagquantum.runtime.backends.mps import transport as mps_transport
+from flagquantum.runtime.executors.mps import transport as mps_transport
 
 
 def test_packed_sender_reuses_payload_buffer_without_changing_values(monkeypatch):

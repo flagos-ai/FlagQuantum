@@ -18,22 +18,22 @@ from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.gradients import parameter_shift_gradient
 from flagquantum.runtime.audit import audit_distributed_scalability
 from flagquantum.runtime.backend_registry import get_backend_capabilities
-from flagquantum.runtime.backends.mps.distributed_state import (
+from flagquantum.runtime.configuration import get_backend, set_backend
+from flagquantum.runtime.distributed import (
+    destroy_torch_distributed,
+)
+from flagquantum.runtime.executors.mps.distributed_state import (
     DistributedBoundaryProtocol,
     DistributedBoundarySync,
     DistributedMPSState,
     DistributedShardPlan,
     ShardedMPSState,
 )
-from flagquantum.runtime.backends.tensor_network.sliced_tasks import (
+from flagquantum.runtime.executors.tensor_network.sliced_tasks import (
     DistributedTNSliceTask,
 )
-from flagquantum.runtime.backends.tensor_network.state import (
+from flagquantum.runtime.executors.tensor_network.state import (
     DistributedTensorNetworkState,
-)
-from flagquantum.runtime.configuration import get_backend, set_backend
-from flagquantum.runtime.distributed import (
-    destroy_torch_distributed,
 )
 from flagquantum.runtime.planner import estimate_state_bytes, select_execution_mode
 from flagquantum.simulation.matrices import GATE_MAT_DICT
@@ -942,7 +942,7 @@ def test_runtime_selection_projects_mps_evidence_status(
     monkeypatch,
     readiness_status,
 ):
-    from flagquantum.runtime.backends.jax.mps import planning as mps_planning
+    from flagquantum.runtime.executors.jax.mps import planning as mps_planning
 
     class _TrainingPlan:
         def summary(self):
@@ -1527,7 +1527,7 @@ def test_sharded_mps_apply_two_local_matches_mps_kernel():
 
 
 def test_distributed_mps_identifies_cross_shard_boundary_gate():
-    from flagquantum.runtime.backends.mps import execution as dist_runtime
+    from flagquantum.runtime.executors.mps import execution as dist_runtime
 
     circuit = fq.Circuit(4)
     circuit.cx(1, 2)

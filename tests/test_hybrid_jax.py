@@ -8,9 +8,9 @@ import torch
 import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.algorithms import Hamiltonian, pauli_term, zz_chain_hamiltonian
-from flagquantum.runtime.backends.jax import compile_quantum_kernel
-from flagquantum.runtime.backends.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
-from flagquantum.runtime.backends.jax.mps import lowering as mps_lowering
+from flagquantum.runtime.executors.jax import compile_quantum_kernel
+from flagquantum.runtime.executors.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
+from flagquantum.runtime.executors.jax.mps import lowering as mps_lowering
 from flagquantum.simulation.jax.mps import kernels as jax_mps
 
 pytestmark = pytest.mark.skipif(
@@ -503,7 +503,7 @@ def test_jax_tensor_network_kernel_matches_native_tn_gradient():
 
 
 def test_jax_tensor_network_z_sum_does_not_materialize_statevector(monkeypatch):
-    from flagquantum.runtime.backends.jax import kernel as jax_kernel_module
+    from flagquantum.runtime.executors.jax import kernel as jax_kernel_module
 
     params = torch.tensor([0.17, -0.31, 0.23], requires_grad=False)
 

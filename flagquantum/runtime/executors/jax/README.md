@@ -1,6 +1,6 @@
-# JAX Runtime Backend
+# JAX Runtime Executors
 
-This directory owns JAX backend selection, PyTorch/JAX bridging, execution
+This directory owns JAX executor selection, PyTorch/JAX bridging, execution
 policy, distributed coordination, and evidence collection.
 
 It does not own statevector, MPS, or tensor-network numerical kernels. Local

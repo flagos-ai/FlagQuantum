@@ -10,19 +10,20 @@ import flagquantum as fq
 import flagquantum.backends as fqb
 from flagquantum.runtime.audit import DistributedScalabilityError
 from flagquantum.runtime.audit.release_policy import require_distributed_scalability
-from flagquantum.runtime.backends.statevector import (
+from flagquantum.runtime.execution import run_advanced
+from flagquantum.runtime.executors.statevector import (
     initialize_statevector_shard,
     plan_distributed_statevector,
     simulate_distributed_statevector_local,
 )
-from flagquantum.runtime.backends.statevector.local_execution import (
+from flagquantum.runtime.executors.statevector.local_execution import (
     apply_gate_to_statevector_shard,
     apply_gate_to_statevector_shards,
     build_statevector_correctness_run_spec,
     execute_distributed_statevector_dry_run,
     execute_distributed_statevector_transport,
 )
-from flagquantum.runtime.backends.statevector.models import (
+from flagquantum.runtime.executors.statevector.models import (
     LocalDistributedStatevectorResult,
     StatevectorBufferPlan,
     StatevectorCommunicationEdge,
@@ -38,19 +39,18 @@ from flagquantum.runtime.backends.statevector.models import (
     StatevectorTraceReport,
     StatevectorTransportReport,
 )
-from flagquantum.runtime.backends.statevector.planning import (
+from flagquantum.runtime.executors.statevector.planning import (
     estimate_distributed_statevector_performance,
     trace_distributed_statevector_plan,
     validate_distributed_statevector_plan,
 )
-from flagquantum.runtime.execution import run_advanced
 
 pytestmark = [pytest.mark.distributed, pytest.mark.distributed_cpu]
 
 
 @pytest.mark.parametrize("world_size", [2, 4, 8])
 def test_static_gate_basis_owner_matches_tensor_index_mapping(world_size):
-    from flagquantum.runtime.backends.statevector.forward import (
+    from flagquantum.runtime.executors.statevector.forward import (
         _basis_owner_rank,
         _owner_and_local,
     )
@@ -76,10 +76,10 @@ def test_static_gate_basis_owner_matches_tensor_index_mapping(world_size):
 
 
 def test_diagonal_gate_on_sharded_wire_stays_rank_local():
-    from flagquantum.runtime.backends.statevector.forward import (
+    from flagquantum.runtime.executors.statevector.forward import (
         _vectorized_local_diagonal_gate,
     )
-    from flagquantum.runtime.backends.statevector.local_execution import (
+    from flagquantum.runtime.executors.statevector.local_execution import (
         initialize_statevector_shard,
     )
     from flagquantum.simulation.statevector.operations import _instruction_matrix

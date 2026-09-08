@@ -13,10 +13,10 @@ import torch.distributed as dist
 from torch.profiler import ProfilerActivity, profile
 
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.reverse import (
+from flagquantum.runtime.executors.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
-from flagquantum.runtime.backends.mps.state import initial_mps_ownership
+from flagquantum.runtime.executors.mps.state import initial_mps_ownership
 
 
 def build(count, wires, device):

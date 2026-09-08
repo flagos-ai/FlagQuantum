@@ -9,19 +9,19 @@ from dataclasses import replace
 import torch
 import torch.distributed as dist
 
-import flagquantum.runtime.backends.mps.forward as mps_forward
+import flagquantum.runtime.executors.mps.forward as mps_forward
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.backends.mps.distributed_state import (
+from flagquantum.runtime.distributed.context import TorchDistributedContext
+from flagquantum.runtime.executors.mps.distributed_state import (
     DistributedShardPlan,
     ShardedMPSState,
 )
-from flagquantum.runtime.backends.mps.forward import (
+from flagquantum.runtime.executors.mps.forward import (
     MPSFullMaterializationError,
     NonlocalMPSCompilationError,
     execute_torch_distributed_mps_forward,
     gather_mps_for_validation,
 )
-from flagquantum.runtime.distributed.context import TorchDistributedContext
 from flagquantum.simulation.mps.entrypoints import run_mps
 from flagquantum.simulation.mps.site_kernels import (
     configure_site_kernel_cache,

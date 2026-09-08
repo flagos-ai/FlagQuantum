@@ -13,7 +13,7 @@ import torch
 import torch.distributed as dist
 from torch.profiler import ProfilerActivity, profile
 
-from flagquantum.runtime.backends.mps.execution import (
+from flagquantum.runtime.executors.mps.execution import (
     _recv_tensor_batch_p2p,
     _recv_tensor_p2p,
     _run_batched_p2p_with_overlap,

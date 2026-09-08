@@ -66,8 +66,8 @@ agent_forbidden = [
 # New imports remain blocked; do not invent a duplicate Core contract merely to
 # make this list shorter.
 runtime_compiler_import_allowed = [
-    "flagquantum/runtime/backends/statevector/noisy.py",
-    "flagquantum/runtime/backends/statevector/planning.py",
+    "flagquantum/runtime/executors/statevector/noisy.py",
+    "flagquantum/runtime/executors/statevector/planning.py",
     "flagquantum/runtime/dynamic/routing.py",
     "flagquantum/runtime/execution.py",
     "flagquantum/runtime/noise_registry.py",
@@ -77,11 +77,11 @@ runtime_compiler_import_allowed = [
 
 [accelerator_boundaries.direct_cuda_call_ceiling]
 "flagquantum/benchmarking/statevector_local.py" = 5
-"flagquantum/runtime/backends/mps/compiled_layers.py" = 1
-"flagquantum/runtime/backends/mps/factorization.py" = 4
-"flagquantum/runtime/backends/mps/reverse_transport.py" = 5
-"flagquantum/runtime/backends/mps/training_engine.py" = 7
-"flagquantum/runtime/backends/statevector/training.py" = 4
+"flagquantum/runtime/executors/mps/compiled_layers.py" = 1
+"flagquantum/runtime/executors/mps/factorization.py" = 4
+"flagquantum/runtime/executors/mps/reverse_transport.py" = 5
+"flagquantum/runtime/executors/mps/training_engine.py" = 7
+"flagquantum/runtime/executors/statevector/training.py" = 4
 "flagquantum/runtime/distributed/context.py" = 1
-"flagquantum/runtime/backends/mps/transport.py" = 5
+"flagquantum/runtime/executors/mps/transport.py" = 5
 "flagquantum/runtime/training_state.py" = 3

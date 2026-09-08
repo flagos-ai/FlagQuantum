@@ -23,11 +23,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import flagquantum.runtime.backends.mps.records as fqxm  # noqa: E402
-from flagquantum.runtime.backends.mps.forward import (  # noqa: E402
+import flagquantum.runtime.executors.mps.records as fqxm  # noqa: E402
+from flagquantum.runtime.executors.mps.forward import (  # noqa: E402
     execute_torch_distributed_mps_forward,
 )
-from flagquantum.runtime.backends.mps.reverse import (  # noqa: E402
+from flagquantum.runtime.executors.mps.reverse import (  # noqa: E402
     execute_torch_distributed_mps_reverse,
     site_sharded_z_zz_observations,
 )

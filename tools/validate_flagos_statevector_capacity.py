@@ -238,7 +238,7 @@ def _run_sharded(
     *,
     context: Any,
 ) -> dict[str, Any]:
-    from flagquantum.runtime.backends.statevector import (
+    from flagquantum.runtime.executors.statevector import (
         execute_torch_distributed_statevector,
     )
 

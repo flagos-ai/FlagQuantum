@@ -94,7 +94,7 @@ Core -> Compiler -> Runtime -> Simulation
 
 1. `ProgramArtifact`、capability、execution request/plan/result/evidence 存在多组相近类型，必须先完成字段、生命周期、身份和消费者对账；
 2. Runtime 仍有十条登记在案的 Runtime→Compiler 依赖，其中既有共享契约依赖，也有内部实现调用和历史噪声/路由耦合；
-3. 数值算法与编排仍同时分布于 `simulation` 和 `runtime/backends`；首个迁移候选是单设备 PyTorch dense statevector engine；
+3. 数值算法与编排仍同时分布于 `simulation` 和 `runtime/executors`；首个迁移候选是单设备 PyTorch dense statevector engine；
 4. Platform 与 Execution Provider 尚无经批准的最小 Core 契约；现有多个 Provider/Extension 协议不能直接合成万能接口；
 5. `ExecutionResult`、`TargetExecutionResult`、`DeploymentResult` 等结果模型并存，状态、错误、取消、位序和校准证据尚未统一；
 6. OpenQASM/QCIS、Qiskit Aer 执行和 Braket IQM 动态方言仍有跨层或双实现；

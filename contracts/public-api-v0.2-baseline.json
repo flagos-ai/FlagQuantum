@@ -1450,7 +1450,7 @@
         }
       ],
       "kind": "class",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.MPSAcceptanceGates"
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSAcceptanceGates"
     },
     "MPSCrossoverMeasurement": {
       "constructor": {
@@ -1627,12 +1627,12 @@
         }
       ],
       "kind": "class",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.MPSCrossoverMeasurement"
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSCrossoverMeasurement"
     },
     "MPSProductionAcceptanceError": {
       "constructor": null,
       "kind": "class",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.MPSProductionAcceptanceError"
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSProductionAcceptanceError"
     },
     "MPSProductionPlan": {
       "constructor": {
@@ -1847,7 +1847,7 @@
         }
       ],
       "kind": "class",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.MPSProductionPlan"
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSProductionPlan"
     },
     "MPSProductionSupport": {
       "constructor": {
@@ -2184,7 +2184,7 @@
         }
       ],
       "kind": "class",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.MPSProductionSupport"
+      "qualified_name": "flagquantum.runtime.executors.mps.production.MPSProductionSupport"
     },
     "MPSReverseCheckpointPolicy": {
       "constructor": {
@@ -2309,7 +2309,7 @@
         }
       ],
       "kind": "class",
-      "qualified_name": "flagquantum.runtime.backends.mps.records.MPSReverseCheckpointPolicy"
+      "qualified_name": "flagquantum.runtime.executors.mps.records.MPSReverseCheckpointPolicy"
     },
     "MeasurementNode": {
       "constructor": {
@@ -3316,7 +3316,7 @@
     },
     "build_mps_release_artifact": {
       "kind": "callable",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.build_mps_release_artifact",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.build_mps_release_artifact",
       "signature": {
         "parameters": [
           {
@@ -4447,7 +4447,7 @@
     },
     "noisy_density_matrix": {
       "kind": "callable",
-      "qualified_name": "flagquantum.runtime.backends.density_matrix.execution.noisy_density_matrix",
+      "qualified_name": "flagquantum.runtime.executors.density_matrix.execution.noisy_density_matrix",
       "signature": {
         "parameters": [
           {
@@ -4670,7 +4670,7 @@
     },
     "plan_production_mps": {
       "kind": "callable",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.plan_production_mps",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.plan_production_mps",
       "signature": {
         "parameters": [
           {
@@ -6021,7 +6021,7 @@
     },
     "train_distributed_mps": {
       "kind": "callable",
-      "qualified_name": "flagquantum.runtime.backends.mps.training.train_distributed_mps",
+      "qualified_name": "flagquantum.runtime.executors.mps.training.train_distributed_mps",
       "signature": {
         "parameters": [
           {
@@ -6046,7 +6046,7 @@
     },
     "train_distributed_statevector": {
       "kind": "callable",
-      "qualified_name": "flagquantum.runtime.backends.statevector.training.train_distributed_statevector",
+      "qualified_name": "flagquantum.runtime.executors.statevector.training.train_distributed_statevector",
       "signature": {
         "parameters": [
           {
@@ -6179,7 +6179,7 @@
     },
     "validate_production_mps_workload": {
       "kind": "callable",
-      "qualified_name": "flagquantum.runtime.backends.mps.production.validate_production_mps_workload",
+      "qualified_name": "flagquantum.runtime.executors.mps.production.validate_production_mps_workload",
       "signature": {
         "parameters": [
           {

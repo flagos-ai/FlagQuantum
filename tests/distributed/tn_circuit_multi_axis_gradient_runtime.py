@@ -9,24 +9,24 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network.adjoint_layout import (
+from flagquantum.runtime.executors.tensor_network.adjoint_layout import (
     plan_tn_adjoint_layouts,
     validate_tn_adjoint_tensors,
 )
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     plan_distributed_tn_contraction_dag,
 )
-from flagquantum.runtime.backends.tensor_network.dynamic_reverse import (
+from flagquantum.runtime.executors.tensor_network.dynamic_reverse import (
     execute_dynamic_tn_parameter_pullback,
     execute_dynamic_tn_reverse_segment,
     plan_dynamic_tn_reverse_segment,
 )
-from flagquantum.runtime.backends.tensor_network.multi_axis_sharding import (
+from flagquantum.runtime.executors.tensor_network.multi_axis_sharding import (
     execute_multi_axis_tn_target_cone,
     plan_multi_axis_tn_layout,
     plan_multi_axis_tn_peak_sharding,
 )
-from flagquantum.runtime.backends.tensor_network.partial_mesh import (
+from flagquantum.runtime.executors.tensor_network.partial_mesh import (
     DistributedTNMeshGroupCache,
     execute_partial_mesh_reverse_pair,
     execute_partial_mesh_tn_redistribution,
@@ -34,11 +34,11 @@ from flagquantum.runtime.backends.tensor_network.partial_mesh import (
     plan_partial_mesh_tn_layout,
     plan_partial_mesh_tn_redistribution,
 )
-from flagquantum.runtime.backends.tensor_network.redistribution import (
+from flagquantum.runtime.executors.tensor_network.redistribution import (
     execute_multi_axis_tn_redistribution,
     plan_multi_axis_tn_redistribution,
 )
-from flagquantum.runtime.backends.tensor_network.reverse_dag import (
+from flagquantum.runtime.executors.tensor_network.reverse_dag import (
     execute_explicit_tn_reverse_dag,
     execute_tn_forward_with_tape,
     plan_explicit_tn_reverse_dag,

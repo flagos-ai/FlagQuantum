@@ -7,9 +7,9 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-import flagquantum.runtime.backends.mps.records as fqxm
+import flagquantum.runtime.executors.mps.records as fqxm
 from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.runtime.backends.mps.reverse import (
+from flagquantum.runtime.executors.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
 

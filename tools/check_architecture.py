@@ -17,10 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "flagquantum"
 MAINTAINED_ENTRYPOINTS = ("benchmarks", "examples", "tools")
 DEVELOPMENT_MILESTONE_TOKENS = ("phase4", "phase5", "phase_4", "phase_5")
-NON_JAX_EXECUTION_BACKENDS = (
-    "flagquantum/runtime/backends/statevector/",
-    "flagquantum/runtime/backends/mps/",
-    "flagquantum/runtime/backends/tensor_network/",
+NON_JAX_EXECUTORS = (
+    "flagquantum/runtime/executors/statevector/",
+    "flagquantum/runtime/executors/mps/",
+    "flagquantum/runtime/executors/tensor_network/",
 )
 CONFIG = tomllib.loads((ROOT / "architecture.toml").read_text(encoding="utf-8"))
 LONG_HORIZON_CONTRACT = ROOT / "contracts" / "long-horizon-architecture-v1.json"
@@ -114,10 +114,10 @@ def _torch_cuda_use_count(path: Path) -> int:
     )
 
 
-def _imports_jax_backend(path: Path) -> bool:
+def _imports_jax_executor(path: Path) -> bool:
     tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
     module_parts = path.relative_to(ROOT).with_suffix("").parts[:-1]
-    target = "flagquantum.runtime.backends.jax"
+    target = "flagquantum.runtime.executors.jax"
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             if any(
@@ -132,7 +132,7 @@ def _imports_jax_backend(path: Path) -> bool:
                 imported = ".".join((*module_parts[:keep], *imported.split(".")))
             if imported == target or imported.startswith(f"{target}."):
                 return True
-            if imported == "flagquantum.runtime.backends" and any(
+            if imported == "flagquantum.runtime.executors" and any(
                 item.name == "jax" for item in node.names
             ):
                 return True
@@ -288,9 +288,7 @@ def architecture_errors() -> tuple[str, ...]:
     for path in sorted(PACKAGE.rglob("*.py")):
         relative = path.relative_to(ROOT).as_posix()
         imports = _imports(path)
-        if relative.startswith(NON_JAX_EXECUTION_BACKENDS) and _imports_jax_backend(
-            path
-        ):
+        if relative.startswith(NON_JAX_EXECUTORS) and _imports_jax_executor(path):
             errors.append(
                 f"{relative}: non-JAX execution backends must not import the JAX "
                 "backend; cross-backend comparison belongs in Runtime Planner"

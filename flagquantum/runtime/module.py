@@ -32,7 +32,7 @@ from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
     from ..algorithms import Hamiltonian
-    from .backends.mps.production import (
+    from .executors.mps.production import (
         MPSAcceptanceGates,
         MPSCrossoverMeasurement,
         MPSProductionPlan,
@@ -589,7 +589,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
     ) -> MPSProductionPlan:
         """Plan the module's MPS workload from measured release evidence."""
 
-        from .backends.mps.production import plan_production_mps
+        from .executors.mps.production import plan_production_mps
 
         circuit = self._build(inputs, self._owned_parameters())
         ir = ensure_circuit_ir(circuit)
@@ -651,7 +651,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         else:
             import torch.distributed as dist
 
-            from .backends.mps.reverse import execute_torch_distributed_mps_reverse
+            from .executors.mps.reverse import execute_torch_distributed_mps_reverse
 
             if not dist.is_initialized():
                 raise ExecutionError(
@@ -765,7 +765,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                     self._jax_kernel is None
                     or self._jax_kernel_signature != kernel_signature
                 ):
-                    from .backends.jax import compile_quantum_kernel
+                    from .executors.jax import compile_quantum_kernel
 
                     if not isinstance(circuit, Circuit):
                         raise TypeError("JAX module builder must return a Circuit")
@@ -822,7 +822,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         if distributed:
             import torch.distributed as dist
 
-            from .backends.statevector import (
+            from .executors.statevector import (
                 execute_torch_distributed_statevector_reverse,
             )
 

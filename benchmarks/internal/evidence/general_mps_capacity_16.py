@@ -23,7 +23,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import flagquantum as fq  # noqa: E402
 import flagquantum.experimental.distributed as fqxd  # noqa: E402
-import flagquantum.runtime.backends.mps.records as fqxm  # noqa: E402
+import flagquantum.runtime.executors.mps.records as fqxm  # noqa: E402
 
 from flagquantum.testing import require_general_mps_capacity  # noqa: E402
 

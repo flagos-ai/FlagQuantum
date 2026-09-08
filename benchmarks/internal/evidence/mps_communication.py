@@ -15,7 +15,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.backends.mps.transport import (
+from flagquantum.runtime.executors.mps.transport import (
     _recv_tensor_p2p,
     _send_tensor_p2p,
 )

@@ -143,7 +143,7 @@ def run_target(
 
             values = tensor_network_amplitudes(circuit_or_ir, targets, **options)
         elif target == "few_amplitudes":
-            from .backends.tensor_network.execution import (
+            from .executors.tensor_network.execution import (
                 distributed_tensor_network_amplitudes,
             )
 
@@ -160,7 +160,7 @@ def run_target(
                 circuit_or_ir, observable_batch, **options
             )
         elif target == "local_observables":
-            from .backends.tensor_network.execution import (
+            from .executors.tensor_network.execution import (
                 distributed_tensor_network_expectations,
             )
 

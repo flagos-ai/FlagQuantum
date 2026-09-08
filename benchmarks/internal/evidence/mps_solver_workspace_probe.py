@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.runtime.backends.mps.solver_workspace import (  # noqa: E402
+from flagquantum.runtime.executors.mps.solver_workspace import (  # noqa: E402
     probe_solver_workspace_capabilities,
 )
 

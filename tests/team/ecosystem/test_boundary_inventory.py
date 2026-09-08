@@ -61,7 +61,7 @@ def test_external_sdk_imports_do_not_enter_inner_layers() -> None:
 
 def test_jax_objects_are_confined_to_the_optional_kernel_boundary() -> None:
     leaks = []
-    runtime_boundary = ROOT / "flagquantum/runtime/backends/jax"
+    runtime_boundary = ROOT / "flagquantum/runtime/executors/jax"
     simulation_boundary = ROOT / "flagquantum/simulation/jax"
     for path in _python_files():
         for module in _imports(path):

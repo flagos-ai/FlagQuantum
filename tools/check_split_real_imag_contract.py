@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "split-real-imag-statevector-contract.toml"
-IMPLEMENTATION = ROOT / "flagquantum/runtime/backends/statevector/split_real_imag.py"
+IMPLEMENTATION = ROOT / "flagquantum/runtime/executors/statevector/split_real_imag.py"
 KERNEL = ROOT / "flagquantum/simulation/statevector/split_real_imag.py"
 PROFILE = ROOT / "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json"
 
@@ -38,7 +38,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     expected = {
         "schema": "flagquantum_split_real_imag_statevector_contract_v1",
         "maturity": "experimental",
-        "implementation": "flagquantum.runtime.backends.statevector.split_real_imag",
+        "implementation": "flagquantum.runtime.executors.statevector.split_real_imag",
         "gate_implementation": "flagquantum.simulation.statevector.split_real_imag",
         "operator_profile": "split_real_imag_statevector_p0",
         "representation": "split_real_imag",

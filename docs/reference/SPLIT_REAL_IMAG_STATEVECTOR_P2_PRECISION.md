@@ -16,7 +16,7 @@ high/low words:
 ```python
 import flagquantum as fq
 from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.runtime.backends.statevector.split_real_imag_precision import (
+from flagquantum.runtime.executors.statevector.split_real_imag_precision import (
     parameter_shift_split_real_imag_precision_gradient,
 )
 

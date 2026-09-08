@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.runtime.backends.tensor_network.dynamic_checkpoint import (
+from flagquantum.runtime.executors.tensor_network.dynamic_checkpoint import (
     clear_dynamic_tn_checkpoint_writer_lock,
     inspect_dynamic_tn_checkpoint,
 )

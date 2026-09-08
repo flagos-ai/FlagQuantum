@@ -43,9 +43,9 @@ Every exception names an owner and removal version. Run
 | Runtime execution planning | `flagquantum.runtime.planner` |
 | Runtime API and contracts | `flagquantum.runtime` |
 | Executor protocols | `flagquantum.runtime.contracts` |
-| Backend boundaries | `flagquantum.runtime.backends` |
+| Backend boundaries | `flagquantum.runtime.executors` |
 | Distributed orchestration | `flagquantum.runtime.distributed` |
-| Optional kernels | backend adapters behind `flagquantum.runtime.backends` |
+| Optional kernels | backend adapters behind `flagquantum.runtime.executors` |
 | Measurement contracts | `flagquantum.core.ir`, `flagquantum.runtime.measurements` |
 | Deployment/providers | `flagquantum.deployment` |
 | External framework adapter contract | `flagquantum.ecosystem` |

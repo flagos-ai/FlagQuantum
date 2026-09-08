@@ -10,10 +10,10 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     plan_distributed_tn_contraction_dag,
 )
-from flagquantum.runtime.backends.tensor_network.distributed_execution import (
+from flagquantum.runtime.executors.tensor_network.distributed_execution import (
     execute_distributed_tn_contraction_dag,
 )
 

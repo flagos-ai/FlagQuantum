@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from flagquantum.runtime.backends.mps.factorization import (
+from flagquantum.runtime.executors.mps.factorization import (
     FactorizationWorkspacePool,
     MPSFactorizationMemoryError,
 )

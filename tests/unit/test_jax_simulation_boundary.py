@@ -2,27 +2,27 @@
 
 import pytest
 
-from flagquantum.runtime.backends.jax import (
+from flagquantum.runtime.executors.jax import (
     array_conversions,
     kernel,
 )
-from flagquantum.runtime.backends.jax.mps import (
+from flagquantum.runtime.executors.jax.mps import (
     canonicalization as mps_canonicalization,
 )
-from flagquantum.runtime.backends.jax.mps import execution as mps_execution
-from flagquantum.runtime.backends.jax.mps import (
+from flagquantum.runtime.executors.jax.mps import execution as mps_execution
+from flagquantum.runtime.executors.jax.mps import (
     gradient_ownership as mps_gradient_ownership,
 )
-from flagquantum.runtime.backends.jax.mps import lowering as mps_lowering
-from flagquantum.runtime.backends.jax.mps import pullbacks as mps_pullbacks
-from flagquantum.runtime.backends.jax.statevector import (
+from flagquantum.runtime.executors.jax.mps import lowering as mps_lowering
+from flagquantum.runtime.executors.jax.mps import pullbacks as mps_pullbacks
+from flagquantum.runtime.executors.jax.statevector import (
     gradient_records as statevector_gradient_records,
 )
-from flagquantum.runtime.backends.jax.statevector import kernels as statevector_kernels
-from flagquantum.runtime.backends.jax.tensor_network import (
+from flagquantum.runtime.executors.jax.statevector import kernels as statevector_kernels
+from flagquantum.runtime.executors.jax.tensor_network import (
     contraction as tensor_network_contraction,
 )
-from flagquantum.runtime.backends.jax.tensor_network import (
+from flagquantum.runtime.executors.jax.tensor_network import (
     gradients as tensor_network_gradients,
 )
 from flagquantum.simulation.jax import primitives as jax_gate_primitives

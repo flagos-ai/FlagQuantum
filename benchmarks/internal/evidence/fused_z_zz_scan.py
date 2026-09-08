@@ -11,7 +11,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.mps.reverse import execute_torch_distributed_mps_reverse
+from flagquantum.runtime.executors.mps.reverse import execute_torch_distributed_mps_reverse
 from flagquantum.simulation.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,

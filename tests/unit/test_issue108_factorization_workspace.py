@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from flagquantum.runtime.backends.mps.factorization import (
+from flagquantum.runtime.executors.mps.factorization import (
     FactorizationMemorySnapshot,
     FactorizationWorkspacePolicy,
     MPSFactorizationMemoryError,
@@ -45,7 +45,7 @@ def test_cuda_memory_snapshot_uses_platform_provider(monkeypatch) -> None:
     )
     platform = SimpleNamespace(memory_snapshot=lambda device: memory)
     monkeypatch.setattr(
-        "flagquantum.runtime.backends.mps.factorization.get_platform_runtime",
+        "flagquantum.runtime.executors.mps.factorization.get_platform_runtime",
         lambda device_type: platform,
     )
 

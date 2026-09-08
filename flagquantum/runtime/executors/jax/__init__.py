@@ -22,35 +22,35 @@ __all__ = (
 
 _EXPORTS = {
     "JAXDistributedQuantumPlan": (
-        "flagquantum.runtime.backends.jax.planning_core",
+        "flagquantum.runtime.executors.jax.planning_core",
         "JAXDistributedQuantumPlan",
     ),
     "compile_quantum_kernel": (
-        "flagquantum.runtime.backends.jax.kernel",
+        "flagquantum.runtime.executors.jax.kernel",
         "compile_quantum_kernel",
     ),
     "plan_jax_distributed_quantum_backend": (
-        "flagquantum.runtime.backends.jax.backend_dispatch",
+        "flagquantum.runtime.executors.jax.backend_dispatch",
         "plan_jax_distributed_quantum_backend",
     ),
     "plan_jax_sharded_mps_training": (
-        "flagquantum.runtime.backends.jax.mps.planning",
+        "flagquantum.runtime.executors.jax.mps.planning",
         "plan_jax_sharded_mps_training",
     ),
     "plan_jax_sharded_statevector_training": (
-        "flagquantum.runtime.backends.jax.statevector.training",
+        "flagquantum.runtime.executors.jax.statevector.training",
         "plan_jax_sharded_statevector_training",
     ),
     "run_jax_sharded_mps": (
-        "flagquantum.runtime.backends.jax.mps.execution",
+        "flagquantum.runtime.executors.jax.mps.execution",
         "run_jax_sharded_mps",
     ),
     "run_jax_sharded_statevector": (
-        "flagquantum.runtime.backends.jax.statevector.execution",
+        "flagquantum.runtime.executors.jax.statevector.execution",
         "run_jax_sharded_statevector",
     ),
     "run_jax_sharded_tensor_network": (
-        "flagquantum.runtime.backends.jax.tensor_network.execution",
+        "flagquantum.runtime.executors.jax.tensor_network.execution",
         "run_jax_sharded_tensor_network",
     ),
 }

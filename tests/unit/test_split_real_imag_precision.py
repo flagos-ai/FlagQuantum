@@ -6,17 +6,17 @@ import torch
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.core.numerics import AccuracyRequirementContract, PrecisionPlanContract
-from flagquantum.runtime.backends.statevector.split_real_imag import (
+from flagquantum.runtime.capabilities import load_operator_profile
+from flagquantum.runtime.executors.statevector.split_real_imag import (
     execute_split_real_imag_expectation,
     parameter_shift_split_real_imag_gradient,
 )
-from flagquantum.runtime.backends.statevector.split_real_imag_precision import (
+from flagquantum.runtime.executors.statevector.split_real_imag_precision import (
     execute_split_real_imag_precision_expectation,
     parameter_shift_split_real_imag_precision_gradient,
     run_split_real_imag_precision_conformance,
     split_real_imag_p2_precision_plan,
 )
-from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.operator_probes import (
     preflight_split_real_imag_statevector_p2,
 )

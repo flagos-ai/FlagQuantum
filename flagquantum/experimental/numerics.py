@@ -6,7 +6,7 @@ from importlib import import_module
 from typing import Any
 
 _EXPORT_MODULES = {
-    "flagquantum.runtime.backends.statevector.split_real_imag": {
+    "flagquantum.runtime.executors.statevector.split_real_imag": {
         "execute_split_real_imag_expectation",
         "execute_split_real_imag_statevector",
         "parameter_shift_split_real_imag_gradient",

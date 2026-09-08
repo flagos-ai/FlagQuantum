@@ -60,7 +60,7 @@ def main() -> None:
     )
     if args.inject_failure_rank == rank:
         noisy_backend = importlib.import_module(
-            "flagquantum.runtime.backends.statevector.noisy"
+            "flagquantum.runtime.executors.statevector.noisy"
         )
         original_execute = noisy_backend._execute_trajectory_batch
 

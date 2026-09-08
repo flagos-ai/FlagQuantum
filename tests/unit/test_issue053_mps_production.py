@@ -3,8 +3,8 @@
 import pytest
 
 import flagquantum as fq
-import flagquantum.runtime.backends.mps as fqxm
-from flagquantum.runtime.backends.mps.forward import NonlocalMPSCompilationError
+import flagquantum.runtime.executors.mps as fqxm
+from flagquantum.runtime.executors.mps.forward import NonlocalMPSCompilationError
 
 pytestmark = pytest.mark.unit
 
@@ -151,7 +151,7 @@ def test_unsupported_topology_fails_during_planning_before_executor(monkeypatch)
         raise AssertionError("executor allocation must not start")
 
     monkeypatch.setattr(
-        "flagquantum.runtime.backends.mps.forward.execute_torch_distributed_mps_forward",
+        "flagquantum.runtime.executors.mps.forward.execute_torch_distributed_mps_forward",
         forbidden,
     )
     with pytest.raises(NonlocalMPSCompilationError, match="requires MPS routing"):

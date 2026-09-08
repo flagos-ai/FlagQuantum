@@ -1,6 +1,6 @@
 import pytest
 
-from flagquantum.runtime.backends.mps.state import (
+from flagquantum.runtime.executors.mps.state import (
     communication_aware_mps_ownership,
     cost_aware_mps_ownership,
     gate_aligned_cost_aware_mps_ownership,

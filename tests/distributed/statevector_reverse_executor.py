@@ -10,7 +10,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.statevector.reverse import (
+from flagquantum.runtime.executors.statevector.reverse import (
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
 )

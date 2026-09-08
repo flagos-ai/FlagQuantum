@@ -53,7 +53,7 @@ and PyTorch distributed launchers.
 ### JAX Quantum Kernel
 
 JAX kernels are an acceleration backend, not a second user-facing framework.
-`flagquantum.runtime.backends.jax.compile_quantum_kernel(..., backend="jax", interface="torch")` lowers a
+`flagquantum.runtime.executors.jax.compile_quantum_kernel(..., backend="jax", interface="torch")` lowers a
 FlagQuantum circuit builder to a JAX value-and-gradient kernel, then exposes it
 as a PyTorch differentiable callable.
 

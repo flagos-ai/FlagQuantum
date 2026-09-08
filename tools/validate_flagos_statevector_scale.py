@@ -213,11 +213,11 @@ def _run_case(
     n_wires: int,
     context: Any,
 ) -> Any:
-    from flagquantum.runtime.backends.statevector import (
-        execute_torch_distributed_statevector,
-    )
     from flagquantum.runtime.distributed.scale_profile import (
         FlagOSStatevectorScaleCase,
+    )
+    from flagquantum.runtime.executors.statevector import (
+        execute_torch_distributed_statevector,
     )
 
     dtype = getattr(torch, dtype_name)

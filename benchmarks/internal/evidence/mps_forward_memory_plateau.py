@@ -26,11 +26,11 @@ from benchmarks.internal.mps_hamiltonian_identification.core import (
     make_probes,
     smooth_couplings,
 )
-from flagquantum.runtime.backends.mps.forward import (
+from flagquantum.runtime.executors.mps.forward import (
     execute_torch_distributed_mps_forward,
 )
-from flagquantum.runtime.backends.mps.factorization import FactorizationWorkspacePolicy
-from flagquantum.runtime.backends.mps.reverse import site_sharded_z_zz_observations
+from flagquantum.runtime.executors.mps.factorization import FactorizationWorkspacePolicy
+from flagquantum.runtime.executors.mps.reverse import site_sharded_z_zz_observations
 from flagquantum.simulation.mps.site_kernels import (
     reset_site_kernel_stats,
     site_kernel_stats,

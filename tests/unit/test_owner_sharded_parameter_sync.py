@@ -1,6 +1,6 @@
 import torch
 
-from flagquantum.runtime.backends.mps.compiled_training import (
+from flagquantum.runtime.executors.mps.compiled_training import (
     OwnerShardedParameterSynchronizer,
 )
 

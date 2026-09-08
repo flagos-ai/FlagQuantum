@@ -10,7 +10,7 @@ from dataclasses import asdict
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.tensor_network.distributed_dag import (
+from flagquantum.runtime.executors.tensor_network.distributed_dag import (
     TN_DAG_VERSION,
     DistributedTNContractionDAG,
     DistributedTNContractionRecord,
@@ -18,7 +18,7 @@ from flagquantum.runtime.backends.tensor_network.distributed_dag import (
     _dag_identity,
     shard_distributed_tn_value_layout,
 )
-from flagquantum.runtime.backends.tensor_network.distributed_execution import (
+from flagquantum.runtime.executors.tensor_network.distributed_execution import (
     execute_sharded_tn_contraction_dag,
 )
 

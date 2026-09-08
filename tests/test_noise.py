@@ -27,11 +27,11 @@ from flagquantum.noise import (
     reset_error_channel,
     thermal_relaxation_channel,
 )
-from flagquantum.runtime.backends.statevector import (
+from flagquantum.runtime.execution import run_advanced
+from flagquantum.runtime.executors.statevector import (
     merge_noisy_statevector_results,
     run_noisy_statevector,
 )
-from flagquantum.runtime.execution import run_advanced
 from flagquantum.runtime.planner import (
     NOISE_SELECTOR_CALIBRATION_SCHEMA,
     estimate_density_bytes,
@@ -332,7 +332,7 @@ def test_batched_statevector_checkpoint_rejects_changed_identity(tmp_path):
 def test_batched_statevector_isolates_failure_and_retries_from_checkpoint(
     tmp_path, monkeypatch
 ):
-    from flagquantum.runtime.backends.statevector import noisy
+    from flagquantum.runtime.executors.statevector import noisy
 
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(0.25))

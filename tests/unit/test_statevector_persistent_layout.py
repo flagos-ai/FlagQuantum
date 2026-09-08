@@ -4,10 +4,10 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.backends.statevector.forward_executor import (
+from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
 )
-from flagquantum.runtime.backends.statevector.layout import (
+from flagquantum.runtime.executors.statevector.layout import (
     _local_bit_view,
     distributed_swap_rank_local_bits,
     plan_persistent_statevector_layout,

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.runtime.backends.statevector.split_real_imag_precision import (
+from flagquantum.runtime.executors.statevector.split_real_imag_precision import (
     split_real_imag_p2_accuracy_envelope,
     split_real_imag_p2_precision_plan,
 )

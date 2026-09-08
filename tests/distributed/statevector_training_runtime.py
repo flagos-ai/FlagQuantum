@@ -15,7 +15,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.backends.statevector.training import DistributedTrainingError
+from flagquantum.runtime.executors.statevector.training import DistributedTrainingError
 
 
 def build(device: torch.device):

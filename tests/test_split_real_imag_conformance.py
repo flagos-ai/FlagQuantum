@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.runtime.backends.statevector.split_real_imag import (
+from flagquantum.runtime.executors.statevector.split_real_imag import (
     run_split_real_imag_conformance,
 )
 

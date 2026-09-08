@@ -18,7 +18,7 @@ from torch.profiler import ProfilerActivity, profile
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.backends.mps.profiling import build_mps_critical_path_report
+from flagquantum.runtime.executors.mps.profiling import build_mps_critical_path_report
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -39,9 +39,9 @@ def _source_snapshot() -> dict[str, object]:
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False,
     ).stdout
     critical_files = (
-        "flagquantum/runtime/backends/mps/profiling.py",
-        "flagquantum/runtime/backends/mps/training.py",
-        "flagquantum/runtime/backends/mps/reverse.py",
+        "flagquantum/runtime/executors/mps/profiling.py",
+        "flagquantum/runtime/executors/mps/training.py",
+        "flagquantum/runtime/executors/mps/reverse.py",
         "flagquantum/simulation/mps/models.py",
         "benchmarks/internal/evidence/mps_critical_path.py",
         "benchmarks/manifests/mps_critical_path_v1.json",
