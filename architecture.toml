@@ -78,7 +78,6 @@ runtime_compiler_import_allowed = [
 "flagquantum/benchmarking/statevector_local.py" = 7
 "flagquantum/runtime/backends/mps/compiled_layers.py" = 3
 "flagquantum/runtime/backends/mps/factorization.py" = 7
-"flagquantum/runtime/backends/mps/metadata_transport.py" = 1
 "flagquantum/runtime/backends/mps/records.py" = 1
 "flagquantum/runtime/backends/mps/reverse_transport.py" = 6
 "flagquantum/runtime/backends/mps/site_kernels.py" = 1

@@ -32,8 +32,12 @@ def test_all_gather_json_uses_variable_length_tensor_payloads(monkeypatch):
     assert metadata_transport.all_gather_json(local) == (local, remote)
 
 
-def test_collective_device_uses_current_cuda_device_for_nccl(monkeypatch):
+def test_collective_device_resolves_nccl_device_through_platform(monkeypatch):
     monkeypatch.setattr(metadata_transport.dist, "get_backend", lambda: "nccl")
-    monkeypatch.setattr(metadata_transport.torch.cuda, "current_device", lambda: 3)
+    monkeypatch.setattr(
+        metadata_transport,
+        "resolve_platform_device",
+        lambda device: torch.device("cuda:3"),
+    )
 
     assert metadata_transport._collective_device() == torch.device("cuda", 3)

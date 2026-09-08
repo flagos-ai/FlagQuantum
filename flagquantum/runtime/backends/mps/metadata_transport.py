@@ -8,13 +8,14 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from ....providers.platform import resolve_platform_device
 from ...distributed.flagos_runtime import current_flagos_device
 
 
 def _collective_device() -> torch.device:
     backend = str(dist.get_backend()).strip().lower()
     if backend == "nccl":
-        return torch.device("cuda", torch.cuda.current_device())
+        return resolve_platform_device("cuda")
     if backend == "flagos":
         return current_flagos_device()
     return torch.device("cpu")
