@@ -20,6 +20,7 @@ from typing import Any, Callable
 import torch
 
 import flagquantum as fq
+from flagquantum.providers.platform import get_platform_runtime
 from flagquantum.simulation.gate_matrix import gate_matrix
 from flagquantum.simulation.statevector.operations import _apply_matrix
 
@@ -76,7 +77,7 @@ def sequential_reference(circuit: fq.Circuit) -> torch.Tensor:
 
 def _sync(device: str) -> None:
     if str(device).startswith("cuda"):
-        torch.cuda.synchronize(torch.device(device))
+        get_platform_runtime("cuda").synchronize(torch.device(device))
 
 
 def _measure(
@@ -224,7 +225,10 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--layers", type=int, default=2)
     parser.add_argument(
-        "--device", default="cuda" if torch.cuda.is_available() else "cpu"
+        "--device",
+        default=(
+            "cuda" if get_platform_runtime("cuda").is_available() else "cpu"
+        ),
     )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--iterations", type=int, default=10)

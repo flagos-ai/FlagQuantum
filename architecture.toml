@@ -74,7 +74,7 @@ runtime_compiler_import_allowed = [
 ]
 
 [accelerator_boundaries.direct_cuda_call_ceiling]
-"flagquantum/benchmarking/statevector_local.py" = 7
+"flagquantum/benchmarking/statevector_local.py" = 5
 "flagquantum/runtime/backends/mps/compiled_layers.py" = 1
 "flagquantum/runtime/backends/mps/factorization.py" = 4
 "flagquantum/runtime/backends/mps/reverse_transport.py" = 5
