@@ -9,6 +9,8 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
+from ....providers.platform import get_platform_runtime
+
 
 @dataclass(frozen=True)
 class DistributedTNOptimizerStepResult:
@@ -139,9 +141,10 @@ def execute_rank_owned_tn_sgd_step(
             "packed rank-owned SGD requires one parameter dtype and device"
         )
     chunk_size, offsets = _packed_owner_layout(parameters, owners, world_size)
+    platform = get_platform_runtime(reference.device.type)
 
-    if any(parameter.is_cuda for parameter in parameters):
-        torch.cuda.synchronize(parameters[0].device)
+    if reference.is_cuda:
+        platform.synchronize(reference.device)
     started = perf_counter()
     with torch.no_grad():
         for index in owned:
@@ -169,8 +172,8 @@ def execute_rank_owned_tn_sgd_step(
             torch.stack(tuple(torch.isfinite(item).all() for item in parameters)).all()
         ):
             raise RuntimeError("parameters became nonfinite after owner all-gather")
-    if any(parameter.is_cuda for parameter in parameters):
-        torch.cuda.synchronize(parameters[0].device)
+    if reference.is_cuda:
+        platform.synchronize(reference.device)
     elapsed = perf_counter() - started
     return DistributedTNOptimizerStepResult(
         rank=rank,
