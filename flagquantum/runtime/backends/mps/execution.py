@@ -10,7 +10,6 @@ across rank-local shards instead of replicating the full circuit per rank.
 from __future__ import annotations
 
 import json
-from importlib import import_module
 from typing import Any, Mapping, Sequence
 
 import torch
@@ -1113,14 +1112,3 @@ __all__ = [
     "run_distributed_mps",
     "torch_distributed_is_available",
 ]
-
-
-def __getattr__(name: str) -> Any:
-    """Preserve private transport probes after distributed decomposition."""
-    if name.startswith("__"):
-        raise AttributeError(name)
-    module = import_module("flagquantum.runtime.backends.mps.transport")
-    try:
-        return getattr(module, name)
-    except AttributeError as exc:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
