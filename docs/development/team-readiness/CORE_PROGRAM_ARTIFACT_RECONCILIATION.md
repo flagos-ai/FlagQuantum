@@ -1,5 +1,10 @@
 # ProgramArtifact Phase 1 契约对账
 
+> 历史说明：本文是 Phase 1 时点的特征盘点。其所述
+> `AgentApplicationService` 已在发布前删除，当前 `flagquantum.services` 不消费
+> 序列化 `ProgramArtifact`；协议适配器在边缘解码后调用稳定 API。以下内容仅用于
+> 追溯当时的契约判断，不描述现行服务入口。
+
 状态：Core 团队正式对账，提交 Integration 决策；不构成 API、schema 或 ADR 批准
 
 对账基线：`99d5a92091bff35fdc573f4b401e3ebaaf5ffcbf`

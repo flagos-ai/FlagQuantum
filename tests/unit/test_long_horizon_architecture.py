@@ -17,7 +17,10 @@ def test_architecture_contract_declares_independent_domains() -> None:
     assert payload["shared_contract_owner"] == "core"
     assert payload["domains"]["core"]["may_depend_on"] == []
     assert payload["domains"]["runtime"]["may_depend_on"] == ["core"]
-    assert payload["domains"]["gateways"]["may_depend_on"] == ["agent"]
+    assert payload["domains"]["gateways"]["may_depend_on"] == [
+        "services",
+        "public_api",
+    ]
     assert set(payload["compute_boundaries"]["remote"]) == {
         "qpu",
         "accelerator_service",

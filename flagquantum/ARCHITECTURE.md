@@ -32,7 +32,7 @@ Remote isolates external task control planes.
 | `compute/` | direct CPU/GPU/NPU lifecycle, capabilities, precision and communication | remote jobs, scheduling policy, simulator algorithms | `compute/README.md` |
 | `remote/` | external target discovery, submission, status and result decoding | direct device lifecycle, scheduling policy, simulator algorithms | `remote/README.md` |
 | `ecosystem/` | PyTorch, JAX, Qiskit and format boundary adapters | a second IR or runtime | `ecosystem/README.md` |
-| `agent/` | deterministic planning, validation and execution services | MCP transport or LLM policy | `agent/README.md` |
+| `services/` | capability discovery and composite preflight workflows | pass-through API wrappers, MCP transport or LLM policy | `services/README.md` |
 | `algorithms/` | user-facing algorithm composition | runtime or backend internals | `algorithms/README.md` |
 | `benchmarking/` | reproducible measurements and evidence generation | alternate execution paths | `benchmarking/README.md` |
 | `testing/` | reusable conformance and certification helpers | production execution | package modules and `tests/` scenarios |
@@ -70,6 +70,8 @@ Generated directories such as `__pycache__` are not part of the architecture.
 - Add a directly controlled accelerator integration in Compute.
 - Add a QPU, remote GPU/HPC service, or cloud integration in Remote.
 - Add support for an external framework or format in Ecosystem.
+- Add a reusable multi-step preflight workflow in Services; call stable APIs
+  directly when no orchestration is needed.
 
 An ordinary feature should normally change one primary domain. If it repeatedly
 needs edits across four or more domains, stop and review the boundary instead of

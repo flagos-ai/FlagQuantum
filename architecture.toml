@@ -3,7 +3,7 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 
 [package_layout]
 allowed_top_level_directories = [
-    "agent",
+    "services",
     "algorithms",
     "backends",
     "benchmarking",
@@ -51,9 +51,11 @@ pennylane_import_allowed_prefixes = [
 runtime_import_allowed = []
 
 [northbound_boundaries]
-agent_forbidden = [
+service_forbidden = [
     "backends",
+    "compute",
     "platforms",
+    "remote",
     "simulation",
 ]
 

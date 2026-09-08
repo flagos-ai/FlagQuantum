@@ -15,8 +15,9 @@ Compiler `SealedExecutableArtifact`、`SealedCircuitIRRoundTrip` 与 Deployment
 `DeploymentPackage` 分别承载更专门且更丰富的身份、payload 和请求信息；它们不是第二个
 envelope 权威，但 v1 当前也不能无损替代它们。
 
-v1 当前唯一实际运行的生产消费链是 Agent Services 的 `kind=circuit` 路径。Compiler、
-Runtime、Simulation、Remote 和 Ecosystem 尚未直接消费 `ProgramArtifact`。
+本提案形成时，v1 唯一实际运行的生产消费链是当时 Agent Services 的
+`kind=circuit` 路径；该未发布门面后来已删除。Compiler、Runtime、Simulation、Remote
+和 Ecosystem 仍未因此自动成为 `ProgramArtifact` 的直接消费者。
 因此“已有唯一权威”不等于“全部消费者已经迁移”，更不等于 executable/deployment 能力已实现。
 
 ## 决策候选
@@ -42,7 +43,7 @@ Runtime、Simulation、Remote 和 Ecosystem 尚未直接消费 `ProgramArtifact`
 
 - `producer` 只是参与 envelope hash 的非空 opaque label；它不是 provenance、tool identity
   或受控词汇。
-- `required_capabilities` 是排序去重的粗粒度兼容提示；当前只有 Agent planning 消费，不能
+- `required_capabilities` 是排序去重的粗粒度兼容提示；提案形成时仅旧 Agent planning 消费，不能
   替代结构化编译/执行 requirements，也不能由它反推出精度、拓扑、shots 或校准要求。
 - `parent_hashes` 是保留顺序和重复项的 opaque lineage；只校验小写 SHA-256 形状，不校验父
   对象存在性、hash 种类或位置角色。

@@ -57,9 +57,9 @@
 └───────────────┬──────────────────────────────────┬──────────────────┘
                 │                                  │
 ┌───────────────▼─────────────────┐  ┌─────────────▼──────────────────┐
-│ Compiler                        │  │ Agent Services                 │
-│ 校验、分析、优化、Lowering      │  │ 发现、解释、规划、预检         │
-│ 只变换 ProgramArtifact          │  │ 协议无关、确定性、无 LLM 依赖  │
+│ Compiler                        │  │ Application Services           │
+│ 校验、分析、优化、Lowering      │  │ 能力汇总、执行与部署预检       │
+│ 只变换 ProgramArtifact          │  │ 仅保留有复用价值的组合流程     │
 └───────────────┬─────────────────┘  └─────────────┬──────────────────┘
                 │ Executable / Plan                │ ExecutionRequest
 ┌───────────────▼──────────────────────────────────▼──────────────────┐
@@ -79,7 +79,7 @@
 │ 版本化 IR、ProgramArtifact、Capabilities、Request、Result、Evidence│
 └─────────────────────────────────────────────────────────────────────┘
 
-外部控制面：MCP / REST / gRPC → Compute Service → Agent Services / Runtime
+外部控制面：MCP / REST / gRPC → 稳定公共 API 或 Application Services
 ```
 
 所有箭头均表示允许的依赖或调用方向。Core 不反向依赖任何上层模块。
@@ -96,8 +96,9 @@
 | Remote | 适配外部任务控制面 | 目标发现、提交、状态、取消、结果解码 | 本地设备生命周期、数值算法、Runtime 调度 |
 | Ecosystem | 连接外部开发生态 | 框架适配、格式导入导出、插件入口 | 第二套规范 IR、Runtime 调度、设备直调 |
 
-Agent Services 是应用服务层，不是第七套计算内核。它组合 Core、Compiler 和 Runtime
-公开契约，为 MCP、REST、CLI 或 IDE 提供稳定而确定性的能力。
+Application Services 是精简的应用组合层，不是第七套计算内核。只有同时组合多个稳定
+API，并增加校验、策略或结构化失败语义的可复用流程才放在这里。单步编译、规划和执行
+由 MCP、REST、CLI、IDE 或用户代码直接调用公共 API，不增加转发门面。
 
 Compute 与 Remote 按控制边界划分，而不是按硬件类型划分：当前进程能直接创建张量、
 选择设备和调用 Kernel 的资源属于 **Compute**；必须通过提交任务、查询状态和获取结果
@@ -154,7 +155,7 @@ flagquantum/
 │   ├── openqasm/
 │   ├── qir/
 │   └── extensions/
-├── agent/                   # 协议无关的确定性应用服务
+├── services/                # 能力汇总和可复用的组合预检流程
 ├── algorithms/              # 面向用户的算法组合
 ├── benchmarking/            # 统一测评与证据生成
 └── testing/                 # 契约、替换与一致性测试工具
@@ -200,8 +201,8 @@ Compute 回答“本进程如何直接使用计算和通信设备”；Remote �
 ```
 
 GPU/HPC 服务与 QPU 同样位于 Remote 边界之后。Algorithms 通过公共
-门面组合应用；Agent Services 通过 Compiler 和 Runtime 的公开契约执行确定性
-预检、解释和调用；Benchmarking 复用与用户相同的执行路径产生测评证据，
+门面组合应用；Application Services 只通过公开契约提供有额外价值的组合预检；
+协议适配器对单步操作直接调用稳定 API；Benchmarking 复用与用户相同的执行路径产生测评证据，
 不建立绕过能力、安全或证据检查的专用快速路径。
 
 ### 5.2 迁移台账
@@ -218,7 +219,7 @@ GPU/HPC 服务与 QPU 同样位于 Remote 边界之后。Algorithms 通过公共
 | 计算平台收敛 | `compute` | `compute` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |
 | 执行目标收敛 | `runtime/executors`、`deployment` | `remote` | 模拟与 QPU/远程服务共享结果契约 | 后端选择和结果解码只存在于 Provider 后方 |
 | 生态收敛 | `ecosystem` | `ecosystem` | 边界转换和往返一致性测试通过 | 外部框架对象不进入核心领域 |
-| Agent/网关分离 | `agent` | 主仓库 Agent Services；外部网关 | 无 MCP SDK 时本地路径通过，跨仓库契约测试通过 | 主仓库无生产 MCP 传输依赖 |
+| 服务/网关分离 | `services` | 主仓库组合流程；协议网关位于系统边缘 | 无 MCP SDK 时本地路径通过；适配器只调用公共 API 或组合服务 | 主仓库无生产 MCP 传输依赖和序列化转发门面 |
 
 禁止只有目标目录而没有退出条件的迁移。一个迁移项完成后，必须删除或封闭旧权威入口，
 不得让两套实现无限期并存。
@@ -326,18 +327,19 @@ Runtime 不实现张量收缩或量子门 Kernel；Simulation 不自行决定集
 真实 QPU 因而属于 **Provider 的具体实现**；QPU 的调度生命周期属于 Runtime；
 面向 QPU 的变换属于 Compiler；QPU 的能力词汇和结果模式属于 Core。
 
-### 7.3 Agent、MCP 与 Compute Service
+### 7.3 Application Services 与协议适配器
 
 ```text
 LLM / IDE / MCP Host
- -> MCP / REST / gRPC Gateway（外部 Compute Service）
- -> FlagQuantum Agent Services
- -> Validator / Compiler / Runtime 公共契约
+ -> MCP / REST / gRPC / CLI 薄适配器
+ -> 稳定公共 API（单步）或 FlagQuantum Services（组合预检）
+ -> Compiler / Runtime / Deployment 公开契约
  -> 结构化结果与证据
 ```
 
 - 主仓库不依赖 MCP SDK，也不包含 LLM 决策逻辑；
-- Agent Services 只提供确定性的发现、校验、规划、预检、解释和执行入口；
+- Services 只保留能力汇总、执行预检和部署预检等可复用组合流程；
+- 适配器负责协议解码和结果序列化，不为单步操作增加服务包装；
 - Compute Service 负责租户、鉴权、配额、预算、持久化任务和协议生命周期；
 - 替换 MCP 版本或网关不影响本地 SDK 和计算语义。
 
@@ -412,9 +414,9 @@ Core <- Compute + Vendor Runtime
 Core <- Simulation
 Core <- Compute
 Core + Deployment <- Remote + External SDK
-Core + Compiler/Runtime public APIs <- Agent Services
+Core + Compiler/Runtime/Deployment public APIs <- Application Services
 Public API + Core <- Ecosystem
-Agent Services <- External Gateways
+Public APIs + Application Services <- Protocol Adapters
 ```
 
 强制规则：
@@ -444,7 +446,7 @@ Agent Services <- External Gateways
 | Compute | `compute` | Core 中的能力、精度和设备事实契约 |
 | Remote | `remote` | Core 中的请求、结果和远程任务契约 |
 | Ecosystem | `ecosystem` | 公共 API、ProgramArtifact |
-| Agent/Service | `agent`、外部服务仓库 | Application Service Contract |
+| Application Service / Gateway | `services`、协议边缘 | Public API + composite workflow contract |
 
 跨领域变更必须先修改契约提案和契约测试，再修改实现。禁止通过导入对方内部模块解决
 短期联调问题。每个领域至少维护：所有者、公共入口、契约测试、替换用假实现和变更记录。
@@ -512,8 +514,8 @@ declared -> prototyped -> validated -> production
 ### 阶段 4：生态与服务化
 
 - 统一 PyTorch/JAX、OpenQASM/QIR 和第三方生态边界；
-- 稳定 Agent Services；
-- 与外部 Compute Service 通过版本化契约联调 MCP/REST/gRPC。
+- 稳定少量有复用价值的 Application Services；
+- 让 MCP/REST/gRPC/CLI 薄适配器直接复用公共 API 和组合流程。
 
 ### 阶段 5：未来能力插件
 

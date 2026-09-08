@@ -3,7 +3,7 @@
 Operational guidance, performance engineering practices, and reproducible case
 studies.
 
-- [Agent integration and constrained VQE recipe](AGENT_INTEGRATION.md)
+- [Service and protocol integration](SERVICE_INTEGRATION.md)
 - [Multi-node A100 runbook](MULTINODE_A100_RUNBOOK.md)
 - [Performance and memory engineering](PERFORMANCE_ENGINEERING.md)
 - [PyTorch operator requirements for FlagGems](PYTORCH_OPERATOR_REQUIREMENTS_FOR_FLAGGEMS.md)

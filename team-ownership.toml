@@ -91,11 +91,11 @@ owns = [
     "flagquantum/encoding/**",
 ]
 
-[teams.agent]
+[teams.services]
 branch = "codex/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
-    "flagquantum/agent/**",
+    "flagquantum/services/**",
 ]
 
 [teams.docs]

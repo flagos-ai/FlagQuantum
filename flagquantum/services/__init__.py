@@ -1,25 +1,21 @@
-"""Deterministic validation, preflight, and services for automation clients."""
+"""Small application workflows shared by protocol and user interfaces."""
 
 from .preflight import (
-    AgentExecutionPlan,
     DeploymentPreflightReport,
+    ExecutionPreflightReport,
     ValidationIssue,
     ValidationReport,
     capabilities,
     preflight_deployment,
     preflight_execution,
-    validate,
 )
-from .service import AgentApplicationService
 
 __all__ = (
-    "AgentApplicationService",
-    "AgentExecutionPlan",
+    "ExecutionPreflightReport",
     "DeploymentPreflightReport",
     "ValidationIssue",
     "ValidationReport",
     "capabilities",
     "preflight_deployment",
     "preflight_execution",
-    "validate",
 )

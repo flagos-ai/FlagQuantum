@@ -1,5 +1,9 @@
 # FlagQuantum vNext Phase 0 集成报告
 
+> 历史说明：本文记录 Phase 0 当时的团队名称和代码边界。现行代码已将
+> `Agent Services` 收敛为 `flagquantum.services` 中少量组合流程，并删除未发布的
+> `AgentApplicationService` 序列化门面；当前规则以 `flagquantum/ARCHITECTURE.md` 为准。
+
 > 状态：第一轮八团队交付已全部审查、合并并完成统一验证
 >
 > 集成分支：`codex/flagquantum-vnext-architecture`
@@ -98,7 +102,7 @@ Core -> Compiler -> Runtime -> Simulation
 4. Platform 与 Execution Provider 尚无经批准的最小 Core 契约；现有多个 Provider/Extension 协议不能直接合成万能接口；
 5. `ExecutionResult`、`TargetExecutionResult`、`DeploymentResult` 等结果模型并存，状态、错误、取消、位序和校准证据尚未统一；
 6. OpenQASM/QCIS、Qiskit Aer 执行和 Braket IQM 动态方言仍有跨层或双实现；
-7. `flagquantum.agent.capabilities()` 仍间接访问 Runtime backend registry；
+7. `flagquantum.services.capabilities()` 仍间接访问 Runtime backend registry；
 8. `CUDAPlatformRuntime.event()` 默认事件不启用 timing，不能直接用于 elapsed-time 证据；
 9. 当前标准门禁存在一个稳定复现的 Compiler import/verify 性能预算失败，需要 Compiler 单独修复，不能通过放宽阈值消除。
 

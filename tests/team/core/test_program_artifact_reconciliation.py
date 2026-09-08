@@ -5,8 +5,6 @@ from dataclasses import fields
 
 import pytest
 
-import flagquantum.agent.service as agent_service_module
-from flagquantum.agent import AgentApplicationService
 from flagquantum.core._artifacts import ArtifactKind, ProgramArtifact
 from flagquantum.core.ir import CircuitIR, Instruction, IRSerializationError
 
@@ -156,39 +154,11 @@ def test_payload_and_envelope_identities_are_distinct() -> None:
         _artifact(kind=ArtifactKind.EXECUTABLE, payload={"blob": b"opaque"})
 
 
-def test_per_kind_payload_validation_and_capability_check_belong_to_consumers(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_per_kind_payload_validation_belongs_to_consumers() -> None:
     malformed = _artifact(payload={"kind": "not-circuit-ir"})
     assert ProgramArtifact.from_dict(malformed.to_dict()) == malformed
     with pytest.raises(IRSerializationError, match="not a FlagQuantum CircuitIR"):
-        AgentApplicationService().validate_program(malformed.to_dict())
-
-    required = _artifact(required_capabilities=("qpu", "statevector"))
-    manifest = {
-        "schema": "flagquantum_agent_capabilities_v1",
-        "version": "characterization",
-        "contracts": {"ir_validation": True},
-        "backends": {
-            "cpu": {
-                "name": "cpu",
-                "available": True,
-                "supports_statevector": True,
-                "devices": ["cpu"],
-            }
-        },
-    }
-    monkeypatch.setattr(
-        agent_service_module, "_agent_capabilities", lambda **_: manifest
-    )
-
-    assert (
-        AgentApplicationService().validate_program(required.to_dict())["valid"] is True
-    )
-    plan = AgentApplicationService().plan_execution(required.to_dict())
-    assert plan["executable"] is False
-    assert plan["blockers"][0]["code"] == "REQUIRED_CAPABILITY_UNAVAILABLE"
-    assert plan["blockers"][0]["context"]["missing_capabilities"] == ["qpu"]
+        CircuitIR.from_dict(malformed.payload)
 
 
 @pytest.mark.parametrize("proposed_field", ["provenance", "requirements", "extensions"])

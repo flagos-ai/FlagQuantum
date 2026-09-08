@@ -15,7 +15,7 @@ def test_team_ownership_policy_is_valid_and_complete() -> None:
         "compute",
         "remote",
         "ecosystem",
-        "agent",
+        "services",
         "docs",
     }
 
@@ -28,6 +28,7 @@ def test_domain_owner_resolution() -> None:
     )
     assert owner_for("flagquantum/compute/flagos.py", policy) == "compute"
     assert owner_for("flagquantum/ecosystem/extensions/sdk.py", policy) == "ecosystem"
+    assert owner_for("flagquantum/services/preflight.py", policy) == "services"
 
 
 def test_team_can_change_owned_and_shared_test_paths() -> None:

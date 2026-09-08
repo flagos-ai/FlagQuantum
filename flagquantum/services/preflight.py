@@ -1,9 +1,8 @@
-"""Fail-closed, machine-readable interfaces for agent-driven workloads.
+"""Fail-closed application-level preflight workflows.
 
-This module contains no LLM or orchestration dependencies.  It adapts the
-existing IR, planner, capability registry, and deployment contracts into
-stable-shaped reports that an external agent can consume without parsing
-exception strings.
+This module combines validation with planning or deployment preparation when
+that composition adds value. Simple compile, plan, and run calls belong to the
+stable FlagQuantum APIs and are deliberately not wrapped here.
 """
 
 from __future__ import annotations
@@ -38,7 +37,7 @@ class ValidationReport:
 
 
 @dataclass(frozen=True)
-class AgentExecutionPlan:
+class ExecutionPreflightReport:
     executable: bool
     selected_backend: str | None
     validation: ValidationReport
@@ -85,7 +84,7 @@ def _issue(
     )
 
 
-def validate(
+def _validate(
     circuit_or_ir: Any,
     *,
     backend: Any | None = None,
@@ -188,7 +187,7 @@ def capabilities(*, refresh: bool = False) -> dict[str, Any]:
         except (RuntimeError, ValueError, ImportError) as exc:
             backends[name] = {"name": name, "available": False, "reason": str(exc)}
     return {
-        "schema": "flagquantum_agent_capabilities_v1",
+        "schema": "flagquantum_service_capabilities_v1",
         "version": __version__,
         "backends": backends,
         "contracts": {
@@ -200,19 +199,21 @@ def capabilities(*, refresh: bool = False) -> dict[str, Any]:
     }
 
 
-def preflight_execution(circuit_or_ir: Any, **options: Any) -> AgentExecutionPlan:
+def preflight_execution(circuit_or_ir: Any, **options: Any) -> ExecutionPreflightReport:
     """Validate and plan a workload, converting all expected failures to blockers."""
 
     from ..runtime.planner import plan_runtime_selection
 
     requires_gradient = bool(options.get("require_gradients", False))
-    validation = validate(circuit_or_ir, requires_gradient=requires_gradient)
+    validation = _validate(circuit_or_ir, requires_gradient=requires_gradient)
     if not validation.valid:
-        return AgentExecutionPlan(False, None, validation, blockers=validation.errors)
+        return ExecutionPreflightReport(
+            False, None, validation, blockers=validation.errors
+        )
     try:
         native_plan = plan_runtime_selection(circuit_or_ir, **options)
         summary = native_plan.summary()
-        return AgentExecutionPlan(
+        return ExecutionPreflightReport(
             executable=True,
             selected_backend=str(summary["recommended_mode"]),
             validation=validation,
@@ -225,7 +226,7 @@ def preflight_execution(circuit_or_ir: Any, **options: Any) -> AgentExecutionPla
             suggestions=({"action": "change_backend_or_resource_limits"},),
             retryable=True,
         )
-        return AgentExecutionPlan(False, None, validation, blockers=(blocker,))
+        return ExecutionPreflightReport(False, None, validation, blockers=(blocker,))
 
 
 def preflight_deployment(
@@ -233,13 +234,13 @@ def preflight_deployment(
     *,
     backend: Any,
     shots: int = 1024,
-    name: str = "agent-workload",
+    name: str = "service-workload",
 ) -> DeploymentPreflightReport:
     """Build and identity-check a deployment package without submitting it."""
 
     from ..deployment import create_deployment_package, validate_deployment_package
 
-    validation = validate(circuit_or_ir, backend=backend)
+    validation = _validate(circuit_or_ir, backend=backend)
     backend_summary = {
         "provider": backend.provider,
         "name": backend.name,
@@ -275,12 +276,11 @@ def preflight_deployment(
 
 
 __all__ = [
-    "AgentExecutionPlan",
+    "ExecutionPreflightReport",
     "DeploymentPreflightReport",
     "ValidationIssue",
     "ValidationReport",
     "capabilities",
     "preflight_deployment",
     "preflight_execution",
-    "validate",
 ]

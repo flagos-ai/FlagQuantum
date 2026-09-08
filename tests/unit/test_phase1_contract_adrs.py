@@ -59,7 +59,7 @@ def test_program_artifact_v1_remains_the_only_envelope_authority():
     assert "`ProgramArtifact` v1 继续作为唯一 artifact envelope 权威" in text
     assert "任何 v2 都是同一契约" in text
     assert "不得并行创建第二套" in text
-    assert "当前唯一实际运行的生产消费链" in text
+    assert "本提案形成时，v1 唯一实际运行的生产消费链" in text
     for legacy in (
         "`SealedExecutableArtifact`",
         "`SealedCircuitIRRoundTrip`",

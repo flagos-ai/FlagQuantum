@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-NORTHBOUND_SERVICE_PATHS = (ROOT / "flagquantum" / "agent" / "service.py",)
+SERVICE_PATHS = (ROOT / "flagquantum" / "services" / "preflight.py",)
 
 
 def _imports(path: Path) -> tuple[str, ...]:
@@ -20,37 +20,34 @@ def _imports(path: Path) -> tuple[str, ...]:
     return tuple(imported)
 
 
-def test_northbound_code_has_no_protocol_llm_kernel_or_vendor_imports() -> None:
+def test_services_have_no_protocol_llm_kernel_or_vendor_imports() -> None:
     forbidden_roots = {
         "anthropic",
-        "backends",
         "braket",
+        "compute",
         "cuda",
-        "devices",
         "fastmcp",
         "langchain",
         "llama_index",
         "mcp",
         "openai",
-        "platforms",
         "qiskit_ibm_runtime",
         "quafu",
-        "runtime",
+        "remote",
         "simulation",
         "torch_fl",
         "transformers",
     }
     violations: list[str] = []
-    for path in NORTHBOUND_SERVICE_PATHS:
+    for path in SERVICE_PATHS:
         for module in _imports(path):
             if forbidden_roots.intersection(module.split(".")):
-                relative = path.relative_to(ROOT).as_posix()
-                violations.append(f"{relative}: {module}")
+                violations.append(f"{path.relative_to(ROOT).as_posix()}: {module}")
 
     assert violations == []
 
 
-def test_local_sdk_and_agent_service_run_when_mcp_sdk_is_unavailable() -> None:
+def test_local_sdk_and_services_run_without_mcp_sdk() -> None:
     script = r"""
 import importlib.abc
 import sys
@@ -64,13 +61,13 @@ class RejectMCP(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, RejectMCP())
 
 import flagquantum as fq
-from flagquantum.agent import AgentApplicationService
+from flagquantum.services import preflight_execution
 
 circuit = fq.Circuit(1).h(0)
-validation = AgentApplicationService().validate_program(circuit.to_ir().to_dict())
+preflight = preflight_execution(circuit)
 result = fq.run(circuit)
 
-assert validation["valid"] is True
+assert preflight.executable
 assert result.state is not None
 assert not any(name == "mcp" or name.startswith("mcp.") for name in sys.modules)
 assert not any(name == "fastmcp" or name.startswith("fastmcp.") for name in sys.modules)

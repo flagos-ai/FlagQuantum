@@ -20,7 +20,7 @@ codex/vnext-team-simulation           FlagQuantum-vNext-simulation  Simulation
 codex/vnext-team-platform-providers   FlagQuantum-vNext-platform    Compute
 codex/vnext-team-execution-providers  FlagQuantum-vNext-execution   Remote
 codex/vnext-team-ecosystem            FlagQuantum-vNext-ecosystem   Ecosystem
-codex/vnext-team-agent-services       FlagQuantum-vNext-agent       Agent Services
+codex/vnext-team-agent-services       FlagQuantum-vNext-agent       Application Services
 codex/vnext-team-docs                 FlagQuantum-vNext-docs        Docs / User Experience
 ```
 
@@ -171,7 +171,7 @@ Core契约
  -> Simulation与Platform
  -> Remote
  -> Ecosystem
- -> Agent Services
+ -> Application Services
 ```
 
 独立或仅含盘点/测试的提交可以调整顺序，但仍须逐个合并、逐个验证。一次合并通过前，

@@ -22,10 +22,10 @@
     "compute": {"may_depend_on": ["core", "vendor_runtime"]},
     "remote": {"may_depend_on": ["core", "deployment", "external_sdk"]},
     "ecosystem": {"may_depend_on": ["core", "public_api"]},
-    "agent": {
+    "services": {
       "may_depend_on": ["core", "compiler_public_api", "runtime_public_api"]
     },
-    "gateways": {"repository": "external", "may_depend_on": ["agent"]}
+    "gateways": {"repository": "external", "may_depend_on": ["services", "public_api"]}
   },
   "migration_tracks": [
     {
@@ -100,13 +100,13 @@
       "status": "in_progress"
     },
     {
-      "name": "agent_gateway_separation",
-      "owner": "agent-service-maintainers",
+      "name": "service_gateway_separation",
+      "owner": "application-service-maintainers",
       "target_milestone": "vnext-phase-4",
-      "current_authority": ["flagquantum/agent"],
-      "target_authority": "protocol-neutral Agent package in FlagQuantum; gateways in external Compute Service",
-      "compatibility_adapter": "versioned service contract",
-      "completion_evidence": "local SDK and Agent Services pass with the MCP SDK absent, and cross-repository contract tests pass",
+      "current_authority": ["flagquantum/services"],
+      "target_authority": "focused application workflows in FlagQuantum; protocol gateways at the system edge",
+      "compatibility_adapter": "none",
+      "completion_evidence": "local SDK and Services pass with the MCP SDK absent; protocol adapters call public APIs or composite services",
       "retirement_condition": "the main repository has no production MCP transport dependency",
       "status": "in_progress"
     }
@@ -118,6 +118,6 @@
     "multi_qpu",
     "quantum_network",
     "domestic_accelerators",
-    "agent_protocols"
+    "protocol_adapters"
   ]
 }

@@ -15,7 +15,7 @@ to domain code and adapters; numerical code never reaches back into Runtime.
 | Ecosystem | `flagquantum.ecosystem` | Framework conversion, conformance, extension SDK |
 | Applications | `flagquantum.algorithms` | Reusable quantum and hybrid algorithms |
 | Evaluation | `flagquantum.benchmarking` | Reproducible correctness and performance workloads |
-| Agent services | `flagquantum.agent` | Deterministic services used by MCP and agents |
+| Application services | `flagquantum.services` | Reusable capability discovery and composite preflight workflows |
 
 `flagquantum.backends` is a thin, stable expert API for backend-native entry
 points. Implementations live in `flagquantum.runtime.executors`; directly
@@ -52,8 +52,9 @@ The important boundaries are:
   task systems. Vendor objects stop at their owning boundary.
 - Ecosystem adapters translate framework objects and delegate execution through
   maintained FlagQuantum APIs.
-- Agent and MCP layers call deterministic services; they do not bypass Compiler or
-  Runtime contracts.
+- Application services compose stable APIs only when a multi-step workflow adds
+  value. MCP, REST, CLI, and notebook adapters call stable APIs directly for simple
+  operations and use Services for shared composite workflows.
 
 Cross-boundary data uses explicit contracts. Do not pass internal scheduler,
 provider SDK, proof, or cache objects through the public API.

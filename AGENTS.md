@@ -93,9 +93,9 @@ requirements.
    authoritative responsibility. Compiler transforms programs; Runtime
    organizes execution; Simulation performs numerical computation; Compute
    adapts directly controlled resources; Remote adapts external task systems;
-   Ecosystem adapters translate external objects;
-   Agent and MCP layers invoke deterministic services. Cross-layer shortcuts
-   are prohibited.
+   Ecosystem adapters translate external objects. Application services compose
+   stable APIs only when a reusable multi-step workflow adds value; MCP, REST,
+   CLI, and notebook adapters remain thin. Cross-layer shortcuts are prohibited.
 
 5. **Keep core semantics infrastructure- and vendor-neutral.** Core domain
    models, IR, capability vocabulary, and validation rules must not depend on
