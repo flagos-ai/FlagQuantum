@@ -53,6 +53,8 @@ def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() ->
     unread.conditional("x", 0, classical_bit=0)
     with pytest.raises(RuntimeError, match="read before measurement"):
         fq.experimental.dynamic.run_dynamic(unread, shots=1, seed=1)
+    with pytest.raises(fqe.CapabilityError, match="run_dynamic"):
+        fq.run(unread)
 
     theta = torch.tensor(0.2, requires_grad=True)
     differentiable = DynamicCircuit(1).rx(0, theta=theta)

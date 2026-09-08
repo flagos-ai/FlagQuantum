@@ -82,7 +82,7 @@ class DynamicCircuit(Circuit):
     def state(self, *, refresh: bool = False) -> torch.Tensor:
         if any(
             instruction.metadata.get("is_dynamic")
-            or instruction.metadata.get("condition")
+            or instruction.metadata.get("conditions")
             for instruction in self._instructions
         ):
             raise CapabilityError(

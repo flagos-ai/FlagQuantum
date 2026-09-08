@@ -81,6 +81,8 @@ def test_dynamic_builder_uses_stable_error_categories() -> None:
         fqd.DynamicCircuit(1).conditional("x", 0, conditions={0: 2})
     with pytest.raises(fqe.CapabilityError):
         fqd.DynamicCircuit(1).measure(0).state()
+    with pytest.raises(fqe.CapabilityError):
+        fqd.DynamicCircuit(1).conditional("x", 0, classical_bit=0).state()
 
 
 def test_native_dynamic_result_remains_experimental() -> None:

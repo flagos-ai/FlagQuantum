@@ -11,9 +11,6 @@ def instruction_conditions(
         return tuple(
             (int(bit), int(value)) for bit, value in instruction.metadata["conditions"]
         )
-    legacy = instruction.metadata.get("condition")
-    if legacy:
-        return ((int(legacy["bit"]), int(legacy["equals"])),)
     return ()
 
 
