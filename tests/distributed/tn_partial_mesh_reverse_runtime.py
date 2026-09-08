@@ -6,9 +6,11 @@ import os
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.backends.tensor_network import (
-    DistributedTNMeshGroupCache,
+from flagquantum.runtime.backends.tensor_network.distributed_dag import (
     DistributedTNValueLayout,
+)
+from flagquantum.runtime.backends.tensor_network.partial_mesh import (
+    DistributedTNMeshGroupCache,
     execute_partial_mesh_reverse_pair,
     execute_partial_mesh_tn_redistribution,
     partition_tn_tensor_for_partial_mesh,

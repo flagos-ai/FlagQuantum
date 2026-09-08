@@ -7,15 +7,13 @@ import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.backends.tensor_network as fqbtn
 import flagquantum.runtime.backends.tensor_network.execution as fqxd
+import flagquantum.runtime.backends.tensor_network.plan_cache as distributed_plan_cache
 import flagquantum.runtime.planner as fqxp
 import flagquantum.simulation.tensor_network.entrypoints as tensor_execution
 import flagquantum.simulation.tensor_network.observables as tensor_observables
 from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.runtime.backends.tensor_network import (
+from flagquantum.runtime.backends.tensor_network.joint_planning import (
     DistributedTNWorkingSetPolicy,
-)
-from flagquantum.runtime.backends.tensor_network import (
-    plan_cache as distributed_plan_cache,
 )
 from flagquantum.runtime.planner import (
     build_tn_working_set_calibration,

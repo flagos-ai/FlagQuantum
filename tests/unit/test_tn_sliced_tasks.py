@@ -7,10 +7,12 @@ from collections import Counter
 import pytest
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network import (
+from flagquantum.runtime.backends.tensor_network.sliced_reverse import (
     estimate_sliced_tn_full_tape_bytes,
-    plan_distributed_tn_slice_tasks,
     plan_sliced_tn_checkpoint_memory,
+)
+from flagquantum.runtime.backends.tensor_network.sliced_tasks import (
+    plan_distributed_tn_slice_tasks,
 )
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network_expectation,

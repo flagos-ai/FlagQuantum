@@ -4,6 +4,9 @@ This directory owns contraction DAGs, slice and shard ownership, checkpoint and
 rematerialization plans, distributed communication, optimizer lifecycle, and
 execution evidence for tensor-network backends.
 
+Import from the module that owns the behavior; the package `__init__.py` does
+not re-export a second, flattened API.
+
 It does not own pair-contraction, pair-pullback, high-rank fallback, or
 compensated-accumulation mathematics. Those numerical primitives live in
 `flagquantum/simulation/tensor_network/stages.py`; complex real/imaginary kernels live

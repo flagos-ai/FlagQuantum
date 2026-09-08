@@ -1,6 +1,8 @@
 import pytest
 
-from flagquantum.runtime.backends.tensor_network import plan_tn_parameter_owners
+from flagquantum.runtime.backends.tensor_network.distributed_optimizer import (
+    plan_tn_parameter_owners,
+)
 
 
 def test_tn_parameter_owner_plan_is_balanced_and_complete():

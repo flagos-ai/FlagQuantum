@@ -10,16 +10,26 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network import (
-    DistributedTNMeshGroupCache,
-    DistributedTNRematerializationProvider,
-    execute_dynamic_tn_reverse_segment,
-    execute_multi_axis_tn_target_cone,
+from flagquantum.runtime.backends.tensor_network.distributed_dag import (
     plan_distributed_tn_contraction_dag,
+)
+from flagquantum.runtime.backends.tensor_network.dynamic_reverse import (
+    execute_dynamic_tn_reverse_segment,
     plan_dynamic_tn_reverse_segment,
-    plan_explicit_tn_reverse_dag,
+)
+from flagquantum.runtime.backends.tensor_network.multi_axis_sharding import (
+    execute_multi_axis_tn_target_cone,
     plan_multi_axis_tn_peak_sharding,
+)
+from flagquantum.runtime.backends.tensor_network.partial_mesh import (
+    DistributedTNMeshGroupCache,
+)
+from flagquantum.runtime.backends.tensor_network.rematerialization import (
+    DistributedTNRematerializationProvider,
     plan_partial_mesh_rematerialization,
+)
+from flagquantum.runtime.backends.tensor_network.reverse_dag import (
+    plan_explicit_tn_reverse_dag,
 )
 
 

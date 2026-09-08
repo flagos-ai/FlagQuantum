@@ -25,9 +25,11 @@ from flagquantum.runtime.backends.mps.distributed_state import (
     DistributedShardPlan,
     ShardedMPSState,
 )
-from flagquantum.runtime.backends.tensor_network import (
-    DistributedTensorNetworkState,
+from flagquantum.runtime.backends.tensor_network.sliced_tasks import (
     DistributedTNSliceTask,
+)
+from flagquantum.runtime.backends.tensor_network.state import (
+    DistributedTensorNetworkState,
 )
 from flagquantum.runtime.configuration import get_backend, set_backend
 from flagquantum.runtime.distributed import (

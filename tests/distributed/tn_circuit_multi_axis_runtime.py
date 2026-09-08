@@ -12,9 +12,11 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network import (
-    execute_multi_axis_tn_target_cone,
+from flagquantum.runtime.backends.tensor_network.distributed_dag import (
     plan_distributed_tn_contraction_dag,
+)
+from flagquantum.runtime.backends.tensor_network.multi_axis_sharding import (
+    execute_multi_axis_tn_target_cone,
     plan_multi_axis_tn_peak_sharding,
 )
 from flagquantum.simulation.tensor_network.entrypoints import (

@@ -17,12 +17,18 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network import (
-    estimate_sliced_tn_full_tape_bytes,
-    execute_distributed_sliced_tn_explicit_reverse,
+from flagquantum.runtime.backends.tensor_network.distributed_optimizer import (
     execute_rank_owned_tn_sgd_step,
-    plan_distributed_tn_slice_tasks,
+)
+from flagquantum.runtime.backends.tensor_network.distributed_sliced_reverse import (
+    execute_distributed_sliced_tn_explicit_reverse,
+)
+from flagquantum.runtime.backends.tensor_network.sliced_reverse import (
+    estimate_sliced_tn_full_tape_bytes,
     plan_sliced_tn_checkpoint_memory,
+)
+from flagquantum.runtime.backends.tensor_network.sliced_tasks import (
+    plan_distributed_tn_slice_tasks,
 )
 from flagquantum.simulation.tensor_network.contraction import (
     _canonicalize_unit_extent_nodes,

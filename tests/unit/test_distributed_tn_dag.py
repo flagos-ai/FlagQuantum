@@ -8,57 +8,77 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.backends.tensor_network import (
+import flagquantum.runtime.backends.tensor_network.distributed_dag as distributed_dag
+import flagquantum.runtime.backends.tensor_network.distributed_execution as distributed_execution
+from flagquantum.runtime.backends.tensor_network.distributed_dag import (
     DistributedTNContractionDAG,
     DistributedTNContractionRecord,
     DistributedTNShard,
     DistributedTNValueLayout,
+    plan_distributed_tn_contraction_dag,
+    shard_distributed_tn_value_layout,
+    with_sharded_tn_input,
+    with_sharded_tn_intermediate,
+)
+from flagquantum.runtime.backends.tensor_network.distributed_execution import (
+    execute_distributed_tn_contraction_dag,
+    execute_sharded_tn_dag_operation,
+    prepare_sharded_tn_dag_operation,
+    required_local_tn_inputs,
+)
+from flagquantum.runtime.backends.tensor_network.dynamic_reverse import (
+    plan_dynamic_tn_reverse_segment,
+)
+from flagquantum.runtime.backends.tensor_network.joint_planning import (
     DistributedTNWorkingSetPolicy,
-    assemble_tn_redistribution_shard,
+    plan_joint_distributed_tn_execution,
+)
+from flagquantum.runtime.backends.tensor_network.memory_evidence import (
     build_distributed_tn_memory_evidence,
-    combine_contracted_shards,
-    combine_output_shards,
+    require_distributed_tn_memory_evidence,
+)
+from flagquantum.runtime.backends.tensor_network.multi_axis_sharding import (
+    partition_tn_tensor_for_multi_axis_shard,
+    plan_multi_axis_tn_layout,
+    plan_multi_axis_tn_peak_sharding,
+)
+from flagquantum.runtime.backends.tensor_network.partial_mesh import (
+    partition_tn_tensor_for_partial_mesh,
+    plan_partial_mesh_tn_layout,
+    plan_partial_mesh_tn_redistribution,
+)
+from flagquantum.runtime.backends.tensor_network.redistribution import (
+    assemble_tn_redistribution_shard,
+    execute_distributed_tn_redistribution,
+    pack_tn_redistribution_block,
+    plan_distributed_tn_redistribution,
+    plan_multi_axis_tn_redistribution,
+)
+from flagquantum.runtime.backends.tensor_network.reverse_dag import (
     compile_tn_forward_schedule,
     compile_tn_reverse_schedule,
-    contract_pair_for_contracted_shard,
-    contract_pair_for_output_shard,
-    distributed_dag,
-    distributed_execution,
     execute_checkpointed_tn_reverse_dag,
     execute_compiled_tn_forward_with_tape,
     execute_compiled_tn_reverse_dag,
-    execute_distributed_tn_contraction_dag,
-    execute_distributed_tn_redistribution,
     execute_explicit_tn_reverse_dag,
-    execute_pre_sharded_pair_contraction,
-    execute_sharded_tn_dag_operation,
-    execute_sliced_tn_explicit_reverse,
     execute_tn_forward_with_checkpoint_tape,
     execute_tn_forward_with_tape,
-    pack_tn_redistribution_block,
-    partition_tn_tensor_for_multi_axis_shard,
-    partition_tn_tensor_for_partial_mesh,
-    partition_tn_tensor_for_shard,
-    plan_distributed_tn_contraction_dag,
-    plan_distributed_tn_redistribution,
-    plan_dynamic_tn_reverse_segment,
     plan_explicit_tn_reverse_dag,
-    plan_joint_distributed_tn_execution,
-    plan_multi_axis_tn_layout,
-    plan_multi_axis_tn_peak_sharding,
-    plan_multi_axis_tn_redistribution,
-    plan_partial_mesh_tn_layout,
-    plan_partial_mesh_tn_redistribution,
     plan_tn_adjoint_layouts,
     plan_tn_checkpoints,
-    prepare_sharded_tn_dag_operation,
-    require_distributed_tn_memory_evidence,
-    required_local_tn_inputs,
-    select_sharded_pair_mode,
-    shard_distributed_tn_value_layout,
     validate_tn_adjoint_tensors,
-    with_sharded_tn_input,
-    with_sharded_tn_intermediate,
+)
+from flagquantum.runtime.backends.tensor_network.sharded_kernels import (
+    combine_contracted_shards,
+    combine_output_shards,
+    contract_pair_for_contracted_shard,
+    contract_pair_for_output_shard,
+    execute_pre_sharded_pair_contraction,
+    partition_tn_tensor_for_shard,
+    select_sharded_pair_mode,
+)
+from flagquantum.runtime.backends.tensor_network.sliced_reverse import (
+    execute_sliced_tn_explicit_reverse,
 )
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
