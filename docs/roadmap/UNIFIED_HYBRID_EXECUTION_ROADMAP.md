@@ -80,8 +80,7 @@ statevector/MPS/TN   Docker/Slurm/Kubernetes   Quafu/Braket/others
 - 已有 Statevector、MPS、Tensor Network、Density Matrix 及分布式执行基础；
 - 已有 `CloudBackendProfile`、`DeploymentPackage`、`ProviderTaskHandle`、
   `DeploymentResult` 和部署产物身份链；
-- 已有本地模拟、Quafu、OriginQ、腾讯量子、天衍、国盾、Field Quantum、Amazon
-  Braket 等 Provider 实现或适配路径；
+- 已有本地模拟、Quafu 和 Amazon Braket Provider 实现或适配路径；
 - 已有 QASM/QCIS 导出、拓扑路由、动态线路实验路径和 Quafu 校准转换；
 - API 保护、能力成熟度、测试分层和 fail-closed 原则已经建立。
 

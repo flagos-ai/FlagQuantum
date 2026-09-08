@@ -1,20 +1,12 @@
 """Tests for quantum cloud provider adapters."""
 
-import pytest
-
 import flagquantum as fq
-import flagquantum.deployment as deployment
 import flagquantum.deployment as fqd
 from flagquantum.deployment import (
     CloudBackendProfile,
-    FieldQuantumProvider,
-    GuodunProvider,
     HttpQuantumProvider,
-    OriginQProvider,
     ProviderCredentials,
     QuafuProvider,
-    TencentQuantumProvider,
-    TianyanProvider,
 )
 
 
@@ -26,16 +18,6 @@ class FakeTransport:
 
     def post_json(self, url, payload, headers, timeout):
         self.posts.append((url, payload, headers, timeout))
-        if url.endswith("/task/submit"):
-            return {"tasks": [{"id": "tx-1"}]}
-        if url.endswith("/task/detail"):
-            return {
-                "task": {"state": "completed", "result": {"counts": {"00": 3, "11": 5}}}
-            }
-        if url.endswith("/task/run"):
-            return {"task_id": "fq-1", "status": "submitted"}
-        if "temporary/save" in url:
-            return {"code": 0, "data": {"query_ids": ["cq-1"]}}
         return {"task_id": "job-1", "status": "submitted"}
 
     def get_json(self, url, headers, timeout):
@@ -54,8 +36,6 @@ class FakeTransport:
             return {"status": "Finished"}
         if url.endswith("/result"):
             return {"counts": {"00": 3, "11": 5}}
-        if "quantumComputer/list" in url:
-            return {"code": 0, "data": [{"machineName": "cqpu", "qubits": 8}]}
         if "/task/status/" in url:
             return {"status": "finished"}
         if "/task/result/" in url:
@@ -286,122 +266,3 @@ def test_quafu_provider_submits_sealed_physical_qasm_without_compile():
     assert headers == {"token": "secret"}
     assert handle.payload["compile"] is False
     assert len(handle.payload["physical_qasm_sha256"]) == 64
-
-
-def test_tencent_provider_uses_real_task_contract():
-    transport = FakeTransport()
-    provider = TencentQuantumProvider(
-        base_url="https://tencent.test/cloud/quk", token="secret", transport=transport
-    )
-    package = _package("tencent")
-
-    result = provider.run(package)
-
-    submit_url, submit_payload, submit_headers, _ = transport.posts[0]
-    assert submit_url == "https://tencent.test/cloud/quk/task/submit"
-    assert submit_payload["device"] == "chip?o=2"
-    assert submit_payload["lang"] == "OPENQASM"
-    assert submit_headers["Authorization"] == "Bearer secret"
-    assert submit_headers["user-agent"] == "Mozilla/5.0"
-    assert result.counts == {"00": 3, "11": 5}
-    _assert_identity_chain(package, result)
-
-
-def test_fieldquantum_provider_uses_sample_mode_contract():
-    transport = FakeTransport()
-    provider = FieldQuantumProvider(base_url="https://field.test", transport=transport)
-    package = _package("fieldquantum")
-
-    result = provider.run(package)
-
-    assert transport.posts[0][0] == "https://field.test/task/run"
-    assert transport.posts[0][1]["mode"] == "sample"
-    assert transport.gets[0][0] == "https://field.test/task/status/fq-1"
-    assert transport.gets[1][0] == "https://field.test/task/result/fq-1"
-    assert result.counts == {"00": 3, "11": 5}
-    _assert_identity_chain(package, result)
-
-
-def test_cqlib_provider_logs_in_discovers_and_requires_qcis_for_submit():
-    transport = FakeTransport()
-    provider = TianyanProvider(token="open-id", transport=transport)
-
-    backends = provider.discover_backends(2)
-
-    assert transport.forms[0][0] == "https://qc.zdxlz.com/qccp-auth/oauth2/sdk/opnId"
-    assert transport.forms[0][1]["grant_type"] == "openId"
-    assert backends[0].supports_qcis is True
-    assert backends[0].supports_openqasm is False
-
-    package = _package("tianyan")
-    with pytest.raises(ValueError, match="QCIS-native"):
-        provider.submit(package)
-
-
-def test_cqlib_provider_submits_qcis_and_extracts_matrix_counts():
-    class CqlibTransport(FakeTransport):
-        def post_json(self, url, payload, headers, timeout):
-            self.posts.append((url, payload, headers, timeout))
-            if "temporary/save" in url:
-                return {"code": 0, "data": {"query_ids": ["cq-1"]}}
-            if "result/find" in url:
-                return {
-                    "code": 0,
-                    "data": {
-                        "experimentResultModelList": [
-                            {"resultStatus": [["Q0", "Q1"], [0, 0], [1, 1], [1, 1]]}
-                        ]
-                    },
-                }
-            return super().post_json(url, payload, headers, timeout)
-
-    transport = CqlibTransport()
-    provider = GuodunProvider(token="open-id", transport=transport)
-    backend = provider.discover_backends(2)[0]
-    package = fqd.create_deployment_package(
-        fq.Circuit(2).h(0).cx(0, 1),
-        backend=backend,
-        shots=3,
-    )
-
-    result = provider.run(package)
-
-    submit_payload = transport.posts[0][1]
-    assert submit_payload["languageCode"] == "qcis"
-    assert submit_payload["inputCode"][0].startswith("Y2M Q0")
-    assert "CZ Q0 Q1" in submit_payload["inputCode"][0]
-    assert transport.posts[0][2]["basicToken"] == "access-1"
-    assert result.counts == {"00": 1, "11": 2}
-
-
-def test_originq_provider_is_sdk_based_not_fake_http():
-    provider = OriginQProvider()
-    package = _package("originq")
-
-    with pytest.raises(NotImplementedError, match="sdk adapter"):
-        provider.submit(package)
-
-
-def test_named_quantum_cloud_provider_apis_exist():
-    providers = [
-        QuafuProvider(base_url="https://example.test", transport=FakeTransport()),
-        OriginQProvider(),
-        TencentQuantumProvider(
-            base_url="https://example.test", transport=FakeTransport()
-        ),
-        TianyanProvider(token="open-id", transport=FakeTransport()),
-        GuodunProvider(token="open-id", transport=FakeTransport()),
-        FieldQuantumProvider(
-            base_url="https://example.test", transport=FakeTransport()
-        ),
-    ]
-
-    assert [provider.provider for provider in providers] == [
-        "quafu",
-        "originq",
-        "tencent",
-        "tianyan",
-        "guodun",
-        "fieldquantum",
-    ]
-    assert deployment.QuafuProvider is QuafuProvider

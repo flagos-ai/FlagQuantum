@@ -4,15 +4,11 @@ import flagquantum.deployment as deployment
 from flagquantum.deployment import providers
 from flagquantum.providers.execution import (
     braket,
-    cqlib,
-    fieldquantum,
     http,
     local,
-    originq,
     quafu,
     quafu_calibration,
     result_parsing,
-    tencent,
 )
 
 pytestmark = pytest.mark.unit
@@ -57,23 +53,6 @@ def test_deployment_preserves_quafu_calibration_object_identity():
 
 def test_deployment_preserves_local_provider_object_identity():
     assert deployment.LocalSimulatorProvider is local.LocalSimulatorProvider
-
-
-def test_provider_aggregator_preserves_originq_object_identity():
-    assert providers.OriginQProvider is originq.OriginQProvider
-
-
-def test_provider_aggregator_preserves_tencent_object_identity():
-    assert providers.TencentQuantumProvider is tencent.TencentQuantumProvider
-
-
-def test_provider_aggregator_preserves_fieldquantum_object_identity():
-    assert providers.FieldQuantumProvider is fieldquantum.FieldQuantumProvider
-
-
-@pytest.mark.parametrize("name", ("TianyanProvider", "GuodunProvider"))
-def test_provider_aggregator_preserves_cqlib_object_identity(name):
-    assert getattr(providers, name) is getattr(cqlib, name)
 
 
 @pytest.mark.parametrize(
