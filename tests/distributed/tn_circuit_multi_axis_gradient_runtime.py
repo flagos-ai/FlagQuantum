@@ -9,6 +9,10 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+from flagquantum.runtime.backends.tensor_network.adjoint_layout import (
+    plan_tn_adjoint_layouts,
+    validate_tn_adjoint_tensors,
+)
 from flagquantum.runtime.backends.tensor_network.distributed_dag import (
     plan_distributed_tn_contraction_dag,
 )
@@ -38,8 +42,6 @@ from flagquantum.runtime.backends.tensor_network.reverse_dag import (
     execute_explicit_tn_reverse_dag,
     execute_tn_forward_with_tape,
     plan_explicit_tn_reverse_dag,
-    plan_tn_adjoint_layouts,
-    validate_tn_adjoint_tensors,
 )
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network_expectation,

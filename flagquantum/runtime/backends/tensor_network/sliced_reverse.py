@@ -21,19 +21,23 @@ from ....simulation.tensor_network.models import (
 )
 from ....simulation.tensor_network.path_search import _label_dims
 from ....simulation.tensor_network.stages import kahan_add
+from .checkpointing import (
+    execute_checkpointed_tn_reverse_dag,
+    execute_tn_forward_with_checkpoint_tape,
+    plan_tn_checkpoints,
+)
+from .compiled_execution import (
+    execute_compiled_tn_forward_with_tape,
+    execute_compiled_tn_reverse_dag,
+)
 from .distributed_dag import plan_distributed_tn_contraction_dag
 from .joint_planning import (
     _predict_rematerialization_peak,
     _predict_reverse_cotangent_peak,
 )
 from .reverse_dag import (
-    execute_checkpointed_tn_reverse_dag,
-    execute_compiled_tn_forward_with_tape,
-    execute_compiled_tn_reverse_dag,
     execute_explicit_tn_reverse_dag,
-    execute_tn_forward_with_checkpoint_tape,
     plan_explicit_tn_reverse_dag,
-    plan_tn_checkpoints,
 )
 
 

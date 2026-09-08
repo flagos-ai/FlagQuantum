@@ -12,12 +12,19 @@ compensated-accumulation mathematics. Those numerical primitives live in
 `flagquantum/simulation/tensor_network/stages.py`; complex real/imaginary kernels live
 in `flagquantum/simulation/real_imag_kernels.py`.
 
-For a reverse-mode change, start with `reverse_dag.py` for DAG/tape execution or
-`sliced_reverse.py` for slice orchestration. `distributed_sliced_reverse.py`
-adds process-group reduction and measured communication. Keep task ownership,
-checkpoint selection, cotangent lifecycle, batching schedules, collectives,
-and evidence here. Do not move them into Simulation merely because they
-manipulate tensors.
+For a reverse-mode change, start with the file that owns the behavior:
+
+- `reverse_dag.py` owns the reverse DAG, full tape, and direct reverse pass.
+- `checkpointing.py` owns checkpoint selection and rematerialized execution.
+- `compiled_execution.py` owns dependency-stage batching and its schedule cache.
+- `adjoint_layout.py` owns rank-local cotangent layout planning and validation.
+- `sliced_reverse.py` owns local slice orchestration;
+  `distributed_sliced_reverse.py` adds process-group reduction and measured
+  communication.
+
+Keep task ownership, checkpoint selection, cotangent lifecycle, batching
+schedules, collectives, and evidence here. Do not move them into Simulation
+merely because they manipulate tensors.
 
 For end-to-end distributed tensor-network execution, start with `execution.py`.
 It owns slice planning, rank-local execution, and reduction; `state.py` owns the
