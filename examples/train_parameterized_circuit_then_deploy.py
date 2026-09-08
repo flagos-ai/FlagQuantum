@@ -16,6 +16,7 @@ import torch
 from flagquantum.algorithms import Hamiltonian, pauli_term, run_vqe
 from flagquantum.compiler import CouplingMap
 from flagquantum.deployment import hamiltonian_expectation_from_counts
+from flagquantum.testing import InMemoryRemoteTarget
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -68,7 +69,7 @@ def main() -> None:
         {parameter: value for parameter, value in zip(PARAMETERS, optimized_parameters)}
     )
 
-    provider = fqd.LocalSimulatorProvider()
+    provider = InMemoryRemoteTarget()
     backend = fqd.CloudBackendProfile(
         provider="local",
         name="line2",

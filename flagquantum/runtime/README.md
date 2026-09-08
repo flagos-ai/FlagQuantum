@@ -7,7 +7,7 @@ assembly.
 
 Runtime does not implement compiler transformations, numerical simulation
 kernels, vendor SDK adapters, or long-lived service scheduling. Those belong to
-Compiler, Simulation, Providers, and external services respectively.
+Compiler, Simulation, Compute, and Remote respectively.
 
 ## Local CPU path
 

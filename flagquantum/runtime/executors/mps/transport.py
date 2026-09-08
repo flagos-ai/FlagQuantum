@@ -10,7 +10,7 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
-from ....providers.platform import get_platform_runtime
+from ....compute import get_platform_runtime
 
 
 def _p2p_timeout() -> datetime.timedelta:

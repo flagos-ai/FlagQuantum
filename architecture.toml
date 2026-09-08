@@ -14,7 +14,8 @@ allowed_top_level_directories = [
     "ecosystem",
     "experimental",
     "noise",
-    "providers",
+    "compute",
+    "remote",
     "runtime",
     "simulation",
     "testing",
@@ -22,20 +23,20 @@ allowed_top_level_directories = [
 
 [boundaries]
 core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
-compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simulation", "providers"]
+compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simulation", "compute", "remote"]
 noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
 trajectory_runtime_forbidden = ["circuit", "simulation", "backends", "deployment"]
-simulation_forbidden = ["runtime", "providers", "deployment"]
+simulation_forbidden = ["runtime", "compute", "remote", "deployment"]
 executor_policy_forbidden = ["audit", "release_policy"]
 default_module_line_ceiling = 1250
 root_init_line_ceiling = 140
 
 [accelerator_boundaries]
 torch_fl_import_allowed = [
-    "flagquantum/providers/platform/flagos.py",
+    "flagquantum/compute/flagos.py",
 ]
 direct_cuda_allowed = [
-    "flagquantum/providers/platform/pytorch.py",
+    "flagquantum/compute/pytorch.py",
 ]
 
 [interop_boundaries]
@@ -59,7 +60,7 @@ agent_forbidden = [
 [long_horizon_boundaries]
 # Runtime may invoke Compiler only at explicit program-to-plan composition or
 # maintained raw-program compatibility boundaries. Backend execution, distributed
-# lifecycle, Simulation, and Providers must consume compiled IR or plans instead.
+# lifecycle, Simulation, Compute, and Remote must consume compiled IR or plans instead.
 # New imports remain blocked; do not invent a duplicate Core contract merely to
 # make this list shorter.
 runtime_compiler_import_allowed = [

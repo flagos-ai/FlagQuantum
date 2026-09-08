@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass, replace
 from typing import Any
 
-from ....providers.platform import get_platform_runtime
+from ....compute import get_platform_runtime
 
 
 @dataclass(frozen=True)

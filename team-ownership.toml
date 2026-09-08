@@ -63,21 +63,22 @@ branch = "codex/vnext-team-simulation"
 worktree = "FlagQuantum-vNext-simulation"
 owns = [
     "flagquantum/simulation/**",
+    "flagquantum/runtime/executors/**",
 ]
 
-[teams.platform]
+[teams.compute]
 branch = "codex/vnext-team-platform-providers"
 worktree = "FlagQuantum-vNext-platform"
 owns = [
-    "flagquantum/providers/platform/**",
+    "flagquantum/compute/**",
     "flagquantum/devices/**",
 ]
 
-[teams.execution]
+[teams.remote]
 branch = "codex/vnext-team-execution-providers"
 worktree = "FlagQuantum-vNext-execution"
 owns = [
-    "flagquantum/providers/execution/**",
+    "flagquantum/remote/**",
     "flagquantum/deployment/**",
     "flagquantum/runtime/target_execution.py",
 ]

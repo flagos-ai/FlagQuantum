@@ -10,21 +10,21 @@ to domain code and adapters; numerical code never reaches back into Runtime.
 | Compiler | `flagquantum.compiler` | Program optimization, scheduling, routing, lowering |
 | Runtime | `flagquantum.runtime` | Planning, execution lifecycle, training, evidence |
 | Simulation | `flagquantum.simulation` | Statevector, MPS, tensor-network, noise numerics |
-| Execution providers | `flagquantum.providers.execution` | QPU and remote-service adapters |
-| Platform providers | `flagquantum.providers.platform` | CPU, CUDA, domestic accelerator, and FlagOS facts |
+| Remote | `flagquantum.remote` | External control-plane adapters for QPUs and compute services |
+| Compute | `flagquantum.compute` | Direct CPU, CUDA, domestic accelerator, and FlagOS access |
 | Ecosystem | `flagquantum.ecosystem` | Framework conversion, conformance, extension SDK |
 | Applications | `flagquantum.algorithms` | Reusable quantum and hybrid algorithms |
 | Evaluation | `flagquantum.benchmarking` | Reproducible correctness and performance workloads |
 | Agent services | `flagquantum.agent` | Deterministic services used by MCP and agents |
 
 `flagquantum.backends` is a thin, stable expert API for backend-native entry
-points. Implementations live in `flagquantum.runtime.executors`; external systems
-live in `flagquantum.providers`. These packages have similar names but do not
-share ownership.
+points. Implementations live in `flagquantum.runtime.executors`; directly
+controlled devices live in `flagquantum.compute`; external task systems live in
+`flagquantum.remote`.
 
 `flagquantum.deployment` remains the maintained user API for sealed deployment
-packages and provider-neutral submission. Its concrete service adapters live in
-`providers.execution`.
+packages and target-neutral submission. Its concrete service adapters live in
+`flagquantum.remote`.
 
 ## Dependency direction
 
@@ -35,21 +35,21 @@ User API
   -> Compiler
   -> Runtime planner
   -> Runtime executor
-  -> Simulation or execution provider
+  -> Simulation + Compute, or Remote
   -> Result and evidence
 ```
 
 The important boundaries are:
 
-- Core imports no Runtime, Simulation, Provider, vendor SDK, or framework code.
+- Core imports no Runtime, Simulation, Compute, Remote, vendor SDK, or framework code.
 - Compiler transforms programs; it does not execute them or select devices.
 - Runtime chooses resources and owns execution lifecycle; it does not implement
   numerical kernels.
 - Simulation receives explicit programs, tensors, dtypes, and algorithm options;
-  it does not inspect Runtime plans, process groups, providers, or environment
+  it does not inspect Runtime plans, process groups, remote adapters, or environment
   policy.
-- Providers translate external systems and platform facts; vendor objects stop at
-  the provider boundary.
+- Compute isolates directly controlled vendor runtimes; Remote translates external
+  task systems. Vendor objects stop at their owning boundary.
 - Ecosystem adapters translate framework objects and delegate execution through
   maintained FlagQuantum APIs.
 - Agent and MCP layers call deterministic services; they do not bypass Compiler or

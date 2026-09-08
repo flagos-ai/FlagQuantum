@@ -11,13 +11,15 @@ fq.Circuit / fq.Module
         |
         v
 Core IR -> Compiler -> Runtime -> Simulation -> result
-                         |
-                         +-> Execution Provider -> QPU or remote service
+                         |  |
+                         |  +-> Compute (direct CPU/GPU/NPU)
+                         +----> Remote (QPU, GPU/HPC service, or cloud platform)
 ```
 
 Core supplies the shared vocabulary throughout this path; it is not an
 orchestration service. Runtime chooses and organizes execution. Simulation owns
-numerical methods. Providers isolate external systems.
+numerical methods. Compute isolates resources controlled by the current process;
+Remote isolates external task control planes.
 
 ## Source domains
 
@@ -27,7 +29,8 @@ numerical methods. Providers isolate external systems.
 | `compiler/` | validation, optimization, lowering, routing, code generation | device lifecycle, execution, simulation | `compiler/README.md` |
 | `runtime/` | planning, execution lifecycle, backend selection, distributed coordination, results | compiler passes, numerical algorithms, vendor integration | `runtime/README.md` |
 | `simulation/` | statevector, MPS, tensor-network, noise and precision kernels | resource policy, credentials, remote jobs | `simulation/README.md` |
-| `providers/` | QPU, remote-service and compute-platform adapters | common IR, scheduling policy, simulator algorithms | `providers/README.md` |
+| `compute/` | direct CPU/GPU/NPU lifecycle, capabilities, precision and communication | remote jobs, scheduling policy, simulator algorithms | `compute/README.md` |
+| `remote/` | external target discovery, submission, status and result decoding | direct device lifecycle, scheduling policy, simulator algorithms | `remote/README.md` |
 | `ecosystem/` | PyTorch, JAX, Qiskit and format boundary adapters | a second IR or runtime | `ecosystem/README.md` |
 | `agent/` | deterministic planning, validation and execution services | MCP transport or LLM policy | `agent/README.md` |
 | `algorithms/` | user-facing algorithm composition | runtime or backend internals | `algorithms/README.md` |
@@ -47,8 +50,8 @@ These explicit namespaces also remain intentional:
 - `backends/` is the stable expert facade for backend-native results. Its
   implementations live in Runtime or Simulation.
 - `noise/` owns backend-neutral channel and noise-model semantics.
-- `deployment/` owns the reviewed packaging and cloud-deployment API while
-  concrete external adapters converge under Providers.
+- `deployment/` owns sealed execution packages and target-neutral submission
+  contracts; concrete external adapters live in Remote.
 - `drawer/` owns visualization and IR-to-drawing adaptation.
 - `experimental/` contains APIs with no compatibility guarantee.
 - `utils/` contains the existing QASM/QCIS exporters until Compiler covers
@@ -64,7 +67,8 @@ Generated directories such as `__pycache__` are not part of the architecture.
 - Change target selection, retries, distributed ownership or result assembly
   in Runtime.
 - Change tensor math, precision kernels or simulator behavior in Simulation.
-- Add a QPU, remote service or accelerator integration in Providers.
+- Add a directly controlled accelerator integration in Compute.
+- Add a QPU, remote GPU/HPC service, or cloud integration in Remote.
 - Add support for an external framework or format in Ecosystem.
 
 An ordinary feature should normally change one primary domain. If it repeatedly

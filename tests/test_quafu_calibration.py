@@ -3,7 +3,7 @@
 import pytest
 
 import flagquantum as fq
-from flagquantum.deployment import quafu_noise_model_from_chip_info
+from flagquantum.remote import quafu_noise_model_from_chip_info
 
 
 def _chip_info():

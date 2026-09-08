@@ -20,7 +20,7 @@ from typing import Any, Callable
 import torch
 
 import flagquantum as fq
-from flagquantum.providers.platform import get_platform_runtime
+from flagquantum.compute import get_platform_runtime
 from flagquantum.simulation.gate_matrix import gate_matrix
 from flagquantum.simulation.statevector.operations import _apply_matrix
 

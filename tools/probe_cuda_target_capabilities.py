@@ -17,14 +17,14 @@ import torch
 
 import flagquantum as fq
 from flagquantum.backends import run_native
+from flagquantum.compute import get_platform_runtime
+from flagquantum.compute.cuda_target_capabilities import (
+    CUDA_STATEVECTOR_WORKLOAD,
+    cuda_statevector_capability_snapshot,
+)
 from flagquantum.core.numerics import (
     default_accuracy_requirement,
     default_precision_plan,
-)
-from flagquantum.providers.platform import get_platform_runtime
-from flagquantum.providers.platform.cuda_target_capabilities import (
-    CUDA_STATEVECTOR_WORKLOAD,
-    cuda_statevector_capability_snapshot,
 )
 from flagquantum.runtime.numerical_validation import certify_statevector_local_p0
 from flagquantum.runtime.operator_probes import preflight_statevector_local_p0

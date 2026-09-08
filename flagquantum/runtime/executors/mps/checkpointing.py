@@ -15,7 +15,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
-from ....providers.platform import get_platform_runtime
+from ....compute import get_platform_runtime
 from .errors import MPSTrainingError
 from .metadata_transport import all_gather_json
 

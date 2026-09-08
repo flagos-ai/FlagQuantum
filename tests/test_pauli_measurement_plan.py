@@ -6,7 +6,7 @@ import torch
 import flagquantum as fq
 import flagquantum.deployment as fqd
 from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.deployment import LocalSimulatorProvider
+from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration
 
@@ -82,7 +82,7 @@ def test_local_provider_executes_grouped_measurement_packages() -> None:
         shots=8192,
         optimize=False,
     )
-    provider = LocalSimulatorProvider()
+    provider = InMemoryRemoteTarget()
 
     results = tuple(provider.run(package) for package in plan.packages)
     measured = plan.expectation(tuple(result.counts for result in results))

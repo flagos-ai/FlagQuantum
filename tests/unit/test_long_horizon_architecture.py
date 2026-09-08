@@ -18,12 +18,13 @@ def test_architecture_contract_declares_independent_domains() -> None:
     assert payload["domains"]["core"]["may_depend_on"] == []
     assert payload["domains"]["runtime"]["may_depend_on"] == ["core"]
     assert payload["domains"]["gateways"]["may_depend_on"] == ["agent"]
-    assert set(payload["provider_layers"]["execution"]) == {
-        "simulation",
+    assert set(payload["compute_boundaries"]["remote"]) == {
         "qpu",
-        "remote_service",
+        "accelerator_service",
+        "hpc_service",
+        "cloud_service",
     }
-    assert set(payload["provider_layers"]["platform"]) == {
+    assert set(payload["compute_boundaries"]["direct"]) == {
         "cpu",
         "accelerator",
         "communication",

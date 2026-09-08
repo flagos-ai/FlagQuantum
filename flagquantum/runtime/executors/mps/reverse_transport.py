@@ -14,8 +14,8 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....compute import get_platform_runtime
 from ....core.ir import Instruction
-from ....providers.platform import get_platform_runtime
 from .communication import (
     _recv_tensor_batch_p2p,
     _recv_tensor_p2p,

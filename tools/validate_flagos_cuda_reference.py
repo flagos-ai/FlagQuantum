@@ -167,7 +167,7 @@ def validate(
     torch = importlib.import_module("torch")
     fq = importlib.import_module("flagquantum")
     fqb = importlib.import_module("flagquantum.backends")
-    platforms = importlib.import_module("flagquantum.providers.platform")
+    platforms = importlib.import_module("flagquantum.compute")
 
     if not hasattr(torch, "flagos"):
         raise RuntimeError("Torch-FL imported without registering torch.flagos")

@@ -12,7 +12,7 @@ definitions.
 
 It does not own user policy, device selection, distributed lifecycle, provider
 identity, fallback decisions, durable jobs, or public result assembly. Those
-belong to Runtime and Providers. Simulation consumes Core IR and operator
+belong to Runtime and Compute/Remote. Simulation consumes Core IR and operator
 semantics and may use PyTorch or isolated accelerator kernels.
 
 ## Local statevector path

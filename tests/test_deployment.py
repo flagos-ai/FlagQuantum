@@ -15,12 +15,12 @@ from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.deployment import (
     CloudBackendProfile,
     DeploymentPackageIdentityError,
-    LocalSimulatorProvider,
     expectation_z_from_counts,
     hamiltonian_expectation_from_counts,
     validate_deployment_package,
     validate_deployment_result,
 )
+from flagquantum.testing import InMemoryRemoteTarget
 
 
 def test_create_deployment_package_exports_qasm_and_metadata():
@@ -162,7 +162,7 @@ def test_qcis_backend_package_gets_qcis_metadata_automatically():
 def test_local_provider_runs_packaged_circuit():
     circuit = fq.Circuit(2)
     circuit.x(0).x(1)
-    provider = LocalSimulatorProvider()
+    provider = InMemoryRemoteTarget()
     backend = provider.discover_backends(2)[0]
 
     result = fqd.deploy_circuit(circuit, provider, backend=backend, shots=32)
@@ -255,12 +255,11 @@ def test_symbolic_parameter_template_binds_optimized_values_for_deployment():
 
 def test_deployment_subsystem_is_top_level_easy_to_use():
     assert deployment.CloudBackendProfile is CloudBackendProfile
-    assert deployment.LocalSimulatorProvider is LocalSimulatorProvider
 
 
 @pytest.mark.parametrize("field", ("qasm", "shots", "routing_evidence"))
 def test_provider_rejects_tampered_deployment_package(field):
-    provider = LocalSimulatorProvider()
+    provider = InMemoryRemoteTarget()
     backend = provider.discover_backends(2)[0]
     package = fqd.create_deployment_package(
         fq.Circuit(2).h(0).cx(0, 1),
@@ -302,7 +301,7 @@ def test_qcis_native_program_is_bound_to_deployment_identity():
 
 @pytest.mark.parametrize("field", ("identity", "shots"))
 def test_deployment_result_rejects_broken_receipt_chain(field):
-    provider = LocalSimulatorProvider()
+    provider = InMemoryRemoteTarget()
     backend = provider.discover_backends(2)[0]
     result = fqd.deploy_circuit(
         fq.Circuit(2).x(0),

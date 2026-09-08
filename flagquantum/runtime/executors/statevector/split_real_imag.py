@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
+from ....compute import get_platform_runtime, resolve_platform_device
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import (
@@ -17,7 +18,6 @@ from ....core.parameters import (
     parameter_names_in_value,
     value_to_tensor,
 )
-from ....providers.platform import get_platform_runtime, resolve_platform_device
 from ....simulation.statevector.split_real_imag import (
     SPLIT_REAL_IMAG_SUPPORTED_GATES,
     pauli_term_expectation,

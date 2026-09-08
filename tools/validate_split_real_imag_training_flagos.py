@@ -51,7 +51,7 @@ def validate(
         raise RuntimeError("Torch-FL is required for flagos validation") from exc
 
     torch = importlib.import_module("torch")
-    platforms = importlib.import_module("flagquantum.providers.platform")
+    platforms = importlib.import_module("flagquantum.compute")
     split = importlib.import_module(
         "flagquantum.runtime.executors.statevector.split_real_imag"
     )

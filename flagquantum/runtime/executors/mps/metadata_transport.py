@@ -8,7 +8,7 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....providers.platform import resolve_platform_device
+from ....compute import resolve_platform_device
 from ...distributed.flagos_runtime import current_flagos_device
 
 

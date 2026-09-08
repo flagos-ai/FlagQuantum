@@ -73,7 +73,7 @@ same journey plus plan-integrity failure behavior.
 
 Start with `flagquantum/runtime/execution.py` for dispatch or result assembly,
 `flagquantum/simulation/statevector/local.py` for the numerical entry, and
-`flagquantum/providers/platform/pytorch.py` for CPU lifecycle behavior. Changes
+`flagquantum/compute/pytorch.py` for CPU lifecycle behavior. Changes
 to one concern should normally remain in its owning domain.
 
 GPU, distributed execution, noise, MPS, tensor networks, training, QPU, and new
@@ -82,7 +82,7 @@ public contracts are outside this slice.
 ## First physical directory migration
 
 The proven path now resolves its CPU lifecycle through
-`flagquantum/providers/platform`. The complete pre-existing platform package
+`flagquantum/compute`. The complete pre-existing platform package
 was moved there as one unit so CPU, CUDA, and FlagOS still share one registry
 and one set of provider-local contracts. Every in-repository consumer moved in
 the same change, and the former `flagquantum/runtime/platforms` package was

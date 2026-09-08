@@ -10,13 +10,14 @@ import os
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
+from flagquantum.remote import QuafuProvider
 
 
 def main() -> None:
     if not os.getenv("QPU_API_TOKEN"):
         raise RuntimeError("Set QPU_API_TOKEN before submitting to Quafu SQC")
 
-    provider = fqd.QuafuProvider(result_timeout=1800)
+    provider = QuafuProvider(result_timeout=1800)
     available = provider.discover_backends(2)
     online = [
         backend

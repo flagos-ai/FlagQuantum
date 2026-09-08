@@ -9,9 +9,9 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from ....compute import get_platform_runtime
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
-from ....providers.platform import get_platform_runtime
 from ....simulation.statevector.adjoint import (
     analytic_rotation_derivative as _analytic_rotation_derivative,
 )

@@ -2,8 +2,8 @@
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-from flagquantum.deployment import (
-    CloudBackendProfile,
+from flagquantum.deployment import CloudBackendProfile
+from flagquantum.remote import (
     HttpQuantumProvider,
     ProviderCredentials,
     QuafuProvider,

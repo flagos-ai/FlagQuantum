@@ -66,22 +66,13 @@
 │ Runtime                                                            │
 │ 目标选择、资源编排、Session、分布式执行、恢复、观测和证据采集      │
 └───────────────┬─────────────────────────────────────────────────────┘
-                │ Core 所有的 Execution Provider Contract
-      ┌─────────┼────────────────────┐
-      │         │                    │
-┌─────▼──────┐ ┌▼──────────────┐ ┌──▼────────────────┐
-│Simulation  │ │ QPU Provider  │ │Remote Service     │
-│Provider    │ │ 真实 QPU      │ │Provider           │
-└─────┬──────┘ └───────────────┘ └───────────────────┘
-      │
-┌─────▼──────────────────────┐
-│ Simulation Engine         │
-│ SV / MPS / TN / Noise     │
-└─────┬──────────────────────┘
-      │ Core 所有的 Platform Provider Contract
-┌─────▼───────────────────────────────────────────────────────────────┐
-│ Platform Providers：CPU | 国产 GPU/NPU | 通信与异构互联            │
-└─────────────────────────────────────────────────────────────────────┘
+                │
+      ┌─────────────┬──────────────────────────┐
+      │ 数值执行    │ 本进程算力               │ 外部任务控制面
+┌─────▼──────────┐ ┌▼───────────────────────┐ ┌▼─────────────────────┐
+│ Simulation     │ │ Compute                │ │ Remote                │
+│ SV/MPS/TN/Noise│ │ CPU | GPU/NPU | 通信   │ │ QPU | GPU/HPC | 云   │
+└────────────────┘ └────────────────────────┘ └───────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
 │ Core                                                               │
@@ -93,7 +84,7 @@
 
 所有箭头均表示允许的依赖或调用方向。Core 不反向依赖任何上层模块。
 
-## 4. 六个稳定领域
+## 4. 七个稳定领域
 
 | 领域 | 唯一职责 | 可以拥有 | 禁止拥有 |
 | --- | --- | --- | --- |
@@ -101,20 +92,17 @@
 | Compiler | 将程序从一种产物变换为另一种产物 | 捕获、校验、分析、Pass、Lowering、代码生成 | 任务提交、设备生命周期、数值模拟 |
 | Runtime | 组织一次执行及其生命周期 | 规划、资源、Session、分布式编排、恢复、观测 | 编译优化、状态向量/MPS/TN 算法、长期服务任务 |
 | Simulation | 实现量子数值计算 | 状态向量、MPS、张量网络、噪声、可微计算 | 用户策略、凭据、集群资源治理 |
-| Providers | 隔离外部执行目标和计算平台 | Execution Provider；Platform Provider | 公共领域语义、通用编译 Pass |
+| Compute | 适配当前进程直接控制的算力 | CPU/GPU/NPU 生命周期、设备事实、通信原语 | 外部任务提交、数值算法、Runtime 调度 |
+| Remote | 适配外部任务控制面 | 目标发现、提交、状态、取消、结果解码 | 本地设备生命周期、数值算法、Runtime 调度 |
 | Ecosystem | 连接外部开发生态 | 框架适配、格式导入导出、插件入口 | 第二套规范 IR、Runtime 调度、设备直调 |
 
 Agent Services 是应用服务层，不是第七套计算内核。它组合 Core、Compiler 和 Runtime
 公开契约，为 MCP、REST、CLI 或 IDE 提供稳定而确定性的能力。
 
-Providers 内部有两个不可混用的抽象层级：
-
-- **Execution Provider** 接受完整执行请求，包括 Simulation、QPU 和 Remote Service；
-- **Platform Provider** 向执行引擎提供设备、Kernel、精度和通信能力，包括 CPU、国产
-  GPU/NPU 及通信实现。
-
-Simulation Provider 可以组合 Simulation Engine 与一个或多个 Platform Provider；QPU
-Provider 和 Remote Service Provider 不因此被迫依赖模拟算法。
+Compute 与 Remote 按控制边界划分，而不是按硬件类型划分：当前进程能直接创建张量、
+选择设备和调用 Kernel 的资源属于 **Compute**；必须通过提交任务、查询状态和获取结果
+使用的资源属于 **Remote**。因此同一型号 GPU 既可能作为本地 Compute，也可能位于远程
+HPC 服务之后；真实 QPU 通常属于 Remote。
 
 ## 5. 目标代码结构
 
@@ -145,7 +133,6 @@ flagquantum/
 │   ├── distributed/
 │   ├── recovery/
 │   ├── observability/
-│   └── platforms/           # 现有设备生命周期权威入口
 ├── simulation/
 │   ├── statevector/
 │   ├── mps/
@@ -153,15 +140,13 @@ flagquantum/
 │   ├── noise/
 │   ├── differentiation/
 │   └── kernels/
-├── providers/
-│   ├── execution/
-│   │   ├── simulation/      # 组合模拟引擎与计算平台
-│   │   ├── qpu/             # 超导、离子阱、中性原子、光量子等
-│   │   └── remote_service/  # 远程计算服务
-│   └── platform/
-│       ├── cpu/
-│       ├── accelerators/    # 国产 GPU/NPU/异构加速器
-│       └── communication/   # 集合通信、P2P 和异构互联
+├── compute/                 # 当前进程直接控制的算力
+│   ├── cpu/
+│   ├── accelerators/        # 国产 GPU/NPU/异构加速器
+│   └── communication/       # 集合通信、P2P 和异构互联
+├── remote/                  # 通过外部任务控制面调用的算力
+│   ├── qpu/
+│   └── services/            # GPU/HPC 服务及云平台
 ├── ecosystem/
 │   ├── pytorch/
 │   ├── jax/
@@ -194,29 +179,27 @@ Core 不是调用链上的首个“服务”，而是贯穿各阶段的共同语
   -> Ecosystem 边界转换（仅当输入是外部对象时）
   -> Compiler（校验、优化、Lowering、目标合法性）
   -> Runtime（能力匹配、目标选择、计划与执行生命周期）
-  -> Simulation Execution Provider（接收标准执行请求）
-  -> Simulation Engine（状态向量 / MPS / TN / 噪声 / 梯度）
-  -> Platform Provider（CPU / 国产 GPU/NPU / 通信）
+  -> Runtime 通过 Compute 解析设备、精度和通信资源
+  -> Runtime 调用 Simulation（状态向量 / MPS / TN / 噪声 / 梯度）
   -> ExecutionResult + ExecutionEvidence
   -> Runtime
   -> Ecosystem 结果转换（如需）
   -> 用户
 ```
 
-Execution Provider 回答“任务交给哪类目标以及如何提交和取回结果”；
-Platform Provider 回答“模拟引擎如何使用具体计算和通信设备”。Runtime
-通过 Execution Provider 管理执行，不直接调用具体 Platform Provider；
-Simulation Execution Provider 组合 Simulation Engine 与 Platform Provider。
+Compute 回答“本进程如何直接使用计算和通信设备”；Remote 回答“如何通过外部控制面
+提交任务并取回结果”。Runtime 选择执行路径并管理生命周期，Simulation 只负责数值
+计算，不直接导入 Compute，也不把远程服务伪装成本地设备。
 
-真实 QPU 任务不经过 Simulation Engine 或 Platform Provider：
+真实 QPU 任务不经过 Simulation 或 Compute：
 
 ```text
 用户 -> fq 公共门面 -> Compiler -> Runtime
-     -> QPU Execution Provider -> 真实 QPU
+     -> Remote -> 真实 QPU
      -> ExecutionResult + ExecutionEvidence -> Runtime -> 用户
 ```
 
-Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms 通过公共
+GPU/HPC 服务与 QPU 同样位于 Remote 边界之后。Algorithms 通过公共
 门面组合应用；Agent Services 通过 Compiler 和 Runtime 的公开契约执行确定性
 预检、解释和调用；Benchmarking 复用与用户相同的执行路径产生测评证据，
 不建立绕过能力、安全或证据检查的专用快速路径。
@@ -232,8 +215,8 @@ Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms
 | 核心契约 | `core`、Runtime 执行对象、平台与执行 Provider 本地契约 | `core` | 跨领域产物、能力、请求、结果和证据均由 Core 定义并通过序列化测试 | 重复私有契约没有调用者；Provider 本地协议完成中立投影 |
 | 编译器收敛 | `compiler` | `compiler` | 替换一条编译管线不修改 Runtime 和用户 API | 已删除 `_compiler` 和 `compilation` 旧入口 |
 | 模拟算法抽离 | `simulation`、部分 `runtime/executors` | `simulation` | 真实引擎和契约假实现通过同一套一致性测试 | Runtime 下不再拥有数值算法 |
-| 计算平台收敛 | `providers/platform` | `providers/platform` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |
-| 执行目标收敛 | `runtime/executors`、`deployment` | `providers/execution` | 模拟与 QPU/远程服务共享结果契约 | 后端选择和结果解码只存在于 Provider 后方 |
+| 计算平台收敛 | `compute` | `compute` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |
+| 执行目标收敛 | `runtime/executors`、`deployment` | `remote` | 模拟与 QPU/远程服务共享结果契约 | 后端选择和结果解码只存在于 Provider 后方 |
 | 生态收敛 | `ecosystem` | `ecosystem` | 边界转换和往返一致性测试通过 | 外部框架对象不进入核心领域 |
 | Agent/网关分离 | `agent` | 主仓库 Agent Services；外部网关 | 无 MCP SDK 时本地路径通过，跨仓库契约测试通过 | 主仓库无生产 MCP 传输依赖 |
 
@@ -369,16 +352,16 @@ LLM / IDE / MCP Host
 | 何时建立通信组、保存检查点、恢复任务 | Runtime |
 | 前向、反向和梯度 Kernel 如何计算 | Simulation |
 | 是否允许降低精度或回退 CPU | Request Policy + Runtime |
-| 实际发生了何种精度、通信和回退 | Provider 采集，Runtime 汇总为 Evidence |
+| 实际发生了何种精度、通信和回退 | Compute/Remote 采集，Runtime 汇总为 Evidence |
 
-Runtime 调用 Simulation Execution Provider，Provider 再组合一个 Simulation Engine 和所需
-Platform Provider。因而 Simulation Engine 既可以是内置实现，也可以被独立高性能模拟库
-替换；设备平台也可以在不修改模拟算法调用方的前提下替换。
+Runtime 组合 Simulation 与 Compute：先解析设备、精度和通信资源，再把明确的数据与
+设备参数交给 Simulation。Simulation 不导入 Compute。因而数值引擎和设备适配都可独立
+替换。外部任务由 Runtime 交给 Remote，不进入本地 Simulation 链路。
 
 ## 9. 国产异构算力
 
-每一家国产 GPU/NPU/异构芯片通过独立 Platform Provider 接入，不向上暴露厂商对象。
-Platform Provider 至少实现：
+每一家国产 GPU/NPU/异构芯片通过独立 Compute 适配接入，不向上暴露厂商对象。
+Compute 至少实现：
 
 1. 设备发现、生命周期和内存能力；
 2. Kernel 注册、编译或调用；
@@ -425,9 +408,10 @@ Runtime 负责跨 QPU 编排，Compiler 负责程序划分，Provider 负责纠�
 Core <- Compiler
 Core <- Runtime
 Core <- Simulation
-Core + Vendor SDK <- Platform Providers
-Core + Simulation + Platform Providers <- Simulation Execution Provider
-Core + Vendor SDK <- QPU / Remote Service Execution Providers
+Core <- Compute + Vendor Runtime
+Core <- Simulation
+Core <- Compute
+Core + Deployment <- Remote + External SDK
 Core + Compiler/Runtime public APIs <- Agent Services
 Public API + Core <- Ecosystem
 Agent Services <- External Gateways
@@ -435,12 +419,12 @@ Agent Services <- External Gateways
 
 强制规则：
 
-- Core 不导入 Runtime、Simulation、Provider、Ecosystem 或网关；
-- Compiler 不导入 Runtime、具体 Provider 或设备 SDK；
+- Core 不导入 Runtime、Simulation、Compute、Remote、Ecosystem 或网关；
+- Compiler 不导入 Runtime、Compute、Remote 或设备 SDK；
 - Runtime 不导入 Compiler 包；二者共享的数据契约必须由 Core 所有；
 - Simulation 不导入 Runtime 策略和部署代码；
-- Execution Provider 与 Platform Provider 不得混成同一接口；
-- 通用代码不导入具体 Provider；
+- Compute 与 Remote 不得混成同一接口；
+- 通用代码不导入具体 Compute 或 Remote 实现；
 - Ecosystem 对象在边界完成转换，不向核心层泄漏；
 - 网关不直调 Kernel、设备或编译器内部模块；
 - 临时例外必须登记、设置责任人和移除条件，并由架构检查器跟踪。
@@ -455,10 +439,10 @@ Agent Services <- External Gateways
 | --- | --- | --- |
 | Core/IR | `core`、契约模式 | 无下游具体实现 |
 | Compiler | `compiler` | ProgramArtifact、Capabilities |
-| Runtime | `runtime` | Core 中的 ExecutionRequest、Execution Provider Contract |
+| Runtime | `runtime` | Core 中的 ExecutionRequest、ExecutionResult |
 | Simulation | `simulation` | Simulation Contract、Evidence |
-| Platform | `providers/platform` | Core 中的 Platform Provider Contract |
-| Execution target | `providers/execution` | Core 中的 Execution Provider Contract |
+| Compute | `compute` | Core 中的能力、精度和设备事实契约 |
+| Remote | `remote` | Core 中的请求、结果和远程任务契约 |
 | Ecosystem | `ecosystem` | 公共 API、ProgramArtifact |
 | Agent/Service | `agent`、外部服务仓库 | Application Service Contract |
 
@@ -518,10 +502,10 @@ declared -> prototyped -> validated -> production
 - 每轮记录新增、复用、删除和冻结的代码；若只增加新路径而旧权威不退出，
   该轮不得标记为迁移完成。
 
-### 阶段 3：Provider 化
+### 阶段 3：Compute 与 Remote 收敛
 
-- 先将现有设备平台和扩展 SDK 演进为 Platform Provider Contract；
-- 再分别建立 Simulation、QPU 和 Remote Service Execution Provider；
+- 将本进程直接控制的设备和通信能力收敛到 Compute；
+- 将 QPU、远程 GPU/HPC 服务和云平台的任务控制面收敛到 Remote；
 - 逐个接入国产加速器、真实 QPU 和远程服务；
 - 禁止建立第二套设备注册和能力发现系统。
 

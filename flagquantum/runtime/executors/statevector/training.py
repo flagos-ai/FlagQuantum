@@ -17,8 +17,8 @@ from typing import Any, Callable, Literal
 import torch
 import torch.distributed as dist
 
+from ....compute import get_platform_runtime, resolve_platform_device
 from ....core.ir import ensure_circuit_ir
-from ....providers.platform import get_platform_runtime, resolve_platform_device
 from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
 from .reverse import (
     StatevectorCheckpointPolicy,

@@ -234,7 +234,8 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 | --- | --- | --- |
 | `flagquantum/backends/` | 稳定专家 API，转发 `run_native`、MPS、TN 和设备解析入口 | 实现执行、数值算法或设备 SDK |
 | `flagquantum/runtime/executors/` | 后端执行计划、生命周期、分布与结果组织 | 稳定公共命名空间或外部系统适配 |
-| `flagquantum/providers/` | 真实 QPU、远程服务和计算平台的边界适配 | 模拟数值核或 Runtime 调度策略 |
+| `flagquantum/compute/` | 当前进程直接控制的计算平台 | 外部任务提交、模拟数值核或 Runtime 调度策略 |
+| `flagquantum/remote/` | 真实 QPU、远程 GPU/HPC 服务和云平台的控制面适配 | 本地设备生命周期、模拟数值核或 Runtime 调度策略 |
 
 仓内测试、示例和参考文档均直接使用 `flagquantum.backends`，且命名空间一致性测试要求
 转发对象保持实现身份。因此本轮结论是：**不迁移、不合并这三个目录，也不在

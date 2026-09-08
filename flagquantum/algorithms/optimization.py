@@ -14,7 +14,7 @@ from typing import Callable, Mapping, Sequence
 
 import torch
 
-from ..providers.platform import get_platform_runtime
+from ..compute import get_platform_runtime
 
 ParameterGroups = Mapping[str, torch.Tensor]
 Objective = Callable[[ParameterGroups], torch.Tensor]

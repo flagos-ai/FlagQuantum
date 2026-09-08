@@ -15,8 +15,8 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
+from ....compute import get_platform_runtime
 from ....core.ir import ensure_circuit_ir
-from ....providers.platform import get_platform_runtime
 from . import checkpointing as _checkpointing
 from .communication import warmup_mps_neighbor_communicators
 from .device_resolution import resolve_distributed_mps_device

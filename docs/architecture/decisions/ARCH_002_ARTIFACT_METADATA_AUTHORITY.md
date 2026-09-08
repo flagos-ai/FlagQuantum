@@ -16,7 +16,7 @@ Compiler `SealedExecutableArtifact`、`SealedCircuitIRRoundTrip` 与 Deployment
 envelope 权威，但 v1 当前也不能无损替代它们。
 
 v1 当前唯一实际运行的生产消费链是 Agent Services 的 `kind=circuit` 路径。Compiler、
-Runtime、Simulation、Execution Provider 和 Ecosystem 尚未直接消费 `ProgramArtifact`。
+Runtime、Simulation、Remote 和 Ecosystem 尚未直接消费 `ProgramArtifact`。
 因此“已有唯一权威”不等于“全部消费者已经迁移”，更不等于 executable/deployment 能力已实现。
 
 ## 决策候选

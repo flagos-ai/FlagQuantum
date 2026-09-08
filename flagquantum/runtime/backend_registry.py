@@ -16,12 +16,12 @@ from typing import Any, Mapping
 
 import torch
 
-from ..core.runtime_config import get_runtime_config
-from ..providers.platform import (
+from ..compute import (
     discover_platform_devices,
     get_platform_runtime,
     resolve_platform_device,
 )
+from ..core.runtime_config import get_runtime_config
 
 
 @dataclass(frozen=True)

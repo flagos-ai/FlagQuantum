@@ -98,7 +98,7 @@ The v0.1 device-coupled encoding API has been removed. Parameterized
 | OpenQASM 3 dynamic | `runtime/dynamic/dialects/openqasm3.py` | Runtime dynamic dialect export | Format lowering is embedded in Runtime and should move after a shared dynamic artifact contract is approved |
 | Braket IQM dynamic QASM | `runtime/dynamic/dialects/braket_iqm.py` | Vendor backend dialect | Vendor vocabulary in Runtime; move to Execution Provider boundary |
 | QCIS v1 | `compiler/qcis.py` | Target format export | Compiler owns the only QCIS emitter |
-| Amazon Braket SDK | `providers/execution/braket.py` | Provider discovery/submission | Correct provider boundary; SDK objects should never enter IR/runtime records |
+| Amazon Braket SDK | `remote/braket.py` | Provider discovery/submission | Correct provider boundary; SDK objects should never enter IR/runtime records |
 | Quafu/QuarkCircuit | `deployment/providers.py` and calibration helpers | Provider discovery/submission | Correct provider boundary; keep device/job objects local |
 
 `architecture.toml` already confines direct Qiskit and PennyLane imports to

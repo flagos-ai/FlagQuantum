@@ -1,6 +1,9 @@
 # ARCH-006：Platform/Execution Provider 两层模型与准入依赖
 
-状态：Proposed
+状态：Superseded by ARCH-001 (2026-09-08 revision)
+
+> 本提案保留为设计历史。现行架构不再采用 Platform/Execution Provider 两层命名，
+> 而按控制边界使用 Compute 与 Remote；以修订后的 ARCH-001 为准。
 
 日期：2026-09-03
 依据：细化已批准 ARCH-001；本提案不注册、认证或实现 Provider

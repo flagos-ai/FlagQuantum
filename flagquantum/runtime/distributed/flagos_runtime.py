@@ -53,7 +53,7 @@ def activate_flagos_device(
 
     if local_rank < 0:
         raise ValueError("LOCAL_RANK must be non-negative")
-    from ...providers.platform import get_platform_runtime
+    from ...compute import get_platform_runtime
 
     platform = get_platform_runtime("flagos")
     platform.activate()

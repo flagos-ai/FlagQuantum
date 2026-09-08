@@ -16,7 +16,7 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.distributed as dist
 
-from ....providers.platform import resolve_platform_device
+from ....compute import resolve_platform_device
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )

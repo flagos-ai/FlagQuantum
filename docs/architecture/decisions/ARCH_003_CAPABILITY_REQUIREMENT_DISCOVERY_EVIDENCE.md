@@ -172,7 +172,7 @@ Runtime 拥有候选匹配、排序、租约与最终决策。fallback 仅在对
 | 责任 | 唯一 owner | 边界 |
 | --- | --- | --- |
 | 程序与目标合法性 | Compiler | 从 IR/旧 target 产生 compiler-source mandatory 谓词；对 Runtime 选定 snapshot 做合法化；不做 discovery 或授权 fallback |
-| 平台/目标发现 | Platform Provider / Execution Provider | 产生 adapter candidate、source 与 evidence refs；不决定 workload、claim 或 target 选择 |
+| 平台/目标发现 | Compute / Remote | 产生 adapter candidate、source 与 evidence refs；不决定 workload、claim 或 target 选择 |
 | 候选匹配与 policy | Runtime | 消费 RequirementSet、snapshot、租约与授权，选择目标；不改 Compiler 合法性或伪造事实 |
 | 算法候选与成本提示 | Simulation | 给出合法 representation、资源估算、误差和 partition 提示；不选择物理设备、route 或 fallback |
 | 一次执行证据 | Runtime + executing Provider | 绑定 attempt 记录实际 target/device/precision/route/distribution/fallback；不自动回填长期 snapshot |

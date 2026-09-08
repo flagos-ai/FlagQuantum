@@ -4,12 +4,12 @@ Core defines FlagQuantum's backend-neutral language: circuit IR, operator and
 parameter semantics, target capabilities, numerical requirements, and the
 versioned contracts exchanged across domain boundaries. These definitions are
 the single source of truth consumed by Compiler, Runtime, Simulation, and
-Providers.
+Compute or Remote.
 
 Core does not compile or execute programs, choose resources, implement
 simulation kernels, call vendor SDKs, or expose service and framework adapters.
 It must remain independent of Compiler and Runtime implementations, Simulation,
-Providers, ecosystem frameworks, gateways, and infrastructure libraries.
+Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 
 ## Where to start
 

@@ -15,6 +15,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
+from ....compute import resolve_platform_device
 from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ....core.numerics import (
     AccuracyMode,
@@ -28,7 +29,6 @@ from ....core.parameters import (
     ParameterExpression,
     bind_parameter_value,
 )
-from ....providers.platform import resolve_platform_device
 from ....simulation.numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,

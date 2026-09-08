@@ -8,6 +8,9 @@ from typing import Iterable
 
 import torch
 
+from ..compute.cpu_target_capabilities import (
+    probe_local_cpu_target_capabilities,
+)
 from ..core.runtime_config import RuntimeConfig
 from ..core.target_capabilities import (
     CapabilityRequirement,
@@ -21,9 +24,6 @@ from ..core.target_capabilities import (
     TargetIdentity,
 )
 from ..errors import ExecutionError, FlagQuantumError
-from ..providers.platform.cpu_target_capabilities import (
-    probe_local_cpu_target_capabilities,
-)
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,

@@ -31,8 +31,9 @@ For explicit backend selection:
 ```python
 import flagquantum as fq
 import flagquantum.deployment as fqd
+from flagquantum.remote import QuafuProvider
 
-provider = fqd.QuafuProvider(result_timeout=1800)
+provider = QuafuProvider(result_timeout=1800)
 backend = next(item for item in provider.discover_backends(2)
                if item.name == "Dongling")
 

@@ -18,7 +18,6 @@ def test_phase1_contract_adrs_remain_proposals_with_required_sections():
         "ARCH_003_CAPABILITY_REQUIREMENT_DISCOVERY_EVIDENCE.md",
         "ARCH_004_EXECUTION_REQUEST_POLICY_BOUNDARY.md",
         "ARCH_005_EXECUTION_RESULT_EVIDENCE_COMPATIBILITY.md",
-        "ARCH_006_PROVIDER_ADMISSION_MODEL.md",
         "ARCH_007_SIMULATION_RUNTIME_PLANNING_BOUNDARY.md",
         "ARCH_008_MIGRATION_AND_VERIFICATION_PATHS.md",
     ]
@@ -34,6 +33,12 @@ def test_phase1_contract_adrs_remain_proposals_with_required_sections():
             "## 未决问题",
         ):
             assert section in text, (name, section)
+
+
+def test_superseded_provider_admission_model_points_to_current_decision():
+    text = _read("ARCH_006_PROVIDER_ADMISSION_MODEL.md")
+    assert "状态：Superseded by ARCH-001" in text
+    assert "Compute 与 Remote" in text
 
 
 def test_evidence_levels_and_fact_exposure_are_distinct_from_support_status():

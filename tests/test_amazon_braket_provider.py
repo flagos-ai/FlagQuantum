@@ -3,8 +3,8 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
-from flagquantum.deployment import AmazonBraketProvider, braket_backend_profile
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.remote import AmazonBraketProvider, braket_backend_profile
 from flagquantum.runtime.dynamic import create_dynamic_deployment_package
 
 pytestmark = pytest.mark.braket

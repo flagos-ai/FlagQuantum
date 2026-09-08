@@ -13,7 +13,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
-from ....providers.platform import resolve_platform_device
+from ....compute import resolve_platform_device
 from ....simulation.tensor_network.stages import einsum_pair_by_labels
 from ...distributed.flagos_runtime import current_flagos_device
 from .distributed_dag import (

@@ -91,8 +91,9 @@ requirements.
 
 4. **Keep responsibilities and failure domains separate.** Each module has one
    authoritative responsibility. Compiler transforms programs; Runtime
-   organizes execution; Simulation performs numerical computation; Providers
-   adapt external systems; Ecosystem adapters translate external objects;
+   organizes execution; Simulation performs numerical computation; Compute
+   adapts directly controlled resources; Remote adapts external task systems;
+   Ecosystem adapters translate external objects;
    Agent and MCP layers invoke deterministic services. Cross-layer shortcuts
    are prohibited.
 

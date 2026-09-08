@@ -140,7 +140,7 @@ def _validate_flagos_statevector(
                 "only for local statevector execution through flagos"
             )
         return None
-    from ..providers.platform import get_platform_runtime
+    from ..compute import get_platform_runtime
     from .numerical_validation import certify_statevector_local_p0
     from .operator_probes import preflight_statevector_local_p0
 
@@ -383,7 +383,7 @@ def run_native(
     if not operator_backend_active and (
         operator_backend_name is not None or os.environ.get("FQ_OPERATOR_BACKEND")
     ):
-        from ..providers.platform.flaggems import (
+        from ..compute.flaggems import (
             operator_backend as operator_backend_context,
         )
 
@@ -1044,7 +1044,7 @@ def _normalize_execution_output(
         and execution_plan.world_size == 1
         and isinstance(result.state, torch.Tensor)
     ):
-        from ..providers.platform import get_platform_runtime
+        from ..compute import get_platform_runtime
 
         actual_device = result.state.device
         platform = get_platform_runtime(actual_device.type)

@@ -138,7 +138,7 @@ Start with the smallest authoritative file:
 | Numerical kernel or precision implementation | `flagquantum/simulation/` |
 
 A normal feature should principally change one domain. If a change repeatedly
-requires edits across Core, Compiler, Runtime, Simulation, and Providers,
+requires edits across Core, Compiler, Runtime, Simulation, and Compute/Remote,
 recheck the boundary before adding another cross-layer object.
 
 ## Verification

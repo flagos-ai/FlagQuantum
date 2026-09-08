@@ -7,10 +7,10 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
+from ....compute import get_platform_runtime, resolve_platform_device
 from ....core.ir import ensure_circuit_ir
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import Parameter
-from ....providers.platform import get_platform_runtime, resolve_platform_device
 from .split_real_imag import _parameter_occurrences
 from .split_real_imag_device_double_single import (
     execute_split_real_imag_device_double_single_expectation,
@@ -171,7 +171,7 @@ def split_real_imag_device_double_single_autograd_expectation(
     )
     identity = get_platform_runtime(resolved_device.type).identity()
     if identity.provider != "pytorch_cpu":
-        raise RuntimeError("P5 CPU bridge resolved an unexpected platform provider")
+        raise RuntimeError("P5 CPU bridge resolved an unexpected compute runtime")
     config = _P5BridgeConfig(
         circuit_or_ir=circuit_or_ir,
         observable=observable,

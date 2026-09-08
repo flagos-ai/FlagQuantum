@@ -31,7 +31,7 @@ boundaries to converge; moving the Runtime facade into Core would not solve them
 | Stable user result | `runtime/result.py` | Tensor-bearing result and user accessors | Runtime-owned intentionally |
 | Runtime API facade | `runtime/contracts.py` | Re-exports Runtime user types; defines no contracts | Not an authority |
 | Runtime evidence artifact | `runtime/observability/evidence.py` | Collection, integrity and release-evidence verification | Pending Core envelope boundary |
-| Platform provider contract | `providers/platform/contracts.py` | Device lifecycle; currently includes PyTorch types | Pending neutral boundary |
+| Platform provider contract | `compute/contracts.py` | Device lifecycle; currently includes PyTorch types | Pending neutral boundary |
 | Execution provider contract | `deployment/cloud.py` | QPU/cloud package, handle, result and provider lifecycle | Pending provider convergence |
 
 ## Similar names that are not duplicates
@@ -78,7 +78,7 @@ neutral conformance suite without consumers importing vendor or framework types.
 
 `QuantumProvider`, `DeploymentPackage`, `ProviderTaskHandle`, and
 `DeploymentResult` remain in `deployment/cloud.py`, while concrete adapters live in
-`providers/execution`. The target is a small Core-owned request/result/failure
+`remote`. The target is a small Core-owned request/result/failure
 contract implemented by Simulation and at least one QPU or remote provider. Package
 building stays outside Core, and credentials or SDK handles must never enter Core.
 

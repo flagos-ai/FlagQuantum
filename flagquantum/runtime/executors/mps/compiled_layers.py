@@ -6,8 +6,8 @@ from typing import Any, Sequence
 
 import torch
 
+from ....compute import get_platform_runtime
 from ....core.ir import Instruction
-from ....providers.platform import get_platform_runtime
 from ....simulation.mps.compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     apply_compiled_mps_two_site_bucket,

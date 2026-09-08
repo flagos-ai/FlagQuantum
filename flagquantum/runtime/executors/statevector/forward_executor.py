@@ -10,9 +10,9 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
+from ....compute import resolve_platform_device
 from ....core.ir import ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
-from ....providers.platform import resolve_platform_device
 from ....simulation.statevector.operations import (
     _compose_gate_matrices,
     _instruction_matrix,

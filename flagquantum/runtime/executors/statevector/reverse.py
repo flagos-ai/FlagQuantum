@@ -9,8 +9,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from ....compute import resolve_platform_device
 from ....core.ir import CircuitIR, ensure_circuit_ir
-from ....providers.platform import resolve_platform_device
 from ...builder_compilation import detached_ir_snapshot
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_wire_layout

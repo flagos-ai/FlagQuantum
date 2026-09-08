@@ -7,12 +7,12 @@ Core，不自动完成 Phase 退出门，也不替代实现测试、性能证据
 
 | ADR | 决策 | 状态 | 批准范围 |
 | --- | --- | --- | --- |
-| [ARCH-001](ARCH_001_PROVIDER_LAYERS_AND_CORE_CONTRACTS.md) | Provider 分层与 Core 契约所有权 | Approved | vNext 目标边界、迁移台账与新增依赖约束 |
+| [ARCH-001](ARCH_001_COMPUTE_REMOTE_AND_CORE_CONTRACTS.md) | Compute、Remote 与 Core 契约所有权 | Approved | 按控制边界区分直控算力与外部任务系统 |
 | [ARCH-002](ARCH_002_ARTIFACT_METADATA_AUTHORITY.md) | Artifact 与 metadata 权威及兼容边界 | Proposed | Phase 1 契约候选；不修改 Stable Core |
 | [ARCH-003](ARCH_003_CAPABILITY_REQUIREMENT_DISCOVERY_EVIDENCE.md) | Capability requirement、snapshot 与 evidence 边界 | Proposed | Phase 2 最小内部实现与 adapter 授权；不代表能力可用或 Stable API 变更 |
 | [ARCH-004](ARCH_004_EXECUTION_REQUEST_POLICY_BOUNDARY.md) | Execution Request 与 policy 边界 | Proposed | Phase 1 契约候选；不修改执行入口 |
 | [ARCH-005](ARCH_005_EXECUTION_RESULT_EVIDENCE_COMPATIBILITY.md) | Execution Result 与 Evidence 兼容边界 | Proposed | Phase 1 契约候选；不新增结果实现 |
-| [ARCH-006](ARCH_006_PROVIDER_ADMISSION_MODEL.md) | Platform/Execution Provider 两层模型与准入依赖 | Proposed | Phase 1 契约候选；不认证 Provider |
+| [ARCH-006](ARCH_006_PROVIDER_ADMISSION_MODEL.md) | Platform/Execution Provider 两层模型与准入依赖 | Superseded | 由修订后的 ARCH-001 取代 |
 | [ARCH-007](ARCH_007_SIMULATION_RUNTIME_PLANNING_BOUNDARY.md) | Simulation 与 Runtime 的规划信息边界 | Proposed | Phase 1 契约候选；不改变当前 planner |
 | [ARCH-008](ARCH_008_MIGRATION_AND_VERIFICATION_PATHS.md) | 迁移决策账本与快速/标准/认证路径 | Proposed | Phase 1 治理候选；不授权实现或退役 |
 

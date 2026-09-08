@@ -17,8 +17,8 @@ codex/vnext-team-core                 FlagQuantum-vNext-core        Core
 codex/vnext-team-compiler             FlagQuantum-vNext-compiler    Compiler
 codex/vnext-team-runtime              FlagQuantum-vNext-runtime     Runtime
 codex/vnext-team-simulation           FlagQuantum-vNext-simulation  Simulation
-codex/vnext-team-platform-providers   FlagQuantum-vNext-platform    Platform Provider
-codex/vnext-team-execution-providers  FlagQuantum-vNext-execution   Execution Provider
+codex/vnext-team-platform-providers   FlagQuantum-vNext-platform    Compute
+codex/vnext-team-execution-providers  FlagQuantum-vNext-execution   Remote
 codex/vnext-team-ecosystem            FlagQuantum-vNext-ecosystem   Ecosystem
 codex/vnext-team-agent-services       FlagQuantum-vNext-agent       Agent Services
 codex/vnext-team-docs                 FlagQuantum-vNext-docs        Docs / User Experience
@@ -74,7 +74,7 @@ python tools/check_team_scope.py \
 - `contracts/`、`architecture.toml`、`team-ownership.toml`、根 `AGENTS.md`；
 - 总体架构和 ADR；
 - 依赖清单、CI 和发布配置；
-- 新跨领域契约、Provider 类型或长期兼容层。
+- 新跨领域契约、Compute/Remote 类型或长期兼容层。
 
 团队遇到受保护区域时应提交契约/ADR 提案，不得在本团队分支复制一个私有替代类型。
 
@@ -85,8 +85,8 @@ python tools/check_team_scope.py \
 - `runtime/**` 默认属于 Runtime；
 - `runtime/executors/**` 属于 Runtime，且只拥有计划感知的执行与生命周期编排；
 - `simulation/**` 属于 Simulation，拥有数值算法与 Kernel；
-- `providers/platform/**` 属于 Platform；
-- `runtime/target_execution.py` 过渡期属于 Execution Provider；
+- `compute/**` 属于 Compute；
+- `remote/**` 与 `runtime/target_execution.py` 过渡期属于 Remote；
 - `ecosystem/**` 属于 Ecosystem，包括扩展协议。
 
 这使当前代码在尚未移动目录时也只有一个责任团队。迁移到目标目录后，应同步删除旧规则。
@@ -169,7 +169,7 @@ git merge --no-ff codex/vnext-team-compiler
 Core契约
  -> Compiler与Runtime
  -> Simulation与Platform
- -> Execution Provider
+ -> Remote
  -> Ecosystem
  -> Agent Services
 ```

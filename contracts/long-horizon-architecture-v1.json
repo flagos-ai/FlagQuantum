@@ -10,21 +10,17 @@
     "execution_result"
   ],
   "execution_modes": ["job", "session", "realtime_session", "workflow"],
-  "provider_layers": {
-    "execution": ["simulation", "qpu", "remote_service"],
-    "platform": ["cpu", "accelerator", "communication"]
+  "compute_boundaries": {
+    "direct": ["cpu", "accelerator", "communication"],
+    "remote": ["qpu", "accelerator_service", "hpc_service", "cloud_service"]
   },
   "domains": {
     "core": {"may_depend_on": []},
     "compiler": {"may_depend_on": ["core"]},
     "runtime": {"may_depend_on": ["core"]},
     "simulation": {"may_depend_on": ["core"]},
-    "platform_providers": {"may_depend_on": ["core", "vendor_sdk"]},
-    "simulation_provider": {
-      "may_depend_on": ["core", "simulation", "platform_providers"]
-    },
-    "qpu_provider": {"may_depend_on": ["core", "vendor_sdk"]},
-    "remote_service_provider": {"may_depend_on": ["core", "vendor_sdk"]},
+    "compute": {"may_depend_on": ["core", "vendor_runtime"]},
+    "remote": {"may_depend_on": ["core", "deployment", "external_sdk"]},
     "ecosystem": {"may_depend_on": ["core", "public_api"]},
     "agent": {
       "may_depend_on": ["core", "compiler_public_api", "runtime_public_api"]
@@ -39,7 +35,7 @@
       "current_authority": [
         "flagquantum/core",
         "flagquantum/runtime",
-        "flagquantum/providers/platform/contracts.py",
+        "flagquantum/compute/contracts.py",
         "flagquantum/deployment/cloud.py"
       ],
       "target_authority": "flagquantum/core",
@@ -71,22 +67,22 @@
       "status": "complete"
     },
     {
-      "name": "platform_provider_convergence",
+      "name": "compute_convergence",
       "owner": "platform-maintainers",
       "target_milestone": "vnext-phase-3",
-      "current_authority": ["flagquantum/providers/platform"],
-      "target_authority": "flagquantum/providers/platform",
+      "current_authority": ["flagquantum/compute"],
+      "target_authority": "flagquantum/compute",
       "compatibility_adapter": "PlatformRuntime contract",
       "completion_evidence": "two platform implementations pass capability, precision, communication, fallback, and replacement tests",
       "retirement_condition": "no general-purpose module imports a concrete vendor runtime",
       "status": "in_progress"
     },
     {
-      "name": "execution_provider_convergence",
+      "name": "remote_convergence",
       "owner": "runtime-provider-maintainers",
       "target_milestone": "vnext-phase-3",
-      "current_authority": ["flagquantum/providers/execution", "flagquantum/runtime/executors", "flagquantum/deployment"],
-      "target_authority": "flagquantum/providers/execution",
+      "current_authority": ["flagquantum/remote", "flagquantum/runtime/executors", "flagquantum/deployment"],
+      "target_authority": "flagquantum/remote",
       "compatibility_adapter": "Runtime provider facade",
       "completion_evidence": "simulation and QPU or remote-service implementations pass one execution-result contract",
       "retirement_condition": "backend selection and vendor result decoding exist only behind execution-provider contracts",

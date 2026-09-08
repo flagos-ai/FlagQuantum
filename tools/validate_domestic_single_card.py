@@ -278,7 +278,7 @@ def validate(*, attestation_path: Path, device_name: str) -> dict[str, Any]:
     except ImportError as exc:
         raise RuntimeError("Torch-FL is required for domestic certification") from exc
     torch = importlib.import_module("torch")
-    platforms = importlib.import_module("flagquantum.providers.platform")
+    platforms = importlib.import_module("flagquantum.compute")
     if not hasattr(torch, "flagos") or not torch.flagos.is_available():
         raise RuntimeError("Torch-FL did not expose an available flagos device")
 

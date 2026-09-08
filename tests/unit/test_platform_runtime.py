@@ -8,14 +8,14 @@ from types import ModuleType, SimpleNamespace
 import pytest
 import torch
 
-from flagquantum.providers.platform import (
+from flagquantum.compute import (
     PlatformActivationError,
     discover_platform_devices,
     get_platform_runtime,
     list_platform_status,
 )
-from flagquantum.providers.platform import flagos as flagos_module
-from flagquantum.providers.platform.flagos import FlagOSPlatformRuntime
+from flagquantum.compute import flagos as flagos_module
+from flagquantum.compute.flagos import FlagOSPlatformRuntime
 from flagquantum.runtime import backend_registry
 
 pytestmark = pytest.mark.unit

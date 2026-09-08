@@ -8,8 +8,8 @@ from typing import Any, Sequence
 
 import torch
 
+from ....compute import resolve_platform_device
 from ....core.parameters import Parameter, ParameterExpression
-from ....providers.platform import resolve_platform_device
 from ....simulation.numerics.double_single import (
     DoubleSingleTensor,
     double_single_sin_cos,

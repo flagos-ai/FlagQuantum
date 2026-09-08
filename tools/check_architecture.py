@@ -40,22 +40,23 @@ def _long_horizon_contract_errors() -> tuple[str, ...]:
             "long-horizon architecture: Runtime may depend only on Core contracts"
         )
 
-    provider_layers = payload.get("provider_layers", {})
-    if set(provider_layers.get("execution", ())) != {
-        "simulation",
+    compute_boundaries = payload.get("compute_boundaries", {})
+    if set(compute_boundaries.get("remote", ())) != {
         "qpu",
-        "remote_service",
+        "accelerator_service",
+        "hpc_service",
+        "cloud_service",
     }:
         errors.append(
-            "long-horizon architecture: execution providers must remain distinct"
+            "long-horizon architecture: remote target classes must remain distinct"
         )
-    if set(provider_layers.get("platform", ())) != {
+    if set(compute_boundaries.get("direct", ())) != {
         "cpu",
         "accelerator",
         "communication",
     }:
         errors.append(
-            "long-horizon architecture: platform providers must remain distinct"
+            "long-horizon architecture: direct compute classes must remain distinct"
         )
 
     required_track_fields = {
@@ -322,6 +323,12 @@ def architecture_errors() -> tuple[str, ...]:
         errors.append(
             "flagquantum/runtime_stack: removed compatibility package must not return"
         )
+    removed_providers = PACKAGE / "providers"
+    if removed_providers.exists():
+        errors.append(
+            "flagquantum/providers: removed ambiguous package must not return; "
+            "use flagquantum/compute or flagquantum/remote according to control boundary"
+        )
     removed_core_circuit = PACKAGE / "core" / "circuit.py"
     if removed_core_circuit.exists():
         errors.append(
@@ -338,7 +345,7 @@ def architecture_errors() -> tuple[str, ...]:
     ):
         errors.append(
             "flagquantum/runtime/platforms: migrated platform package must not return; "
-            "use flagquantum/providers/platform"
+            "use flagquantum/compute"
         )
     for removed_compiler_path in (
         PACKAGE / "compiler.py",

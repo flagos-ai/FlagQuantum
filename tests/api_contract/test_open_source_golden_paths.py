@@ -5,6 +5,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
+from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration
 
@@ -78,7 +79,7 @@ def test_automatic_backend_planning_is_explainable() -> None:
 
 def test_local_deployment_package_executes() -> None:
     circuit = fq.Circuit(n_qubits=2).x(0).x(1)
-    provider = fqd.LocalSimulatorProvider()
+    provider = InMemoryRemoteTarget()
     backend = provider.discover_backends(2)[0]
 
     result = fqd.deploy_circuit(circuit, provider, backend=backend, shots=16)

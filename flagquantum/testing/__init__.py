@@ -36,6 +36,7 @@ from .mps_stability_certification import (
     MPSStabilityCertificationError,
     require_mps_stability,
 )
+from .remote import InMemoryRemoteTarget
 from .watchdog import PhaseAwareWatchdog, ProgressSnapshot, StallDiagnosis
 
 __all__ = (
@@ -64,4 +65,5 @@ __all__ = (
     "require_mps_scaling",
     "MPSPortabilityCertificationError",
     "require_mps_portability",
+    "InMemoryRemoteTarget",
 )

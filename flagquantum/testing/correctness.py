@@ -160,7 +160,9 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
             return CertificationResult(case, True, passed, "qcis_serialization")
         elif case.backend == "provider":
             package = fqd.create_deployment_package(ir, optimize=False)
-            result = fqd.LocalSimulatorProvider().run(package)
+            from .remote import InMemoryRemoteTarget
+
+            result = InMemoryRemoteTarget().run(package)
             passed = (
                 bool(package.qasm.strip())
                 and sum(result.counts.values()) == package.shots

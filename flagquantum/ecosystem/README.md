@@ -20,7 +20,7 @@ adapters must not import an optional framework.
 - `<framework>/adapter.py`: the small implementation of the common protocol.
 
 `qiskit/execution.py` is recorded migration debt, not an example for new
-adapters: backend execution belongs to an Execution Provider once the owning
+adapters: external target execution belongs to Remote once the owning
 contract is available. Do not add more execution behavior under Interop.
 
 ## Ten-minute change path

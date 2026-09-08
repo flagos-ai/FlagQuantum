@@ -67,7 +67,8 @@ def test_non_jax_backend_import_check_resolves_relative_and_absolute_imports(
 
 def test_top_level_package_layout_is_explicitly_frozen():
     allowed = set(CONFIG["package_layout"]["allowed_top_level_directories"])
-    assert {"core", "compiler", "runtime", "simulation", "providers"} <= allowed
+    assert {"core", "compiler", "runtime", "simulation", "compute", "remote"} <= allowed
+    assert "providers" not in allowed
     assert {"ops", "numerics", "compilation", "_compiler"}.isdisjoint(allowed)
 
 
