@@ -25,6 +25,7 @@ from ....simulation.statevector.adjoint import (
     z_expectation_chunk as _z_expectation_chunk,
 )
 from ....simulation.statevector.operations import _instruction_matrix
+from .checkpointing import StatevectorCheckpointPolicy
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
@@ -50,9 +51,8 @@ from .local_execution import (
     use_compact_global_indices,
 )
 from .planning import plan_distributed_statevector
-from .reverse import (
+from .reverse_support import (
     BackwardExecutionEvidence,
-    StatevectorCheckpointPolicy,
     _bind_parameters,
     _fused_vjp_pipeline_enabled,
     _gradient_bucketing_enabled,

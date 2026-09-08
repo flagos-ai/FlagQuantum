@@ -16,8 +16,8 @@ import torch
 import torch.distributed as dist
 
 from ....providers.platform import get_platform_runtime
+from .errors import MPSTrainingError
 from .metadata_transport import all_gather_json
-from .training import MPSTrainingError
 
 
 def _checkpoint_path(root: Path, rank: int, step: int | None = None) -> Path:

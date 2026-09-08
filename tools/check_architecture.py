@@ -103,6 +103,127 @@ def _imports(path: Path) -> tuple[tuple[str, str], ...]:
     return tuple(imports)
 
 
+def _module_name(path: Path, package_root: Path) -> str:
+    parts = path.relative_to(package_root).with_suffix("").parts
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    return ".".join((package_root.name, *parts))
+
+
+def _is_type_checking_guard(node: ast.expr) -> bool:
+    return (isinstance(node, ast.Name) and node.id == "TYPE_CHECKING") or (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "typing"
+        and node.attr == "TYPE_CHECKING"
+    )
+
+
+def _eager_import_candidates(path: Path, package_root: Path) -> tuple[str, ...]:
+    """Return imports evaluated while a module is initialized.
+
+    Function bodies and ``TYPE_CHECKING`` blocks are deliberately excluded:
+    those references do not create Python initialization cycles.
+    """
+
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    module = _module_name(path, package_root)
+    package = module if path.name == "__init__.py" else module.rpartition(".")[0]
+    candidates: list[str] = []
+
+    class Visitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            return None
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            return None
+
+        def visit_Lambda(self, node: ast.Lambda) -> None:
+            return None
+
+        def visit_If(self, node: ast.If) -> None:
+            if _is_type_checking_guard(node.test):
+                for statement in node.orelse:
+                    self.visit(statement)
+                return
+            self.generic_visit(node)
+
+        def visit_Import(self, node: ast.Import) -> None:
+            candidates.extend(item.name for item in node.names)
+
+        def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+            if node.level:
+                package_parts = package.split(".") if package else []
+                keep = max(0, len(package_parts) - (node.level - 1))
+                base_parts = package_parts[:keep]
+                if node.module:
+                    base_parts.extend(node.module.split("."))
+                base = ".".join(base_parts)
+            else:
+                base = node.module or ""
+            if base:
+                candidates.append(base)
+            candidates.extend(
+                f"{base}.{item.name}" if base else item.name
+                for item in node.names
+                if item.name != "*"
+            )
+
+    Visitor().visit(tree)
+    return tuple(candidates)
+
+
+def eager_import_cycles(package_root: Path = PACKAGE) -> tuple[tuple[str, ...], ...]:
+    """Return strongly connected module-initialization dependencies."""
+
+    paths = tuple(sorted(package_root.rglob("*.py")))
+    modules = {_module_name(path, package_root): path for path in paths}
+    graph: dict[str, set[str]] = {module: set() for module in modules}
+    for module, path in modules.items():
+        for candidate in _eager_import_candidates(path, package_root):
+            target = candidate
+            while target and target not in modules:
+                target = target.rpartition(".")[0]
+            if target and target != module:
+                graph[module].add(target)
+
+    index = 0
+    indices: dict[str, int] = {}
+    lowlinks: dict[str, int] = {}
+    stack: list[str] = []
+    active: set[str] = set()
+    components: list[tuple[str, ...]] = []
+
+    def visit(module: str) -> None:
+        nonlocal index
+        indices[module] = lowlinks[module] = index
+        index += 1
+        stack.append(module)
+        active.add(module)
+        for dependency in graph[module]:
+            if dependency not in indices:
+                visit(dependency)
+                lowlinks[module] = min(lowlinks[module], lowlinks[dependency])
+            elif dependency in active:
+                lowlinks[module] = min(lowlinks[module], indices[dependency])
+        if lowlinks[module] != indices[module]:
+            return
+        component: list[str] = []
+        while True:
+            member = stack.pop()
+            active.remove(member)
+            component.append(member)
+            if member == module:
+                break
+        if len(component) > 1:
+            components.append(tuple(sorted(component)))
+
+    for module in graph:
+        if module not in indices:
+            visit(module)
+    return tuple(sorted(components))
+
+
 def _torch_cuda_use_count(path: Path) -> int:
     tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
     return sum(
@@ -141,6 +262,8 @@ def _imports_jax_executor(path: Path) -> bool:
 
 def architecture_errors() -> tuple[str, ...]:
     errors = list(_long_horizon_contract_errors())
+    for cycle in eager_import_cycles():
+        errors.append("eager import cycle: " + " -> ".join((*cycle, cycle[0])))
     allowed_package_directories = set(
         CONFIG.get("package_layout", {}).get("allowed_top_level_directories", ())
     )

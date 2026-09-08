@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_architecture import CONFIG, _imports_jax_executor, architecture_errors
+from tools.check_architecture import (
+    CONFIG,
+    _imports_jax_executor,
+    architecture_errors,
+    eager_import_cycles,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -13,6 +18,30 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_checked_architecture_boundaries_pass():
     assert architecture_errors() == ()
+
+
+def test_eager_import_cycle_is_rejected_but_delayed_references_are_allowed(tmp_path):
+    package = tmp_path / "flagquantum"
+    package.mkdir()
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "first.py").write_text(
+        "from flagquantum import second\n", encoding="utf-8"
+    )
+    (package / "second.py").write_text(
+        "from flagquantum import first\n", encoding="utf-8"
+    )
+    (package / "delayed.py").write_text(
+        "from typing import TYPE_CHECKING\n"
+        "if TYPE_CHECKING:\n"
+        "    from flagquantum import first\n"
+        "def load():\n"
+        "    from flagquantum import first\n",
+        encoding="utf-8",
+    )
+
+    assert eager_import_cycles(package) == (
+        ("flagquantum.first", "flagquantum.second"),
+    )
 
 
 @pytest.mark.parametrize(

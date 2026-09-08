@@ -20,6 +20,7 @@ from ....providers.platform import get_platform_runtime
 from . import checkpointing as _checkpointing
 from .communication import warmup_mps_neighbor_communicators
 from .device_resolution import resolve_distributed_mps_device
+from .errors import MPSTrainingError
 from .metadata_transport import all_gather_json
 from .records import MPSReverseCheckpointPolicy
 from .reverse import execute_torch_distributed_mps_reverse
@@ -29,10 +30,9 @@ from .state import (
     topology_aware_mps_ownership,
     validate_mps_ownership,
 )
-from .training import (
+from .training_records import (
     MPSOptimizerOwnership,
     MPSStepMetrics,
-    MPSTrainingError,
     ShardedMPSTrainingResult,
 )
 
@@ -1087,10 +1087,4 @@ def train_distributed_mps(
     return result
 
 
-__all__ = (
-    "MPSOptimizerOwnership",
-    "MPSStepMetrics",
-    "MPSTrainingError",
-    "ShardedMPSTrainingResult",
-    "train_distributed_mps",
-)
+__all__ = ("train_distributed_mps",)

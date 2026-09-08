@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 
 from ...distributed.flagos_runtime import current_flagos_device
-from .training import MPSTrainingError
+from .errors import MPSTrainingError
 
 
 def resolve_distributed_mps_device(

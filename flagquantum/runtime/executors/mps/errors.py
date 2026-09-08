@@ -17,9 +17,14 @@ class MPSReverseContractError(RuntimeError):
     """The sharded reverse tape, transport, or memory contract is invalid."""
 
 
+class MPSTrainingError(RuntimeError):
+    """A distributed MPS training lifecycle or evidence check failed."""
+
+
 __all__ = (
     "MPSForwardLifetimeError",
     "MPSFullMaterializationError",
     "MPSReverseContractError",
+    "MPSTrainingError",
     "NonlocalMPSCompilationError",
 )
