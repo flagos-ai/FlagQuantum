@@ -8,6 +8,13 @@ import torch
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
+from flagquantum.runtime.backends.mps.checkpointing import (
+    _checkpoint_capacity_error,
+    _checkpoint_start_policy_error,
+    _load_checkpoint,
+    _prune_checkpoint_generations,
+    _save_checkpoint,
+)
 from flagquantum.runtime.backends.mps.distributed_state import (
     DistributedShardPlan,
     ShardedMPSState,
@@ -19,14 +26,9 @@ from flagquantum.runtime.backends.mps.training import (
     ShardedMPSTrainingResult,
 )
 from flagquantum.runtime.backends.mps.training_engine import (
-    _checkpoint_capacity_error,
-    _checkpoint_start_policy_error,
     _initial_state_contract,
-    _load_checkpoint,
     _parameter_broadcast_buckets,
-    _prune_checkpoint_generations,
     _resolve_compile_site_kernels,
-    _save_checkpoint,
 )
 from flagquantum.runtime.distributed.context import TorchDistributedContext
 from flagquantum.simulation.mps.state import MPSState

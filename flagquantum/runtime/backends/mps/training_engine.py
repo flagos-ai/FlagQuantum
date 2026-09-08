@@ -38,33 +38,6 @@ from .training import (
 
 _parameter_layout = build_mps_parameter_layout
 
-# Preserve the historical internal import surface while checkpoint ownership
-# lives in the dedicated module.
-_checkpoint_path = _checkpointing._checkpoint_path
-_checkpoint_manifest_path = _checkpointing._checkpoint_manifest_path
-_checkpoint_checksum_path = _checkpointing._checkpoint_checksum_path
-_file_sha256 = _checkpointing._file_sha256
-_commit_checkpoint_generation = _checkpointing._commit_checkpoint_generation
-_preflight_checkpoint_generation = _checkpointing._preflight_checkpoint_generation
-_checkpoint_start_policy_error = _checkpointing._checkpoint_start_policy_error
-_validate_checkpoint_start_policy_collective = (
-    _checkpointing._validate_checkpoint_start_policy_collective
-)
-_checkpoint_writer_lease_path = _checkpointing._checkpoint_writer_lease_path
-_acquire_checkpoint_writer_lease = _checkpointing._acquire_checkpoint_writer_lease
-_refresh_checkpoint_writer_lease = _checkpointing._refresh_checkpoint_writer_lease
-_release_checkpoint_writer_lease = _checkpointing._release_checkpoint_writer_lease
-_prune_checkpoint_generations = _checkpointing._prune_checkpoint_generations
-_prune_checkpoint_generations_collective = (
-    _checkpointing._prune_checkpoint_generations_collective
-)
-_tensor_bytes_in = _checkpointing._tensor_bytes_in
-_checkpoint_capacity_error = _checkpointing._checkpoint_capacity_error
-_checkpoint_storage_preflight = _checkpointing._checkpoint_storage_preflight
-_validate_shared_checkpoint_root = _checkpointing._validate_shared_checkpoint_root
-_save_checkpoint = _checkpointing._save_checkpoint
-_load_checkpoint = _checkpointing._load_checkpoint
-
 
 def _nvtx_phase(name: str, device: torch.device):
     return torch.cuda.nvtx.range(name) if device.type == "cuda" else nullcontext()
@@ -594,20 +567,20 @@ def train_distributed_mps(
     if root is not None:
         root.mkdir(parents=True, exist_ok=True)
         storage_probe_started = time.perf_counter()
-        _validate_shared_checkpoint_root(
+        _checkpointing._validate_shared_checkpoint_root(
             root,
             rank=rank,
             world_size=world_size,
             contract_fingerprint=contract_fingerprint,
         )
         checkpoint_storage_probe_seconds = time.perf_counter() - storage_probe_started
-        _validate_checkpoint_start_policy_collective(
+        _checkpointing._validate_checkpoint_start_policy_collective(
             root,
             rank=rank,
             resume=resume,
             allow_overwrite=allow_checkpoint_overwrite,
         )
-        _acquire_checkpoint_writer_lease(
+        _checkpointing._acquire_checkpoint_writer_lease(
             root,
             rank=rank,
             world_size=world_size,
@@ -619,13 +592,15 @@ def train_distributed_mps(
     if resume:
         if root is None:
             raise ValueError("resume requires checkpoint_dir")
-        committed_step, committed_path = _preflight_checkpoint_generation(
-            root,
-            rank=rank,
-            world_size=world_size,
-            contract_fingerprint=contract_fingerprint,
+        committed_step, committed_path = (
+            _checkpointing._preflight_checkpoint_generation(
+                root,
+                rank=rank,
+                world_size=world_size,
+                contract_fingerprint=contract_fingerprint,
+            )
         )
-        start_step = _load_checkpoint(
+        start_step = _checkpointing._load_checkpoint(
             root,
             rank=rank,
             world_size=world_size,
@@ -669,7 +644,7 @@ def train_distributed_mps(
     for step in range(start_step, steps):
         if root is not None:
             heartbeat_started = time.perf_counter()
-            _refresh_checkpoint_writer_lease(
+            _checkpointing._refresh_checkpoint_writer_lease(
                 root,
                 rank=rank,
                 contract_fingerprint=contract_fingerprint,
@@ -983,7 +958,7 @@ def train_distributed_mps(
             )
         )
         if root is not None and (step + 1) % checkpoint_interval == 0:
-            free_bytes, estimated_bytes = _checkpoint_storage_preflight(
+            free_bytes, estimated_bytes = _checkpointing._checkpoint_storage_preflight(
                 root,
                 rank=rank,
                 owned_indices=owned_indices,
@@ -1000,7 +975,7 @@ def train_distributed_mps(
                 checkpoint_estimated_generation_bytes, estimated_bytes
             )
             checkpoint_started = time.perf_counter()
-            path = _save_checkpoint(
+            path = _checkpointing._save_checkpoint(
                 root,
                 rank=rank,
                 world_size=world_size,
@@ -1013,10 +988,12 @@ def train_distributed_mps(
             )
             checkpoint_write_seconds += time.perf_counter() - checkpoint_started
             checkpoint_bytes_written += path.stat().st_size
-            checkpoint_bytes_written += _checkpoint_checksum_path(path).stat().st_size
+            checkpoint_bytes_written += (
+                _checkpointing._checkpoint_checksum_path(path).stat().st_size
+            )
             checkpoints.append(str(path))
             commit_started = time.perf_counter()
-            _commit_checkpoint_generation(
+            _checkpointing._commit_checkpoint_generation(
                 root,
                 rank=rank,
                 world_size=world_size,
@@ -1027,7 +1004,7 @@ def train_distributed_mps(
             checkpoint_commit_seconds += time.perf_counter() - commit_started
             prune_started = time.perf_counter()
             pruned_checkpoint_files.extend(
-                _prune_checkpoint_generations_collective(
+                _checkpointing._prune_checkpoint_generations_collective(
                     root,
                     rank=rank,
                     committed_step=step + 1,
@@ -1056,7 +1033,7 @@ def train_distributed_mps(
     if root is not None:
         for path in root.glob(f"rank-{rank}-step-*.pt"):
             checkpoint_retained_bytes += path.stat().st_size
-            checksum = _checkpoint_checksum_path(path)
+            checksum = _checkpointing._checkpoint_checksum_path(path)
             if checksum.is_file():
                 checkpoint_retained_bytes += checksum.stat().st_size
     result = ShardedMPSTrainingResult(
@@ -1106,7 +1083,7 @@ def train_distributed_mps(
         ),
     )
     if root is not None:
-        _release_checkpoint_writer_lease(root, rank=rank)
+        _checkpointing._release_checkpoint_writer_lease(root, rank=rank)
     return result
 
 
