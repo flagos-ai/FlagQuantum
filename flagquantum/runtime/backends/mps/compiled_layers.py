@@ -7,6 +7,7 @@ from typing import Any, Sequence
 import torch
 
 from ....core.ir import Instruction
+from ....providers.platform import get_platform_runtime
 from ....simulation.mps.compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     apply_compiled_mps_two_site_bucket,
@@ -49,9 +50,10 @@ def device_memory_metadata(device: torch.device) -> dict[str, int | None]:
             "reserved_memory_bytes": None,
             "peak_allocated_memory_bytes": None,
         }
+    memory = get_platform_runtime(device.type).memory_snapshot(device)
     return {
-        "allocated_memory_bytes": int(torch.cuda.memory_allocated(device)),
-        "reserved_memory_bytes": int(torch.cuda.memory_reserved(device)),
+        "allocated_memory_bytes": memory.allocated_bytes,
+        "reserved_memory_bytes": memory.reserved_bytes,
         "peak_allocated_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
     }
 

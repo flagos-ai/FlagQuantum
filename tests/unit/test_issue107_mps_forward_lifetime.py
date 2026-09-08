@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import inspect
+from types import SimpleNamespace
 
 import pytest
 import torch
 
 import flagquantum.runtime.backends.mps.forward as forward
+from flagquantum.runtime.backends.mps import compiled_layers
 
 pytestmark = pytest.mark.unit
 
@@ -41,3 +43,16 @@ def test_cuda_memory_fields_are_json_metadata_on_cpu() -> None:
         "peak_allocated_memory_bytes": None,
     }
     assert not any(isinstance(value, torch.Tensor) for value in fields.values())
+
+
+def test_cuda_memory_fields_use_platform_snapshot(monkeypatch) -> None:
+    memory = SimpleNamespace(allocated_bytes=10, reserved_bytes=20)
+    platform = SimpleNamespace(memory_snapshot=lambda device: memory)
+    monkeypatch.setattr(compiled_layers, "get_platform_runtime", lambda kind: platform)
+    monkeypatch.setattr(compiled_layers.torch.cuda, "max_memory_allocated", lambda device: 30)
+
+    assert compiled_layers.device_memory_metadata(torch.device("cuda:0")) == {
+        "allocated_memory_bytes": 10,
+        "reserved_memory_bytes": 20,
+        "peak_allocated_memory_bytes": 30,
+    }
