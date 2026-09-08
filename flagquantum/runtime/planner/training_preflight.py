@@ -98,10 +98,7 @@ def collect_distributed_training_preflight(
                     *(str(item) for item in mps_summary.get("blockers", ())),
                     *(
                         str(item)
-                        for item in mps_summary.get(
-                            "mps_runtime_blockers",
-                            mps_summary.get("phase5_mps_runtime_blockers", ()),
-                        )
+                        for item in mps_summary.get("mps_runtime_blockers", ())
                     ),
                 )
             )

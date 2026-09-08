@@ -78,8 +78,6 @@ class MPSBackwardReadinessGate:
         return {
             "status": self.status,
             "mps_backward_readiness_status": self.status,
-            # Compatibility field for historical release payloads.
-            "phase5_mps_backward_readiness_status": self.status,
             "production_training_claimable": self.production_training_claimable,
             "claimable_production_training": self.production_training_claimable,
             "fail_closed": self.fail_closed,

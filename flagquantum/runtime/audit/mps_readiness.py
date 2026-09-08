@@ -769,11 +769,5 @@ def _attach_mps_runtime_summary(
     out["mps_backward_readiness_blockers"] = gate["blockers"]
     out["mps_runtime_summary"] = runtime_summary
     out["mps_runtime_blockers"] = runtime_blockers
-    # Compatibility keys for historical benchmark and release payloads.
-    out["phase5_mps_backward_readiness_gate"] = gate
-    out["phase5_mps_backward_readiness_status"] = gate["status"]
-    out["phase5_mps_backward_readiness_blockers"] = gate["blockers"]
-    out["phase5_mps_runtime_summary"] = runtime_summary
-    out["phase5_mps_runtime_blockers"] = runtime_blockers
     out["claimable_production_training"] = gate["production_training_claimable"]
     return out

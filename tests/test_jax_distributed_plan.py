@@ -407,6 +407,7 @@ def test_jax_sharded_mps_parameter_flow_tracks_rank_local_parameter_gates():
         == "distributed_evidence_contract_v1"
     )
     assert summary["mps_backward_readiness_gate"]["fail_closed"] is True
+    assert not any(key.startswith("phase5_mps_") for key in summary)
     runtime = summary["mps_runtime_summary"]
     assert runtime["status"] == "control_plane_ready"
     assert runtime["evidence_status"] == {

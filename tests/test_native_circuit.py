@@ -1196,6 +1196,7 @@ def test_distributed_mps_local_tensor_strict_chain_shards_without_full_sync():
     assert "full_mps_sync_fallback" not in summary["scalability_blockers"]
     assert summary["mps_backward_readiness_status"] == "blocked"
     assert summary["mps_backward_readiness_gate"]["fail_closed"] is True
+    assert not any(key.startswith("phase5_mps_") for key in summary)
     runtime = summary["mps_runtime_summary"]
     assert runtime["status"] == "blocked"
     assert runtime["evidence_status"]["boundary_adjoint_exchange"] == "pending"

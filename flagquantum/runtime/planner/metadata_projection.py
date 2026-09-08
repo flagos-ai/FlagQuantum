@@ -245,8 +245,6 @@ def _jax_mps_runtime_metadata_from_training_summary(
             },
             "mps_backward_readiness_status": "blocked",
             "mps_runtime_blockers": blockers,
-            "phase5_mps_backward_readiness_status": "blocked",
-            "phase5_mps_runtime_blockers": blockers,
             "runtime_readiness_blockers": blockers,
             "claimable_production_training": False,
         }
@@ -257,26 +255,12 @@ def _jax_mps_runtime_metadata_from_training_summary(
             dict(fallback_deployment_plan),
             metadata,
         )
-    mps_readiness = dict(
-        summary.get(
-            "mps_runtime_summary", summary.get("phase5_mps_runtime_summary", {})
-        )
-        or {}
-    )
-    gate = dict(
-        summary.get(
-            "mps_backward_readiness_gate",
-            summary.get("phase5_mps_backward_readiness_gate", {}),
-        )
-        or {}
-    )
+    mps_readiness = dict(summary.get("mps_runtime_summary", {}) or {})
+    gate = dict(summary.get("mps_backward_readiness_gate", {}) or {})
     status = str(
         mps_readiness.get(
             "status",
-            summary.get(
-                "mps_backward_readiness_status",
-                summary.get("phase5_mps_backward_readiness_status", "blocked"),
-            ),
+            summary.get("mps_backward_readiness_status", "blocked"),
         )
     )
     evidence_status = dict(mps_readiness.get("evidence_status", {}) or {})
@@ -286,10 +270,7 @@ def _jax_mps_runtime_metadata_from_training_summary(
                 *(str(item) for item in summary.get("blockers", ()) or ()),
                 *(
                     str(item)
-                    for item in summary.get(
-                        "mps_runtime_blockers",
-                        summary.get("phase5_mps_runtime_blockers", ()),
-                    )
+                    for item in summary.get("mps_runtime_blockers", ())
                     or ()
                 ),
             )
@@ -326,7 +307,6 @@ def _jax_mps_runtime_metadata_from_training_summary(
     gradient.update(
         {
             "mps_backward_readiness_status": status,
-            "phase5_mps_backward_readiness_status": status,
             "parameter_gradient_ready": bool(
                 summary.get("parameter_gradient_ready", False)
             ),
@@ -392,29 +372,13 @@ def _jax_mps_runtime_metadata_from_training_summary(
         "mps_backward_readiness_gate": gate,
         "mps_backward_readiness_status": status,
         "mps_backward_readiness_blockers": tuple(
-            summary.get(
-                "mps_backward_readiness_blockers",
-                summary.get("phase5_mps_backward_readiness_blockers", ()),
-            )
-            or ()
+            summary.get("mps_backward_readiness_blockers", ()) or ()
         ),
         "mps_runtime_summary": mps_readiness,
         "mps_runtime_blockers": tuple(
-            summary.get(
-                "mps_runtime_blockers",
-                summary.get("phase5_mps_runtime_blockers", ()),
-            )
-            or ()
+            summary.get("mps_runtime_blockers", ()) or ()
         ),
         "runtime_readiness_blockers": blockers,
         "claimable_production_training": claimable,
     }
-    for legacy, canonical in (
-        ("phase5_mps_backward_readiness_gate", "mps_backward_readiness_gate"),
-        ("phase5_mps_backward_readiness_status", "mps_backward_readiness_status"),
-        ("phase5_mps_backward_readiness_blockers", "mps_backward_readiness_blockers"),
-        ("phase5_mps_runtime_summary", "mps_runtime_summary"),
-        ("phase5_mps_runtime_blockers", "mps_runtime_blockers"),
-    ):
-        metadata[legacy] = metadata[canonical]
     return memory, communication, gradient, deployment, metadata
