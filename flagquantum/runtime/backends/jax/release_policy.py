@@ -15,9 +15,6 @@ def attach_statevector_claimability(payload: Mapping[str, Any]) -> dict[str, Any
     gate = evaluate_statevector_training_claimability(out).summary()
     out["statevector_training_claimability_gate"] = gate
     out["statevector_training_claimability_status"] = gate["status"]
-    # Compatibility keys for historical benchmark payloads.
-    out["phase4_claimability_gate"] = gate
-    out["phase4_claimability_status"] = gate["status"]
     out["claimable_production_training"] = gate["claimable_production_training"]
     return out
 

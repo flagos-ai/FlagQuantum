@@ -132,6 +132,8 @@ def test_distributed_statevector_plan_marks_sharded_wires_and_communication():
         plan.summary()["statevector_training_claimability_status"] == "preflight_only"
     )
     assert plan.summary()["claimable_production_training"] is False
+    assert "phase4_claimability_gate" not in plan.summary()
+    assert "phase4_claimability_status" not in plan.summary()
     assert (
         plan.summary()["statevector_training_claimability_gate"]["checks"][
             "memory_plan_has_per_rank_shard_and_comm_buffer"

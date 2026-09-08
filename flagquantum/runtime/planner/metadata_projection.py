@@ -33,7 +33,6 @@ def _jax_statevector_runtime_metadata_from_training_summary(
                     "status": "training_preflight_unavailable",
                 },
                 "statevector_training_claimability_status": "blocked",
-                "phase4_claimability_status": "blocked",
                 "claimable_production_training": False,
                 "runtime_readiness_blockers": (
                     "jax_sharded_statevector_training_plan_unavailable",
@@ -64,10 +63,7 @@ def _jax_statevector_runtime_metadata_from_training_summary(
     deployment_plan = dict(fallback_deployment_plan)
     blockers = tuple(str(item) for item in summary.get("blockers", ()) or ())
     claimability_status = str(
-        summary.get(
-            "statevector_training_claimability_status",
-            summary.get("phase4_claimability_status", "blocked"),
-        )
+        summary.get("statevector_training_claimability_status", "blocked")
     )
     claimable = bool(summary.get("claimable_production_training", False))
     world_size = int(summary.get("world_size", 1) or 1)
@@ -201,11 +197,7 @@ def _jax_statevector_runtime_metadata_from_training_summary(
         "rank_ownership": rank_ownership,
         "rank_shards": rank_shards,
         "statevector_training_claimability_gate": dict(
-            summary.get(
-                "statevector_training_claimability_gate",
-                summary.get("phase4_claimability_gate", {}),
-            )
-            or {}
+            summary.get("statevector_training_claimability_gate", {}) or {}
         ),
         "statevector_training_claimability_status": claimability_status,
         "claimable_production_training": claimable,
@@ -226,10 +218,6 @@ def _jax_statevector_runtime_metadata_from_training_summary(
         ),
         "runtime_readiness_blockers": readiness_blockers,
     }
-    metadata["phase4_claimability_gate"] = metadata[
-        "statevector_training_claimability_gate"
-    ]
-    metadata["phase4_claimability_status"] = claimability_status
     return memory_plan, communication_plan, gradient_plan, deployment_plan, metadata
 
 

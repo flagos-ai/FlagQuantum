@@ -229,6 +229,8 @@ def test_jax_sharded_statevector_training_plan_requires_device_preflight():
     assert len(summary["local_memory_bytes_by_rank"]) == 4
     assert summary["statevector_training_claimability_status"] == "preflight_only"
     assert summary["claimable_production_training"] is False
+    assert "phase4_claimability_gate" not in summary
+    assert "phase4_claimability_status" not in summary
     assert (
         summary["statevector_training_claimability_gate"]["checks"][
             "memory_plan_has_per_rank_shard_and_comm_buffer"

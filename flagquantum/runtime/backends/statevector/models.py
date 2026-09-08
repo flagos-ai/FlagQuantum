@@ -511,9 +511,6 @@ class DistributedStatevectorPlan:
         gate = evaluate_statevector_training_claimability(payload).summary()
         payload["statevector_training_claimability_gate"] = gate
         payload["statevector_training_claimability_status"] = gate["status"]
-        # Compatibility keys for historical benchmark payloads.
-        payload["phase4_claimability_gate"] = gate
-        payload["phase4_claimability_status"] = gate["status"]
         payload["claimable_production_training"] = gate["claimable_production_training"]
         return payload
 
