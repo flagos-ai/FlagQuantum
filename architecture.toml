@@ -82,6 +82,6 @@ runtime_compiler_import_allowed = [
 "flagquantum/runtime/backends/mps/training_engine.py" = 14
 "flagquantum/runtime/backends/statevector/training.py" = 4
 "flagquantum/runtime/distributed/context.py" = 1
-"flagquantum/runtime/backends/mps/transport.py" = 8
+"flagquantum/runtime/backends/mps/transport.py" = 5
 "flagquantum/runtime/operator_backends.py" = 2
 "flagquantum/runtime/training_state.py" = 8

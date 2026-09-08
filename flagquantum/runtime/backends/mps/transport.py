@@ -10,6 +10,8 @@ from typing import Any, Sequence
 import torch
 import torch.distributed as dist
 
+from ....providers.platform import get_platform_runtime
+
 
 def _p2p_timeout() -> datetime.timedelta:
     seconds = float(os.environ.get("FLAGQUANTUM_MPS_P2P_TIMEOUT_SECONDS", "120"))
@@ -111,7 +113,7 @@ def _run_batched_p2p(
     key = (device.type, device.index)
     stream = _MPS_P2P_STREAMS.get(key)
     if stream is None:
-        stream = torch.cuda.Stream(device=device)
+        stream = get_platform_runtime(device.type).stream(device)
         _MPS_P2P_STREAMS[key] = stream
     current = torch.cuda.current_stream(device)
     stream.wait_stream(current)
@@ -137,7 +139,7 @@ def _run_batched_p2p_with_overlap(
     key = (device.type, device.index)
     stream = _MPS_P2P_STREAMS.get(key)
     if stream is None:
-        stream = torch.cuda.Stream(device=device)
+        stream = get_platform_runtime(device.type).stream(device)
         _MPS_P2P_STREAMS[key] = stream
     current = torch.cuda.current_stream(device)
     stream.wait_stream(current)
@@ -193,7 +195,7 @@ def warmup_mps_neighbor_communicators(device: torch.device) -> float:
         diagnostic=f"phase=communicator_warmup,peers={tuple((rank - 1, rank + 1))}",
     )
     if device.type == "cuda":
-        torch.cuda.synchronize(device)
+        get_platform_runtime(device.type).synchronize(device)
     _WARMED_MPS_NEIGHBORS.add(key)
     return __import__("time").perf_counter() - started
 
