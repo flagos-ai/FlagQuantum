@@ -81,7 +81,7 @@ payload 中。
 ### Kernel
 
 `PlatformRuntime` 没有 kernel 枚举、算子探针、编译能力或 fallback 字段。算子能力目前由
-`runtime/operator_backends.py`、`runtime/operator_probes.py`、Simulation 内的 PyTorch/
+`providers/platform/flaggems.py`、`runtime/operator_probes.py`、Simulation 内的 PyTorch/
 Triton 实现和具体工作负载测试分别给出。因而“provider 已发现”不能推出 statevector、
 MPS、TN、梯度或任意算子已支持。FlagOS 自动选择保持关闭，直到工作负载级算子与数值
 证据通过。
@@ -141,7 +141,7 @@ CUDA/NCCL 与 FlagOS 分布式执行由 Runtime 拥有。FlagOS 身份记录刻�
 3. Simulation 使用 `Tensor.is_cuda` 和 Triton CUDA 限制做 kernel 选择。这没有泄漏
    CUDA Python 对象，但把厂商设备分类写入了数值实现，阻止 FlagOS/其他
    PrivateUse1 平台复用同一优化 kernel；应由可验证的 kernel capability 决定。
-4. `runtime/operator_backends.py` 读取并序列化 FlagGems `vendor_name`。值被降为字符串，
+4. `providers/platform/flaggems.py` 读取并序列化 FlagGems `vendor_name`。值被降为字符串，
    没有把 vendor object 传入用户 API，但该探测尚未纳入 PlatformRuntime 证据模型。
 5. `PlatformRuntime.stream()`/`event()` 返回 `Any`，`PlatformIdentity.metadata` 与
    `PlatformDevice.metadata` 也接受任意值。实现当前主要返回 PyTorch 对象或 JSON-like

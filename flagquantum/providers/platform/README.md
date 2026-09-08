@@ -12,6 +12,7 @@ Simulation owns numerical kernels; Core owns cross-domain contracts.
 
 - Change portable CPU or CUDA lifecycle behavior in `pytorch.py`.
 - Change lazy FlagOS/Torch-FL adaptation in `flagos.py`.
+- Change optional FlagGems operator replacement and validation in `flaggems.py`.
 - Change provider lookup and device resolution in `registry.py`.
 - Change the existing provider-local value types only in `contracts.py`.
 - Change CPU-to-Core capability observation in `cpu_target_capabilities.py`.

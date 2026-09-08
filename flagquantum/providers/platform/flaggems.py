@@ -1,4 +1,4 @@
-"""Canonical optional PyTorch operator backend adapters.
+"""FlagGems PyTorch operator platform provider.
 
 FlagQuantum owns the quantum execution semantics.  Operator backends such as
 FlagGems sit below the native PyTorch path and may replace selected ATen
@@ -17,7 +17,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any, Iterable, Iterator, Mapping, Sequence
 
-from ..providers.platform import get_platform_runtime
+from .registry import get_platform_runtime
 
 FLAGGEMS_SAFE_OPS: tuple[str, ...] = (
     "abs",

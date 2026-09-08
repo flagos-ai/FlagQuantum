@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.backends as fqb
-from flagquantum.runtime.operator_backends import (
+from flagquantum.providers.platform.flaggems import (
     flaggems_preflight,
     operator_backend,
     plan_operator_replacements,

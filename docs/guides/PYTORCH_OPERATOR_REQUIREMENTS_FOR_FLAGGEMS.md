@@ -198,7 +198,7 @@ TN 需求重点：
 
 当前 FlagQuantum 已经有 operator backend 入口：
 
-- `flagquantum/runtime/operator_backends.py`
+- `flagquantum/providers/platform/flaggems.py`
 - `benchmarks/operator_backend_compare.py`
 
 当前安全候选算子：
@@ -257,7 +257,7 @@ rg -o --no-filename "torch\.[A-Za-z_][A-Za-z0-9_]*" flagquantum -g "*.py" \
 验证 FlagGems 对某个 dtype 的实际支持：
 
 ```python
-from flagquantum.runtime.operator_backends import validate_flaggems_ops
+from flagquantum.providers.platform.flaggems import validate_flaggems_ops
 
 ops = [
     "mm", "bmm", "sum", "mul", "abs", "add", "addmm",

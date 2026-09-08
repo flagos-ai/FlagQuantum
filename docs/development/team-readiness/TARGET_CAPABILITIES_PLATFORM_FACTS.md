@@ -222,7 +222,7 @@ PlatformCapabilitySnapshotCandidate
    Platform 设备选择能力，本切片不改契约。
 2. Runtime/Simulation 的 CUDA fast path 多处直接使用 `torch.cuda`；这些是已登记的既有
    architecture ceiling。它们会妨碍替换为其他平台，不能作为通用 capability snapshot 来源。
-3. `runtime/operator_backends.py` 把 FlagGems `vendor_name` 降为字符串，未泄漏 vendor object，
+3. `providers/platform/flaggems.py` 把 FlagGems `vendor_name` 降为字符串，未泄漏 vendor object，
    但其 operator catalog 是声明/探测输入，不是平台硬件认证。
 4. `PlatformRuntime.stream/event -> Any` 与 identity/device `metadata: Any` 尚未在合同层强制
    JSON-safe。现实现可返回 PyTorch/provider handle；它们必须止于 adapter，投影只接受标量、

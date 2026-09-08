@@ -383,7 +383,9 @@ def run_native(
     if not operator_backend_active and (
         operator_backend_name is not None or os.environ.get("FQ_OPERATOR_BACKEND")
     ):
-        from .operator_backends import operator_backend as operator_backend_context
+        from ..providers.platform.flaggems import (
+            operator_backend as operator_backend_context,
+        )
 
         wrapped_options = dict(options)
         wrapped_options["_operator_backend_active"] = True
