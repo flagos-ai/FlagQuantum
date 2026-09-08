@@ -14,9 +14,16 @@ from typing import Callable, Mapping, Sequence
 
 import torch
 
+from ..providers.platform import get_platform_runtime
+
 ParameterGroups = Mapping[str, torch.Tensor]
 Objective = Callable[[ParameterGroups], torch.Tensor]
 StateFunction = Callable[[ParameterGroups], torch.Tensor]
+
+
+def _synchronize(parameter: torch.Tensor) -> None:
+    if parameter.is_cuda:
+        get_platform_runtime(parameter.device.type).synchronize(parameter.device)
 
 
 @dataclass(frozen=True)
@@ -121,8 +128,7 @@ def _quantum_metric(
         create_graph=False,
         vectorize=True,
     ).reshape(-1, flat.numel())
-    if parameter.is_cuda:
-        torch.cuda.synchronize(parameter.device)
+    _synchronize(parameter)
     real_finished = time.perf_counter()
     imag_jac = torch.autograd.functional.jacobian(
         lambda value: state_from_flat(value).imag,
@@ -130,8 +136,7 @@ def _quantum_metric(
         create_graph=False,
         vectorize=True,
     ).reshape(-1, flat.numel())
-    if parameter.is_cuda:
-        torch.cuda.synchronize(parameter.device)
+    _synchronize(parameter)
     imag_finished = time.perf_counter()
     jacobian = torch.complex(real_jac, imag_jac)
     state = state_from_flat(flat).detach()
@@ -147,8 +152,7 @@ def _quantum_metric(
             stop = min(flat.numel(), start + block_size)
             blocked[start:stop, start:stop] = metric[start:stop, start:stop]
         metric = blocked
-    if parameter.is_cuda:
-        torch.cuda.synchronize(parameter.device)
+    _synchronize(parameter)
     finished = time.perf_counter()
     if timings is not None:
         timings.update(
@@ -214,8 +218,7 @@ def optimize_hybrid(
             else None
         )
         for step_index in range(stage.steps):
-            if parameter.is_cuda:
-                torch.cuda.synchronize(parameter.device)
+            _synchronize(parameter)
             step_started = time.perf_counter()
             objective_gradient_seconds = 0.0
             quantum_metric_seconds: float | None = None
@@ -262,8 +265,7 @@ def optimize_hybrid(
                 evaluations += 1
                 step_evaluations += 1
                 gradient = torch.autograd.grad(loss, parameter)[0].reshape(-1)
-                if parameter.is_cuda:
-                    torch.cuda.synchronize(parameter.device)
+                _synchronize(parameter)
                 objective_gradient_seconds = time.perf_counter() - objective_started
                 gradient_norm = float(torch.linalg.vector_norm(gradient).detach())
                 metric_timings: dict[str, float] = {}
@@ -285,8 +287,7 @@ def optimize_hybrid(
                 direction = torch.linalg.solve(
                     metric + stage.damping * identity, gradient
                 )
-                if parameter.is_cuda:
-                    torch.cuda.synchronize(parameter.device)
+                _synchronize(parameter)
                 linear_solve_seconds = time.perf_counter() - solve_started
                 with torch.no_grad():
                     parameter.add_(-stage.lr * direction.reshape_as(parameter))
