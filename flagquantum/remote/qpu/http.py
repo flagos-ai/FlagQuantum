@@ -7,12 +7,12 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, cast
 from urllib import parse, request
 
-from ..deployment.cloud import (
+from ...deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
     validate_deployment_package,
 )
-from .quantum import (
+from .contracts import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,

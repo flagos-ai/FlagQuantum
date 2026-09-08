@@ -10,10 +10,10 @@ the external API or SDK, and converts returned data into FlagQuantum-owned
 results. Directly controlled devices belong in `flagquantum.compute`.
 
 It does not own deployment-package semantics, Runtime scheduling, compiler
-lowering, or simulation numerics. The maintained external adapters are
-`braket.py` and `quafu.py`; `http.py` provides their reusable HTTP transport
-boundary and `result_parsing.py` normalizes remote counts. Quafu calibration
-conversion lives beside its adapter in `quafu_calibration.py`. The in-memory
+lowering, or simulation numerics. Existing quantum task contracts and adapters
+live under `qpu/`; their shots-and-counts result model must not become the
+contract for future remote compute services. Add `compute/` only when a real
+remote GPU or HPC adapter establishes that lifecycle. The in-memory
 control-plane test double lives in `flagquantum.testing`; it is not a local
 compute implementation. Run `python -m pytest
 tests/test_amazon_braket_provider.py tests/test_cloud_providers.py

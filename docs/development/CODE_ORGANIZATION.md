@@ -25,7 +25,8 @@ controlled devices live in `flagquantum.compute`; external task systems live in
 `flagquantum.deployment` remains the maintained user API for sealed deployment
 packages and measurement plans. Provider task handles, submission receipts,
 status, and results belong to `flagquantum.remote` with the concrete service
-adapters. Quantum-specific task contracts live in `flagquantum.remote.quantum`;
+adapters. Quantum-specific task contracts and adapters live in
+`flagquantum.remote.qpu`;
 future remote compute services must not reuse its shots-and-counts result model.
 
 ## Dependency direction

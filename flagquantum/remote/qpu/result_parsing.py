@@ -1,4 +1,4 @@
-"""Shared stateless parsing helpers for quantum-cloud providers."""
+"""Shared stateless parsing helpers for remote QPU providers."""
 
 from __future__ import annotations
 

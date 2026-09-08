@@ -5,12 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from ..deployment.cloud import (
+from ...deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
     validate_deployment_package,
 )
-from .quantum import (
+from .contracts import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,
@@ -66,7 +66,7 @@ def _first_property(value: Any, paths: tuple[tuple[str, ...], ...]) -> Any:
 
 
 def _braket_coupling_map(properties: Any, n_wires: int) -> Any:
-    from ..compiler import CouplingMap
+    from ...compiler import CouplingMap
 
     graph = _first_property(
         properties,

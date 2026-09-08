@@ -8,13 +8,12 @@ import time
 from typing import Any, Mapping
 from urllib import parse
 
-from ..deployment.cloud import (
+from ...deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
     validate_deployment_package,
 )
-from .http import HttpQuantumProvider, ProviderCredentials
-from .quantum import (
+from .contracts import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     DeploymentResult,
     ProviderTaskHandle,
@@ -22,6 +21,7 @@ from .quantum import (
     build_submission_receipt,
     validate_deployment_result,
 )
+from .http import HttpQuantumProvider, ProviderCredentials
 from .result_parsing import _extract_counts
 
 
