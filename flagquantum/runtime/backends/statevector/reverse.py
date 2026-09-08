@@ -10,6 +10,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR, ensure_circuit_ir
+from ....providers.platform import resolve_platform_device
 from ...builder_compilation import detached_ir_snapshot
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .environment import get_bool
@@ -589,7 +590,7 @@ def execute_torch_distributed_statevector_reverse(
     parameters, slots, occurrences = _parameter_layout(execution_ir)
     if device is None:
         device = (
-            torch.device("cuda", torch.cuda.current_device())
+            resolve_platform_device("cuda")
             if backend == "nccl"
             else parameters[0].device
         )

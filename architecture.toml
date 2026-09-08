@@ -85,7 +85,6 @@ runtime_compiler_import_allowed = [
 "flagquantum/runtime/backends/mps/site_kernels.py" = 1
 "flagquantum/runtime/backends/mps/training_engine.py" = 14
 "flagquantum/runtime/backends/statevector/checkpointing.py" = 2
-"flagquantum/runtime/backends/statevector/reverse.py" = 1
 "flagquantum/runtime/backends/statevector/reverse_adjoint.py" = 3
 "flagquantum/runtime/backends/statevector/training.py" = 7
 "flagquantum/runtime/backends/tensor_network/distributed_optimizer.py" = 2
