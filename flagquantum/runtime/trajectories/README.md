@@ -14,6 +14,7 @@ are supplied by Simulation; Runtime schedules them and records their outcomes.
 - Change seed derivation in `rng.py`.
 - Change online statistics in `statistics.py`.
 - Change checkpoint schema or persistence in `checkpoint.py`.
+- Change trajectory result contracts in `result.py`.
 - Change noisy MPS scheduling, recovery, or rank merging in `mps.py`.
 
 `mps.py` also resolves a trajectory seed into an explicit generator before it

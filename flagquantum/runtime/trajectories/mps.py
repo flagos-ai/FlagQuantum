@@ -14,7 +14,7 @@ from .checkpoint import (
 )
 from .distributed import merge_trajectory_statistics
 from .ownership import owned_trajectory_ids
-from .result import TrajectoryFailure
+from .result import MPSMonteCarloResult, TrajectoryFailure
 from .rng import derive_trajectory_seed, trajectory_generator
 from .statistics import TensorWelford
 
@@ -66,8 +66,7 @@ def run_noisy_mps_runtime(
     max_bond: int | None = None,
     cutoff: float = 0.0,
     trajectory_executor: Callable[..., Any],
-    result_factory: Callable[..., Any],
-) -> Any:
+) -> MPSMonteCarloResult:
     """Run multiple noisy MPS trajectories and aggregate Z expectations."""
 
     if int(trajectories) <= 0:
@@ -240,7 +239,7 @@ def run_noisy_mps_runtime(
         if seed is not None
         else ()
     )
-    return result_factory(
+    return MPSMonteCarloResult(
         trajectories=tuple(states),
         expectation_z_mean=statistics.mean,
         expectation_z_variance=statistics.variance,
@@ -265,8 +264,7 @@ def merge_noisy_mps_results_runtime(
     results: Any,
     *,
     require_complete: bool = True,
-    result_factory: Callable[..., Any],
-) -> Any:
+) -> MPSMonteCarloResult:
     """Merge disjoint rank-local noisy MPS results in rank order."""
 
     items = tuple(results)
@@ -329,7 +327,7 @@ def merge_noisy_mps_results_runtime(
             strict=True,
         )
     }
-    return result_factory(
+    return MPSMonteCarloResult(
         trajectories=tuple(state for _, state in retained),
         expectation_z_mean=statistics.mean,
         expectation_z_variance=statistics.variance,

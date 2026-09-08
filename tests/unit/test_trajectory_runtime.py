@@ -8,6 +8,7 @@ from flagquantum.compiler import lower_noise_model
 from flagquantum.noise import bit_flip_channel
 from flagquantum.runtime.executors.mps.noisy import merge_noisy_mps_results
 from flagquantum.runtime.trajectories import (
+    MPSMonteCarloResult,
     TensorWelford,
     TrajectoryCheckpoint,
     TrajectoryFailure,
@@ -17,7 +18,6 @@ from flagquantum.runtime.trajectories import (
     owned_trajectory_ids,
     save_trajectory_checkpoint,
 )
-from flagquantum.simulation.mps.models import MPSMonteCarloResult
 
 pytestmark = pytest.mark.unit
 
@@ -42,7 +42,7 @@ def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
     assert calls[0][2]["trajectories"] == 3
     assert calls[0][2]["seed"] == 7
     assert callable(calls[0][2]["trajectory_executor"])
-    assert calls[0][2]["result_factory"] is MPSMonteCarloResult
+    assert "result_factory" not in calls[0][2]
 
 
 def test_run_native_uses_lowered_mps_entrypoints(monkeypatch):
@@ -182,6 +182,7 @@ def test_seeded_noisy_mps_is_reproducible_by_global_trajectory_id():
     first = fqb.run_noisy_mps(circuit, model, trajectories=12, seed=101)
     second = fqb.run_noisy_mps(circuit, model, trajectories=12, seed=101)
 
+    assert isinstance(first, MPSMonteCarloResult)
     assert first.trajectory_ids == tuple(range(12))
     assert first.trajectory_seeds == second.trajectory_seeds
     assert torch.equal(first.expectation_z_mean, second.expectation_z_mean)

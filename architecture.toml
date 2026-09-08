@@ -47,9 +47,7 @@ pennylane_import_allowed_prefixes = [
 ]
 
 [simulation_boundaries]
-runtime_import_allowed = [
-    "flagquantum/simulation/mps/models.py",
-]
+runtime_import_allowed = []
 
 [northbound_boundaries]
 agent_forbidden = [

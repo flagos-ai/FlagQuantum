@@ -8,6 +8,7 @@ from typing import Any
 import torch
 
 from ...trajectories import mps as trajectory_runtime
+from ...trajectories.result import MPSMonteCarloResult
 
 
 def run_noisy_mps_trajectory(
@@ -101,7 +102,7 @@ def run_noisy_mps(
     dtype: torch.dtype | None = None,
     max_bond: int | None = None,
     cutoff: float = 0.0,
-) -> Any:
+) -> MPSMonteCarloResult:
     """Compile and schedule noisy MPS trajectories."""
 
     from ....compiler import lower_noise_model
@@ -161,7 +162,6 @@ def run_lowered_noisy_mps(
     """Schedule trajectories for an already-lowered noisy MPS program."""
 
     from ....simulation.mps.entrypoints import execute_lowered_noisy_mps_trajectory
-    from ....simulation.mps.models import MPSMonteCarloResult
 
     def execute_trajectory(
         _source: Any,
@@ -209,7 +209,6 @@ def run_lowered_noisy_mps(
         max_bond=max_bond,
         cutoff=cutoff,
         trajectory_executor=execute_trajectory,
-        result_factory=MPSMonteCarloResult,
     )
 
 
@@ -217,15 +216,12 @@ def merge_noisy_mps_results(
     results: Any,
     *,
     require_complete: bool = True,
-) -> Any:
+) -> MPSMonteCarloResult:
     """Merge disjoint rank-local noisy MPS results."""
-
-    from ....simulation.mps.models import MPSMonteCarloResult
 
     return trajectory_runtime.merge_noisy_mps_results_runtime(
         results,
         require_complete=require_complete,
-        result_factory=MPSMonteCarloResult,
     )
 
 
