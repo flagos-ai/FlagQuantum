@@ -18,6 +18,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
+from ....providers.platform import get_platform_runtime, resolve_platform_device
 from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
 from .reverse import (
     StatevectorCheckpointPolicy,
@@ -159,7 +160,8 @@ class ShardedTrainingResult:
 
 def _memory_bytes(device: torch.device) -> int:
     if device.type == "cuda":
-        return int(torch.cuda.memory_allocated(device))
+        memory = get_platform_runtime(device.type).memory_snapshot(device)
+        return int(memory.allocated_bytes or 0)
     # Linux reports ru_maxrss in KiB. This is process-wide CPU resident memory,
     # which is the measurable allocator envelope available without sampling
     # platform-specific malloc internals.
@@ -494,7 +496,7 @@ def train_distributed_statevector(
     rank = dist.get_rank() if dist.is_initialized() else 0
     backend = dist.get_backend() if dist.is_initialized() else "single_process"
     device = (
-        torch.device("cuda", torch.cuda.current_device())
+        resolve_platform_device("cuda")
         if backend == "nccl"
         else next(
             (
@@ -506,6 +508,7 @@ def train_distributed_statevector(
             torch.device("cpu"),
         )
     )
+    platform = get_platform_runtime(device.type)
     first_reverse = execute_torch_distributed_statevector_reverse(
         ir, observable_wire=observable_wire, device=device
     )
@@ -619,7 +622,7 @@ def train_distributed_statevector(
         step: int, phase: str, operation: str, completed: int, collective: str = "none"
     ) -> None:
         if device.type == "cuda":
-            torch.cuda.synchronize(device)
+            platform.synchronize(device)
         now = time.monotonic()
         snapshot = ProgressSnapshot(
             timestamp=now,

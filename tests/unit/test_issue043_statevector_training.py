@@ -2,6 +2,7 @@
 
 import hashlib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -10,6 +11,7 @@ import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
 from flagquantum.runtime.backends.statevector.training import (
     DistributedTrainingError,
+    _memory_bytes,
     _validate_checkpoint_generations,
     train_distributed_statevector,
 )
@@ -22,6 +24,17 @@ def _circuit(theta_value=0.43, phi_value=-0.21):
     phi = torch.tensor(phi_value, requires_grad=True)
     circuit = fq.Circuit(2).ry(0, theta).rxx(0, 1, phi).rz(1, theta)
     return circuit, (theta, phi)
+
+
+def test_cuda_memory_observation_uses_platform_provider(monkeypatch):
+    platform = SimpleNamespace(
+        memory_snapshot=lambda device: SimpleNamespace(allocated_bytes=4096)
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.backends.statevector.training.get_platform_runtime",
+        lambda device_type: platform,
+    )
+    assert _memory_bytes(torch.device("cuda:0")) == 4096
 
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
