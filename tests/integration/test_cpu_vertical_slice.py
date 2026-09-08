@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
+import subprocess
+import sys
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 import torch
@@ -13,6 +16,22 @@ from flagquantum.runtime.execution_plan_contract import (
 )
 
 pytestmark = pytest.mark.integration
+
+
+def test_cpu_statevector_user_example_runs_end_to_end() -> None:
+    root = Path(__file__).resolve().parents[2]
+    completed = subprocess.run(
+        [sys.executable, "-m", "examples.cpu_statevector"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    output = completed.stdout
+    assert "FlagQuantum CPU statevector check passed" in output
+    assert "path: local_statevector" in output
+    assert "device: cpu" in output
 
 
 def test_cpu_statevector_golden_path_is_compiled_executed_and_observable() -> None:

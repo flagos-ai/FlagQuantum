@@ -23,6 +23,9 @@ tests, and rendered in the
 
 ## Build and execute
 
+Run the complete CPU example with
+`python -m examples.cpu_statevector`, or use the same stable interfaces directly:
+
 ```python
 import flagquantum as fq
 

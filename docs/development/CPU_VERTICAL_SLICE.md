@@ -64,8 +64,12 @@ accelerator evidence.
 ## Run and modify
 
 ```bash
+python -m examples.cpu_statevector
 python -m pytest tests/integration/test_cpu_vertical_slice.py -q
 ```
+
+The example is the user-facing golden path. The integration test protects the
+same journey plus plan-integrity failure behavior.
 
 Start with `flagquantum/runtime/execution.py` for dispatch or result assembly,
 `flagquantum/simulation/statevector/local.py` for the numerical entry, and

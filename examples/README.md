@@ -13,6 +13,19 @@ All curated examples use:
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
 
+## First CPU execution
+
+Start with the complete local execution path:
+
+```bash
+python -m examples.cpu_statevector
+```
+
+The example builds a Bell-state circuit, creates an inspectable execution plan,
+runs that exact plan on the PyTorch CPU statevector engine, and checks the
+double-precision result against its analytical state. It disables backend
+fallback so a successful run proves the reported CPU path was actually used.
+
 ## Start in one minute
 
 From an editable development installation:
