@@ -93,7 +93,7 @@ The v0.1 device-coupled encoding API has been removed. Parameterized
 | --- | --- | --- | --- |
 | FlagQuantum IR JSON/dict | `CircuitIR.to_dict/from_dict`, compiler `import_circuit_ir`/`export_circuit_ir` | Canonical owned format | Source of truth |
 | Legacy engine “QIR” | `Circuit.to_qir/from_qir`, `core.from_engine_qir` | Compatibility format | This is a legacy Python instruction-list format, not LLVM/Microsoft QIR; rename/deprecate only through Stable Core process |
-| OpenQASM 2 static | compiler artifact profiles/emitter/offline deployment; legacy `utils.qasm_exporter` | Target format export | Compiler-owned target lowering is authoritative; legacy exporter is duplicate compatibility debt |
+| OpenQASM 2 static | `compiler/openqasm.py`, offline deployment | Target format export | Compiler owns the only static OpenQASM lowering path |
 | OpenQASM 3 static | compiler artifact profiles/emitter/offline deployment | Target format export | Compiler-owned target lowering |
 | OpenQASM 3 dynamic | `runtime/dynamic/dialects/openqasm3.py` | Runtime dynamic dialect export | Format lowering is embedded in Runtime and should move after a shared dynamic artifact contract is approved |
 | Braket IQM dynamic QASM | `runtime/dynamic/dialects/braket_iqm.py` | Vendor backend dialect | Vendor vocabulary in Runtime; move to Execution Provider boundary |
@@ -151,7 +151,6 @@ adapter or alternate IR.
 | P2 | `runtime/dynamic/conformance.py` | Runtime compatibility wrappers import `interop.qiskit.execution`. | Dependency direction is Runtime -> Ecosystem. | Move Qiskit Aer implementation to Execution Provider; keep an Ecosystem format converter and a compatibility shim with an owned removal plan. |
 | P2 | `_compiler/importers/circuit_ir.py` | Compiler provenance allowlist names `qiskit_label`. | No external object leaks, but vendor vocabulary has entered Compiler. | Core defines vendor-neutral operation label/provenance semantics; Qiskit maps at the edge. |
 | P2 | `runtime/dynamic/dialects/braket_iqm.py` | Vendor-specific Braket/IQM lowering is implemented under Runtime. | Runtime owns orchestration, not vendor artifact dialects. | Execution Provider migration after a dynamic artifact contract is approved. |
-| P2 | compiler emitter plus `utils/qasm_exporter.py` | Two OpenQASM text-lowering paths remain. | Risks divergent gate, parameter, wire, and failure semantics. | Compiler must become authoritative before the remaining utils path is removed. |
 | P3 | `encoding/encoder.py` | Legacy PyTorch/device frontend directly invokes old device operations. | It bypasses the modern IR-centered user journey but does not import another ecosystem. | Migrate examples/users to `fq.Circuit`/`fq.Module`; retire only through compatibility policy. |
 
 The Runtime-to-Ecosystem reverse dependency recorded above has since been

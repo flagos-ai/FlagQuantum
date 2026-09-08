@@ -13,6 +13,7 @@ import flagquantum.backends as fqb
 import flagquantum.compiler as compiler
 import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler import CouplingMap
+from flagquantum.compiler.openqasm import emit_openqasm
 from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.gradients import parameter_shift_gradient
 from flagquantum.runtime.audit import audit_distributed_scalability
@@ -41,7 +42,6 @@ from flagquantum.simulation.statevector.operations import (
     _gate_matrix,
 )
 from flagquantum.simulation.tensor_network.entrypoints import build_tensor_network
-from flagquantum.utils.qasm_exporter import export_to_qasm_str
 
 pytestmark = pytest.mark.integration
 
@@ -283,7 +283,7 @@ def test_native_named_parameters_bind_before_execution_and_export():
     with pytest.raises(ValueError, match="bind_parameters"):
         circuit.state()
     with pytest.raises(ValueError, match="bind_parameters"):
-        export_to_qasm_str(circuit)
+        emit_openqasm(circuit)
 
     bound = circuit.bind_parameters({"theta": 0.3, phi: torch.tensor(0.2)})
 
@@ -292,7 +292,7 @@ def test_native_named_parameters_bind_before_execution_and_export():
     assert torch.allclose(
         bound.expectation_z(0), torch.cos(torch.tensor([[0.3]])), atol=1e-6
     )
-    assert "rx(0.3)" in export_to_qasm_str(bound, version=2.0)
+    assert "rx(0.3)" in emit_openqasm(bound, version=2.0)
     assert "RZ Q0 0.3" in emit_qcis(bound)
 
 
@@ -388,7 +388,7 @@ def test_native_qasm_export():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1).rx(1, theta=0.25)
 
-    qasm = export_to_qasm_str(circuit, version=3.0)
+    qasm = emit_openqasm(circuit, version=3.0)
 
     assert "OPENQASM 3.0;" in qasm
     assert "qubit[2] q;" in qasm

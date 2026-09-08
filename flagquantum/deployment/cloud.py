@@ -17,10 +17,10 @@ from ..algorithms import Hamiltonian
 from ..circuit import Circuit
 from ..compiler import CouplingMap
 from ..compiler import compile as compile_program
+from ..compiler.openqasm import emit_openqasm
 from ..compiler.qcis import emit_qcis
 from ..core.ir import CircuitIR, Instruction, MeasurementNode
 from ..runtime.parallel import ObservableGroup, group_observables
-from ..utils.qasm_exporter import export_to_qasm_str
 from .routing_evidence import (
     DEPLOYMENT_PACKAGE_SCHEMA,
     build_deployment_routing_evidence,
@@ -190,7 +190,7 @@ def validate_deployment_package(
         dynamic._instructions.extend(package.ir.instructions)
         expected_qasm = export_dynamic_qasm3_for_backend(dynamic, package.backend)
     else:
-        expected_qasm = export_to_qasm_str(package.ir, version=package.qasm_version)
+        expected_qasm = emit_openqasm(package.ir, version=package.qasm_version)
     if package.qasm != expected_qasm:
         raise DeploymentPackageIdentityError(
             "deployment QASM does not match the packaged IR"
@@ -351,7 +351,7 @@ def create_deployment_package(
         routing_strategy=routing_strategy,
         optimize=optimize,
     )
-    qasm = export_to_qasm_str(compiled_ir, version=qasm_version)
+    qasm = emit_openqasm(compiled_ir, version=qasm_version)
     package_metadata = {
         "source": "flagquantum",
         "compiled": True,

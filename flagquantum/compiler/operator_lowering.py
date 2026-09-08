@@ -184,7 +184,15 @@ def _builtin_registry() -> OperatorLoweringRegistry:
                 strategy = "decomposition"
                 implementation = "flagquantum.compiler.qcis._decompose"
                 reason = "no QCIS decomposition" if not supported else ""
-            elif backend in {"qasm", "provider"}:
+            elif backend == "qasm":
+                strategy = "serialization"
+                implementation = "flagquantum.compiler.openqasm.emit_openqasm"
+                reason = (
+                    "channels require provider-specific lowering"
+                    if not supported
+                    else ""
+                )
+            elif backend == "provider":
                 strategy = "serialization"
                 reason = (
                     "channels require provider-specific lowering"
