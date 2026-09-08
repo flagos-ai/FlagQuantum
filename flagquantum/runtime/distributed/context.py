@@ -11,6 +11,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
+from ...providers.platform import get_platform_runtime
 from .flagos_runtime import activate_flagos_device, is_flagos_request
 from .identity import DistributedIdentity, build_distributed_identity
 
@@ -57,6 +58,10 @@ def torch_distributed_is_available() -> bool:
     return bool(dist.is_available())
 
 
+def _default_device_type() -> str:
+    return "cuda" if get_platform_runtime("cuda").is_available() else "cpu"
+
+
 def _infer_backend(
     device: torch.device | str | None = None,
     backend: str | None = None,
@@ -64,10 +69,9 @@ def _infer_backend(
     logical_device_type: str | None = None,
 ) -> str:
     explicit = str(backend).strip().lower() if backend is not None else None
-    device_type = (
-        logical_device_type
-        or torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu")).type
-    )
+    device_type = logical_device_type or torch.device(
+        device or _default_device_type()
+    ).type
     if device_type == "flagos":
         if explicit not in (None, "flagos"):
             raise ValueError(
@@ -79,7 +83,11 @@ def _infer_backend(
         raise ValueError("backend='flagos' requires device='flagos:<local_rank>'")
     if explicit is not None:
         return explicit
-    return "nccl" if device_type == "cuda" and torch.cuda.is_available() else "gloo"
+    return (
+        "nccl"
+        if device_type == "cuda" and get_platform_runtime("cuda").is_available()
+        else "gloo"
+    )
 
 
 def _normalized_active_backend() -> str:
@@ -180,9 +188,7 @@ def init_torch_distributed(
     if flagos_requested:
         resolved_device, platform_identity = activate_flagos_device(local_rank)
     else:
-        resolved_device = torch.device(
-            device or ("cuda" if torch.cuda.is_available() else "cpu")
-        )
+        resolved_device = torch.device(device or _default_device_type())
     if resolved_device.type == "cuda":
         torch.cuda.set_device(local_rank)
         resolved_device = torch.device("cuda", local_rank)

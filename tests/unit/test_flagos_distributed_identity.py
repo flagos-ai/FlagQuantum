@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 import torch
 
@@ -14,6 +16,12 @@ from flagquantum.runtime.distributed.identity import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_backend_inference_uses_platform_availability(monkeypatch):
+    platform = SimpleNamespace(is_available=lambda: True)
+    monkeypatch.setattr(context, "get_platform_runtime", lambda kind: platform)
+    assert context._infer_backend() == "nccl"
 
 
 def test_flagos_identity_is_fail_closed_without_provider_evidence():
