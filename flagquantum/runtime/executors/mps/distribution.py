@@ -8,13 +8,17 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import Instruction
-from .communication import (
-    _apply_two_mps_tensors_with_info,
-    _recv_tensor_p2p,
-    _send_tensor_p2p,
-    _tensor_nbytes,
+from ....simulation.mps.rank_local import (
+    apply_two_mps_tensors_with_info as _apply_two_mps_tensors_with_info,
+)
+from ....simulation.mps.rank_local import (
+    tensor_nbytes as _tensor_nbytes,
 )
 from .state import RankOwnedMPSState, _owner, _weighted_ownership
+from .transport import (
+    _recv_tensor_p2p,
+    _send_tensor_p2p,
+)
 
 
 def apply_rank_boundary_gate(

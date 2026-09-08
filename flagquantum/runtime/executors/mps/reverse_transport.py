@@ -16,7 +16,9 @@ from torch.profiler import record_function
 
 from ....compute import get_platform_runtime
 from ....core.ir import Instruction
-from .communication import (
+from .records import MPSReverseContractError
+from .state import RankOwnedMPSState
+from .transport import (
     _recv_tensor_batch_p2p,
     _recv_tensor_p2p,
     _recv_tensor_static_p2p,
@@ -24,8 +26,6 @@ from .communication import (
     _send_tensor_p2p,
     _send_tensor_static_p2p,
 )
-from .records import MPSReverseContractError
-from .state import RankOwnedMPSState
 
 
 @dataclass

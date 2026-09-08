@@ -18,7 +18,6 @@ from torch.profiler import record_function
 from ....compute import get_platform_runtime
 from ....core.ir import ensure_circuit_ir
 from . import checkpointing as _checkpointing
-from .communication import warmup_mps_neighbor_communicators
 from .device_resolution import resolve_distributed_mps_device
 from .errors import MPSTrainingError
 from .metadata_transport import all_gather_json
@@ -35,6 +34,7 @@ from .training_records import (
     MPSStepMetrics,
     ShardedMPSTrainingResult,
 )
+from .transport import warmup_mps_neighbor_communicators
 
 _parameter_layout = build_mps_parameter_layout
 

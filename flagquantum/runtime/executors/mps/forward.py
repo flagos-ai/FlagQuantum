@@ -12,14 +12,14 @@ from ....simulation.mps.models import MPSConfig
 from ....simulation.mps.rank_local import (
     apply_rank_local_mps_instruction as _apply_rank_local_instruction,
 )
+from ....simulation.mps.rank_local import (
+    instruction_matrix_for_mps as _instruction_matrix_for_mps,
+)
+from ....simulation.mps.rank_local import (
+    tensor_nbytes as _tensor_nbytes,
+)
 from ....simulation.mps.state import MPSState
 from .canonicalization import canonicalize_rank_owned_mps
-from .communication import (
-    _instruction_matrix_for_mps,
-    _recv_tensor_p2p,
-    _send_tensor_p2p,
-    _tensor_nbytes,
-)
 from .compiled_layers import (
     device_memory_metadata,
     prepare_compiled_mps_layer,
@@ -47,6 +47,10 @@ from .state import (
     RankOwnedMPSState,
     _owner,
     initial_mps_ownership,
+)
+from .transport import (
+    _recv_tensor_p2p,
+    _send_tensor_p2p,
 )
 
 _apply_boundary_gate = apply_rank_boundary_gate

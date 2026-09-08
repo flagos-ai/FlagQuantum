@@ -17,7 +17,7 @@ from ....simulation.mps.canonicalization import (
     mps_center_norms,
 )
 from ....simulation.mps.rank_local import tensor_nbytes
-from .communication import _recv_tensor_p2p, _send_tensor_p2p
+from .transport import _recv_tensor_p2p, _send_tensor_p2p
 
 
 @dataclass(frozen=True)

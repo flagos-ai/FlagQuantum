@@ -10,7 +10,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR
 from ....simulation.mps.models import MPSConfig
-from .communication import _tensor_nbytes
+from ....simulation.mps.rank_local import tensor_nbytes as _tensor_nbytes
 from .errors import MPSFullMaterializationError, MPSReverseContractError
 
 
