@@ -213,11 +213,11 @@ canonicalization/truncation pullback 已由 `simulation/jax/mps/pullbacks.py` �
 - RY 期望梯度与解析值一致；
 - 自定义可微矩阵不丢失 autograd 图。
 
-`tests/team/simulation/test_statevector_engine_replacement_draft.py` 让真实
-`run_local_statevector()` 与测试局部 fake 通过同一个参数化 conformance，二者均经
-`run_native(..., mode="statevector")` 的同一消费者接缝执行。共同检查 batch、dtype、计划
-mode/world size 和参数梯度所有权，且替换实现不修改 Runtime 消费者。测试没有向产品代码新增
-Protocol、注册表或导出；因此首切片的实现替换证据已经成立，但还没有证明最终 Core 契约完成。
+`tests/team/simulation/test_statevector_engine_replacement.py` 让真实
+`run_local_statevector()` 与测试局部 fake 通过同一个既有 Simulation 调用点执行。
+二者均由完全相同的 `fq.run(plan)` 消费者驱动，共同检查 batch、dtype、device、计划身份、
+结果语义和参数梯度所有权；替换实现不修改规划器、编译器或公共 API。该测试没有向产品代码新增
+Protocol、注册表或导出，因此首切片的实现替换证据已经成立，但还没有证明最终 Core 契约完成。
 
 ## 8. Core 契约提案（未实施）
 
