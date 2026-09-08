@@ -15,6 +15,7 @@ import torch.distributed as dist
 from torch.profiler import record_function
 
 from ....core.ir import Instruction
+from ....providers.platform import get_platform_runtime
 from .communication import (
     _recv_tensor_batch_p2p,
     _recv_tensor_p2p,
@@ -83,7 +84,7 @@ def begin_reverse_layer_halo_prefetch(
     if device.type == "cuda":
         stream = _LAYER_HALO_STREAMS.get(device.index)
         if stream is None:
-            stream = torch.cuda.Stream(device=device)
+            stream = get_platform_runtime(device.type).stream(device)
             _LAYER_HALO_STREAMS[device.index] = stream
         stream.wait_stream(torch.cuda.current_stream(device))
         with torch.cuda.stream(stream):
