@@ -13,6 +13,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
+from ....providers.platform import resolve_platform_device
 from ....simulation.tensor_network.stages import einsum_pair_by_labels
 from ...distributed.flagos_runtime import current_flagos_device
 from .distributed_dag import (
@@ -698,7 +699,7 @@ def _communication_device(local_values: Mapping[str, torch.Tensor]) -> torch.dev
     if dist.is_initialized():
         backend = str(dist.get_backend()).strip().lower()
         if backend == "nccl":
-            return torch.device("cuda", torch.cuda.current_device())
+            return resolve_platform_device("cuda")
         if backend == "flagos":
             return current_flagos_device()
     return torch.device("cpu")

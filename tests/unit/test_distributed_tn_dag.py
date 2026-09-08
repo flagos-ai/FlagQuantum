@@ -23,6 +23,7 @@ from flagquantum.runtime.backends.tensor_network import (
     contract_pair_for_contracted_shard,
     contract_pair_for_output_shard,
     distributed_dag,
+    distributed_execution,
     execute_checkpointed_tn_reverse_dag,
     execute_compiled_tn_forward_with_tape,
     execute_compiled_tn_reverse_dag,
@@ -1740,3 +1741,22 @@ def test_tn_redistribution_execution_requires_initialized_process_group():
             plan,
             rank=0,
         )
+
+
+def test_tn_communication_device_resolves_nccl_through_platform_provider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requested: list[str] = []
+
+    monkeypatch.setattr(distributed_execution.dist, "is_initialized", lambda: True)
+    monkeypatch.setattr(distributed_execution.dist, "get_backend", lambda: "nccl")
+    monkeypatch.setattr(
+        distributed_execution,
+        "resolve_platform_device",
+        lambda device: requested.append(device) or torch.device("cuda"),
+    )
+
+    device = distributed_execution._communication_device({})
+
+    assert device == torch.device("cuda")
+    assert requested == ["cuda"]
