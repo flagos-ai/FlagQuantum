@@ -60,8 +60,11 @@ agent_services_forbidden = [
 ]
 
 [long_horizon_boundaries]
-# Existing target-architecture debt. New Runtime -> Compiler imports are blocked;
-# remove entries as contracts move into Core.
+# Runtime may invoke Compiler only at explicit program-to-plan composition or
+# maintained raw-program compatibility boundaries. Backend execution, distributed
+# lifecycle, Simulation, and Providers must consume compiled IR or plans instead.
+# New imports remain blocked; do not invent a duplicate Core contract merely to
+# make this list shorter.
 runtime_compiler_import_allowed = [
     "flagquantum/runtime/backends/statevector/noisy.py",
     "flagquantum/runtime/backends/statevector/planning.py",

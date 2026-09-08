@@ -1,8 +1,6 @@
 # Runtime 解耦盘点
 
-状态：Runtime 团队盘点，待集成团队审阅
-
-共同基线：`d7c56603e363bba95d5e98b9a77a75adb3c52e0d`
+状态：集成分支当前边界说明（2026-09-08）
 
 路径分类：本轮仅增加文档与特征测试，不改变任何执行语义；所覆盖的本地路径为
 `single_device_fast_path`，轨迹检查点样例明确记录为
@@ -18,24 +16,16 @@ Runtime 当前同时承担了三种不同层次的工作：
 3. 为兼容历史入口而直接调用 Compiler 实现的编译、路由、噪声 lowering、模式选择
    和计划构建逻辑。
 
-`architecture.toml` 当前允许 10 个 Runtime 路径直接依赖 Compiler。逐项检查表明：
+`architecture.toml` 当前允许 7 个 Runtime 路径直接依赖 Compiler。允许项分为两类：
 
-- 3 条主要是共享数据契约放错层；
-- 2 条主要是编译服务调用没有经过稳定服务边界；
-- 2 条主要是 Runtime/Simulation 规划或校验代码直接调用 Compiler 内部算法；
-- 3 条主要是噪声或路由能力仍留在历史目录和入口造成的复合耦合。
+- `runtime/execution.py` 与 `runtime/planner/__init__.py` 是明确的 program-to-plan
+  编排入口，可以组织 Compiler 后进入 Runtime；
+- 其余 5 项服务仍接收 raw program 的后端规划、噪声或动态线路兼容入口，应在真实调用链
+  已经传递编译后 IR 时逐项收口。
 
-上述“主要分类”按文件计数；同一文件可能同时包含共享类型和服务调用，详见第 3 节。
-本轮不移动类型、不复制 Compiler 类型，也不修改 Simulation、Platform 或 Execution
-Provider 的暂管区域。
-
-最容易作为下一阶段首个移除候选的是
-`flagquantum/runtime/result.py -> flagquantum.runtime.execution_plan.ExecutionPlan`：它只在
-`TYPE_CHECKING` 分支中存在，不触发运行时导入，也不承担编译行为。移除前应由 Core
-通过批准的 API 变更提案提供最小的 `ExecutablePlanContract`（或等价的 Core-owned
-协议），Compiler 的 `ExecutionPlan` 通过适配/一致性测试满足该契约，Runtime 的
-`ExecutionResult.plan` 再只引用 Core 契约。不得以 `Any`、自由格式字典或 Runtime
-私有复制类型替代。
+目标不是让整个 `runtime` 对 Compiler 零依赖，而是禁止执行内核、分布式生命周期、
+Simulation 和 Provider 在执行期间重新编译。不得为缩短白名单复制调度、路由或噪声
+lowering，也不得仅为消除导入新增 `ExecutablePlanContract`、自由格式字典或转发层。
 
 ## 2. 当前执行生命周期入口
 
@@ -137,15 +127,13 @@ Provider 的暂管区域。
 
 | `architecture.toml` 登记路径 | 实际依赖 | 主要分类 | 目标替代方式 |
 | --- | --- | --- | --- |
-| `runtime/backends/statevector/noisy.py` | `lower_noise_model()` | 噪声历史耦合（编译服务调用） | 轨迹执行器接收已 lowering IR；由 Compiler 服务生成，Simulation 不直接导入 Compiler |
-| `runtime/backends/statevector/planning.py` | `schedule_layers()` | 公共 raw-program 规划入口保留的编译服务调用 | 当前入口直接接收 Circuit/IR，继续通过 Compiler facade 获得 layer schedule；只有经批准的 executable-plan 契约能够携带该结果后，计划执行路径才可改为直接消费，Runtime 不复制调度算法 |
-| `runtime/backends/tensor_network/execution.py` | `TNWorkingSetCalibration` | 共享数据契约 | 将版本化校准记录的最小只读契约置于 Core；校准构建仍由 Compiler/benchmark owning service 完成，Runtime 只验证适用范围并消费记录 |
-| `runtime/dynamic/routing.py` | `CouplingMap`、`route_to_topology()` | 路由历史耦合（共享契约 + 编译服务） | Core 提供 topology/coupling 数据契约；Compiler routing service 接收动态 IR 并返回已路由 IR，Runtime 只执行 |
-| `runtime/execution.py` | `ExecutionPlan`、`compiler.compile()`、`select_execution_mode()`、`plan_advanced()`、`plan()`；noise plan/lowering helpers | 编译服务调用（复合） | 把便捷的 program→plan 调用收束到一个 Compiler service port；attempt path 只接收 Core-owned executable plan view。自动模式、编译、噪声 lowering 均在尝试开始前完成 |
-| `runtime/noise_registry.py` | `EvolutionSemantics`、`StateRepresentation`、`NoisyExecutionPlan` | 噪声历史耦合（共享契约） | Core 提供 backend-neutral noise execution decision/enum 契约；registry 只按契约解析执行器，不认识 Compiler 类型 |
-| `runtime/plan_execution.py` | `ExecutionPlan`；`plan_program()`、`plan_decision()`、`plan_noise_model()`、`validate_plan_environment()`、`ExecutionPlanContractError` | 错误的内部实现调用（同时含共享契约） | Core executable-plan contract 负责严格反序列化和只读字段；Runtime-owned preflight 负责环境/资源校验；跨层错误使用 Core/公共错误契约。不要把当前 Compiler helper 复制到 Runtime |
-| `runtime/result.py` | `TYPE_CHECKING` 下的 `ExecutionPlan` | 共享数据契约 | `ExecutionResult.plan` 改为批准的 Core-owned executable-plan contract/protocol；Compiler plan 通过适配和 conformance test 满足它 |
-| `runtime/target_execution.py` | `BackendSelection`、`select_backend_by_cost()` | 编译服务调用（同时含共享决策契约） | Compiler service 返回 Core-owned backend-selection decision；Execution Provider 执行已选目标，不在执行文件中导入选择算法 |
+| `runtime/backends/statevector/noisy.py` | `lower_noise_model()` | raw-program 专家入口 | 保留入口行为；主执行链应调用其已 lowering 的内部执行函数 |
+| `runtime/backends/statevector/planning.py` | `schedule_layers()` | raw-program 后端规划入口 | 当前直接接收 Circuit/IR；不复制调度算法，不为此单独新增计划契约 |
+| `runtime/dynamic/routing.py` | `CouplingMap`、`route_to_topology()` | 动态线路编译兼容入口 | 路由必须发生在执行前；待动态线路调用链自然收口时移动编排责任 |
+| `runtime/execution.py` | `compile()`、`lower_noise_model()` | 顶层执行编排 | 合理的 composition root；后端分派不得再次编译已有计划 |
+| `runtime/noise_registry.py` | `lower_noise_model()` | 稳定密度矩阵便捷入口 | 计划执行入口已消费 lowered IR；便捷 raw-program 入口暂时保留 |
+| `runtime/planner/__init__.py` | `compile()`、`lower_noise_model()`、`schedule_layers()` | 顶层规划编排 | 合理的 program-to-plan 边界 |
+| `runtime/planner/noise_selection.py` | `lower_noise_model()` | raw-program 噪声候选评估 | 待调用方普遍已有 lowered IR 后收口，不增加隐藏参数或重复模型 |
 
 分布式状态向量的稳定 `ExecutionPlan.layers` 足以复用 Compiler 的层划分，但不包含
 amplitude shard、fusion block、通信 segment、buffer、节点拓扑或 JAX preflight 结果。
@@ -220,32 +208,13 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 这些测试是当前行为的特征证据，不宣称已经存在统一 attempt coordinator，也不构成 GPU、
 多节点或可扩展性发布证据。
 
-## 6. 下一阶段首个候选与所需 Core 契约
+## 6. 当前收口原则
 
-首个候选：移除 `runtime/result.py` 对 `compilation.models.ExecutionPlan` 的类型依赖。
+现阶段不以新增 Core 计划契约换取导入数量下降。只有真实用户流程无法由现有
+`CircuitIR`、`ExecutionPlan` 和结果类型表达时，才按公共 API 变更流程提出新契约。
 
-建议由集成/Core 团队先批准并提供最小 `ExecutablePlanContract`：
-
-1. Core-owned、版本化、严格字段和稳定身份；
-2. 至少暴露 `plan_id/identity`、可执行 `CircuitIR`、最终 execution decision、环境要求、
-   extensions 和 fingerprints；
-3. 允许 Compiler 的具体 `ExecutionPlan` 通过适配器满足，不要求 Runtime 认识 Compiler
-   类；
-4. 提供序列化 round-trip、未知字段/版本 fail-closed、Compiler 实现替换 conformance；
-5. 明确 `ExecutionResult.plan` 的兼容策略。由于这是 Stable Core 公开结果字段的类型边界，
-   必须遵循 `PUBLIC_API_PROTECTION.md` 的 API change proposal，不能直接改注解或快照。
-
-后续契约（不属于首个候选的前置条件）应按独立提案拆分：
-
-- `ExecutionAttemptContract`：`attempt_id`、plan identity、ordinal、状态、observation、
-  ownership、failure、fallback、checkpoint reference、provenance；
-- `NoiseExecutionPlanContract`：噪声 representation/evolution/parallel/memory 决策；
-- topology/coupling contract；
-- backend-selection decision contract；
-- TN working-set calibration record contract。
-
-只有 Core 契约、contract fake 和 conformance test 先在集成分支落地后，Runtime 才应同步
-基线并实施依赖移除。
+后续每次只沿一条真实调用链收口：上层完成编译，后端消费已有 IR，验证没有二次编译后再
+删除一项白名单。若入口仍必须接收 raw program，则保留受控依赖并停止拆分。
 
 ## 7. 兼容执行入口收口（2026-09-06）
 
