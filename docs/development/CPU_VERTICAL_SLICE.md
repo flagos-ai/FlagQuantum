@@ -113,9 +113,10 @@ This migration reused the existing `CircuitIR`, optimization and routing
 implementations, public compiler functions, and CPU vertical tests. It added no
 new compiler contract, pass framework, registry, fallback, or parallel
 implementation. Architecture checks prevent the removed paths from returning.
-The `_compiler` research implementation remains frozen and off the default path
-until a bounded concern can replace the stable implementation under the same
-consumer-facing conformance tests.
+The disconnected `_compiler` research implementation and its dedicated tests were
+removed before release. Compiler replacement is covered by a consumer-facing test
+that substitutes the Runtime planning compiler callable while leaving `fq.plan(...)`
+and `fq.run(...)` unchanged.
 
 ## Runtime planning authority migration
 

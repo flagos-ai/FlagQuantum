@@ -49,10 +49,10 @@
       "target_milestone": "vnext-phase-2",
       "current_authority": ["flagquantum/compiler"],
       "target_authority": "flagquantum/compiler",
-      "compatibility_adapter": "stable flagquantum.compiler package and bounded planning migration",
+      "compatibility_adapter": "Runtime compiler call boundary",
       "completion_evidence": "one pipeline can be replaced without Runtime or user API changes",
       "retirement_condition": "all supported compiler entry points delegate to the target facade and legacy internal imports reach zero",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "name": "simulation_extraction",

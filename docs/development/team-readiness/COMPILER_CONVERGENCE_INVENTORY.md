@@ -31,3 +31,15 @@ their Runtime owner. No second compiler authority remains in the package tree.
 
 The CPU vertical slice must continue to pass without importing a private compiler
 tree or any vendor SDK.
+
+## Replacement evidence
+
+`tests/team/compiler/test_compiler_pipeline_replacement.py` replaces the compiler
+callable used by Runtime planning with an independent contract fake, then runs the
+unchanged public `fq.plan(...)` and `fq.run(...)` path. The resulting CPU state is
+verified against the same scientific expectation. This proves that compiler
+implementation replacement does not require changes to Runtime production code or
+the user API.
+
+Together with the absence of legacy compiler paths and imports, this closes the
+`compiler_convergence` migration track.

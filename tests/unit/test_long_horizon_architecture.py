@@ -37,6 +37,11 @@ def test_architecture_contract_declares_independent_domains() -> None:
     )
     assert simulation["status"] == "complete"
     assert simulation["current_authority"] == [simulation["target_authority"]]
+    compiler = next(
+        track for track in migration_tracks if track["name"] == "compiler_convergence"
+    )
+    assert compiler["status"] == "complete"
+    assert compiler["current_authority"] == [compiler["target_authority"]]
 
 
 def test_program_artifact_wraps_circuit_without_replacing_circuit_ir() -> None:

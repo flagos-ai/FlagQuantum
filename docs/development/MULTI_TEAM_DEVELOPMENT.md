@@ -47,7 +47,7 @@ CI 或发布声明；这些变更仍由 Integration 单独审批。
 ```bash
 python tools/check_team_scope.py \
   --team compiler \
-  --files flagquantum/_compiler/pipeline.py tests/unit/test_pipeline.py
+  --files flagquantum/compiler/pipeline.py tests/team/compiler/test_compiler_pipeline_replacement.py
 ```
 
 分支完成检查示例：
