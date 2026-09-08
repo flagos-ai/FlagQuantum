@@ -11,8 +11,8 @@ from ....algorithms import pauli_term
 from ....circuit import Circuit
 from ....core.ir import ensure_circuit_ir
 from ....core.parameters import Parameter
-from ....simulation.numerics.double_single import DoubleSingleTensor
 from ....providers.platform import get_platform_runtime, resolve_platform_device
+from ....simulation.numerics.double_single import DoubleSingleTensor
 from .split_real_imag import _normalized_observables, _parameter_occurrences
 from .split_real_imag_autograd_optimizer import (
     double_single_sgd_step,

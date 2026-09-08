@@ -362,9 +362,7 @@ def _distributed_sparse_contraction(
             raise RuntimeError(
                 "rank-zero tensor-network contraction DAG was not broadcast"
             )
-        local_tasks = tuple(
-            task for task in tasks if task.owner_rank == context.rank
-        )
+        local_tasks = tuple(task for task in tasks if task.owner_rank == context.rank)
         value = _contract_assigned_tensor_slices(
             nodes,
             output_labels,
@@ -377,9 +375,7 @@ def _distributed_sparse_contraction(
     else:
         partials = []
         for task_rank in range(world_size):
-            local_tasks = tuple(
-                task for task in tasks if task.owner_rank == task_rank
-            )
+            local_tasks = tuple(task for task in tasks if task.owner_rank == task_rank)
             partial = _contract_assigned_tensor_slices(
                 nodes, output_labels, local_tasks
             )
@@ -747,9 +743,7 @@ def run_distributed_tensor_network(
     local_simulation = False
     rank_partial_bytes: dict[int, int] = {}
     if context is not None and context.initialized:
-        local_tasks = tuple(
-            task for task in tasks if task.owner_rank == context.rank
-        )
+        local_tasks = tuple(task for task in tasks if task.owner_rank == context.rank)
         partial = _contract_assigned_tensor_slices(
             plan.nodes, plan.output_labels, local_tasks
         )
@@ -759,9 +753,7 @@ def run_distributed_tensor_network(
     elif world_size > 1 and backend_policy.torch_backend == "local_tensor":
         partials = []
         for task_rank in range(world_size):
-            local_tasks = tuple(
-                task for task in tasks if task.owner_rank == task_rank
-            )
+            local_tasks = tuple(task for task in tasks if task.owner_rank == task_rank)
             partial = _contract_assigned_tensor_slices(
                 plan.nodes, plan.output_labels, local_tasks
             )

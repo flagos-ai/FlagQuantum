@@ -110,7 +110,9 @@ def scope_errors(
         if owner is None:
             errors.append(f"{path}: unowned path; integration assignment is required")
         elif owner.startswith("AMBIGUOUS:"):
-            errors.append(f"{path}: ambiguous ownership ({owner.removeprefix('AMBIGUOUS:')})")
+            errors.append(
+                f"{path}: ambiguous ownership ({owner.removeprefix('AMBIGUOUS:')})"
+            )
         else:
             errors.append(f"{path}: owned by team {owner!r}, not {team!r}")
     return tuple(errors)
@@ -154,7 +156,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.files is None and not args.base:
             errors.append("provide --files or --base")
         if not errors:
-            paths = tuple(args.files) if args.files is not None else _git_changed_files(args.base)
+            paths = (
+                tuple(args.files)
+                if args.files is not None
+                else _git_changed_files(args.base)
+            )
             errors.extend(scope_errors(args.team, paths, policy))
     if errors:
         for error in errors:

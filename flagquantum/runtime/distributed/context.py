@@ -69,9 +69,9 @@ def _infer_backend(
     logical_device_type: str | None = None,
 ) -> str:
     explicit = str(backend).strip().lower() if backend is not None else None
-    device_type = logical_device_type or torch.device(
-        device or _default_device_type()
-    ).type
+    device_type = (
+        logical_device_type or torch.device(device or _default_device_type()).type
+    )
     if device_type == "flagos":
         if explicit not in (None, "flagos"):
             raise ValueError(

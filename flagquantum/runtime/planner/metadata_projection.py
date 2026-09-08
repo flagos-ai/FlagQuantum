@@ -268,11 +268,7 @@ def _jax_mps_runtime_metadata_from_training_summary(
         dict.fromkeys(
             (
                 *(str(item) for item in summary.get("blockers", ()) or ()),
-                *(
-                    str(item)
-                    for item in summary.get("mps_runtime_blockers", ())
-                    or ()
-                ),
+                *(str(item) for item in summary.get("mps_runtime_blockers", ()) or ()),
             )
         )
     )
@@ -375,9 +371,7 @@ def _jax_mps_runtime_metadata_from_training_summary(
             summary.get("mps_backward_readiness_blockers", ()) or ()
         ),
         "mps_runtime_summary": mps_readiness,
-        "mps_runtime_blockers": tuple(
-            summary.get("mps_runtime_blockers", ()) or ()
-        ),
+        "mps_runtime_blockers": tuple(summary.get("mps_runtime_blockers", ()) or ()),
         "runtime_readiness_blockers": blockers,
         "claimable_production_training": claimable,
     }

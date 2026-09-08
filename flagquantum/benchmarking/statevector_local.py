@@ -226,9 +226,7 @@ def main() -> None:
     parser.add_argument("--layers", type=int, default=2)
     parser.add_argument(
         "--device",
-        default=(
-            "cuda" if get_platform_runtime("cuda").is_available() else "cpu"
-        ),
+        default=("cuda" if get_platform_runtime("cuda").is_available() else "cpu"),
     )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--iterations", type=int, default=10)

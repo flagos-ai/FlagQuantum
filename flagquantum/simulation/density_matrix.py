@@ -7,9 +7,9 @@ from typing import Any, Iterable, Sequence
 import torch
 
 from ..core.ir import CircuitIR
+from ..core.runtime_config import get_runtime_config
 from ..noise import KrausChannel
 from .gate_matrix import gate_matrix
-from ..core.runtime_config import get_runtime_config
 
 
 def _complex_dtype(dtype: torch.dtype | None = None) -> torch.dtype:

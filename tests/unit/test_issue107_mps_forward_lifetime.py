@@ -49,7 +49,9 @@ def test_cuda_memory_fields_use_platform_snapshot(monkeypatch) -> None:
     memory = SimpleNamespace(allocated_bytes=10, reserved_bytes=20)
     platform = SimpleNamespace(memory_snapshot=lambda device: memory)
     monkeypatch.setattr(compiled_layers, "get_platform_runtime", lambda kind: platform)
-    monkeypatch.setattr(compiled_layers.torch.cuda, "max_memory_allocated", lambda device: 30)
+    monkeypatch.setattr(
+        compiled_layers.torch.cuda, "max_memory_allocated", lambda device: 30
+    )
 
     assert compiled_layers.device_memory_metadata(torch.device("cuda:0")) == {
         "allocated_memory_bytes": 10,

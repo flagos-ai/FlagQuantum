@@ -611,8 +611,7 @@ def plan(
                 "noise_model must be a flagquantum.noise.NoiseModel or None"
             )
     if any(
-        instruction.metadata.get("is_dynamic")
-        or instruction.metadata.get("conditions")
+        instruction.metadata.get("is_dynamic") or instruction.metadata.get("conditions")
         for instruction in source_ir.instructions
     ):
         raise CapabilityError(

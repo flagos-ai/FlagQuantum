@@ -27,7 +27,7 @@ def _nodes() -> tuple[TensorNetworkNode, ...]:
     ),
 )
 def test_compatibility_names_preserve_path_search_function_identity(name):
-        assert getattr(contraction, name) is getattr(path_search, name)
+    assert getattr(contraction, name) is getattr(path_search, name)
 
 
 def test_extracted_path_search_modes_preserve_contraction_result():

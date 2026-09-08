@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-from flagquantum.core.operator_schema import operator_manifest
 from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
+from flagquantum.core.operator_schema import operator_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "docs" / "operator_manifest.json"

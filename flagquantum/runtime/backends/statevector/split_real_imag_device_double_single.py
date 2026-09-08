@@ -17,12 +17,12 @@ from ....core.numerics import (
     RefinementStrategy,
 )
 from ....core.parameters import Parameter
+from ....providers.platform import resolve_platform_device
 from ....simulation.numerics.double_single import (
     DoubleSingleComplexTensor,
     DoubleSingleTensor,
     double_single_sum,
 )
-from ....providers.platform import resolve_platform_device
 from ....simulation.statevector.double_single import (
     double_single_pauli_term_expectation,
     run_double_single_statevector,

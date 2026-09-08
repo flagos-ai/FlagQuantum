@@ -9,11 +9,11 @@ from typing import Any, Sequence
 import torch
 
 from ....core.parameters import Parameter, ParameterExpression
+from ....providers.platform import resolve_platform_device
 from ....simulation.numerics.double_single import (
     DoubleSingleTensor,
     double_single_sin_cos,
 )
-from ....providers.platform import resolve_platform_device
 from ....simulation.statevector.double_single_device_gates import (
     encode_device_double_single_matrix,
 )

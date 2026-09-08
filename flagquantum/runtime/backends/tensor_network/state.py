@@ -122,7 +122,10 @@ class DistributedTensorNetworkState:
                     for blocker, active in (
                         ("single_process_development_simulator", self.local_simulation),
                         ("full_local_tensor_network_facade", has_slice_parallel_state),
-                        ("expectation_methods_use_local_state", has_slice_parallel_state),
+                        (
+                            "expectation_methods_use_local_state",
+                            has_slice_parallel_state,
+                        ),
                     )
                     if active
                 ),

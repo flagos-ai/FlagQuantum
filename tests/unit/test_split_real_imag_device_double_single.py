@@ -8,10 +8,6 @@ import torch
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import pauli_term
 from flagquantum.core.numerics import default_accuracy_requirement
-from flagquantum.simulation.numerics.double_single import (
-    DoubleSingleTensor,
-    double_single_sin_cos,
-)
 from flagquantum.runtime.backends.statevector.split_real_imag_device_double_single import (
     execute_split_real_imag_device_double_single_expectation,
     execute_split_real_imag_device_double_single_statevector,
@@ -23,6 +19,10 @@ from flagquantum.runtime.backends.statevector.split_real_imag_device_double_sing
 from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.operator_probes import (
     preflight_split_real_imag_statevector_p4,
+)
+from flagquantum.simulation.numerics.double_single import (
+    DoubleSingleTensor,
+    double_single_sin_cos,
 )
 
 pytestmark = pytest.mark.unit

@@ -126,7 +126,9 @@ def execute_distributed_sliced_tn_explicit_reverse(
             "distributed sliced TN reverse requires at least one task per rank"
         )
 
-    cuda_parameter = next((parameter for parameter in parameters if parameter.is_cuda), None)
+    cuda_parameter = next(
+        (parameter for parameter in parameters if parameter.is_cuda), None
+    )
     if cuda_parameter is not None:
         get_platform_runtime("cuda").synchronize(cuda_parameter.device)
     local_start = perf_counter()

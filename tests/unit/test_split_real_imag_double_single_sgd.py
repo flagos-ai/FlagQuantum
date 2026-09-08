@@ -7,12 +7,12 @@ import torch
 
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import pauli_term
-from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 from flagquantum.runtime.backends.statevector.split_real_imag_autograd_optimizer import (
     double_single_sgd_step,
     initialize_split_real_imag_double_single_sgd,
     split_real_imag_double_single_sgd_step,
 )
+from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 
 pytestmark = pytest.mark.unit
 

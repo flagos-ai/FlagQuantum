@@ -33,22 +33,22 @@ repos:
         pass_filenames: false
       - id: operator-manifest
         name: operator manifest
-        entry: python tools/operator_manifest.py --check
+        entry: python -m tools.operator_manifest --check
         language: system
         pass_filenames: false
       - id: runtime-contract-schema
         name: runtime contract schema
-        entry: python tools/runtime_contract_schema.py --check
+        entry: python -m tools.runtime_contract_schema --check
         language: system
         pass_filenames: false
       - id: documentation-source-of-truth
         name: documentation source of truth
-        entry: python tools/docs_source_of_truth.py --check
+        entry: python -m tools.docs_source_of_truth --check
         language: system
         pass_filenames: false
       - id: public-api-baseline
         name: public API migration baseline
-        entry: python tools/public_api_snapshot.py
+        entry: python -m tools.public_api_snapshot
         language: system
         pass_filenames: false
       - id: legacy-root-api-usage
@@ -58,7 +58,7 @@ repos:
         pass_filenames: false
       - id: correctness-certification
         name: correctness certification matrix
-        entry: python tools/correctness_certification.py --check
+        entry: python -m tools.correctness_certification --check
         language: system
         pass_filenames: false
       - id: black-production-surface

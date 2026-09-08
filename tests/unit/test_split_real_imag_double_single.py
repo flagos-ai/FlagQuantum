@@ -6,7 +6,6 @@ import torch
 from flagquantum import Circuit, Parameter
 from flagquantum.algorithms import pauli_term
 from flagquantum.core.numerics import AccuracyRequirementContract, PrecisionPlanContract
-from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 from flagquantum.runtime.backends.statevector.split_real_imag_double_single import (
     execute_split_real_imag_double_single_expectation,
     execute_split_real_imag_double_single_statevector,
@@ -18,6 +17,7 @@ from flagquantum.runtime.backends.statevector.split_real_imag_double_single_conf
 )
 from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.operator_probes import preflight_split_real_imag_statevector_p3
+from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 
 pytestmark = pytest.mark.unit
 
