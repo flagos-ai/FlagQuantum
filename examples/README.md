@@ -26,6 +26,17 @@ runs that exact plan on the PyTorch CPU statevector engine, and checks the
 double-precision result against its analytical state. It disables backend
 fallback so a successful run proves the reported CPU path was actually used.
 
+To inspect target-independent compiler optimization separately:
+
+```bash
+python -m examples.compiler_optimize
+```
+
+This example removes redundant gates, verifies that optimization reaches a
+fixed point, and compares the optimized program with the original numerical
+result. It uses `compiler.optimize`; target-aware lowering and routing belong to
+`compiler.compile`.
+
 ## Start in one minute
 
 From an editable development installation:

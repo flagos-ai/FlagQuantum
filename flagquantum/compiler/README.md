@@ -15,6 +15,12 @@ Use `optimize(program)` for target-independent canonical optimization and
 `simple_compile` has been removed; it did not describe a distinct compilation
 stage.
 
+Run the user-facing optimization path from the repository root:
+
+```bash
+python -m examples.compiler_optimize
+```
+
 Individual canonicalization functions are pipeline implementation details, not
 expert-facing entry points. Change or compose them through `optimize`.
 

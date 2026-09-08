@@ -15,6 +15,7 @@ tests, and rendered in the
 | Task | Primary interface | Result |
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
 | Execute | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
@@ -79,6 +80,22 @@ the responsibility of `DeploymentPackage`.
 `flagquantum.backends.run_native`, `flagquantum.backends.run_mps`, and
 `flagquantum.backends.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects or backend-specific controls.
+
+## Optimize a program
+
+Compiler optimization is an expert-facing, target-independent transformation:
+
+```python
+import flagquantum.compiler as compiler
+
+optimized_ir = compiler.optimize(circuit)
+result = fq.run(optimized_ir, options=options)
+```
+
+`optimize` returns a new `CircuitIR`, leaves the input unchanged, and applies
+canonical rewrites to a fixed point. Use `compiler.compile` when a concrete
+target topology or target-aware lowering is required. The complete executable
+example is `python -m examples.compiler_optimize`.
 
 ## Train with PyTorch
 
