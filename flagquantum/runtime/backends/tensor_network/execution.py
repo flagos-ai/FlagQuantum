@@ -50,6 +50,7 @@ from ....simulation.tensor_network.stages import (
 )
 from ....version import __version__
 from ...distributed.backend_policy import (
+    DistributedBackendPolicy,
     _resolve_backend_policy,
     _should_use_torch_distributed,
 )
@@ -527,6 +528,39 @@ def _distributed_sparse_contraction(
     return value, tasks, partial_bytes, semantics, working_set_preflight
 
 
+def _prepare_distributed_context(
+    *,
+    world_size: int,
+    distributed_executor: str,
+    backend: str | None,
+    init_method: str,
+    rank: int | None,
+    local_rank: int | None,
+    options: dict[str, Any],
+) -> tuple[DistributedBackendPolicy, TorchDistributedContext | None, int]:
+    """Resolve backend policy and initialize the requested process group."""
+
+    backend_policy = _resolve_backend_policy(options)
+    context = None
+    if _should_use_torch_distributed(
+        distributed_executor,
+        backend_policy,
+        world_size=world_size,
+    ):
+        context = init_torch_distributed(
+            backend=backend,
+            init_method=init_method,
+            rank=rank,
+            world_size=world_size,
+            local_rank=local_rank,
+            device=options.get("device"),
+            force_initialize=distributed_executor == "torch",
+        )
+        world_size = context.world_size
+        options["device"] = context.device
+    return backend_policy, context, world_size
+
+
 def distributed_tensor_network_amplitude(
     circuit_or_ir: Any,
     bitstring: int | str | Sequence[int],
@@ -551,24 +585,15 @@ def distributed_tensor_network_amplitude(
 ) -> DistributedTensorNetworkAmplitude:
     """Compute one amplitude by distributing internal-edge slice tasks."""
 
-    backend_policy = _resolve_backend_policy(options)
-    context = None
-    if _should_use_torch_distributed(
-        distributed_executor,
-        backend_policy,
+    _, context, world_size = _prepare_distributed_context(
         world_size=world_size,
-    ):
-        context = init_torch_distributed(
-            backend=backend,
-            init_method=init_method,
-            rank=rank,
-            world_size=world_size,
-            local_rank=local_rank,
-            device=options.get("device"),
-            force_initialize=distributed_executor == "torch",
-        )
-        world_size = context.world_size
-        options["device"] = context.device
+        distributed_executor=distributed_executor,
+        backend=backend,
+        init_method=init_method,
+        rank=rank,
+        local_rank=local_rank,
+        options=options,
+    )
 
     plan = build_tensor_network(
         circuit_or_ir,
@@ -629,24 +654,15 @@ def distributed_tensor_network_expectation(
 ) -> DistributedTensorNetworkExpectation:
     """Compute one Pauli-product expectation without materializing the state."""
 
-    backend_policy = _resolve_backend_policy(options)
-    context = None
-    if _should_use_torch_distributed(
-        distributed_executor,
-        backend_policy,
+    _, context, world_size = _prepare_distributed_context(
         world_size=world_size,
-    ):
-        context = init_torch_distributed(
-            backend=backend,
-            init_method=init_method,
-            rank=rank,
-            world_size=world_size,
-            local_rank=local_rank,
-            device=options.get("device"),
-            force_initialize=distributed_executor == "torch",
-        )
-        world_size = context.world_size
-        options["device"] = context.device
+        distributed_executor=distributed_executor,
+        backend=backend,
+        init_method=init_method,
+        rank=rank,
+        local_rank=local_rank,
+        options=options,
+    )
 
     ket_plan = build_tensor_network(
         circuit_or_ir,
@@ -706,24 +722,15 @@ def distributed_tensor_network_amplitudes(
 ) -> DistributedTensorNetworkAmplitudes:
     """Compute a small amplitude batch with shared planning and contraction."""
 
-    backend_policy = _resolve_backend_policy(options)
-    context = None
-    if _should_use_torch_distributed(
-        distributed_executor,
-        backend_policy,
+    _, context, world_size = _prepare_distributed_context(
         world_size=world_size,
-    ):
-        context = init_torch_distributed(
-            backend=backend,
-            init_method=init_method,
-            rank=rank,
-            world_size=world_size,
-            local_rank=local_rank,
-            device=options.get("device"),
-            force_initialize=distributed_executor == "torch",
-        )
-        world_size = context.world_size
-        options["device"] = context.device
+        distributed_executor=distributed_executor,
+        backend=backend,
+        init_method=init_method,
+        rank=rank,
+        local_rank=local_rank,
+        options=options,
+    )
 
     plan = build_tensor_network(
         circuit_or_ir,
@@ -783,24 +790,15 @@ def distributed_tensor_network_expectations(
 ) -> DistributedTensorNetworkExpectations:
     """Compute several Pauli products through one distributed contraction."""
 
-    backend_policy = _resolve_backend_policy(options)
-    context = None
-    if _should_use_torch_distributed(
-        distributed_executor,
-        backend_policy,
+    _, context, world_size = _prepare_distributed_context(
         world_size=world_size,
-    ):
-        context = init_torch_distributed(
-            backend=backend,
-            init_method=init_method,
-            rank=rank,
-            world_size=world_size,
-            local_rank=local_rank,
-            device=options.get("device"),
-            force_initialize=distributed_executor == "torch",
-        )
-        world_size = context.world_size
-        options["device"] = context.device
+        distributed_executor=distributed_executor,
+        backend=backend,
+        init_method=init_method,
+        rank=rank,
+        local_rank=local_rank,
+        options=options,
+    )
 
     plan = build_tensor_network(
         circuit_or_ir,
@@ -851,25 +849,15 @@ def run_distributed_tensor_network(
 ) -> DistributedTensorNetworkState:
     """Run tensor-network contraction with torch.distributed slice parallelism."""
 
-    backend_policy = _resolve_backend_policy(options)
-    context = None
-    use_torch = _should_use_torch_distributed(
-        distributed_executor,
-        backend_policy,
+    backend_policy, context, world_size = _prepare_distributed_context(
         world_size=world_size,
+        distributed_executor=distributed_executor,
+        backend=backend,
+        init_method=init_method,
+        rank=rank,
+        local_rank=local_rank,
+        options=options,
     )
-    if use_torch:
-        context = init_torch_distributed(
-            backend=backend,
-            init_method=init_method,
-            rank=rank,
-            world_size=world_size,
-            local_rank=local_rank,
-            device=options.get("device"),
-            force_initialize=distributed_executor == "torch",
-        )
-        world_size = context.world_size
-        options["device"] = context.device
 
     plan = build_tensor_network(
         circuit_or_ir,
