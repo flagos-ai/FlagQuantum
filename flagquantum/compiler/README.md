@@ -19,6 +19,7 @@ Run the user-facing optimization path from the repository root:
 
 ```bash
 python -m examples.compiler_optimize
+python -m examples.target_aware_compilation
 ```
 
 Individual canonicalization functions are pipeline implementation details, not

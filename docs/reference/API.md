@@ -97,6 +97,22 @@ canonical rewrites to a fixed point. Use `compiler.compile` when a concrete
 target topology or target-aware lowering is required. The complete executable
 example is `python -m examples.compiler_optimize`.
 
+For target-aware compilation, provide an explicit coupling map:
+
+```python
+coupling = compiler.CouplingMap.line(circuit.n_qubits)
+compiled_ir = compiler.compile(
+    circuit,
+    coupling_map=coupling,
+    routing_strategy="auto",
+)
+```
+
+The compiler emits only topology-valid two-qubit operations and records its
+routing decision in `compiled_ir.metadata["routing"]`. It does not select or
+invoke an execution backend. Run the complete example with
+`python -m examples.target_aware_compilation`.
+
 ## Train with PyTorch
 
 Execution and training are intentionally separate. A complete trainable program

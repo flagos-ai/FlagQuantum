@@ -37,6 +37,16 @@ fixed point, and compares the optimized program with the original numerical
 result. It uses `compiler.optimize`; target-aware lowering and routing belong to
 `compiler.compile`.
 
+Compile non-local gates for a concrete hardware topology with:
+
+```bash
+python -m examples.target_aware_compilation
+```
+
+The example targets a five-qubit line, checks every emitted two-qubit operation
+against that connectivity, verifies logical-wire restoration, and executes the
+compiled IR against the original result.
+
 ## Start in one minute
 
 From an editable development installation:
