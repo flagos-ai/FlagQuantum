@@ -123,10 +123,10 @@ which invokes `flagquantum.compiler` only when program transformation is needed.
 This migration reused the existing public planning functions and selection
 types, added no manager, registry, compatibility facade, or duplicate policy,
 and deleted their former `compilation` modules. Architecture checks prevent the
-old paths from returning. `flagquantum/compilation` temporarily retains the
-stable `ExecutionPlan` product, serialization, assembly, contract attachment,
-and performance calibration; these are the next bounded seams, not
-authorization for new planning policy in that package.
+old paths from returning. The stable `ExecutionPlan` product, serialization,
+contract projection, and performance calibration now live under
+`flagquantum/runtime`; plan assembly remains in `runtime/planner`. The former
+`flagquantum/compilation` transition package has been removed.
 
 ## Noise lowering authority migration
 
@@ -138,34 +138,24 @@ Simulation still performs channel and trajectory numerics. The former
 forwarder.
 
 This move added no new public type or compatibility layer. Existing noisy-plan
-types and their builder remain with the transitional execution-plan product in
-`flagquantum/compilation` until an approved contract migration can preserve the
-protected `ExecutionPlan` schema and identity behavior.
+types live with the Runtime-owned execution-plan product, and their builder
+lives with the Runtime planner. The protected `ExecutionPlan` schema and
+identity behavior remain unchanged.
 
 ## Calibration policy subtraction
 
-The unused world-size selector was removed from the transitional compilation
-package. Runtime already owns world-size and execution selection, and no
-consumer had ever exercised the duplicate calibration path. The remaining
-performance adapter exists only for the current
-`ExecutionPlan.calibrated_cost()` behavior; moving or removing that method
-requires a separate protected-contract decision.
+The unused world-size selector was removed before the transition package
+exited. Runtime owns world-size, execution selection, and the remaining
+performance calibration behind `ExecutionPlan.calibrated_cost()`. Moving or
+removing that method still requires a separate protected-contract decision.
 
 ## Plan projection consolidation
 
-The single-use `compilation/contract_adapter.py` was folded into
+The single-use `compilation/contract_adapter.py` was folded into Runtime-owned
 `execution_plan_contract.py`, which already owns plan identity, serialization,
 and contract projection. `ExecutionPlan.to_contract()` retains its signature,
-return type, lossy audit semantics, and deterministic identity. The removed
-adapter path is guarded against reintroduction.
-
-The remaining `flagquantum/compilation` package has now been audited down to
-three source modules: the protected plan/noisy-plan products, their protected
-serialization and identity implementation, and the single calibration adapter
-behind `ExecutionPlan.calibrated_cost()`. None is independently dead. This is a
-deliberate stopping point rather than unfinished file shuffling; further
-physical relocation requires the approved public-plan migration and matching
-serialization and consumer conformance evidence.
+return type, lossy audit semantics, and deterministic identity. Architecture
+checks guard the removed adapter and transition package against reintroduction.
 
 ## Runtime plan assembly migration
 
