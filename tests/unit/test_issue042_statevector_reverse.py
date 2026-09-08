@@ -373,6 +373,13 @@ def test_custom_autograd_boundary_passes_double_precision_gradcheck():
     )
 
 
+def test_reverse_memory_debug_uses_active_platform(monkeypatch, capsys):
+    monkeypatch.setenv("FQ_STATEVECTOR_DEBUG_MEMORY", "1")
+    theta = torch.tensor(0.19, requires_grad=True)
+    execute_torch_distributed_statevector_reverse(fq.Circuit(1).ry(0, theta)).backward()
+    assert "reversible_adjoint_initialized" in capsys.readouterr().out
+
+
 def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch):
     import flagquantum.runtime.backends.statevector.reverse_adjoint as reverse_adjoint
 

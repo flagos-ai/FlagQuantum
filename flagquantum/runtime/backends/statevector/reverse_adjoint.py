@@ -11,6 +11,7 @@ import torch.distributed as dist
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....providers.platform import get_platform_runtime
 from ....simulation.statevector.adjoint import (
     analytic_rotation_derivative as _analytic_rotation_derivative,
 )
@@ -535,12 +536,14 @@ def _explicit_sharded_adjoint(
         )
         adjoint_scratch = None if inplace_local else torch.empty_like(adjoint)
         if os.getenv("FQ_STATEVECTOR_DEBUG_MEMORY", "0") == "1":
-            torch.cuda.synchronize(device)
+            platform = get_platform_runtime(device.type)
+            platform.synchronize(device)
+            memory = platform.memory_snapshot(device)
             print(
                 "reversible_adjoint_initialized",
                 {
-                    "allocated": torch.cuda.memory_allocated(device),
-                    "reserved": torch.cuda.memory_reserved(device),
+                    "allocated": memory.allocated_bytes,
+                    "reserved": memory.reserved_bytes,
                     "shard_bytes": reversible_state.amplitudes.numel()
                     * reversible_state.amplitudes.element_size(),
                 },
