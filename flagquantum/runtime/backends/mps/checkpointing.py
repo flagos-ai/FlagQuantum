@@ -15,6 +15,7 @@ from typing import Any, Mapping
 import torch
 import torch.distributed as dist
 
+from ....providers.platform import get_platform_runtime
 from .metadata_transport import all_gather_json
 from .training import MPSTrainingError
 
@@ -535,7 +536,7 @@ def _save_checkpoint(
             "bond_layout": dict(bond_layout),
             "torch_rng_state": torch.get_rng_state(),
             "cuda_rng_state": (
-                torch.cuda.get_rng_state(parameters[0].device)
+                get_platform_runtime("cuda").rng_state(parameters[0].device)
                 if parameters[0].device.type == "cuda"
                 else None
             ),
@@ -671,5 +672,7 @@ def _load_checkpoint(
     except (RuntimeError, ValueError, KeyError, TypeError) as error:
         raise MPSTrainingError("checkpoint state restoration failed") from error
     if parameters[0].device.type == "cuda" and cuda_rng_state is not None:
-        torch.cuda.set_rng_state(cuda_rng_state.cpu(), parameters[0].device)
+        get_platform_runtime("cuda").restore_rng_state(
+            parameters[0].device, cuda_rng_state.cpu()
+        )
     return completed_steps
