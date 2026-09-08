@@ -29,7 +29,7 @@ numerical methods. Providers isolate external systems.
 | `simulation/` | statevector, MPS, tensor-network, noise and precision kernels | resource policy, credentials, remote jobs | `simulation/README.md` |
 | `providers/` | QPU, remote-service and compute-platform adapters | common IR, scheduling policy, simulator algorithms | `providers/README.md` |
 | `ecosystem/` | PyTorch, JAX, Qiskit and format boundary adapters | a second IR or runtime | `ecosystem/README.md` |
-| `agent_services/` | deterministic planning, validation and execution services | MCP transport or LLM policy | `agent_services/README.md` |
+| `agent/` | deterministic planning, validation and execution services | MCP transport or LLM policy | `agent/README.md` |
 | `algorithms/` | user-facing algorithm composition | runtime or backend internals | `algorithms/README.md` |
 | `benchmarking/` | reproducible measurements and evidence generation | alternate execution paths | `benchmarking/README.md` |
 | `testing/` | reusable conformance and certification helpers | production execution | package modules and `tests/` scenarios |

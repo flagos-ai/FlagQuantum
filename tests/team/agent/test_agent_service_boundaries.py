@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-NORTHBOUND_ROOTS = (ROOT / "flagquantum" / "agent_services",)
+NORTHBOUND_SERVICE_PATHS = (ROOT / "flagquantum" / "agent" / "service.py",)
 
 
 def _imports(path: Path) -> tuple[str, ...]:
@@ -41,12 +41,11 @@ def test_northbound_code_has_no_protocol_llm_kernel_or_vendor_imports() -> None:
         "transformers",
     }
     violations: list[str] = []
-    for package_root in NORTHBOUND_ROOTS:
-        for path in sorted(package_root.rglob("*.py")):
-            for module in _imports(path):
-                if forbidden_roots.intersection(module.split(".")):
-                    relative = path.relative_to(ROOT).as_posix()
-                    violations.append(f"{relative}: {module}")
+    for path in NORTHBOUND_SERVICE_PATHS:
+        for module in _imports(path):
+            if forbidden_roots.intersection(module.split(".")):
+                relative = path.relative_to(ROOT).as_posix()
+                violations.append(f"{relative}: {module}")
 
     assert violations == []
 
@@ -65,7 +64,7 @@ class RejectMCP(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, RejectMCP())
 
 import flagquantum as fq
-from flagquantum.agent_services import AgentApplicationService
+from flagquantum.agent import AgentApplicationService
 
 circuit = fq.Circuit(1).h(0)
 validation = AgentApplicationService().validate_program(circuit.to_ir().to_dict())

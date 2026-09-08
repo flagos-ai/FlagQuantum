@@ -15,7 +15,7 @@ to domain code and adapters; numerical code never reaches back into Runtime.
 | Ecosystem | `flagquantum.ecosystem` | Framework conversion, conformance, extension SDK |
 | Applications | `flagquantum.algorithms` | Reusable quantum and hybrid algorithms |
 | Evaluation | `flagquantum.benchmarking` | Reproducible correctness and performance workloads |
-| Agent services | `flagquantum.agent_services` | Deterministic services used by MCP and agents |
+| Agent services | `flagquantum.agent` | Deterministic services used by MCP and agents |
 
 `flagquantum.backends` is a thin, stable expert API for backend-native entry
 points. Implementations live in `flagquantum.runtime.backends`; external systems

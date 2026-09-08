@@ -3,7 +3,7 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 
 [package_layout]
 allowed_top_level_directories = [
-    "agent_services",
+    "agent",
     "algorithms",
     "backends",
     "benchmarking",
@@ -53,7 +53,7 @@ runtime_import_allowed = [
 ]
 
 [northbound_boundaries]
-agent_services_forbidden = [
+agent_forbidden = [
     "backends",
     "platforms",
     "simulation",

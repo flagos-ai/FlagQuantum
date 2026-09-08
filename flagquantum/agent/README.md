@@ -1,9 +1,10 @@
-# Agent Services
+# Agent
 
-Agent Services are deterministic, protocol-neutral application services for
-automation clients. The current `AgentApplicationService` exposes capability
-discovery, program validation, and execution planning over FlagQuantum-owned
-serialized programs and structured results.
+The Agent package provides deterministic, protocol-neutral validation,
+preflight, and application services for automation clients. It does not
+implement an autonomous or LLM-backed agent. `AgentApplicationService` exposes
+capability discovery, program validation, and execution planning over
+FlagQuantum-owned serialized programs and structured results.
 
 This package does not contain an LLM, MCP/REST/gRPC transport, authentication,
 tenant or job persistence, provider SDK calls, device control, or numerical
@@ -15,17 +16,17 @@ the structured output, but it cannot replace its validation or planning facts.
 
 ```text
 serialized CircuitIR or ProgramArtifact
-  -> AgentApplicationService
+  -> AgentApplicationService or preflight API
   -> decode and fail-closed artifact checks
-  -> flagquantum.agent validation or preflight facade
+  -> validation or preflight operation
   -> structured capability, validation, or planning dictionary
 ```
 
-Start in `service.py`. Keep request decoding, deterministic orchestration, and
-protocol-neutral result projection there until a concrete second service owner
-requires a split. The current service intentionally has no `execute` or
-standalone `explain` method; do not advertise or add those through a transport
-shortcut.
+Start in `preflight.py` for direct Python validation and planning, or in
+`service.py` for serialized automation requests. Keep request decoding and
+protocol-neutral result projection in the service. The current service
+intentionally has no `execute` or standalone `explain` method; do not advertise
+or add those through a transport shortcut.
 
 ## Ten-minute change path
 

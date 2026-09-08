@@ -26,10 +26,10 @@
     "qpu_provider": {"may_depend_on": ["core", "vendor_sdk"]},
     "remote_service_provider": {"may_depend_on": ["core", "vendor_sdk"]},
     "ecosystem": {"may_depend_on": ["core", "public_api"]},
-    "agent_services": {
+    "agent": {
       "may_depend_on": ["core", "compiler_public_api", "runtime_public_api"]
     },
-    "gateways": {"repository": "external", "may_depend_on": ["agent_services"]}
+    "gateways": {"repository": "external", "may_depend_on": ["agent"]}
   },
   "migration_tracks": [
     {
@@ -102,8 +102,8 @@
       "name": "agent_gateway_separation",
       "owner": "agent-service-maintainers",
       "target_milestone": "vnext-phase-4",
-      "current_authority": ["flagquantum/agent_services"],
-      "target_authority": "protocol-neutral Agent Services in FlagQuantum; gateways in external Compute Service",
+      "current_authority": ["flagquantum/agent"],
+      "target_authority": "protocol-neutral Agent package in FlagQuantum; gateways in external Compute Service",
       "compatibility_adapter": "versioned service contract",
       "completion_evidence": "local SDK and Agent Services pass with the MCP SDK absent, and cross-repository contract tests pass",
       "retirement_condition": "the main repository has no production MCP transport dependency",

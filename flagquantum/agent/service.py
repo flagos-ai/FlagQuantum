@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from ..agent import (
+from ..core._artifacts import ArtifactKind, ProgramArtifact
+from ..core.ir import CircuitIR
+from .preflight import (
     AgentExecutionPlan,
     ValidationIssue,
     preflight_execution,
     validate,
 )
-from ..agent import (
+from .preflight import (
     capabilities as _agent_capabilities,
 )
-from ..core._artifacts import ArtifactKind, ProgramArtifact
-from ..core.ir import CircuitIR
 
 
 def _decode_program(program: Mapping[str, Any]) -> tuple[CircuitIR, tuple[str, ...]]:

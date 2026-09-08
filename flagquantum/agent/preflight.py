@@ -178,8 +178,8 @@ def validate(
 def capabilities(*, refresh: bool = False) -> dict[str, Any]:
     """Return the installed runtime capabilities in a machine-readable shape."""
 
-    from .runtime.backend_registry import capability_summary, list_backends
-    from .version import __version__
+    from ..runtime.backend_registry import capability_summary, list_backends
+    from ..version import __version__
 
     backends = {}
     for name in list_backends(refresh=refresh):
@@ -203,7 +203,7 @@ def capabilities(*, refresh: bool = False) -> dict[str, Any]:
 def preflight_execution(circuit_or_ir: Any, **options: Any) -> AgentExecutionPlan:
     """Validate and plan a workload, converting all expected failures to blockers."""
 
-    from .runtime.planner import plan_runtime_selection
+    from ..runtime.planner import plan_runtime_selection
 
     requires_gradient = bool(options.get("require_gradients", False))
     validation = validate(circuit_or_ir, requires_gradient=requires_gradient)
@@ -237,7 +237,7 @@ def preflight_deployment(
 ) -> DeploymentPreflightReport:
     """Build and identity-check a deployment package without submitting it."""
 
-    from .deployment import create_deployment_package, validate_deployment_package
+    from ..deployment import create_deployment_package, validate_deployment_package
 
     validation = validate(circuit_or_ir, backend=backend)
     backend_summary = {

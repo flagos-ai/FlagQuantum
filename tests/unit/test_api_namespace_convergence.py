@@ -73,4 +73,5 @@ def test_compiler_facade_has_one_canonical_short_name() -> None:
 
 def test_historical_api_aggregators_are_not_shipped() -> None:
     assert importlib.util.find_spec("flagquantum.api") is None
+    assert importlib.util.find_spec("flagquantum.agent_services") is None
     assert importlib.util.find_spec("flagquantum.runtime.compatibility") is None

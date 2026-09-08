@@ -93,8 +93,7 @@ owns = [
 branch = "codex/vnext-team-agent-services"
 worktree = "FlagQuantum-vNext-agent"
 owns = [
-    "flagquantum/agent_services/**",
-    "flagquantum/agent.py",
+    "flagquantum/agent/**",
 ]
 
 [teams.docs]

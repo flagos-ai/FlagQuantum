@@ -8,7 +8,7 @@
 
 ## 结论
 
-`flagquantum.agent_services.AgentApplicationService` 已经是无协议类型、无 LLM、无数值
+`flagquantum.agent.AgentApplicationService` 已经是无协议类型、无 LLM、无数值
 Kernel、无具体设备和无厂商 SDK 导入的确定性应用服务。MCP Python SDK 不在主仓库依赖
 清单中；在导入钩子明确拒绝 `mcp` 和 `fastmcp` 的独立进程里，Agent Services 校验和
 本地 `fq.run` 均可运行。
@@ -44,10 +44,10 @@ manifest 中构造稳定集合；缺失项按字典序返回
 
 ## 依赖审计
 
-审计范围为 `flagquantum/agent_services/**/*.py`，并追踪
+审计范围为 `flagquantum/agent/**/*.py`，并追踪
 了其同团队门面 `flagquantum/agent.py` 的一跳依赖。
 
-| 被检查依赖 | `agent_services` 直接依赖 | 主仓库网关直接依赖 | 一跳/遗留耦合 | 结论 |
+| 被检查依赖 | `agent` 直接依赖 | 主仓库网关直接依赖 | 一跳/遗留耦合 | 结论 |
 | --- | --- | --- | --- | --- |
 | MCP SDK / FastMCP | 无 | 无 Python 实现 | 无 | 通过；主仓库没有 MCP 运行时依赖 |
 | LLM SDK/模型调用 | 无 | 无 | 无 | 通过；服务输出只由输入、安装能力和确定性代码决定 |
@@ -59,7 +59,7 @@ manifest 中构造稳定集合；缺失项按字典序返回
 
 `tests/team/agent/test_agent_service_boundaries.py` 对以上直接禁止导入做 AST 特征检查，覆盖
 协议 SDK、常见 LLM SDK、Simulation、Runtime、backend/platform/device 和厂商 SDK
-命名空间。架构检查器禁止 `agent_services` 直达 backend、platform 与 Simulation。
+命名空间。架构检查器禁止 `agent` 直达 backend、platform 与 Simulation。
 
 ### 已知协议耦合点
 

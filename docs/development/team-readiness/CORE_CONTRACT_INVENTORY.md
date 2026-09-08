@@ -79,7 +79,7 @@
 
 | 类型 | 当前定义 | 主要消费者 | 分类与判断 |
 | --- | --- | --- | --- |
-| `ProgramArtifact` | `flagquantum/core/_artifacts.py` | `agent_services/service.py` | **内部候选契约**，且文件属于受保护集成路径。严格拒绝未知顶层字段和非 `1.0` 版本，规范 JSON 参与 `content_hash`。尚未被 Compiler 主链采用。 |
+| `ProgramArtifact` | `flagquantum/core/_artifacts.py` | `agent/service.py` | **内部候选契约**，且文件属于受保护集成路径。严格拒绝未知顶层字段和非 `1.0` 版本，规范 JSON 参与 `content_hash`。尚未被 Compiler 主链采用。 |
 | `SealedExecutableArtifact` | `flagquantum/_compiler/executable_artifact.py` | compiler runtime ABI/adapters、provider conformance | **内部候选契约**。封装 bytes、profile 和完整身份链；只有 `identity_dict()`，没有通用 `to_dict/from_dict` 往返。目标态应由 Core 拥有。 |
 | `DeploymentPackage` | `flagquantum/deployment/cloud.py` | QPU/cloud providers、deployment helpers | **临时领域对象**。携带 `CircuitIR`、QASM、backend profile 与 metadata 内的哈希链；与 executable artifact 重叠，但面向云提交且尚未使用统一 artifact envelope。 |
 | `SealedCircuitIRRoundTrip` / `CircuitExportResult` | `flagquantum/_compiler/exporters/circuit_ir.py` | 内部 IR 验证测试与 compiler pipeline | **临时编译结果**。是验证结果，不应提升为跨领域 artifact。 |

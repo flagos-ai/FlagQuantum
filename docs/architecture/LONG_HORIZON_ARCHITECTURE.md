@@ -169,7 +169,7 @@ flagquantum/
 │   ├── openqasm/
 │   ├── qir/
 │   └── extensions/
-├── agent_services/          # 协议无关的确定性应用服务
+├── agent/                   # 协议无关的确定性应用服务
 ├── algorithms/              # 面向用户的算法组合
 ├── benchmarking/            # 统一测评与证据生成
 └── testing/                 # 契约、替换与一致性测试工具
@@ -235,7 +235,7 @@ Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms
 | 计算平台收敛 | `providers/platform` | `providers/platform` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |
 | 执行目标收敛 | `runtime/backends`、`deployment` | `providers/execution` | 模拟与 QPU/远程服务共享结果契约 | 后端选择和结果解码只存在于 Provider 后方 |
 | 生态收敛 | `ecosystem` | `ecosystem` | 边界转换和往返一致性测试通过 | 外部框架对象不进入核心领域 |
-| Agent/网关分离 | `agent_services` | 主仓库 Agent Services；外部网关 | 无 MCP SDK 时本地路径通过，跨仓库契约测试通过 | 主仓库无生产 MCP 传输依赖 |
+| Agent/网关分离 | `agent` | 主仓库 Agent Services；外部网关 | 无 MCP SDK 时本地路径通过，跨仓库契约测试通过 | 主仓库无生产 MCP 传输依赖 |
 
 禁止只有目标目录而没有退出条件的迁移。一个迁移项完成后，必须删除或封闭旧权威入口，
 不得让两套实现无限期并存。
@@ -460,7 +460,7 @@ Agent Services <- External Gateways
 | Platform | `providers/platform` | Core 中的 Platform Provider Contract |
 | Execution target | `providers/execution` | Core 中的 Execution Provider Contract |
 | Ecosystem | `ecosystem` | 公共 API、ProgramArtifact |
-| Agent/Service | `agent_services`、外部服务仓库 | Application Service Contract |
+| Agent/Service | `agent`、外部服务仓库 | Application Service Contract |
 
 跨领域变更必须先修改契约提案和契约测试，再修改实现。禁止通过导入对方内部模块解决
 短期联调问题。每个领域至少维护：所有者、公共入口、契约测试、替换用假实现和变更记录。
