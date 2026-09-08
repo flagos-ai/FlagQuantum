@@ -18,8 +18,8 @@ from flagquantum.deployment import (
     expectation_z_from_counts,
     hamiltonian_expectation_from_counts,
     validate_deployment_package,
-    validate_deployment_result,
 )
+from flagquantum.remote import validate_deployment_result
 from flagquantum.testing import InMemoryRemoteTarget
 
 

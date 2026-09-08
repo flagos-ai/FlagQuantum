@@ -9,14 +9,16 @@ from typing import Any, Mapping
 from urllib import parse
 
 from ..deployment.cloud import (
-    DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     CloudBackendProfile,
     DeploymentPackage,
+    validate_deployment_package,
+)
+from .contracts import (
+    DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     DeploymentResult,
     ProviderTaskHandle,
     build_result_metadata,
     build_submission_receipt,
-    validate_deployment_package,
     validate_deployment_result,
 )
 from .http import HttpQuantumProvider, ProviderCredentials

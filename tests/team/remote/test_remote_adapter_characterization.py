@@ -15,6 +15,7 @@ import pytest
 import flagquantum as fq
 import flagquantum.backends as fqb
 import flagquantum.deployment as fqd
+import flagquantum.remote as fqr
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.ecosystem.extensions import ProviderExtension
 from flagquantum.remote import HttpQuantumProvider, QuafuProvider
@@ -51,7 +52,7 @@ def test_current_local_target_and_deployment_results_are_distinct() -> None:
 
     assert isinstance(runtime_result, ExecutionResult)
     assert isinstance(target_result, TargetExecutionResult)
-    assert isinstance(deployment_result, fqd.DeploymentResult)
+    assert isinstance(deployment_result, fqr.DeploymentResult)
     assert not isinstance(target_result, ExecutionResult)
     assert not isinstance(deployment_result, ExecutionResult)
     assert target_result.summary()["full_state_materialized"] is False
@@ -73,7 +74,7 @@ def test_local_simulator_exercises_submission_status_result_identity_chain() -> 
         == handle.payload["deployment_artifact_sha256"]
         == package.metadata["deployment_artifact_sha256"]
     )
-    assert fqd.validate_deployment_result(result) is result
+    assert fqr.validate_deployment_result(result) is result
 
 
 def test_deployment_result_validation_only_seals_identity_and_shot_accounting() -> None:
@@ -92,15 +93,15 @@ def test_deployment_result_validation_only_seals_identity_and_shot_accounting() 
         metadata={**result.metadata, "provider_native_state": "COMPLETED"},
     )
     assert (
-        fqd.validate_deployment_result(with_extra_native_metadata)
+        fqr.validate_deployment_result(with_extra_native_metadata)
         is with_extra_native_metadata
     )
     with pytest.raises(fqd.DeploymentPackageIdentityError, match="shots do not match"):
-        fqd.validate_deployment_result(replace(result, shots=result.shots + 1))
+        fqr.validate_deployment_result(replace(result, shots=result.shots + 1))
 
 
 def test_base_provider_run_checks_status_once_instead_of_polling() -> None:
-    class PendingProvider(fqd.QuantumProvider):
+    class PendingProvider(fqr.QuantumProvider):
         provider = "pending-characterization"
 
         def __init__(self) -> None:
@@ -108,11 +109,11 @@ def test_base_provider_run_checks_status_once_instead_of_polling() -> None:
             self.fetch_calls = 0
 
         def submit(self, package):
-            return fqd.ProviderTaskHandle(
+            return fqr.ProviderTaskHandle(
                 self.provider,
                 "pending-1",
                 package.backend.name,
-                fqd.build_submission_receipt(package),
+                fqr.build_submission_receipt(package),
             )
 
         def query_status(self, handle):
@@ -133,7 +134,7 @@ def test_base_provider_run_checks_status_once_instead_of_polling() -> None:
 
 
 def test_cancel_and_result_are_not_shared_by_both_provider_surfaces() -> None:
-    assert "cancel" not in fqd.QuantumProvider.__dict__
+    assert "cancel" not in fqr.QuantumProvider.__dict__
     assert "cancel" in QuafuProvider.__dict__
     assert "submit" in ProviderExtension.__dict__
     assert "status" in ProviderExtension.__dict__

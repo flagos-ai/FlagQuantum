@@ -10,12 +10,14 @@ from urllib import parse, request
 from ..deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
+    validate_deployment_package,
+)
+from .contracts import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,
     build_result_metadata,
     build_submission_receipt,
-    validate_deployment_package,
 )
 from .result_parsing import _extract_counts
 

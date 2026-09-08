@@ -8,12 +8,14 @@ from typing import Any, Mapping
 from ..deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
+    validate_deployment_package,
+)
+from .contracts import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,
     build_result_metadata,
     build_submission_receipt,
-    validate_deployment_package,
     validate_deployment_result,
 )
 from .result_parsing import _normalize_counts

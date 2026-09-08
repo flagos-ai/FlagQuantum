@@ -6,12 +6,14 @@ from ..circuit import Circuit
 from ..deployment.cloud import (
     CloudBackendProfile,
     DeploymentPackage,
+    validate_deployment_package,
+)
+from ..remote.contracts import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,
     build_result_metadata,
     build_submission_receipt,
-    validate_deployment_package,
 )
 
 
