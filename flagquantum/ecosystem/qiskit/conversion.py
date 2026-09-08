@@ -397,9 +397,6 @@ def _condition_pairs(instruction: Instruction) -> tuple[tuple[int, int], ...]:
         return tuple(
             (int(bit), int(value)) for bit, value in instruction.metadata["conditions"]
         )
-    legacy = instruction.metadata.get("condition")
-    if isinstance(legacy, Mapping):
-        return ((int(legacy["bit"]), int(legacy["equals"])),)
     return ()
 
 
