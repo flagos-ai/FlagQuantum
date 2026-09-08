@@ -9,6 +9,7 @@ from typing import Callable, Sequence
 import torch
 from torch.profiler import record_function
 
+from ....providers.platform import get_platform_runtime
 from ....simulation.mps.factorization import (
     mps_qr_forward as _simulation_mps_qr_forward,
 )
@@ -235,12 +236,19 @@ def cuda_factorization_memory_snapshot(
             allocated_bytes=0,
             reserved_bytes=0,
         )
-    free_bytes, total_bytes = torch.cuda.mem_get_info(device)
+    memory = get_platform_runtime(device.type).memory_snapshot(device)
+    if None in (
+        memory.free_bytes,
+        memory.total_bytes,
+        memory.allocated_bytes,
+        memory.reserved_bytes,
+    ):
+        raise MPSFactorizationMemoryError("CUDA memory snapshot is unavailable")
     return FactorizationMemorySnapshot(
-        free_bytes=int(free_bytes),
-        total_bytes=int(total_bytes),
-        allocated_bytes=int(torch.cuda.memory_allocated(device)),
-        reserved_bytes=int(torch.cuda.memory_reserved(device)),
+        free_bytes=int(memory.free_bytes),
+        total_bytes=int(memory.total_bytes),
+        allocated_bytes=int(memory.allocated_bytes),
+        reserved_bytes=int(memory.reserved_bytes),
     )
 
 

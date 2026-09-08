@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 import torch
 
@@ -7,6 +9,7 @@ from flagquantum.runtime.backends.mps.factorization import (
     FactorizationMemorySnapshot,
     FactorizationWorkspacePolicy,
     MPSFactorizationMemoryError,
+    cuda_factorization_memory_snapshot,
     estimate_rxx_factorization_working_set,
     plan_rxx_factorization_microbatch,
 )
@@ -33,6 +36,21 @@ def _provider(available: int):
         total_bytes=available,
         allocated_bytes=0,
         reserved_bytes=0,
+    )
+
+
+def test_cuda_memory_snapshot_uses_platform_provider(monkeypatch) -> None:
+    memory = SimpleNamespace(
+        free_bytes=100, total_bytes=200, allocated_bytes=30, reserved_bytes=40
+    )
+    platform = SimpleNamespace(memory_snapshot=lambda device: memory)
+    monkeypatch.setattr(
+        "flagquantum.runtime.backends.mps.factorization.get_platform_runtime",
+        lambda device_type: platform,
+    )
+
+    assert cuda_factorization_memory_snapshot(torch.device("cuda:0")) == (
+        FactorizationMemorySnapshot(100, 200, 30, 40)
     )
 
 
