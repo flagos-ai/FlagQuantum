@@ -181,7 +181,8 @@ def test_circuit_run_matches_uniform_execution_entry_point() -> None:
     result = circuit.run(options=options)
     assert isinstance(result, fq.ExecutionResult)
     assert result.plan is not None
-    assert result.compatibility["legacy_return_normalized"] is True
+    assert result.compatibility["native_output_adapted"] is True
+    assert "legacy_return_normalized" not in result.compatibility
 
     native = fqb.run_native(circuit, mode="statevector")
     assert isinstance(native, torch.Tensor)

@@ -271,7 +271,7 @@ def normalize_execution_result(
     mode: str,
     plan: Any | None = None,
 ) -> ExecutionResult:
-    """Normalize a legacy runtime return without materializing hidden state."""
+    """Adapt a backend-native return without materializing hidden state."""
 
     if isinstance(output, ExecutionResult):
         return output
@@ -296,7 +296,7 @@ def normalize_execution_result(
         plan=plan,
         runtime=runtime,
         compatibility={
-            "legacy_return_normalized": True,
+            "native_output_adapted": True,
             "source_type": type(output).__name__,
             "full_state_materialized_by_adapter": False,
         },
