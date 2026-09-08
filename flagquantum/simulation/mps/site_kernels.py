@@ -11,8 +11,6 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 import torch
 from torch.profiler import record_function
 
-from ...providers.platform import get_platform_runtime
-
 
 @dataclass
 class SiteKernelStats:
@@ -279,7 +277,7 @@ def _run(eager, args, *, kind: str, compiled: bool, prewarm: bool = False):
         with _recompile_limit_context():
             result = kernel(*args)
         if args[0].is_cuda:
-            get_platform_runtime(args[0].device.type).synchronize(args[0].device)
+            torch.accelerator.synchronize(args[0].device)
     except Exception as error:
         raise RuntimeError(
             f"compiled site-sharded {kind} kernel failed closed: {error}"

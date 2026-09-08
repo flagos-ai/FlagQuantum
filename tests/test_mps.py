@@ -11,12 +11,10 @@ from flagquantum.runtime.executors.mps.compiled_training import (
     MPSTrainingStep,
     compile_mps_training_step,
 )
+from flagquantum.runtime.executors.mps.noisy import run_noisy_mps_trajectory
 from flagquantum.runtime.planner import estimate_mps_bytes
 from flagquantum.simulation.density_matrix import expectation_z_density
-from flagquantum.simulation.mps.entrypoints import (
-    run_mps_adaptive,
-    run_noisy_mps_trajectory,
-)
+from flagquantum.simulation.mps.entrypoints import run_mps_adaptive
 from flagquantum.simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSAdaptiveRunResult,

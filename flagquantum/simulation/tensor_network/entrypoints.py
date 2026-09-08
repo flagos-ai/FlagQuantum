@@ -6,7 +6,6 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ...circuit import Circuit
 from .contraction import (  # noqa: E402
     _build_slicing_plan,
     _contract_nodes_greedy,
@@ -317,7 +316,7 @@ def run_tensor_network(
 ) -> TensorNetworkState:
     """Run a circuit through the general tensor-network contraction engine."""
 
-    if isinstance(circuit_or_ir, Circuit):
+    if hasattr(circuit_or_ir, "to_ir"):
         bsz = circuit_or_ir.bsz
         dtype = circuit_or_ir.dtype
         if device is None:

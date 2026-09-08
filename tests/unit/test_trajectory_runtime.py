@@ -6,6 +6,7 @@ import flagquantum.backends as fqb
 import flagquantum.noise as fqn
 from flagquantum.compiler import lower_noise_model
 from flagquantum.noise import bit_flip_channel
+from flagquantum.runtime.executors.mps.noisy import merge_noisy_mps_results
 from flagquantum.runtime.trajectories import (
     TensorWelford,
     TrajectoryCheckpoint,
@@ -16,7 +17,6 @@ from flagquantum.runtime.trajectories import (
     owned_trajectory_ids,
     save_trajectory_checkpoint,
 )
-from flagquantum.simulation.mps.entrypoints import merge_noisy_mps_results
 from flagquantum.simulation.mps.models import MPSMonteCarloResult
 
 pytestmark = pytest.mark.unit
@@ -46,7 +46,7 @@ def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
 
 
 def test_run_native_uses_lowered_mps_entrypoints(monkeypatch):
-    import flagquantum.simulation.mps.entrypoints as mps_entrypoints
+    import flagquantum.runtime.executors.mps.noisy as mps_entrypoints
 
     def legacy_entrypoint(*args, **kwargs):
         raise AssertionError("run_native must not re-enter legacy noise lowering")

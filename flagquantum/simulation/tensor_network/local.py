@@ -6,7 +6,6 @@ from typing import Any, Sequence
 
 import torch
 
-from ...circuit import Circuit
 from ..gate_matrix import gate_matrix
 from .models import (
     CompiledTNProgram,
@@ -28,7 +27,7 @@ def _initial_wire_tensors(
 ) -> tuple[torch.Tensor, ...]:
     """Represent the default |0...0> state without a dense allocation."""
 
-    if isinstance(circuit_or_ir, Circuit) and circuit_or_ir._inputs is not None:
+    if getattr(circuit_or_ir, "_inputs", None) is not None:
         state = circuit_or_ir.initial_state().to(device=device, dtype=dtype)
         if state.ndim == 1:
             state = state.reshape(1, -1)
@@ -164,7 +163,7 @@ def ensure_local_tensor_network_plan(
 
     if isinstance(plan_or_circuit, TensorNetworkContractionPlan):
         return plan_or_circuit
-    if isinstance(plan_or_circuit, Circuit):
+    if hasattr(plan_or_circuit, "to_ir"):
         return build_local_tensor_network(
             plan_or_circuit,
             bsz=plan_or_circuit.bsz,

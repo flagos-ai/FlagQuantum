@@ -48,7 +48,6 @@ pennylane_import_allowed_prefixes = [
 
 [simulation_boundaries]
 runtime_import_allowed = [
-    "flagquantum/simulation/mps/entrypoints.py",
     "flagquantum/simulation/mps/models.py",
 ]
 
@@ -73,6 +72,7 @@ runtime_compiler_import_allowed = [
     "flagquantum/runtime/noise_registry.py",
     "flagquantum/runtime/planner/__init__.py",
     "flagquantum/runtime/planner/noise_selection.py",
+    "flagquantum/runtime/executors/mps/noisy.py",
 ]
 
 [accelerator_boundaries.direct_cuda_call_ceiling]

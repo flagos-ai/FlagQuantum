@@ -837,7 +837,7 @@ def run_native(
                 ),
             )
     elif mode == "mps_trajectory":
-        from ..simulation.mps.entrypoints import run_lowered_noisy_mps_trajectory
+        from .executors.mps.noisy import run_lowered_noisy_mps_trajectory
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)
@@ -879,7 +879,7 @@ def run_native(
                 ),
             )
     elif mode == "noisy_mps":
-        from ..simulation.mps.entrypoints import run_lowered_noisy_mps
+        from .executors.mps.noisy import run_lowered_noisy_mps
 
         mps_options = dict(options)
         mps_options.pop("memory_limit_bytes", None)
