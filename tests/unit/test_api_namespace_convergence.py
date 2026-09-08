@@ -75,3 +75,16 @@ def test_historical_api_aggregators_are_not_shipped() -> None:
     assert importlib.util.find_spec("flagquantum.api") is None
     assert importlib.util.find_spec("flagquantum.agent_services") is None
     assert importlib.util.find_spec("flagquantum.runtime.compatibility") is None
+
+
+def test_runtime_contracts_is_a_reexport_only_facade() -> None:
+    runtime_contracts = importlib.import_module("flagquantum.runtime.contracts")
+
+    locally_defined = {
+        name
+        for name in runtime_contracts.__all__
+        if getattr(getattr(runtime_contracts, name), "__module__", None)
+        == runtime_contracts.__name__
+    }
+
+    assert locally_defined == set()

@@ -229,7 +229,7 @@ Remote Service 与 QPU 同样位于 Execution Provider 边界之后。Algorithms
 
 | 迁移项 | 当前权威位置 | 目标位置 | 完成证据 | 旧实现退出条件 |
 | --- | --- | --- | --- | --- |
-| 核心契约 | `core` 和 `runtime/contracts.py` | `core` | 跨领域产物、能力、请求、结果和证据均由 Core 定义并通过序列化测试 | 重复私有契约没有调用者 |
+| 核心契约 | `core`、Runtime 执行对象、平台与执行 Provider 本地契约 | `core` | 跨领域产物、能力、请求、结果和证据均由 Core 定义并通过序列化测试 | 重复私有契约没有调用者；Provider 本地协议完成中立投影 |
 | 编译器收敛 | `compiler` | `compiler` | 替换一条编译管线不修改 Runtime 和用户 API | 已删除 `_compiler` 和 `compilation` 旧入口 |
 | 模拟算法抽离 | `simulation`、部分 `runtime/executors` | `simulation` | 真实引擎和契约假实现通过同一套一致性测试 | Runtime 下不再拥有数值算法 |
 | 计算平台收敛 | `providers/platform` | `providers/platform` | 两种平台通过能力、精度、通信、回退和替换测试 | 通用代码不再导入厂商 Runtime |

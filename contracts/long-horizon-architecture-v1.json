@@ -36,11 +36,16 @@
       "name": "core_contracts",
       "owner": "core-maintainers",
       "target_milestone": "vnext-phase-2",
-      "current_authority": ["flagquantum/core", "flagquantum/runtime/contracts.py"],
+      "current_authority": [
+        "flagquantum/core",
+        "flagquantum/runtime",
+        "flagquantum/providers/platform/contracts.py",
+        "flagquantum/deployment/cloud.py"
+      ],
       "target_authority": "flagquantum/core",
-      "compatibility_adapter": "private typed adapters at current public entry points",
-      "completion_evidence": "all cross-domain program, capability, request, result, and evidence types are Core-owned and pass serialization contracts",
-      "retirement_condition": "duplicate private contract definitions have no importers",
+      "compatibility_adapter": "stable Runtime projections and provider-local protocols",
+      "completion_evidence": "portable cross-domain program, capability, audit request/result/evidence, and provider contracts are Core-owned; stable Runtime objects project through tested boundaries",
+      "retirement_condition": "duplicate private contract definitions have no importers and provider-local protocols no longer define cross-domain semantics",
       "status": "in_progress"
     },
     {
