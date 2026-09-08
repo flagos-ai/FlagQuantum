@@ -126,7 +126,7 @@ __all__ = (
 
 _EXPORTS = {
     "DistributedTensorNetworkState": (
-        "flagquantum.runtime.backends.tensor_network.execution",
+        "flagquantum.runtime.backends.tensor_network.state",
         "DistributedTensorNetworkState",
     ),
     "CompiledTNForwardBucket": (
