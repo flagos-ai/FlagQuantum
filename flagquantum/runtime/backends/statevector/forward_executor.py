@@ -12,6 +12,7 @@ import torch.distributed as dist
 
 from ....core.ir import ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
+from ....providers.platform import resolve_platform_device
 from ....simulation.statevector.operations import (
     _compose_gate_matrices,
     _instruction_matrix,
@@ -109,7 +110,7 @@ def execute_torch_distributed_statevector(
         fuse_cross_shard_gates = False
     if device is None:
         if backend == "nccl":
-            device = torch.device("cuda", torch.cuda.current_device())
+            device = resolve_platform_device("cuda")
         elif backend == "flagos":
             device = current_flagos_device()
         else:
