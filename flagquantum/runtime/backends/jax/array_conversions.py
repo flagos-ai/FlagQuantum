@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence
 from ....simulation.jax.statevector.kernels import (
     jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
 )
+from ....simulation.jax.tensor_network.models import JAXTensorNetworkNode
 from ....simulation.statevector.operations import _basis_offset, _wire_mask
 from .runtime_environment import (
     _jax_complex_dtype,
@@ -16,7 +17,6 @@ from .runtime_environment import (
     _require_torch,
 )
 from .statevector.records import JAXStatevectorShardState
-from .tensor_network.records import JAXTensorNetworkNode
 
 
 def _gate_matrix_as_jax(

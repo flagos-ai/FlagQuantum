@@ -48,15 +48,15 @@ move plan-aware collective code into Simulation or create mirror shard records
 just to empty the Runtime file.
 
 For sliced parameterized tensor networks, `tensor_network/gradients.py` owns
-the Runtime-facing circuit/parameter adaptation, `JAXTensorNetworkNode`
-records, slicing tasks, backend and collective selection, gradient lifecycle,
-and result evidence. Raw node construction, contraction, slicing, and
-observable/loss mathematics that do not require Runtime records live in
-`simulation/jax/tensor_network/kernels.py`. This is the tensor-network stopping point:
-do not introduce a second node record or a node factory merely to move the
-remaining record-aware assembly out of Runtime. A numerical operation should
-move only when it is independently reusable without importing Runtime plans,
-tasks, records, policies, or collectives.
+the Runtime-facing circuit/parameter adaptation, slicing tasks, backend and
+collective selection, gradient lifecycle, and result evidence. The numerical
+node record and local greedy/sliced contraction live in
+`simulation/jax/tensor_network/models.py` and `contraction.py`; lower-level
+kernels and observable/loss mathematics live beside them in `kernels.py`.
+Runtime retains rank assignment, `pmap`/`shard_map` selection, collective
+reduction, and evidence. A numerical operation should move only when it is
+independently reusable without importing Runtime plans, tasks, records,
+policies, or collectives.
 
 Run the boundary checks with:
 

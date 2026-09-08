@@ -19,16 +19,6 @@ from ..runtime_environment import (
 from .planning import _tasks_by_rank_from_slicing
 
 
-@dataclass(frozen=True)
-class JAXTensorNetworkNode:
-    """JAX tensor-network node with integer labels."""
-
-    tensor: Any
-    labels: tuple[int, ...]
-    name: str = ""
-    metadata: Mapping[str, Any] | None = None
-
-
 @dataclass
 class JAXTNSliceRankState:
     """Rank-local tensor-network slice tasks and partial contraction result."""

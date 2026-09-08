@@ -8,6 +8,7 @@ from .....simulation.jax.primitives import _jax_pauli_matrix
 from .....simulation.jax.tensor_network.kernels import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
+from .....simulation.jax.tensor_network.models import JAXTensorNetworkNode
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
     _jax_nodes_from_torch_nodes,
@@ -36,7 +37,6 @@ from .planning import _tn_tasks
 from .records import (
     JAXSlicedTensorNetworkGradientResult,
     JAXSlicedTensorNetworkParameterGradientResult,
-    JAXTensorNetworkNode,
 )
 
 

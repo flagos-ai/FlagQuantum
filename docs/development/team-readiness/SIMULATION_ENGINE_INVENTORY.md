@@ -13,7 +13,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 `simulation/statevector/adjoint.py` 统一持有；本地分片调试路径仅处理索引、所有权和
 结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_network/stages.py`；JAX 的 dtype、
 门矩阵、状态作用、分片局部 observable/loss、MPS 批量更新和 pullback 已归
-`simulation/jax_*.py`。剩余候选集中在仍与分布式 MPS/TN 记录和调度交织的路径，且真实
+`simulation/jax/` 下的表示子目录。剩余候选集中在仍与分布式 MPS/TN 记录和调度交织的路径，且真实
 本地 Engine 与测试 fake 现已通过同一套首切片 conformance，但最终 Core Engine 契约尚未批准。
 因此 `simulation_extraction` 必须保持 `in_progress`，不得以目录数量或单一 CPU 测试代替退出条件。
 
@@ -122,9 +122,9 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 | `tensor_network/distributed_execution.py`、`distributed_sliced_reverse.py`、`redistribution.py`、`partial_mesh.py` | 通信/执行适配（混合） | 局部 contraction 调用 | process group、P2P/all-to-all、rank 生命周期与聚合 |
 | `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
 | `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
-| `simulation/jax/primitives.py`、`simulation/jax/statevector/kernels.py`、`simulation/jax/tensor_network/kernels.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
+| `simulation/jax/primitives.py`、`simulation/jax/statevector/kernels.py`、`simulation/jax/tensor_network/{models,contraction,kernels}.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络节点、局部贪心/切片 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
 | `simulation/jax/mps/kernels.py`、`simulation/jax/mps/batched.py`、`simulation/jax/mps/pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
-| `jax/kernel.py`、`mps/lowering.py`、`*_kernels.py`、`*_contraction.py`、`*_pullbacks.py` | Kernel 调用/数值算法 | 剩余 JAX quantum kernel、VJP/pullback、slice 与 contraction 编排 | backend/device 是否选择 JAX 由 Runtime/Platform；标签切片与基础 einsum 数学归 Simulation |
+| `jax/kernel.py`、`mps/lowering.py`、表示目录内 Runtime 执行模块 | 执行适配 | 仅调用 Simulation 数值实现 | backend/device 是否选择 JAX、rank 任务分配、pmap/shard-map 与 collective 由 Runtime/Platform |
 | `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
 | `jax/*execution.py`、`backend_dispatch.py`、`statevector/training.py`、`mps/gradients.py`、`tensor_network/gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
 | `jax/*planning.py`、`planning_core.py`、`runtime_environment.py`、`transport.py` | 资源或通信编排 | 算法约束/代价输入 | Runtime/Platform topology、environment、transport 和 device lifecycle |
@@ -135,8 +135,7 @@ adjoint 局部数学已由 `simulation/statevector/operations.py` 与
 ### JAX Runtime 数值边界收口审计（2026-09-05）
 
 剩余 JAX Runtime 数值调用按职责处理，不以“清零 `jnp` 调用”为目标：collective、
-设备放置、结果整形和证据探针属于执行语义，继续留在 Runtime；参数化张量网络的节点
-记录组装依赖 Runtime 记录，暂不为搬迁而引入 node factory。单行零值分配或矩阵组合仅在
+设备放置、结果整形和证据探针属于执行语义，继续留在 Runtime。单行零值分配或矩阵组合仅在
 形成重复算法权威时下沉，不拆成细碎公共函数。审计识别出的实质算法
 `mps/gradient_ownership.py` 跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算已迁入
 `simulation/jax/mps/kernels.py`，Runtime 仅保留 rank 张量记录到数值参数的适配。
@@ -146,12 +145,12 @@ Statevector 复核确认 `statevector/kernels.py` 只剩指令/计划适配、co
 数学均已委托 `simulation/jax/statevector/kernels.py`。该路径已到停止点，不为移动文件而复制
 Runtime shard/plan 类型。
 
-参数化张量网络复核确认，通用节点构造、标签切片、einsum 收缩以及输出 observable/loss
-数学已由 `simulation/jax/tensor_network/kernels.py` 统一负责；`tensor_network/gradients.py` 中
-剩余节点组装直接消费 Runtime 的 `JAXTensorNetworkNode`、切片任务、后端和 collective
-选择，并参与梯度生命周期与结果证据，因此继续属于 Runtime 适配。该路径已到停止点：
-不得为消除 Runtime 中的 `jnp` 调用而复制节点记录或新增 node factory；只有不依赖
-Runtime 计划、任务、记录、策略和 collective，且具有独立复用价值的数值操作才继续下沉。
+参数化张量网络复核确认，`JAXTensorNetworkNode`、标签切片、局部贪心/切片收缩以及输出
+observable/loss 数学已由 `simulation/jax/tensor_network/` 统一负责；Runtime 的
+`tensor_network/contraction.py` 只保留 rank 任务分配、pmap/shard-map 选择和 collective
+归约，`gradients.py` 保留电路/参数适配、梯度生命周期与结果证据。该路径已到停止点：
+不得为消除 Runtime 中的 `jnp` 调用而复制 Simulation 记录或拆出细碎包装；只有不依赖
+Runtime 计划、任务、策略和 collective，且具有独立复用价值的数值操作才继续下沉。
 
 JAX MPS 反向路径复核确认，参数局部 VJP、边界 RXX adjoint 以及 QR/SVD
 canonicalization/truncation pullback 已由 `simulation/jax/mps/pullbacks.py` 统一负责。

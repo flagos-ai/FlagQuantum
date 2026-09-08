@@ -30,6 +30,9 @@ from flagquantum.simulation.jax.mps import batched as jax_mps_batched
 from flagquantum.simulation.jax.mps import kernels as jax_mps
 from flagquantum.simulation.jax.mps import pullbacks as jax_mps_pullbacks
 from flagquantum.simulation.jax.statevector import kernels as jax_statevector
+from flagquantum.simulation.jax.tensor_network import (
+    contraction as jax_tensor_network_contraction,
+)
 from flagquantum.simulation.jax.tensor_network import kernels as jax_tensor_network
 
 pytestmark = pytest.mark.unit
@@ -132,16 +135,8 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
 
 def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
     assert (
-        tensor_network_contraction._jax_einsum_by_labels
-        is jax_tensor_network._jax_einsum_by_labels
-    )
-    assert (
-        tensor_network_contraction._jax_einsum_reorder
-        is jax_tensor_network._jax_einsum_reorder
-    )
-    assert (
-        tensor_network_contraction.jax_slice_tensor_by_labels
-        is jax_tensor_network.jax_slice_tensor_by_labels
+        tensor_network_contraction._jax_contract_assigned_tensor_slices
+        is jax_tensor_network_contraction.contract_assigned_slices
     )
     assert (
         tensor_network_gradients._jax_pauli_matrix
