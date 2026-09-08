@@ -157,34 +157,6 @@ def run_dynamic_conformance(
     )
 
 
-def run_qiskit_aer_dynamic(
-    circuit: DynamicCircuit,
-    *,
-    shots: int,
-    seed: int | None = None,
-) -> DynamicExecutionResult:
-    """Compatibility wrapper for the isolated Qiskit Aer adapter."""
-
-    from ...ecosystem.qiskit.execution import run_qiskit_aer_dynamic as execute
-
-    return execute(circuit, shots=shots, seed=seed)
-
-
-def run_qiskit_aer_qasm3_round_trip(
-    circuit: DynamicCircuit,
-    *,
-    shots: int,
-    seed: int | None = None,
-) -> DynamicExecutionResult:
-    """Compatibility wrapper for the isolated Qiskit QASM 3 adapter."""
-
-    from ...ecosystem.qiskit.execution import (
-        run_qiskit_aer_qasm3_round_trip as execute,
-    )
-
-    return execute(circuit, shots=shots, seed=seed)
-
-
 __all__ = (
     "BRAKET_IQM_DYNAMIC_FEATURES",
     "DynamicConformanceCase",
@@ -196,6 +168,4 @@ __all__ = (
     "assess_dynamic_features",
     "dynamic_conformance_cases",
     "run_dynamic_conformance",
-    "run_qiskit_aer_dynamic",
-    "run_qiskit_aer_qasm3_round_trip",
 )

@@ -75,7 +75,7 @@ def test_jax_objects_are_confined_to_the_optional_kernel_boundary() -> None:
     assert leaks == []
 
 
-def test_runtime_to_ecosystem_reverse_dependency_is_frozen_as_migration_debt() -> None:
+def test_runtime_does_not_import_ecosystem_adapters() -> None:
     importers = {
         path.relative_to(ROOT).as_posix()
         for path in _python_files()
@@ -86,7 +86,7 @@ def test_runtime_to_ecosystem_reverse_dependency_is_frozen_as_migration_debt() -
         )
     }
 
-    assert importers == {"flagquantum/runtime/dynamic/conformance.py"}
+    assert importers == set()
 
 
 def test_external_framework_names_are_not_part_of_owned_ir_type_annotations() -> None:

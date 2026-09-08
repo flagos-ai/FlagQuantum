@@ -55,7 +55,6 @@ made.
 | Export | `export_qiskit`, `to_qiskit` | Qiskit object only in explicit `artifact`/`circuit` | Format interoperability | Correct boundary |
 | Semantic conversion | `qiskit_statevector_to_flagquantum`, `semantic_fingerprint`, `run_qiskit_conformance` | PyTorch tensor or owned conformance record | Result conversion/test | Correct boundary |
 | Execute | `run_qiskit_aer_dynamic`, `run_qiskit_aer_qasm3_round_trip` in `interop/qiskit/execution.py` | `DynamicExecutionResult` | Backend execution | Misclassified location; migrate after an execution-provider contract exists |
-| Runtime compatibility wrapper | same names in `runtime/dynamic/conformance.py` | Delegates to Ecosystem | Backend conformance | Reverse dependency debt: Runtime imports Ecosystem |
 
 Import behavior is fail-closed by default. Barriers, arbitrary metadata,
 register flattening, unsupported control flow, unsafe multi-qubit unitary basis
@@ -155,7 +154,10 @@ adapter or alternate IR.
 | P2 | compiler emitters plus `utils/qasm_exporter.py` and `utils/qcis_exporter.py` | Two text-lowering families exist for OpenQASM/QCIS. | Risks divergent gate, parameter, wire, and failure semantics. | Compiler remains authoritative; compatibility paths delegate, deprecate, then remove through API policy. |
 | P3 | `encoding/encoder.py` | Legacy PyTorch/device frontend directly invokes old device operations. | It bypasses the modern IR-centered user journey but does not import another ecosystem. | Migrate examples/users to `fq.Circuit`/`fq.Module`; retire only through compatibility policy. |
 
-The P1 metadata issue is intentionally documented rather than patched here:
+The Runtime-to-Ecosystem reverse dependency recorded above has since been
+removed: dynamic conformance tests now invoke the Qiskit adapter at its owning
+Ecosystem boundary. The P1 metadata issue is intentionally documented rather
+than patched here:
 adding a canonical metadata value algebra or a new public issue code touches
 protected Core/interop contracts and must be approved contract-first. The team
 tests cover normal-result object containment and prevent new direct SDK import
