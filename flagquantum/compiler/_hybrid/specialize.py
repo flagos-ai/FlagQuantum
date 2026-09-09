@@ -17,7 +17,7 @@ from .model import (
     Value,
     ValueId,
 )
-from .verifier import verify_program
+from .passes import PassRecord, run_pass_pipeline
 
 
 class SpecializationError(ValueError):
@@ -53,6 +53,8 @@ class SpecializedTrace:
     """Ephemeral selected quantum trace, not a second persistent quantum IR."""
 
     program_identity: str
+    optimized_program_identity: str
+    optimization_records: tuple[PassRecord, ...]
     input_signature_identity: str
     gates: tuple[TraceGate, ...]
     observables: tuple[tuple[str, int], ...]
@@ -433,13 +435,19 @@ def specialize_program(
     *,
     max_unrolled_iterations: int = 10_000,
     require_smooth_gradients: bool = False,
+    optimize: bool = True,
 ) -> SpecializedTrace:
     """Select one bounded runtime path without executing numerical kernels."""
 
     if type(require_smooth_gradients) is not bool:
         raise TypeError("require_smooth_gradients must be a bool")
-    verify_program(program)
-    entry = program.body.blocks[0]
+    if type(optimize) is not bool:
+        raise TypeError("optimize must be a bool")
+    optimization = (
+        run_pass_pipeline(program) if optimize else run_pass_pipeline(program, ())
+    )
+    optimized_program = optimization.program
+    entry = optimized_program.body.blocks[0]
     declared_inputs = entry.arguments[:-1]
     if len(inputs) != len(declared_inputs):
         raise SpecializationError(
@@ -466,6 +474,8 @@ def specialize_program(
         )
     return SpecializedTrace(
         program_identity=program.semantic_identity,
+        optimized_program_identity=optimized_program.semantic_identity,
+        optimization_records=optimization.records,
         input_signature_identity=input_identity,
         gates=tuple(specializer.gates),
         observables=specializer.observables,

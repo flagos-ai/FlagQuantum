@@ -9,8 +9,8 @@ from typing import Any, Mapping, NoReturn, Sequence
 from ...core.ir import CircuitIR, Instruction
 from ...core.parameters import Parameter, bind_parameter_value
 from .model import Block, HybridProgram, Operation, Region, Value, ValueId
+from .passes import PassRecord, run_pass_pipeline
 from .specialize import SpecializationError, _input_signature, _runtime_shape
-from .verifier import verify_program
 
 
 @dataclass(frozen=True)
@@ -20,6 +20,8 @@ class LoweredDynamicProgram:
     circuit_template: CircuitIR
     bindings: Mapping[str, Any] = field(compare=False, repr=False)
     program_identity: str
+    optimized_program_identity: str
+    optimization_records: tuple[PassRecord, ...]
     input_signature_identity: str
     measurement_count: int
     return_classical_bit: int
@@ -770,11 +772,17 @@ def lower_dynamic_program(
     max_unrolled_iterations: int = 10_000,
     max_condition_clauses: int = 64,
     max_dynamic_measurements: int = 4_096,
+    optimize: bool = True,
 ) -> LoweredDynamicProgram:
     """Lower a bounded measurement-feedback program without executing numerics."""
 
-    verify_program(program)
-    entry = program.body.blocks[0]
+    if type(optimize) is not bool:
+        raise TypeError("optimize must be a bool")
+    optimization = (
+        run_pass_pipeline(program) if optimize else run_pass_pipeline(program, ())
+    )
+    optimized_program = optimization.program
+    entry = optimized_program.body.blocks[0]
     declared_inputs = entry.arguments[:-1]
     if len(inputs) != len(declared_inputs):
         raise SpecializationError(
@@ -842,6 +850,8 @@ def lower_dynamic_program(
         circuit_template=circuit_template,
         bindings=lowerer.bindings,
         program_identity=program.semantic_identity,
+        optimized_program_identity=optimized_program.semantic_identity,
+        optimization_records=optimization.records,
         input_signature_identity=input_identity,
         measurement_count=lowerer.measurement_count,
         return_classical_bit=lowerer.return_classical_bit,

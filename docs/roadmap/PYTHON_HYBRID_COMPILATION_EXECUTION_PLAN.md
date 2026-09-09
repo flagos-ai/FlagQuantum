@@ -830,6 +830,24 @@ Exit gate:
 - maximum-likelihood decoding, arbitrary measurement-error tolerance, general
   codes, hardware timing, thresholds, scale, and performance remain excluded.
 
+### Phase 21 — verified Program IR normalization
+
+Insert one private, bounded transformation stage after Program IR verification
+and before both static specialization and dynamic lowering. Keep the same
+`HybridProgram` type across the boundary. Compute constant and SSA-use facts,
+fold supported constant-only arithmetic, and remove unused constants without
+removing operations that may fail at runtime.
+
+Exit gate:
+
+- every input and pass result is verified and invalid pass output fails closed;
+- the pipeline is deterministic, idempotent, and capped at 32 passes;
+- static and dynamic lowering match an explicit unoptimized differential oracle;
+- source and optimized identities plus per-pass operation counts are retained;
+- tensor parameter bindings and autograd edges survive normalization;
+- no target IR, target dialect, stable pass extension API, or performance claim
+  is introduced.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -978,3 +996,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 18 bounded dynamic noise and QEC finite-shot sweeps verified
 - [x] Phase 19 Runtime decoder feedback and Pauli-frame evolution verified
 - [x] Phase 20 detection-event temporal decoding verified
+- [x] Phase 21 verified Program IR normalization implemented and verified

@@ -765,3 +765,43 @@ def test_phase20_adds_bounded_detection_event_temporal_decoding() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE20_EVIDENCE.md"
     )
     assert contract["phase20_completed"] is True
+
+
+def test_phase21_adds_a_verified_program_normalization_stage() -> None:
+    contract = _contract()
+    phase21 = contract["phase21"]
+
+    assert phase21["stage"] == "verified_hybrid_program_normalization"
+    assert phase21["input_ir"] == phase21["output_ir"]
+    assert phase21["analyses"] == [
+        "constant_values",
+        "whole_program_ssa_use_counts",
+        "operation_count",
+    ]
+    assert phase21["passes"] == [
+        "constant_fold",
+        "dead_constant_elimination",
+    ]
+    assert phase21["dead_operation_scope"] == "unused_arith_constants_only"
+    assert phase21["verification"] == "before_pipeline_and_after_every_pass"
+    assert phase21["maximum_passes"] == 32
+    assert phase21["audit_fields"] == [
+        "source_program_identity",
+        "optimized_program_identity",
+        "pass_name",
+        "input_operation_count",
+        "output_operation_count",
+    ]
+    assert phase21["static_specialization_integration"] is True
+    assert phase21["dynamic_lowering_integration"] is True
+    assert phase21["unoptimized_differential_oracle"] is True
+    assert phase21["target_ir_added"] is False
+    assert phase21["target_dialect_added"] is False
+    assert phase21["stable_pass_extension_api"] is False
+    assert phase21["public_root_export"] is False
+    assert phase21["stable_api_change"] is False
+    assert phase21["performance_claim"] is False
+    assert phase21["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE21_EVIDENCE.md"
+    )
+    assert contract["phase21_completed"] is True

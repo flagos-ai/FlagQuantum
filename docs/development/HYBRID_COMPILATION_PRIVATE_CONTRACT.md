@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-18 implemented and verified under the repository owner's
+Status: Phases 1-21 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -734,3 +734,26 @@ checked readout-noise profile. This does not authorize a maximum-likelihood
 decoder, arbitrary measurement-error tolerance, logical suppression, a
 threshold, general codes, provider/hard-real-time execution, gradients,
 scalability, performance, or fault tolerance.
+
+## Phase 21 verified Program IR normalization authorization
+
+Phase 21 may add a bounded private pass pipeline between `HybridProgram`
+verification and the existing static or dynamic lowering paths. The pipeline
+keeps `HybridProgram` as the authoritative program representation. It may
+compute constant-value, whole-program SSA-use, and operation-count facts; fold
+supported constant-only arithmetic; and remove unused `arith.constant`
+operations after folding.
+
+Verification runs before the pipeline and after every transformation. A pass
+must return a `HybridProgram`, and a pipeline longer than 32 passes fails before
+transformation. Lowered results retain the source identity, optimized identity,
+pass names, and before/after operation counts. A private unoptimized path is
+kept solely as a differential correctness oracle.
+
+Operations with possible runtime failure are not removed simply because their
+results are unused. The phase does not authorize a second target IR, target
+dialect, general optimizer or plugin registry, stable pass extension API,
+public export, device-specific optimization, or performance claim. Acceptance
+requires deterministic and idempotent normalization, static and dynamic
+lowering equivalence against the unoptimized oracle, preserved parameter
+autograd edges, and fail-closed invalid-pass boundaries.

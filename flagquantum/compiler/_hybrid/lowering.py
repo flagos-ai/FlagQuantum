@@ -11,6 +11,7 @@ from typing import Any, Mapping, Sequence
 from ...core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from ...core.parameters import Parameter, bind_parameter_value
 from .model import HybridProgram
+from .passes import PassRecord
 from .specialize import SpecializedTrace, specialize_program
 
 
@@ -21,6 +22,8 @@ class LoweredHybridProgram:
     circuit_template: CircuitIR
     bindings: Mapping[str, Any] = field(compare=False, repr=False)
     program_identity: str
+    optimized_program_identity: str
+    optimization_records: tuple[PassRecord, ...]
     input_signature_identity: str
     selected_structure_identity: str
     cache_event: str
@@ -167,6 +170,8 @@ def lower_trace(
         circuit_template=template,
         bindings=bindings,
         program_identity=trace.program_identity,
+        optimized_program_identity=trace.optimized_program_identity,
+        optimization_records=trace.optimization_records,
         input_signature_identity=trace.input_signature_identity,
         selected_structure_identity=structure_identity,
         cache_event=event,
@@ -182,6 +187,7 @@ def specialize_and_lower(
     circuit_dtype: str = "complex64",
     max_unrolled_iterations: int = 10_000,
     require_smooth_gradients: bool = False,
+    optimize: bool = True,
     cache: CircuitStructureCache | None = None,
 ) -> LoweredHybridProgram:
     """Specialize one path and lower it without numerical execution."""
@@ -191,5 +197,6 @@ def specialize_and_lower(
         inputs,
         max_unrolled_iterations=max_unrolled_iterations,
         require_smooth_gradients=require_smooth_gradients,
+        optimize=optimize,
     )
     return lower_trace(trace, circuit_dtype=circuit_dtype, cache=cache)

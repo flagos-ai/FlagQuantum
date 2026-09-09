@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase20_temporal_repetition_decoder_verified",
+  "status": "phase21_verified_hybrid_pass_pipeline",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -679,6 +679,41 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE20_EVIDENCE.md"
   },
   "phase20_completed": true,
+  "phase21": {
+    "stage": "verified_hybrid_program_normalization",
+    "input_ir": "flagquantum.compiler._hybrid.HybridProgram",
+    "output_ir": "flagquantum.compiler._hybrid.HybridProgram",
+    "analyses": [
+      "constant_values",
+      "whole_program_ssa_use_counts",
+      "operation_count"
+    ],
+    "passes": [
+      "constant_fold",
+      "dead_constant_elimination"
+    ],
+    "dead_operation_scope": "unused_arith_constants_only",
+    "verification": "before_pipeline_and_after_every_pass",
+    "maximum_passes": 32,
+    "audit_fields": [
+      "source_program_identity",
+      "optimized_program_identity",
+      "pass_name",
+      "input_operation_count",
+      "output_operation_count"
+    ],
+    "static_specialization_integration": true,
+    "dynamic_lowering_integration": true,
+    "unoptimized_differential_oracle": true,
+    "target_ir_added": false,
+    "target_dialect_added": false,
+    "stable_pass_extension_api": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE21_EVIDENCE.md"
+  },
+  "phase21_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

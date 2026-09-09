@@ -75,6 +75,20 @@ trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 reference; reusable structure identity never serializes or hashes their values.
 The optional structure cache is bounded and reports hit, miss, and eviction.
 
+`passes.py` owns the verified Program IR normalization stage used by both static
+specialization and dynamic lowering. The first concrete analyses are constant
+facts and whole-program SSA use counts. The first transformations fold supported
+constant-only arithmetic and remove only unused constants. Verification runs
+before the pipeline and after every pass; at most 32 passes are accepted. Each
+lowered result retains both the source and optimized semantic identities plus
+per-pass operation counts. The private `optimize=False` path is a differential
+oracle, not a second compiler mode or public API commitment.
+
+This stage deliberately keeps `HybridProgram` as its input and output. It does
+not introduce a target dialect, `TargetIR`, general pass registry, stable pass
+extension API, device optimization, or performance claim. Operations that may
+fail at runtime are not removed merely because their result is unused.
+
 `dynamic_lowering.py` owns the separate bounded measurement-feedback profile.
 Capture represents a top-level measurement as a boolean SSA value plus a new
 linear quantum effect. A direct `if` on that value lowers both branches to
