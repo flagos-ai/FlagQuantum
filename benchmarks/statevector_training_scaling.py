@@ -42,7 +42,7 @@ from flagquantum.runtime.executors.statevector.reverse import (  # noqa: E402
     StatevectorCheckpointPolicy,
     execute_torch_distributed_statevector_reverse,
 )
-from flagquantum.runtime.mps_training import (  # noqa: E402
+from flagquantum.runtime.executors.mps.compiled_training import (  # noqa: E402
     OwnerShardedParameterSynchronizer,
 )
 
