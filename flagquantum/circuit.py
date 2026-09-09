@@ -40,7 +40,16 @@ def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
 
 
 class Circuit:
-    """FlagQuantum native differentiable circuit."""
+    """FlagQuantum native differentiable circuit.
+
+    Examples:
+        Build a two-qubit Bell circuit using the fluent gate API:
+
+        >>> import flagquantum as fq
+        >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
+        >>> circuit.n_qubits
+        2
+    """
 
     def __init__(
         self,

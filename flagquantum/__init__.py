@@ -15,11 +15,8 @@ if TYPE_CHECKING:
 
 from .version import __version__
 
-__author__ = "FlagQuantum Team"
-__license__ = "Apache-2.0"
+__author__, __license__ = "FlagQuantum Team", "Apache-2.0"
 
-# Stable root surface for the first public alpha. Names absent from this tuple
-# are not available from the package root.
 __all__ = (
     "Circuit",
     "CircuitIR",
@@ -54,7 +51,13 @@ def compile(
     target: str | Mapping[str, Any] | None = None,
     target_qubits: Sequence[int] | None = None,
 ) -> Any:
-    """Compile a circuit with FlagQuantum or one named installed compiler."""
+    """Compile a circuit with FlagQuantum or one named installed compiler.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> fq.compile(fq.Circuit(2).h(0).cx(0, 1)).n_wires
+        2
+    """
 
     return import_module(".api", __name__).compile_program(
         program,
@@ -76,7 +79,15 @@ def run(
     shots: int | None = None,
     name: str | None = None,
 ) -> ExecutionResult:
-    """Execute locally, or compile and execute on one named remote target."""
+    """Execute locally, or compile and execute on one named remote target.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
+        >>> request = fq.MeasurementNode("probabilities", (0, 1))
+        >>> fq.run(circuit, measurements=(request,)).measurement(request.kind).wires
+        (0, 1)
+    """
 
     return import_module(".api", __name__).run_program(
         program_or_plan,
@@ -126,5 +137,4 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> list[str]:
-    private_names = {name for name in globals() if name.startswith("_")}
-    return sorted(private_names | set(__all__))
+    return sorted({name for name in globals() if name.startswith("_")} | set(__all__))

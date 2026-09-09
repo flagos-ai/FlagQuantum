@@ -48,6 +48,19 @@ class Module(torch.nn.Module):  # type: ignore[misc]
 
     ``circuit`` receives the owned parameter tensor, and optionally the input
     tensor when its signature accepts two positional arguments.
+
+    Examples:
+        Use a parameterized circuit like any other differentiable PyTorch layer:
+
+        >>> import flagquantum as fq
+        >>> import torch
+        >>> def build(parameters):
+        ...     return fq.Circuit(1).ry(0, theta=parameters[0])
+        >>> module = fq.Module(build, n_parameters=1, init=torch.tensor([0.25]))
+        >>> loss = module().mean()
+        >>> loss.backward()
+        >>> next(module.parameters()).grad is not None
+        True
     """
 
     def __init__(

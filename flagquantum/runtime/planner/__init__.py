@@ -578,7 +578,16 @@ def plan(
     measurements: Sequence[MeasurementNode] | None = None,
     noise_model: NoiseModel | None = None,
 ) -> ExecutionPlan:
-    """Build an execution plan from the stable, backend-neutral options."""
+    """Build an execution plan from the stable, backend-neutral options.
+
+    Examples:
+        Inspect the selected execution mode before running a circuit:
+
+        >>> import flagquantum as fq
+        >>> plan = fq.plan(fq.Circuit(2).h(0).cx(0, 1))
+        >>> plan.state_mode
+        'statevector'
+    """
 
     from ..distributed.backend_policy import (
         resolve_distributed_backend_policy,

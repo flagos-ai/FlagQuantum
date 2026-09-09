@@ -76,6 +76,24 @@ def train(
     step. Set ``log_interval`` to a positive integer to print the first, last,
     and every matching training step. ``callback`` is called after every step
     with a one-based step number, scalar loss, and detached execution result.
+
+    Examples:
+        Optimize a one-parameter circuit with a standard PyTorch optimizer:
+
+        >>> import flagquantum as fq
+        >>> import torch
+        >>> def build(parameters):
+        ...     return fq.Circuit(1).ry(0, theta=parameters[0])
+        >>> module = fq.Module(build, n_parameters=1, init=torch.tensor([0.25]))
+        >>> optimizer = torch.optim.SGD(module.parameters(), lr=0.2)
+        >>> result = fq.train(
+        ...     module,
+        ...     optimizer=optimizer,
+        ...     objective=lambda value: value.mean(),
+        ...     steps=2,
+        ... )
+        >>> result.completed_steps
+        2
     """
 
     if not isinstance(module, Module):

@@ -201,6 +201,22 @@ evidence internals.
    boilerplate. Reviewers must reject code whose structure cannot be explained
    in terms of current product behavior and domain ownership.
 
+## Docstrings and Code Examples
+
+- Public APIs and cross-domain interfaces use concise Google-style docstrings.
+  Document parameters, results, and failure behavior only when that information
+  is not already obvious from the signature and type annotations.
+- A stable user-facing workflow entry must include one shortest supported
+  `Examples:` path. Add a second example only when it prevents a likely misuse.
+  Examples use public `fq.*` APIs and must stay executable as the product evolves.
+- Docstring examples must not submit remote jobs, consume paid resources, require
+  credentials, or depend on unavailable hardware. Describe those prerequisites
+  in prose and keep live execution in an explicitly invoked example or evidence
+  workflow.
+- Private helpers do not require templated docstrings or examples. Comments
+  explain intent, invariants, units, precision, ownership, or non-obvious failure
+  semantics; they do not translate each line of code into English.
+
 ## Source Documents
 
 Before changing distributed runtime, planners, benchmark claims, or quantum AI
