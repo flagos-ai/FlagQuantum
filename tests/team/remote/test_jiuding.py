@@ -120,6 +120,7 @@ def test_create_workspace_uses_explicit_non_privileged_configuration(client):
         "flagquantum-dev",
         target="jiuding:gpu",
         image="flagquantum-runtime:v0.2.0",
+        accelerator_count=2,
         cpus=8,
         memory_gib=32,
     )
@@ -129,7 +130,7 @@ def test_create_workspace_uses_explicit_non_privileged_configuration(client):
         "target": "jiuding:gpu",
         "cpus": 8,
         "memory_gib": 32,
-        "gpus": 1,
+        "gpus": 2,
         "accelerator_model": "NVIDIA_A100-SXM4-40GB",
     }
     client._catalog_image.assert_called_once_with(
@@ -144,12 +145,34 @@ def test_create_workspace_uses_explicit_non_privileged_configuration(client):
     assert body["isPrivileged"] is False
     assert body["quotaDetail"]["resourceDetail"] == {
         "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
-        "acceleratorCount": 1,
+        "acceleratorCount": 2,
         "cpuCores": 8,
         "memGib": 32,
         "quotaItemId": 0,
         "sharedMemGib": 16,
     }
+
+
+@pytest.mark.parametrize(
+    ("target", "accelerator_count", "message"),
+    [
+        ("jiuding:cpu", 1, "CPU workspaces"),
+        ("jiuding:gpu", 0, "GPU workspaces"),
+        ("jiuding:gpu", -1, "non-negative integer"),
+    ],
+)
+def test_create_workspace_rejects_incompatible_accelerator_count(
+    client, target, accelerator_count, message
+):
+    client._request = Mock()
+    with pytest.raises(ValueError, match=message):
+        client.create_workspace(
+            "flagquantum-dev",
+            target=target,
+            image="flagquantum-runtime:v0.2.0",
+            accelerator_count=accelerator_count,
+        )
+    client._request.assert_not_called()
 
 
 def test_workspace_lifecycle_uses_resolved_owner_and_never_saves_on_stop(client):

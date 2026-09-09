@@ -22,6 +22,7 @@ created = client.create_workspace(
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
     image="flagquantum-runtime:v0.2.0-e30b1b0c-cu128-a100",
     image_region="PRIVATE",
+    accelerator_count=1,
     cpus=4,
     memory_gib=16,
 )
@@ -35,6 +36,10 @@ operation and is never triggered by `fq.run()`. Use
 container snapshot and `client.start_workspace("example-resident-a100")` to
 restart it. Source code and durable results must remain on mounted storage;
 stopping a workspace does not make its container filesystem durable.
+Set `accelerator_count=2` or higher only for an explicitly distributed
+workspace. A larger allocation exposes devices to the workspace; it does not
+turn replicated work into sharded execution. Launch a supported distributed
+FlagQuantum engine under `torchrun` and retain its distribution evidence.
 
 ```python
 from pathlib import Path

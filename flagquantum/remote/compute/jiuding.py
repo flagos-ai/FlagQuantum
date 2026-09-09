@@ -710,6 +710,7 @@ class JiudingClient:
         target: str,
         image: str,
         image_region: str = "PRIVATE",
+        accelerator_count: int | None = None,
         cpus: int = 4,
         memory_gib: int = 16,
         description: str = "",
@@ -728,7 +729,14 @@ class JiudingClient:
             raise ValueError("memory_gib must be an integer of at least 2")
         context = self.workspace()
         chip_type, model = self._resolve_compute_target(target)
-        accelerator_count = int(chip_type == "gpu")
+        if accelerator_count is None:
+            accelerator_count = int(chip_type == "gpu")
+        if type(accelerator_count) is not int or accelerator_count < 0:
+            raise ValueError("accelerator_count must be a non-negative integer")
+        if chip_type == "cpu" and accelerator_count:
+            raise ValueError("CPU workspaces cannot request accelerators")
+        if chip_type == "gpu" and accelerator_count < 1:
+            raise ValueError("GPU workspaces must request at least one accelerator")
         catalog_image = self._catalog_image(image, image_region)
         body = {
             "name": name,
