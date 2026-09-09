@@ -873,6 +873,21 @@ class _Capture:
                 result_types=(QUANTUM_EFFECT,),
             )[0]
             return
+        if name == "reset":
+            if call.args:
+                self.fail(
+                    call,
+                    "quantum.arguments",
+                    "reset accepts only the wires keyword",
+                )
+            wire = self.dynamic_wires(call, expected=1)[0]
+            self.effect = self.emit(
+                call,
+                "quantum.reset",
+                operands=(wire, self.require_effect(call)),
+                result_types=(QUANTUM_EFFECT,),
+            )[0]
+            return
         if name == "measure":
             self.fail(
                 call,

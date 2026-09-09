@@ -308,6 +308,20 @@ class _Verifier:
                     "quantum.measure_type",
                     "quantum.measure requires index, effect -> bool, effect",
                 )
+        elif name == "quantum.reset":
+            if (
+                len(operands) == 2
+                and len(results) == 1
+                and (
+                    operands[0].type != INDEX
+                    or operands[1].type != QUANTUM_EFFECT
+                    or results[0].type != QUANTUM_EFFECT
+                )
+            ):
+                self.error(
+                    "quantum.reset_type",
+                    "quantum.reset requires index, effect -> effect",
+                )
         elif name == "quantum.expectation" and len(operands) == 1 and len(results) == 1:
             if operands[0].type != QUANTUM_EFFECT or not _is_scalar(results[0].type):
                 self.error(

@@ -506,3 +506,40 @@ def test_phase14_merges_measurement_dependent_ssa_values() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE14_EVIDENCE.md"
     )
     assert contract["phase14_completed"] is True
+
+
+def test_phase15_supports_fixed_round_syndrome_feedback() -> None:
+    contract = _contract()
+    phase15 = contract["phase15"]
+
+    assert phase15["program_ir_operations_added"] == ["quantum.reset"]
+    assert phase15["execution_profile"] == (
+        "statically_bounded_repeated_syndrome_feedback"
+    )
+    assert phase15["loop_measurement_supported"] is True
+    assert phase15["loop_reset_supported"] is True
+    assert phase15["per_iteration_feedback_supported"] is True
+    assert phase15["measurement_allocation"] == (
+        "dense_monotonic_classical_bits_after_unrolling"
+    )
+    assert phase15["loop_carried_syndrome"] is True
+    assert phase15["budgets"] == {
+        "max_unrolled_iterations_default": 10_000,
+        "max_dynamic_measurements_default": 4_096,
+        "max_condition_clauses_default": 64,
+    }
+    assert phase15["conditional_measurement"] == "unsupported_fail_closed"
+    assert phase15["conditional_reset"] == "unsupported_fail_closed"
+    assert phase15["measurement_dependent_loop_termination"] == (
+        "unsupported_fail_closed"
+    )
+    assert phase15["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase15["provider_execution"] == "unsupported_fail_closed"
+    assert phase15["public_api_change"] is False
+    assert phase15["default_path_change"] is False
+    assert phase15["core_ir_schema_change"] is False
+    assert phase15["performance_claim"] is False
+    assert phase15["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE15_EVIDENCE.md"
+    )
+    assert contract["phase15_completed"] is True

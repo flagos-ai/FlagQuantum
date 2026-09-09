@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-14 bounded vertical slices complete**
+Status: **Phases 1-15 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -686,6 +686,29 @@ Exit gate:
 - public API, Core schema, default path, and performance claims remain
   unchanged.
 
+### Phase 15 — fixed-round syndrome measurement and feedback
+
+Permit measurements and unconditional ancilla reset inside statically bounded
+loops. Lowering unrolls the rounds, allocates dense classical bits for each
+measurement, carries the latest syndrome through loop SSA, and emits immediate
+conditioned correction gates without evaluating measurements in Compiler.
+
+The first QEC-oriented vertical slice injects a deterministic data error,
+extracts an ancilla syndrome for three rounds, corrects after the first
+detection, resets the ancilla every round, and verifies that subsequent
+syndromes remain clear. Reference and batched Runtime strategies must agree.
+
+Exit gate:
+
+- loop measurement order maps deterministically to dense classical bits;
+- a loop-carried syndrome may be returned after the final round;
+- measurement feedback changes the data qubit in the same round;
+- unconditional reset returns the ancilla to zero before reuse;
+- unroll, measurement, and predicate expansion budgets fail closed;
+- conditional measurement/reset and dynamic termination remain unsupported;
+- no decoder, threshold, provider, gradient, capacity, or performance claim is
+  made.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -827,3 +850,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 13 disjunction, complement, XOR/XNOR, and exact quantum branches verified
 - [x] Phase 14 measurement-dependent SSA merge contract authorized
 - [x] Phase 14 scalar/index/bool value partitioning and consumer splitting verified
+- [x] Phase 15 fixed-round syndrome-feedback contract authorized
+- [x] Phase 15 loop measurement, immediate correction, and ancilla reset verified

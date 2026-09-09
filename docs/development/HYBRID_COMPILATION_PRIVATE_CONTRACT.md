@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-14 implemented and verified under the repository owner's
+Status: Phases 1-15 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -589,3 +589,30 @@ measurement, measurement-dependent loop bounds, measurement-dependent program
 returns, and finite-shot gradients remain unsupported. Phase 14 changes no
 public API, default path, or Core serialization schema and makes no performance
 claim.
+
+## Phase 15 fixed-round syndrome-feedback authorization
+
+Phase 15 may execute `quantum.measure` inside a statically bounded `scf.for`
+and may add `quantum.reset` as an index-and-effect Program IR operation.
+Dynamic lowering fully unrolls the bounded loop, assigns every measurement a
+distinct dense classical bit in program order, and carries the latest syndrome
+SSA value across iterations and out of the loop.
+
+Each round may measure an ancilla, evaluate the resulting Boolean predicate,
+apply immediate conditioned correction gates, and unconditionally reset the
+ancilla before the next round. Runtime retains ownership of collapse, reset,
+the per-shot classical register, and conditional gate execution. Compiler
+does not sample syndrome values while lowering.
+
+The profile is bounded independently by `max_unrolled_iterations`,
+`max_dynamic_measurements`, and `max_condition_clauses`, with defaults of
+10,000, 4,096, and 64. Exceeding any configured bound fails before Runtime.
+Conditional measurement or reset, measurement-dependent loop termination,
+finite-shot gradients, and provider execution remain unsupported.
+
+Phase 15 acceptance requires a fixed three-round correction program in which
+the first syndrome detects an injected data error, its conditioned correction
+clears the error, later syndromes remain clear, every ancilla reset succeeds,
+and reference and batched trajectories agree. This is a bounded QEC control
+slice, not a logical-error-rate, threshold, decoder, hardware-latency, or
+fault-tolerance claim.

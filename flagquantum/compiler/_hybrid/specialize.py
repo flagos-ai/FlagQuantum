@@ -355,6 +355,12 @@ class _Specializer:
             wire = self.as_index(operation, operands[0])
             self.gates.append(TraceGate(name.removeprefix("quantum."), (wire,)))
             return (_EFFECT,)
+        if name == "quantum.reset":
+            self.fail(
+                operation,
+                "dynamic.operation_required",
+                "reset requires the bounded dynamic lowering path",
+            )
         if name == "quantum.expectation":
             self.require_effect(operation, operands[0])
             self.observables = tuple(

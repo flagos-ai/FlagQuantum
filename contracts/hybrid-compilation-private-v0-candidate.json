@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase14_measurement_dependent_ssa_merge_verified",
+  "status": "phase15_fixed_round_syndrome_feedback_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -474,6 +474,34 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE14_EVIDENCE.md"
   },
   "phase14_completed": true,
+  "phase15": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.lower_dynamic_program",
+    "program_ir_operations_added": [
+      "quantum.reset"
+    ],
+    "execution_profile": "statically_bounded_repeated_syndrome_feedback",
+    "loop_measurement_supported": true,
+    "loop_reset_supported": true,
+    "per_iteration_feedback_supported": true,
+    "measurement_allocation": "dense_monotonic_classical_bits_after_unrolling",
+    "loop_carried_syndrome": true,
+    "budgets": {
+      "max_unrolled_iterations_default": 10000,
+      "max_dynamic_measurements_default": 4096,
+      "max_condition_clauses_default": 64
+    },
+    "conditional_measurement": "unsupported_fail_closed",
+    "conditional_reset": "unsupported_fail_closed",
+    "measurement_dependent_loop_termination": "unsupported_fail_closed",
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "provider_execution": "unsupported_fail_closed",
+    "public_api_change": false,
+    "default_path_change": false,
+    "core_ir_schema_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE15_EVIDENCE.md"
+  },
+  "phase15_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

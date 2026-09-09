@@ -76,7 +76,11 @@ _FALSE_CLAUSES: tuple[tuple[tuple[int, int], ...], ...] = ()
 
 class _DynamicLowerer:
     def __init__(
-        self, *, max_unrolled_iterations: int, max_condition_clauses: int
+        self,
+        *,
+        max_unrolled_iterations: int,
+        max_condition_clauses: int,
+        max_dynamic_measurements: int,
     ) -> None:
         if int(max_unrolled_iterations) <= 0:
             raise ValueError("max_unrolled_iterations must be positive")
@@ -84,6 +88,9 @@ class _DynamicLowerer:
         if int(max_condition_clauses) <= 0:
             raise ValueError("max_condition_clauses must be positive")
         self.max_condition_clauses = int(max_condition_clauses)
+        if int(max_dynamic_measurements) <= 0:
+            raise ValueError("max_dynamic_measurements must be positive")
+        self.max_dynamic_measurements = int(max_dynamic_measurements)
         self.unrolled_iterations = 0
         self.instructions: list[Instruction] = []
         self.bindings: dict[str, Any] = {}
@@ -240,6 +247,12 @@ class _DynamicLowerer:
                 )
             wire = self.as_index(operation, operands[0])
             classical_bit = self.measurement_count
+            if classical_bit >= self.max_dynamic_measurements:
+                self.fail(
+                    operation,
+                    "dynamic.measurement_limit",
+                    f"program exceeds {self.max_dynamic_measurements} measurements",
+                )
             self.measurement_count += 1
             self.instructions.append(
                 Instruction(
@@ -252,6 +265,28 @@ class _DynamicLowerer:
                 )
             )
             return (_MeasurementRef(classical_bit), _EFFECT)
+        if name == "quantum.reset":
+            self.require_effect(operation, operands[1])
+            if conditions != _TRUE_CLAUSES:
+                self.fail(
+                    operation,
+                    "dynamic.conditional_reset",
+                    "conditional reset is outside the fixed-round profile",
+                )
+            if isinstance(operands[0], _ConditionalValue):
+                self.fail(
+                    operation,
+                    "dynamic.conditional_reset_target",
+                    "measurement-dependent reset wires are unsupported",
+                )
+            self.instructions.append(
+                Instruction(
+                    "reset",
+                    (self.as_index(operation, operands[0]),),
+                    metadata={"is_dynamic": True},
+                )
+            )
+            return (_EFFECT,)
         if name == "scf.if":
             predicate = operands[0]
             if not isinstance(
@@ -327,19 +362,12 @@ class _DynamicLowerer:
                     f"path exceeds {self.max_unrolled_iterations} loop iterations",
                 )
             carried = operands[3:]
-            measurements_before = self.measurement_count
             for iteration in iterations:
                 carried = self.execute_region(
                     operation.regions[0],
                     environment,
                     (iteration, *carried),
                     conditions=conditions,
-                )
-            if self.measurement_count != measurements_before:
-                self.fail(
-                    operation,
-                    "dynamic.loop_measurement",
-                    "measurement inside a loop is outside the bounded profile",
                 )
             return carried
         if name == "scf.yield":
@@ -741,6 +769,7 @@ def lower_dynamic_program(
     circuit_dtype: str = "complex64",
     max_unrolled_iterations: int = 10_000,
     max_condition_clauses: int = 64,
+    max_dynamic_measurements: int = 4_096,
 ) -> LoweredDynamicProgram:
     """Lower a bounded measurement-feedback program without executing numerics."""
 
@@ -782,6 +811,7 @@ def lower_dynamic_program(
     lowerer = _DynamicLowerer(
         max_unrolled_iterations=max_unrolled_iterations,
         max_condition_clauses=max_condition_clauses,
+        max_dynamic_measurements=max_dynamic_measurements,
     )
     lowerer.execute_block(entry, {}, (*inputs, _EFFECT))
     if not lowerer.instructions or lowerer.measurement_count == 0:

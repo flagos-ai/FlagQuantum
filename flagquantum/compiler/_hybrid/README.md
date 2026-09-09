@@ -61,6 +61,14 @@ Conditional measurement, measurement-derived loop bounds or program returns,
 case expansion beyond the configured ceiling, and stochastic gradients fail
 closed.
 
+Statically bounded loops may contain measurement, same-round conditioned
+feedback, and unconditional ancilla reset. Lowering unrolls each round and
+allocates dense classical bits in source order; a syndrome bool may be carried
+through the loop and returned after its final iteration. Unrolling,
+measurement count, and predicate expansion have independent configured
+ceilings. Conditional measurement/reset and measurement-dependent termination
+remain outside the profile.
+
 `specialize.py` selects one bounded runtime path and records an ephemeral gate
 trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 `Parameter` slots. Runtime tensor slices stay in a separate binding map by

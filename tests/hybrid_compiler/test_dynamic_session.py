@@ -397,7 +397,7 @@ def test_bool_input_selects_float32_rotation_before_measurement(
     assert torch.all(result.classical_bits == 1)
 
 
-def test_tensor_inputs_and_loop_measurement_remain_outside_profile() -> None:
+def test_tensor_inputs_remain_outside_dynamic_profile() -> None:
     tensor_program = capture_source(
         """
 def tensor_feedback(data):
@@ -413,18 +413,52 @@ def tensor_feedback(data):
             circuit_dtype="complex64",
         )
 
-    loop_measurement = capture_source(
+
+@pytest.mark.parametrize("strategy", ("trajectory", "batched"))
+def test_fixed_round_syndrome_measurement_feedback_and_reset(strategy: str) -> None:
+    syndrome_program = capture_source(
         """
-def loop_measurement():
-    for index in range(2):
-        nested = qp.measure(wires=index)
-    bit = qp.measure(wires=0)
-    return bit
+def fixed_round_correction():
+    qp.X(wires=0)
+    syndrome = False
+    for round_id in range(3):
+        qp.CNOT(wires=[0, 1])
+        syndrome = qp.measure(wires=1)
+        if syndrome:
+            qp.X(wires=0)
+        qp.reset(wires=1)
+    return syndrome
 """,
         (),
     )
-    with pytest.raises(SpecializationError, match="dynamic.loop_measurement"):
-        lower_dynamic_program(loop_measurement)
+    lowered = lower_dynamic_program(syndrome_program)
+    measurements = tuple(
+        instruction
+        for instruction in lowered.circuit.instructions
+        if instruction.name == "measure"
+    )
+    resets = tuple(
+        instruction
+        for instruction in lowered.circuit.instructions
+        if instruction.name == "reset"
+    )
+
+    assert lowered.measurement_count == 3
+    assert lowered.return_classical_bit == 2
+    assert tuple(item.metadata["classical_bit"] for item in measurements) == (0, 1, 2)
+    assert len(resets) == 3
+    assert all(item.metadata == {"is_dynamic": True} for item in resets)
+
+    result = execute_hybrid_dynamic_session(
+        lowered.circuit, shots=32, seed=47, strategy=strategy
+    )
+    assert torch.all(result.classical_bits[:, 0] == 1)
+    assert torch.all(result.classical_bits[:, 1:] == 0)
+    assert torch.all(result.samples[:, 0] == 0)
+    assert torch.all(result.samples[:, 1] == 0)
+
+    with pytest.raises(SpecializationError, match="exceeds 2 measurements"):
+        lower_dynamic_program(syndrome_program, max_dynamic_measurements=2)
 
 
 def test_capture_and_execute_loop_carried_scalar_and_index_state() -> None:

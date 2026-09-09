@@ -104,6 +104,13 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
             if type(bit) is not int or bit < 0 or bit in measured:
                 raise ValueError("measurement classical bits must be unique integers")
             measured.add(bit)
+        elif instruction.name == "reset":
+            if (
+                clauses
+                or set(instruction.metadata) != {"is_dynamic"}
+                or (instruction.metadata.get("is_dynamic") is not True)
+            ):
+                raise ValueError("reset metadata is outside the fixed-round profile")
         elif instruction.name not in _ALLOWED_FIXED_GATES | _ALLOWED_ROTATIONS:
             raise ValueError(
                 f"instruction {instruction.name!r} is outside the dynamic profile"
