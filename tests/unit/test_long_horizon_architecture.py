@@ -33,7 +33,7 @@ def test_architecture_contract_declares_independent_domains() -> None:
         "communication",
     }
     migration_tracks = payload["migration_tracks"]
-    assert len(migration_tracks) == 7
+    assert len(migration_tracks) == 8
     assert all(track["completion_evidence"] for track in migration_tracks)
     assert all(track["retirement_condition"] for track in migration_tracks)
     simulation = next(
