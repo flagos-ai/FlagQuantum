@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-7 bounded vertical slices complete**
+Status: **Phases 1-8 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -515,6 +515,24 @@ shot semantics, and stochastic-gradient policy.
 It is not a prerequisite for claiming the bounded classical-data-dependent
 hybrid control-flow profile from Phases 0-6.
 
+### Phase 8 — parameterized bounded dynamic session
+
+Extend the private Phase 7 session with non-trainable scalar, index, and bool
+runtime inputs. Specialize positive bounded `range` loops, lower RX/RY values
+through explicit Core `Parameter` slots, and keep parameter values outside the
+template identity.
+
+Exit gate:
+
+- equal structure with different parameter values has one template identity;
+- bound values preserve the original scalar tensor objects;
+- loop bounds are visible and limited by a configurable unroll ceiling;
+- eager dynamic shots respond to parameter changes under deterministic oracles;
+- trainable inputs, unbound templates, tensor inputs, and loop measurements
+  fail closed;
+- no finite-shot gradient, graph-compilation, accelerator, distributed, or
+  performance claim is introduced.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -642,3 +660,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 6 FakeTensor, Autograd, opcheck, gradcheck, and fullgraph path verified
 - [x] Phase 7 Runtime/Simulation contract authorized for a bounded profile
 - [x] Phase 7 measurement-value, conditional-session, shot, and gradient-policy slice verified
+- [x] Phase 8 parameter-slot and bounded-loop contract authorized
+- [x] Phase 8 non-trainable parameterized dynamic-session slice verified

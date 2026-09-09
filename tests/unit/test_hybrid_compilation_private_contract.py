@@ -254,3 +254,37 @@ def test_phase7_reuses_dynamic_runtime_and_rejects_stochastic_gradients() -> Non
         "docs/development/HYBRID_COMPILATION_PHASE7_EVIDENCE.md"
     )
     assert contract["phase7_completed"] is True
+
+
+def test_phase8_separates_dynamic_parameters_from_specialized_structure() -> None:
+    contract = _contract()
+    phase8 = contract["phase8"]
+
+    assert phase8["template_artifact"] == "flagquantum.core.ir.CircuitIR"
+    assert phase8["runtime_input_types"] == [
+        "scalar_float32_or_float64",
+        "index",
+        "bool",
+    ]
+    assert phase8["tensor_runtime_inputs_supported"] is False
+    assert phase8["parameterized_gates"] == ["rx", "ry"]
+    assert phase8["parameter_binding"] == "explicit_ordered_core_parameter_slots"
+    assert phase8["parameter_values_excluded_from_template_identity"] is True
+    assert phase8["source_tensor_identity_preserved_by_binding"] is True
+    assert phase8["classical_loop_profile"] == ("positive_bounded_range_specialization")
+    assert phase8["default_max_unrolled_iterations"] == 10_000
+    assert phase8["loop_measurement_supported"] is False
+    assert phase8["input_dependent_structure_requires_respecialization"] is True
+    assert phase8["trainable_inputs"] == "unsupported_fail_closed"
+    assert phase8["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase8["runtime_execution"] == "existing_local_dynamic_trajectory"
+    assert phase8["torch_compile_claim"] is False
+    assert phase8["accelerator_claim"] is False
+    assert phase8["distributed_claim"] is False
+    assert phase8["performance_claim"] is False
+    assert phase8["public_api_change"] is False
+    assert phase8["default_path_change"] is False
+    assert phase8["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE8_EVIDENCE.md"
+    )
+    assert contract["phase8_completed"] is True

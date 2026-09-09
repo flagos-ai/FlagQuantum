@@ -374,3 +374,38 @@ preserve the returned measurement semantics; and every excluded gradient or
 control case fails closed. This result is a semantic vertical slice, not a
 claim of general dynamic-program compilation or production dynamic-QPU
 support.
+
+## Phase 8 parameterized bounded-session authorization
+
+Phase 8 may add non-trainable scalar, index, and boolean runtime inputs to the
+private dynamic-session lowering path. Tensor inputs remain excluded. Runtime
+input shapes and dtypes use the same specialization validation as the analytic
+path. A `complex64` circuit accepts declared `float32` scalar inputs and a
+`complex128` circuit accepts declared `float64` scalar inputs.
+
+RX and RY are added to the accepted dynamic gate profile. Compiler stores each
+rotation value in an explicit ordered binding map and emits only a Core
+`Parameter` placeholder into the `CircuitIR` template. Binding preserves the
+original scalar object. Parameter values therefore do not enter the template
+hash, while changes to gate count, branch selection, loop trip count, or wire
+structure produce a different template and require specialization again.
+
+Positive bounded `range` loops may be specialized and unrolled before Runtime
+execution. The default cumulative ceiling is 10,000 iterations and callers may
+choose a smaller limit. Measurement inside a loop remains unsupported. Static
+input predicates may select a branch during specialization; predicates derived
+from measurements continue to lower both branches as classical conditions.
+
+Finite-shot dynamic execution remains non-differentiable. Compiler rejects a
+runtime input with `requires_grad=True`; Runtime independently rejects any
+trainable tensor introduced into a bound or tampered artifact. There is no
+parameter-shift, likelihood-ratio, straight-through, surrogate, or detached
+gradient result. An unbound template also fails before trajectory execution.
+
+Phase 8 acceptance is complete for this bounded profile. Equal loop structure
+with different scalar values has one template identity, binding retains the
+source tensor, RX(0) and RX(pi) produce the expected deterministic measurement
+and feedback outcomes, and the unroll, binding, dtype, and gradient exclusions
+fail closed. The extension remains private and makes no public API, default
+path, `torch.compile`, accelerator, distributed, capacity, or performance
+claim.

@@ -6,11 +6,16 @@ import pytest
 import torch
 
 from flagquantum.compiler._hybrid import (
+    BOOL,
+    INDEX,
     SpecializationError,
     capture_source,
     lower_dynamic_program,
+    scalar_type,
+    tensor_type,
 )
 from flagquantum.core.ir import Instruction
+from flagquantum.core.parameters import Parameter
 from flagquantum.runtime.dynamic.hybrid_session import (
     execute_hybrid_dynamic_session,
 )
@@ -27,6 +32,32 @@ def feedback():
         qp.X(wires=2)
     return bit
 """
+PARAMETERIZED_SOURCE = """
+def parameterized_feedback(theta, layers):
+    for layer in range(layers):
+        qp.RX(theta, wires=0)
+    bit = qp.measure(wires=0)
+    if bit:
+        qp.X(wires=1)
+    return bit
+"""
+PARAMETERIZED_PROGRAM = capture_source(
+    PARAMETERIZED_SOURCE,
+    (scalar_type("float64"), INDEX),
+)
+STATIC_BRANCH_SOURCE = """
+def static_branch_feedback(use_ry, theta):
+    if use_ry:
+        qp.RY(theta, wires=0)
+    else:
+        qp.RX(theta, wires=0)
+    bit = qp.measure(wires=0)
+    return bit
+"""
+STATIC_BRANCH_PROGRAM = capture_source(
+    STATIC_BRANCH_SOURCE,
+    (BOOL, scalar_type("float32")),
+)
 
 
 def _lowered():
@@ -98,7 +129,7 @@ def conditional_measurement():
 """
     with pytest.raises(SpecializationError, match="dynamic.conditional_measurement"):
         lower_dynamic_program(capture_source(source, ()))
-    with pytest.raises(SpecializationError, match="accepts no runtime inputs"):
+    with pytest.raises(SpecializationError, match="expected 0 runtime input"):
         lower_dynamic_program(capture_source(SOURCE, ()), (torch.tensor(1.0),))
 
 
@@ -136,3 +167,116 @@ def test_runtime_rejects_invalid_shots_gradient_and_classical_order() -> None:
     )
     with pytest.raises(ValueError, match="binary values"):
         execute_hybrid_dynamic_session(invalid_condition, shots=1)
+
+
+@pytest.mark.parametrize(("theta", "expected"), ((0.0, 0), (torch.pi, 1)))
+def test_parameterized_bounded_loop_changes_dynamic_session(
+    theta: float, expected: int
+) -> None:
+    value = torch.tensor(theta, dtype=torch.float64)
+    lowered = lower_dynamic_program(
+        PARAMETERIZED_PROGRAM,
+        (value, 1),
+        circuit_dtype="complex128",
+    )
+
+    assert isinstance(
+        lowered.circuit_template.instructions[0].params["theta"], Parameter
+    )
+    assert lowered.ordered_bindings[0][1] is value
+    result = execute_hybrid_dynamic_session(
+        lowered.bind(), shots=32, seed=5, strategy="batched"
+    )
+
+    assert torch.all(result.classical_bits[:, 0] == expected)
+    assert torch.all(result.samples[:, 0] == expected)
+    assert torch.all(result.samples[:, 1] == expected)
+
+
+def test_dynamic_parameter_values_do_not_change_template_identity() -> None:
+    first = lower_dynamic_program(
+        PARAMETERIZED_PROGRAM,
+        (torch.tensor(0.1, dtype=torch.float64), 2),
+        circuit_dtype="complex128",
+    )
+    second = lower_dynamic_program(
+        PARAMETERIZED_PROGRAM,
+        (torch.tensor(0.9, dtype=torch.float64), 2),
+        circuit_dtype="complex128",
+    )
+
+    assert first.circuit_template.content_hash == second.circuit_template.content_hash
+    assert first.input_signature_identity == second.input_signature_identity
+    assert first.circuit.instructions[0].params["theta"] is not (
+        second.circuit.instructions[0].params["theta"]
+    )
+
+
+def test_parameterized_dynamic_profile_rejects_gradients_unbound_ir_and_large_loop() -> (
+    None
+):
+    with pytest.raises(SpecializationError, match="trainable inputs"):
+        lower_dynamic_program(
+            PARAMETERIZED_PROGRAM,
+            (torch.tensor(0.2, dtype=torch.float64, requires_grad=True), 1),
+            circuit_dtype="complex128",
+        )
+    with pytest.raises(SpecializationError, match="unroll_limit"):
+        lower_dynamic_program(
+            PARAMETERIZED_PROGRAM,
+            (torch.tensor(0.2, dtype=torch.float64), 5),
+            circuit_dtype="complex128",
+            max_unrolled_iterations=4,
+        )
+    lowered = lower_dynamic_program(
+        PARAMETERIZED_PROGRAM,
+        (torch.tensor(0.2, dtype=torch.float64), 1),
+        circuit_dtype="complex128",
+    )
+    with pytest.raises(ValueError, match="must be bound"):
+        execute_hybrid_dynamic_session(lowered.circuit_template, shots=1)
+
+
+@pytest.mark.parametrize(("use_ry", "gate"), ((True, "ry"), (False, "rx")))
+def test_bool_input_selects_float32_rotation_before_measurement(
+    use_ry: bool, gate: str
+) -> None:
+    lowered = lower_dynamic_program(
+        STATIC_BRANCH_PROGRAM,
+        (use_ry, torch.tensor(torch.pi, dtype=torch.float32)),
+        circuit_dtype="complex64",
+    )
+
+    assert lowered.circuit_template.instructions[0].name == gate
+    result = execute_hybrid_dynamic_session(lowered.circuit, shots=16, seed=3)
+    assert torch.all(result.classical_bits == 1)
+
+
+def test_tensor_inputs_and_loop_measurement_remain_outside_profile() -> None:
+    tensor_program = capture_source(
+        """
+def tensor_feedback(data):
+    bit = qp.measure(wires=0)
+    return bit
+""",
+        (tensor_type("float32", (1,)),),
+    )
+    with pytest.raises(SpecializationError, match="scalar, index, or bool"):
+        lower_dynamic_program(
+            tensor_program,
+            (torch.zeros(1),),
+            circuit_dtype="complex64",
+        )
+
+    loop_measurement = capture_source(
+        """
+def loop_measurement():
+    for index in range(2):
+        nested = qp.measure(wires=index)
+    bit = qp.measure(wires=0)
+    return bit
+""",
+        (),
+    )
+    with pytest.raises(SpecializationError, match="dynamic.loop_measurement"):
+        lower_dynamic_program(loop_measurement)

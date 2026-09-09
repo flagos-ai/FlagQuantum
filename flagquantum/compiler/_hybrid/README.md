@@ -51,8 +51,10 @@ classically conditioned instructions on one Core `CircuitIR`; it does not
 sample or collapse state in Compiler. The private Runtime dynamic-session
 handoff performs that execution through the existing trajectory machinery.
 
-This first dynamic profile is deliberately small: no runtime inputs,
-top-level measurements only, direct measurement-bool conditions, H/X/CX gates,
-and no stochastic gradients. Unsupported nesting, trainable tensors, durable
-sessions, accelerators, and distributed execution fail closed or remain
-outside the contract.
+The base dynamic profile is deliberately small: top-level measurements only,
+direct measurement-bool conditions, H/X/CX gates, and no stochastic gradients.
+Its bounded parameterized extension accepts non-trainable scalar, index, and
+bool inputs, specializes positive `range` loops, and lowers RX/RY values through
+ordered Core `Parameter` slots. Unsupported nesting, tensor inputs, trainable
+values, loop measurements, durable sessions, accelerators, and distributed
+execution fail closed or remain outside the contract.

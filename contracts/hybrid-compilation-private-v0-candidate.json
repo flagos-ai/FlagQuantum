@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase7_dynamic_session_verified",
+  "status": "phase8_parameterized_dynamic_session_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -272,6 +272,38 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE7_EVIDENCE.md"
   },
   "phase7_completed": true,
+  "phase8": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.lower_dynamic_program",
+    "template_artifact": "flagquantum.core.ir.CircuitIR",
+    "runtime_input_types": [
+      "scalar_float32_or_float64",
+      "index",
+      "bool"
+    ],
+    "tensor_runtime_inputs_supported": false,
+    "parameterized_gates": [
+      "rx",
+      "ry"
+    ],
+    "parameter_binding": "explicit_ordered_core_parameter_slots",
+    "parameter_values_excluded_from_template_identity": true,
+    "source_tensor_identity_preserved_by_binding": true,
+    "classical_loop_profile": "positive_bounded_range_specialization",
+    "default_max_unrolled_iterations": 10000,
+    "loop_measurement_supported": false,
+    "input_dependent_structure_requires_respecialization": true,
+    "trainable_inputs": "unsupported_fail_closed",
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "runtime_execution": "existing_local_dynamic_trajectory",
+    "torch_compile_claim": false,
+    "accelerator_claim": false,
+    "distributed_claim": false,
+    "performance_claim": false,
+    "public_api_change": false,
+    "default_path_change": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE8_EVIDENCE.md"
+  },
+  "phase8_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

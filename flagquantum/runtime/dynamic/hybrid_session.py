@@ -8,17 +8,21 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
+from ...core.parameters import is_parameterized_value
 from ._conditions import instruction_conditions
 from .circuit import DynamicCircuit
 from .execution import run_dynamic
 from .result import DynamicExecutionResult
 
-_ALLOWED_GATES = {"h", "x", "cx"}
+_ALLOWED_FIXED_GATES = {"h", "x", "cx"}
+_ALLOWED_ROTATIONS = {"rx", "ry"}
 _SESSION_METADATA = {
     "hybrid_dynamic_session",
     "hybrid_dynamic_return_bit",
     "hybrid_dynamic_measurement_count",
     "hybrid_stochastic_gradient_policy",
+    "hybrid_parameter_order",
+    "hybrid_dynamic_unrolled_iterations",
 }
 
 
@@ -47,6 +51,7 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
             "hybrid dynamic session returns trajectory data, not static measurements"
         )
     measured: set[int] = set()
+    rotation_count = 0
     for index, instruction in enumerate(ir.instructions):
         if _contains_trainable(instruction.params) or _contains_trainable(
             instruction.matrix
@@ -54,6 +59,10 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
             raise RuntimeError(
                 "hybrid dynamic session stochastic gradients are unsupported"
             )
+        if is_parameterized_value(instruction.params) or is_parameterized_value(
+            instruction.matrix
+        ):
+            raise ValueError("hybrid dynamic CircuitIR must be bound before execution")
         conditions = instruction_conditions(instruction)
         if any(
             bit < 0 or expected not in {0, 1} for bit, expected in conditions
@@ -78,14 +87,26 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
             if type(bit) is not int or bit < 0 or bit in measured:
                 raise ValueError("measurement classical bits must be unique integers")
             measured.add(bit)
-        elif instruction.name not in _ALLOWED_GATES:
+        elif instruction.name not in _ALLOWED_FIXED_GATES | _ALLOWED_ROTATIONS:
             raise ValueError(
-                f"instruction {instruction.name!r} is outside the Phase 7 profile"
+                f"instruction {instruction.name!r} is outside the dynamic profile"
             )
-        elif instruction.params or instruction.matrix is not None:
+        elif instruction.name in _ALLOWED_FIXED_GATES and (
+            instruction.params or instruction.matrix is not None
+        ):
             raise ValueError("Phase 7 fixed gates cannot carry parameters or matrices")
+        elif instruction.name in _ALLOWED_ROTATIONS and (
+            set(instruction.params) != {"theta"}
+            or instruction.matrix is not None
+            or not _is_real_scalar(instruction.params["theta"])
+        ):
+            raise ValueError(
+                "Phase 8 rotations require one bound real scalar theta parameter"
+            )
         elif set(instruction.metadata) - {"conditions"}:
-            raise ValueError("fixed-gate metadata is outside the Phase 7 profile")
+            raise ValueError("gate metadata is outside the dynamic profile")
+        if instruction.name in _ALLOWED_ROTATIONS:
+            rotation_count += 1
     return_bit = ir.metadata.get("hybrid_dynamic_return_bit")
     if type(return_bit) is not int or return_bit not in measured:
         raise ValueError("hybrid dynamic return bit must name a measured classical bit")
@@ -93,11 +114,35 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
         raise ValueError("hybrid dynamic measurement count metadata is inconsistent")
     if measured != set(range(len(measured))):
         raise ValueError("hybrid dynamic classical bits must be densely ordered")
+    unrolled = ir.metadata.get("hybrid_dynamic_unrolled_iterations")
+    if type(unrolled) is not int or unrolled < 0:
+        raise ValueError("hybrid dynamic unrolled iteration count is invalid")
+    parameter_order = ir.metadata.get("hybrid_parameter_order")
+    if (
+        not isinstance(parameter_order, (tuple, list))
+        or any(not isinstance(name, str) for name in parameter_order)
+        or len(set(parameter_order)) != len(parameter_order)
+    ):
+        raise ValueError("hybrid dynamic parameter order metadata is invalid")
+    if len(parameter_order) != rotation_count:
+        raise ValueError("hybrid dynamic parameter order does not match rotations")
     if ir.metadata.get("hybrid_stochastic_gradient_policy") != (
         "unsupported_fail_closed"
     ):
         raise ValueError("hybrid dynamic stochastic-gradient policy is unsupported")
     return ir, return_bit
+
+
+def _is_real_scalar(value: Any) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return True
+    return (
+        isinstance(value, torch.Tensor)
+        and value.ndim == 0
+        and value.dtype in {torch.float32, torch.float64}
+    )
 
 
 def execute_hybrid_dynamic_session(
