@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phase 0 in progress**
+Status: **Phase 1 semantic migration complete; Phase 2 not started**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -87,7 +87,7 @@ The current repository already provides:
 
 None of these types is to be duplicated under a new name.
 
-### 4.2 Recoverable research implementation
+### 4.2 Historical research implementation used as evidence
 
 Repository history and the retained workspace copy contain a former private
 compiler tree with:
@@ -100,9 +100,11 @@ compiler tree with:
   emitters, target capabilities, TargetIR, and executable artifact prototypes.
 
 It was removed from the current branch because it was disconnected from the
-public/default product path. It is a design and test source, not code to restore
-wholesale. Only behavior needed by the current vertical slice may be migrated,
-and it must move into the current authoritative `flagquantum/compiler` domain.
+public/default product path. It is evidence for semantics and negative tests,
+not a source tree, branch, or class hierarchy to restore. Migration means
+re-expressing only required behavior inside current vNext authorities; copying
+the former `_compiler`, `QuantumIR`, `TargetIR`, artifact, provider, or runtime
+layers is prohibited.
 
 ### 4.3 Missing capability
 
@@ -156,6 +158,22 @@ Quantum VJP + classical VJP
            v
 Gradient in the originating PyTorch graph
 ```
+
+This is a semantic migration, not a restoration of the historical layer stack:
+
+```text
+historical capability                 vNext authority
+---------------------                 ---------------
+program-level SSA/control/effects  -> flagquantum.compiler._hybrid
+static quantum region              -> existing flagquantum.core.ir.CircuitIR
+optimization/routing/target emit   -> existing flagquantum.compiler
+execution lifecycle                -> existing flagquantum.runtime
+numerical state and kernels        -> existing flagquantum.simulation
+```
+
+The first phase adds only the missing program-level semantics. A separate
+`QuantumIR` or `TargetIR` may be introduced later only if an existing vNext type
+cannot express a verified requirement and a new contract is approved.
 
 The architecture has two execution modes:
 
@@ -499,15 +517,13 @@ hybrid control-flow profile from Phases 0-6.
 
 ## 12. File and team ownership plan
 
-Expected Compiler-owned implementation:
+Expected Compiler-owned implementation (files are added only when their phase
+needs them):
 
 ```text
-flagquantum/compiler/hybrid/
+flagquantum/compiler/_hybrid/
   README.md
-  types.py
-  values.py
-  operations.py
-  regions.py
+  model.py
   schemas.py
   verifier.py
   capture.py
@@ -610,4 +626,7 @@ Stop implementation and return to Integration review if:
 - [x] Existing compiler-extension/public API worktree changes cleared
 - [x] Phase 0 private semantic contract approved conditionally
 - [x] Machine-readable entry gates added
-- [ ] Phase 1 implementation started on the assigned Compiler branch
+- [x] Whole-tree restoration explicitly rejected
+- [x] Migration mapped onto current vNext authorities
+- [x] Integration team-scope preflight passed for the Phase 1 slice
+- [x] Phase 1 private semantic slice implemented and verified

@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: approved for conditional Phase 1 entry by the repository owner's
+Status: Phase 1 semantic migration implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -29,7 +29,7 @@ export is authorized.
 
 ## Newly authorized private responsibility
 
-`flagquantum.compiler.hybrid` may own a private structured program
+`flagquantum.compiler._hybrid` may own a private structured program
 representation containing:
 
 - typed SSA-like values;
@@ -91,14 +91,14 @@ Phase 1 does not authorize:
 
 Implementation begins only when:
 
-- the Integration worktree contains no unrelated uncommitted changes;
-- the assigned Compiler worktree is on the branch declared by
-  `team-ownership.toml` and synchronized with the approved Integration commit;
+- the authoritative Integration baseline is identified;
+- migration targets current vNext authority rather than restoring a historical
+  worktree, package, or layer stack;
 - team-scope preflight passes for all proposed implementation and test files.
 
-The current Integration worktree satisfies the unrelated-change gate after the
-compiler-extension work was incorporated upstream. The assigned Compiler
-worktree branch reconciliation remains outstanding.
+These gates are satisfied. Phase 1 implementation proceeds in the private
+Compiler namespace on the Integration baseline. The historical `_compiler`
+tree remains reference evidence only.
 
 ## Phase 1 acceptance
 
@@ -111,5 +111,5 @@ worktree branch reconciliation remains outstanding.
 - protected public API comparison reports no hybrid additions;
 - the Compiler README contains a ten-minute internal contributor path.
 
-Phase 1 completion authorizes Phase 2 capture design review; it does not
+Phase 1 is complete and authorizes Phase 2 capture design review; it does not
 automatically authorize capture, execution, gradients, or public claims.

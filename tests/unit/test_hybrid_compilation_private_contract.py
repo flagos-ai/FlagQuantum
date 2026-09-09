@@ -37,7 +37,7 @@ def test_private_hybrid_contract_has_structured_control_and_quantum_effects() ->
     operations = set(contract["phase1_operations"])
     invariants = set(contract["phase1_invariants"])
 
-    assert {"program.func", "scf.if", "scf.for", "scf.yield"} <= operations
+    assert {"program.return", "scf.if", "scf.for", "scf.yield"} <= operations
     assert {"tensor.extract", "arith.cmp"} <= operations
     assert {"quantum.rx", "quantum.ry", "quantum.cx"} <= operations
     assert "quantum.expectation" in operations
@@ -63,17 +63,27 @@ def test_phase1_cannot_claim_execution_or_public_integration() -> None:
     assert rules["candidate_is_public_contract"] is False
     assert rules["may_update_public_api_snapshots"] is False
     assert rules["may_restore_removed_private_tree_wholesale"] is False
+    assert rules["may_copy_historical_layer_hierarchy"] is False
+    assert rules["may_duplicate_circuit_or_runtime_authority"] is False
     assert rules["unsupported_behavior_fails_closed"] is True
 
 
-def test_phase1_entry_remains_blocked_until_compiler_worktree_is_reconciled() -> None:
+def test_phase1_migrates_semantics_into_current_vnext_authorities() -> None:
     contract = _contract()
     gates = contract["entry_gates"]
 
-    assert gates["integration_worktree_has_only_this_change"] is True
-    assert gates["compiler_worktree_on_assigned_branch"] is False
-    assert (
-        gates["compiler_worktree_synchronized_to_approved_integration_commit"] is False
-    )
-    assert gates["team_scope_preflight"] is False
-    assert contract["implementation_started"] is False
+    assert contract["migration_strategy"] == "semantic_vertical_slice"
+    assert contract["migration_mapping"] == {
+        "program_control_and_effects": "flagquantum.compiler._hybrid",
+        "static_quantum_region": "flagquantum.core.ir.CircuitIR",
+        "circuit_transformation": "flagquantum.compiler",
+        "execution_lifecycle": "flagquantum.runtime",
+        "numerical_execution": "flagquantum.simulation",
+    }
+    assert gates == {
+        "authoritative_integration_baseline_identified": True,
+        "historical_tree_excluded_as_migration_target": True,
+        "team_scope_preflight": True,
+    }
+    assert contract["implementation_started"] is True
+    assert contract["phase1_completed"] is True

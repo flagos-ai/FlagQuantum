@@ -1,8 +1,8 @@
 # Hybrid compilation Phase 0 inventory
 
 Updated: 2026-09-09
-Status: **inventory and private contract complete; implementation entry blocked
-by the assigned Compiler worktree gate**
+Status: **complete; Phase 1 semantic migration implemented and verified on the
+authoritative integration baseline**
 
 ## Decision
 
@@ -128,36 +128,34 @@ This proves that the selected historical components are executable research
 assets. It does not prove current-vNext integration, dynamic control flow,
 hybrid gradients, production performance, or public stability.
 
-## Current repository blockers
+## Migration decision
 
-The integration worktree is on the correct authoritative branch. The earlier
-compiler-extension/public API changes have been incorporated upstream; only the
-hybrid-plan, inventory, private contract, and matching contract test are pending
-in this worktree.
+The historical worktree and branch are not migration targets and need not be
+reconciled. The current integration branch owns the architecture baseline and
+is authorized to land the first Compiler-owned private semantic slice after an
+exact-file team-scope preflight. Historical files may be inspected to recover
+invariants and test cases, but no historical module is copied or revived.
 
-The assigned Compiler worktree is clean, but it is currently checked out on a
-phase-specific branch rather than the `team-ownership.toml` Compiler branch.
-Repository policy prohibits switching another team's worktree or starting a
-second writing session there without reconciliation.
+The migration deliberately collapses the old layer stack:
 
-Consequently, Phase 1 code implementation must not begin until:
-
-1. the Compiler worktree is returned by its owner to the assigned Compiler
-   branch and synchronized with the resulting integration baseline;
-2. team scope preflight passes for the exact Phase 1 files.
+- program-level structured control and effect ordering move into the private
+  `flagquantum.compiler._hybrid` package;
+- static quantum regions lower to the existing Core-owned `CircuitIR`;
+- circuit optimization, routing, and emission remain in the existing Compiler;
+- Runtime and Simulation retain their existing responsibilities;
+- historical `QuantumIR`, `TargetIR`, executable-artifact, provider, and
+  runtime models are not restored.
 
 ## Phase 1 proposed file scope
 
 ```text
-flagquantum/compiler/hybrid/README.md
-flagquantum/compiler/hybrid/types.py
-flagquantum/compiler/hybrid/values.py
-flagquantum/compiler/hybrid/operations.py
-flagquantum/compiler/hybrid/regions.py
-flagquantum/compiler/hybrid/schemas.py
-flagquantum/compiler/hybrid/verifier.py
+flagquantum/compiler/_hybrid/README.md
+flagquantum/compiler/_hybrid/__init__.py
+flagquantum/compiler/_hybrid/model.py
+flagquantum/compiler/_hybrid/schemas.py
+flagquantum/compiler/_hybrid/verifier.py
 tests/hybrid_compiler/test_program_ir.py
-tests/hybrid_compiler/test_verifier_negative.py
+tests/hybrid_compiler/test_verifier.py
 ```
 
 The Phase 1 change is compiler-only and does not execute numerical kernels. It
@@ -176,5 +174,5 @@ is classified as compiler infrastructure supporting a future
 - [x] Existing integration worktree changes resolved
 - [x] Private Phase 1 semantic contract approved conditionally
 - [x] Machine-readable contract and contract test added
-- [ ] Assigned Compiler worktree reconciled
-- [ ] Phase 1 team-scope preflight passed
+- [x] Historical worktree excluded as a migration target
+- [x] Phase 1 exact-file team-scope preflight passed on Integration

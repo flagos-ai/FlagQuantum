@@ -10,6 +10,11 @@ internal backend/operator capability registry used before lowering or
 serialization. `__init__.py` is the stable
 expert-facing compiler interface.
 
+`_hybrid/` owns the private structured-program semantic slice used to migrate
+program-level control flow and ordered quantum effects into vNext. It is not a
+second circuit compiler: its future quantum-region output is the existing
+Core-owned `CircuitIR`, and it is intentionally absent from public exports.
+
 Use `optimize(program)` for target-independent canonical optimization and
 `compile(program, coupling_map=...)` for target-aware lowering. The pre-release name
 `simple_compile` has been removed; it did not describe a distinct compilation
@@ -34,6 +39,8 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change OpenQASM 2/3 target emission in `openqasm.py`.
 - Change QCIS target emission in `qcis.py`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
+- Change private structured program semantics through `_hybrid/README.md` and
+  its focused golden scenario; do not restore the historical `_compiler` tree.
 - Run the compiler fixed-point, trainable-parameter, scheduler, routing, public
   namespace, noise, and CPU vertical-slice tests.
 
