@@ -5,23 +5,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, Sequence, runtime_checkable
 
-from .types import Correction
+from .types import Correction, DecodeResult, PauliFrame, SyndromeRound
 
 
 @runtime_checkable
 class Decoder(Protocol):
-    """Translate one syndrome into a correction decision."""
+    """Translate a complete syndrome history into a readout correction."""
 
-    def decode(self, syndrome: Sequence[int], *, round_index: int) -> Correction: ...
+    def decode(self, syndrome_history: Sequence[SyndromeRound]) -> DecodeResult: ...
 
 
 @dataclass(frozen=True)
 class RepetitionLookupDecoder:
-    """Exact lookup decoder for adjacent checks of three data qubits."""
+    """Decode the terminal adjacent-check syndrome of three data qubits."""
 
-    def decode(self, syndrome: Sequence[int], *, round_index: int) -> Correction:
-        bits = tuple(int(value) for value in syndrome)
-        if len(bits) != 2 or any(value not in {0, 1} for value in bits):
+    def decode(self, syndrome_history: Sequence[SyndromeRound]) -> DecodeResult:
+        history = tuple(syndrome_history)
+        if not history:
+            raise ValueError("repetition decoder requires syndrome history")
+        if tuple(item.round_index for item in history) != tuple(range(len(history))):
+            raise ValueError("syndrome history must be dense and ordered from zero")
+        bits = history[-1].bits
+        if len(bits) != 2:
             raise ValueError("repetition syndrome must contain two binary values")
         wire = {
             (0, 0): None,
@@ -29,7 +34,13 @@ class RepetitionLookupDecoder:
             (1, 1): 1,
             (0, 1): 2,
         }[bits]
-        return Correction(round_index=round_index, wire=wire)
+        correction = Correction(round_index=history[-1].round_index, wire=wire)
+        corrections = (correction,)
+        return DecodeResult(
+            consumed_rounds=len(history),
+            corrections=corrections,
+            pauli_frame=PauliFrame.from_corrections(corrections),
+        )
 
 
 __all__ = ("Decoder", "RepetitionLookupDecoder")

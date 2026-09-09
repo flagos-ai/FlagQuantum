@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-16 implemented and verified under the repository owner's
+Status: Phases 1-17 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -639,3 +639,26 @@ decoder conformance, and fail-closed validation. The subpackage is not exported
 from the stable root. No general-code, realistic-noise, logical-suppression,
 threshold, controller-latency, provider, gradient, distributed, capacity,
 performance, or fault-tolerance claim is authorized.
+
+## Phase 17 timed-error and offline-frame authorization
+
+Phase 17 may replace the initial pre-run error selector with a canonical QEC
+`ErrorSchedule`. A bounded schedule identifies deterministic X errors by data
+wire and fixed round. Lowering specializes those validated events into the
+unrolled program at the start of each round, before parity checks. Duplicate
+round/wire events, events outside the run, non-X errors, and schedules above 64
+events fail before Runtime execution.
+
+The repetition workflow exposes two separate policies. `compiled_lookup`
+retains immediate measurement-conditioned X feedback. `offline_pauli_frame`
+executes no physical feedback and applies the decoder's readout frame only
+after execution. The decoder receives the complete, ordered syndrome history
+and returns typed corrections plus a parity-reduced Pauli frame. Each shot
+records actual compiled feedback separately from decoder advice.
+
+Phase 17 acceptance requires every single data-wire error in any of three
+rounds to be corrected by both policies, exact syndrome/detection-event
+histories, and explicit logical failure for two same-round errors. This does
+not authorize stochastic or measurement noise, a Runtime decoder callback,
+logical-error suppression, threshold, general stabilizer-code, hardware,
+gradient, distributed, capacity, performance, or fault-tolerance claims.

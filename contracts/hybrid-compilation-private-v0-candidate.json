@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase16_repetition_memory_workflow_verified",
+  "status": "phase17_timed_error_and_pauli_frame_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -537,6 +537,36 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE16_EVIDENCE.md"
   },
   "phase16_completed": true,
+  "phase17": {
+    "domain": "flagquantum.qec",
+    "execution_profile": "bounded_timed_error_repetition_memory",
+    "error_schedule": "canonical_deterministic_x_events_by_round_and_data_wire",
+    "error_event_limit": 64,
+    "error_injection_point": "start_of_round_before_parity_checks",
+    "feedback_modes": [
+      "compiled_lookup",
+      "offline_pauli_frame"
+    ],
+    "executed_feedback_recorded_separately": true,
+    "decoder_input": "complete_ordered_syndrome_history",
+    "reference_decoder": "terminal_syndrome_lookup",
+    "decode_result": "corrections_plus_parity_reduced_pauli_frame",
+    "offline_frame_application": "final_data_readout_only",
+    "single_error_any_round_verified": true,
+    "double_error_logical_failure_recorded": true,
+    "stochastic_noise": false,
+    "measurement_error": false,
+    "realtime_decoder_integration": false,
+    "logical_error_suppression_claim": false,
+    "threshold_claim": false,
+    "fault_tolerance_claim": false,
+    "public_root_export": false,
+    "public_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE17_EVIDENCE.md"
+  },
+  "phase17_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

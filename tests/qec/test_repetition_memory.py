@@ -5,7 +5,11 @@ import pytest
 from flagquantum.qec import (
     Correction,
     Decoder,
+    DecodeResult,
     DetectionEvent,
+    ErrorEvent,
+    ErrorSchedule,
+    PauliFrame,
     RepetitionLookupDecoder,
     RepetitionMemoryShot,
     SyndromeRound,
@@ -24,103 +28,154 @@ pytestmark = pytest.mark.integration
         ((0, 1), 2),
     ),
 )
-def test_repetition_lookup_decoder(syndrome, wire) -> None:
+def test_repetition_lookup_decoder_uses_complete_history(syndrome, wire) -> None:
     decoder = RepetitionLookupDecoder()
+    history = (SyndromeRound(0, (0, 0)), SyndromeRound(1, syndrome))
 
     assert isinstance(decoder, Decoder)
-    correction = decoder.decode(syndrome, round_index=2)
-    assert correction.round_index == 2
-    assert correction.wire == wire
-    assert correction.applied is (wire is not None)
+    decoded = decoder.decode(history)
+    assert decoded.consumed_rounds == 2
+    assert decoded.corrections == (Correction(round_index=1, wire=wire),)
+    assert decoded.pauli_frame.x_wires == (() if wire is None else (wire,))
 
 
-@pytest.mark.parametrize(
-    ("error_wire", "first_syndrome"),
-    ((0, (1, 0)), (1, (1, 1)), (2, (0, 1))),
-)
+@pytest.mark.parametrize("error_round", (0, 1, 2))
+@pytest.mark.parametrize(("wire", "syndrome"), ((0, (1, 0)), (1, (1, 1)), (2, (0, 1))))
 @pytest.mark.parametrize("strategy", ("trajectory", "batched"))
-def test_repetition_memory_corrects_each_single_data_error(
-    error_wire: int, first_syndrome: tuple[int, int], strategy: str
+def test_compiled_feedback_corrects_single_error_in_any_round(
+    error_round: int,
+    wire: int,
+    syndrome: tuple[int, int],
+    strategy: str,
 ) -> None:
     result = run_repetition_memory_experiment(
-        error_wire=error_wire,
+        error_schedule=ErrorSchedule((ErrorEvent(error_round, wire),)),
         rounds=3,
-        shots=8,
+        shots=2,
         seed=53,
         strategy=strategy,
+        feedback_mode="compiled_lookup",
     )
 
     assert result.logical_error_rate == 0.0
-    assert result.logical_failures == 0
-    assert result.shot_count == 8
     for shot in result.shot_records:
-        assert tuple(record.bits for record in shot.syndrome_rounds) == (
-            first_syndrome,
-            (0, 0),
-            (0, 0),
-        )
-        assert shot.corrections[0].wire == error_wire
-        assert tuple(item.wire for item in shot.corrections[1:]) == (None, None)
-        assert shot.final_data_bits == (0, 0, 0)
-        assert shot.logical_bit == 0
+        expected = [(0, 0), (0, 0), (0, 0)]
+        expected[error_round] = syndrome
+        assert [record.bits for record in shot.syndrome_rounds] == expected
+        assert shot.executed_feedback[error_round].wire == wire
+        assert shot.raw_final_data_bits == (0, 0, 0)
+        assert shot.decoded_data_bits == (0, 0, 0)
+
+
+@pytest.mark.parametrize("wire", (0, 1, 2))
+def test_offline_pauli_frame_restores_single_error_without_physical_feedback(
+    wire: int,
+) -> None:
+    result = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(1, wire),)),
+        rounds=3,
+        shots=2,
+        seed=59,
+        feedback_mode="offline_pauli_frame",
+    )
+
+    for shot in result.shot_records:
+        expected_raw = tuple(int(index == wire) for index in range(3))
+        assert shot.raw_final_data_bits == expected_raw
+        assert shot.decode_result.pauli_frame.x_wires == (wire,)
+        assert shot.decoded_data_bits == (0, 0, 0)
+        assert all(not item.applied for item in shot.executed_feedback)
         assert not shot.logical_failure
 
 
-def test_repetition_memory_reports_detection_events_and_no_error_baseline() -> None:
-    corrected = run_repetition_memory_experiment(
-        error_wire=1, rounds=3, shots=1, seed=59
+@pytest.mark.parametrize("feedback_mode", ("compiled_lookup", "offline_pauli_frame"))
+def test_two_same_round_errors_are_recorded_as_a_logical_failure(
+    feedback_mode: str,
+) -> None:
+    result = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(1, 0), ErrorEvent(1, 1))),
+        rounds=3,
+        shots=1,
+        seed=61,
+        feedback_mode=feedback_mode,
+    )
+
+    shot = result.shot_records[0]
+    assert shot.decoded_data_bits == (1, 1, 1)
+    assert shot.logical_failure
+    assert result.logical_error_rate == 1.0
+
+
+def test_detection_events_record_error_onset_and_compiled_clearance() -> None:
+    shot = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(1, 1),)),
+        rounds=3,
+        shots=1,
+        seed=67,
     ).shot_records[0]
+
     assert tuple(
         tuple(event.check_index for event in record.detection_events)
-        for record in corrected.syndrome_rounds
-    ) == ((0, 1), (0, 1), ())
-
-    baseline = run_repetition_memory_experiment(
-        error_wire=None, rounds=2, shots=2, seed=61
-    )
-    assert baseline.injected_error_wire is None
-    assert baseline.logical_error_rate == 0.0
-    assert all(
-        record.bits == (0, 0)
-        for shot in baseline.shot_records
         for record in shot.syndrome_rounds
-    )
+    ) == ((), (0, 1), (0, 1))
 
 
-def test_analysis_decoder_is_replaceable_without_changing_executed_feedback() -> None:
-    class NoCorrectionAnalysis:
-        def decode(self, syndrome, *, round_index: int) -> Correction:
-            return Correction(round_index=round_index, wire=None)
+def test_error_schedule_is_canonical_and_decoder_is_replaceable() -> None:
+    schedule = ErrorSchedule((ErrorEvent(1, 2), ErrorEvent(0, 0)))
+    assert schedule.events == (ErrorEvent(0, 0), ErrorEvent(1, 2))
+    assert schedule.for_round(1) == (ErrorEvent(1, 2),)
+
+    class WireZeroDecoder:
+        def decode(self, syndrome_history) -> DecodeResult:
+            correction = Correction(len(syndrome_history) - 1, 0)
+            return DecodeResult(
+                consumed_rounds=len(syndrome_history),
+                corrections=(correction,),
+                pauli_frame=PauliFrame((0,)),
+            )
 
     result = run_repetition_memory_experiment(
-        error_wire=1,
+        error_schedule=ErrorSchedule((ErrorEvent(0, 0),)),
         rounds=2,
         shots=1,
-        analysis_decoder=NoCorrectionAnalysis(),
+        feedback_mode="offline_pauli_frame",
+        decoder=WireZeroDecoder(),
     )
-
-    assert tuple(item.wire for item in result.shot_records[0].corrections) == (
-        None,
-        None,
-    )
-    assert result.shot_records[0].final_data_bits == (0, 0, 0)
+    assert result.shot_records[0].decode_result.pauli_frame == PauliFrame((0,))
 
 
 def test_repetition_memory_validation_fails_closed() -> None:
-    with pytest.raises(ValueError, match="0, 1, 2, or None"):
-        run_repetition_memory_experiment(error_wire=3)
-    with pytest.raises(ValueError, match="rounds must be a positive integer"):
-        run_repetition_memory_experiment(error_wire=0, rounds=0)
-    with pytest.raises(ValueError, match="two binary values"):
-        RepetitionLookupDecoder().decode((1, 0, 1), round_index=0)
+    with pytest.raises(ValueError, match="wire must be 0, 1, or 2"):
+        ErrorEvent(0, 3)
+    with pytest.raises(ValueError, match="cannot repeat"):
+        ErrorSchedule((ErrorEvent(0, 1), ErrorEvent(0, 1)))
+    with pytest.raises(TypeError, match="must be ErrorEvent"):
+        ErrorSchedule((object(),))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="outside the configured rounds"):
+        run_repetition_memory_experiment(
+            error_schedule=ErrorSchedule((ErrorEvent(3, 1),)), rounds=3
+        )
+    with pytest.raises(ValueError, match="unsupported repetition feedback mode"):
+        run_repetition_memory_experiment(feedback_mode="realtime")
+    with pytest.raises(ValueError, match="requires syndrome history"):
+        RepetitionLookupDecoder().decode(())
     with pytest.raises(ValueError, match="check index exceeds syndrome width"):
         SyndromeRound(0, (0, 0), (DetectionEvent(0, 2),))
-    with pytest.raises(ValueError, match="correction rounds must align"):
+    with pytest.raises(ValueError, match="feedback rounds must align"):
         RepetitionMemoryShot(
             shot_index=0,
             syndrome_rounds=(SyndromeRound(0, (0, 0)),),
-            corrections=(Correction(1, None),),
-            final_data_bits=(0, 0, 0),
+            executed_feedback=(Correction(1, None),),
+            decode_result=DecodeResult(1, (Correction(0, None),), PauliFrame()),
+            raw_final_data_bits=(0, 0, 0),
+            decoded_data_bits=(0, 0, 0),
             logical_bit=0,
             logical_failure=False,
         )
+
+    class InvalidDecoder:
+        def decode(self, syndrome_history):
+            return None
+
+    with pytest.raises(TypeError, match="must return a DecodeResult"):
+        run_repetition_memory_experiment(rounds=1, shots=1, decoder=InvalidDecoder())

@@ -583,3 +583,41 @@ def test_phase16_defines_bounded_repetition_memory_workflow() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE16_EVIDENCE.md"
     )
     assert contract["phase16_completed"] is True
+
+
+def test_phase17_separates_timed_errors_feedback_and_pauli_frames() -> None:
+    contract = _contract()
+    phase17 = contract["phase17"]
+
+    assert phase17["domain"] == "flagquantum.qec"
+    assert phase17["execution_profile"] == "bounded_timed_error_repetition_memory"
+    assert phase17["error_schedule"] == (
+        "canonical_deterministic_x_events_by_round_and_data_wire"
+    )
+    assert phase17["error_event_limit"] == 64
+    assert phase17["error_injection_point"] == ("start_of_round_before_parity_checks")
+    assert phase17["feedback_modes"] == [
+        "compiled_lookup",
+        "offline_pauli_frame",
+    ]
+    assert phase17["executed_feedback_recorded_separately"] is True
+    assert phase17["decoder_input"] == "complete_ordered_syndrome_history"
+    assert phase17["reference_decoder"] == "terminal_syndrome_lookup"
+    assert phase17["decode_result"] == ("corrections_plus_parity_reduced_pauli_frame")
+    assert phase17["offline_frame_application"] == "final_data_readout_only"
+    assert phase17["single_error_any_round_verified"] is True
+    assert phase17["double_error_logical_failure_recorded"] is True
+    assert phase17["stochastic_noise"] is False
+    assert phase17["measurement_error"] is False
+    assert phase17["realtime_decoder_integration"] is False
+    assert phase17["logical_error_suppression_claim"] is False
+    assert phase17["threshold_claim"] is False
+    assert phase17["fault_tolerance_claim"] is False
+    assert phase17["public_root_export"] is False
+    assert phase17["public_api_change"] is False
+    assert phase17["default_path_change"] is False
+    assert phase17["performance_claim"] is False
+    assert phase17["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE17_EVIDENCE.md"
+    )
+    assert contract["phase17_completed"] is True

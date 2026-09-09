@@ -301,17 +301,17 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 
 ### Repetition-code memory experiment
 
-Run a bounded three-data-qubit bit-flip memory experiment and inspect typed syndrome, detection-event, decoder-decision, and logical-result records.
+Run a bounded three-data-qubit bit-flip memory experiment with deterministic timed errors, compiled feedback or offline Pauli-frame correction, and typed logical-result records.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.Decoder`
-- **Runtime modes:** `local_statevector_trajectory`
+- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.ErrorSchedule`, `flagquantum.qec.Decoder`
+- **Runtime modes:** `local_statevector_compiled_feedback`, `local_statevector_offline_pauli_frame`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../flagquantum/qec/README.md)
 - **Documentation:** [guide](../../flagquantum/qec/README.md)
-- **Known boundary:** A noiseless local reference for one fixed three-data-qubit repetition-code profile with deterministic zero or single-X injection and compiled lookup feedback. Decoder replacement currently analyzes recorded syndromes after execution; it does not replace the in-circuit feedback policy. General stabilizer codes, realistic noise, logical-error suppression, thresholds, real-time decoding, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root.
+- **Known boundary:** A noiseless local reference for one fixed three-data-qubit repetition-code profile with a bounded deterministic X-error schedule. Compiled lookup feedback and offline terminal-syndrome Pauli-frame correction are distinct modes; decoder replacement remains post-execution and is not a real-time callback. Stochastic and measurement noise, general stabilizer codes, logical-error suppression, thresholds, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root.
 
 
 ## Distributed execution

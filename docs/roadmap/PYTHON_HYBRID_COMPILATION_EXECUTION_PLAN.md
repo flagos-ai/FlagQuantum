@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-16 bounded vertical slices complete**
+Status: **Phases 1-17 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -733,6 +733,32 @@ Exit gate:
 - no stable-root, realistic-noise, real-time-decoder, threshold,
   fault-tolerance, provider, gradient, capacity, or performance claim is made.
 
+### Phase 17 — timed errors, history decoding, and offline Pauli frames
+
+Replace the initial single-wire injection shortcut with a bounded canonical
+schedule of deterministic X-error events located by round and data wire.
+Specialize those events into the unrolled program before each round's parity
+checks. Keep this test instrumentation QEC-owned and leave generic dynamic
+control with Compiler and Runtime.
+
+Make the decoder consume the complete ordered syndrome history and return a
+typed decode result containing correction recommendations and a parity-reduced
+Pauli frame. Separate immediate compiled lookup feedback from an offline mode
+that performs no physical feedback and applies the frame only to final readout.
+Record actual feedback independently from decoder recommendations.
+
+Exit gate:
+
+- the schedule is canonical, bounded, and rejects ambiguous duplicate events;
+- every data wire may receive one X error in any verified round;
+- compiled feedback and offline frame correction both restore single errors;
+- syndrome onset and feedback clearance appear as detection events;
+- two same-round errors produce an explicit logical failure rather than a
+  success claim;
+- malformed histories, decode results, frames, and result records fail closed;
+- stochastic/measurement noise, real-time callbacks, threshold, suppression,
+  general-code, hardware, gradient, capacity, and performance remain excluded.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -877,3 +903,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 15 fixed-round syndrome-feedback contract authorized
 - [x] Phase 15 loop measurement, immediate correction, and ancilla reset verified
 - [x] Phase 16 QEC domain and repetition-code memory workflow verified
+- [x] Phase 17 timed errors, history decoding, and offline Pauli frames verified

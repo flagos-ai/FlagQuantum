@@ -11,11 +11,14 @@ and hardware feedback contracts remain in Remote or a future realtime Runtime
 domain.
 
 The first experimental profile contains a three-data-qubit repetition code, a
-two-bit-syndrome lookup decoder, and a fixed-round memory experiment using the
-private bounded hybrid compiler. The compiled program owns the reference
-lookup feedback. A replaceable `Decoder` currently interprets the recorded
-syndromes after execution; it is not yet called in a real-time control loop.
-The namespace is not exported from the stable `flagquantum` root API.
+bounded deterministic X-error schedule, a two-bit-syndrome lookup decoder, and
+a fixed-round memory experiment using the private bounded hybrid compiler.
+`compiled_lookup` performs immediate reference feedback; the separate
+`offline_pauli_frame` mode leaves the data uncorrected until a decoder-produced
+frame is applied to final readout. Executed feedback and decoder advice are
+reported separately. A replaceable `Decoder` consumes the complete syndrome
+history after execution; it is not yet called in a real-time control loop. The
+namespace is not exported from the stable `flagquantum` root API.
 
 ## Ten-minute change path
 
@@ -29,5 +32,6 @@ The namespace is not exported from the stable `flagquantum` root API.
    python tools/check_architecture.py
    ```
 
-No logical-error-rate, threshold, fault-tolerance, realtime-hardware, or
-performance claim follows from the reference workflow.
+The reference accepts deterministic errors only. No stochastic-noise,
+measurement-error, logical-error-suppression, threshold, fault-tolerance,
+realtime-hardware, or performance claim follows from the workflow.
