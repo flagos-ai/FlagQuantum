@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
+from ..noise import NoiseModel
 from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 from .decoders import Decoder, RepetitionLookupDecoder
 from .types import (
@@ -99,6 +100,7 @@ def run_repetition_memory_experiment(
     strategy: str = "auto",
     feedback_mode: str = "compiled_lookup",
     decoder: Decoder | None = None,
+    noise_model: NoiseModel | None = None,
 ) -> RepetitionMemoryResult:
     """Run the bounded three-qubit bit-flip memory reference.
 
@@ -138,6 +140,7 @@ def run_repetition_memory_experiment(
         shots=shots,
         seed=seed,
         strategy=strategy,
+        noise_model=noise_model,
     )
     classical_rows = execution.classical_bits.tolist()
     sample_rows = execution.samples.tolist()
@@ -184,6 +187,9 @@ def run_repetition_memory_experiment(
         feedback_mode=feedback_mode,
         shot_records=tuple(shot_records),
         execution_semantics=execution.execution_semantics,
+        noise_model_identity=execution.statistics["noise_model_identity"],
+        bit_flip_events=int(execution.statistics["bit_flip_event_count"]),
+        readout_errors=int(execution.statistics["readout_error_count"]),
     )
 
 

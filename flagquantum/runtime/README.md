@@ -9,6 +9,13 @@ Runtime does not implement compiler transformations, numerical simulation
 kernels, vendor SDK adapters, or long-lived service scheduling. Those belong to
 Compiler, Simulation, Compute, and Remote respectively.
 
+The experimental dynamic executor may orchestrate a validated `NoiseModel`.
+It owns random-stream use, true-versus-observed measurement flow, conditional
+control from observed bits, event accounting, and result assembly. Numerical
+bit-flip and readout sampling kernels remain in Simulation. The current dynamic
+profile rejects general Kraus channels, correlated readout, device-timing
+profiles, and noisy gradients.
+
 ## Local CPU path
 
 The shortest supported path is:

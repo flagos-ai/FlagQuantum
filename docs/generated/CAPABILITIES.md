@@ -301,17 +301,17 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 
 ### Repetition-code memory experiment
 
-Run a bounded three-data-qubit bit-flip memory experiment with deterministic timed errors, compiled feedback or offline Pauli-frame correction, and typed logical-result records.
+Run a bounded three-data-qubit memory experiment with timed errors or circuit-location bit-flip/readout noise, compiled feedback or offline Pauli-frame correction, and finite-shot logical-result records.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.ErrorSchedule`, `flagquantum.qec.Decoder`
-- **Runtime modes:** `local_statevector_compiled_feedback`, `local_statevector_offline_pauli_frame`
+- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.run_repetition_memory_noise_sweep`, `flagquantum.qec.RepetitionNoiseProfile`, `flagquantum.qec.ErrorSchedule`, `flagquantum.qec.Decoder`
+- **Runtime modes:** `local_statevector_compiled_feedback`, `local_statevector_offline_pauli_frame`, `local_statevector_noisy_trajectory`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../flagquantum/qec/README.md)
 - **Documentation:** [guide](../../flagquantum/qec/README.md)
-- **Known boundary:** A noiseless local reference for one fixed three-data-qubit repetition-code profile with a bounded deterministic X-error schedule. Compiled lookup feedback and offline terminal-syndrome Pauli-frame correction are distinct modes; decoder replacement remains post-execution and is not a real-time callback. Stochastic and measurement noise, general stabilizer codes, logical-error suppression, thresholds, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root.
+- **Known boundary:** A local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules plus one circuit-location stochastic profile: independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Sweeps report finite-shot observations only, not logical suppression or thresholds. General channels/codes, correlated or timing noise, real-time decoding, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root.
 
 
 ## Distributed execution
@@ -447,17 +447,17 @@ Translate supported Qiskit circuits to versioned FlagQuantum IR and export FlagQ
 
 ### Dynamic circuits and backend assessment
 
-Execute dynamic circuits locally and assess whether a backend can support their required features.
+Execute dynamic circuits locally, including a bounded bit-flip/readout-noise profile, and assess whether a backend can support their required features.
 
 - **Maturity:** Experimental
 - **Public API:** `flagquantum.dynamic.DynamicCircuit`, `flagquantum.experimental.dynamic.assess_dynamic_backend`, `flagquantum.experimental.dynamic.run_dynamic`
-- **Runtime modes:** `local_statevector_trajectory`, `backend_assessment`
+- **Runtime modes:** `local_statevector_trajectory`, `local_statevector_noisy_trajectory`, `backend_assessment`
 - **Hardware:** `cpu`, `provider_profiles_unverified`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/reference/API.md)
-- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
+- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Local dynamic noise is limited to one-wire bit-flip channels after matching executed gates and independent readout confusion on explicit measurements and final sampling. Other Kraus channels, correlated readout, device-profile timing noise, noisy gradients, and provider-noise execution fail closed. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
 
 ### Extension SDK
 

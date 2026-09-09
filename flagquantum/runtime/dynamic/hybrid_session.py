@@ -9,6 +9,7 @@ import torch
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...core.parameters import is_parameterized_value
+from ...noise import NoiseModel
 from ._conditions import instruction_condition_clauses
 from .circuit import DynamicCircuit
 from .execution import run_dynamic
@@ -176,6 +177,7 @@ def execute_hybrid_dynamic_session(
     seed: int | None = None,
     strategy: str = "auto",
     max_batched_bytes: int = 256 * 1024**2,
+    noise_model: NoiseModel | None = None,
 ) -> DynamicExecutionResult:
     """Execute one private, compiler-lowered local dynamic session."""
 
@@ -196,6 +198,7 @@ def execute_hybrid_dynamic_session(
         seed=seed,
         strategy=strategy,
         max_batched_bytes=max_batched_bytes,
+        noise_model=noise_model,
     )
     statistics = dict(result.statistics)
     statistics.update(

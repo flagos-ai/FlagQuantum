@@ -498,11 +498,11 @@ focused_tests = "tests/test_qiskit_interop_conformance.py"
 
 [capabilities.dynamic_circuits]
 title = "Dynamic circuits and backend assessment"
-summary = "Execute dynamic circuits locally and assess whether a backend can support their required features."
+summary = "Execute dynamic circuits locally, including a bounded bit-flip/readout-noise profile, and assess whether a backend can support their required features."
 category = "deployment_and_extension"
 user_goals = ["Prototype mid-circuit measurement and feed-forward", "Assess backend support before execution"]
 public_apis = ["flagquantum.dynamic.DynamicCircuit", "flagquantum.experimental.dynamic.assess_dynamic_backend", "flagquantum.experimental.dynamic.run_dynamic"]
-runtime_modes = ["local_statevector_trajectory", "backend_assessment"]
+runtime_modes = ["local_statevector_trajectory", "local_statevector_noisy_trajectory", "backend_assessment"]
 hardware = ["cpu", "provider_profiles_unverified"]
 gradient_support = "unsupported"
 distribution_semantics = "single_process"
@@ -510,16 +510,16 @@ quick_start = "docs/reference/API.md"
 documentation = "docs/reference/API.md"
 level = "experimental"
 owner = "deployment maintainers"
-limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
+limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Local dynamic noise is limited to one-wire bit-flip channels after matching executed gates and independent readout confusion on explicit measurements and final sampling. Other Kraus channels, correlated readout, device-profile timing noise, noisy gradients, and provider-noise execution fail closed. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
 focused_tests = "tests/test_dynamic_conformance.py"
 
 [capabilities.repetition_code_memory]
 title = "Repetition-code memory experiment"
-summary = "Run a bounded three-data-qubit bit-flip memory experiment with deterministic timed errors, compiled feedback or offline Pauli-frame correction, and typed logical-result records."
+summary = "Run a bounded three-data-qubit memory experiment with timed errors or circuit-location bit-flip/readout noise, compiled feedback or offline Pauli-frame correction, and finite-shot logical-result records."
 category = "simulation_and_training"
 user_goals = ["Exercise a fixed-round QEC control workflow", "Inspect syndrome and detection-event records", "Prototype a decoder against a typed contract"]
-public_apis = ["flagquantum.qec.run_repetition_memory_experiment", "flagquantum.qec.ErrorSchedule", "flagquantum.qec.Decoder"]
-runtime_modes = ["local_statevector_compiled_feedback", "local_statevector_offline_pauli_frame"]
+public_apis = ["flagquantum.qec.run_repetition_memory_experiment", "flagquantum.qec.run_repetition_memory_noise_sweep", "flagquantum.qec.RepetitionNoiseProfile", "flagquantum.qec.ErrorSchedule", "flagquantum.qec.Decoder"]
+runtime_modes = ["local_statevector_compiled_feedback", "local_statevector_offline_pauli_frame", "local_statevector_noisy_trajectory"]
 hardware = ["cpu"]
 gradient_support = "unsupported"
 distribution_semantics = "single_process"
@@ -527,9 +527,9 @@ quick_start = "flagquantum/qec/README.md"
 documentation = "flagquantum/qec/README.md"
 level = "development_evidence"
 owner = "QEC maintainers"
-limitations = "A noiseless local reference for one fixed three-data-qubit repetition-code profile with a bounded deterministic X-error schedule. Compiled lookup feedback and offline terminal-syndrome Pauli-frame correction are distinct modes; decoder replacement remains post-execution and is not a real-time callback. Stochastic and measurement noise, general stabilizer codes, logical-error suppression, thresholds, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root."
+limitations = "A local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules plus one circuit-location stochastic profile: independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Sweeps report finite-shot observations only, not logical suppression or thresholds. General channels/codes, correlated or timing noise, real-time decoding, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root."
 focused_tests = "tests/qec/test_repetition_memory.py"
-development_artifact = "docs/development/HYBRID_COMPILATION_PHASE17_EVIDENCE.md"
+development_artifact = "docs/development/HYBRID_COMPILATION_PHASE18_EVIDENCE.md"
 
 [capabilities.extension_sdk]
 title = "Extension SDK"

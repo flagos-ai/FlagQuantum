@@ -214,6 +214,9 @@ class RepetitionMemoryResult:
     feedback_mode: str
     shot_records: tuple[RepetitionMemoryShot, ...]
     execution_semantics: str
+    noise_model_identity: str | None = None
+    bit_flip_events: int = 0
+    readout_errors: int = 0
 
     def __post_init__(self) -> None:
         if self.rounds <= 0:
@@ -234,6 +237,8 @@ class RepetitionMemoryResult:
             raise ValueError("shot records must be dense and ordered from zero")
         if not self.execution_semantics:
             raise ValueError("execution semantics must be recorded")
+        if self.bit_flip_events < 0 or self.readout_errors < 0:
+            raise ValueError("noise event counts must be non-negative")
         if self.feedback_mode == "compiled_lookup" and any(
             shot.decoded_data_bits != shot.raw_final_data_bits
             for shot in self.shot_records
@@ -260,12 +265,35 @@ class RepetitionMemoryResult:
         return self.logical_failures / self.shot_count
 
 
+@dataclass(frozen=True)
+class NoiseSweepPoint:
+    """One finite-shot logical-error observation at a configured noise rate."""
+
+    probability: float
+    shots: int
+    logical_failures: int
+    logical_error_rate: float
+    bit_flip_events: int
+    readout_errors: int
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.probability <= 1.0:
+            raise ValueError("noise probability must be between zero and one")
+        if self.shots <= 0 or not 0 <= self.logical_failures <= self.shots:
+            raise ValueError("noise sweep failure count is outside the shot count")
+        if self.logical_error_rate != self.logical_failures / self.shots:
+            raise ValueError("noise sweep logical error rate is inconsistent")
+        if self.bit_flip_events < 0 or self.readout_errors < 0:
+            raise ValueError("noise sweep event counts must be non-negative")
+
+
 __all__ = (
     "Correction",
     "DecodeResult",
     "DetectionEvent",
     "ErrorEvent",
     "ErrorSchedule",
+    "NoiseSweepPoint",
     "PauliFrame",
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",

@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-17 implemented and verified under the repository owner's
+Status: Phases 1-18 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -662,3 +662,26 @@ histories, and explicit logical failure for two same-round errors. This does
 not authorize stochastic or measurement noise, a Runtime decoder callback,
 logical-error suppression, threshold, general stabilizer-code, hardware,
 gradient, distributed, capacity, performance, or fault-tolerance claims.
+
+## Phase 18 bounded dynamic-noise authorization
+
+Phase 18 may pass the existing backend-neutral `NoiseModel` into local dynamic
+execution. Runtime owns seeded random streams, placement after matching
+actually executed gates, true-versus-observed measurement flow, conditional
+feedback from observed bits, and event accounting. Simulation owns the
+numerical bit-flip and readout-sampling kernels. No second noise model or
+compiler-owned stochastic executor is authorized.
+
+The accepted channel profile is one-wire independent bit flips. Independent
+readout confusion may affect explicit measurements and final sampling; state
+collapse follows the true result while the classical register records the
+observed result. Reference and batched trajectory strategies must preserve
+these semantics. General Kraus channels, correlated readout, device-profile
+timing noise, noise on reset, and noisy gradients fail closed.
+
+QEC may map this generic capability onto parity-check circuit locations and
+emit finite-shot logical-error observations. The mapping must disclose that
+the middle repetition-code data wire has two CNOT noise opportunities per
+round while edge wires have one. Phase 18 does not authorize calibrated-device,
+logical-suppression, threshold, real-time-decoder, provider, scalability,
+performance, or fault-tolerance claims.

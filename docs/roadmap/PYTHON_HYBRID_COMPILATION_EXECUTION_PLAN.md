@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-17 bounded vertical slices complete**
+Status: **Phases 1-18 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -759,6 +759,35 @@ Exit gate:
 - stochastic/measurement noise, real-time callbacks, threshold, suppression,
   general-code, hardware, gradient, capacity, and performance remain excluded.
 
+### Phase 18 — bounded stochastic noise in dynamic execution
+
+Connect the existing `NoiseModel` authority to local dynamic trajectories.
+Runtime owns seeded random-stream lifecycle, channel placement after matching
+executed gates, true/observed measurement separation, feedback from observed
+bits, and event statistics. Simulation supplies the numerical sampling kernels.
+
+Limit the first profile to independent one-wire bit-flip channels and
+independent readout confusion. Apply readout confusion to explicit measurements
+and final sampling while collapsing the physical state on the true bit. Reject
+general Kraus channels, correlated readout, device-timing profiles, reset noise,
+and noisy gradients.
+
+Map the profile onto the repetition-code check circuit and provide typed
+finite-shot sweep points. State the circuit-location asymmetry explicitly and
+do not infer logical suppression or a threshold from the sweep.
+
+Exit gate:
+
+- probability-one bit flips and readout errors have deterministic oracles;
+- gate noise applies only to shots on which a conditional gate executes;
+- seeded noisy execution is reproducible within each strategy;
+- noise identity, opportunities, realized flips, and readout errors are visible;
+- QEC stochastic runs preserve syndrome, feedback, decode, and logical records;
+- finite-shot sweeps are observations, not calibrated-device predictions;
+- unsupported noise forms fail before execution;
+- public-root, provider, gradient, threshold, scale, and performance claims
+  remain unchanged.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -904,3 +933,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 15 loop measurement, immediate correction, and ancilla reset verified
 - [x] Phase 16 QEC domain and repetition-code memory workflow verified
 - [x] Phase 17 timed errors, history decoding, and offline Pauli frames verified
+- [x] Phase 18 bounded dynamic noise and QEC finite-shot sweeps verified

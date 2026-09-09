@@ -7,6 +7,7 @@ import torch
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
+from ...noise import NoiseModel
 from ...simulation.gate_matrix import gate_matrix
 from ...simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
@@ -17,6 +18,11 @@ from ...simulation.statevector.operations import (
     _statevector_layout,
 )
 from ._conditions import classical_width, instruction_condition_clauses
+from ._noise import (
+    apply_noise_after_instruction as _apply_noise_after_instruction,
+)
+from ._noise import apply_readout_error as _apply_readout_error
+from ._noise import validate_dynamic_noise as _validate_dynamic_noise
 from .circuit import DynamicCircuit
 from .result import DynamicExecutionResult
 
@@ -83,6 +89,7 @@ def _run_dynamic_trajectory(
     *,
     shots: int,
     seed: int | None = None,
+    noise_model: NoiseModel | None = None,
 ) -> DynamicExecutionResult:
     """Execute independent statevector trajectories with classical feedback."""
 
@@ -102,6 +109,9 @@ def _run_dynamic_trajectory(
     reset_count = 0
     conditional_applied = 0
     conditional_skipped = 0
+    noise_channel_applications = 0
+    bit_flip_events = 0
+    readout_errors = 0
     generator = torch.Generator(device=torch.device(circuit.device).type)
     if seed is not None:
         generator.manual_seed(int(seed))
@@ -136,12 +146,22 @@ def _run_dynamic_trajectory(
                 if clauses:
                     conditional_applied += 1
                 if instruction.name == "measure":
-                    state, bit = _measure_wire(
+                    state, true_bit = _measure_wire(
                         state,
                         instruction.wires[0],
                         circuit.n_wires,
                         generator=generator,
                     )
+                    observed, count = _apply_readout_error(
+                        torch.tensor(
+                            [true_bit], dtype=torch.int64, device=state.device
+                        ),
+                        instruction.wires[0],
+                        noise_model,
+                        generator=generator,
+                    )
+                    bit = int(observed.item())
+                    readout_errors += count
                     classical[int(instruction.metadata["classical_bit"])] = bit
                     measurement_count += 1
                     branch_trace.append((instruction_index, bit))
@@ -166,6 +186,15 @@ def _run_dynamic_trajectory(
                         instruction,
                         n_wires=circuit.n_wires,
                     )
+                    state, applications, events = _apply_noise_after_instruction(
+                        state,
+                        instruction,
+                        noise_model,
+                        n_wires=circuit.n_wires,
+                        generator=generator,
+                    )
+                    noise_channel_applications += applications
+                    bit_flip_events += events
             index = int(
                 torch.multinomial(
                     torch.abs(state.reshape(-1)) ** 2,
@@ -174,12 +203,24 @@ def _run_dynamic_trajectory(
                 ).item()
             )
             final_states.append(state.reshape(-1))
-            final_samples.append(
+            sample = torch.tensor(
                 [
                     (index >> (circuit.n_wires - wire - 1)) & 1
                     for wire in range(circuit.n_wires)
-                ]
+                ],
+                dtype=torch.int64,
+                device=state.device,
             )
+            for wire in range(circuit.n_wires):
+                observed, count = _apply_readout_error(
+                    sample[wire : wire + 1],
+                    wire,
+                    noise_model,
+                    generator=generator,
+                )
+                sample[wire] = observed[0]
+                readout_errors += count
+            final_samples.append(sample.tolist())
             classical_rows.append(classical)
             branch_counts[
                 ",".join(f"{index}:{bit}" for index, bit in branch_trace)
@@ -221,6 +262,12 @@ def _run_dynamic_trajectory(
             "gate_execution_strategy": "trajectory_direct_statevector_kernel",
             "device": str(circuit.device),
             "seed": seed,
+            "noise_model_identity": (
+                None if noise_model is None else noise_model.identity
+            ),
+            "noise_channel_application_count": noise_channel_applications,
+            "bit_flip_event_count": bit_flip_events,
+            "readout_error_count": readout_errors,
         },
     )
 
@@ -268,6 +315,7 @@ def _run_dynamic_batched(
     *,
     shots: int,
     seed: int | None,
+    noise_model: NoiseModel | None,
 ) -> DynamicExecutionResult:
     width = classical_width(circuit)
     started = perf_counter()
@@ -287,6 +335,9 @@ def _run_dynamic_batched(
     reset_count = 0
     conditional_applied = 0
     conditional_skipped = 0
+    noise_channel_applications = 0
+    bit_flip_events = 0
+    readout_errors = 0
 
     for instruction_index, instruction in enumerate(circuit._instructions):
         active = torch.ones(int(shots), dtype=torch.bool, device=circuit.device)
@@ -321,13 +372,24 @@ def _run_dynamic_batched(
                 generator=generator,
             )
             state = state.index_copy(0, indices, selected)
+            recorded = bits
+            if instruction.name == "measure":
+                recorded, count = _apply_readout_error(
+                    bits,
+                    instruction.wires[0],
+                    noise_model,
+                    generator=generator,
+                )
+                readout_errors += count
             recorded_bits = torch.full(
                 (int(shots),), -1, dtype=torch.int64, device=circuit.device
             )
-            recorded_bits[indices] = bits
+            recorded_bits[indices] = recorded
             branch_values.append((instruction_index, recorded_bits))
             if instruction.name == "measure":
-                classical[indices, int(instruction.metadata["classical_bit"])] = bits
+                classical[indices, int(instruction.metadata["classical_bit"])] = (
+                    recorded
+                )
                 measurement_count += active_count
             else:
                 reset_count += active_count
@@ -350,6 +412,17 @@ def _run_dynamic_batched(
                 instruction,
                 n_wires=circuit.n_wires,
             )
+            indices = torch.nonzero(active, as_tuple=False).reshape(-1)
+            selected, applications, events = _apply_noise_after_instruction(
+                state.index_select(0, indices),
+                instruction,
+                noise_model,
+                n_wires=circuit.n_wires,
+                generator=generator,
+            )
+            state = state.index_copy(0, indices, selected)
+            noise_channel_applications += applications
+            bit_flip_events += events
 
     sampled_indices = torch.multinomial(
         torch.abs(state) ** 2,
@@ -363,6 +436,15 @@ def _run_dynamic_batched(
         ),
         dim=1,
     )
+    for wire in range(circuit.n_wires):
+        observed, count = _apply_readout_error(
+            samples[:, wire],
+            wire,
+            noise_model,
+            generator=generator,
+        )
+        samples[:, wire] = observed
+        readout_errors += count
     branch_counts: Counter[str] = Counter()
     branch_rows = tuple((index, values.tolist()) for index, values in branch_values)
     for shot_index in range(int(shots)):
@@ -396,6 +478,12 @@ def _run_dynamic_batched(
             "gate_execution_strategy": "batched_statevector_kernel",
             "device": str(circuit.device),
             "seed": seed,
+            "noise_model_identity": (
+                None if noise_model is None else noise_model.identity
+            ),
+            "noise_channel_application_count": noise_channel_applications,
+            "bit_flip_event_count": bit_flip_events,
+            "readout_error_count": readout_errors,
         },
     )
 
@@ -407,6 +495,7 @@ def run_dynamic(
     seed: int | None = None,
     strategy: str = "auto",
     max_batched_bytes: int = 256 * 1024**2,
+    noise_model: NoiseModel | None = None,
 ) -> DynamicExecutionResult:
     """Execute dynamic shots using a reference or vectorized trajectory path."""
 
@@ -422,6 +511,7 @@ def run_dynamic(
         for value in instruction.params.values():
             if isinstance(value, torch.Tensor) and value.requires_grad:
                 raise RuntimeError("dynamic trajectory execution is not differentiable")
+    _validate_dynamic_noise(circuit, noise_model)
 
     element_size = torch.empty((), dtype=circuit.dtype).element_size()
     estimated_bytes = int(shots) * (2**circuit.n_wires) * element_size * 3
@@ -435,8 +525,18 @@ def run_dynamic(
         strategy == "auto" and int(shots) >= 32 and batched_compatible
     )
     if use_batched:
-        return _run_dynamic_batched(circuit, shots=int(shots), seed=seed)
-    return _run_dynamic_trajectory(circuit, shots=int(shots), seed=seed)
+        return _run_dynamic_batched(
+            circuit,
+            shots=int(shots),
+            seed=seed,
+            noise_model=noise_model,
+        )
+    return _run_dynamic_trajectory(
+        circuit,
+        shots=int(shots),
+        seed=seed,
+        noise_model=noise_model,
+    )
 
 
 __all__ = ("run_dynamic",)

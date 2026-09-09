@@ -621,3 +621,56 @@ def test_phase17_separates_timed_errors_feedback_and_pauli_frames() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE17_EVIDENCE.md"
     )
     assert contract["phase17_completed"] is True
+
+
+def test_phase18_bridges_bounded_noise_into_dynamic_execution() -> None:
+    contract = _contract()
+    phase18 = contract["phase18"]
+
+    assert phase18["noise_authority"] == "flagquantum.noise.NoiseModel"
+    assert phase18["runtime_entry_points"] == [
+        "flagquantum.runtime.dynamic.run_dynamic",
+        "flagquantum.runtime.dynamic.hybrid_session.execute_hybrid_dynamic_session",
+    ]
+    assert phase18["simulation_kernels"] == (
+        "flagquantum.simulation.statevector.dynamic_noise"
+    )
+    assert phase18["supported_channels"] == [
+        "independent_one_wire_bit_flip_after_matching_executed_gate"
+    ]
+    assert phase18["readout_semantics"] == (
+        "independent_true_to_observed_confusion_on_explicit_measurement_and_final_sampling"
+    )
+    assert phase18["collapse_semantics"] == "physical_state_collapses_on_true_bit"
+    assert phase18["feedback_semantics"] == (
+        "classical_conditions_consume_observed_bit"
+    )
+    assert phase18["execution_strategies"] == ["trajectory", "batched"]
+    assert phase18["seeded_reproducibility"] is True
+    assert phase18["statistics"] == [
+        "noise_model_identity",
+        "noise_channel_application_count",
+        "bit_flip_event_count",
+        "readout_error_count",
+    ]
+    assert phase18["qec_middle_wire_noise_opportunities_per_round"] == 2
+    assert phase18["qec_edge_wire_noise_opportunities_per_round"] == 1
+    assert phase18["finite_shot_sweep"] == (
+        "flagquantum.qec.run_repetition_memory_noise_sweep"
+    )
+    assert phase18["general_kraus_channels"] == "unsupported_fail_closed"
+    assert phase18["correlated_readout"] == "unsupported_fail_closed"
+    assert phase18["device_profile_timing_noise"] == "unsupported_fail_closed"
+    assert phase18["noisy_gradients"] == "unsupported_fail_closed"
+    assert phase18["realtime_decoder_integration"] is False
+    assert phase18["logical_error_suppression_claim"] is False
+    assert phase18["threshold_claim"] is False
+    assert phase18["fault_tolerance_claim"] is False
+    assert phase18["provider_execution"] == "unsupported_fail_closed"
+    assert phase18["public_root_export"] is False
+    assert phase18["default_path_change"] is False
+    assert phase18["performance_claim"] is False
+    assert phase18["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE18_EVIDENCE.md"
+    )
+    assert contract["phase18_completed"] is True

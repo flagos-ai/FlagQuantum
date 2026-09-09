@@ -12,8 +12,10 @@ from flagquantum.qec import (
     PauliFrame,
     RepetitionLookupDecoder,
     RepetitionMemoryShot,
+    RepetitionNoiseProfile,
     SyndromeRound,
     run_repetition_memory_experiment,
+    run_repetition_memory_noise_sweep,
 )
 
 pytestmark = pytest.mark.integration
@@ -179,3 +181,78 @@ def test_repetition_memory_validation_fails_closed() -> None:
 
     with pytest.raises(TypeError, match="must return a DecodeResult"):
         run_repetition_memory_experiment(rounds=1, shots=1, decoder=InvalidDecoder())
+
+
+def test_repetition_noise_profile_uses_existing_noise_model_contract() -> None:
+    profile = RepetitionNoiseProfile(
+        data_bit_flip_probability=0.2,
+        syndrome_readout_error_probability=0.1,
+        final_readout_error_probability=0.05,
+    )
+    model = profile.to_noise_model()
+
+    assert len(model.rules) == 3
+    assert tuple(rule.wires for rule in model.rules) == ((0,), (1,), (2,))
+    assert tuple(rule.wires for rule in model.readout_rules) == ((3, 4), (0, 1, 2))
+    with pytest.raises(ValueError, match="between zero and one"):
+        RepetitionNoiseProfile(data_bit_flip_probability=1.1)
+
+
+def test_stochastic_repetition_noise_is_seeded_and_auditable() -> None:
+    model = RepetitionNoiseProfile(data_bit_flip_probability=0.2).to_noise_model()
+
+    first = run_repetition_memory_experiment(
+        rounds=3,
+        shots=64,
+        seed=71,
+        strategy="batched",
+        noise_model=model,
+    )
+    second = run_repetition_memory_experiment(
+        rounds=3,
+        shots=64,
+        seed=71,
+        strategy="batched",
+        noise_model=model,
+    )
+
+    assert first.noise_model_identity == model.identity
+    assert first.bit_flip_events > 0
+    assert first.bit_flip_events == second.bit_flip_events
+    assert first.logical_failures == second.logical_failures
+    assert tuple(shot.syndrome_rounds for shot in first.shot_records) == tuple(
+        shot.syndrome_rounds for shot in second.shot_records
+    )
+
+
+def test_syndrome_readout_noise_changes_observed_feedback() -> None:
+    model = RepetitionNoiseProfile(
+        syndrome_readout_error_probability=1.0
+    ).to_noise_model()
+    result = run_repetition_memory_experiment(
+        rounds=3,
+        shots=2,
+        seed=73,
+        strategy="batched",
+        noise_model=model,
+    )
+
+    assert all(shot.syndrome_rounds[0].bits == (1, 1) for shot in result.shot_records)
+    assert result.readout_errors == 16
+
+
+def test_noise_sweep_records_finite_shot_points_without_suppression_claim() -> None:
+    points = run_repetition_memory_noise_sweep(
+        (0.0, 0.2),
+        rounds=3,
+        shots=64,
+        seed=79,
+        strategy="batched",
+    )
+
+    assert points[0].logical_error_rate == 0.0
+    assert points[0].bit_flip_events == 0
+    assert points[1].bit_flip_events > 0
+    assert points[1].logical_error_rate == points[1].logical_failures / 64
+    with pytest.raises(ValueError, match="at least one probability"):
+        run_repetition_memory_noise_sweep(())

@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase17_timed_error_and_pauli_frame_verified",
+  "status": "phase18_dynamic_noise_bridge_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -567,6 +567,49 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE17_EVIDENCE.md"
   },
   "phase17_completed": true,
+  "phase18": {
+    "noise_authority": "flagquantum.noise.NoiseModel",
+    "runtime_entry_points": [
+      "flagquantum.runtime.dynamic.run_dynamic",
+      "flagquantum.runtime.dynamic.hybrid_session.execute_hybrid_dynamic_session"
+    ],
+    "simulation_kernels": "flagquantum.simulation.statevector.dynamic_noise",
+    "supported_channels": [
+      "independent_one_wire_bit_flip_after_matching_executed_gate"
+    ],
+    "readout_semantics": "independent_true_to_observed_confusion_on_explicit_measurement_and_final_sampling",
+    "collapse_semantics": "physical_state_collapses_on_true_bit",
+    "feedback_semantics": "classical_conditions_consume_observed_bit",
+    "execution_strategies": [
+      "trajectory",
+      "batched"
+    ],
+    "seeded_reproducibility": true,
+    "statistics": [
+      "noise_model_identity",
+      "noise_channel_application_count",
+      "bit_flip_event_count",
+      "readout_error_count"
+    ],
+    "qec_noise_profile": "bit_flip_after_parity_check_cx_plus_syndrome_or_final_readout_confusion",
+    "qec_middle_wire_noise_opportunities_per_round": 2,
+    "qec_edge_wire_noise_opportunities_per_round": 1,
+    "finite_shot_sweep": "flagquantum.qec.run_repetition_memory_noise_sweep",
+    "general_kraus_channels": "unsupported_fail_closed",
+    "correlated_readout": "unsupported_fail_closed",
+    "device_profile_timing_noise": "unsupported_fail_closed",
+    "noisy_gradients": "unsupported_fail_closed",
+    "realtime_decoder_integration": false,
+    "logical_error_suppression_claim": false,
+    "threshold_claim": false,
+    "fault_tolerance_claim": false,
+    "provider_execution": "unsupported_fail_closed",
+    "public_root_export": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE18_EVIDENCE.md"
+  },
+  "phase18_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

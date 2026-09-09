@@ -52,6 +52,12 @@ instruction loop for one already-lowered trajectory batch. Runtime retains
 trajectory IDs and random-stream construction, readout-error handling,
 convergence, retry, checkpointing, collectives, and result assembly.
 
+`statevector/dynamic_noise.py` owns the bounded numerical kernels used by local
+dynamic trajectories: independent one-wire bit-flip sampling and independent
+true-to-observed readout sampling. Runtime decides placement, owns random-stream
+lifecycle and classical feedback, and fails closed for channels outside this
+profile.
+
 `statevector/double_single_host_gates.py` owns P3's explicit CPU reference encoding;
 `statevector/double_single_device_gates.py` separately owns P4's device-resident FP32
 gate-matrix numerics so its no-CPU/no-complex128 rule remains source-auditable.
