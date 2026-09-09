@@ -113,6 +113,25 @@ qubits and compilation fails unless the current target snapshot proves that
 the selection is valid and connected. An explicit mapping is never silently
 replaced.
 
+One Pauli expectation can use the same remote entry point:
+
+```python
+energy = fq.run(
+    circuit,
+    outputs=fq.expectation(0.5 * (fq.X(0) @ fq.X(1)) + fq.Z(0)),
+    compiler="qsteed",
+    target="quafu:ScQ-P10",
+    shots=4096,
+).expectation()
+```
+
+The circuit is compiled once, then qubit-wise-commuting terms are measured in
+separate sealed jobs without changing the selected physical-qubit mapping.
+`shots` applies to each measurement group. The measurement statistics report
+the estimator standard error, group count, per-group shots, and total shots;
+provenance records every provider task and deployment identity. Mixed outputs
+and unsupported remote outputs fail before compilation or submission.
+
 ## Optimize a program
 
 Compiler optimization is an expert-facing, target-independent transformation:
@@ -317,7 +336,7 @@ results = tuple(provider.run(package) for package in plan.packages)
 energy = plan.expectation(tuple(result.counts for result in results))
 ```
 
-X measurements append H; Y measurements append S-dagger followed by H.
+X measurements append H; Y measurements append RZ(-pi/2) followed by H.
 Aggregation validates the number of groups, shot totals, bitstring widths, and
 real Hamiltonian coefficients before producing an expectation value. Each
 package records its group index, term indices, basis, routing evidence, and

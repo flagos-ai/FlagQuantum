@@ -163,15 +163,21 @@ def run(
     source_ir = import_module(".core.ir", __package__).ensure_circuit_ir(
         program_or_plan
     )
-    if (
-        len(requested) != 1
-        or requested[0].kind != "counts"
-        or requested[0].observable is not None
-        or requested[0].wires not in {(), tuple(range(source_ir.n_wires))}
-    ):
+    full_counts = (
+        len(requested) == 1
+        and requested[0].kind == "counts"
+        and requested[0].observable is None
+        and requested[0].wires in {(), tuple(range(source_ir.n_wires))}
+    )
+    expectation_output = (
+        len(requested) == 1
+        and requested[0].kind == "expectation"
+        and requested[0].observable is not None
+    )
+    if not full_counts and not expectation_output:
         raise ValueError(
-            "remote Quafu execution currently supports one full-register "
-            "fq.counts() output"
+            "remote Quafu execution supports one full-register fq.counts() "
+            "or one fq.expectation(...) output"
         )
     compiled = compile(
         program_or_plan,
@@ -180,11 +186,112 @@ def run(
         target_qubits=target_qubits,
     )
     remote = import_module(".remote", __package__)
+    provider = remote.QuafuProvider()
+    if expectation_output:
+        assert requested[0].observable is not None
+        algorithms = import_module(".algorithms", __package__)
+        hamiltonian = algorithms.Hamiltonian(
+            algorithms.HamiltonianTerm(
+                term.coefficient,
+                {wire: axis for wire, axis in term.factors},
+            )
+            for term in requested[0].observable.terms
+        )
+        deployment = import_module(".deployment", __package__)
+        deployment_name = name.strip() if name is not None else "flagquantum_job"
+        measurement_plan = deployment.create_pauli_measurement_plan(
+            compiled,
+            hamiltonian,
+            name=deployment_name,
+            shots=shots,
+        )
+        native_results = tuple(
+            provider.run(package) for package in measurement_plan.packages
+        )
+        grouped_counts = tuple(result.counts for result in native_results)
+        value = measurement_plan.expectation(grouped_counts)
+        standard_error = measurement_plan.standard_error(grouped_counts)
+        execution_target = dict(compiled.metadata.get("execution_target", {}))
+        task_ids = tuple(result.handle.task_id for result in native_results)
+        group_evidence = tuple(
+            {
+                "group_index": index,
+                "task_id": result.handle.task_id,
+                "deployment_artifact_sha256": package.metadata.get(
+                    "deployment_artifact_sha256"
+                ),
+                "routing_evidence_sha256": package.metadata.get(
+                    "routing_evidence_sha256"
+                ),
+                "provider_result": dict(result.metadata),
+            }
+            for index, (package, result) in enumerate(
+                zip(measurement_plan.packages, native_results, strict=True)
+            )
+        )
+        observable_wires = tuple(
+            sorted(
+                {
+                    wire
+                    for term in requested[0].observable.terms
+                    for wire, _axis in term.factors
+                }
+            )
+        )
+        contracts = import_module(".runtime.contracts", __package__)
+        result = contracts.ExecutionResult(
+            measurements=(
+                contracts.MeasurementResult(
+                    kind="expectation",
+                    wires=observable_wires or (0,),
+                    value=value,
+                    shots=sum(measurement_plan.shots_per_group),
+                    metadata={
+                        "fq_output_index": 0,
+                        "fq_output_kind": "expectation",
+                        "fq_output_name": requested[0].name,
+                        **(
+                            {"name": requested[0].name}
+                            if requested[0].name is not None
+                            else {}
+                        ),
+                        "provider": native_results[0].handle.provider,
+                        "backend": native_results[0].handle.backend_name,
+                        "task_ids": task_ids,
+                    },
+                    statistics={
+                        "standard_error": float(standard_error.item()),
+                        "group_count": len(measurement_plan.groups),
+                        "shots_per_group": measurement_plan.shots_per_group,
+                        "total_shots": sum(measurement_plan.shots_per_group),
+                    },
+                ),
+            ),
+            provenance={
+                "provider": native_results[0].handle.provider,
+                "backend": native_results[0].handle.backend_name,
+                "task_ids": task_ids,
+                "compiler": compiler,
+                "target": target,
+                "target_qubits": tuple(execution_target.get("target_qubits", ())),
+                "name": deployment_name,
+                "measurement_plan": measurement_plan.summary(),
+                "measurement_groups": group_evidence,
+            },
+            runtime={
+                "mode": "remote_qpu",
+                "shots": sum(measurement_plan.shots_per_group),
+                "shots_per_group": measurement_plan.shots_per_group,
+            },
+        )
+        object.__setattr__(result, "_native_output", native_results)
+        return result
+
     deployment_options: dict[str, Any] = {"shots": shots}
     if name is not None:
         deployment_options["name"] = name.strip()
     native = import_module(".deployment", __package__).deploy_circuit(
-        compiled, remote.QuafuProvider(), **deployment_options
+        compiled, provider, **deployment_options
     )
     contracts = import_module(".runtime.contracts", __package__)
     counts = {str(key): int(value) for key, value in native.counts.items()}

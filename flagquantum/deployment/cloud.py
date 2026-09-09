@@ -8,6 +8,7 @@ Circuit and IR objects.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
@@ -101,6 +102,15 @@ class PauliMeasurementPlan:
         counts_by_group: Sequence[Mapping[str, int]],
     ) -> torch.Tensor:
         return hamiltonian_expectation_from_grouped_counts(counts_by_group, self)
+
+    def standard_error(
+        self,
+        counts_by_group: Sequence[Mapping[str, int]],
+    ) -> torch.Tensor:
+        """Return the standard error of the grouped expectation estimator."""
+
+        _, standard_error = _grouped_hamiltonian_statistics(counts_by_group, self)
+        return torch.tensor([standard_error], dtype=torch.float32)
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -387,7 +397,10 @@ def create_pauli_measurement_plan(
                 rotations.append(Instruction("h", (wire,)))
             elif basis == "y":
                 rotations.extend(
-                    (Instruction("sdg", (wire,)), Instruction("h", (wire,)))
+                    (
+                        Instruction("rz", (wire,), params={"theta": -math.pi / 2}),
+                        Instruction("h", (wire,)),
+                    )
                 )
             elif basis != "z":
                 raise ValueError(f"unsupported Pauli measurement basis {basis!r}")
@@ -525,11 +538,22 @@ def hamiltonian_expectation_from_grouped_counts(
 ) -> torch.Tensor:
     """Aggregate basis-rotated counts from a ``PauliMeasurementPlan``."""
 
+    expectation, _ = _grouped_hamiltonian_statistics(counts_by_group, plan)
+    return torch.tensor([expectation], dtype=torch.float32)
+
+
+def _grouped_hamiltonian_statistics(
+    counts_by_group: Sequence[Mapping[str, int]],
+    plan: PauliMeasurementPlan,
+) -> tuple[float, float]:
+    """Return the grouped estimator mean and standard error."""
+
     if len(counts_by_group) != len(plan.groups):
         raise ValueError(
             "counts_by_group must contain one result per measurement group"
         )
     total = 0.0
+    total_variance = 0.0
     for group_index, (counts, group, package) in enumerate(
         zip(counts_by_group, plan.groups, plan.packages, strict=True)
     ):
@@ -547,19 +571,29 @@ def hamiltonian_expectation_from_grouped_counts(
                     f"measurement group {group_index} bitstring width does not "
                     "match its deployment package"
                 )
+        coefficients: list[tuple[float, tuple[tuple[int, str], ...]]] = []
         for term_index in group.term_indices:
             term = plan.hamiltonian.terms[term_index]
             coefficient = torch.as_tensor(term.coefficient)
             if coefficient.is_complex() and torch.abs(coefficient.imag) > 1e-12:
                 raise ValueError("measured Hamiltonian coefficients must be real")
-            expectation = 0.0
-            for bitstring, count in counts.items():
+            coefficients.append((float(coefficient.real), term.ops))
+
+        mean = 0.0
+        second_moment = 0.0
+        for bitstring, count in counts.items():
+            sample_value = 0.0
+            for coefficient, ops in coefficients:
                 parity = 1.0
-                for wire, _name in term.ops:
+                for wire, _name in ops:
                     parity *= 1.0 if str(bitstring)[wire] == "0" else -1.0
-                expectation += parity * int(count)
-            total += float(coefficient.real) * expectation / shots
-    return torch.tensor([total], dtype=torch.float32)
+                sample_value += coefficient * parity
+            probability = int(count) / shots
+            mean += probability * sample_value
+            second_moment += probability * sample_value * sample_value
+        total += mean
+        total_variance += max(second_moment - mean * mean, 0.0) / shots
+    return total, math.sqrt(total_variance)
 
 
 __all__ = [
