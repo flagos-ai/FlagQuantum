@@ -197,6 +197,11 @@ python examples/remote/jiuding_vqe.py \
   --learning-rate 0.4
 ```
 
+The recorded five-step A100 run used exactly one gradient batch per step,
+decreased the energy at every update, and had a maximum gradient error of
+`1.31e-6` against local autograd. See the
+[eight-parameter VQE evidence](../development/evidence/jiuding_vqe_8param_20260909.json).
+
 The batch is validated in full before its first circuit executes, accepts at
 most 256 circuits, and returns ordinary `ExecutionResult` objects in input
 order. Statevector batches are intentionally rejected. Per-result runtime
