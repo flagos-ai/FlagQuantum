@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase23_bounded_constant_loop_unroll_verified",
+  "status": "phase24_pass_audit_and_differential_verification_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -768,6 +768,43 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE23_EVIDENCE.md"
   },
   "phase23_completed": true,
+  "phase24": {
+    "module_boundaries": {
+      "analysis": "flagquantum.compiler._hybrid.analysis",
+      "ssa_rewrites": "flagquantum.compiler._hybrid.rewrites",
+      "transformations": "flagquantum.compiler._hybrid.transforms",
+      "pipeline_and_audit": "flagquantum.compiler._hybrid.passes"
+    },
+    "pass_outcome": "immutable_program_statistics_and_remarks",
+    "statistics": [
+      "folded_operations",
+      "constant_branches_inlined",
+      "empty_loops_removed",
+      "constants_removed",
+      "loops_unrolled",
+      "iterations_unrolled",
+      "expanded_operations",
+      "loops_preserved_by_reason"
+    ],
+    "budget_skip_remarks": "deterministic_loop_identity_and_reason",
+    "seeded_differential_cases": 12,
+    "differential_oracles": [
+      "circuit_instruction_structure",
+      "bound_parameter_values",
+      "statevector_expectation",
+      "statevector_adjoint_vjp",
+      "optimization_fixed_point"
+    ],
+    "negative_step_profile": "unsupported_equally_with_optimization_on_or_off",
+    "pass_statistics_affect_program_identity": false,
+    "new_optimization_semantics": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE24_EVIDENCE.md"
+  },
+  "phase24_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

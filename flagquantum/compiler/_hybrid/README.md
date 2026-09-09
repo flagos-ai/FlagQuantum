@@ -75,9 +75,12 @@ trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 reference; reusable structure identity never serializes or hashes their values.
 The optional structure cache is bounded and reports hit, miss, and eviction.
 
-`passes.py` owns the verified Program IR normalization stage used by both static
-specialization and dynamic lowering. The first concrete analyses are constant
-facts and whole-program SSA use counts. The first transformations fold supported
+The verified Program IR normalization stage is split by responsibility:
+`analysis.py` computes facts, `rewrites.py` owns SSA substitution and cloning,
+`transforms.py` contains concrete transformations, and `passes.py` verifies and
+audits the bounded pipeline used by static specialization and dynamic lowering.
+The first concrete analyses are constant facts and whole-program SSA use counts.
+The first transformations fold supported
 constant-only arithmetic, inline a compile-time-selected `scf.if` region,
 eliminate statically empty `scf.for` regions, and remove only unused constants.
 Control simplification rewires explicit carried SSA values and the linear
@@ -94,6 +97,13 @@ definitions and an explicit induction constant; carried classical values and
 the quantum effect are chained through each cloned yield. Larger loops remain
 structured. Pre-expanded iterations stay in pass evidence and count toward the
 existing specialization and dynamic-lowering unroll limit.
+
+Each concrete pass returns immutable statistics. Budget-preserved loops also
+produce deterministic remarks containing the loop identity and reason. These
+records are diagnostic evidence and do not participate in Program IR semantic
+identity. Seeded differential tests compare optimized and unoptimized circuit
+structure, bound parameter values, statevector results, adjoint gradients, and
+fixed-point behavior.
 
 This stage deliberately keeps `HybridProgram` as its input and output. It does
 not introduce a target dialect, `TargetIR`, general pass registry, stable pass

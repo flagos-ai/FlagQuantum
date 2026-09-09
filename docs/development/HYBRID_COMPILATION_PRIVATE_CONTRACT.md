@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-23 implemented and verified under the repository owner's
+Status: Phases 1-24 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -745,8 +745,9 @@ supported constant-only arithmetic; and remove unused `arith.constant`
 operations after folding.
 
 Verification runs before the pipeline and after every transformation. A pass
-must return a `HybridProgram`, and a pipeline longer than 32 passes fails before
-transformation. Lowered results retain the source identity, optimized identity,
+must yield a `HybridProgram`, directly or through a verified private outcome,
+and a pipeline longer than 32 passes fails before transformation. Lowered
+results retain the source identity, optimized identity,
 pass names, and before/after operation counts. A private unoptimized path is
 kept solely as a differential correctness oracle.
 
@@ -799,3 +800,25 @@ optimized/unoptimized `CircuitIR` agreement, parameter-value agreement,
 preserved autograd edges, and matching limit failures. Nested-loop expansion,
 general unrolling, target-specific scheduling, public APIs, and performance
 claims remain unauthorized.
+
+## Phase 24 pass-audit and differential-verification authorization
+
+Phase 24 may split the private optimizer implementation into four local
+responsibilities: verified analysis, SSA rewrite helpers, concrete
+transformations, and pipeline/audit orchestration. This is an internal
+maintainability change and must not create another IR, pipeline authority, or
+public compiler surface.
+
+Concrete passes may return a private immutable outcome containing the verified
+program, non-negative integer statistics, and deterministic nonempty remarks.
+Records expose actual fold, removal, branch, loop, expansion, and budget-skip
+behavior. Audit values do not affect program semantic identity. A direct
+`HybridProgram` result remains accepted for narrow internal test passes.
+
+Acceptance requires fixed-seed differential programs covering constant
+branches, bounded loops, carried scalar/index values, ordered quantum effects,
+parameter binding, statevector execution, and adjoint VJP. Optimized and
+unoptimized paths must agree, and a second optimization run must be a fixed
+point. Negative runtime loop steps remain unsupported and must fail identically
+with optimization enabled or disabled. No new optimization semantics, target
+IR, public API, or performance claim is authorized.

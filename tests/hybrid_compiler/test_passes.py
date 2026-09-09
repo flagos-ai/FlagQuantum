@@ -9,6 +9,7 @@ from flagquantum.compiler._hybrid import (
     BoundedLoopUnrollPass,
     HybridProgram,
     HybridVerificationError,
+    PassOutcome,
     Region,
     SpecializationError,
     analyze_program,
@@ -106,16 +107,19 @@ def test_default_pipeline_folds_constants_and_removes_dead_constants() -> None:
     assert result.optimized_identity == result.program.semantic_identity
     assert result.changed is True
     assert tuple(record.name for record in result.records) == (
+        "constant_fold",
+        "structured_control_flow_simplification",
         "bounded_loop_unroll",
         "constant_fold",
         "structured_control_flow_simplification",
         "dead_constant_elimination",
     )
-    assert result.records[0].changed is False
-    assert result.records[1].changed is True
-    assert result.records[2].changed is False
-    assert result.records[3].input_operation_count == 9
-    assert result.records[3].output_operation_count == 4
+    assert result.records[0].changed is True
+    assert result.records[0].statistics == {"folded_operations": 2}
+    assert all(record.changed is False for record in result.records[1:5])
+    assert result.records[5].input_operation_count == 9
+    assert result.records[5].output_operation_count == 4
+    assert result.records[5].statistics["constants_removed"] == 5
     assert analyze_program(result.program).operation_count == 4
     assert tuple(
         operation.name for operation in result.program.body.blocks[0].operations
@@ -138,6 +142,8 @@ def test_optimized_and_unoptimized_static_lowering_are_equivalent() -> None:
     assert optimized.program_identity == program.semantic_identity
     assert optimized.optimized_program_identity != optimized.program_identity
     assert tuple(record.name for record in optimized.optimization_records) == (
+        "constant_fold",
+        "structured_control_flow_simplification",
         "bounded_loop_unroll",
         "constant_fold",
         "structured_control_flow_simplification",
@@ -171,6 +177,20 @@ def test_constant_branches_and_empty_loops_preserve_carried_ssa_values() -> None
     assert analyze_program(program).operation_count == 19
     assert analyze_program(result.program).operation_count == 5
     assert all(operation.name not in {"scf.if", "scf.for"} for operation in operations)
+    control_records = tuple(
+        record
+        for record in result.records
+        if record.name == "structured_control_flow_simplification"
+    )
+    assert (
+        sum(
+            record.statistics["constant_branches_inlined"] for record in control_records
+        )
+        == 1
+    )
+    assert (
+        sum(record.statistics["empty_loops_removed"] for record in control_records) == 1
+    )
     assert tuple((item.name, item.wires) for item in optimized.bind().instructions) == (
         ("x", (1,)),
         ("h", (1,)),
@@ -191,9 +211,13 @@ def test_bounded_loop_unroll_preserves_parameters_gradients_and_budget() -> None
     baseline = specialize_and_lower(program, (theta, delta), optimize=False)
 
     assert "scf.for" not in _operation_names(normalized.program)
-    unroll_record = normalized.records[0]
+    unroll_record = normalized.records[2]
     assert unroll_record.name == "bounded_loop_unroll"
     assert unroll_record.preexpanded_iterations == 3
+    assert unroll_record.statistics["loops_unrolled"] == 1
+    assert unroll_record.statistics["iterations_unrolled"] == 3
+    assert unroll_record.statistics["expanded_operations"] > 0
+    assert unroll_record.remarks == ()
     assert normalized.preexpanded_iterations == 3
     assert (
         run_pass_pipeline(normalized.program).optimized_identity
@@ -242,10 +266,27 @@ def test_unroll_budget_preserves_larger_loops_for_existing_lowering() -> None:
     assert "scf.for" in _operation_names(operation_limited.program)
     assert iteration_limited.preexpanded_iterations == 0
     assert operation_limited.preexpanded_iterations == 0
+    assert (
+        iteration_limited.records[0].statistics["loops_preserved_iteration_budget"] == 1
+    )
+    assert (
+        operation_limited.records[0].statistics["loops_preserved_operation_budget"] == 1
+    )
+    assert (
+        iteration_limited.records[0]
+        .remarks[0]
+        .endswith("loops_preserved_iteration_budget")
+    )
+    with pytest.raises(TypeError):
+        iteration_limited.records[0].statistics["mutated"] = 1
     with pytest.raises(ValueError, match="max_iterations must be positive"):
         BoundedLoopUnrollPass(max_iterations=0)
     with pytest.raises(ValueError, match="max_expanded_operations must be positive"):
         BoundedLoopUnrollPass(max_expanded_operations=0)
+    with pytest.raises(ValueError, match="non-negative"):
+        PassOutcome(program, statistics={"invalid": -1})
+    with pytest.raises(ValueError, match="nonempty"):
+        PassOutcome(program, remarks=("",))
 
 
 def test_dynamic_unroll_preserves_circuit_and_original_iteration_limit() -> None:
@@ -306,6 +347,8 @@ def test_dynamic_lowering_uses_the_same_verified_optimization_stage() -> None:
     assert optimized.program_identity == program.semantic_identity
     assert optimized.optimized_program_identity != optimized.program_identity
     assert tuple(record.name for record in optimized.optimization_records) == (
+        "constant_fold",
+        "structured_control_flow_simplification",
         "bounded_loop_unroll",
         "constant_fold",
         "structured_control_flow_simplification",

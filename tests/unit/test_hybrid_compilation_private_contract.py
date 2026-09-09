@@ -879,3 +879,48 @@ def test_phase23_unrolls_only_small_constant_entry_loops() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE23_EVIDENCE.md"
     )
     assert contract["phase23_completed"] is True
+
+
+def test_phase24_adds_pass_audit_and_seeded_differential_verification() -> None:
+    contract = _contract()
+    phase24 = contract["phase24"]
+
+    assert phase24["module_boundaries"] == {
+        "analysis": "flagquantum.compiler._hybrid.analysis",
+        "ssa_rewrites": "flagquantum.compiler._hybrid.rewrites",
+        "transformations": "flagquantum.compiler._hybrid.transforms",
+        "pipeline_and_audit": "flagquantum.compiler._hybrid.passes",
+    }
+    assert phase24["pass_outcome"] == "immutable_program_statistics_and_remarks"
+    assert phase24["statistics"] == [
+        "folded_operations",
+        "constant_branches_inlined",
+        "empty_loops_removed",
+        "constants_removed",
+        "loops_unrolled",
+        "iterations_unrolled",
+        "expanded_operations",
+        "loops_preserved_by_reason",
+    ]
+    assert phase24["budget_skip_remarks"] == ("deterministic_loop_identity_and_reason")
+    assert phase24["seeded_differential_cases"] == 12
+    assert phase24["differential_oracles"] == [
+        "circuit_instruction_structure",
+        "bound_parameter_values",
+        "statevector_expectation",
+        "statevector_adjoint_vjp",
+        "optimization_fixed_point",
+    ]
+    assert phase24["negative_step_profile"] == (
+        "unsupported_equally_with_optimization_on_or_off"
+    )
+    assert phase24["pass_statistics_affect_program_identity"] is False
+    assert phase24["new_optimization_semantics"] is False
+    assert phase24["target_ir_added"] is False
+    assert phase24["public_root_export"] is False
+    assert phase24["stable_api_change"] is False
+    assert phase24["performance_claim"] is False
+    assert phase24["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE24_EVIDENCE.md"
+    )
+    assert contract["phase24_completed"] is True

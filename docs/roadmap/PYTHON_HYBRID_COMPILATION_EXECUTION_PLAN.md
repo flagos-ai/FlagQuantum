@@ -888,6 +888,31 @@ Exit gate:
 - nested/general unrolling, target scheduling, public API, and performance
   claims remain excluded.
 
+### Phase 24 — pass audit and differential verification
+
+Split the private optimizer by responsibility into analysis, SSA rewrite,
+concrete transformation, and pipeline/audit modules. Give every concrete pass
+an immutable outcome with non-negative statistics and deterministic remarks for
+preserved loops. Keep audit evidence outside Program IR identity.
+
+Build a fixed-seed differential corpus that exercises constant branches,
+bounded loops, carried values, quantum-effect ordering, and parameters. Compare
+optimization enabled and disabled at the `CircuitIR`, statevector result, and
+adjoint-VJP levels. Re-run optimization to prove fixed-point behavior. Record
+negative-step loops as an equal fail-closed boundary until loop bounds gain a
+separate signed-integer type.
+
+Exit gate:
+
+- four local modules have one documented optimizer responsibility each;
+- every default pass reports actual transformation counts;
+- budget-preserved loops report deterministic identities and reasons;
+- pass statistics and remarks are immutable and identity-neutral;
+- at least 12 fixed seeds agree on structure, parameters, expectation, and VJP;
+- every optimized seeded program is a fixed point on a second pass;
+- negative-step behavior agrees with optimization enabled and disabled;
+- no new optimization, target IR, public API, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1039,3 +1064,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 21 verified Program IR normalization implemented and verified
 - [x] Phase 22 structured-control-flow simplification implemented and verified
 - [x] Phase 23 bounded constant-loop unrolling implemented and verified
+- [x] Phase 24 pass audit and differential verification implemented and verified
