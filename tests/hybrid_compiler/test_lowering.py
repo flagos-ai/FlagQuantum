@@ -158,6 +158,18 @@ def test_template_uses_slots_and_binding_preserves_autograd_edges() -> None:
     )
 
 
+def test_template_serializes_explicit_parameter_order() -> None:
+    weights = torch.tensor([[0.2, -0.3, 0.0, 0.5]], dtype=torch.float64)
+    data = torch.tensor([0.1, 0.2, 0.3, 0.4], dtype=torch.float64)
+    lowered = specialize_and_lower(program(), (weights, data))
+
+    names = tuple(name for name, _ in lowered.ordered_bindings)
+    restored = CircuitIR.from_json(lowered.circuit_template.to_json())
+
+    assert names == tuple(lowered.bindings)
+    assert restored.metadata["hybrid_parameter_order"] == names
+
+
 def test_existing_compiler_accepts_template_and_bound_circuit() -> None:
     weights = torch.tensor([[0.2, -0.3, 0.0, 0.5]], dtype=torch.float64)
     data = torch.zeros(4, dtype=torch.float64)

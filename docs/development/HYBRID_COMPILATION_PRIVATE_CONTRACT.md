@@ -269,5 +269,52 @@ A six-step deterministic optimization trajectory decreases monotonically.
 Ordered-comparison equality boundaries are recorded and fail before lowering
 when smooth gradients are required. The result summary exposes
 `statevector_adjoint`, the accepted observable profile, selected wires, and
-local backward semantics. Phase 6 PyTorch graph-compilation work remains
-separately gated.
+local backward semantics. Those results form the input to the separately
+reviewed Phase 6 contract below.
+
+## Phase 6 PyTorch graph-compilation authorization
+
+Phase 6 may wrap one already specialized `CircuitIR` quantum region in a
+private functional PyTorch custom operator. The operator receives every scalar
+parameter tensor and the deterministic `CircuitIR` JSON as explicit inputs.
+The template records the exact parameter order in
+`hybrid_parameter_order`; a process-global program registry, opaque integer
+handle, implicit mutable cache, or duplicated circuit representation is not
+permitted.
+
+Runtime owns the operator because it invokes the existing Runtime statevector
+reverse executor. Compiler remains responsible only for specialization,
+lowering, and deterministic template construction. The operator must register
+a FakeTensor implementation and a first-order Autograd formula. The Autograd
+formula calls a separate functional backward custom operator so AOT Autograd
+can retain the whole supported region in a `fullgraph=True` graph. Backward
+saves the explicit parameter tensors and immutable circuit text, then
+rematerializes the existing statevector-adjoint execution context. This is a
+correctness-first implementation, not a claim that quantum state replay has
+been eliminated.
+
+The supported profile remains analytic local CPU statevector execution, scalar
+`float32` or `float64` parameters, and a sum of unit single-wire Pauli-Z terms.
+All parameters must have one dtype and device and must exactly match the
+template slots. Unsupported devices, shapes, observables, missing slots, or
+extra slots fail closed before simulation. Only the selected quantum region is
+compiled; this phase does not claim general dynamic Python capture, predicate
+derivatives, higher-order gradients, accelerator or distributed execution, or
+finite-shot/noisy gradients.
+
+Acceptance requires `torch.library.opcheck`, numerical `gradcheck`, eager versus
+compiled forward and first-order-gradient parity, and successful
+`torch.compile(..., fullgraph=True)` execution with AOT Autograd. The custom
+operator remains private: it is not exported from the package root and does
+not alter `fq.run`, `fq.plan`, `fq.Module`, backend selection, or the default
+non-hybrid path. Compile and execution timings may be recorded separately, but
+no performance benefit is claimed.
+
+Phase 6 acceptance is complete for this bounded profile. The serialized
+template carries an explicit parameter order, the functional forward and
+backward operators have FakeTensor coverage, `opcheck` and `gradcheck` pass,
+and eager/AOT-compiled forward and first-order gradients agree under
+`fullgraph=True`. Original tensor views still receive gradients. The backward
+path deliberately rematerializes the statevector-adjoint context, and no
+performance, public API, accelerator, distributed, or broader control-flow
+claim is made.

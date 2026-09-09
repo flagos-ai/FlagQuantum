@@ -41,6 +41,13 @@ class LoweredHybridProgram:
         )
         return hashlib.sha256(encoded.encode("ascii")).hexdigest()
 
+    @property
+    def ordered_bindings(self) -> tuple[tuple[str, Any], ...]:
+        """Return bindings in the explicit parameter order carried by the template."""
+
+        names = tuple(self.circuit_template.metadata["hybrid_parameter_order"])
+        return tuple((name, self.bindings[name]) for name in names)
+
     def bind(self) -> CircuitIR:
         """Bind parameter slots while preserving tensor objects and autograd edges."""
 
@@ -129,6 +136,7 @@ def _template(
         observables=observables,
         measurements=measurements,
         dtype=circuit_dtype,
+        metadata={"hybrid_parameter_order": tuple(bindings)},
     )
     return circuit, bindings
 

@@ -190,3 +190,36 @@ def test_phase5_reuses_adjoint_and_preserves_branchwise_tensor_vjp() -> None:
     assert phase5["public_api_change"] is False
     assert phase5["default_path_change"] is False
     assert contract["phase5_completed"] is True
+
+
+def test_phase6_is_functional_explicit_and_fullgraph_verified() -> None:
+    contract = _contract()
+    phase6 = contract["phase6"]
+
+    assert phase6["compiler_handoff_artifact"] == "flagquantum.core.ir.CircuitIR"
+    assert phase6["parameter_order"] == "explicit_hybrid_parameter_order_metadata"
+    assert phase6["operator_schema"] == (
+        "(Tensor[] parameters, str circuit_ir_json) -> Tensor"
+    )
+    assert phase6["operator_semantics"] == "functional"
+    assert phase6["mutates_inputs"] is False
+    assert phase6["static_program_is_explicit_input"] is True
+    assert phase6["hidden_program_registry"] is False
+    assert phase6["fake_tensor_registered"] is True
+    assert phase6["autograd_registered"] is True
+    assert phase6["backward_is_separate_custom_operator"] is True
+    assert phase6["backward_method"] == "statevector_adjoint"
+    assert phase6["compile_scope"] == "specialized_quantum_region"
+    assert phase6["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE6_EVIDENCE.md"
+    )
+    assert phase6["general_dynamic_python_graph_claim"] is False
+    assert phase6["opcheck_required"] is True
+    assert phase6["gradcheck_required"] is True
+    assert phase6["fullgraph_required"] is True
+    assert phase6["higher_order_gradient_claim"] is False
+    assert phase6["execution_scope"] == "local_cpu_single_device_fast_path"
+    assert phase6["performance_claim"] is False
+    assert phase6["public_api_change"] is False
+    assert phase6["default_path_change"] is False
+    assert contract["phase6_completed"] is True
