@@ -812,6 +812,24 @@ Exit gate:
   general codes, gradients, suppression, thresholds, scale, and performance
   remain unsupported.
 
+### Phase 20 — detection-event temporal decoding
+
+Add a bounded repetition-code streaming decoder that distinguishes persistent
+data syndromes from isolated readout excursions using consecutive-round
+detection events. Require two matching non-zero syndrome rounds before issuing
+physical or frame feedback, and reject inconsistent event histories.
+
+Exit gate:
+
+- a persistent syndrome is confirmed and corrected on its second observation;
+- an isolated syndrome excursion and matching return event cause no action;
+- confirmable single-data errors work through physical and frame policies;
+- a terminal-round error remains visible and unconfirmed;
+- a seeded readout-noise profile records fewer spurious actions than immediate
+  lookup without promoting that observation to a suppression claim;
+- maximum-likelihood decoding, arbitrary measurement-error tolerance, general
+  codes, hardware timing, thresholds, scale, and performance remain excluded.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -959,3 +977,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 17 timed errors, history decoding, and offline Pauli frames verified
 - [x] Phase 18 bounded dynamic noise and QEC finite-shot sweeps verified
 - [x] Phase 19 Runtime decoder feedback and Pauli-frame evolution verified
+- [x] Phase 20 detection-event temporal decoding verified

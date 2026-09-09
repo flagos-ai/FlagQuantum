@@ -18,6 +18,7 @@ from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
     RepetitionStreamingLookupDecoder,
+    RepetitionTemporalDecoder,
     StreamingDecoder,
 )
 from .types import (
@@ -36,6 +37,8 @@ _FEEDBACK_MODES = {
     "offline_pauli_frame",
     "runtime_decoder",
     "runtime_pauli_frame",
+    "runtime_temporal_decoder",
+    "runtime_temporal_pauli_frame",
 }
 
 
@@ -207,11 +210,14 @@ def run_repetition_memory_experiment(
     selected_decoder = RepetitionLookupDecoder() if decoder is None else decoder
     if not isinstance(selected_decoder, Decoder):
         raise TypeError("decoder must implement the Decoder protocol")
-    selected_feedback_decoder = (
-        RepetitionStreamingLookupDecoder()
-        if feedback_decoder is None
-        else feedback_decoder
-    )
+    if feedback_decoder is None:
+        selected_feedback_decoder = (
+            RepetitionTemporalDecoder()
+            if feedback_mode.startswith("runtime_temporal_")
+            else RepetitionStreamingLookupDecoder()
+        )
+    else:
+        selected_feedback_decoder = feedback_decoder
     if feedback_mode.startswith("runtime_") and not isinstance(
         selected_feedback_decoder, StreamingDecoder
     ):
@@ -228,11 +234,14 @@ def run_repetition_memory_experiment(
         max_dynamic_measurements=rounds * 2,
     )
     runtime_plan = None
-    if feedback_mode == "runtime_decoder":
+    if feedback_mode in {"runtime_decoder", "runtime_temporal_decoder"}:
         runtime_plan = _feedback_plan(
             rounds, selected_feedback_decoder, action_mode="physical_x"
         )
-    elif feedback_mode == "runtime_pauli_frame":
+    elif feedback_mode in {
+        "runtime_pauli_frame",
+        "runtime_temporal_pauli_frame",
+    }:
         runtime_plan = _feedback_plan(
             rounds, selected_feedback_decoder, action_mode="frame_x"
         )
@@ -274,7 +283,10 @@ def run_repetition_memory_experiment(
         if not isinstance(decode_result, DecodeResult):
             raise TypeError("decoder must return a DecodeResult")
         final_data = tuple(int(value) for value in sample[:3])
-        if feedback_mode == "runtime_pauli_frame":
+        if feedback_mode in {
+            "runtime_pauli_frame",
+            "runtime_temporal_pauli_frame",
+        }:
             runtime_frame = PauliFrame.from_corrections(executed_feedback)
             raw_final_data = runtime_frame.apply(final_data)
             decoded_data = final_data

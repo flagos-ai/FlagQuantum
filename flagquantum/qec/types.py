@@ -226,6 +226,8 @@ class RepetitionMemoryResult:
             "offline_pauli_frame",
             "runtime_decoder",
             "runtime_pauli_frame",
+            "runtime_temporal_decoder",
+            "runtime_temporal_pauli_frame",
         }:
             raise ValueError("unsupported repetition feedback mode")
         if any(
@@ -244,7 +246,11 @@ class RepetitionMemoryResult:
             raise ValueError("execution semantics must be recorded")
         if self.bit_flip_events < 0 or self.readout_errors < 0:
             raise ValueError("noise event counts must be non-negative")
-        if self.feedback_mode in {"compiled_lookup", "runtime_decoder"} and any(
+        if self.feedback_mode in {
+            "compiled_lookup",
+            "runtime_decoder",
+            "runtime_temporal_decoder",
+        } and any(
             shot.decoded_data_bits != shot.raw_final_data_bits
             for shot in self.shot_records
         ):
@@ -256,7 +262,10 @@ class RepetitionMemoryResult:
             for shot in self.shot_records
         ):
             raise ValueError("offline mode must apply only the decoder readout frame")
-        if self.feedback_mode == "runtime_pauli_frame" and any(
+        if self.feedback_mode in {
+            "runtime_pauli_frame",
+            "runtime_temporal_pauli_frame",
+        } and any(
             shot.decoded_data_bits
             != PauliFrame.from_corrections(shot.executed_feedback).apply(
                 shot.raw_final_data_bits

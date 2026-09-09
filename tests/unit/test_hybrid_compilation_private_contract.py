@@ -722,3 +722,46 @@ def test_phase19_runs_replaceable_decoders_inside_trajectory_execution() -> None
         "docs/development/HYBRID_COMPILATION_PHASE19_EVIDENCE.md"
     )
     assert contract["phase19_completed"] is True
+
+
+def test_phase20_adds_bounded_detection_event_temporal_decoding() -> None:
+    contract = _contract()
+    phase20 = contract["phase20"]
+
+    assert phase20["decoder"] == "flagquantum.qec.RepetitionTemporalDecoder"
+    assert phase20["input"] == (
+        "complete_available_syndrome_and_detection_event_history"
+    )
+    assert phase20["confirmation_rounds"] == 2
+    assert phase20["data_error_rule"] == (
+        "same_nonzero_syndrome_in_two_consecutive_rounds_with_no_second_boundary_event"
+    )
+    assert phase20["isolated_readout_rule"] == (
+        "paired_temporal_detection_events_returning_to_prior_syndrome_produce_no_correction"
+    )
+    assert phase20["feedback_modes"] == [
+        "runtime_temporal_decoder",
+        "runtime_temporal_pauli_frame",
+    ]
+    assert phase20["confirmed_error_window"] == "rounds_zero_through_n_minus_two"
+    assert phase20["terminal_round_error"] == "visible_but_unconfirmed"
+    assert phase20["malformed_detection_history"] == "unsupported_fail_closed"
+    assert phase20["seeded_readout_noise_observation"] == (
+        "fewer_spurious_feedback_actions_than_immediate_lookup_in_checked_profile"
+    )
+    assert phase20["maximum_likelihood_decoder"] is False
+    assert phase20["measurement_error_tolerance_claim"] == (
+        "bounded_isolated_readout_oracle_only"
+    )
+    assert phase20["logical_error_suppression_claim"] is False
+    assert phase20["threshold_claim"] is False
+    assert phase20["general_code_support"] is False
+    assert phase20["hard_realtime_claim"] is False
+    assert phase20["provider_execution"] == "unsupported_fail_closed"
+    assert phase20["public_root_export"] is False
+    assert phase20["default_path_change"] is False
+    assert phase20["performance_claim"] is False
+    assert phase20["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE20_EVIDENCE.md"
+    )
+    assert contract["phase20_completed"] is True

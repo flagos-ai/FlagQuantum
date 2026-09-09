@@ -710,3 +710,27 @@ local synchronous reference loop, not a stable plugin type or hard-real-time
 controller contract. General codes, provider execution, latency, gradients,
 logical suppression, thresholds, scale, performance, and fault tolerance
 remain outside the authorized claim.
+
+## Phase 20 bounded temporal-decoder authorization
+
+Phase 20 may add a repetition-code `RepetitionTemporalDecoder` that validates
+and consumes all syndrome and detection-event records available at each Runtime
+decision. The accepted reference rule requires the same non-zero two-check
+syndrome in two consecutive rounds, with no new detection event at the second
+boundary, before issuing a correction. A one-round readout excursion followed
+by the matching return detection event produces no correction.
+
+Both physical-X and Pauli-frame-X Runtime policies may use this decoder. Data
+errors introduced no later than the penultimate round have a two-round
+confirmation window. An error first observed in the terminal round remains
+visible and explicitly unconfirmed. Inconsistent detection-event histories
+fail before a correction is returned.
+
+Acceptance requires exact persistent-data and isolated-readout oracles,
+physical and frame correction of confirmable single-data errors, explicit
+terminal-round non-correction, and a seeded finite-shot observation that the
+temporal rule emits fewer spurious actions than immediate lookup under the
+checked readout-noise profile. This does not authorize a maximum-likelihood
+decoder, arbitrary measurement-error tolerance, logical suppression, a
+threshold, general codes, provider/hard-real-time execution, gradients,
+scalability, performance, or fault tolerance.

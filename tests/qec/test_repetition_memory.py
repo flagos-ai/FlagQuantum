@@ -14,6 +14,7 @@ from flagquantum.qec import (
     RepetitionMemoryShot,
     RepetitionNoiseProfile,
     RepetitionStreamingLookupDecoder,
+    RepetitionTemporalDecoder,
     SyndromeRound,
     run_repetition_memory_experiment,
     run_repetition_memory_noise_sweep,
@@ -144,6 +145,70 @@ def test_streaming_lookup_decoder_consumes_available_history() -> None:
     assert decoder.decode_round(history) == Correction(1, 2)
 
 
+def test_temporal_decoder_confirms_persistent_data_syndrome() -> None:
+    decoder = RepetitionTemporalDecoder()
+    onset = SyndromeRound(0, (1, 0), (DetectionEvent(0, 0),))
+    confirmed = SyndromeRound(1, (1, 0))
+
+    assert decoder.decode_round((onset,)) == Correction(0, None)
+    assert decoder.decode_round((onset, confirmed)) == Correction(1, 0)
+
+
+def test_temporal_decoder_rejects_isolated_readout_syndrome() -> None:
+    decoder = RepetitionTemporalDecoder()
+    false_onset = SyndromeRound(0, (0, 1), (DetectionEvent(0, 1),))
+    cleared = SyndromeRound(1, (0, 0), (DetectionEvent(1, 1),))
+
+    assert decoder.decode_round((false_onset, cleared)) == Correction(1, None)
+
+
+@pytest.mark.parametrize(
+    "feedback_mode",
+    ("runtime_temporal_decoder", "runtime_temporal_pauli_frame"),
+)
+@pytest.mark.parametrize("error_round", (0, 1))
+@pytest.mark.parametrize("wire", (0, 1, 2))
+def test_temporal_runtime_feedback_corrects_confirmable_data_errors(
+    feedback_mode: str, error_round: int, wire: int
+) -> None:
+    result = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(error_round, wire),)),
+        rounds=3,
+        shots=2,
+        seed=107,
+        strategy="trajectory",
+        feedback_mode=feedback_mode,
+    )
+
+    for shot in result.shot_records:
+        assert shot.executed_feedback[error_round].wire is None
+        assert shot.executed_feedback[error_round + 1].wire == wire
+        assert shot.decoded_data_bits == (0, 0, 0)
+        assert not shot.logical_failure
+
+
+@pytest.mark.parametrize(
+    "feedback_mode",
+    ("runtime_temporal_decoder", "runtime_temporal_pauli_frame"),
+)
+def test_temporal_runtime_leaves_terminal_round_error_unconfirmed(
+    feedback_mode: str,
+) -> None:
+    result = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(2, 0),)),
+        rounds=3,
+        shots=1,
+        seed=109,
+        strategy="trajectory",
+        feedback_mode=feedback_mode,
+    )
+
+    shot = result.shot_records[0]
+    assert all(not correction.applied for correction in shot.executed_feedback)
+    assert shot.raw_final_data_bits == (1, 0, 0)
+    assert shot.syndrome_rounds[-1].bits == (1, 0)
+
+
 @pytest.mark.parametrize("wire", (0, 1, 2))
 def test_compiled_runtime_and_frame_modes_agree_on_logical_outcome(wire: int) -> None:
     schedule = ErrorSchedule((ErrorEvent(1, wire),))
@@ -239,6 +304,10 @@ def test_repetition_memory_validation_fails_closed() -> None:
         RepetitionLookupDecoder().decode(())
     with pytest.raises(ValueError, match="requires syndrome history"):
         RepetitionStreamingLookupDecoder().decode_round(())
+    with pytest.raises(ValueError, match="requires syndrome history"):
+        RepetitionTemporalDecoder().decode_round(())
+    with pytest.raises(ValueError, match="inconsistent with syndrome history"):
+        RepetitionTemporalDecoder().decode_round((SyndromeRound(0, (1, 0)),))
     with pytest.raises(ValueError, match="check index exceeds syndrome width"):
         SyndromeRound(0, (0, 0), (DetectionEvent(0, 2),))
     with pytest.raises(ValueError, match="feedback rounds must align"):
@@ -317,6 +386,42 @@ def test_syndrome_readout_noise_changes_observed_feedback() -> None:
 
     assert all(shot.syndrome_rounds[0].bits == (1, 1) for shot in result.shot_records)
     assert result.readout_errors == 16
+
+
+def test_temporal_decoder_reduces_spurious_feedback_in_seeded_readout_noise() -> None:
+    model = RepetitionNoiseProfile(
+        syndrome_readout_error_probability=0.1
+    ).to_noise_model()
+    immediate = run_repetition_memory_experiment(
+        rounds=4,
+        shots=128,
+        seed=113,
+        strategy="trajectory",
+        feedback_mode="runtime_decoder",
+        noise_model=model,
+    )
+    temporal = run_repetition_memory_experiment(
+        rounds=4,
+        shots=128,
+        seed=113,
+        strategy="trajectory",
+        feedback_mode="runtime_temporal_decoder",
+        noise_model=model,
+    )
+
+    immediate_actions = sum(
+        correction.applied
+        for shot in immediate.shot_records
+        for correction in shot.executed_feedback
+    )
+    temporal_actions = sum(
+        correction.applied
+        for shot in temporal.shot_records
+        for correction in shot.executed_feedback
+    )
+    assert immediate.readout_errors > 0
+    assert temporal.readout_errors > 0
+    assert temporal_actions < immediate_actions
 
 
 def test_noise_sweep_records_finite_shot_points_without_suppression_claim() -> None:

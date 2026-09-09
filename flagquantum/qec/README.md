@@ -24,6 +24,13 @@ observed bits, actions, and frame evolution. This is not a hard-real-time or
 provider feedback contract. The namespace is not exported from the stable
 `flagquantum` root API.
 
+`RepetitionTemporalDecoder` adds a bounded measurement-error-aware policy. It
+requires the same non-zero syndrome in two consecutive rounds before acting.
+An isolated readout excursion therefore clears with a paired detection event
+and produces no correction. The extra evidence round means errors first seen
+in the final round remain visible but unconfirmed. The corresponding modes are
+`runtime_temporal_decoder` and `runtime_temporal_pauli_frame`.
+
 `RepetitionNoiseProfile` maps code-specific circuit locations onto the existing
 backend-neutral `NoiseModel`: a data bit-flip channel is sampled after matching
 parity-check CNOTs, syndrome readout confusion applies to ancilla measurements,
@@ -48,6 +55,6 @@ or logical-suppression evidence.
 Runtime decoder feedback is trajectory-only; explicit batched feedback fails
 closed. The stochastic profile is limited to independent bit flips and
 independent readout confusion. No general Kraus/correlated/timing-noise,
-measurement-error-tolerant temporal decoder, logical-error-suppression,
-threshold, fault-tolerance, realtime-hardware, or performance claim follows
-from the workflow.
+maximum-likelihood or general measurement-error-tolerant decoder,
+logical-error-suppression, threshold, fault-tolerance, realtime-hardware, or
+performance claim follows from the workflow.

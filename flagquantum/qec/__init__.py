@@ -4,6 +4,7 @@ from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
     RepetitionStreamingLookupDecoder,
+    RepetitionTemporalDecoder,
     StreamingDecoder,
 )
 from .noise import RepetitionNoiseProfile, run_repetition_memory_noise_sweep
@@ -33,6 +34,7 @@ __all__ = (
     "RepetitionNoiseProfile",
     "RepetitionLookupDecoder",
     "RepetitionStreamingLookupDecoder",
+    "RepetitionTemporalDecoder",
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
     "SyndromeRound",

@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase19_runtime_decoder_feedback_verified",
+  "status": "phase20_temporal_repetition_decoder_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -652,6 +652,33 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE19_EVIDENCE.md"
   },
   "phase19_completed": true,
+  "phase20": {
+    "decoder": "flagquantum.qec.RepetitionTemporalDecoder",
+    "input": "complete_available_syndrome_and_detection_event_history",
+    "confirmation_rounds": 2,
+    "data_error_rule": "same_nonzero_syndrome_in_two_consecutive_rounds_with_no_second_boundary_event",
+    "isolated_readout_rule": "paired_temporal_detection_events_returning_to_prior_syndrome_produce_no_correction",
+    "feedback_modes": [
+      "runtime_temporal_decoder",
+      "runtime_temporal_pauli_frame"
+    ],
+    "confirmed_error_window": "rounds_zero_through_n_minus_two",
+    "terminal_round_error": "visible_but_unconfirmed",
+    "malformed_detection_history": "unsupported_fail_closed",
+    "seeded_readout_noise_observation": "fewer_spurious_feedback_actions_than_immediate_lookup_in_checked_profile",
+    "maximum_likelihood_decoder": false,
+    "measurement_error_tolerance_claim": "bounded_isolated_readout_oracle_only",
+    "logical_error_suppression_claim": false,
+    "threshold_claim": false,
+    "general_code_support": false,
+    "hard_realtime_claim": false,
+    "provider_execution": "unsupported_fail_closed",
+    "public_root_export": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE20_EVIDENCE.md"
+  },
+  "phase20_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,
