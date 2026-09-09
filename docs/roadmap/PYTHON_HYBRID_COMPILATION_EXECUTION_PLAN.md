@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phase 1 semantic migration complete; Phase 2 not started**
+Status: **Phases 1-2 complete; Phase 3 not started**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -630,3 +630,5 @@ Stop implementation and return to Integration review if:
 - [x] Migration mapped onto current vNext authorities
 - [x] Integration team-scope preflight passed for the Phase 1 slice
 - [x] Phase 1 private semantic slice implemented and verified
+- [x] Phase 2 private capture contract authorized
+- [x] Phase 2 restricted Python capture implemented and verified

@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase1_semantic_core_verified",
+  "status": "phase2_restricted_python_capture_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -90,6 +90,43 @@
   "implementation_authorized_when_all_entry_gates_true": true,
   "implementation_started": true,
   "phase1_completed": true,
+  "phase2": {
+    "private_entry_points": [
+      "flagquantum.compiler._hybrid.capture_source",
+      "flagquantum.compiler._hybrid.capture_function"
+    ],
+    "supported_statements": [
+      "local_name_assignment",
+      "if_elif_else",
+      "for_range",
+      "for_tensor_axis",
+      "for_enumerate_tensor_axis",
+      "expression_quantum_call",
+      "single_scalar_expectation_return"
+    ],
+    "supported_expressions": [
+      "name",
+      "scalar_constant",
+      "tensor_shape_dimension",
+      "tensor_extract",
+      "addition",
+      "remainder",
+      "comparison",
+      "jax_numpy_mod_call"
+    ],
+    "supported_quantum_calls": [
+      "angle_embedding",
+      "rx",
+      "ry",
+      "cx_or_cnot",
+      "expval_pauli_sum"
+    ],
+    "capture_executes_user_code": false,
+    "runtime_tensor_predicates_evaluated_during_capture": false,
+    "public_api_change": false,
+    "default_path_change": false
+  },
+  "phase2_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

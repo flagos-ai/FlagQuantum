@@ -87,3 +87,23 @@ def test_phase1_migrates_semantics_into_current_vnext_authorities() -> None:
     }
     assert contract["implementation_started"] is True
     assert contract["phase1_completed"] is True
+
+
+def test_phase2_capture_is_private_structural_and_non_executing() -> None:
+    phase2 = _contract()["phase2"]
+
+    assert phase2["private_entry_points"] == [
+        "flagquantum.compiler._hybrid.capture_source",
+        "flagquantum.compiler._hybrid.capture_function",
+    ]
+    assert {"if_elif_else", "for_range", "for_enumerate_tensor_axis"} <= set(
+        phase2["supported_statements"]
+    )
+    assert {"tensor_extract", "comparison", "jax_numpy_mod_call"} <= set(
+        phase2["supported_expressions"]
+    )
+    assert phase2["capture_executes_user_code"] is False
+    assert phase2["runtime_tensor_predicates_evaluated_during_capture"] is False
+    assert phase2["public_api_change"] is False
+    assert phase2["default_path_change"] is False
+    assert _contract()["phase2_completed"] is True

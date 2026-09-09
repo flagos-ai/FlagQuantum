@@ -29,5 +29,11 @@ models, or runtime contracts here.
    ```
 
 The first golden scenario is nested tensor-indexed loops with data-dependent
-RX/RY selection, a CX loop, and a scalar expectation. Phase 1 represents and
-verifies that structure; it does not execute it.
+RX/RY selection, a CX loop, and a scalar expectation. `capture.py` parses the
+restricted Python source into that representation without invoking the function
+or reading tensor values. It remains compilation only and does not execute the
+program.
+
+Straight-line local temporaries are supported. A branch or loop may not rewrite
+an outer classical binding yet: that requires explicit region-carried values
+and therefore fails closed instead of silently using a stale value.

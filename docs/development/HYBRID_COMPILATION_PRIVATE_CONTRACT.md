@@ -1,8 +1,8 @@
 # Private hybrid compilation contract
 
-Status: Phase 1 semantic migration implemented and verified under the repository owner's
-2026-09-09 direction to record and execute the Python-first hybrid compilation
-plan.
+Status: Phase 1 semantic migration and Phase 2 restricted Python capture
+implemented and verified under the repository owner's 2026-09-09 direction to
+record and execute the Python-first hybrid compilation plan.
 
 ## Purpose
 
@@ -113,3 +113,33 @@ tree remains reference evidence only.
 
 Phase 1 is complete and authorizes Phase 2 capture design review; it does not
 automatically authorize capture, execution, gradients, or public claims.
+
+## Phase 2 restricted capture authorization
+
+Phase 2 may add private `capture_source` and `capture_function` entry points
+under `flagquantum.compiler._hybrid`. Capture parses Python source with `ast`;
+it must not execute the function or evaluate runtime tensor predicates.
+
+The accepted subset is limited to local-name assignment, structured
+`if`/`elif`/`else`, `for` over `range`, iteration over a statically ranked tensor
+axis, `enumerate` over such an axis, tensor dimension/extraction, scalar
+addition/remainder/comparison, and the first-profile quantum operations. A
+single scalar expectation return is required.
+
+Local assignments are straight-line temporaries in their current region.
+Writing an outer classical binding inside a branch or loop is rejected until a
+later contract adds explicit classical region-carried results; such writes must
+never be approximated by retaining the pre-region value.
+
+Mutation, `while`, `break`, `continue`, Python `yield`, exceptions, context
+managers, comprehensions, generators, imports, global/nonlocal state, arbitrary
+calls, host scalar extraction, detach, NumPy conversion, recursion, and
+unsupported quantum operations fail closed with source-located diagnostics.
+
+Phase 2 does not authorize specialization, `CircuitIR` lowering, execution,
+autodiff, framework graph capture, or default-path/public integration.
+
+Phase 2 acceptance is complete. The captured golden source preserves nested
+tensor-axis loops and data-dependent quantum gate selection, and the prohibited
+construct suite fails with source-located diagnostics. Phase 3 specialization
+and `CircuitIR` lowering remain separately gated.

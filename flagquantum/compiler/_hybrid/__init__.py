@@ -3,6 +3,12 @@
 This package is intentionally absent from :mod:`flagquantum.compiler` exports.
 """
 
+from .capture import (
+    CaptureDiagnostic,
+    HybridCaptureError,
+    capture_function,
+    capture_source,
+)
 from .model import (
     BOOL,
     INDEX,
@@ -25,7 +31,9 @@ __all__ = (
     "INDEX",
     "QUANTUM_EFFECT",
     "Block",
+    "CaptureDiagnostic",
     "HybridProgram",
+    "HybridCaptureError",
     "HybridVerificationError",
     "IRType",
     "Operation",
@@ -33,6 +41,8 @@ __all__ = (
     "SourceLocation",
     "Value",
     "ValueId",
+    "capture_function",
+    "capture_source",
     "scalar_type",
     "tensor_type",
     "verify_program",
