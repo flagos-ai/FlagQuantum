@@ -42,3 +42,14 @@ These statements are support boundaries, not a development backlog. Promotion
 requires all evidence for the target level to pass
 `python tools/check_capability_maturity.py`.
 <!-- END GENERATED KNOWN_LIMITATIONS -->
+
+## Unpromoted remote compute adapter
+
+The experimental [Jiuding adapter](../guides/JIUDING.md) has a real CPU Bell-state
+task and shared-result check recorded under
+[development evidence](../development/evidence/jiuding_bell_cpu_20260909.json).
+It requires an existing workspace, compatible image and shared source/result
+storage. Automatic uploading, image builds, GPU/multinode jobs, log streaming,
+and recovery that automatically relaunches partially submitted work are absent.
+This implementation evidence does not promote an entry in the generated
+capability catalog or establish a released API, training or scalability claim.

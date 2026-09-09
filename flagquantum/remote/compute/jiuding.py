@@ -1,0 +1,473 @@
+"""Jiuding workspace task adapter. Experimental; no Stable Core API changes.
+
+Scripts, receipts and results must be on storage shared with the submitted job.
+The adapter manages external tasks; it does not select numerical backends.
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import json
+import os
+import shlex
+import socket
+import sys
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+class JiudingClient:
+    """Use injected credentials and discover the current workspace's queue.
+
+    ``workspace`` is optional inside a platform pod; outside it, specify a
+    unique workspace name. Credentials come from JIUDING_AK/JIUDING_SK or
+    /etc/accesskey/user-{ak,sk}. No credentials are stored in receipts.
+    """
+
+    def __init__(
+        self,
+        *,
+        workspace: str | None = None,
+        endpoint: str = "https://platform-multi.baai.ac.cn",
+    ):
+        url = urlsplit(endpoint)
+        if (
+            url.scheme != "https"
+            or not url.netloc
+            or url.username
+            or url.password
+            or url.path not in ("", "/")
+            or url.query
+            or url.fragment
+        ):
+            raise ValueError("endpoint must be an HTTPS origin")
+        self.endpoint = endpoint.rstrip("/")
+        self.workspace_name = workspace
+        self._token = ""
+        self._expires = 0.0
+        self._workspace: dict | None = None
+
+    def _request(self, path: str, body: dict | None, headers: dict) -> dict:
+        request = Request(
+            self.endpoint + path,
+            method="POST",
+            data=None if body is None else json.dumps(body).encode(),
+            headers={"Content-Type": "application/json", **headers},
+        )
+        try:
+            with build_opener(_NoRedirect).open(request, timeout=20) as response:
+                result = json.load(response)
+        except HTTPError as exc:
+            message = ""
+            try:
+                error = json.loads(exc.read(8192))
+                if isinstance(error, dict):
+                    message = str(error.get("message", ""))[:1000]
+                    for value in headers.values():
+                        if value:
+                            message = message.replace(value, "[REDACTED]")
+            except (ValueError, OSError):
+                pass
+            raise RuntimeError(f"Jiuding {path}: HTTP {exc.code} {message}") from None
+        except (URLError, OSError, ValueError):
+            raise RuntimeError(
+                f"Jiuding {path}: transport/JSON error; request not retried"
+            ) from None
+        if not isinstance(result, dict):
+            raise RuntimeError(f"Jiuding {path}: expected JSON object")
+        return result
+
+    def _auth(self) -> dict:
+        if time.monotonic() >= self._expires:
+            credentials = []
+            for suffix in ("AK", "SK"):
+                value = os.environ.get("JIUDING_" + suffix)
+                if not value:
+                    source = Path("/etc/accesskey/user-" + suffix.lower())
+                    try:
+                        value = base64.b64decode(
+                            b"".join(source.read_bytes().split()), validate=True
+                        ).decode()
+                    except (OSError, ValueError):
+                        raise RuntimeError(
+                            f"Set JIUDING_{suffix} or use a Jiuding workspace with injected credentials"
+                        ) from None
+                credentials.append(value.strip())
+            ak, sk = credentials
+            if not ak or not sk:
+                raise RuntimeError("Jiuding credentials must not be empty")
+            path = "/api/v1/users/token/exchange"
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            digest = hashlib.sha256(f"POST\n{path}\n{stamp}".encode()).hexdigest()
+            signature = hmac.new(
+                sk.encode(),
+                f"AIRS-HMAC-SHA256\n{stamp}\n{digest}".encode(),
+                hashlib.sha256,
+            ).hexdigest()
+            result = self._request(
+                path,
+                None,
+                {
+                    "Authorization": f"AIRS-HMAC-SHA256 Credential={ak}, Signature={signature}",
+                    "X-Airs-Date": stamp,
+                },
+            )
+            token = result.get("token")
+            if not isinstance(token, str) or not token:
+                raise RuntimeError("Jiuding authentication returned no token")
+            lifetime = int(result.get("expiresIn", 0))
+            if lifetime <= 0:
+                raise RuntimeError("Jiuding authentication returned invalid expiry")
+            self._token = token
+            self._expires = time.monotonic() + max(1, lifetime - min(60, lifetime / 2))
+        return {"AIRS-Token": self._token}
+
+    def _pages(self, path: str, body: dict, field: str, headers: dict):
+        for page in range(1, 101):
+            result = self._request(
+                path, {**body, "paging": {"page": page, "pageSize": 100}}, headers
+            )
+            rows = result.get(field)
+            if not isinstance(rows, list):
+                raise RuntimeError(f"Jiuding response missing {field}")
+            yield from rows
+            if len(rows) < 100:
+                return
+        raise RuntimeError(
+            "Jiuding pagination limit reached; refusing incomplete discovery"
+        )
+
+    def workspace(self) -> dict:
+        """Return non-secret context for one unambiguous visible workspace."""
+        if self._workspace is None:
+            matches = [
+                w
+                for w in self._pages(
+                    "/api/v1/workspaces/select",
+                    {"queryStatus": [7, 1]},
+                    "items",
+                    self._auth(),
+                )
+                if (
+                    w.get("name") == self.workspace_name
+                    if self.workspace_name
+                    else w.get("podName") == socket.gethostname()
+                )
+            ]
+            if len(matches) != 1:
+                raise RuntimeError("Specify a unique Jiuding workspace name")
+            w = matches[0]
+            fields = (
+                "id",
+                "name",
+                "projId",
+                "projsetId",
+                "queueId",
+                "queueName",
+                "clusterId",
+                "zoneId",
+                "queueStatus",
+                "resourceRegion",
+                "creatorId",
+                "creatorName",
+            )
+            self._workspace = {k: w[k] for k in fields}
+            self._workspace["storageInfo"] = w.get("advanceConfig", {}).get(
+                "storageInfo", []
+            )
+        return json.loads(json.dumps(self._workspace))
+
+    def _headers(self) -> dict:
+        w = self.workspace()
+        return {
+            **self._auth(),
+            "Airs-Proj-id": w["projId"],
+            "Airs-Projset-id": w["projsetId"],
+            "AIRS-Cluster-ID": w["clusterId"],
+            "AIRS-Zone-ID": w["zoneId"],
+        }
+
+    def _jobs(self):
+        w = self.workspace()
+        return self._pages(
+            "/api/v1/job/select",
+            {"queueId": w["queueId"], "experimentType": 1},
+            "jobInfos",
+            self._headers(),
+        )
+
+    def images(self) -> list[str]:
+        """Images observed in this queue's existing jobs, not an image catalog."""
+        w = self.workspace()
+        return sorted(
+            {
+                j["basicImage"]
+                for j in self._jobs()
+                if j.get("queueId") == w["queueId"] and j.get("basicImage")
+            }
+        )
+
+    @staticmethod
+    def _save(path: Path, receipt: dict) -> None:
+        temporary = path.with_name(path.name + ".tmp")
+        temporary.write_text(json.dumps(receipt, indent=2) + "\n")
+        temporary.replace(path)
+
+    def submit(
+        self,
+        script: str | Path,
+        *,
+        image: str,
+        receipt: str | Path,
+        python: str = sys.executable,
+        pythonpath: str | Path | None = None,
+        cpus: int = 2,
+        memory_gib: int = 2,
+    ) -> dict:
+        """Run a shared Python file's main() and persist its JSON return value.
+
+        One CPU instance, no GPUs. Receipt path must be new and on shared
+        storage. Reusing it is rejected, including after an ambiguous timeout.
+        """
+        if (
+            type(cpus) is not int
+            or cpus < 1
+            or type(memory_gib) is not int
+            or memory_gib < 2
+        ):
+            raise ValueError("cpus must be positive and memory_gib >= 2")
+        script, receipt = Path(script).resolve(), Path(receipt).resolve()
+        if not script.is_file() or not receipt.parent.is_dir():
+            raise ValueError(
+                "script and receipt directory must exist on shared storage"
+            )
+        w = self.workspace()
+        if w["queueStatus"] != "QUEUE_STATUS_ACTIVE":
+            raise RuntimeError("Workspace queue is not active")
+        examples = [
+            j
+            for j in self._jobs()
+            if j.get("queueId") == w["queueId"] and j.get("basicImage") == image
+        ]
+        if not examples:
+            raise ValueError("Choose an image returned by client.images()")
+        run_id = uuid.uuid4().hex
+        result_path = receipt.parent / (run_id + ".result.json")
+        command = shlex.join(
+            [
+                python,
+                "-m",
+                "flagquantum.remote.compute._worker",
+                str(script),
+                str(result_path),
+                run_id,
+            ]
+        )
+        if pythonpath is not None:
+            root = Path(pythonpath).resolve()
+            if not root.is_dir():
+                raise ValueError("pythonpath must be a shared source directory")
+            command = "env " + shlex.quote("PYTHONPATH=" + str(root)) + " " + command
+        model = (
+            examples[0]
+            .get("roleInfos", [{}])[0]
+            .get("resourceRequestDetail", {})
+            .get("acceleratorModel", "")
+        )
+        resource = {
+            "queueId": w["queueId"],
+            "priority": "high",
+            "basicImage": image,
+            "imageRegion": examples[0]["imageRegion"],
+            "clusterId": w["clusterId"],
+            "zoneId": w["zoneId"],
+            "podRestartPolicy": "Never",
+            "restartScope": "FailedInstanceOnly",
+            "roleInfoList": [
+                {
+                    "name": "Master",
+                    "replicas": 1,
+                    "resourceRegion": w["resourceRegion"],
+                    "resourceRequestDetail": {
+                        "acceleratorModel": model,
+                        "acceleratorCount": 0,
+                        "cpuCores": cpus,
+                        "memGib": memory_gib,
+                        "sharedMemGib": 1,
+                        "rdmaSharedCount": 0,
+                    },
+                }
+            ],
+        }
+        body = {
+            "projId": w["projId"],
+            "projsetId": w["projsetId"],
+            "name": "flagquantum-" + run_id[:12],
+            "experimentType": "1",
+            "trainFrame": "PyTorch",
+            "creatorId": w["creatorId"],
+            "creator": w["creatorName"],
+            "storageInfo": w["storageInfo"],
+            "heteroType": 1,
+            "advanceConfigInfos": [
+                {
+                    "configName": "config1",
+                    "codeConfig": "0",
+                    "command": command,
+                    "hyperParameter": {},
+                    "slotsPerWorker": 0,
+                    "resourceConfigList": [resource],
+                }
+            ],
+        }
+        body.update(
+            description="",
+            timeType=60000,
+            duration=0,
+            duration1=0,
+            codeConfig="0",
+            createdTime="",
+            delivery=False,
+            mirrorType="",
+            nativeCluster="",
+            restartPolicy="",
+            experimentId="",
+            nameSpace="",
+            profilerInfo={"enabled": False, "level": "typical"},
+            modelStorageInfo={},
+            flag=False,
+        )
+        record = {
+            "run_id": run_id,
+            "experimentName": body["name"],
+            "endpoint": self.endpoint,
+            "queueId": w["queueId"],
+            "workspace": w["name"],
+            "receipt": str(receipt),
+            "result_path": str(result_path),
+            "submission": "unknown",
+        }
+        with receipt.open("x") as file:
+            json.dump(record, file)
+        created = self._request("/api/v1/experiment", body, self._headers())
+        if not created.get("experimentId"):
+            raise RuntimeError(
+                "Creation outcome uncertain; reconcile receipt before retrying"
+            )
+        record.update(experimentId=created["experimentId"], submission="created")
+        self._save(receipt, record)
+        details = self._request(
+            "/api/v1/experiment/select",
+            {
+                "experimentId": record["experimentId"],
+                "experimentType": 1,
+                "userId": "-1",
+            },
+            self._headers(),
+        )
+        matches = [
+            e
+            for e in details.get("experimentSummaryInfos", [])
+            if e.get("experimentId") == record["experimentId"]
+        ]
+        if len(matches) != 1:
+            raise RuntimeError("Created experiment could not be uniquely resolved")
+        detail = matches[0]
+        configs = detail.get("advanceConfigInfos", [])
+        if len(configs) != 1 or not configs[0].get("confId"):
+            raise RuntimeError("Expected one executable experiment configuration")
+        config = configs[0]
+        # Request shape verified against the platform's bundled airsctl using a
+        # loopback fake gateway, then exercised directly on the real platform.
+        launch = {
+            "advanceConfigInfos": [config],
+            "confId": config["confId"],
+            "confName": config["configName"],
+            "creatorId": str(detail["creatorId"]),
+            "experimentOwnerId": str(detail["creatorId"]),
+            "experimentId": record["experimentId"],
+            "experimentType": 1,
+            "jobOrigin": "JOB_ORIGIN_CLI",
+            "name": record["experimentName"],
+            "nameSpace": "airs",
+            "nativeCluster": detail["nativeCluster"],
+            "projId": w["projId"],
+            "projsetId": w["projsetId"],
+            "restartPolicy": "Never",
+            "trainFrame": "PyTorch",
+            "storageInfo": detail.get("storageInfo", []),
+            "modelStorageInfo": {},
+        }
+        record["submission"] = "launch_unknown"
+        self._save(receipt, record)
+        started = self._request("/api/v1/job", launch, self._headers())
+        if not started.get("jobId"):
+            raise RuntimeError(
+                "Launch returned no Job ID; reconcile saved experiment before retrying"
+            )
+        record.update(submission="submitted", jobId=started["jobId"])
+        self._save(receipt, record)
+        return record
+
+    def status(self, receipt: dict) -> list[dict]:
+        """Query this experiment only; an empty list is not success."""
+        w = self.workspace()
+        if (
+            receipt.get("endpoint") != self.endpoint
+            or receipt.get("queueId") != w["queueId"]
+        ):
+            raise ValueError("Receipt belongs to a different endpoint or queue")
+        return [
+            {k: j.get(k) for k in ("id", "status", "createdTime", "endTime")}
+            for j in self._jobs()
+            if j.get("experimentId") == receipt["experimentId"]
+            and j.get("queueId") == w["queueId"]
+        ]
+
+    def result(self, receipt: dict, *, timeout: float = 120, poll_interval: float = 3):
+        """Wait for platform success and return the matching shared JSON result.
+
+        Timeout leaves the job running; use cancel() explicitly if appropriate.
+        """
+        if timeout < 0 or poll_interval <= 0:
+            raise ValueError("timeout must be nonnegative and poll_interval positive")
+        deadline = time.monotonic() + timeout
+        while True:
+            jobs = self.status(receipt)
+            if jobs and all(j["status"] == "Succeed" for j in jobs):
+                result = json.loads(Path(receipt["result_path"]).read_text())
+                if result.get("run_id") != receipt["run_id"]:
+                    raise RuntimeError("Result does not belong to this submission")
+                return result["value"]
+            if any(
+                j["status"]
+                not in ("Pending", "Scheduling", "Starting", "Running", "Succeed")
+                for j in jobs
+            ):
+                raise RuntimeError(f"Jiuding job did not succeed: {jobs}")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(
+                    "Job not complete; receipt retained, no resubmission or cancellation"
+                )
+            time.sleep(min(poll_interval, remaining))
+
+    def cancel(self, receipt: dict) -> None:
+        """Stop active jobs for this receipt; never archive/delete experiments."""
+        for job in self.status(receipt):
+            if job["status"] in ("Pending", "Scheduling", "Starting", "Running"):
+                self._request(
+                    "/api/v1/job/cancel", {"jobIds": [job["id"]]}, self._headers()
+                )

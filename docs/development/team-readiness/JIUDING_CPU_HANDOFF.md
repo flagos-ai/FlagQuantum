@@ -1,0 +1,89 @@
+# Jiuding CPU adapter handoff — 2026-09-09
+
+## Identity and delivery state
+
+- Team: remote.
+- Worktree: `FlagQuantum-vNext-execution`.
+- Branch: `codex/vnext-team-execution-providers`.
+- Common integration baseline: `9cd38efcd136abc9a705151be3378f9487d1064e`.
+- Implementation is present and tested but NOT committed or merged.
+- Commit attempt was blocked by local system hooks: `python`, `black` and
+  `mypy` were not found on the hook PATH. No hooks were bypassed. Ruff's
+  automatic import-order/unused-import fixes were retained.
+- The main integration worktree had unrelated active API/observable edits;
+  it was not modified by this task. Finish the commit environment and coordinate
+  a normal non-fast-forward integration merge after those edits are settled.
+
+## Scope and interface
+
+The user explicitly requested implementation of the already proven Jiuding
+connection and a real FlagQuantum circuit task. The new concrete experimental
+adapter is `flagquantum.remote.compute.jiuding.JiudingClient`, with workspace
+discovery, observed-image listing, Python task submission, receipt-bound status,
+shared JSON results and stop requests. It uses direct HTTP for both experiment
+creation and Job launch; the temporary CLI dependency was removed after observing
+its request shape against a loopback fake gateway with a dummy token.
+
+No root exports, Stable Core signatures, QPU contracts, generic provider
+protocols, runtime/simulation internals or dependency manifests changed. No
+cross-team contract or new infrastructure dependency was introduced. The
+adapter's receipt dictionary is experimental and is not a promoted public schema.
+All changes belong to Remote or shared examples/tests/docs paths; team scope
+prechecks passed. Existing fq.run is used inside the submitted Python process.
+
+## Concrete live result
+
+- Job: `33295f22-cce9-4c66-8782-c5fd23cea908`.
+- Experiment: `2ce1d352-56e8-4de9-ab87-50140d3839ce`.
+- Platform terminal state: `Succeed`.
+- Allocation: one replica, 2 CPU cores, 2 GiB, 0 GPUs.
+- Two-qubit complex64 Bell state probabilities:
+  `[0.4999999701976776, 0, 0, 0.4999999701976776]`.
+- Maximum absolute state error against expected: 0.
+- Shared result JSON was retrieved and matched to its submitted run_id.
+- No numerical fallback, precision downgrade, GPU or distributed claim.
+- Evidence: `docs/development/evidence/jiuding_bell_cpu_20260909.json`.
+
+An initial reduced experiment request returned HTTP 400. Its experiment name
+was checked against the complete accessible experiment listing and found absent
+before a corrected submission was made. The accepted request retains the known
+platform fields and accelerator model even for zero-GPU tasks. No duplicate
+successful job was created. Receipts from both attempts remain on the remote
+shared snapshot at `/share/project/liuwei/fq-jiuding-vnext.c0yW36`.
+
+## Verification
+
+- Final focused regression: **30 passed** in 2.88 s, covering
+  `tests/team/remote/test_jiuding.py`, `tests/test_local_fast_path.py`,
+  `tests/test_cloud_providers.py`, `tests/test_amazon_braket_provider.py`.
+- Default `pytest -m "smoke or unit" -q`: **1216 passed, 19 skipped,
+  3 failed**, 1295 deselected, 112.51 s. This preceded two additional auth/worker
+  tests included in the final focused run and the creation-field correction.
+- All three failures reproduced against a separate archive of the unchanged
+  integration baseline, in the same Python 3.12 / PyTorch environment:
+  - `test_historical_api_aggregators_are_not_shipped`: baseline ships
+    `flagquantum.api`, contrary to the existing test.
+  - `test_exact_shape_cache_can_compile_more_than_dynamo_default_recompile_limit`:
+    PyTorch Dynamo cache_size_limit reached.
+  - `test_dynamo_specialization_limit_accounts_for_microbatch_variants`:
+    this PyTorch lacks `config.recompile_limit`.
+- `tools/check_architecture.py`: passed.
+- `tools/check_capability_maturity.py`: passed; no catalog promotion.
+- `git diff --check`: passed before final staging.
+- Live cancellation was not exercised; stop request shape was observed with the
+  platform CLI against a fake gateway and covered by an offline behavior test.
+
+## Remaining boundaries
+
+This is an existing-workspace/shared-storage CPU adapter, not a general remote
+project upload service. A compatible image and shared code must already exist.
+User script main() returns JSON; large tensors should be stored separately.
+No GPU/multinode scheduling, training validation, image build, log streaming,
+automatic partial-launch recovery, release certification or public API freeze.
+The first journey intentionally avoids manual project/queue IDs and credentials
+in subprocess arguments. Read `docs/guides/JIUDING.md` for use and failure behavior.
+
+Before requesting integration: make the repository's existing commit toolchain
+available, commit the scoped changes without bypassing hooks, and coordinate with
+the integration branch's ongoing API edits. The new adapter is not yet part of
+that worktree or any published package.
