@@ -170,10 +170,12 @@ def test_workspace_lifecycle_uses_resolved_owner_and_never_saves_on_stop(client)
         "/api/v1/workspaces/workspace-id/restart",
         {"id": "workspace-id", "userId": "owner", "isPrivileged": False},
     )
+    assert start.kwargs == {"method": "PUT"}
     assert stop.args[:2] == (
         "/api/v1/workspaces/workspace-id/stop",
         {"id": "workspace-id", "userId": "owner", "saveSnapshot": False},
     )
+    assert stop.kwargs == {"method": "PUT"}
 
 
 def test_uncertain_create_is_not_retried(client, tmp_path):

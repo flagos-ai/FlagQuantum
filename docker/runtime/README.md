@@ -62,3 +62,9 @@ base image's entrypoint or modify platform-provided `NVIDIA_*`, `CUDA_*`,
 
 This runtime image is suitable for functional and performance development. It
 is not, by itself, release evidence for a benchmark or scalability claim.
+
+The `v0.2.0-ef3affbd-cu128-a100` private build includes the resident Jiuding
+workspace executor. Its clean-build wheel SHA-256 is
+`f5eac87203950659f78b1342db20f0193882cd1fb07f9002dc7f835c047098e0`.
+Pure-image startup and warm Bell-state measurements are recorded in
+[`jiuding_warm_executor_image_20260909.json`](../../docs/development/evidence/jiuding_warm_executor_image_20260909.json).

@@ -66,10 +66,14 @@ class JiudingClient:
         self._executor_channels: dict[int, subprocess.Popen] = {}
         self._executor_health: dict[int, dict] = {}
 
-    def _request(self, path: str, body: dict | None, headers: dict) -> dict:
+    def _request(
+        self, path: str, body: dict | None, headers: dict, *, method: str = "POST"
+    ) -> dict:
+        if method not in {"GET", "POST", "PUT"}:
+            raise ValueError("Jiuding request method must be GET, POST or PUT")
         request = Request(
             self.endpoint + path,
-            method="POST",
+            method=method,
             data=None if body is None else json.dumps(body).encode(),
             headers={"Content-Type": "application/json", **headers},
         )
@@ -655,6 +659,7 @@ class JiudingClient:
                 "isPrivileged": bool(item.get("isPrivileged", False)),
             },
             self._headers(),
+            method="PUT",
         )
 
     def stop_workspace(self, reference: str) -> dict:
@@ -664,6 +669,7 @@ class JiudingClient:
             f"/api/v1/workspaces/{item['id']}/stop",
             {"id": item["id"], "userId": item["creatorId"], "saveSnapshot": False},
             self._headers(),
+            method="PUT",
         )
 
     def _jobs(self):

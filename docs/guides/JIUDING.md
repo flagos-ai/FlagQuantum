@@ -204,3 +204,11 @@ GPU Bell task as an independent Job on 2026-09-09. Job
 `f2d7cdfd-8382-44a0-b3cb-87967a0773f2` reached `Succeed` on one A100 40GB;
 the run-bound result was retrieved from persistent storage and had maximum
 state error 0. See [private-image GPU evidence](../development/evidence/jiuding_bell_private_gpu_20260909.json).
+
+The private `flagquantum-runtime:v0.2.0-ef3affbd-cu128-a100` image also passed
+a pure-image resident-executor check. A fresh one-A100 workspace started the
+executor without any post-creation source upload, completed three Bell-state
+runs with no CPU fallback, and reused one SSH channel. The two warm calls took
+17.6--18.6 ms end to end; their recorded CUDA execution took 2.3--2.6 ms. The
+temporary workspace was stopped after validation. See the
+[resident-image evidence](../development/evidence/jiuding_warm_executor_image_20260909.json).
