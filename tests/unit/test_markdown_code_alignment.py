@@ -100,6 +100,6 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
     assert "non-executable future API sketch" in vision
     assert (
         "advanced example intentionally uses "
-        "``flagquantum.backends.run_native``" in native_example
+        "``flagquantum.runtime.run_native``" in native_example
     )
     assert "not a stable public-API" in mps_research

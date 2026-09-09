@@ -3,8 +3,9 @@
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
 import flagquantum.noise as fqn
+import flagquantum.runtime as fqr
+import flagquantum.simulation.mps as fqmps
 import flagquantum.simulation.mps.models as mps_models
 from flagquantum.noise import amplitude_damping_channel, bit_flip_channel
 from flagquantum.runtime.executors.mps.compiled_training import (
@@ -37,7 +38,7 @@ def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
     monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
     monkeypatch.setattr(mps_entrypoints, "run_local_mps", replacement)
 
-    assert fqb.run_mps(fq.Circuit(2).h(0)) is expected
+    assert fqmps.run_mps(fq.Circuit(2).h(0)) is expected
     assert len(calls) == 1
     assert isinstance(calls[0][0], fq.CircuitIR)
     assert calls[0][1].n_wires == 2
@@ -49,7 +50,7 @@ def test_mps_bell_state_matches_statevector():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    mps, plan = fqb.run_native(circuit, mode="mps", return_plan=True)
+    mps, plan = fqr.run_native(circuit, mode="mps", return_plan=True)
 
     assert plan.state_mode == "mps"
     assert plan.recommended_mode == "mps"
@@ -67,12 +68,12 @@ def test_mps_bell_state_matches_statevector():
 def test_mps_instruction_schedule_is_reused_for_dynamic_parameters():
     mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE.clear()
     theta = torch.tensor(0.2, requires_grad=True)
-    first = fqb.run_mps(fq.Circuit(2).ry(0, theta).rz(0, theta).cx(0, 1))
+    first = fqmps.run_mps(fq.Circuit(2).ry(0, theta).rz(0, theta).cx(0, 1))
     first.expectation_z(0).sum().backward()
     cache_size = len(mps_models._MPS_INSTRUCTION_SCHEDULE_CACHE)
 
     phi = torch.tensor(-0.3, requires_grad=True)
-    second = fqb.run_mps(fq.Circuit(2).ry(0, phi).rz(0, phi).cx(0, 1))
+    second = fqmps.run_mps(fq.Circuit(2).ry(0, phi).rz(0, phi).cx(0, 1))
     second.expectation_z(0).sum().backward()
 
     assert cache_size == 1
@@ -83,11 +84,11 @@ def test_mps_instruction_schedule_is_reused_for_dynamic_parameters():
 def test_mps_program_is_shape_and_truncation_specialized():
     circuit = fq.Circuit(3).ry(0, 0.2).cx(0, 1).cx(0, 2)
 
-    fqb.run_mps(circuit, max_bond=2, cutoff=0.0)
+    fqmps.run_mps(circuit, max_bond=2, cutoff=0.0)
     first_program = next(
         value for key, value in circuit._backend_programs.items() if key[0] == "mps"
     )
-    fqb.run_mps(circuit, max_bond=4, cutoff=1e-6)
+    fqmps.run_mps(circuit, max_bond=4, cutoff=1e-6)
     programs = [
         value for key, value in circuit._backend_programs.items() if key[0] == "mps"
     ]
@@ -106,7 +107,7 @@ def test_mps_parameterized_adjacent_two_qubit_gate():
     circuit = fq.Circuit(2)
     circuit.ry(0, theta=0.31).rxx(0, 1, theta=0.42).rz(1, theta=-0.2)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
 
@@ -115,9 +116,9 @@ def test_mps_spatial_two_site_bucket_is_default_and_matches_sequential(monkeypat
     circuit = fq.Circuit(4).h(0).h(2).rxx(0, 1, theta=0.31).rzz(2, 3, theta=-0.27)
 
     monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
-    bucketed = fqb.run_mps(circuit)
+    bucketed = fqmps.run_mps(circuit)
     monkeypatch.setenv("FQ_MPS_SPATIAL_BUCKET", "0")
-    sequential = fqb.run_mps(circuit)
+    sequential = fqmps.run_mps(circuit)
 
     torch.testing.assert_close(
         bucketed.to_statevector(), sequential.to_statevector(), atol=1e-6, rtol=1e-6
@@ -137,7 +138,7 @@ def test_mps_spatial_two_site_bucket_preserves_parameter_gradients(monkeypatch):
     reference = fq.Circuit(4).rxx(0, 1, reference_theta).rzz(2, 3, reference_phi)
 
     monkeypatch.delenv("FQ_MPS_SPATIAL_BUCKET", raising=False)
-    loss = fqb.run_mps(circuit).expectation_z_sum().sum()
+    loss = fqmps.run_mps(circuit).expectation_z_sum().sum()
     reference_loss = reference.expectation_z().sum()
     loss.backward()
     reference_loss.backward()
@@ -157,12 +158,12 @@ def test_mps_complex128_two_site_gate_preserves_dtype_and_gradient():
         1, 2, reference_theta
     )
 
-    mps_loss = fqb.run_mps(circuit).expectation_ps(z=(0, 2)).mean()
+    mps_loss = fqmps.run_mps(circuit).expectation_ps(z=(0, 2)).mean()
     dense_loss = reference.expectation_ps(z=(0, 2)).mean()
     mps_loss.backward()
     dense_loss.backward()
 
-    assert fqb.run_mps(circuit).dtype == torch.complex128
+    assert fqmps.run_mps(circuit).dtype == torch.complex128
     torch.testing.assert_close(mps_loss, dense_loss, atol=1e-12, rtol=1e-12)
     torch.testing.assert_close(theta.grad, reference_theta.grad, atol=1e-11, rtol=1e-11)
 
@@ -181,7 +182,7 @@ def test_mps_complex_two_site_autograd_matches_statevector():
         circuit.rzz(1, 2, theta=values[3])
         return circuit
 
-    mps_loss = fqb.run_mps(build(params), max_bond=8).expectation_z((0, 2)).sum()
+    mps_loss = fqmps.run_mps(build(params), max_bond=8).expectation_z((0, 2)).sum()
     ref_loss = build(ref_params).expectation_z((0, 2)).sum()
     mps_loss.backward()
     ref_loss.backward()
@@ -204,8 +205,8 @@ def test_mps_expectation_z_sum_matches_vectorized_z_gradient():
         circuit.cx(0, 1).cx(1, 2).cx(2, 3)
         return circuit
 
-    loss = fqb.run_mps(build(params), max_bond=8).expectation_z_sum().sum()
-    ref_loss = fqb.run_mps(build(ref_params), max_bond=8).expectation_z().sum()
+    loss = fqmps.run_mps(build(params), max_bond=8).expectation_z_sum().sum()
+    ref_loss = fqmps.run_mps(build(ref_params), max_bond=8).expectation_z().sum()
     loss.backward()
     ref_loss.backward()
 
@@ -218,7 +219,7 @@ def test_mps_expectation_z_sum_matches_vectorized_z_gradient():
 def test_mps_expectation_z_sum_preserves_wire_multiplicity_and_empty_inputs():
     circuit = fq.Circuit(3)
     circuit.h(0).ry(1, theta=0.2).cx(0, 2)
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     repeated = mps.expectation_z_sum((0, 0, 2))
     vectorized = mps.expectation_z((0, 0, 2)).sum()
@@ -251,7 +252,7 @@ def test_compile_mps_training_step_allows_parameter_updates_and_matches_mps():
 
     ref_params = params.detach().clone().requires_grad_(True)
     ref_loss = (
-        fqb.run_mps(build(ref_params), max_bond=8, dense_observable_wires=8)
+        fqmps.run_mps(build(ref_params), max_bond=8, dense_observable_wires=8)
         .expectation_z_sum()
         .sum()
     )
@@ -293,7 +294,7 @@ def test_mps_non_adjacent_gate_uses_local_swaps():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).rz(1, theta=0.5)
 
-    mps = fqb.run_native(circuit, mode="mps")
+    mps = fqr.run_native(circuit, mode="mps")
 
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
     assert mps.summary()["local_swap_count"] == 2
@@ -303,7 +304,7 @@ def test_mps_non_adjacent_reverse_wire_order():
     circuit = fq.Circuit(3)
     circuit.h(2).cx(2, 0).ry(1, theta=0.2)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
     assert mps.summary()["local_swap_count"] == 2
@@ -313,7 +314,7 @@ def test_mps_parameterized_remote_two_qubit_gate():
     circuit = fq.Circuit(4)
     circuit.h(0).ry(3, theta=0.4).rxx(0, 3, theta=-0.35).rz(2, theta=0.2)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
     assert mps.summary()["local_swap_count"] == 4
@@ -324,7 +325,7 @@ def test_mps_from_initial_state():
     circuit = fq.Circuit(2, inputs=initial)
     circuit.cx(0, 1)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     assert torch.allclose(mps.to_statevector(), circuit.state(), atol=1e-6)
 
@@ -333,7 +334,7 @@ def test_mps_pauli_string_expectation_matches_statevector():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     assert torch.allclose(
         mps.expectation_ps(z=[0, 1]), circuit.expectation_ps(z=[0, 1])
@@ -349,7 +350,7 @@ def test_mps_pauli_string_expectation_matches_statevector():
 def test_mps_expectations_use_transfer_contraction():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     def blocked_statevector():
         raise AssertionError("expectations should not materialize statevector")
@@ -365,7 +366,7 @@ def test_mps_sampling_and_counts_match_basis_state():
     circuit = fq.Circuit(3)
     circuit.x(0).x(2)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
     samples = mps.sample(8, generator=generator)
     counts = mps.counts(8, generator=torch.Generator().manual_seed(1234))
 
@@ -379,7 +380,7 @@ def test_mps_sampling_and_counts_match_basis_state():
 def test_mps_sampling_uses_conditional_contraction():
     circuit = fq.Circuit(3)
     circuit.x(0).x(2)
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
 
     def blocked_dense():
         raise AssertionError("sampling should not materialize dense probabilities")
@@ -398,7 +399,7 @@ def test_mps_counts_int_format():
     circuit = fq.Circuit(2)
     circuit.x(1)
 
-    mps = fqb.run_native(circuit, mode="mps")
+    mps = fqr.run_native(circuit, mode="mps")
 
     assert mps.counts(4, generator=torch.Generator().manual_seed(1), format="int") == [
         {1: 4}
@@ -409,7 +410,7 @@ def test_mps_truncation_error_is_reported():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    mps = fqb.run_mps(circuit, max_bond=1)
+    mps = fqmps.run_mps(circuit, max_bond=1)
     summary = mps.summary()
 
     assert mps.max_bond == 1
@@ -423,7 +424,7 @@ def test_mps_truncation_records_are_reported_per_bond():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)
 
-    mps = fqb.run_mps(circuit, max_bond=1)
+    mps = fqmps.run_mps(circuit, max_bond=1)
     profile = mps.bond_profile()
 
     assert profile.truncation_records
@@ -448,7 +449,7 @@ def test_mps_adaptive_bond_plan_uses_truncation_hotspots():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)
 
-    mps = fqb.run_mps(circuit, max_bond=1)
+    mps = fqmps.run_mps(circuit, max_bond=1)
     plan = mps.adaptive_bond_plan(global_error_budget=0.0, growth_factor=2.0)
 
     assert isinstance(plan, MPSAdaptiveBondPlan)
@@ -467,7 +468,7 @@ def test_mps_local_refinement_plan_maps_hot_bonds_to_windows():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)
 
-    mps = fqb.run_mps(circuit, max_bond=1)
+    mps = fqmps.run_mps(circuit, max_bond=1)
     plan = mps.local_refinement_plan(global_error_budget=0.0, window_radius=0)
 
     assert isinstance(plan, MPSLocalRefinementPlan)
@@ -500,7 +501,7 @@ def test_run_mps_adaptive_reruns_with_suggested_bond():
     assert result.summary()["refinement_plan"]["windows"]
     assert torch.allclose(
         result.to_statevector(),
-        fqb.run_native(circuit, mode="mps", max_bond=4).to_statevector(),
+        fqr.run_native(circuit, mode="mps", max_bond=4).to_statevector(),
         atol=1e-6,
     )
 
@@ -525,7 +526,7 @@ def test_circuit_run_accepts_adaptive_mps_mode():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)
 
-    result, plan = fqb.run_native(
+    result, plan = fqr.run_native(
         circuit,
         mode="adaptive_mps",
         initial_max_bond=1,
@@ -539,7 +540,7 @@ def test_circuit_run_accepts_adaptive_mps_mode():
     assert plan.state_mode == "mps"
     assert torch.allclose(
         result.to_statevector(),
-        fqb.run_mps(circuit, max_bond=4).to_statevector(),
+        fqmps.run_mps(circuit, max_bond=4).to_statevector(),
         atol=1e-6,
     )
 
@@ -548,7 +549,7 @@ def test_mps_canonicalize_rebuilds_left_canonical_form():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.25)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
     before = mps.to_statevector()
     mps.canonicalize()
 
@@ -560,7 +561,7 @@ def test_mps_orthogonalize_left_preserves_state_and_profiles():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.25).rzz(2, 3, theta=-0.31)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
     mps.apply_one(torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=mps.dtype), 0)
     before = mps.to_statevector()
 
@@ -579,7 +580,7 @@ def test_mps_orthogonalize_right_preserves_state_and_profiles():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.25).rzz(2, 3, theta=-0.31)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
     before = mps.to_statevector()
 
     mps.orthogonalize_right()
@@ -595,7 +596,7 @@ def test_mps_move_orthogonality_center_to_middle():
     circuit = fq.Circuit(5)
     circuit.h(0).cx(0, 4).ry(1, theta=0.25).rzz(2, 3, theta=-0.31).cx(1, 3)
 
-    mps = fqb.run_mps(circuit)
+    mps = fqmps.run_mps(circuit)
     before = mps.to_statevector()
 
     mps.move_orthogonality_center(2)
@@ -649,7 +650,7 @@ def test_noisy_mps_trajectory_amplitude_damping():
     circuit.x(0)
     model = fqn.NoiseModel().add("x", amplitude_damping_channel(1.0))
 
-    mps, plan = fqb.run_native(
+    mps, plan = fqr.run_native(
         circuit,
         noise_model=model,
         mode="mps_trajectory",
@@ -669,7 +670,7 @@ def test_noisy_mps_monte_carlo_aggregates_deterministic_channel():
     circuit.x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
-    result = fqb.run_noisy_mps(
+    result = fqr.run_noisy_mps(
         circuit,
         model,
         trajectories=4,
@@ -688,7 +689,7 @@ def test_run_native_noisy_mps_mode():
     circuit.x(0)
     model = fqn.NoiseModel().add("x", amplitude_damping_channel(1.0))
 
-    result, plan = fqb.run_native(
+    result, plan = fqr.run_native(
         circuit,
         noise_model=model,
         mode="noisy_mps",

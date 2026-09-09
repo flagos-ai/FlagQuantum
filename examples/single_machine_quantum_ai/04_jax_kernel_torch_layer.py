@@ -20,7 +20,8 @@ from common import (  # noqa: E402
 )
 
 import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
+import flagquantum.simulation.mps as fqmps  # noqa: E402
+import flagquantum.simulation.tensor_network as fqtn  # noqa: E402
 from flagquantum.algorithms import Hamiltonian, pauli_term  # noqa: E402
 
 
@@ -91,8 +92,8 @@ def main() -> None:
         if args.mode == "statevector":
             return hamiltonian.expectation(circuit).sum()
         if args.mode == "mps":
-            return hamiltonian.expectation(fqb.run_mps(circuit, max_bond=16)).sum()
-        return hamiltonian.expectation(fqb.run_tensor_network(circuit)).sum()
+            return hamiltonian.expectation(fqmps.run_mps(circuit, max_bond=16)).sum()
+        return hamiltonian.expectation(fqtn.run_tensor_network(circuit)).sum()
 
     for step in range(args.steps):
         optimizer.zero_grad()

@@ -10,6 +10,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
+import flagquantum.runtime as fqr
 
 
 def _circuit(n_wires: int, depth: int, device: str) -> fq.Circuit:
@@ -44,7 +45,7 @@ def main() -> None:
         .add("ry", fqn.amplitude_damping_channel(0.002))
         .add("cx", fqn.depolarizing_channel(0.005))
     )
-    pilot = fq.run_noisy_statevector(
+    pilot = fqr.run_noisy_statevector(
         circuit,
         noise,
         trajectories=args.pilot_trajectories,

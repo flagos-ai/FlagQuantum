@@ -12,6 +12,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
+import flagquantum.runtime as fqr
 
 
 def _circuit(n_wires: int, depth: int, *, device: str) -> fq.Circuit:
@@ -44,7 +45,7 @@ def _measure(
             torch.cuda.synchronize(device)
             torch.cuda.reset_peak_memory_stats(device)
         started = time.perf_counter()
-        result = fq.run_noisy_statevector(
+        result = fqr.run_noisy_statevector(
             circuit,
             noise,
             trajectories=trajectories,

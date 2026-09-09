@@ -48,13 +48,19 @@ def test_historical_experimental_inventory_is_superseded_without_rewriting_it() 
     assert surface["transition"]["internal_routes_removed"] is True
 
 
-def test_backend_facade_preserves_implementation_identity() -> None:
-    backends = importlib.import_module("flagquantum.backends")
+def test_expert_interfaces_preserve_implementation_identity() -> None:
+    runtime = importlib.import_module("flagquantum.runtime")
     execution = importlib.import_module("flagquantum.runtime.execution")
+    mps = importlib.import_module("flagquantum.simulation.mps")
     mps_entrypoints = importlib.import_module("flagquantum.simulation.mps.entrypoints")
+    tensor_network = importlib.import_module("flagquantum.simulation.tensor_network")
+    tensor_entrypoints = importlib.import_module(
+        "flagquantum.simulation.tensor_network.entrypoints"
+    )
 
-    assert backends.run_native is execution.run_native
-    assert backends.run_mps is mps_entrypoints.run_mps
+    assert runtime.run_native is execution.run_native
+    assert mps.run_mps is mps_entrypoints.run_mps
+    assert tensor_network.run_tensor_network is tensor_entrypoints.run_tensor_network
     assert "run_advanced" not in execution.__all__
 
 
@@ -75,6 +81,7 @@ def test_historical_api_aggregators_are_not_shipped() -> None:
     assert importlib.util.find_spec("flagquantum.api") is None
     assert importlib.util.find_spec("flagquantum.agent") is None
     assert importlib.util.find_spec("flagquantum.agent_services") is None
+    assert importlib.util.find_spec("flagquantum.backends") is None
     assert importlib.util.find_spec("flagquantum.services") is not None
     assert importlib.util.find_spec("flagquantum.runtime.compatibility") is None
 

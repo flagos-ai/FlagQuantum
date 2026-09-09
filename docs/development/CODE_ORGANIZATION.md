@@ -17,10 +17,11 @@ to domain code and adapters; numerical code never reaches back into Runtime.
 | Evaluation | `flagquantum.benchmarking` | Reproducible correctness and performance workloads |
 | Application services | `flagquantum.services` | Reusable capability discovery and composite preflight workflows |
 
-`flagquantum.backends` is a thin, stable expert API for backend-native entry
-points. Implementations live in `flagquantum.runtime.executors`; directly
-controlled devices live in `flagquantum.compute`; external task systems live in
-`flagquantum.remote`.
+Backend-native execution and device policy enter through `flagquantum.runtime`.
+Representation-specific expert simulation enters through
+`flagquantum.simulation.mps` or `flagquantum.simulation.tensor_network`.
+Directly controlled devices live in `flagquantum.compute`; external task systems
+live in `flagquantum.remote`.
 
 `flagquantum.deployment` remains the maintained user API for sealed deployment
 packages and measurement plans. Provider task handles, submission receipts,

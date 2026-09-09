@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr
 from flagquantum.compute.flaggems import (
     flaggems_preflight,
     operator_backend,
@@ -150,7 +150,7 @@ def test_run_native_accepts_flaggems_operator_backend(monkeypatch):
     circuit = fq.Circuit(1)
     circuit.rx(0, theta=torch.tensor(0.2))
 
-    state = fqb.run_native(
+    state = fqr.run_native(
         circuit,
         mode="statevector",
         operator_backend="flaggems",

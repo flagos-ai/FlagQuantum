@@ -1,8 +1,8 @@
 """Exact and MPS-trajectory noisy simulation with one NoiseModel."""
 
 import flagquantum as fq
-import flagquantum.backends as fqb
 import flagquantum.noise as fqn
+import flagquantum.runtime as fqr  # noqa: E402
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
 noise = (
@@ -22,7 +22,7 @@ exact = fq.run(
 exact_z = exact.measurements[0].value
 
 # Low-entanglement scale-out path: sampled MPS quantum trajectories.
-sampled = fqb.run_noisy_mps(
+sampled = fqr.run_noisy_mps(
     circuit,
     noise,
     trajectories=4096,

@@ -35,7 +35,6 @@ os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 import torch
 import torch.distributed as dist
 
-
 REPRO_COMMANDS = """
 Single-node GPU statevector:
   torchrun --standalone --nproc_per_node=8 benchmarks/distributed_backend_compare.py --device cuda --dist-backend nccl --mode statevector --n-wires 8 --layers 2 --batch-size 16 --observable ising --iters 100 --warmup 20 --jax-matmul-precision highest --torch-matmul-precision highest --json-output gpu_jax_statevector_compare_8q_b16_ising.json
@@ -71,7 +70,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
+import flagquantum.simulation.mps as fqmps  # noqa: E402
+import flagquantum.simulation.tensor_network as fqtn  # noqa: E402
 
 
 def _configure_torch_precision(mode: str) -> None:
@@ -299,13 +299,13 @@ def _pytorch_value_and_grad(
             return _loss_from_state(circuit, observable=observable, hamiltonian=hamiltonian)
         if mode == "mps":
             return _loss_from_state(
-                fqb.run_mps(circuit, max_bond=max_bond),
+                fqmps.run_mps(circuit, max_bond=max_bond),
                 observable=observable,
                 hamiltonian=hamiltonian,
             )
         if mode in {"tensor_network", "tn"}:
             return _loss_from_state(
-                fqb.run_tensor_network(circuit),
+                fqtn.run_tensor_network(circuit),
                 observable=observable,
                 hamiltonian=hamiltonian,
             )

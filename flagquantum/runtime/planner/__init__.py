@@ -627,8 +627,8 @@ def plan(
     if resolved.backend not in {"auto", "pytorch"}:
         raise CapabilityError(
             f"stable fq.run backend {resolved.backend!r} is not available; "
-            "use fq.Module for JAX kernels or flagquantum.backends for "
-            "backend-native execution"
+            "use fq.Module for JAX kernels or the owning Runtime or Simulation "
+            "expert interface for backend-native execution"
         )
     if noise_model is not None and resolved.mode not in {"auto", "density_matrix"}:
         raise ValidationError(

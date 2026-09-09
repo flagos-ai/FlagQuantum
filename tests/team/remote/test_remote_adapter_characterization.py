@@ -13,9 +13,9 @@ from typing import Any, Mapping
 import pytest
 
 import flagquantum as fq
-import flagquantum.backends as fqb
 import flagquantum.deployment as fqd
 import flagquantum.remote as fqr
+import flagquantum.runtime as fqrt
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.ecosystem.extensions import ProviderExtension
 from flagquantum.remote import HttpQuantumProvider, QuafuProvider
@@ -42,7 +42,7 @@ def test_current_local_target_and_deployment_results_are_distinct() -> None:
     circuit = fq.Circuit(2).x(0)
 
     runtime_result = fq.run(circuit)
-    target_result = fqb.run_target(
+    target_result = fqrt.run_target(
         circuit,
         target="few_amplitudes",
         bitstrings=("00", "10"),

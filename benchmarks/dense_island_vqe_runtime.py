@@ -15,12 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
 from flagquantum.simulation.dense_island import (  # noqa: E402
     DenseIslandPlan,
     DenseIslandState,
 )
+
+import flagquantum as fq  # noqa: E402
+import flagquantum.simulation.mps as fqmps  # noqa: E402
 
 
 def _ry(angle: torch.Tensor) -> torch.Tensor:
@@ -73,7 +74,7 @@ def _mps_loss(parameters: torch.Tensor, *, max_bond: int) -> tuple[torch.Tensor,
             circuit.rz(wire, theta=parameters[layer, wire, 1])
         for wire in range(layer % 2, n_wires - 1, 2):
             circuit.cx(wire, wire + 1)
-    state = fqb.run_mps(circuit, max_bond=max_bond, cutoff=0.0)
+    state = fqmps.run_mps(circuit, max_bond=max_bond, cutoff=0.0)
     value = fq.zz_chain_hamiltonian(
         n_wires, coupling=-1.0, field=0.1
     ).expectation(state).sum()

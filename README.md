@@ -137,7 +137,7 @@ FlagQuantum
     └── quantum hardware deployment path
 ```
 
-The stable end-to-end `flagquantum.backends.flagos` integration is under active
+The stable end-to-end `flagquantum.compute.flagos` integration is under active
 development. Cross-accelerator claims are promoted only after native operator
 coverage, numerical and gradient parity, hidden-fallback checks, distributed
 ownership, and reproducible hardware evidence pass their release gates. See
@@ -204,7 +204,7 @@ architecture category rather than a blanket support claim: sharded
 statevector, sharded MPS, and sliced tensor-network execution have distinct
 maturity levels in the capability matrix.
 
-The complete stable `flagquantum.backends.flagos` backend and deeper FlagOS
+The complete stable `flagquantum.compute.flagos` backend and deeper FlagOS
 kernel and collective integration are under active development. Existing
 accelerator paths remain supported according to their documented maturity.
 

@@ -37,14 +37,28 @@
   },
   "stable_extensions": [
     {
-      "namespace": "flagquantum.backends",
+      "namespace": "flagquantum.runtime",
       "symbols": [
         "resolve_device",
-        "run_mps",
         "run_native",
         "run_noisy_mps",
-        "run_target",
-        "run_tensor_network"
+        "run_noisy_statevector",
+        "run_target"
+      ]
+    },
+    {
+      "namespace": "flagquantum.simulation.mps",
+      "symbols": [
+        "run_mps"
+      ]
+    },
+    {
+      "namespace": "flagquantum.simulation.tensor_network",
+      "symbols": [
+        "run_tensor_network",
+        "tensor_network_amplitude",
+        "tensor_network_amplitudes",
+        "tensor_network_expectations"
       ]
     },
     {
@@ -128,14 +142,6 @@
       "symbols": [
         "GateInfo",
         "gate_info"
-      ]
-    },
-    {
-      "namespace": "flagquantum.backends.tensor_network",
-      "symbols": [
-        "tensor_network_amplitude",
-        "tensor_network_amplitudes",
-        "tensor_network_expectations"
       ]
     }
   ],

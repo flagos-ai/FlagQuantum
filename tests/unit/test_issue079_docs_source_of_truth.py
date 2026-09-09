@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
@@ -100,5 +100,5 @@ def test_stable_document_example_executes():
     circuit = fq.Circuit(2)
     circuit.h(0)
     circuit.cx(0, 1)
-    result = fqb.run_native(circuit)
+    result = fqr.run_native(circuit)
     assert result is not None

@@ -14,7 +14,7 @@ from typing import Iterable
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.simulation.mps as fqmps
 from flagquantum.simulation.mps.brickwork import (
     compiled_local_z_zz,
     run_batched_brickwork_mps,
@@ -175,7 +175,7 @@ def predict(
     device: torch.device | str,
 ) -> torch.Tensor:
     circuit = build_trotter_circuit(coupling, field, probe, dt=dt, device=device)
-    state = fqb.run_mps(circuit, max_bond=max_bond, cutoff=cutoff)
+    state = fqmps.run_mps(circuit, max_bond=max_bond, cutoff=cutoff)
     return local_observables(state, observation_sites).reshape(-1)
 
 
@@ -212,7 +212,7 @@ def predict_batch(
         return local_observables(state, observation_sites)
     else:
         circuit = build_batched_trotter_circuit(coupling, field, probes, dt=dt, device=device)
-        state = fqb.run_mps(circuit, max_bond=max_bond, cutoff=cutoff)
+        state = fqmps.run_mps(circuit, max_bond=max_bond, cutoff=cutoff)
         return local_observables(state, observation_sites)
 
 

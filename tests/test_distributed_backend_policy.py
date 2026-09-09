@@ -2,7 +2,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr
+import flagquantum.simulation.mps as fqmps
 from flagquantum.errors import ExecutionError
 from flagquantum.runtime.distributed import (
     LocalTensor,
@@ -171,7 +172,7 @@ def test_circuit_run_development_distributed_statevector_measure(monkeypatch):
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    measured, plan = fqb.run_native(
+    measured, plan = fqr.run_native(
         circuit,
         mode="distributed_statevector",
         world_size=2,
@@ -245,7 +246,7 @@ def test_production_statevector_uses_torch_distributed_executor(monkeypatch):
         execute,
     )
 
-    result, plan = fqb.run_native(
+    result, plan = fqr.run_native(
         circuit,
         mode="distributed_statevector",
         world_size=1,
@@ -264,7 +265,7 @@ def test_production_statevector_requires_initialized_process_group(monkeypatch):
     monkeypatch.setenv("FQ_DISTRIBUTED_PROFILE", "production")
 
     with pytest.raises(ExecutionError, match="initialized torch.distributed"):
-        fqb.run_native(
+        fqr.run_native(
             fq.Circuit(2).h(0),
             mode="distributed_statevector",
             world_size=2,
@@ -314,7 +315,7 @@ def test_distributed_mps_uses_env_local_world_size_without_code_change(monkeypat
     assert summary["local_tensor_wires_by_rank"] == {0: (0, 1), 1: (2, 3), 2: (4, 5)}
     assert torch.allclose(
         result.to_statevector(),
-        fqb.run_mps(circuit, max_bond=4).to_statevector(),
+        fqmps.run_mps(circuit, max_bond=4).to_statevector(),
         atol=1e-6,
     )
 

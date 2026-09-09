@@ -52,13 +52,13 @@ os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 
 import torch
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
+import flagquantum.simulation.mps as fqmps  # noqa: E402
+import flagquantum.simulation.tensor_network as fqtn  # noqa: E402
 
 
 def _torch_to_jax(value: torch.Tensor) -> Any:
@@ -143,11 +143,11 @@ def _flagquantum_loss(
     circuit = _build_circuit(params, device=device)
     if mode == "mps":
         return _loss_from_flagquantum_state(
-            fqb.run_mps(circuit, max_bond=max_bond), observable
+            fqmps.run_mps(circuit, max_bond=max_bond), observable
         )
     if mode in {"tn", "tensor_network"}:
         return _loss_from_flagquantum_state(
-            fqb.run_tensor_network(circuit), observable
+            fqtn.run_tensor_network(circuit), observable
         )
     raise ValueError("mode must be 'mps' or 'tn'.")
 
@@ -383,11 +383,12 @@ def _pennylane_worker(config: dict[str, Any], queue: Any) -> None:
                 diff_method=str(config["pennylane_diff_method"]),
                 jit=not bool(config["no_pennylane_jit"]),
             )
-            fn = lambda: _pennylane_jax_value_and_grad(
-                pl_value_and_grad,
-                params_seed,
-                forward_only=bool(config["forward_only"]),
-            )
+            def fn():
+                return _pennylane_jax_value_and_grad(
+                    pl_value_and_grad,
+                    params_seed,
+                    forward_only=bool(config["forward_only"]),
+                )
         else:
             pl_loss = _build_pennylane_loss(
                 n_wires=int(config["n_wires"]),
@@ -398,7 +399,12 @@ def _pennylane_worker(config: dict[str, Any], queue: Any) -> None:
                 cutoff=config["cutoff"],
                 diff_method=str(config["pennylane_diff_method"]),
             )
-            fn = lambda: _value_and_grad(pl_loss, params_seed, forward_only=bool(config["forward_only"]))
+            def fn():
+                return _value_and_grad(
+                    pl_loss,
+                    params_seed,
+                    forward_only=bool(config["forward_only"]),
+                )
         result = _time_value_and_grad(
             fn,
             warmup=int(config["warmup"]),
@@ -493,13 +499,14 @@ def main() -> None:
         )
         flagquantum_backend = "jax"
     else:
-        fq_loss = lambda values: _flagquantum_loss(
-            values,
-            mode=args.method,
-            max_bond=args.max_bond,
-            observable=args.observable,
-            device=device,
-        )
+        def fq_loss(values):
+            return _flagquantum_loss(
+                values,
+                mode=args.method,
+                max_bond=args.max_bond,
+                observable=args.observable,
+                device=device,
+            )
         fq_kernel = None
         flagquantum_backend = "pytorch"
 
@@ -552,11 +559,14 @@ def main() -> None:
                         diff_method=args.pennylane_diff_method,
                         jit=not args.no_pennylane_jit,
                     )
-                    pl_fn = lambda: _pennylane_jax_value_and_grad(
-                        pl_value_and_grad,
-                        params_seed.cpu() if device.startswith("cuda") else params_seed,
-                        forward_only=args.forward_only,
-                    )
+                    def pl_fn():
+                        return _pennylane_jax_value_and_grad(
+                            pl_value_and_grad,
+                            params_seed.cpu()
+                            if device.startswith("cuda")
+                            else params_seed,
+                            forward_only=args.forward_only,
+                        )
                 else:
                     pl_loss = _build_pennylane_loss(
                         n_wires=args.n_wires,
@@ -567,7 +577,12 @@ def main() -> None:
                         cutoff=args.cutoff,
                         diff_method=args.pennylane_diff_method,
                     )
-                    pl_fn = lambda: _value_and_grad(pl_loss, params_seed, forward_only=args.forward_only)
+                    def pl_fn():
+                        return _value_and_grad(
+                            pl_loss,
+                            params_seed,
+                            forward_only=args.forward_only,
+                        )
                 pennylane_result = _time_value_and_grad(
                     pl_fn,
                     warmup=args.warmup,

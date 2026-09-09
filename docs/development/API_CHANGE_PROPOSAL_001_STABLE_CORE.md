@@ -9,7 +9,8 @@
 本文的验收条件。
 
 本文定义首次公开 alpha 之前的根 API 收敛方案。它不是已冻结契约。机器可读分类位于
-`contracts/public-api-v1-candidate.json`。
+`contracts/public-api-v1-candidate.json`。其中原 `flagquantum.backends` 决策已由
+API Change Proposal 018 取代。
 
 ## 决策摘要
 
@@ -47,12 +48,13 @@ MPS 生产验收对象、部署工具和项目介绍函数。建议将最终 Sta
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `flagquantum.backends` | backend-native 执行和设备解析 |
+| `flagquantum.runtime` | backend-native 执行和设备策略 |
 | `flagquantum.compiler` | 专家编译入口 |
 | `flagquantum.deployment` | package、provider 和 Pauli 测量部署 |
 | `flagquantum.noise` | 噪声模型和专用模拟 |
 | `flagquantum.operators` | gate schema 和查询 |
-| `flagquantum.backends.tensor_network` | TN 专用 amplitude/expectation 操作 |
+| `flagquantum.simulation.mps` | MPS 专用模拟 |
+| `flagquantum.simulation.tensor_network` | TN 专用 amplitude/expectation 操作 |
 
 普通用户仍通过 `fq.run` 使用这些能力；稳定扩展面向明确需要后端原生对象或专家控制的
 用户。

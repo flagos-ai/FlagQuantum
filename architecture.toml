@@ -5,7 +5,6 @@ order = ["api", "deployment", "audit", "optional_kernels", "pytorch_runtime", "e
 allowed_top_level_directories = [
     "services",
     "algorithms",
-    "backends",
     "benchmarking",
     "compiler",
     "core",
@@ -26,7 +25,7 @@ allowed_top_level_directories = [
 core_forbidden = ["runtime_stack", "deployment", "drawer", "simulation", "ops"]
 compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment", "simulation", "compute", "remote"]
 noise_forbidden = ["circuit", "compilation", "deployment", "runtime", "simulation"]
-trajectory_runtime_forbidden = ["circuit", "simulation", "backends", "deployment"]
+trajectory_runtime_forbidden = ["circuit", "simulation", "deployment"]
 simulation_forbidden = ["runtime", "compute", "remote", "deployment"]
 executor_policy_forbidden = ["audit", "release_policy"]
 default_module_line_ceiling = 1250
@@ -53,7 +52,6 @@ runtime_import_allowed = []
 
 [northbound_boundaries]
 service_forbidden = [
-    "backends",
     "compute",
     "platforms",
     "remote",

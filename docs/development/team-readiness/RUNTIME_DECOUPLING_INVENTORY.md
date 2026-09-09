@@ -218,27 +218,23 @@ Runtime 不应复制这些长期控制面能力；Compute Service 也不应绕�
 
 ## 7. 兼容执行入口收口（2026-09-06）
 
-`run_native()` 与 `run_distributed()` 仍属于受保护的 backend-native 兼容面，当前有公开 facade、
-文档及真实测试消费者，不能在没有 API 迁移提案时删除。`run_advanced()` 只服务内部后端特征与
+`run_native()` 与 `run_distributed()` 仍属于受保护的 Runtime 专家接口。`run_advanced()` 只服务内部后端特征与
 分布式测试，当前 `fq.experimental.execution` 已明确为空，因此不再列入
 `runtime.execution.__all__`，也不得新增产品调用方。函数暂留是为了避免一次性重写大量底层测试，
-不代表新的公共执行入口；后续应按真实消费者逐步改用稳定 `fq.run()` 或所属 backend facade，
+不代表新的公共执行入口；后续应按真实消费者逐步改用稳定 `fq.run()` 或所属领域专家接口，
 消费者清零后再删除实现。
 
-## 8. `backends` 命名空间边界复核（2026-09-08）
+## 8. `backends` 命名空间移除（2026-09-09）
 
-`flagquantum/backends/` 当前只有 58 行公开转发代码，不包含数值核、调度策略或厂商适配；
-它是经 API 提案确认的 backend-native 专家入口。其名称与以下实现目录相近，但职责不同：
+API Change Proposal 018 已移除仅含转发代码的 `flagquantum/backends/`。它把 Runtime
+执行、设备策略和 Simulation 数值入口混在同一名称下，没有独立领域职责。
 
-| 路径 | 唯一职责 | 不负责 |
+| 权威入口 | 唯一职责 | 不负责 |
 | --- | --- | --- |
-| `flagquantum/backends/` | 稳定专家 API，转发 `run_native`、MPS、TN 和设备解析入口 | 实现执行、数值算法或设备 SDK |
-| `flagquantum/runtime/executors/` | 后端执行计划、生命周期、分布与结果组织 | 稳定公共命名空间或外部系统适配 |
+| `flagquantum.runtime` | backend-native 执行、目标调用和设备策略 | 数值算法或设备 SDK |
+| `flagquantum.simulation.mps` | MPS 数值模拟 | 资源规划和设备选择 |
+| `flagquantum.simulation.tensor_network` | TN 数值模拟及专家查询 | 资源规划和设备选择 |
 | `flagquantum/compute/` | 当前进程直接控制的计算平台 | 外部任务提交、模拟数值核或 Runtime 调度策略 |
 | `flagquantum/remote/` | 真实 QPU、远程 GPU/HPC 服务和云平台的控制面适配 | 本地设备生命周期、模拟数值核或 Runtime 调度策略 |
 
-仓内测试、示例和参考文档均直接使用 `flagquantum.backends`，且命名空间一致性测试要求
-转发对象保持实现身份。因此本轮结论是：**不迁移、不合并这三个目录，也不在
-`providers` 下复制模拟后端**。根命名空间历史别名没有真实消费者；其专用错误转发层
-`flagquantum/_root_api_compat.py` 已删除。旧名称继续由 Python 的标准 `AttributeError`
-拒绝，迁移目标只保留在 API 提案和静态使用检查器中，不再进入运行时代码。
+仓内消费者已迁至上述权威入口，不保留兼容包，也不在其他目录复制这些接口。

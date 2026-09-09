@@ -23,7 +23,7 @@ from typing import Any
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr  # noqa: E402
 
 BACKEND_ALIASES = {
     "sv": "statevector",
@@ -52,12 +52,12 @@ def build_ansatz(parameters: torch.Tensor) -> fq.Circuit:
 def execute(circuit: fq.Circuit, backend: str, *, max_bond: int) -> Any:
     """Return a backend-native object for this explicit parity experiment.
 
-    This advanced example intentionally uses ``flagquantum.backends.run_native`` because it
+    This advanced example intentionally uses ``flagquantum.runtime.run_native`` because it
     compares backend-specific expectation methods. Normal applications should
     use ``fq.run`` and the stable ``fq.ExecutionResult`` contract.
     """
     options = {"max_bond": max_bond} if backend == "mps" else {}
-    return fqb.run_native(circuit, mode=backend, **options)
+    return fqr.run_native(circuit, mode=backend, **options)
 
 
 def expectation(

@@ -23,7 +23,7 @@ from common import (  # noqa: E402
 )
 
 import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
+import flagquantum.simulation.mps as fqmps  # noqa: E402
 from flagquantum.algorithms import (  # noqa: E402
     hardware_efficient_parameter_count,
     zz_chain_hamiltonian,
@@ -74,7 +74,7 @@ def main() -> None:
         )
 
     def native_mps_loss(theta: torch.Tensor) -> torch.Tensor:
-        mps = fqb.run_mps(build(theta), max_bond=args.max_bond)
+        mps = fqmps.run_mps(build(theta), max_bond=args.max_bond)
         return hamiltonian.expectation(mps).sum()
 
     def training_loss(theta: torch.Tensor) -> torch.Tensor:
@@ -98,7 +98,7 @@ def main() -> None:
         ):
             print({"step": step + 1, "energy": float(loss.detach())})
 
-    trained_mps = fqb.run_mps(build(parameters.detach()), max_bond=args.max_bond)
+    trained_mps = fqmps.run_mps(build(parameters.detach()), max_bond=args.max_bond)
     native_speed = None
     if args.compare_torch:
         native_speed = time_value_and_grad(
@@ -125,14 +125,16 @@ def main() -> None:
             "training_backend": "pytorch",
             "initial_energy": initial,
             "final_energy": final_energy,
-            "gap_to_theory": None
-            if exact_energy is None
-            else final_energy - exact_energy,
+            "gap_to_theory": (
+                None if exact_energy is None else final_energy - exact_energy
+            ),
         },
         speed_compare={
-            "pytorch_native_mps": native_speed
-            if native_speed is not None
-            else {"status": "unavailable", "reason": "run with --compare-torch"},
+            "pytorch_native_mps": (
+                native_speed
+                if native_speed is not None
+                else {"status": "unavailable", "reason": "run with --compare-torch"}
+            ),
             "jax_kernel_mps": {
                 "status": "see examples/single_machine_quantum_ai/05_mps_1000q_dimer_training.py"
             },

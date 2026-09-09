@@ -152,7 +152,7 @@ fq.run(program_or_plan, options=...)
 作为唯一推荐入口。其他入口按以下方式处理：
 
 - `Circuit.run()` 必须与 `fq.run(circuit)` 语义严格等价；
-- backend-native 执行迁入 `fq.backends.<backend>.run`；
+- backend-native 执行进入 `flagquantum.runtime`，数值专家入口进入所属 Simulation 方法包；
 - 尚未稳定的分布式、硬件和研究能力迁入 `fq.experimental`；
 - 根级专用 runner 不进入长期 stable core。
 
@@ -324,7 +324,8 @@ __version__
 fq.noise
 fq.deployment
 fq.interop
-fq.backends
+flagquantum.runtime
+flagquantum.simulation
 fq.compiler
 ```
 
@@ -463,7 +464,7 @@ noisy statevector 等专用入口。
 
 - 普通用户只使用 `fq.run(..., noise=...)`；
 - mode 由 options 或 planner 决定；
-- 专用模拟器迁入 `fq.backends`；
+- 专用模拟器进入所属 `flagquantum.simulation` 方法包；
 - 所有路径返回相同稳定结果契约；
 - noise capability 不支持时在 planning 阶段失败。
 
@@ -573,7 +574,9 @@ training = fq.train(
 后端专家路径：
 
 ```python
-native = fq.backends.mps.run(circuit, options=options)
+from flagquantum.simulation.mps import run_mps
+
+native = run_mps(circuit, options=options)
 ```
 
 统一执行路径：

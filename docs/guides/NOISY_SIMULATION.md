@@ -9,7 +9,7 @@ sampling statistics, and the MPS path additionally reports truncation data.
 
 ```python
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr
 import flagquantum.noise as fqn
 from flagquantum.runtime.planner import plan_noise_execution_selection
 
@@ -33,7 +33,7 @@ exact = fq.run(
 )
 exact_z = exact.measurements[0].value
 
-sampled = fqb.run_noisy_mps(
+sampled = fqr.run_noisy_mps(
     circuit,
     noise,
     trajectories=4096,
@@ -54,7 +54,7 @@ For dense circuits that fit statevector memory, trajectories can be processed
 in true tensor batches:
 
 ```python
-sampled_sv = fqb.run_noisy_statevector(
+sampled_sv = fqr.run_noisy_statevector(
     circuit,
     noise,
     trajectories=4096,
@@ -138,7 +138,7 @@ match. If both eligible trajectory backends match, the measured-time estimate de
 incomplete or mismatched calibration falls back to the analytic policy. The
 8-qubit single-A800 full-noise decision and all candidate evidence are preserved in
 `benchmarks/results/local/noise_selector_a800_calibrated_20260806.json`. Public
-`flagquantum.backends.run_native(..., noise_performance_calibration=...)` uses
+`flagquantum.runtime.run_native(..., noise_performance_calibration=...)` uses
 the same policy.
 
 For adaptive runs, the selector also reports a time-to-target trajectory

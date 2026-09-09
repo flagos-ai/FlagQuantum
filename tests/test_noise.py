@@ -6,9 +6,9 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
 import flagquantum.noise as fqn
 import flagquantum.noise as noise
+import flagquantum.runtime as fqr
 import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler import lower_noise_model
 from flagquantum.noise import (
@@ -424,7 +424,7 @@ def test_noisy_mps_aggregates_post_readout_z_expectation():
         ReadoutError(((0.75, 0.25), (0.1, 0.9))),
     )
 
-    result = fqb.run_noisy_mps(
+    result = fqr.run_noisy_mps(
         fq.Circuit(1),
         model,
         trajectories=3,
@@ -571,7 +571,7 @@ def test_device_profile_relaxation_executes_on_density_backend():
     assert torch.allclose(expectation_z_density(rho, 0), torch.zeros(1, 1), atol=1e-6)
 
     model = fqn.NoiseModel.from_device_profile(profile)
-    _, plan = fqb.run_native(
+    _, plan = fqr.run_native(
         fq.Circuit(1).x(0),
         noise_model=model,
         mode="density_matrix",
@@ -621,7 +621,7 @@ def test_two_qubit_mps_trajectory_samples_kraus_branches():
     model = fqn.NoiseModel().add("cx", channel)
 
     exact = expectation_z_density(fqn.noisy_density_matrix(circuit, model))
-    sampled = fqb.run_noisy_mps(
+    sampled = fqr.run_noisy_mps(
         circuit,
         model,
         trajectories=512,
@@ -835,7 +835,7 @@ def test_run_native_statevector_path():
     circuit = fq.Circuit(1)
     circuit.h(0)
 
-    state, plan = fqb.run_native(circuit, return_plan=True)
+    state, plan = fqr.run_native(circuit, return_plan=True)
 
     assert state.shape == (1, 2)
     assert plan.state_mode == "statevector"
@@ -847,7 +847,7 @@ def test_auto_mode_selects_density_matrix_for_noise():
     circuit.x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
-    rho, plan = fqb.run_native(circuit, noise_model=model, return_plan=True)
+    rho, plan = fqr.run_native(circuit, noise_model=model, return_plan=True)
 
     assert plan.state_mode == "density_matrix"
     assert select_execution_mode(circuit, noise_model=model) == "density_matrix"
@@ -859,7 +859,7 @@ def test_auto_mode_selects_batched_statevector_when_trajectory_controls_fit():
     circuit.x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
-    result, plan = fqb.run_native(
+    result, plan = fqr.run_native(
         circuit,
         noise_model=model,
         trajectories=4,
@@ -882,7 +882,7 @@ def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
 ):
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
-    expected, plan = fqb.run_native(
+    expected, plan = fqr.run_native(
         circuit,
         noise_model=model,
         mode="noisy_statevector",
@@ -899,7 +899,7 @@ def test_planned_noisy_statevector_consumes_lowered_ir_without_recompiling(
         "flagquantum.compiler.lower_noise_model",
         forbidden,
     )
-    actual, returned_plan = fqb.run_native(
+    actual, returned_plan = fqr.run_native(
         lowered,
         noise_model=model,
         mode="noisy_statevector",
@@ -920,7 +920,7 @@ def test_auto_mode_fails_when_every_noisy_candidate_exceeds_memory():
     model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
 
     with pytest.raises(ValueError, match="no noisy execution candidate"):
-        fqb.run_native(
+        fqr.run_native(
             circuit,
             noise_model=model,
             memory_limit_bytes=1,
@@ -990,7 +990,7 @@ def test_explicit_distributed_noisy_mps_request_fails_closed():
         )
 
     with pytest.raises(NotImplementedError, match="distributed statistics reduction"):
-        fqb.run_native(
+        fqr.run_native(
             circuit,
             noise_model=model,
             mode="noisy_mps",
@@ -1100,7 +1100,7 @@ def test_run_native_consumes_selector_calibration_option():
         circuit, model, statevector_seconds=1.0, mps_seconds=10.0
     )
 
-    result, plan = fqb.run_native(
+    result, plan = fqr.run_native(
         circuit,
         noise_model=model,
         trajectories=8,

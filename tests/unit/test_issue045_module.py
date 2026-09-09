@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr
 import flagquantum.training as fqt
 from flagquantum.algorithms import zz_chain_hamiltonian
 
@@ -184,7 +184,7 @@ def test_circuit_run_matches_uniform_execution_entry_point() -> None:
     assert result.compatibility["native_output_adapted"] is True
     assert "legacy_return_normalized" not in result.compatibility
 
-    native = fqb.run_native(circuit, mode="statevector")
+    native = fqr.run_native(circuit, mode="statevector")
     assert isinstance(native, torch.Tensor)
     torch.testing.assert_close(result.state, native)
 

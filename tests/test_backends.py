@@ -5,10 +5,10 @@ import torch
 
 import flagquantum as fq
 import flagquantum.algorithms as algorithms
-import flagquantum.backends as fqb
 import flagquantum.compiler as compiler
 import flagquantum.noise as fqn
 import flagquantum.noise as noise
+import flagquantum.runtime as fqr
 import flagquantum.runtime.execution as execution
 from flagquantum.algorithms import Hamiltonian
 from flagquantum.compiler import CouplingMap
@@ -56,7 +56,7 @@ def test_runtime_backend_uses_registry():
 
 
 def test_resolve_device_auto_falls_back_to_available_device():
-    device = fqb.resolve_device("auto")
+    device = fqr.resolve_device("auto")
 
     assert isinstance(device, torch.device)
     assert device.type in get_backend_capabilities().devices
@@ -103,7 +103,7 @@ def test_run_native_accepts_auto_device_policy():
     circuit = fq.Circuit(1)
     circuit.h(0)
 
-    state = fqb.run_native(circuit, device="auto")
+    state = fqr.run_native(circuit, device="auto")
 
     assert torch.allclose(state, circuit.state(), atol=1e-6)
 
@@ -125,5 +125,5 @@ def test_plan_for_backend_uses_dtype_and_topology_policy():
 def test_top_level_subsystems_remain_easy_to_use():
     assert algorithms.Hamiltonian is Hamiltonian
     assert compiler.CouplingMap is CouplingMap
-    assert execution.run_native is fqb.run_native
+    assert execution.run_native is fqr.run_native
     assert noise.NoiseModel is fqn.NoiseModel

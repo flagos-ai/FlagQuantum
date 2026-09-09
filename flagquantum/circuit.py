@@ -327,7 +327,7 @@ class Circuit:
 
         This is exactly the object-oriented spelling of
         ``flagquantum.run(circuit, ...)``. Backend-native controls belong to
-        :mod:`flagquantum.backends`.
+        :mod:`flagquantum.runtime`.
         """
 
         from .runtime.execution import run as run_circuit

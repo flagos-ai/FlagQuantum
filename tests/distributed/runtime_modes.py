@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import flagquantum as fq  # noqa: E402
-import flagquantum.backends as fqb  # noqa: E402
+import flagquantum.runtime as fqr  # noqa: E402
 
 
 def _world_size() -> int:
@@ -39,7 +39,7 @@ def main() -> None:
     world_size = _world_size()
     rank = _rank()
 
-    dtn = fqb.run_native(
+    dtn = fqr.run_native(
         _circuit(),
         mode="distributed_tensor_network",
         world_size=world_size,
@@ -48,7 +48,7 @@ def main() -> None:
         device="cpu",
         max_intermediate_size=8,
     )
-    local_tn = fqb.run_native(_circuit(), mode="tensor_network")
+    local_tn = fqr.run_native(_circuit(), mode="tensor_network")
     if not torch.allclose(dtn.to_statevector(), local_tn.to_statevector(), atol=1e-6):
         raise AssertionError(
             "distributed tensor-network result does not match local tensor-network result"
@@ -64,7 +64,7 @@ def main() -> None:
     torch.distributed.broadcast_object_list = _forbid_object_collective
     torch.distributed.all_gather_object = _forbid_object_collective
     try:
-        dmps = fqb.run_native(
+        dmps = fqr.run_native(
             _circuit(),
             mode="distributed_mps",
             world_size=world_size,
@@ -77,7 +77,7 @@ def main() -> None:
     finally:
         torch.distributed.broadcast_object_list = original_broadcast_object_list
         torch.distributed.all_gather_object = original_all_gather_object
-    local_mps = fqb.run_native(_circuit(), mode="mps", max_bond=8)
+    local_mps = fqr.run_native(_circuit(), mode="mps", max_bond=8)
     distributed_mps_state = dmps.sharded_state.to_statevector()
     local_mps_state = local_mps.to_statevector()
     if not torch.allclose(distributed_mps_state, local_mps_state, atol=1e-6):

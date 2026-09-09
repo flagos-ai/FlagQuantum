@@ -77,8 +77,8 @@ An existing plan is closed to semantic overrides: passing `options`,
 or world-size incompatibility fails before kernel launch rather than silently
 replanning or falling back. Provider submission and signed portability remain
 the responsibility of `DeploymentPackage`.
-`flagquantum.backends.run_native`, `flagquantum.backends.run_mps`, and
-`flagquantum.backends.run_tensor_network` are advanced interfaces for callers
+`flagquantum.runtime.run_native`, `flagquantum.simulation.mps.run_mps`, and
+`flagquantum.simulation.tensor_network.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects or backend-specific controls.
 
 ## Optimize a program

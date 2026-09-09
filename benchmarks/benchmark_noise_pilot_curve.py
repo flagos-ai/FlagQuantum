@@ -11,6 +11,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
+import flagquantum.runtime as fqr
 
 
 def _circuit(n_wires: int, depth: int, device: str) -> fq.Circuit:
@@ -50,7 +51,7 @@ def main() -> None:
     for pilot_size in args.pilot_sizes:
         torch.cuda.synchronize() if torch.device(args.device).type == "cuda" else None
         started = time.perf_counter()
-        pilot = fq.run_noisy_statevector(
+        pilot = fqr.run_noisy_statevector(
             circuit,
             noise,
             trajectories=pilot_size,

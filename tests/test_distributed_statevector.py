@@ -7,7 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.backends as fqb
+import flagquantum.runtime as fqr
 from flagquantum.runtime.audit import DistributedScalabilityError
 from flagquantum.runtime.audit.release_policy import require_distributed_scalability
 from flagquantum.runtime.execution import run_advanced
@@ -587,7 +587,7 @@ def test_run_distributed_attaches_statevector_plan_summary():
 
     # Backend-native inspection remains available explicitly without weakening
     # the stable ExecutionResult contract of Circuit.run().
-    native = fqb.run_native(
+    native = fqr.run_native(
         circuit,
         mode="distributed_statevector",
         device="cpu",

@@ -132,7 +132,7 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 Exercise the local differentiable statevector path through Torch-FL's logical flagos device on a locked CUDA reference environment.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.backends.resolve_device`, `fq.run`
+- **Public API:** `flagquantum.runtime.resolve_device`, `fq.run`
 - **Runtime modes:** `statevector`
 - **Hardware:** `nvidia_a100_cuda_reference`
 - **Gradient support:** `development_evidence`
@@ -272,7 +272,7 @@ Evolve open-chain local Pauli Hamiltonians with fail-closed second-order imagina
 Execute tensor-network circuit paths and evaluate experimental contraction and gradient workflows.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.backends.run_tensor_network`
+- **Public API:** `flagquantum.simulation.tensor_network.run_tensor_network`
 - **Runtime modes:** `tensor_network`
 - **Hardware:** `cpu`, `single_gpu`
 - **Gradient support:** `experimental`
@@ -286,7 +286,7 @@ Execute tensor-network circuit paths and evaluate experimental contraction and g
 Lower validated Kraus noise models into FlagQuantum IR and execute exact density-matrix or MPS quantum-trajectory paths.
 
 - **Maturity:** Experimental
-- **Public API:** `flagquantum.noise.NoiseModel`, `flagquantum.noise.noisy_density_matrix`, `flagquantum.backends.run_noisy_mps`
+- **Public API:** `flagquantum.noise.NoiseModel`, `flagquantum.noise.noisy_density_matrix`, `flagquantum.runtime.run_noisy_mps`, `flagquantum.runtime.run_noisy_statevector`
 - **Runtime modes:** `density_matrix`, `noisy_mps`
 - **Hardware:** `cpu`, `single_gpu`
 - **Gradient support:** `unsupported`
@@ -359,7 +359,7 @@ Observe a fixed multi-rank complex collective matrix through the public FlagOS b
 Train low-entanglement quantum systems with local or rank-owned matrix product states.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.backends.run_mps`, `flagquantum.experimental.distributed.train_distributed_mps`
+- **Public API:** `flagquantum.simulation.mps.run_mps`, `flagquantum.experimental.distributed.train_distributed_mps`
 - **Runtime modes:** `mps`, `distributed_mps`
 - **Hardware:** `cpu`, `single_gpu`, `multi_gpu`, `multi_node`
 - **Gradient support:** `exact`
