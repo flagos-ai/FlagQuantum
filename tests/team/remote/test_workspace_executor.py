@@ -112,6 +112,68 @@ def test_cpu_executor_returns_samples_and_counts_without_statevector():
     assert response["evidence"]["counts_aggregation"] == "host"
 
 
+def test_cpu_executor_runs_measurement_batch_in_one_request():
+    from flagquantum.observables import lower_outputs
+
+    measurements = lower_outputs(fq.expectation(fq.Z(0)), n_wires=1, shots=None)
+    assert measurements is not None
+    programs = [
+        replace(circuit.to_ir(), measurements=measurements).to_dict()
+        for circuit in (fq.Circuit(1).h(0), fq.Circuit(1).x(0))
+    ]
+
+    response = executor.execute(
+        {
+            "schema": executor.SCHEMA,
+            "version": executor.VERSION,
+            "operation": "measurement_batch",
+            "request_id": "z-batch",
+            "target": "jiuding:cpu",
+            "programs": programs,
+        },
+        target="jiuding:cpu",
+        device="cpu",
+    )
+
+    assert response["evidence"]["batch_size"] == 2
+    assert len(response["results"]) == 2
+    assert all("state" not in result for result in response["results"])
+    values = [
+        torch.frombuffer(
+            bytearray(base64.b64decode(result["measurements"][0]["value"]["data"])),
+            dtype=torch.float32,
+        )
+        for result in response["results"]
+    ]
+    torch.testing.assert_close(values[0], torch.tensor([0.0]), atol=1e-6, rtol=0)
+    torch.testing.assert_close(values[1], torch.tensor([-1.0]))
+
+
+def test_cpu_executor_rejects_invalid_batch_before_execution(monkeypatch):
+    from flagquantum.observables import lower_outputs
+
+    measurements = lower_outputs(fq.expectation(fq.Z(0)), n_wires=1, shots=None)
+    assert measurements is not None
+    valid = replace(fq.Circuit(1).to_ir(), measurements=measurements).to_dict()
+    monkeypatch.setattr(
+        "flagquantum.runtime.execution.run",
+        lambda *_, **__: pytest.fail("invalid batch must fail before execution"),
+    )
+
+    with pytest.raises(TypeError, match="JSON objects"):
+        executor.execute(
+            {
+                "schema": executor.SCHEMA,
+                "version": executor.VERSION,
+                "operation": "measurement_batch",
+                "target": "jiuding:cpu",
+                "programs": [valid, "invalid"],
+            },
+            target="jiuding:cpu",
+            device="cpu",
+        )
+
+
 def test_protocol_round_trip_and_size_limit():
     stream = io.BytesIO()
     executor.write_message(stream, {"ok": True})
@@ -342,6 +404,75 @@ def test_client_requires_outputs_for_shots():
             target="jiuding:cpu",
             outputs=fq.samples(),
         )
+
+
+def test_client_runs_measurement_batch_with_one_transport_request(monkeypatch):
+    client = JiudingClient(workspace="test")
+    calls = []
+    monkeypatch.setattr(client, "start_executor", lambda **_: {"ok": True})
+    monkeypatch.setattr(client, "_resolve_compute_target", lambda _: ("cpu", ""))
+
+    values = (torch.tensor([1.0]), torch.tensor([-1.0]))
+
+    def request(payload, **_):
+        calls.append(payload)
+        results = []
+        for value in values:
+            results.append(
+                {
+                    "measurements": [
+                        {
+                            "kind": "expectation_ps",
+                            "wires": [0],
+                            "value": {
+                                "dtype": "float32",
+                                "shape": [1],
+                                "data": base64.b64encode(
+                                    value.numpy().tobytes()
+                                ).decode(),
+                            },
+                            "shots": None,
+                            "metadata": {"fq_output_index": 0, "z": [0]},
+                            "statistics": {},
+                        }
+                    ],
+                    "evidence": {
+                        "device": "cpu",
+                        "elapsed_seconds": 0.001,
+                        "cpu_fallback_used": False,
+                        "statevector_transferred": False,
+                    },
+                }
+            )
+        return {
+            "results": results,
+            "evidence": {"batch_size": 2, "elapsed_seconds": 0.002},
+        }
+
+    monkeypatch.setattr(client, "_executor_request", request)
+
+    results = client.run_batch(
+        [fq.Circuit(1), fq.Circuit(1).x(0)],
+        target="jiuding:cpu",
+        outputs=fq.expectation(fq.Z(0)),
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["operation"] == "measurement_batch"
+    assert len(calls[0]["programs"]) == 2
+    torch.testing.assert_close(results[0].expectation(), values[0])
+    torch.testing.assert_close(results[1].expectation(), values[1])
+    assert results[1].runtime["batch_index"] == 1
+    assert results[1].runtime["batch_size"] == 2
+
+
+def test_client_rejects_unbounded_or_statevector_batch():
+    client = JiudingClient(workspace="test")
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        client.run_batch([], target="jiuding:cpu", outputs=fq.probabilities())
+    with pytest.raises(TypeError, match="requires measurement outputs"):
+        client.run_batch([fq.Circuit(1)], target="jiuding:cpu", outputs=None)
 
 
 def test_start_executor_reuses_verified_health(monkeypatch):

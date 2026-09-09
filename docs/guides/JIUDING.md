@@ -18,9 +18,9 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 
 client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
-    "flagquantum-runtime-gpu",
+    "flagquantum-runtime-a100",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-7b588ea5-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-59a517cd-cu128-a100",
     image_region="PRIVATE",
     cpus=4,
     memory_gib=16,
@@ -31,8 +31,8 @@ print(client.workspace_state(created["id"]))
 Creation starts the workspace but does not enable privileged mode, Jupyter
 Cloud IDE or automatic snapshots. It is an explicit billable infrastructure
 operation and is never triggered by `fq.run()`. Use
-`client.stop_workspace("flagquantum-runtime-gpu")` to stop it without saving a
-container snapshot and `client.start_workspace("flagquantum-runtime-gpu")` to
+`client.stop_workspace("flagquantum-runtime-a100")` to stop it without saving a
+container snapshot and `client.start_workspace("flagquantum-runtime-a100")` to
 restart it. Source code and durable results must remain on mounted storage;
 stopping a workspace does not make its container filesystem durable.
 
@@ -112,7 +112,7 @@ import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
-with JiudingClient(workspace="flagquantum-runtime-gpu") as client:
+with JiudingClient(workspace="flagquantum-runtime-a100") as client:
     first = client.run_statevector(
         circuit,
         target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
@@ -135,10 +135,35 @@ An interrupted execution request is never retried automatically because its
 completion status may be ambiguous; the following explicit call performs
 readiness recovery before submitting new work.
 
-This initial path intentionally supports statevector results only. It is not a
-replacement for Jiuding batch scheduling, multi-node launch, or a public
-multi-user service. Large full-state transfers remain bounded by the protocol
-message limit; use batch artifacts for large outputs.
+This path supports statevectors, probabilities, Pauli expectations, samples,
+and counts. It is not a replacement for Jiuding batch scheduling, multi-node
+launch, or a public multi-user service. Large full-state transfers remain
+bounded by the protocol message limit; use batch artifacts for large outputs.
+
+For parameter sweeps, parameter-shift gradients, or other groups of distinct
+circuits with the same requested outputs, submit a bounded measurement batch
+through one resident transport request:
+
+```python
+import flagquantum as fq
+from flagquantum.remote.compute.jiuding import JiudingClient
+
+circuits = [fq.Circuit(1).ry(0, theta=value) for value in (0.1, 0.2, 0.3)]
+with JiudingClient(workspace="flagquantum-runtime-a100") as client:
+    results = client.run_batch(
+        circuits,
+        target="jiuding:gpu",
+        outputs=fq.expectation(fq.Z(0)),
+    )
+
+expectations = [result.expectation() for result in results]
+```
+
+The batch is validated in full before its first circuit executes, accepts at
+most 256 circuits, and returns ordinary `ExecutionResult` objects in input
+order. Statevector batches are intentionally rejected. Per-result runtime
+evidence includes the batch index, batch size, total batch time, device, result
+transfer, and fallback status.
 The target namespace recognizes `cpu`, `gpu`, `mlu`, `npu` and `xpu` so its
 meaning remains stable as Jiuding adds adapters. Only CPU and single-GPU paths
 are implemented today. MLU, NPU and XPU targets fail before any platform
@@ -218,7 +243,7 @@ the stable root entry point. Calls in the same Python process reuse its resident
 executor and SSH channel:
 
 ```bash
-export JIUDING_WORKSPACE=flagquantum-runtime-gpu
+export JIUDING_WORKSPACE=flagquantum-runtime-a100
 ```
 
 ```python
@@ -236,14 +261,20 @@ correlation = fq.run(
     target="jiuding:gpu",
     outputs=fq.expectation(fq.X(0) @ fq.X(1)),
 )
+counts = fq.run(
+    circuit,
+    target="jiuding:gpu",
+    outputs=fq.counts(),
+    shots=1024,
+)
 ```
 
 Without `outputs`, this path returns an exact statevector. Probability and
-expectation requests are reduced on the workspace GPU, so they do not transfer
-the full statevector. It deliberately rejects sampled outputs, shots, noise
-models, compiler selection and execution plans instead of silently changing
-their meaning. Numerical execution occurs on the workspace GPU; requested
-results are materialized in the caller process.
+expectation and sampled-output requests do not transfer the full statevector.
+Numerical execution and sampling occur on the workspace GPU; requested results
+are materialized in the caller process, and counts aggregation is reported as
+host-side post-processing. Noise models, compiler selection and execution plans
+remain unsupported and fail explicitly.
 The production workspace and root entry point were validated on 2026-09-09;
 see [the root-entry evidence](../development/evidence/jiuding_root_run_20260909.json).
 

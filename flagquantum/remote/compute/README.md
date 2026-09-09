@@ -5,8 +5,10 @@ Jiuding currently supports explicit development-workspace creation and
 start/stop control, one CPU or single-GPU task instance, automatic workspace
 context discovery, create-and-start submission, status, waiting, shared JSON
 results, stopping active jobs, and a loopback-only resident statevector
-executor for low-latency work in an already-running workspace. It uses the
-standard library and direct HTTPS/SSH calls.
+executor for low-latency work in an already-running workspace. The resident
+path supports exact measurements, sampled outputs, and bounded measurement
+batches in one transport request. It uses the standard library and direct
+HTTPS/SSH calls.
 Compute selection uses `jiuding:<chip-type>` or
 `jiuding:<chip-type>/<model>`. CPU and GPU are implemented; MLU, NPU and XPU
 are recognized reserved names that fail closed until real adapters exist.

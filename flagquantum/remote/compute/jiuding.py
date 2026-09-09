@@ -26,31 +26,35 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from ._workspace_results import decode_tensor, measurement_result
+
 _DEFAULT_CLIENTS: dict[str, "JiudingClient"] = {}
+_MAX_BATCH_ITEMS = 256
+_SUPPORTED_RESIDENT_MEASUREMENTS = {
+    "counts",
+    "counts_ps",
+    "expectation_identity",
+    "expectation_ps",
+    "probabilities",
+    "sample",
+    "sample_ps",
+}
 
 
-def _decode_tensor(payload: dict):
-    import torch
+def _measurement_program(program, *, outputs, shots):
+    from dataclasses import replace
 
-    dtype_name = payload.get("dtype")
-    dtypes = {
-        "float32": torch.float32,
-        "float64": torch.float64,
-        "complex64": torch.complex64,
-        "complex128": torch.complex128,
-        "int64": torch.int64,
-    }
-    if dtype_name not in dtypes:
-        raise RuntimeError("Jiuding workspace returned an unsupported result dtype")
-    raw = base64.b64decode(payload["data"], validate=True)
-    storage_dtype = {
-        "complex64": torch.float32,
-        "complex128": torch.float64,
-    }.get(dtype_name, dtypes[dtype_name])
-    value = torch.frombuffer(bytearray(raw), dtype=storage_dtype)
-    if dtype_name.startswith("complex"):
-        value = value.view(dtypes[dtype_name])
-    return value.reshape(tuple(int(item) for item in payload["shape"])).clone()
+    from ...core.ir import ensure_circuit_ir
+    from ...observables import lower_outputs
+
+    ir = ensure_circuit_ir(program)
+    measurements = lower_outputs(outputs, n_wires=ir.n_wires, shots=shots)
+    assert measurements is not None
+    if any(item.kind not in _SUPPORTED_RESIDENT_MEASUREMENTS for item in measurements):
+        raise ValueError(
+            "Jiuding resident execution received an unsupported output request"
+        )
+    return replace(ir, measurements=measurements)
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -451,7 +455,7 @@ class JiudingClient:
             return dict(cached)
         health = {
             "schema": "flagquantum.jiuding.workspace_executor",
-            "version": "1.2",
+            "version": "1.3",
             "operation": "health",
         }
         try:
@@ -533,7 +537,7 @@ class JiudingClient:
             port=port,
             timeout=timeout,
         )
-        state = _decode_tensor(response["state"])
+        state = decode_tensor(response["state"])
         from ...runtime.result import ExecutionResult
 
         evidence = dict(response.get("evidence", {}))
@@ -575,117 +579,75 @@ class JiudingClient:
                 port=port,
                 timeout=timeout,
             )
-        from ...core.ir import ensure_circuit_ir
-        from ...observables import lower_outputs
-
-        ir = ensure_circuit_ir(program)
-        measurements = lower_outputs(
-            outputs,
-            n_wires=ir.n_wires,
-            shots=shots,
-        )
-        assert measurements is not None
-        supported = {
-            "counts",
-            "counts_ps",
-            "expectation_identity",
-            "expectation_ps",
-            "probabilities",
-            "sample",
-            "sample_ps",
-        }
-        if any(item.kind not in supported for item in measurements):
-            raise ValueError(
-                "Jiuding resident execution received an unsupported output request"
-            )
+        ir = _measurement_program(program, outputs=outputs, shots=shots)
         response, effective_target = self._execute(
             ir,
             target=target,
-            measurements=measurements,
+            measurements=ir.measurements,
             port=port,
             timeout=timeout,
         )
-        import torch
+        return measurement_result(
+            response,
+            requested_target=target,
+            effective_target=effective_target,
+        )
 
-        from ...runtime.result import ExecutionResult, MeasurementResult
+    def run_batch(
+        self,
+        programs,
+        *,
+        target: str,
+        outputs,
+        shots: int | None = None,
+        port: int = 57621,
+        timeout: float = 30,
+    ):
+        """Execute a bounded measurement batch in one workspace request."""
 
-        def decode_value(value):
-            if isinstance(value, dict) and {"dtype", "shape", "data"} <= value.keys():
-                return _decode_tensor(value)
-            if isinstance(value, dict) and set(value) == {"counts"}:
-                rows = value["counts"]
-                if not isinstance(rows, list):
-                    raise RuntimeError("Jiuding workspace returned invalid counts")
-                decoded = []
-                for row in rows:
-                    if not isinstance(row, list):
-                        raise RuntimeError("Jiuding workspace returned invalid counts")
-                    counts = {}
-                    for entry in row:
-                        if not isinstance(entry, dict) or set(entry) != {
-                            "outcome",
-                            "count",
-                        }:
-                            raise RuntimeError(
-                                "Jiuding workspace returned invalid counts"
-                            )
-                        outcome, count = entry["outcome"], entry["count"]
-                        if (
-                            not isinstance(outcome, (str, int))
-                            or isinstance(outcome, bool)
-                            or type(count) is not int
-                            or count < 0
-                        ):
-                            raise RuntimeError(
-                                "Jiuding workspace returned invalid counts"
-                            )
-                        if outcome in counts:
-                            raise RuntimeError(
-                                "Jiuding workspace returned duplicate count outcomes"
-                            )
-                        counts[outcome] = count
-                    decoded.append(counts)
-                return decoded
-            raise RuntimeError("Jiuding workspace returned an unsupported result value")
-
-        results = tuple(
-            MeasurementResult(
-                kind=item["kind"],
-                wires=tuple(int(wire) for wire in item["wires"]),
-                value=decode_value(item["value"]),
-                shots=item.get("shots"),
-                metadata=dict(item.get("metadata", {})),
-                statistics=dict(item.get("statistics", {})),
+        if not isinstance(programs, (list, tuple)):
+            raise TypeError("programs must be a list or tuple of circuits")
+        if not programs:
+            raise ValueError("programs must not be empty")
+        if len(programs) > _MAX_BATCH_ITEMS:
+            raise ValueError(
+                f"programs exceeds the {_MAX_BATCH_ITEMS}-circuit batch limit"
             )
-            for item in response["measurements"]
+        if outputs is None:
+            raise TypeError("batch execution requires measurement outputs")
+        prepared = tuple(
+            _measurement_program(program, outputs=outputs, shots=shots)
+            for program in programs
         )
-        evidence = dict(response.get("evidence", {}))
-        first_samples = next(
-            (
-                item.value
-                for item in results
-                if item.kind in {"sample", "sample_ps"}
-                and isinstance(item.value, torch.Tensor)
-            ),
-            None,
+        self.start_executor(target=target, port=port, timeout=timeout)
+        chip_type, model = self._resolve_compute_target(target)
+        effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
+        response = self._executor_request(
+            {
+                "schema": "flagquantum.jiuding.workspace_executor",
+                "version": "1.3",
+                "operation": "measurement_batch",
+                "request_id": uuid.uuid4().hex,
+                "target": effective_target,
+                "programs": [program.to_dict() for program in prepared],
+            },
+            port=port,
+            timeout=timeout,
         )
-        return ExecutionResult(
-            samples=first_samples,
-            measurements=results,
-            runtime={
-                "execution_path": "jiuding_workspace_executor",
-                "device": evidence.get("device"),
-                "elapsed_seconds": evidence.get("elapsed_seconds"),
-                "result_transfer": evidence.get("result_transfer"),
-                "counts_aggregation": evidence.get("counts_aggregation"),
-            },
-            provenance={
-                "requested_target": target,
-                "selected_target": effective_target,
-                "accelerator": evidence.get("accelerator"),
-                "cpu_fallback_used": evidence.get("cpu_fallback_used"),
-                "statevector_transferred": evidence.get("statevector_transferred"),
-            },
+        responses = response.get("results")
+        if not isinstance(responses, list) or len(responses) != len(prepared):
+            raise RuntimeError("Jiuding workspace returned an invalid batch result")
+        batch_evidence = response.get("evidence", {})
+        return tuple(
+            measurement_result(
+                item,
+                requested_target=target,
+                effective_target=effective_target,
+                batch_index=index,
+                batch_size=len(responses),
+                batch_elapsed_seconds=batch_evidence.get("elapsed_seconds"),
+            )
+            for index, item in enumerate(responses)
         )
 
     def _execute(
@@ -712,7 +674,7 @@ class JiudingClient:
         response = self._executor_request(
             {
                 "schema": "flagquantum.jiuding.workspace_executor",
-                "version": "1.2",
+                "version": "1.3",
                 "operation": "measurements" if measurements else "statevector",
                 "request_id": uuid.uuid4().hex,
                 "target": effective_target,

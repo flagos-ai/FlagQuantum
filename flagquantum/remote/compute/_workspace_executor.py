@@ -12,8 +12,18 @@ from dataclasses import replace
 from typing import Any
 
 SCHEMA = "flagquantum.jiuding.workspace_executor"
-VERSION = "1.2"
+VERSION = "1.3"
 MAX_MESSAGE_BYTES = 8 * 1024 * 1024
+MAX_BATCH_ITEMS = 256
+SUPPORTED_MEASUREMENTS = {
+    "counts",
+    "counts_ps",
+    "expectation_identity",
+    "expectation_ps",
+    "probabilities",
+    "sample",
+    "sample_ps",
+}
 
 
 def _read_exact(stream: Any, size: int) -> bytes:
@@ -113,6 +123,57 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
                 platform.is_available() if device.startswith("cuda") else False
             ),
         }
+    if operation == "measurement_batch":
+        programs = request.get("programs")
+        if not isinstance(programs, list) or not programs:
+            raise ValueError("measurement batch requires a non-empty program list")
+        if len(programs) > MAX_BATCH_ITEMS:
+            raise ValueError(
+                f"measurement batch exceeds the {MAX_BATCH_ITEMS}-program limit"
+            )
+        from flagquantum.core.ir import CircuitIR
+
+        validated = []
+        for program in programs:
+            if not isinstance(program, dict):
+                raise TypeError("measurement batch programs must be JSON objects")
+            ir = CircuitIR.from_dict(program)
+            if not ir.measurements:
+                raise ValueError("measurement batch programs require outputs")
+            if any(item.kind not in SUPPORTED_MEASUREMENTS for item in ir.measurements):
+                raise ValueError(
+                    "measurement batch received an unsupported measurement request"
+                )
+            validated.append(ir.to_dict())
+        started = time.perf_counter()
+        results = []
+        for index, program in enumerate(validated):
+            result = execute(
+                {
+                    "schema": SCHEMA,
+                    "version": VERSION,
+                    "operation": "measurements",
+                    "request_id": f"{request.get('request_id')}:{index}",
+                    "target": request.get("target"),
+                    "program": program,
+                },
+                target=target,
+                device=device,
+            )
+            results.append(result)
+        return {
+            "schema": SCHEMA,
+            "version": VERSION,
+            "ok": True,
+            "request_id": request.get("request_id"),
+            "results": results,
+            "evidence": {
+                "target": target,
+                "device": device,
+                "batch_size": len(results),
+                "elapsed_seconds": time.perf_counter() - started,
+            },
+        }
     if operation not in {"statevector", "measurements"}:
         raise ValueError(f"unsupported workspace executor operation {operation!r}")
     if request.get("target") != target:
@@ -127,16 +188,7 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
     if operation == "measurements":
         if not measurements:
             raise ValueError("measurement execution requires at least one request")
-        supported = {
-            "counts",
-            "counts_ps",
-            "expectation_identity",
-            "expectation_ps",
-            "probabilities",
-            "sample",
-            "sample_ps",
-        }
-        if any(item.kind not in supported for item in measurements):
+        if any(item.kind not in SUPPORTED_MEASUREMENTS for item in measurements):
             raise ValueError(
                 "resident execution received an unsupported measurement request"
             )
