@@ -161,7 +161,7 @@ class _Capture:
             self.fail(
                 function,
                 "function.return",
-                "captured function must end with one scalar expectation return",
+                "captured function must end with one supported scalar return",
             )
         program = HybridProgram(
             function.name,
@@ -306,6 +306,8 @@ class _Capture:
             )[0]
         if isinstance(node, ast.Call):
             name = _call_name(node).lower()
+            if name == "measure":
+                return self.capture_measurement(node)
             if name in {"item", "detach", "numpy", "tolist"}:
                 self.fail(
                     node,
@@ -656,11 +658,49 @@ class _Capture:
                 result_types=(QUANTUM_EFFECT,),
             )[0]
             return
+        if name in {"h", "x"}:
+            if call.args:
+                self.fail(
+                    call,
+                    "quantum.arguments",
+                    f"{name.upper()} accepts only the wires keyword",
+                )
+            wire = self.dynamic_wires(call, expected=1)[0]
+            self.effect = self.emit(
+                call,
+                f"quantum.{name}",
+                operands=(wire, self.require_effect(call)),
+                result_types=(QUANTUM_EFFECT,),
+            )[0]
+            return
+        if name == "measure":
+            self.fail(
+                call,
+                "quantum.measurement_value",
+                "measure must be assigned to a local name",
+            )
         self.fail(
             call,
             "quantum.unsupported",
             f"unsupported quantum call {_call_name(call)!r}",
         )
+
+    def capture_measurement(self, call: ast.Call) -> Value:
+        if call.args:
+            self.fail(
+                call,
+                "quantum.arguments",
+                "measure accepts only the wires keyword",
+            )
+        wire = self.dynamic_wires(call, expected=1)[0]
+        measured, effect = self.emit(
+            call,
+            "quantum.measure",
+            operands=(wire, self.require_effect(call)),
+            result_types=(BOOL, QUANTUM_EFFECT),
+        )
+        self.effect = effect
+        return measured
 
     def wires_node(self, call: ast.Call) -> ast.expr:
         matches = [item.value for item in call.keywords if item.arg == "wires"]
@@ -698,11 +738,29 @@ class _Capture:
         return tuple(self.emit_index(item) for item in items)
 
     def capture_return(self, statement: ast.Return) -> None:
+        if isinstance(statement.value, ast.Name):
+            result = self.emit_expression(statement.value)
+            if result.type != BOOL:
+                self.fail(
+                    statement.value,
+                    "function.return",
+                    "a direct return is limited to a measurement bool",
+                )
+            effect = self.require_effect(statement)
+            self.effect = None
+            self.operations.append(
+                Operation(
+                    "program.return",
+                    operands=(result, effect),
+                    location=self.location(statement),
+                )
+            )
+            return
         if statement.value is None or not isinstance(statement.value, ast.Call):
             self.fail(
                 statement,
                 "function.return",
-                "return must contain a supported scalar expectation",
+                "return must contain an expectation or measurement bool",
             )
         call = statement.value
         name = _call_name(call).replace("_", "").lower()

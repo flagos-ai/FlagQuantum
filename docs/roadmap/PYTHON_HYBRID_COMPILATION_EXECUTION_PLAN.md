@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-6 complete; Phase 7 separately gated**
+Status: **Phases 1-7 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -640,3 +640,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 5 branchwise adjoint VJP vertical slice verified
 - [x] Phase 6 functional PyTorch custom-op contract authorized
 - [x] Phase 6 FakeTensor, Autograd, opcheck, gradcheck, and fullgraph path verified
+- [x] Phase 7 Runtime/Simulation contract authorized for a bounded profile
+- [x] Phase 7 measurement-value, conditional-session, shot, and gradient-policy slice verified

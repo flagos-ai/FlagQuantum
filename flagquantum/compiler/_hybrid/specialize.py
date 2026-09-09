@@ -340,6 +340,11 @@ class _Specializer:
                 self.fail(operation, "quantum.wires", "CX wires must be distinct")
             self.gates.append(TraceGate("cx", wires))
             return (_EFFECT,)
+        if name in {"quantum.h", "quantum.x"}:
+            self.require_effect(operation, operands[1])
+            wire = self.as_index(operation, operands[0])
+            self.gates.append(TraceGate(name.removeprefix("quantum."), (wire,)))
+            return (_EFFECT,)
         if name == "quantum.expectation":
             self.require_effect(operation, operands[0])
             self.observables = tuple(

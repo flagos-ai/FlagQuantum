@@ -318,3 +318,59 @@ and eager/AOT-compiled forward and first-order gradients agree under
 path deliberately rematerializes the statevector-adjoint context, and no
 performance, public API, accelerator, distributed, or broader control-flow
 claim is made.
+
+## Phase 7 dynamic measurement-session authorization
+
+Phase 7 may add a separately bounded measurement-feedback profile without
+changing the analytic custom operator from Phase 6. Source capture represents
+`qp.measure(wires=...)` as a `quantum.measure` operation that consumes and
+returns the linear quantum effect and also produces a boolean SSA value. A
+program may use that value directly as an `if` condition and return the
+measured bit. This makes the data dependency explicit in Program IR rather
+than evaluating a quantum measurement during Compiler specialization.
+
+Compiler lowers both sides of the structured branch into the existing Core
+`CircuitIR`: the measurement becomes an existing dynamic `measure`
+instruction, and gates in the true and false regions carry conditions for the
+same classical bit. Runtime, not Compiler, owns state collapse, the per-shot
+classical register, conditional continuation, seeding, trajectory selection,
+statistics, and result construction. Simulation continues to own statevector
+gate primitives; this phase reuses the existing dynamic measurement
+implementation and adds no numerical kernel. The first profile supports only
+no-input programs, top-level measurement, direct measurement-bool conditions,
+H/X/CX gates, and local CPU `complex64` or `complex128` execution.
+
+The private Runtime entry point validates the compiler marker and all dynamic
+metadata before constructing a transient `DynamicCircuit` and calling the
+existing dynamic trajectory executor. Every shot starts from an independent
+initial state, maintains its own collapsed quantum state and classical
+register, follows its measured branch, and contributes one final sample. A
+fixed integer seed must reproduce measurement bits, branches, and final
+samples. The returned `DynamicExecutionResult.classical_bits` contains the
+source-visible measurement values; metadata identifies which classical bit
+was returned by the program.
+
+Stochastic gradients are explicitly unsupported and fail closed when any
+trainable tensor reaches the session. There is no parameter-shift,
+score-function, straight-through, or silent deterministic-gradient fallback.
+This authorization also excludes runtime inputs, measurement inside a branch,
+arbitrary boolean expressions over measurement results, loops containing
+measurements, reset, durable sessions across calls, `torch.compile`, finite-shot
+gradient claims, accelerators, distributed execution, remote providers, and
+performance claims.
+
+Phase 7 acceptance requires exact `CircuitIR` lowering, observation of both
+branches, shot-wise agreement among the measured bit, conditional gates, and
+final samples, seeded reproducibility, equivalent reference and batched
+trajectory semantics, and negative tests for invalid shot counts, classical
+read-before-measurement, conditional measurement, and trainable parameters.
+The entry points remain private and do not change the root API or the default
+`fq.run`/`fq.plan` path.
+
+Phase 7 acceptance is complete for this bounded profile. The compiler emits a
+single Core `CircuitIR`; the existing Runtime dynamic trajectory machinery
+performs state collapse and feedback; both reference and batched strategies
+preserve the returned measurement semantics; and every excluded gradient or
+control case fails closed. This result is a semantic vertical slice, not a
+claim of general dynamic-program compilation or production dynamic-QPU
+support.

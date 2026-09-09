@@ -223,3 +223,34 @@ def test_phase6_is_functional_explicit_and_fullgraph_verified() -> None:
     assert phase6["public_api_change"] is False
     assert phase6["default_path_change"] is False
     assert contract["phase6_completed"] is True
+
+
+def test_phase7_reuses_dynamic_runtime_and_rejects_stochastic_gradients() -> None:
+    contract = _contract()
+    phase7 = contract["phase7"]
+
+    assert {"quantum.h", "quantum.x", "quantum.measure", "scf.if"} <= set(
+        phase7["phase7_operations"]
+    )
+    assert phase7["compiler_handoff_artifact"] == "flagquantum.core.ir.CircuitIR"
+    assert phase7["runtime_result"].endswith(".DynamicExecutionResult")
+    assert phase7["execution_scope"] == "local_cpu_statevector_trajectory"
+    assert phase7["source_measurement_value"] == "bool_ssa_value"
+    assert phase7["conditional_continuation"] == ("direct_measurement_bool_then_else")
+    assert phase7["supported_gates"] == ["h", "x", "cx"]
+    assert phase7["runtime_inputs_supported"] is False
+    assert phase7["conditional_measurement_supported"] is False
+    assert phase7["shot_semantics"] == "independent_trajectories"
+    assert phase7["seeded_reproducibility_required"] is True
+    assert phase7["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase7["durable_session_claim"] is False
+    assert phase7["torch_compile_claim"] is False
+    assert phase7["accelerator_claim"] is False
+    assert phase7["distributed_claim"] is False
+    assert phase7["performance_claim"] is False
+    assert phase7["public_api_change"] is False
+    assert phase7["default_path_change"] is False
+    assert phase7["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE7_EVIDENCE.md"
+    )
+    assert contract["phase7_completed"] is True

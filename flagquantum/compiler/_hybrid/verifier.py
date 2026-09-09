@@ -179,10 +179,22 @@ class _Verifier:
 
         if name == "program.return":
             if operands and (
-                not _is_scalar(operands[0].type) or operands[0].type.linear
+                (not _is_scalar(operands[0].type) and operands[0].type != BOOL)
+                or operands[0].type.linear
             ):
                 self.error(
                     "program.return_type", "program must return one scalar value"
+                )
+            if operands and operands[0].type == BOOL:
+                if len(operands) != 2 or operands[1].type != QUANTUM_EFFECT:
+                    self.error(
+                        "program.dynamic_return",
+                        "a measurement bool return must consume the quantum effect",
+                    )
+            elif len(operands) != 1:
+                self.error(
+                    "program.return_arity",
+                    "an expectation return must contain exactly one value",
                 )
         elif name == "arith.constant" and len(results) == 1:
             self._verify_constant(operation)
@@ -256,6 +268,35 @@ class _Verifier:
                 self.error(
                     "quantum.cx_type",
                     "quantum.cx requires index, index, effect -> effect",
+                )
+        elif name in {"quantum.h", "quantum.x"}:
+            if (
+                len(operands) == 2
+                and len(results) == 1
+                and (
+                    operands[0].type != INDEX
+                    or operands[1].type != QUANTUM_EFFECT
+                    or results[0].type != QUANTUM_EFFECT
+                )
+            ):
+                self.error(
+                    "quantum.fixed_gate_type",
+                    f"{name} requires index, effect -> effect",
+                )
+        elif name == "quantum.measure":
+            if (
+                len(operands) == 2
+                and len(results) == 2
+                and (
+                    operands[0].type != INDEX
+                    or operands[1].type != QUANTUM_EFFECT
+                    or results[0].type != BOOL
+                    or results[1].type != QUANTUM_EFFECT
+                )
+            ):
+                self.error(
+                    "quantum.measure_type",
+                    "quantum.measure requires index, effect -> bool, effect",
                 )
         elif name == "quantum.expectation" and len(operands) == 1 and len(results) == 1:
             if operands[0].type != QUANTUM_EFFECT or not _is_scalar(results[0].type):

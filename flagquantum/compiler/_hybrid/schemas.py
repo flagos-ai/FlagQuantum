@@ -20,7 +20,7 @@ class OperationSchema:
 
 
 OPERATION_SCHEMAS = {
-    "program.return": OperationSchema(1, 1, 0, 0, 0, terminator=True),
+    "program.return": OperationSchema(1, 2, 0, 0, 0, terminator=True),
     "tensor.dim": OperationSchema(2, 2, 1, 1, 0),
     "tensor.extract": OperationSchema(2, None, 1, 1, 0),
     "arith.constant": OperationSchema(
@@ -40,6 +40,9 @@ OPERATION_SCHEMAS = {
     "quantum.rx": OperationSchema(3, 3, 1, 1, 0),
     "quantum.ry": OperationSchema(3, 3, 1, 1, 0),
     "quantum.cx": OperationSchema(3, 3, 1, 1, 0),
+    "quantum.h": OperationSchema(2, 2, 1, 1, 0),
+    "quantum.x": OperationSchema(2, 2, 1, 1, 0),
+    "quantum.measure": OperationSchema(2, 2, 2, 2, 0),
     "quantum.expectation": OperationSchema(
         1, 1, 1, 1, 0, required_attributes=frozenset({"terms"})
     ),

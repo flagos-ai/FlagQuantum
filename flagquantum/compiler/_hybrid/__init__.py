@@ -9,6 +9,7 @@ from .capture import (
     capture_function,
     capture_source,
 )
+from .dynamic_lowering import LoweredDynamicProgram, lower_dynamic_program
 from .lowering import (
     CircuitStructureCache,
     LoweredHybridProgram,
@@ -50,6 +51,7 @@ __all__ = (
     "HybridVerificationError",
     "IRType",
     "LoweredHybridProgram",
+    "LoweredDynamicProgram",
     "Operation",
     "Region",
     "SourceLocation",
@@ -61,6 +63,7 @@ __all__ = (
     "capture_function",
     "capture_source",
     "lower_trace",
+    "lower_dynamic_program",
     "scalar_type",
     "tensor_type",
     "specialize_and_lower",

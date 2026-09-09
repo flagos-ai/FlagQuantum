@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase6_pytorch_fullgraph_verified",
+  "status": "phase7_dynamic_session_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -233,6 +233,45 @@
     "default_path_change": false
   },
   "phase6_completed": true,
+  "phase7": {
+    "phase7_operations": [
+      "quantum.h",
+      "quantum.x",
+      "quantum.cx",
+      "quantum.measure",
+      "scf.if",
+      "scf.yield",
+      "program.return"
+    ],
+    "compiler_entry_point": "flagquantum.compiler._hybrid.lower_dynamic_program",
+    "compiler_handoff_artifact": "flagquantum.core.ir.CircuitIR",
+    "runtime_entry_point": "flagquantum.runtime.dynamic.hybrid_session.execute_hybrid_dynamic_session",
+    "runtime_result": "flagquantum.runtime.dynamic.result.DynamicExecutionResult",
+    "execution_scope": "local_cpu_statevector_trajectory",
+    "session_lifetime": "one_independent_collapsed_state_and_classical_register_per_shot",
+    "durable_session_claim": false,
+    "source_measurement_value": "bool_ssa_value",
+    "return_value": "measured_classical_bit_in_classical_bits",
+    "conditional_continuation": "direct_measurement_bool_then_else",
+    "supported_gates": [
+      "h",
+      "x",
+      "cx"
+    ],
+    "runtime_inputs_supported": false,
+    "conditional_measurement_supported": false,
+    "shot_semantics": "independent_trajectories",
+    "seeded_reproducibility_required": true,
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "torch_compile_claim": false,
+    "accelerator_claim": false,
+    "distributed_claim": false,
+    "performance_claim": false,
+    "public_api_change": false,
+    "default_path_change": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE7_EVIDENCE.md"
+  },
+  "phase7_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,
