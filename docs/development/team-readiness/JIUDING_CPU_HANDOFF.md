@@ -5,14 +5,15 @@
 - Team: remote.
 - Worktree: `FlagQuantum-vNext-execution`.
 - Branch: `codex/vnext-team-execution-providers`.
-- Common integration baseline: `9cd38efcd136abc9a705151be3378f9487d1064e`.
-- Implementation is present and tested but NOT committed or merged.
-- Commit attempt was blocked by local system hooks: `python`, `black` and
-  `mypy` were not found on the hook PATH. No hooks were bypassed. Ruff's
-  automatic import-order/unused-import fixes were retained.
-- The main integration worktree had unrelated active API/observable edits;
-  it was not modified by this task. Finish the commit environment and coordinate
-  a normal non-fast-forward integration merge after those edits are settled.
+- Original live-run baseline: `9cd38efcd136abc9a705151be3378f9487d1064e`.
+- Updated integration baseline: `7f77dbad` (includes the observable API changes).
+- Implementation commit: `fb4daead`.
+- Integration authorized by the user after the other API edits were committed.
+- The initial hook PATH issue is resolved by using the existing
+  `FlagQAI/backend/.venv/bin` tool environment and the bundled Git fallback.
+  Every commit hook passed, including architecture, API baseline, Black and both
+  mypy checks. No hooks were bypassed or disabled.
+- Unrelated untracked planning documents in the main worktree are excluded.
 
 ## Scope and interface
 
@@ -53,6 +54,22 @@ shared snapshot at `/share/project/liuwei/fq-jiuding-vnext.c0yW36`.
 
 ## Verification
 
+Latest integration verification supersedes the older environment failures below:
+
+- On baseline `7f77dbad` plus this adapter, Python 3.12.14 / PyTorch 2.13.0:
+  **1227 passed, 14 skipped**, 1270 deselected, 24.72 s for the default smoke/unit
+  suite; **30 passed** for the focused local/remote regression set.
+- Bell example also ran locally on the updated API and returned the same
+  probabilities with maximum absolute error 0.
+- Local validation used Python `-S` and explicitly added the existing venv's
+  site-packages without executing unrelated editable-install `.pth` hooks.
+  This prevented imports from an old sibling worktree. Obsolete, untracked
+  pyc-only backend directories were preserved outside the repository in /tmp.
+- Git was placed on PATH for repository-hygiene tests. These were environment
+  corrections, not changes to test expectations or product code.
+
+Original remote validation before integration:
+
 - Final focused regression: **30 passed** in 2.88 s, covering
   `tests/team/remote/test_jiuding.py`, `tests/test_local_fast_path.py`,
   `tests/test_cloud_providers.py`, `tests/test_amazon_braket_provider.py`.
@@ -83,7 +100,6 @@ automatic partial-launch recovery, release certification or public API freeze.
 The first journey intentionally avoids manual project/queue IDs and credentials
 in subprocess arguments. Read `docs/guides/JIUDING.md` for use and failure behavior.
 
-Before requesting integration: make the repository's existing commit toolchain
-available, commit the scoped changes without bypassing hooks, and coordinate with
-the integration branch's ongoing API edits. The new adapter is not yet part of
-that worktree or any published package.
+The scoped implementation and follow-up verification record are delivered on
+the Remote branch for a normal non-fast-forward integration merge. The merge
+does not publish a package or promote the adapter to a stable API.
