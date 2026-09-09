@@ -186,6 +186,17 @@ update. A live single-A100 run used one two-circuit batch call and decreased the
 test energy after one update; see the
 [parameter-shift evidence](../development/evidence/jiuding_parameter_shift_20260909.json).
 
+The eight-parameter validation example sends 16 shifted circuits in one batch
+per optimization step:
+
+```bash
+python examples/remote/jiuding_vqe.py \
+  --workspace example-resident-a100 \
+  --target jiuding:gpu \
+  --steps 5 \
+  --learning-rate 0.4
+```
+
 The batch is validated in full before its first circuit executes, accepts at
 most 256 circuits, and returns ordinary `ExecutionResult` objects in input
 order. Statevector batches are intentionally rejected. Per-result runtime
