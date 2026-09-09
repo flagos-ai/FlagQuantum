@@ -19,6 +19,7 @@ allowed_top_level_directories = [
     "runtime",
     "simulation",
     "testing",
+    "twin",
 ]
 
 [boundaries]

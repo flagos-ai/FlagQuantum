@@ -71,8 +71,14 @@
       │ 数值执行    │ 本进程算力               │ 外部任务控制面
 ┌─────▼──────────┐ ┌▼───────────────────────┐ ┌▼─────────────────────┐
 │ Simulation     │ │ Compute                │ │ Remote                │
-│ SV/MPS/TN/Noise│ │ CPU | GPU/NPU | 通信   │ │ QPU | GPU/HPC | 云   │
+│ SV/MPS/TN      │ │ CPU | GPU/NPU | 通信   │ │ QPU | GPU/HPC | 云   │
 └────────────────┘ └────────────────────────┘ └───────────────────────┘
+                │                                      │ 校准与观测
+                └───────────────┬──────────────────────┘
+                        ┌───────▼────────┐
+                        │ Noise / Twin   │
+                        │ 噪声语义/设备孪生 │
+                        └────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────────┐
 │ Core                                                               │
@@ -84,19 +90,21 @@
 
 所有箭头均表示允许的依赖或调用方向。Core 不反向依赖任何上层模块。
 
-## 4. 七个稳定领域
+## 4. 九个稳定领域
 
 | 领域 | 唯一职责 | 可以拥有 | 禁止拥有 |
 | --- | --- | --- | --- |
 | Core | 定义稳定语义和数据契约 | IR、程序产物、能力、请求、结果、证据、错误分类 | 硬件 SDK、调度策略、数值算法、网络框架 |
 | Compiler | 将程序从一种产物变换为另一种产物 | 捕获、校验、分析、Pass、Lowering、代码生成 | 任务提交、设备生命周期、数值模拟 |
 | Runtime | 组织一次执行及其生命周期 | 规划、资源、Session、分布式编排、恢复、观测 | 编译优化、状态向量/MPS/TN 算法、长期服务任务 |
-| Simulation | 实现量子数值计算 | 状态向量、MPS、张量网络、噪声、可微计算 | 用户策略、凭据、集群资源治理 |
+| Simulation | 实现量子数值计算 | 状态向量、密度矩阵、MPS、张量网络、可微计算 | 用户策略、凭据、设备校准和集群资源治理 |
+| Noise | 定义后端无关的噪声语义 | 噪声通道、设备噪声画像、读出误差 | 数值演化算法、厂商通信、Runtime调度 |
 | Compute | 适配当前进程直接控制的算力 | CPU/GPU/NPU 生命周期、设备事实、通信原语 | 外部任务提交、数值算法、Runtime 调度 |
 | Remote | 适配外部任务控制面 | 目标发现、提交、状态、取消、结果解码 | 本地设备生命周期、数值算法、Runtime 调度 |
+| Twin | 构建并验证特定真实QPU的数字模型 | 冻结快照、校准条件化预测、漂移与真机验证 | 数值内核、厂商凭据、远程任务传输 |
 | Ecosystem | 连接外部开发生态 | 框架适配、格式导入导出、插件入口 | 第二套规范 IR、Runtime 调度、设备直调 |
 
-Application Services 是精简的应用组合层，不是第七套计算内核。只有同时组合多个稳定
+Application Services 是精简的应用组合层，不是另一套计算内核。只有同时组合多个稳定
 API，并增加校验、策略或结构化失败语义的可复用流程才放在这里。单步编译、规划和执行
 由 MCP、REST、CLI、IDE 或用户代码直接调用公共 API，不增加转发门面。
 
@@ -136,11 +144,12 @@ flagquantum/
 │   ├── observability/
 ├── simulation/
 │   ├── statevector/
+│   ├── density_matrix.py
 │   ├── mps/
 │   ├── tensor_network/
-│   ├── noise/
 │   ├── differentiation/
 │   └── kernels/
+├── noise/                   # 后端无关的噪声通道与设备噪声画像
 ├── compute/                 # 当前进程直接控制的算力
 │   ├── cpu/
 │   ├── accelerators/        # 国产 GPU/NPU/异构加速器
@@ -148,6 +157,7 @@ flagquantum/
 ├── remote/                  # 通过外部任务控制面调用的算力
 │   ├── qpu/
 │   └── services/            # GPU/HPC 服务及云平台
+├── twin/                    # 校准条件化、经真机验证的QPU数字模型
 ├── ecosystem/
 │   ├── pytorch/
 │   ├── jax/
@@ -410,9 +420,9 @@ Runtime 负责跨 QPU 编排，Compiler 负责程序划分，Provider 负责纠�
 Core <- Compiler
 Core <- Runtime
 Core <- Simulation
+Core <- Noise
 Core <- Compute + Vendor Runtime
-Core <- Simulation
-Core <- Compute
+Core + Noise + Simulation/Remote public APIs <- Twin
 Core + Deployment <- Remote + External SDK
 Core + Compiler/Runtime/Deployment public APIs <- Application Services
 Public API + Core <- Ecosystem
@@ -443,8 +453,10 @@ Public APIs + Application Services <- Protocol Adapters
 | Compiler | `compiler` | ProgramArtifact、Capabilities |
 | Runtime | `runtime` | Core 中的 ExecutionRequest、ExecutionResult |
 | Simulation | `simulation` | Simulation Contract、Evidence |
+| Noise | `noise` | Core IR 与后端无关的噪声语义 |
 | Compute | `compute` | Core 中的能力、精度和设备事实契约 |
 | Remote | `remote` | Core 中的请求、结果和远程任务契约 |
+| Twin | `twin` | Noise、Simulation与Remote的公共入口 |
 | Ecosystem | `ecosystem` | 公共 API、ProgramArtifact |
 | Application Service / Gateway | `services`、协议边缘 | Public API + composite workflow contract |
 

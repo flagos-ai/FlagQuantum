@@ -18,9 +18,13 @@
     "core": {"may_depend_on": []},
     "compiler": {"may_depend_on": ["core"]},
     "runtime": {"may_depend_on": ["core"]},
-    "simulation": {"may_depend_on": ["core"]},
+    "simulation": {"may_depend_on": ["core", "noise"]},
+    "noise": {"may_depend_on": ["core"]},
     "compute": {"may_depend_on": ["core", "vendor_runtime"]},
     "remote": {"may_depend_on": ["core", "deployment", "external_sdk"]},
+    "twin": {
+      "may_depend_on": ["core", "noise", "simulation_public_api", "remote_qpu_public_api"]
+    },
     "ecosystem": {"may_depend_on": ["core", "public_api"]},
     "services": {
       "may_depend_on": ["core", "compiler_public_api", "runtime_public_api"]
@@ -86,6 +90,17 @@
       "compatibility_adapter": "Runtime provider facade",
       "completion_evidence": "simulation and QPU or remote-service implementations pass one execution-result contract",
       "retirement_condition": "backend selection and vendor result decoding exist only behind execution-provider contracts",
+      "status": "in_progress"
+    },
+    {
+      "name": "twin_convergence",
+      "owner": "twin-maintainers",
+      "target_milestone": "vnext-phase-4",
+      "current_authority": ["FlagQuantum-qpu-digital-twin/flagquantum"],
+      "target_authority": "flagquantum/twin",
+      "compatibility_adapter": "none",
+      "completion_evidence": "a frozen calibration produces a prediction and an identity-bound hardware validation report through existing Noise, Simulation, and Remote public boundaries",
+      "retirement_condition": "only independently reviewed models leave the research worktree and no stage-numbered research module becomes a public API",
       "status": "in_progress"
     },
     {
