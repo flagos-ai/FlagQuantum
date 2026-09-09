@@ -26,6 +26,15 @@ The provider uses these Quafu SQC endpoints:
 - `GET /task/status/{tid}` and `GET /task/result/{tid}` for asynchronous jobs;
 - `GET /task/cancel/{tid}` for cancellation.
 
+These endpoints do not expose a compile-only request that returns the
+authoritative final circuit before submission. QuarkCircuit and QSteed can
+transpile locally against a calibration snapshot, but that output is only a
+candidate circuit: it does not prove which circuit the Quafu control plane will
+ultimately execute. The current Quafu digital-twin path therefore reports
+hardware comparisons as post-execution diagnostics. A returned `transpiled`
+circuit is retained as execution evidence, never presented as a circuit known
+before submission.
+
 For explicit backend selection:
 
 ```python

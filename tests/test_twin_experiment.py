@@ -121,7 +121,10 @@ def test_experiment_binds_prediction_program_receipt_and_result():
         == hashlib.sha256(SUBMITTED_QASM.encode()).hexdigest()
     )
     assert report.task_id == "task-42"
-    assert report.predictive_validation_valid is True
+    assert report.executed_program_matches_submission is True
+    assert report.validation_scope == "retrospective_diagnostic"
+    assert report.to_dict()["validation_scope"] == "retrospective_diagnostic"
+    assert report.to_dict()["executed_program_matches_submission"] is True
     assert report.validation.shots == 1024
     assert len(report.identity) == 64
 
@@ -137,8 +140,10 @@ def test_rewritten_or_missing_executed_program_fails_closed():
         _result(experiment, executed_qasm=None), receipt=receipt
     )
 
-    assert rewritten.predictive_validation_valid is False
-    assert missing.predictive_validation_valid is False
+    assert rewritten.executed_program_matches_submission is False
+    assert missing.executed_program_matches_submission is False
+    assert rewritten.validation_scope == "retrospective_diagnostic"
+    assert missing.validation_scope == "retrospective_diagnostic"
     assert rewritten.validation.shots == missing.validation.shots == 1024
 
 
@@ -170,7 +175,8 @@ def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
         report.executed_qasm_identity
         == hashlib.sha256(response["transpiled"].encode()).hexdigest()
     )
-    assert report.predictive_validation_valid is False
+    assert report.executed_program_matches_submission is False
+    assert report.validation_scope == "retrospective_diagnostic"
     assert report.validation.shots == response["shots"]
 
 

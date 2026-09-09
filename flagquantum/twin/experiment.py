@@ -178,7 +178,7 @@ class TwinExperiment:
 
 @dataclass(frozen=True)
 class TwinHardwareReport:
-    """Hardware comparison bound to an immutable twin experiment and remote task."""
+    """Post-execution diagnostic bound to a twin experiment and remote task."""
 
     experiment_identity: str
     provider: str
@@ -192,10 +192,16 @@ class TwinHardwareReport:
     schema: str = _HARDWARE_REPORT_SCHEMA
 
     @property
-    def predictive_validation_valid(self) -> bool:
-        """Whether the executed program exactly matches the submitted program."""
+    def executed_program_matches_submission(self) -> bool:
+        """Whether the program reported after execution matches the submission."""
 
         return self.executed_qasm_identity == self.submitted_qasm_identity
+
+    @property
+    def validation_scope(self) -> str:
+        """Describe what the current Quafu evidence can establish."""
+
+        return "retrospective_diagnostic"
 
     @property
     def identity(self) -> str:
@@ -210,7 +216,10 @@ class TwinHardwareReport:
             "task_id": self.task_id,
             "submitted_qasm_identity": self.submitted_qasm_identity,
             "executed_qasm_identity": self.executed_qasm_identity,
-            "predictive_validation_valid": self.predictive_validation_valid,
+            "executed_program_matches_submission": (
+                self.executed_program_matches_submission
+            ),
+            "validation_scope": self.validation_scope,
             "counts": dict(sorted(self.counts.items())),
             "validation": self.validation.to_dict(),
             "result_metadata": _json_mapping(self.result_metadata),
