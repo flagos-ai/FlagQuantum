@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-09",
-  "implementation_commit": "0415490a62dbf007dbb3f9b22046c4a24196341e",
+  "implementation_commit": "aec65643cf8d95e47094bd58840eb8b0053ed50f",
   "scope": "One parameter-shift gradient and optimization update through the resident Jiuding A100 executor",
   "workspace": {
     "name": "example-resident-a100",
