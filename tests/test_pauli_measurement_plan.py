@@ -39,8 +39,11 @@ def test_pauli_measurement_plan_rotates_each_group_into_z_basis() -> None:
     assert plan.groups[1].basis == ((0, "y"),)
     assert tuple(item.name for item in plan.packages[0].ir.instructions[-1:]) == ("h",)
     assert tuple(item.name for item in plan.packages[1].ir.instructions[-2:]) == (
-        "sdg",
+        "rz",
         "h",
+    )
+    assert plan.packages[1].ir.instructions[-2].params["theta"] == pytest.approx(
+        -torch.pi / 2
     )
     for group, package in zip(plan.groups, plan.packages, strict=True):
         rotated = fq.Circuit.from_ir(package.ir)
@@ -70,6 +73,24 @@ def test_grouped_counts_reconstruct_general_pauli_hamiltonian() -> None:
 
     torch.testing.assert_close(value, torch.tensor([-0.4]))
     torch.testing.assert_close(plan.expectation(counts), value)
+    torch.testing.assert_close(plan.standard_error(counts), torch.tensor([0.0]))
+
+
+def test_grouped_standard_error_includes_within_group_covariance() -> None:
+    hamiltonian = Hamiltonian((pauli_term(1.0, "Z", (0,)), pauli_term(1.0, "Z", (1,))))
+    plan = fqd.create_pauli_measurement_plan(
+        fq.Circuit(2),
+        hamiltonian,
+        shots=10,
+        optimize=False,
+    )
+
+    standard_error = plan.standard_error(({"00": 5, "11": 5},))
+
+    torch.testing.assert_close(
+        standard_error,
+        torch.tensor([(4.0 / 10) ** 0.5]),
+    )
 
 
 def test_local_provider_executes_grouped_measurement_packages() -> None:

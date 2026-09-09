@@ -38,6 +38,10 @@ no direct accessors for probabilities or counts.
   current Quafu path supports one full-register counts request and fails closed
   for unsupported output shapes or kinds.
 
+The counts-only boundary above records the Proposal 020 implementation state.
+Proposal 021 subsequently adds one remote Pauli expectation output without
+changing the public signature or weakening fail-closed behavior.
+
 ## Naming and alternatives
 
 `outputs` describes what the caller wants returned; `measurements` remains the
