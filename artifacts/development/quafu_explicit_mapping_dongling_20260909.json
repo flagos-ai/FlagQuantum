@@ -1,0 +1,74 @@
+{
+  "schema": "flagquantum_quafu_live_execution_evidence_v1",
+  "evidence_class": "development_evidence",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "source_revision": "5cfcd765",
+  "compiler_plugin": {
+    "distribution": "flagquantum-compiler-qsteed",
+    "revision": "a514227"
+  },
+  "provider": "quafu",
+  "backend": "Dongling",
+  "calibration_time": "2026-09-09 13:12:59",
+  "task": {
+    "name": "flagquantum_explicit_mapping_evidence",
+    "task_id": "2609091513234674683",
+    "status": "Finished",
+    "created": "2026-09-09 15:13:23.981082",
+    "finished": "2026-09-09 15:13:25.881186",
+    "shots": 1024
+  },
+  "program": {
+    "description": "Two-qubit Bell circuit",
+    "source_ir_sha256": "115198c73eac555ee1a6d58c4b3fb300ce04a7d9cc224fac83e4e3a6754c1582",
+    "compiled_ir_sha256": "7eacaecf172d3ef0f42d0699363dd0ab7f51acfab2eccb800ab980278282de68",
+    "compiled_instructions": [
+      {"name": "h", "wires": [0]},
+      {"name": "cx", "wires": [0, 1]}
+    ]
+  },
+  "mapping": {
+    "selection": "explicit",
+    "logical_to_physical": [3, 10],
+    "calibrated_coupler_fidelity": 0.988,
+    "compiler_execution_target": {
+      "provider": "quafu",
+      "backend": "Dongling",
+      "compiler": null,
+      "target_qubits": [3, 10]
+    }
+  },
+  "submission": {
+    "compiler": null,
+    "logical_qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];",
+    "deployment_receipt_schema": "flagquantum_submission_receipt_v1",
+    "deployment_package_schema": "flagquantum_deployment_package_v1",
+    "deployment_program_format": "openqasm-2",
+    "routing_evidence_sha256": "34cd0a490e1061bafe627750c5f4476a441ac0fdfb2434017a6c1417c3b70f1b",
+    "deployment_artifact_sha256": "3ff4384506cfebc334c64ec1bdae2d9c839e839fb639ceba766bdcb8ae88ad71"
+  },
+  "provider_result": {
+    "physical_qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[11];\ncreg c[2];\nh q[3];\ncx q[3],q[10];\nbarrier q[3],q[10];\nmeasure q[3] -> c[0];\nmeasure q[10] -> c[1];",
+    "physical_operations": [
+      ["H", "Q3"],
+      ["Cnot", ["Q3", "Q10"]],
+      ["Barrier", ["Q3", "Q10"]],
+      [["Measure", 0], "Q3"],
+      [["Measure", 1], "Q10"]
+    ],
+    "counts": {"00": 443, "01": 114, "10": 103, "11": 364},
+    "reported_error": ""
+  },
+  "checks": {
+    "requested_mapping_preserved_by_compiler": true,
+    "logical_qasm_uses_only_logical_wire_indices": true,
+    "provider_result_uses_requested_physical_qubits": true,
+    "receipt_identity_preserved_in_result": true,
+    "shot_accounting_matches": true
+  },
+  "limitations": [
+    "This is one live development run, not release certification or a statistical hardware-quality claim.",
+    "Quafu exposes the final physical circuit after submission, so platform-side circuit confirmation is post-execution diagnostic evidence rather than strict pre-submission verification."
+  ]
+}

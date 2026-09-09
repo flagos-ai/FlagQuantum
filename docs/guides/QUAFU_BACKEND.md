@@ -71,6 +71,10 @@ from the current calibration snapshot. If supplied, its order defines the
 logical-to-physical mapping and the compiler fails before submission unless the
 selection exists, is unique, and is connected.
 
+The checked-in [live execution evidence](../reference/QUAFU_LIVE_EXECUTION_EVIDENCE.md)
+shows this mapping carried from the public API through the returned physical
+Quafu circuit and task result.
+
 Quafu reports queue state but not qubit capacity from the status endpoint.
 FlagQuantum therefore retains the requested width in discovered profiles; the
 platform compiler remains authoritative for physical topology validation.
