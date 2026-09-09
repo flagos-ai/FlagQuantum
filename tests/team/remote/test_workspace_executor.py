@@ -126,6 +126,27 @@ def test_run_statevector_returns_normal_execution_result(monkeypatch):
     assert result.provenance["cpu_fallback_used"] is False
 
 
+def test_default_workspace_client_is_reused(monkeypatch):
+    from flagquantum.remote.compute import jiuding
+
+    jiuding._DEFAULT_CLIENTS.clear()
+    monkeypatch.setenv("JIUDING_WORKSPACE", "flagquantum-runtime")
+    clients = []
+
+    def execute(client, program, *, target):
+        clients.append(client)
+        return program
+
+    monkeypatch.setattr(JiudingClient, "run_statevector", execute)
+    circuit = fq.Circuit(1)
+
+    assert jiuding.run_statevector(circuit, target="jiuding:gpu") is circuit
+    assert jiuding.run_statevector(circuit, target="jiuding:gpu") is circuit
+    assert clients[0] is clients[1]
+    assert clients[0].workspace_name == "flagquantum-runtime"
+    jiuding._DEFAULT_CLIENTS.clear()
+
+
 def test_start_executor_reuses_verified_health(monkeypatch):
     client = JiudingClient(workspace="test")
     client._workspace = {

@@ -18,9 +18,9 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 
 client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
-    "flagquantum-dev",
+    "flagquantum-runtime",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-ef3affbd-cu128-a100",
     image_region="PRIVATE",
     cpus=4,
     memory_gib=16,
@@ -31,8 +31,8 @@ print(client.workspace_state(created["id"]))
 Creation starts the workspace but does not enable privileged mode, Jupyter
 Cloud IDE or automatic snapshots. It is an explicit billable infrastructure
 operation and is never triggered by `fq.run()`. Use
-`client.stop_workspace("flagquantum-dev")` to stop it without saving a
-container snapshot and `client.start_workspace("flagquantum-dev")` to restart
+`client.stop_workspace("flagquantum-runtime")` to stop it without saving a
+container snapshot and `client.start_workspace("flagquantum-runtime")` to restart
 it. Source code and durable results must remain on mounted storage; stopping a
 workspace does not make its container filesystem durable.
 
@@ -112,7 +112,7 @@ import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
-with JiudingClient(workspace="flagquantum-dev") as client:
+with JiudingClient(workspace="flagquantum-runtime") as client:
     first = client.run_statevector(
         circuit,
         target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
@@ -212,3 +212,25 @@ runs with no CPU fallback, and reused one SSH channel. The two warm calls took
 17.6--18.6 ms end to end; their recorded CUDA execution took 2.3--2.6 ms. The
 temporary workspace was stopped after validation. See the
 [resident-image evidence](../development/evidence/jiuding_warm_executor_image_20260909.json).
+
+For repeated interactive execution, select one running workspace once and use
+the stable root entry point. Calls in the same Python process reuse its resident
+executor and SSH channel:
+
+```bash
+export JIUDING_WORKSPACE=flagquantum-runtime
+```
+
+```python
+import flagquantum as fq
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+result = fq.run(circuit, target="jiuding:gpu")
+```
+
+This path currently returns an exact statevector. It deliberately rejects
+shots, output requests, noise models, compiler selection and execution plans
+instead of silently changing their meaning. Numerical execution occurs on the
+workspace GPU; the returned statevector is materialized in the caller process.
+The production workspace and root entry point were validated on 2026-09-09;
+see [the root-entry evidence](../development/evidence/jiuding_root_run_20260909.json).

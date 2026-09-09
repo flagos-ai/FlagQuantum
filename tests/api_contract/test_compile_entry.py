@@ -148,3 +148,37 @@ def test_fq_run_remote_controls_fail_closed_when_incomplete():
             shots=1024,
             name="  ",
         )
+
+
+def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
+    circuit = fq.Circuit(2).h(0).cx(0, 1)
+    expected = object()
+    captured = {}
+
+    def run_statevector(program, *, target):
+        captured.update(program=program, target=target)
+        return expected
+
+    monkeypatch.setattr(
+        "flagquantum.remote.compute.jiuding.run_statevector", run_statevector
+    )
+
+    result = fq.run(circuit, target="jiuding:gpu")
+
+    assert result is expected
+    assert captured == {"program": circuit, "target": "jiuding:gpu"}
+
+
+@pytest.mark.parametrize(
+    ("keyword", "value", "message"),
+    [
+        ("compiler", "flagquantum", "does not accept compiler"),
+        ("target_qubits", (0,), "does not accept target_qubits"),
+        ("outputs", fq.probabilities(), "returns the exact statevector"),
+        ("shots", 1024, "returns the exact statevector"),
+        ("name", "bell", "returns the exact statevector"),
+    ],
+)
+def test_fq_run_jiuding_rejects_unsupported_controls(keyword, value, message):
+    with pytest.raises(TypeError, match=message):
+        fq.run(fq.Circuit(1), target="jiuding:gpu", **{keyword: value})

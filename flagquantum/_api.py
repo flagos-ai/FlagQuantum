@@ -137,6 +137,28 @@ def run(
             noise_model=noise_model,
         )
 
+    provider_name, separator, _ = (target or "").partition(":")
+    if separator == ":" and provider_name.lower() == "jiuding":
+        if compiler is not None:
+            raise TypeError("Jiuding workspace execution does not accept compiler")
+        if target_qubits is not None:
+            raise TypeError("Jiuding workspace execution does not accept target_qubits")
+        if options is not None or noise_model is not None:
+            raise TypeError(
+                "options and noise_model are not yet supported by Jiuding workspace execution"
+            )
+        if outputs is not None or shots is not None or name is not None:
+            raise TypeError(
+                "Jiuding workspace execution currently returns the exact statevector; "
+                "outputs, shots and name are not accepted"
+            )
+        if hasattr(program_or_plan, "identity"):
+            raise TypeError(
+                "Jiuding workspace execution requires a Circuit or CircuitIR, not an ExecutionPlan"
+            )
+        jiuding = import_module(".remote.compute.jiuding", __package__)
+        return jiuding.run_statevector(program_or_plan, target=target)
+
     if compiler is None or target is None:
         raise TypeError("remote execution requires both compiler and target")
     if options is not None or noise_model is not None:
@@ -149,7 +171,6 @@ def run(
     if name is not None and (not isinstance(name, str) or not name.strip()):
         raise ValueError("remote execution name must be a non-empty string")
 
-    provider_name, separator, _ = target.partition(":")
     if separator != ":" or provider_name.lower() != "quafu":
         raise ValueError("remote fq.run currently supports target='quafu:<backend>'")
 

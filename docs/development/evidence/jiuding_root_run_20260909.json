@@ -1,0 +1,57 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "implementation_revision": "commit containing this evidence",
+  "scope": "Stable root fq.run entry through a resident Jiuding single-A100 workspace",
+  "image": {
+    "id": "676e971e-ef46-44a1-b583-ccee58402d34",
+    "name": "flagquantum-runtime",
+    "tag": "v0.2.0-ef3affbd-cu128-a100"
+  },
+  "workspace": {
+    "id": "641e867f-5c4e-455d-9ba3-e32d73099ae1",
+    "name": "flagquantum-runtime",
+    "status_after_validation": 1,
+    "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+    "accelerator_count": 1,
+    "cpu_cores": 4,
+    "memory_gib": 16
+  },
+  "replaced_workspace": {
+    "id": "36022265-0512-4172-b63f-eb92ad2bdb4a",
+    "name": "flagquantum-dev",
+    "final_status": 2,
+    "stopped_after_replacement": true
+  },
+  "request": {
+    "entry_point": "fq.run",
+    "target": "jiuding:gpu",
+    "program": "two-qubit Bell state"
+  },
+  "result": {
+    "runs": 3,
+    "selected_target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "device": "cuda:0",
+    "statevector_assertion_passed": true,
+    "cpu_fallback_used": false,
+    "first_total_seconds": 8.936033833997499,
+    "warm_total_seconds": [
+      0.01656633299717214,
+      0.01557633300399175
+    ],
+    "remote_execute_seconds": [
+      0.0030127428472042084,
+      0.0022140908986330032,
+      0.0022748764604330063
+    ]
+  },
+  "claims": {
+    "root_entry_validated": true,
+    "resident_client_reuse_validated": true,
+    "resident_ssh_channel_reuse_validated": true,
+    "single_gpu_forward_validated": true,
+    "training_validated": false,
+    "multi_gpu_validated": false,
+    "multi_node_validated": false
+  }
+}

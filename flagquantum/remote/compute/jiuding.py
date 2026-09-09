@@ -26,6 +26,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+_DEFAULT_CLIENTS: dict[str, "JiudingClient"] = {}
+
 
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
@@ -1063,3 +1065,14 @@ class JiudingClient:
                 self._request(
                     "/api/v1/job/cancel", {"jobIds": [job["id"]]}, self._headers()
                 )
+
+
+def run_statevector(program, *, target: str):
+    """Execute through the process-local resident Jiuding workspace client."""
+
+    workspace = os.environ.get("JIUDING_WORKSPACE", "").strip()
+    client = _DEFAULT_CLIENTS.get(workspace)
+    if client is None:
+        client = JiudingClient(workspace=workspace or None)
+        _DEFAULT_CLIENTS[workspace] = client
+    return client.run_statevector(program, target=target)
