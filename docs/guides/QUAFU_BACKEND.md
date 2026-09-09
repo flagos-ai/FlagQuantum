@@ -52,6 +52,7 @@ result = fq.run(
     compiler="qsteed",
     target="quafu:ScQ-P10",
     shots=1024,
+    name="bell calibration",
 )
 ```
 
@@ -60,6 +61,8 @@ the same `fq.ExecutionResult` type as local execution; counts are available as
 `result.measurement("counts")`. Use `fq.compile` or
 `create_deployment_package` separately only when the compiled IR or sealed
 deployment artifact must be inspected, stored, or submitted later.
+The name is optional, but an explicitly provided name must not be empty; Quafu
+still assigns the immutable task ID.
 
 Quafu reports queue state but not qubit capacity from the status endpoint.
 FlagQuantum therefore retains the requested width in discovered profiles; the

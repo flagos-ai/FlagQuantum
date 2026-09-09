@@ -64,8 +64,8 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
         captured.update(program=program, compiler=compiler, target=target)
         return compiled
 
-    def deploy_target(program, provider, *, shots):
-        captured.update(compiled=program, provider=provider, shots=shots)
+    def deploy_target(program, provider, *, shots, name=None):
+        captured.update(compiled=program, provider=provider, shots=shots, name=name)
         handle = ProviderTaskHandle("quafu", "task-17", "ScQ-P10")
         return DeploymentResult(
             handle=handle,
@@ -96,8 +96,18 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
         "compiled": compiled,
         "provider": captured["provider"],
         "shots": 1024,
+        "name": None,
     }
     assert isinstance(captured["provider"], Provider)
+
+    fq.run(
+        circuit,
+        compiler="qsteed",
+        target="quafu:ScQ-P10",
+        shots=1024,
+        name="  bell calibration  ",
+    )
+    assert captured["name"] == "bell calibration"
 
 
 def test_fq_run_remote_controls_fail_closed_when_incomplete():
@@ -111,4 +121,12 @@ def test_fq_run_remote_controls_fail_closed_when_incomplete():
             compiler="qsteed",
             target="quafu:ScQ-P10",
             shots=0,
+        )
+    with pytest.raises(ValueError, match="non-empty string"):
+        fq.run(
+            circuit,
+            compiler="qsteed",
+            target="quafu:ScQ-P10",
+            shots=1024,
+            name="  ",
         )

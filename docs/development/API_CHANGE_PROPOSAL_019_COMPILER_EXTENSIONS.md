@@ -30,9 +30,10 @@ describe a complete circuit transpiler such as QSteed.
 - Add `fq.compile(program, compiler=None, target=None)` as the stable user
   journey. Omitting `compiler` uses the built-in FlagQuantum compiler. A named
   compiler selects exactly that installed extension without fallback.
-- Extend the stable `fq.run` journey with explicit `compiler`, `target`, and
-  `shots` keywords. When `compiler` and `target` are present, `fq.run` compiles,
-  packages, submits, waits for the result, and returns the same stable
+- Extend the stable `fq.run` journey with explicit `compiler`, `target`,
+  `shots`, and optional `name` keywords. When `compiler` and `target` are
+  present, `fq.run` compiles, packages, submits, waits for the result, and
+  returns the same stable
   `ExecutionResult` type used by local execution. Provider counts are exposed
   as a `counts` measurement; the provider-native `DeploymentResult` remains
   available through `result.native()`.
@@ -62,8 +63,10 @@ duplicate authority.
 - the one-call journey selects one named compiler, forwards its target, returns
   `CircuitIR`, always closes the extension, and never falls back;
 - remote `fq.run` requires an explicit compiler, target, and positive shot
-  count, performs no hidden compiler or provider fallback, and preserves the
-  provider-native result behind the stable result boundary;
+  count; an omitted name uses the deployment default, while an explicitly
+  supplied name must be non-empty. The workflow performs no hidden compiler or
+  provider fallback and preserves the provider-native result behind the stable
+  result boundary;
 - a standalone package can register a compiler without changing FlagQuantum.
 
 ## First-public-alpha release note

@@ -63,15 +63,16 @@ def run_program(
     compiler: str | None,
     target: str | None,
     shots: int | None,
+    name: str | None,
 ) -> Any:
     """Execute one local plan or one explicit remote QPU workflow."""
 
     remote_requested = compiler is not None or target is not None
     if not remote_requested:
-        if shots is not None:
+        if shots is not None or name is not None:
             raise TypeError(
-                "shots is a direct fq.run keyword only for remote execution; "
-                "use ExecutionOptions(shots=...) for local execution"
+                "shots and name are direct fq.run keywords only for remote "
+                "execution; use ExecutionOptions(shots=...) locally"
             )
         return import_module(".runtime.execution", __package__).run(
             program_or_plan,
@@ -89,6 +90,8 @@ def run_program(
         )
     if type(shots) is not int or shots <= 0:
         raise ValueError("remote execution shots must be a positive integer")
+    if name is not None and (not isinstance(name, str) or not name.strip()):
+        raise ValueError("remote execution name must be a non-empty string")
 
     provider_name, separator, _ = target.partition(":")
     if separator != ":" or provider_name.lower() != "quafu":
@@ -96,10 +99,11 @@ def run_program(
 
     compiled = compile_program(program_or_plan, compiler=compiler, target=target)
     remote = import_module(".remote", __package__)
+    deployment_options: dict[str, Any] = {"shots": shots}
+    if name is not None:
+        deployment_options["name"] = name.strip()
     native = import_module(".deployment", __package__).deploy_circuit(
-        compiled,
-        remote.QuafuProvider(),
-        shots=shots,
+        compiled, remote.QuafuProvider(), **deployment_options
     )
     contracts = import_module(".runtime.contracts", __package__)
     counts = {str(key): int(value) for key, value in native.counts.items()}

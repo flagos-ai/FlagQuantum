@@ -228,6 +228,11 @@ def create_deployment_package(
 ) -> DeploymentPackage:
     """Compile and serialize a trained circuit for cloud deployment."""
 
+    if not isinstance(name, str):
+        raise TypeError("deployment name must be a string")
+    name = name.strip()
+    if not name:
+        raise ValueError("deployment name must not be empty")
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     execution_target = ir.metadata.get("execution_target")
     if execution_target is not None and not isinstance(execution_target, Mapping):
@@ -235,11 +240,11 @@ def create_deployment_package(
     if backend is None:
         if execution_target:
             provider = str(execution_target.get("provider", "")).strip()
-            name = str(execution_target.get("backend", "")).strip()
-            if not provider or not name:
+            backend_name = str(execution_target.get("backend", "")).strip()
+            if not provider or not backend_name:
                 raise ValueError("execution_target requires provider and backend")
             backend = CloudBackendProfile(
-                provider=provider, name=name, n_wires=ir.n_wires
+                provider=provider, name=backend_name, n_wires=ir.n_wires
             )
         else:
             backend = CloudBackendProfile.simulator(ir.n_wires)

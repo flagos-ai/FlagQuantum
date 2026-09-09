@@ -90,6 +90,7 @@ result = fq.run(
     compiler="qsteed",
     target="quafu:ScQ-P10",
     shots=1024,
+    name="bell calibration",
 )
 counts = result.measurement("counts").value[0]
 ```
@@ -99,6 +100,10 @@ changing the stable `fq.ExecutionResult` return type. It never selects or
 substitutes a compiler or provider implicitly. Use `fq.compile` to inspect the
 compiled IR, and `create_deployment_package` when the sealed artifact must be
 persisted, signed, or submitted later.
+
+`name` is optional. Omitting it uses the deployment default; an explicitly
+provided name is trimmed and must not be empty. The provider-assigned task ID
+remains independent of this display name.
 
 ## Optimize a program
 

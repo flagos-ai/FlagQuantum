@@ -44,6 +44,37 @@ def test_create_deployment_package_exports_qasm_and_metadata():
     assert "cx q[0], q[1];" in package.qasm
 
 
+def test_deployment_name_is_optional_but_cannot_be_empty():
+    circuit = fq.Circuit(1).x(0)
+
+    assert fqd.create_deployment_package(circuit).name == "flagquantum_job"
+    assert fqd.create_deployment_package(circuit, name="  bell test  ").name == (
+        "bell test"
+    )
+    with pytest.raises(ValueError, match="must not be empty"):
+        fqd.create_deployment_package(circuit, name="  ")
+
+
+def test_target_backend_does_not_replace_deployment_name():
+    compiled = fq.CircuitIR(
+        n_wires=1,
+        instructions=(fq.Instruction("x", (0,)),),
+        metadata={
+            "execution_target": {
+                "provider": "quafu",
+                "backend": "Dongling",
+                "compiler": None,
+                "target_qubits": (7,),
+            }
+        },
+    )
+
+    package = fqd.create_deployment_package(compiled, name="bell test")
+
+    assert package.name == "bell test"
+    assert package.backend.name == "Dongling"
+
+
 def test_deployment_package_uses_backend_topology():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2)

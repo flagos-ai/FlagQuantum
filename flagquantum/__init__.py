@@ -69,6 +69,7 @@ def run(
     compiler: str | None = None,
     target: str | None = None,
     shots: int | None = None,
+    name: str | None = None,
 ) -> ExecutionResult:
     """Execute locally, or compile and execute on one named remote target."""
 
@@ -80,6 +81,7 @@ def run(
         compiler=compiler,
         target=target,
         shots=shots,
+        name=name,
     )
 
 

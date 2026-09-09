@@ -9,7 +9,7 @@
   "protected_root_changes": ["run"],
   "root_signatures": {
     "compile": "(program: 'Any', *, compiler: 'str | None' = None, target: 'str | Mapping[str, Any] | None' = None) -> 'Any'",
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, shots: 'int | None' = None) -> 'ExecutionResult'"
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
   },
   "stable_extensions": [
     {
@@ -92,7 +92,7 @@
     "credential_values_in_serializable_config": false,
     "root_exports_added": true,
     "root_compile_entry": "fq.compile(program, compiler=name, target=provider:backend)",
-    "root_remote_execution_entry": "fq.run(program, compiler=name, target=provider:backend, shots=count)",
+    "root_remote_execution_entry": "fq.run(program, compiler=name, target=provider:backend, shots=count, name=optional_non_empty_name)",
     "root_remote_result": "ExecutionResult with counts measurement and native DeploymentResult",
     "individual_extension_default_stability": "experimental",
     "discovery": "explicit_and_kind_specific",
