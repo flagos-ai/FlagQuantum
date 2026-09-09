@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-15 implemented and verified under the repository owner's
+Status: Phases 1-16 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -616,3 +616,26 @@ clears the error, later syndromes remain clear, every ancilla reset succeeds,
 and reference and batched trajectories agree. This is a bounded QEC control
 slice, not a logical-error-rate, threshold, decoder, hardware-latency, or
 fault-tolerance claim.
+
+## Phase 16 QEC-domain repetition-memory authorization
+
+Phase 16 may add an experimental `flagquantum.qec` domain for QEC-owned code
+profiles, syndrome and detection-event records, decoder contracts, correction
+decisions, workflows, and logical-result analysis. Generic circuit, compiler,
+runtime, simulation, noise, and provider semantics remain with their existing
+owners. No separate FTOC domain or duplicate execution authority is created.
+
+The first workflow is restricted to three data qubits, two adjacent Z-parity
+checks, reusable ancillas, a fixed positive round count, and zero or one
+deterministically injected X error. It composes Phase 15 lowering with the local
+dynamic session. The compiled program executes a fixed lookup correction;
+typed `Decoder` replacement is presently limited to post-execution analysis of
+recorded syndromes and must not be described as a real-time callback.
+
+Phase 16 acceptance requires correction of each single-data-qubit injection,
+zero-error preservation, consistent reference and batched trajectories,
+temporal detection events, typed shot and result records, replaceable analysis
+decoder conformance, and fail-closed validation. The subpackage is not exported
+from the stable root. No general-code, realistic-noise, logical-suppression,
+threshold, controller-latency, provider, gradient, distributed, capacity,
+performance, or fault-tolerance claim is authorized.

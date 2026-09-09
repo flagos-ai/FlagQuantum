@@ -513,6 +513,24 @@ owner = "deployment maintainers"
 limitations = "DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used."
 focused_tests = "tests/test_dynamic_conformance.py"
 
+[capabilities.repetition_code_memory]
+title = "Repetition-code memory experiment"
+summary = "Run a bounded three-data-qubit bit-flip memory experiment and inspect typed syndrome, detection-event, decoder-decision, and logical-result records."
+category = "simulation_and_training"
+user_goals = ["Exercise a fixed-round QEC control workflow", "Inspect syndrome and detection-event records", "Prototype a decoder against a typed contract"]
+public_apis = ["flagquantum.qec.run_repetition_memory_experiment", "flagquantum.qec.Decoder"]
+runtime_modes = ["local_statevector_trajectory"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "flagquantum/qec/README.md"
+documentation = "flagquantum/qec/README.md"
+level = "development_evidence"
+owner = "QEC maintainers"
+limitations = "A noiseless local reference for one fixed three-data-qubit repetition-code profile with deterministic zero or single-X injection and compiled lookup feedback. Decoder replacement currently analyzes recorded syndromes after execution; it does not replace the in-circuit feedback policy. General stabilizer codes, realistic noise, logical-error suppression, thresholds, real-time decoding, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root."
+focused_tests = "tests/qec/test_repetition_memory.py"
+development_artifact = "docs/development/HYBRID_COMPILATION_PHASE16_EVIDENCE.md"
+
 [capabilities.extension_sdk]
 title = "Extension SDK"
 summary = "Build and qualify optional extensions through the Ecosystem extension protocol."

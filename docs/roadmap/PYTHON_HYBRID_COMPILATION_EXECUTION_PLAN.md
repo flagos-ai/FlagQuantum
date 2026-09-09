@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-15 bounded vertical slices complete**
+Status: **Phases 1-16 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -709,6 +709,30 @@ Exit gate:
 - no decoder, threshold, provider, gradient, capacity, or performance claim is
   made.
 
+### Phase 16 — QEC-owned repetition-code memory workflow
+
+Create an experimental `flagquantum.qec` domain without adding stable root
+exports or moving generic dynamic control out of Compiler and Runtime. Compose
+the Phase 15 machinery into a fixed-round, three-data-qubit repetition-code
+memory experiment with two adjacent parity checks and reusable ancillas.
+
+Return typed shot-resolved syndrome, detection-event, decoder-decision, final
+data, and logical-result records. Provide a small decoder protocol and lookup
+reference. The replaceable decoder initially analyzes recorded syndromes after
+execution; the compiled lookup remains the policy that performs feedback.
+
+Exit gate:
+
+- zero-error logical-zero memory is preserved;
+- one X error on each data wire produces the expected first syndrome;
+- compiled same-round lookup feedback restores the data register;
+- later syndromes clear and temporal detection events are explicit;
+- reference and batched trajectory strategies agree;
+- analysis decoder replacement is structurally verified;
+- malformed inputs and inconsistent QEC records fail closed;
+- no stable-root, realistic-noise, real-time-decoder, threshold,
+  fault-tolerance, provider, gradient, capacity, or performance claim is made.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -852,3 +876,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 14 scalar/index/bool value partitioning and consumer splitting verified
 - [x] Phase 15 fixed-round syndrome-feedback contract authorized
 - [x] Phase 15 loop measurement, immediate correction, and ancilla reset verified
+- [x] Phase 16 QEC domain and repetition-code memory workflow verified

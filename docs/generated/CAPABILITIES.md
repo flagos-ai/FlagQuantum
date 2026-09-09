@@ -91,6 +91,9 @@ This catalog is generated from the machine-validated
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Prototype mid-circuit measurement and feed-forward | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
 | Assess backend support before execution | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
+| Exercise a fixed-round QEC control workflow | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
+| Inspect syndrome and detection-event records | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
+| Prototype a decoder against a typed contract | Repetition-code memory experiment | Development evidence | [Run example](../../flagquantum/qec/README.md) |
 | Prototype a FlagQuantum extension | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 | Register custom framework behavior | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 | Install an external circuit compiler | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
@@ -295,6 +298,20 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 - **Start:** [quick example](../../examples/noisy_simulation_v1.py)
 - **Documentation:** [guide](../../docs/guides/NOISY_SIMULATION.md)
 - **Known boundary:** Validated Markovian Kraus channels, timestamped DeviceNoiseProfile input, ASAP gate/idle thermal lowering, classical readout confusion, exact density execution, and reproducible MPS trajectories with single-rank adaptive stopping are available. Pulse overlap, crosstalk, leakage, provider calibration adapters, distributed adaptive stopping, batched statevector trajectories, production multi-GPU scheduling, and noisy gradients remain unsupported. Multi-wire MPS channels use an explicitly dense correctness fallback.
+
+### Repetition-code memory experiment
+
+Run a bounded three-data-qubit bit-flip memory experiment and inspect typed syndrome, detection-event, decoder-decision, and logical-result records.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.Decoder`
+- **Runtime modes:** `local_statevector_trajectory`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../flagquantum/qec/README.md)
+- **Documentation:** [guide](../../flagquantum/qec/README.md)
+- **Known boundary:** A noiseless local reference for one fixed three-data-qubit repetition-code profile with deterministic zero or single-X injection and compiled lookup feedback. Decoder replacement currently analyzes recorded syndromes after execution; it does not replace the in-circuit feedback policy. General stabilizer codes, realistic noise, logical-error suppression, thresholds, real-time decoding, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root.
 
 
 ## Distributed execution

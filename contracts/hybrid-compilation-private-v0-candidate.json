@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase15_fixed_round_syndrome_feedback_verified",
+  "status": "phase16_repetition_memory_workflow_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -502,6 +502,41 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE15_EVIDENCE.md"
   },
   "phase15_completed": true,
+  "phase16": {
+    "domain": "flagquantum.qec",
+    "execution_profile": "three_data_qubit_repetition_bit_flip_memory",
+    "checks": [
+      "z0_z1_parity",
+      "z1_z2_parity"
+    ],
+    "syndrome_bits_per_round": 2,
+    "error_profile": "zero_or_one_deterministic_x_on_data_wire",
+    "typed_records": [
+      "DetectionEvent",
+      "SyndromeRound",
+      "Correction",
+      "RepetitionMemoryShot",
+      "RepetitionMemoryResult"
+    ],
+    "decoder_contract": "flagquantum.qec.Decoder",
+    "reference_decoder": "flagquantum.qec.RepetitionLookupDecoder",
+    "workflow": "flagquantum.qec.run_repetition_memory_experiment",
+    "detection_event_semantics": "temporal_syndrome_xor_from_initial_zero",
+    "execution": "fixed_round_local_statevector_dynamic_session",
+    "compiled_feedback_policy": "reference_lookup",
+    "replaceable_decoder_role": "post_execution_syndrome_analysis",
+    "realtime_decoder_integration": false,
+    "realistic_noise": false,
+    "logical_error_suppression_claim": false,
+    "threshold_claim": false,
+    "fault_tolerance_claim": false,
+    "public_root_export": false,
+    "public_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE16_EVIDENCE.md"
+  },
+  "phase16_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

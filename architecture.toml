@@ -14,6 +14,7 @@ allowed_top_level_directories = [
     "experimental",
     "noise",
     "observables",
+    "qec",
     "compute",
     "remote",
     "runtime",

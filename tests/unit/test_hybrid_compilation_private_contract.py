@@ -543,3 +543,43 @@ def test_phase15_supports_fixed_round_syndrome_feedback() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE15_EVIDENCE.md"
     )
     assert contract["phase15_completed"] is True
+
+
+def test_phase16_defines_bounded_repetition_memory_workflow() -> None:
+    contract = _contract()
+    phase16 = contract["phase16"]
+
+    assert phase16["domain"] == "flagquantum.qec"
+    assert phase16["execution_profile"] == (
+        "three_data_qubit_repetition_bit_flip_memory"
+    )
+    assert phase16["checks"] == ["z0_z1_parity", "z1_z2_parity"]
+    assert phase16["syndrome_bits_per_round"] == 2
+    assert phase16["error_profile"] == ("zero_or_one_deterministic_x_on_data_wire")
+    assert phase16["typed_records"] == [
+        "DetectionEvent",
+        "SyndromeRound",
+        "Correction",
+        "RepetitionMemoryShot",
+        "RepetitionMemoryResult",
+    ]
+    assert phase16["decoder_contract"] == "flagquantum.qec.Decoder"
+    assert phase16["reference_decoder"] == ("flagquantum.qec.RepetitionLookupDecoder")
+    assert phase16["detection_event_semantics"] == (
+        "temporal_syndrome_xor_from_initial_zero"
+    )
+    assert phase16["compiled_feedback_policy"] == "reference_lookup"
+    assert phase16["replaceable_decoder_role"] == ("post_execution_syndrome_analysis")
+    assert phase16["realtime_decoder_integration"] is False
+    assert phase16["realistic_noise"] is False
+    assert phase16["logical_error_suppression_claim"] is False
+    assert phase16["threshold_claim"] is False
+    assert phase16["fault_tolerance_claim"] is False
+    assert phase16["public_root_export"] is False
+    assert phase16["public_api_change"] is False
+    assert phase16["default_path_change"] is False
+    assert phase16["performance_claim"] is False
+    assert phase16["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE16_EVIDENCE.md"
+    )
+    assert contract["phase16_completed"] is True
