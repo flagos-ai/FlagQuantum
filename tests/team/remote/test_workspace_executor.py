@@ -8,6 +8,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.errors import ExecutionError
 from flagquantum.remote.compute import _workspace_executor as executor
 from flagquantum.remote.compute.jiuding import JiudingClient
 from flagquantum.runtime.result import ExecutionResult
@@ -183,6 +184,23 @@ def test_protocol_round_trip_and_size_limit():
     stream = io.BytesIO((executor.MAX_MESSAGE_BYTES + 1).to_bytes(4, "big"))
     with pytest.raises(ValueError, match="size"):
         executor.read_message(stream)
+
+
+def test_executor_error_response_preserves_bounded_root_cause():
+    try:
+        try:
+            raise RuntimeError("missing C compiler")
+        except RuntimeError as cause:
+            raise ExecutionError("planned execution failed") from cause
+    except ExecutionError as error:
+        response = executor._error_response(error)
+
+    assert response["ok"] is False
+    assert response["error"] == "ExecutionError"
+    assert response["message"] == (
+        "ExecutionError: planned execution failed; caused by "
+        "RuntimeError: missing C compiler"
+    )
 
 
 def test_executor_fails_closed_on_target_mismatch():

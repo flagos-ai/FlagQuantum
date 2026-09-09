@@ -26,6 +26,28 @@ SUPPORTED_MEASUREMENTS = {
 }
 
 
+def _error_response(error: Exception) -> dict[str, Any]:
+    """Describe the bounded exception chain needed for remote diagnosis."""
+
+    chain = []
+    current: BaseException | None = error
+    while current is not None and len(chain) < 4:
+        message = str(current).strip()
+        chain.append(
+            f"{type(current).__name__}: {message}"
+            if message
+            else type(current).__name__
+        )
+        current = current.__cause__ or current.__context__
+    return {
+        "schema": SCHEMA,
+        "version": VERSION,
+        "ok": False,
+        "error": type(error).__name__,
+        "message": "; caused by ".join(chain)[:2000],
+    }
+
+
 def _read_exact(stream: Any, size: int) -> bytes:
     chunks = bytearray()
     while len(chunks) < size:
@@ -70,11 +92,11 @@ def _encode_tensor(value: Any) -> dict[str, Any]:
         torch.int64,
     ):
         raise TypeError(f"unsupported result dtype {flat.dtype}")
-    storage = (
-        flat.view(torch.float32)
-        if flat.dtype == torch.complex64
-        else flat.view(torch.float64) if flat.dtype == torch.complex128 else flat
-    )
+    storage = flat
+    if flat.dtype == torch.complex64:
+        storage = flat.view(torch.float32)
+    elif flat.dtype == torch.complex128:
+        storage = flat.view(torch.float64)
     return {
         "dtype": str(flat.dtype).removeprefix("torch."),
         "shape": list(value.shape),
@@ -275,13 +297,7 @@ def serve(*, host: str, port: int, target: str, device: str) -> None:
                     try:
                         response = execute(request, target=target, device=device)
                     except Exception as exc:
-                        response = {
-                            "schema": SCHEMA,
-                            "version": VERSION,
-                            "ok": False,
-                            "error": type(exc).__name__,
-                            "message": str(exc),
-                        }
+                        response = _error_response(exc)
                     try:
                         write_message(stream, response)
                     except (BrokenPipeError, ConnectionError, ValueError):

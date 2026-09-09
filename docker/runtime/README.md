@@ -1,9 +1,10 @@
 # FlagQuantum Jiuding runtime image
 
 This image is the small, reproducible environment for NVIDIA GPU jobs. It adds
-only FlagQuantum and Jiuding's required SSH service to an existing CUDA-enabled
-PyTorch runtime. Development tools, JAX, test dependencies, compilers, and
-benchmark artifacts are intentionally excluded.
+FlagQuantum, Jiuding's required SSH service, and the minimal C toolchain needed
+by Triton's first-use driver bootstrap to an existing CUDA-enabled PyTorch
+runtime. JAX, test dependencies, general development tools, and benchmark
+artifacts are intentionally excluded.
 
 ## Build the wheel
 
@@ -55,10 +56,12 @@ reproducible production image.
 python -c "import json,flagquantum as fq,torch; assert torch.cuda.is_available(); print(json.dumps({'flagquantum':fq.__version__,'torch':torch.__version__,'cuda':torch.version.cuda,'gpu':torch.cuda.get_device_name(0)}))"
 ```
 
-Jiuding requires SSH support even for job images, so `openssh-server` is the
-only operating-system package added here. The Dockerfile does not replace the
-base image's entrypoint or modify platform-provided `NVIDIA_*`, `CUDA_*`,
-`NCCL_*`, `RANK`, `MASTER_*`, or `AIRS_*` environment variables.
+Jiuding requires SSH support even for job images. Triton also compiles a small
+driver helper on first use, so the runtime keeps `gcc` and `libc6-dev`; omitting
+them allows simple Torch-only gates to run but breaks Triton-backed fused gates.
+The Dockerfile does not replace the base image's entrypoint or modify
+platform-provided `NVIDIA_*`, `CUDA_*`, `NCCL_*`, `RANK`, `MASTER_*`, or
+`AIRS_*` environment variables.
 
 This runtime image is suitable for functional and performance development. It
 is not, by itself, release evidence for a benchmark or scalability claim.

@@ -194,13 +194,19 @@ python examples/remote/jiuding_vqe.py \
   --workspace example-resident-a100 \
   --target jiuding:gpu \
   --steps 5 \
-  --learning-rate 0.4
+  --learning-rate 0.35
 ```
 
-The recorded five-step A100 run used exactly one gradient batch per step,
-decreased the energy at every update, and had a maximum gradient error of
-`1.31e-6` against local autograd. See the
-[eight-parameter VQE evidence](../development/evidence/jiuding_vqe_8param_20260909.json).
+The example uses two RY layers separated by chained CX gates. The recorded
+five-step A100 run used exactly one 16-circuit gradient batch per step,
+decreased the energy at every update, and had a maximum gradient error below
+`3.6e-7` against local autograd. See the
+[entangling VQE evidence](../development/evidence/jiuding_entangling_vqe_20260909.json).
+
+GPU runtime images must contain `gcc` and `libc6-dev`. Triton compiles its small
+driver helper on first use; without that minimal toolchain, Torch-only gates can
+appear healthy while the first fused gate fails. FlagQuantum never treats a
+CPU fallback as a remedy for this image defect.
 
 The batch is validated in full before its first circuit executes, accepts at
 most 256 circuits, and returns ordinary `ExecutionResult` objects in input

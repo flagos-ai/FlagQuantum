@@ -19,7 +19,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
 COPY dist/${FLAGQUANTUM_WHEEL} /tmp/${FLAGQUANTUM_WHEEL}
 
 RUN apt-get update \
-    && apt-get install -yq --no-install-recommends openssh-server tzdata \
+    && apt-get install -yq --no-install-recommends \
+        gcc \
+        libc6-dev \
+        openssh-server \
+        tzdata \
     && mkdir -p /run/sshd \
     && python -m pip install --no-deps /tmp/${FLAGQUANTUM_WHEEL} \
     && rm -f /tmp/${FLAGQUANTUM_WHEEL} \

@@ -18,7 +18,11 @@ LABEL org.opencontainers.image.title="FlagQuantum Jiuding runtime" \
 COPY flagquantum-0.2.0-py3-none-any.whl /tmp/flagquantum-0.2.0-py3-none-any.whl
 
 RUN apt-get update \
-    && apt-get install -yq --no-install-recommends openssh-server tzdata \
+    && apt-get install -yq --no-install-recommends \
+        gcc \
+        libc6-dev \
+        openssh-server \
+        tzdata \
     && mkdir -p /run/sshd \
     && python -m pip install --no-deps /tmp/flagquantum-0.2.0-py3-none-any.whl \
     && rm -f /tmp/flagquantum-0.2.0-py3-none-any.whl \

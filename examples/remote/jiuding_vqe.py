@@ -1,4 +1,4 @@
-"""Run an eight-parameter VQE loop on a warm Jiuding executor."""
+"""Run an eight-parameter entangling VQE loop on a warm Jiuding executor."""
 
 import argparse
 import json
@@ -12,19 +12,25 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 
 
 def build_ansatz(parameters: torch.Tensor) -> fq.Circuit:
-    """Build the fixed eight-qubit, eight-parameter validation ansatz."""
+    """Build the fixed four-qubit, two-layer validation ansatz."""
 
-    circuit = fq.Circuit(8)
-    for wire in range(8):
+    circuit = fq.Circuit(4)
+    for wire in range(4):
         circuit.ry(wire, theta=parameters[wire])
+    for wire in range(3):
+        circuit.cx(wire, wire + 1)
+    for wire in range(4):
+        circuit.ry(wire, theta=parameters[wire + 4])
+    for wire in range(3):
+        circuit.cx(wire, wire + 1)
     return circuit
 
 
 def hamiltonian() -> fq.Observable:
-    """Return an eight-term Pauli-Z Hamiltonian as one requested output."""
+    """Return a four-term Pauli-Z Hamiltonian as one requested output."""
 
     observable = fq.Z(0)
-    for wire in range(1, 8):
+    for wire in range(1, 4):
         observable += fq.Z(wire)
     return observable
 
@@ -46,7 +52,7 @@ def main() -> None:
     parser.add_argument("--workspace", required=True)
     parser.add_argument("--target", required=True)
     parser.add_argument("--steps", type=int, default=5)
-    parser.add_argument("--learning-rate", type=float, default=0.2)
+    parser.add_argument("--learning-rate", type=float, default=0.35)
     args = parser.parse_args()
     if args.steps <= 0:
         parser.error("--steps must be positive")

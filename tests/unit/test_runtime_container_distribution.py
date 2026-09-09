@@ -14,6 +14,8 @@ def test_runtime_image_installs_only_the_prebuilt_package() -> None:
     assert ".[dev" not in dockerfile
     assert "jax" not in dockerfile.lower()
     assert "build-essential" not in dockerfile
+    assert "gcc" in dockerfile
+    assert "libc6-dev" in dockerfile
 
 
 def test_jiuding_recipe_obeys_platform_build_contract() -> None:
@@ -24,6 +26,8 @@ def test_jiuding_recipe_obeys_platform_build_contract() -> None:
     assert dockerfile.startswith("FROM pytorch/pytorch:")
     assert dockerfile.count("COPY ") == 1
     assert "openssh-server" in dockerfile
+    assert "gcc" in dockerfile
+    assert "libc6-dev" in dockerfile
     assert "ENTRYPOINT" not in dockerfile
     assert "torch.version.cuda" in dockerfile
     assert 'org.flagquantum.sc27.release_evidence="false"' in dockerfile
