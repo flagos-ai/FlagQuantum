@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-22 implemented and verified under the repository owner's
+Status: Phases 1-23 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -777,3 +777,25 @@ oracles.
 This phase does not authorize general loop unrolling, loop-invariant code
 motion, speculative execution, target-specific transformation, a target IR,
 stable pass plugins, public exports, or performance claims.
+
+## Phase 23 bounded constant-loop unroll authorization
+
+Phase 23 may unroll a direct entry-block `scf.for` only when constant analysis
+establishes integer lower, upper, and nonzero step values. The default pass may
+expand at most eight iterations per loop and at most 256 operations across the
+pipeline. A loop outside either budget remains structured for the existing
+specialization or dynamic-lowering path.
+
+Each expanded iteration has fresh SSA definitions and an explicit induction
+constant. Classical carried values and the linear quantum effect are chained
+from one cloned yield to the next. The final values replace the original loop
+results. The transformed program must pass the ordinary verifier and repeated
+normalization must be an identity transformation.
+
+The number of compile-time-expanded iterations is retained in pass evidence
+and initialized into the existing lowering counter. Therefore optimization may
+not bypass a caller's `max_unrolled_iterations` policy. Acceptance requires
+optimized/unoptimized `CircuitIR` agreement, parameter-value agreement,
+preserved autograd edges, and matching limit failures. Nested-loop expansion,
+general unrolling, target-specific scheduling, public APIs, and performance
+claims remain unauthorized.

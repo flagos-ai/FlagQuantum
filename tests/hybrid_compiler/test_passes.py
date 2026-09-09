@@ -6,9 +6,11 @@ import pytest
 import torch
 
 from flagquantum.compiler._hybrid import (
+    BoundedLoopUnrollPass,
     HybridProgram,
     HybridVerificationError,
     Region,
+    SpecializationError,
     analyze_program,
     capture_source,
     lower_dynamic_program,
@@ -57,6 +59,25 @@ def optimized_feedback():
     return bit
 """
 
+UNROLL_SOURCE = """
+def bounded_unroll(theta, delta):
+    angle = theta
+    wire = 0
+    for layer in range(3):
+        angle = angle + delta
+        wire = (wire + 1) % 2
+        qp.RX(angle, wires=wire)
+    return qp.expval(qp.PauliZ(0))
+"""
+
+DYNAMIC_UNROLL_SOURCE = """
+def bounded_dynamic_unroll():
+    for wire in range(3):
+        qp.X(wires=wire)
+    bit = qp.measure(wires=0)
+    return bit
+"""
+
 
 def _static_program() -> HybridProgram:
     return capture_source(STATIC_SOURCE, (scalar_type("float64"),))
@@ -85,14 +106,16 @@ def test_default_pipeline_folds_constants_and_removes_dead_constants() -> None:
     assert result.optimized_identity == result.program.semantic_identity
     assert result.changed is True
     assert tuple(record.name for record in result.records) == (
+        "bounded_loop_unroll",
         "constant_fold",
         "structured_control_flow_simplification",
         "dead_constant_elimination",
     )
-    assert result.records[0].changed is True
-    assert result.records[1].changed is False
-    assert result.records[2].input_operation_count == 9
-    assert result.records[2].output_operation_count == 4
+    assert result.records[0].changed is False
+    assert result.records[1].changed is True
+    assert result.records[2].changed is False
+    assert result.records[3].input_operation_count == 9
+    assert result.records[3].output_operation_count == 4
     assert analyze_program(result.program).operation_count == 4
     assert tuple(
         operation.name for operation in result.program.body.blocks[0].operations
@@ -115,6 +138,7 @@ def test_optimized_and_unoptimized_static_lowering_are_equivalent() -> None:
     assert optimized.program_identity == program.semantic_identity
     assert optimized.optimized_program_identity != optimized.program_identity
     assert tuple(record.name for record in optimized.optimization_records) == (
+        "bounded_loop_unroll",
         "constant_fold",
         "structured_control_flow_simplification",
         "dead_constant_elimination",
@@ -152,6 +176,89 @@ def test_constant_branches_and_empty_loops_preserve_carried_ssa_values() -> None
         ("h", (1,)),
     )
     assert optimized.bind() == baseline.bind()
+
+
+def test_bounded_loop_unroll_preserves_parameters_gradients_and_budget() -> None:
+    program = capture_source(
+        UNROLL_SOURCE,
+        (scalar_type("float64"), scalar_type("float64")),
+    )
+    theta = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
+    delta = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
+
+    normalized = run_pass_pipeline(program)
+    optimized = specialize_and_lower(program, (theta, delta))
+    baseline = specialize_and_lower(program, (theta, delta), optimize=False)
+
+    assert "scf.for" not in _operation_names(normalized.program)
+    unroll_record = normalized.records[0]
+    assert unroll_record.name == "bounded_loop_unroll"
+    assert unroll_record.preexpanded_iterations == 3
+    assert normalized.preexpanded_iterations == 3
+    assert (
+        run_pass_pipeline(normalized.program).optimized_identity
+        == normalized.optimized_identity
+    )
+    assert tuple((item.name, item.wires) for item in optimized.bind().instructions) == (
+        ("rx", (1,)),
+        ("rx", (0,)),
+        ("rx", (1,)),
+    )
+    assert tuple((item.name, item.wires) for item in baseline.bind().instructions) == (
+        ("rx", (1,)),
+        ("rx", (0,)),
+        ("rx", (1,)),
+    )
+    optimized_parameters = torch.stack(
+        [item.params["theta"] for item in optimized.bind().instructions]
+    )
+    baseline_parameters = torch.stack(
+        [item.params["theta"] for item in baseline.bind().instructions]
+    )
+    assert torch.equal(optimized_parameters, baseline_parameters)
+    optimized_parameters.sum().backward()
+    assert theta.grad is not None and theta.grad.item() == pytest.approx(3.0)
+    assert delta.grad is not None and delta.grad.item() == pytest.approx(6.0)
+    with pytest.raises(SpecializationError, match="control.unroll_limit"):
+        specialize_and_lower(program, (theta, delta), max_unrolled_iterations=2)
+
+
+def test_unroll_budget_preserves_larger_loops_for_existing_lowering() -> None:
+    program = capture_source(
+        UNROLL_SOURCE,
+        (scalar_type("float64"), scalar_type("float64")),
+    )
+
+    iteration_limited = run_pass_pipeline(
+        program,
+        (BoundedLoopUnrollPass(max_iterations=2),),
+    )
+    operation_limited = run_pass_pipeline(
+        program,
+        (BoundedLoopUnrollPass(max_expanded_operations=2),),
+    )
+
+    assert "scf.for" in _operation_names(iteration_limited.program)
+    assert "scf.for" in _operation_names(operation_limited.program)
+    assert iteration_limited.preexpanded_iterations == 0
+    assert operation_limited.preexpanded_iterations == 0
+    with pytest.raises(ValueError, match="max_iterations must be positive"):
+        BoundedLoopUnrollPass(max_iterations=0)
+    with pytest.raises(ValueError, match="max_expanded_operations must be positive"):
+        BoundedLoopUnrollPass(max_expanded_operations=0)
+
+
+def test_dynamic_unroll_preserves_circuit_and_original_iteration_limit() -> None:
+    program = capture_source(DYNAMIC_UNROLL_SOURCE, ())
+
+    optimized = lower_dynamic_program(program)
+    baseline = lower_dynamic_program(program, optimize=False)
+
+    assert optimized.circuit == baseline.circuit
+    assert optimized.circuit.metadata["hybrid_dynamic_unrolled_iterations"] == 3
+    assert baseline.circuit.metadata["hybrid_dynamic_unrolled_iterations"] == 3
+    with pytest.raises(SpecializationError, match="control.unroll_limit"):
+        lower_dynamic_program(program, max_unrolled_iterations=2)
 
 
 def test_each_pass_boundary_rejects_an_invalid_program() -> None:
@@ -199,6 +306,7 @@ def test_dynamic_lowering_uses_the_same_verified_optimization_stage() -> None:
     assert optimized.program_identity == program.semantic_identity
     assert optimized.optimized_program_identity != optimized.program_identity
     assert tuple(record.name for record in optimized.optimization_records) == (
+        "bounded_loop_unroll",
         "constant_fold",
         "structured_control_flow_simplification",
         "dead_constant_elimination",

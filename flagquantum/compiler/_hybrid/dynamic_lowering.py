@@ -821,6 +821,14 @@ def lower_dynamic_program(
         max_condition_clauses=max_condition_clauses,
         max_dynamic_measurements=max_dynamic_measurements,
     )
+    if optimization.preexpanded_iterations > lowerer.max_unrolled_iterations:
+        raise SpecializationError(
+            "control.unroll_limit",
+            "compile-time-expanded loops exceed "
+            f"{lowerer.max_unrolled_iterations} loop iterations",
+            program.location,
+        )
+    lowerer.unrolled_iterations = optimization.preexpanded_iterations
     lowerer.execute_block(entry, {}, (*inputs, _EFFECT))
     if not lowerer.instructions or lowerer.measurement_count == 0:
         raise SpecializationError(

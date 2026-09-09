@@ -87,6 +87,14 @@ lowered result retains both the source and optimized semantic identities plus
 per-pass operation counts. The private `optimize=False` path is a differential
 oracle, not a second compiler mode or public API commitment.
 
+The default pipeline may also unroll a direct entry-block `scf.for` with known
+nonzero-step bounds when it has at most eight iterations and expands to at most
+256 operations across all such loops. Every iteration receives fresh SSA
+definitions and an explicit induction constant; carried classical values and
+the quantum effect are chained through each cloned yield. Larger loops remain
+structured. Pre-expanded iterations stay in pass evidence and count toward the
+existing specialization and dynamic-lowering unroll limit.
+
 This stage deliberately keeps `HybridProgram` as its input and output. It does
 not introduce a target dialect, `TargetIR`, general pass registry, stable pass
 extension API, device optimization, or performance claim. Operations that may

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any, Mapping, Protocol, Sequence
 
@@ -171,6 +171,50 @@ def _substitute_value(value: Value, substitutions: Mapping[ValueId, Value]) -> V
     return current
 
 
+def _substitute_operation(
+    operation: Operation, substitutions: Mapping[ValueId, Value]
+) -> Operation:
+    operands = tuple(
+        _substitute_value(value, substitutions) for value in operation.operands
+    )
+    regions = tuple(
+        Region(
+            tuple(
+                Block(
+                    block.arguments,
+                    tuple(
+                        _substitute_operation(nested, substitutions)
+                        for nested in block.operations
+                    ),
+                )
+                for block in region.blocks
+            )
+        )
+        for region in operation.regions
+    )
+    return (
+        operation
+        if operands == operation.operands and regions == operation.regions
+        else replace(operation, operands=operands, regions=regions)
+    )
+
+
+def _constant_loop_iterations(
+    operation: Operation, analysis: HybridProgramAnalysis
+) -> range | None:
+    if operation.name != "scf.for":
+        return None
+    bounds = tuple(
+        analysis.constant_values.get(operand.id) for operand in operation.operands[:3]
+    )
+    if any(not isinstance(value, int) or isinstance(value, bool) for value in bounds):
+        return None
+    lower, upper, step = bounds
+    if step == 0:
+        return None
+    return range(lower, upper, step)
+
+
 @dataclass(frozen=True)
 class StructuredControlFlowSimplificationPass:
     """Inline constant branches and remove statically empty loops."""
@@ -257,18 +301,149 @@ class StructuredControlFlowSimplificationPass:
 
     @staticmethod
     def _is_empty_loop(operation: Operation, analysis: HybridProgramAnalysis) -> bool:
-        if operation.name != "scf.for":
-            return False
-        bounds = tuple(
-            analysis.constant_values.get(operand.id)
-            for operand in operation.operands[:3]
+        iterations = _constant_loop_iterations(operation, analysis)
+        return iterations is not None and len(iterations) == 0
+
+
+def _fresh_value(value: Value, suffix: str) -> Value:
+    return Value(
+        ValueId(f"{value.id.scope}.{suffix}", value.id.index),
+        value.type,
+    )
+
+
+def _clone_inline_block(
+    block: Block,
+    bindings: Mapping[ValueId, Value],
+    *,
+    suffix: str,
+) -> Block:
+    def clone_block(
+        nested: Block,
+        inherited: Mapping[ValueId, Value],
+        argument_bindings: Mapping[ValueId, Value] | None = None,
+    ) -> Block:
+        substitutions = dict(inherited)
+        if argument_bindings is None:
+            arguments = tuple(_fresh_value(value, suffix) for value in nested.arguments)
+            substitutions.update(
+                (original.id, fresh)
+                for original, fresh in zip(nested.arguments, arguments)
+            )
+        else:
+            arguments = ()
+            substitutions.update(argument_bindings)
+        operations: list[Operation] = []
+        for operation in nested.operations:
+            operands = tuple(
+                _substitute_value(value, substitutions) for value in operation.operands
+            )
+            results = tuple(_fresh_value(value, suffix) for value in operation.results)
+            substitutions.update(
+                (original.id, fresh)
+                for original, fresh in zip(operation.results, results)
+            )
+            regions = tuple(
+                Region(
+                    tuple(
+                        clone_block(region_block, substitutions)
+                        for region_block in region.blocks
+                    )
+                )
+                for region in operation.regions
+            )
+            operations.append(
+                replace(
+                    operation,
+                    operands=operands,
+                    results=results,
+                    regions=regions,
+                )
+            )
+        return Block(arguments, tuple(operations))
+
+    return clone_block(block, bindings, bindings)
+
+
+def _region_operation_count(region: Region) -> int:
+    return sum(
+        1 + sum(_region_operation_count(nested) for nested in operation.regions)
+        for block in region.blocks
+        for operation in block.operations
+    )
+
+
+@dataclass(frozen=True)
+class BoundedLoopUnrollPass:
+    """Unroll small constant top-level loops with fresh SSA definitions."""
+
+    max_iterations: int = 8
+    max_expanded_operations: int = 256
+    name: str = field(default="bounded_loop_unroll", init=False)
+
+    def __post_init__(self) -> None:
+        if int(self.max_iterations) <= 0:
+            raise ValueError("max_iterations must be positive")
+        if int(self.max_expanded_operations) <= 0:
+            raise ValueError("max_expanded_operations must be positive")
+
+    def run(
+        self, program: HybridProgram, analysis: HybridProgramAnalysis
+    ) -> HybridProgram:
+        expanded_operations = 0
+
+        def rewrite_entry(block: Block) -> Block:
+            nonlocal expanded_operations
+            substitutions: dict[ValueId, Value] = {}
+            rewritten: list[Operation] = []
+            for original in block.operations:
+                operation = _substitute_operation(original, substitutions)
+                iterations = _constant_loop_iterations(operation, analysis)
+                if iterations is None or not 0 < len(iterations) <= self.max_iterations:
+                    rewritten.append(operation)
+                    continue
+                body = operation.regions[0].blocks[0]
+                body_operation_count = _region_operation_count(operation.regions[0]) - 1
+                expansion = len(iterations) * (body_operation_count + 1)
+                if expanded_operations + expansion > self.max_expanded_operations:
+                    rewritten.append(operation)
+                    continue
+                expanded_operations += expansion
+                carried = operation.operands[3:]
+                loop_key = f"unroll_{operation.results[-1].id.scope}_{operation.results[-1].id.index}"
+                for ordinal, iteration in enumerate(iterations):
+                    suffix = f"{loop_key}_{ordinal}"
+                    induction = _fresh_value(body.arguments[0], suffix)
+                    rewritten.append(
+                        Operation(
+                            "arith.constant",
+                            results=(induction,),
+                            attributes={"value": iteration},
+                            location=operation.location,
+                        )
+                    )
+                    bindings = {
+                        body.arguments[0].id: induction,
+                        **{
+                            argument.id: value
+                            for argument, value in zip(body.arguments[1:], carried)
+                        },
+                    }
+                    cloned = _clone_inline_block(body, bindings, suffix=suffix)
+                    terminator = cloned.operations[-1]
+                    rewritten.extend(cloned.operations[:-1])
+                    carried = terminator.operands
+                substitutions.update(
+                    (result.id, value)
+                    for result, value in zip(operation.results, carried)
+                )
+            return Block(block.arguments, tuple(rewritten))
+
+        return HybridProgram(
+            program.name,
+            Region(tuple(rewrite_entry(block) for block in program.body.blocks)),
+            location=program.location,
         )
-        if any(
-            not isinstance(value, int) or isinstance(value, bool) for value in bounds
-        ):
-            return False
-        lower, upper, step = bounds
-        return step != 0 and len(range(lower, upper, step)) == 0
 
 
 @dataclass(frozen=True)
@@ -308,6 +483,7 @@ class PassRecord:
     output_identity: str
     input_operation_count: int
     output_operation_count: int
+    preexpanded_iterations: int = 0
 
     @property
     def changed(self) -> bool:
@@ -327,12 +503,29 @@ class HybridOptimizationResult:
     def changed(self) -> bool:
         return self.source_identity != self.optimized_identity
 
+    @property
+    def preexpanded_iterations(self) -> int:
+        return sum(record.preexpanded_iterations for record in self.records)
+
 
 DEFAULT_HYBRID_PASSES: tuple[HybridProgramPass, ...] = (
+    BoundedLoopUnrollPass(),
     ConstantFoldPass(),
     StructuredControlFlowSimplificationPass(),
     DeadConstantEliminationPass(),
 )
+
+
+def _direct_constant_loop_counts(
+    program: HybridProgram, analysis: HybridProgramAnalysis
+) -> Mapping[ValueId, int]:
+    return {
+        operation.results[-1].id: len(iterations)
+        for block in program.body.blocks
+        for operation in block.operations
+        if (iterations := _constant_loop_iterations(operation, analysis)) is not None
+        and len(iterations) > 0
+    }
 
 
 def run_pass_pipeline(
@@ -355,6 +548,13 @@ def run_pass_pipeline(
         if not isinstance(transformed, HybridProgram):
             raise TypeError(f"hybrid pass {name!r} must return HybridProgram")
         after = analyze_program(transformed)
+        before_loops = _direct_constant_loop_counts(current, current_analysis)
+        after_loop_ids = set(_direct_constant_loop_counts(transformed, after))
+        preexpanded_iterations = sum(
+            count
+            for loop_id, count in before_loops.items()
+            if loop_id not in after_loop_ids
+        )
         records.append(
             PassRecord(
                 name,
@@ -362,6 +562,7 @@ def run_pass_pipeline(
                 transformed.semantic_identity,
                 current_analysis.operation_count,
                 after.operation_count,
+                preexpanded_iterations,
             )
         )
         current = transformed
@@ -375,6 +576,7 @@ def run_pass_pipeline(
 
 
 __all__ = (
+    "BoundedLoopUnrollPass",
     "DEFAULT_HYBRID_PASSES",
     "ConstantFoldPass",
     "DeadConstantEliminationPass",

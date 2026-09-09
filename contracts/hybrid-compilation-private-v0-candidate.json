@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase22_structured_control_flow_simplification_verified",
+  "status": "phase23_bounded_constant_loop_unroll_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -740,6 +740,34 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE22_EVIDENCE.md"
   },
   "phase22_completed": true,
+  "phase23": {
+    "pass": "bounded_loop_unroll",
+    "scope": "direct_entry_block_constant_bound_loops",
+    "maximum_iterations_per_loop": 8,
+    "maximum_expanded_operations_per_pipeline": 256,
+    "bound_requirements": "compile_time_integer_lower_upper_and_nonzero_step",
+    "iteration_semantics": [
+      "fresh_ssa_definitions_per_iteration",
+      "explicit_induction_constant_per_iteration",
+      "classical_carried_value_chaining",
+      "linear_quantum_effect_chaining"
+    ],
+    "over_budget_behavior": "preserve_structured_loop",
+    "preexpanded_iteration_audit": true,
+    "specialization_unroll_limit_conserved": true,
+    "dynamic_lowering_unroll_limit_conserved": true,
+    "parameter_binding_preserved": true,
+    "autograd_edge_preserved": true,
+    "optimized_unoptimized_circuit_equivalence": true,
+    "nested_loop_unroll": false,
+    "general_loop_unrolling": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE23_EVIDENCE.md"
+  },
+  "phase23_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

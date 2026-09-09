@@ -843,3 +843,39 @@ def test_phase22_simplifies_only_compile_time_structured_control() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE22_EVIDENCE.md"
     )
     assert contract["phase22_completed"] is True
+
+
+def test_phase23_unrolls_only_small_constant_entry_loops() -> None:
+    contract = _contract()
+    phase23 = contract["phase23"]
+
+    assert phase23["pass"] == "bounded_loop_unroll"
+    assert phase23["scope"] == "direct_entry_block_constant_bound_loops"
+    assert phase23["maximum_iterations_per_loop"] == 8
+    assert phase23["maximum_expanded_operations_per_pipeline"] == 256
+    assert phase23["bound_requirements"] == (
+        "compile_time_integer_lower_upper_and_nonzero_step"
+    )
+    assert phase23["iteration_semantics"] == [
+        "fresh_ssa_definitions_per_iteration",
+        "explicit_induction_constant_per_iteration",
+        "classical_carried_value_chaining",
+        "linear_quantum_effect_chaining",
+    ]
+    assert phase23["over_budget_behavior"] == "preserve_structured_loop"
+    assert phase23["preexpanded_iteration_audit"] is True
+    assert phase23["specialization_unroll_limit_conserved"] is True
+    assert phase23["dynamic_lowering_unroll_limit_conserved"] is True
+    assert phase23["parameter_binding_preserved"] is True
+    assert phase23["autograd_edge_preserved"] is True
+    assert phase23["optimized_unoptimized_circuit_equivalence"] is True
+    assert phase23["nested_loop_unroll"] is False
+    assert phase23["general_loop_unrolling"] is False
+    assert phase23["target_ir_added"] is False
+    assert phase23["public_root_export"] is False
+    assert phase23["stable_api_change"] is False
+    assert phase23["performance_claim"] is False
+    assert phase23["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE23_EVIDENCE.md"
+    )
+    assert contract["phase23_completed"] is True

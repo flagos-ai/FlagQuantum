@@ -457,6 +457,14 @@ def specialize_program(
     declared_types = tuple(value.type for value in declared_inputs)
     input_identity = _input_signature(tuple(inputs), declared_types)
     specializer = _Specializer(max_unrolled_iterations=max_unrolled_iterations)
+    if optimization.preexpanded_iterations > specializer.max_unrolled_iterations:
+        raise SpecializationError(
+            "control.unroll_limit",
+            "compile-time-expanded loops exceed "
+            f"{specializer.max_unrolled_iterations} loop iterations",
+            program.location,
+        )
+    specializer.unrolled_iterations = optimization.preexpanded_iterations
     returned = specializer.execute_block(entry, {}, (*inputs, _EFFECT))
     if returned != (_EXPECTATION,):
         raise SpecializationError(

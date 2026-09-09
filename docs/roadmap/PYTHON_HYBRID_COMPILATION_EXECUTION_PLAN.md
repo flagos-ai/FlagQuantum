@@ -867,6 +867,27 @@ Exit gate:
 - no general unrolling, loop motion, target IR, public API, or performance claim
   is introduced.
 
+### Phase 23 — bounded constant-loop unrolling
+
+Unroll a direct entry-block `scf.for` only when all bounds are compile-time
+integers, the step is nonzero, the loop has at most eight iterations, and total
+expansion stays within 256 operations. Clone fresh SSA definitions and an
+explicit induction constant per iteration, then chain every classical carried
+value and the linear quantum effect through the cloned yields.
+
+Exit gate:
+
+- a three-iteration parameterized quantum loop lowers identically with the pass
+  enabled and disabled;
+- parameter values and their autograd edges survive cloning;
+- every cloned definition remains unique and the transformed IR verifies;
+- normalization is deterministic and idempotent after expansion;
+- compile-time-expanded iterations still count against the caller's existing
+  unroll limit in static and dynamic lowering;
+- iteration or operation budget overflow leaves the structured loop intact;
+- nested/general unrolling, target scheduling, public API, and performance
+  claims remain excluded.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1017,3 +1038,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 20 detection-event temporal decoding verified
 - [x] Phase 21 verified Program IR normalization implemented and verified
 - [x] Phase 22 structured-control-flow simplification implemented and verified
+- [x] Phase 23 bounded constant-loop unrolling implemented and verified

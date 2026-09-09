@@ -33,6 +33,7 @@ from .model import (
 )
 from .passes import (
     DEFAULT_HYBRID_PASSES,
+    BoundedLoopUnrollPass,
     ConstantFoldPass,
     DeadConstantEliminationPass,
     HybridOptimizationResult,
@@ -55,6 +56,7 @@ __all__ = (
     "INDEX",
     "QUANTUM_EFFECT",
     "Block",
+    "BoundedLoopUnrollPass",
     "CaptureDiagnostic",
     "CircuitStructureCache",
     "ConstantFoldPass",
