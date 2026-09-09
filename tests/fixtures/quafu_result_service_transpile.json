@@ -1,0 +1,14 @@
+{
+  "chip": "Baihua",
+  "shots": 10240,
+  "status": "Finished",
+  "tid": "task-redacted",
+  "circuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[50];\ncreg c[2];\nu(1.2007963268906046,0.0,3.141592653589793) q[36];\nu(0.7407963267521036,0.0,3.141592653589793) q[49];\nmeasure q[36] -> c[0];\nmeasure q[49] -> c[1];",
+  "transpiled": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[125];\ncreg c[2];\nu(0.7407963267521036,0.0,3.141592653589793) q[123];\nu(1.2007963268906046,0.0,3.141592653589793) q[124];\nbarrier q[123],q[124];\nmeasure q[123] -> c[1];\nmeasure q[124] -> c[0];",
+  "count": {
+    "00": 6103,
+    "01": 2740,
+    "10": 955,
+    "11": 442
+  }
+}

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,7 @@ import flagquantum as fq
 from flagquantum.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
+    QuafuProvider,
     build_result_metadata,
 )
 from flagquantum.twin import QPUDigitalTwin, TwinExperiment
@@ -23,6 +26,7 @@ cx q[3],q[4];
 measure q[3] -> c[0];
 measure q[4] -> c[1];
 """
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def _chip_info():
@@ -43,16 +47,16 @@ def _chip_info():
     }
 
 
-def _experiment():
+def _experiment(*, physical_qasm=PHYSICAL_QASM, shots=1024):
     twin = QPUDigitalTwin.from_quafu_chip_info(
         _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
     )
     return TwinExperiment.prepare(
         twin,
         fq.Circuit(2).h(0).cx(0, 1),
-        physical_qasm=PHYSICAL_QASM,
+        physical_qasm=physical_qasm,
         name="frozen-bell",
-        shots=1024,
+        shots=shots,
     )
 
 
@@ -129,6 +133,31 @@ def test_rewritten_or_missing_executed_program_fails_closed():
     assert rewritten.predictive_validation_valid is False
     assert missing.predictive_validation_valid is False
     assert rewritten.validation.shots == missing.validation.shots == 1024
+
+
+def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
+    response = json.loads(
+        (FIXTURES / "quafu_result_service_transpile.json").read_text(encoding="utf-8")
+    )
+    experiment = _experiment(physical_qasm=response["circuit"], shots=response["shots"])
+    receipt = _handle(experiment)
+
+    class Transport:
+        def get_json(self, url, headers, timeout):
+            return response
+
+    provider = QuafuProvider(base_url="https://quafu.test", transport=Transport())
+    result = provider.fetch_result(receipt)
+    report = experiment.validate_result(result, receipt=receipt)
+
+    assert result.metadata["circuit"] == experiment.physical_qasm
+    assert result.metadata["transpiled"] != experiment.physical_qasm
+    assert (
+        report.executed_qasm_identity
+        == hashlib.sha256(response["transpiled"].encode()).hexdigest()
+    )
+    assert report.predictive_validation_valid is False
+    assert report.validation.shots == response["shots"]
 
 
 def test_experiment_rejects_receipt_or_result_from_another_program():
