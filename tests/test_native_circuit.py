@@ -16,7 +16,10 @@ import flagquantum.simulation.mps as fqmps
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler.openqasm import emit_openqasm
 from flagquantum.compiler.qcis import emit_qcis
-from flagquantum.gradients import parameter_shift_gradient
+from flagquantum.gradients import (
+    batched_parameter_shift_gradient,
+    parameter_shift_gradient,
+)
 from flagquantum.runtime.audit import audit_distributed_scalability
 from flagquantum.runtime.backend_registry import get_backend_capabilities
 from flagquantum.runtime.configuration import get_backend, set_backend
@@ -273,6 +276,65 @@ def test_parameter_shift_gradient_matches_autograd_for_training_loss():
 
     assert autograd_params.grad is not None
     assert torch.allclose(shift_grad, autograd_params.grad.detach(), atol=1e-5)
+
+
+def test_batched_parameter_shift_uses_one_evaluation_and_matches_autograd():
+    params = torch.tensor([0.17, -0.31], dtype=torch.float64)
+    autograd_params = params.detach().clone().requires_grad_(True)
+    batch_sizes = []
+
+    def build(values):
+        return (
+            fq.Circuit(2, dtype=torch.complex128)
+            .h(0)
+            .rx(0, theta=values[0])
+            .ry(1, theta=values[1])
+            .cx(0, 1)
+        )
+
+    def loss(circuit):
+        return circuit.expectation_z((0, 1)).sum()
+
+    def evaluate_batch(circuits):
+        batch_sizes.append(len(circuits))
+        return tuple(loss(circuit) for circuit in circuits)
+
+    reference = loss(build(autograd_params))
+    reference.backward()
+    gradient = batched_parameter_shift_gradient(build, params, evaluate_batch)
+
+    assert batch_sizes == [4]
+    assert autograd_params.grad is not None
+    torch.testing.assert_close(gradient, autograd_params.grad)
+
+
+@pytest.mark.parametrize(
+    "build, message",
+    [
+        (
+            lambda values: fq.Circuit(1).rx(0, theta=values[0]).ry(0, theta=values[0]),
+            "exactly one gate occurrence",
+        ),
+        (
+            lambda values: fq.Circuit(1).rx(0, theta=2 * values[0]),
+            "enter its gate angle directly",
+        ),
+        (
+            lambda values: fq.Circuit(2).rzz(0, 1, theta=values[0]),
+            "supports only H, X, RX, RY, RZ, and CX",
+        ),
+    ],
+)
+def test_batched_parameter_shift_rejects_unsupported_parameter_use(build, message):
+    def unexpected_batch(_circuits):
+        pytest.fail("invalid shifted circuits must fail before batch execution")
+
+    with pytest.raises(ValueError, match=message):
+        batched_parameter_shift_gradient(
+            build,
+            torch.tensor([0.2]),
+            unexpected_batch,
+        )
 
 
 def test_native_named_parameters_bind_before_execution_and_export():

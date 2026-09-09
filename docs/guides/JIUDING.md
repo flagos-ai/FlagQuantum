@@ -159,6 +159,33 @@ with JiudingClient(workspace="example-resident-a100") as client:
 expectations = [result.expectation() for result in results]
 ```
 
+Use the same batch operation for a parameter-shift gradient without adding a
+gradient algorithm to the Jiuding adapter:
+
+```python
+from flagquantum.gradients import batched_parameter_shift_gradient
+
+def build(parameters):
+    return fq.Circuit(1).ry(0, theta=parameters[0])
+
+def evaluate_batch(circuits):
+    results = client.run_batch(
+        circuits,
+        target="jiuding:gpu",
+        outputs=fq.expectation(fq.Z(0)),
+    )
+    return tuple(result.expectation().sum() for result in results)
+
+gradient = batched_parameter_shift_gradient(build, parameters, evaluate_batch)
+```
+
+The current fail-closed profile supports H, X, RX, RY, RZ, and CX. Each input
+parameter must directly control exactly one RX, RY, or RZ occurrence. See
+`examples/remote/jiuding_parameter_shift.py` for one complete optimization
+update. A live single-A100 run used one two-circuit batch call and decreased the
+test energy after one update; see the
+[parameter-shift evidence](../development/evidence/jiuding_parameter_shift_20260909.json).
+
 The batch is validated in full before its first circuit executes, accepts at
 most 256 circuits, and returns ordinary `ExecutionResult` objects in input
 order. Statevector batches are intentionally rejected. Per-result runtime

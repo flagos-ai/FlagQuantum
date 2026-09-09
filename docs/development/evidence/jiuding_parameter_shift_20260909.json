@@ -1,0 +1,47 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "implementation_commit": "0415490a62dbf007dbb3f9b22046c4a24196341e",
+  "scope": "One parameter-shift gradient and optimization update through the resident Jiuding A100 executor",
+  "workspace": {
+    "name": "example-resident-a100",
+    "target": "jiuding:gpu"
+  },
+  "program": {
+    "circuit": "one-qubit RY ansatz",
+    "observable": "Pauli Z expectation",
+    "parameter_dtype": "float32",
+    "initial_parameter": 0.4,
+    "learning_rate": 0.2
+  },
+  "gradient": {
+    "method": "two-term parameter shift",
+    "shifted_circuits": 2,
+    "batch_calls": 1,
+    "batch_remote_seconds": 0.009839236736297607,
+    "gradient_total_seconds": 0.03796854200481903,
+    "observed": -0.3894183933734894,
+    "analytic_absolute_error": 5.106483885741753e-08
+  },
+  "optimization_update": {
+    "energy_before": 0.9210610389709473,
+    "updated_parameter": 0.4778836965560913,
+    "energy_after": 0.8879702091217041,
+    "updated_energy_analytic_absolute_error": 8.52157910902207e-09,
+    "energy_decreased": true
+  },
+  "claims": {
+    "one_remote_batch_call_for_gradient": true,
+    "single_gpu_forward_validated": true,
+    "cpu_fallback_used": false,
+    "one_optimizer_update_validated": true,
+    "multi_parameter_training_validated": false,
+    "shot_based_gradient_validated": false,
+    "multi_gpu_validated": false,
+    "multi_node_validated": false
+  },
+  "_privacy_redaction": {
+    "kind": "publication_copy",
+    "note": "Infrastructure identifiers and paths are substituted. Numeric results are unchanged; provenance hashes refer to original private records."
+  }
+}
