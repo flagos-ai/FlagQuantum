@@ -80,3 +80,9 @@ Pauli-basis samples and counts. Its wheel SHA-256 is
 `ae46789659b29acc884fe2b215a7d2eeeb44532fe8281196907c75be8834c4f1`; live
 results and the device-to-host boundary are recorded in
 [`jiuding_remote_sampling_20260909.json`](../../docs/development/evidence/jiuding_remote_sampling_20260909.json).
+
+The `v0.2.0-e30b1b0c-cu128-a100` build adds bounded resident measurement
+batches. Its wheel SHA-256 is
+`9579bad42d56ed0aed8aff51f16a4c597d244a952480362600327062ba9817b3`; live
+single-call and batch timings are recorded in
+[`jiuding_remote_batch_20260909.json`](../../docs/development/evidence/jiuding_remote_batch_20260909.json).

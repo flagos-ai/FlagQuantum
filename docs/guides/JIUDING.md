@@ -18,9 +18,9 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 
 client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
-    "flagquantum-runtime-a100",
+    "example-resident-a100",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-59a517cd-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-e30b1b0c-cu128-a100",
     image_region="PRIVATE",
     cpus=4,
     memory_gib=16,
@@ -31,8 +31,8 @@ print(client.workspace_state(created["id"]))
 Creation starts the workspace but does not enable privileged mode, Jupyter
 Cloud IDE or automatic snapshots. It is an explicit billable infrastructure
 operation and is never triggered by `fq.run()`. Use
-`client.stop_workspace("flagquantum-runtime-a100")` to stop it without saving a
-container snapshot and `client.start_workspace("flagquantum-runtime-a100")` to
+`client.stop_workspace("example-resident-a100")` to stop it without saving a
+container snapshot and `client.start_workspace("example-resident-a100")` to
 restart it. Source code and durable results must remain on mounted storage;
 stopping a workspace does not make its container filesystem durable.
 
@@ -112,7 +112,7 @@ import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
-with JiudingClient(workspace="flagquantum-runtime-a100") as client:
+with JiudingClient(workspace="example-resident-a100") as client:
     first = client.run_statevector(
         circuit,
         target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
@@ -149,7 +149,7 @@ import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 circuits = [fq.Circuit(1).ry(0, theta=value) for value in (0.1, 0.2, 0.3)]
-with JiudingClient(workspace="flagquantum-runtime-a100") as client:
+with JiudingClient(workspace="example-resident-a100") as client:
     results = client.run_batch(
         circuits,
         target="jiuding:gpu",
@@ -243,7 +243,7 @@ the stable root entry point. Calls in the same Python process reuse its resident
 executor and SSH channel:
 
 ```bash
-export JIUDING_WORKSPACE=flagquantum-runtime-a100
+export JIUDING_WORKSPACE=example-resident-a100
 ```
 
 ```python
