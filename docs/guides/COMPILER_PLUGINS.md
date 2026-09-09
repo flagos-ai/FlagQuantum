@@ -44,9 +44,10 @@ compiled_ir = fq.compile(
     target="quafu:ScQ-P10",
 )
 
-from flagquantum.deployment import create_deployment_package
+from flagquantum.deployment import deploy_circuit
+from flagquantum.remote import QuafuProvider
 
-package = create_deployment_package(compiled_ir, shots=1024)
+result = deploy_circuit(compiled_ir, QuafuProvider(), shots=1024)
 ```
 
 The plugin receives the current Quafu chip snapshot, selects a physical
@@ -55,6 +56,10 @@ subgraph, and returns logical `CircuitIR` with the ordered physical mapping in
 uses logical wires `0..N-1`. Deployment packaging preserves the compiled
 circuit and carries that mapping into Quafu submission without another user
 parameter or a second compilation pass.
+
+`deploy_circuit` is the normal remote-execution entry point and creates the
+sealed deployment package internally. Call `create_deployment_package`
+explicitly only to inspect, persist, sign, or submit that artifact later.
 
 Advanced hosts may pass an explicit target mapping:
 

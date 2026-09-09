@@ -439,7 +439,12 @@ def deploy_circuit(
     routing_strategy: str = "restore_after_each_gate",
     metadata: Mapping[str, Any] | None = None,
 ) -> DeploymentResult:
-    """Package a circuit and run it on a provider."""
+    """Package and execute a circuit through one remote provider.
+
+    Pass target-compiled IR directly.  Call ``create_deployment_package``
+    yourself only when the sealed artifact must be inspected, stored, or
+    submitted later.
+    """
 
     package = create_deployment_package(
         circuit_or_ir,

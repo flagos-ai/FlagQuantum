@@ -212,6 +212,44 @@ def test_local_provider_runs_packaged_circuit():
     )
 
 
+def test_deploy_circuit_preserves_target_compiled_ir(monkeypatch):
+    compiled = fq.CircuitIR(
+        n_wires=2,
+        instructions=(
+            fq.Instruction("h", (0,)),
+            fq.Instruction("cx", (0, 1)),
+        ),
+        metadata={
+            "execution_target": {
+                "provider": "quafu",
+                "backend": "ScQ-P10",
+                "compiler": None,
+                "target_qubits": (3, 4),
+            }
+        },
+    )
+    provider = InMemoryRemoteTarget()
+    provider.provider = "quafu"
+
+    def must_not_compile(*args, **kwargs):
+        raise AssertionError("target-compiled IR must not be compiled again")
+
+    monkeypatch.setattr(
+        "flagquantum.deployment.cloud.compile_program", must_not_compile
+    )
+
+    result = fqd.deploy_circuit(compiled, provider, shots=16)
+    package = provider._packages[result.handle.task_id]
+
+    assert sum(result.counts.values()) == 16
+    assert package.ir is compiled
+    assert package.backend.name == "ScQ-P10"
+    assert package.metadata["provider_options"] == {
+        "compiler": None,
+        "target_qubits": [3, 4],
+    }
+
+
 def test_trained_circuit_can_be_packaged_for_inference():
     theta = torch.tensor([0.4, -0.2], requires_grad=True)
     hamiltonian = Hamiltonian(

@@ -56,12 +56,16 @@ compiled = fq.compile(
     compiler="qsteed",
     target="quafu:ScQ-P10",
 )
-package = fqd.create_deployment_package(
+result = fqd.deploy_circuit(
     compiled,
+    provider,
     shots=1024,
 )
-result = provider.run(package)
 ```
+
+`deploy_circuit` creates and validates the deployment package internally. Use
+`create_deployment_package` directly only when the sealed QASM, target mapping,
+or identity evidence must be inspected, stored, or submitted later.
 
 Quafu reports queue state but not qubit capacity from the status endpoint.
 FlagQuantum therefore retains the requested width in discovered profiles; the

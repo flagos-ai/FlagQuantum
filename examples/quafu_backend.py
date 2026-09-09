@@ -25,12 +25,12 @@ def main() -> None:
         compiler="qsteed",
         target="quafu:ScQ-P10",
     )
-    package = fqd.create_deployment_package(
+    provider = QuafuProvider(result_timeout=1800)
+    result = fqd.deploy_circuit(
         compiled,
+        provider,
         shots=1024,
     )
-    provider = QuafuProvider(result_timeout=1800)
-    result = provider.run(package)
     print(result.handle.task_id, result.counts)
 
 

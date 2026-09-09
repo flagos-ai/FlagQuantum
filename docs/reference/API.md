@@ -21,6 +21,7 @@ tests, and rendered in the
 | Execute | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
+| Execute on a remote target | `flagquantum.deployment.deploy_circuit` | Provider deployment result |
 | Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
@@ -81,6 +82,13 @@ the responsibility of `DeploymentPackage`.
 `flagquantum.runtime.run_native`, `flagquantum.simulation.mps.run_mps`, and
 `flagquantum.simulation.tensor_network.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects or backend-specific controls.
+
+Remote execution remains separate from `fq.run`, whose result is always
+`fq.ExecutionResult`. Compile for the selected target and pass the compiled IR
+directly to `flagquantum.deployment.deploy_circuit`; it creates the sealed
+package internally. `create_deployment_package` is the expert boundary for
+callers that need to inspect, persist, sign, or delay submission of that
+artifact.
 
 ## Optimize a program
 
