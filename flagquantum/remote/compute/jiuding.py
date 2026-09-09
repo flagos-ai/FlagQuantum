@@ -411,6 +411,7 @@ class JiudingClient:
         *,
         image: str,
         receipt: str | Path,
+        image_region: str = "PUBLIC",
         python: str = sys.executable,
         pythonpath: str | Path | None = None,
         cpus: int = 2,
@@ -440,8 +441,12 @@ class JiudingClient:
         w = self.workspace()
         if w["queueStatus"] != "QUEUE_STATUS_ACTIVE":
             raise RuntimeError("Workspace queue is not active")
+        if image_region not in ("PUBLIC", "PRIVATE"):
+            raise ValueError("image_region must be PUBLIC or PRIVATE")
         catalog_image = (
-            self._catalog_image(image) if ":" in image and "/" not in image else None
+            self._catalog_image(image, image_region)
+            if ":" in image and "/" not in image
+            else None
         )
         examples = (
             []
@@ -453,12 +458,13 @@ class JiudingClient:
             ]
         )
         if catalog_image:
-            executable_image = catalog_image.get("baseUrl")
+            executable_image = catalog_image.get(
+                "registryUrl" if image_region == "PRIVATE" else "baseUrl"
+            )
             if not executable_image:
                 raise RuntimeError(
                     "Jiuding image catalog returned no executable image URL"
                 )
-            image_region = "PUBLIC"
             models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
         elif examples:
             executable_image = image
@@ -472,13 +478,14 @@ class JiudingClient:
                 }
             )
         else:
-            catalog_image = self._catalog_image(image)
-            executable_image = catalog_image.get("baseUrl")
+            catalog_image = self._catalog_image(image, image_region)
+            executable_image = catalog_image.get(
+                "registryUrl" if image_region == "PRIVATE" else "baseUrl"
+            )
             if not executable_image:
                 raise RuntimeError(
                     "Jiuding image catalog returned no executable image URL"
                 )
-            image_region = "PUBLIC"
             models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
         if accelerator_model is not None and accelerator_model not in models:
             raise ValueError(
@@ -675,9 +682,19 @@ class JiudingClient:
             or receipt.get("queueId") != w["queueId"]
         ):
             raise ValueError("Receipt belongs to a different endpoint or queue")
+        jobs = self._pages(
+            "/api/v1/job/select",
+            {
+                "queueId": w["queueId"],
+                "experimentType": 1,
+                "experimentId": receipt["experimentId"],
+            },
+            "jobInfos",
+            self._headers(),
+        )
         return [
             {k: j.get(k) for k in ("id", "status", "createdTime", "endTime")}
-            for j in self._jobs()
+            for j in jobs
             if j.get("experimentId") == receipt["experimentId"]
             and j.get("queueId") == w["queueId"]
         ]

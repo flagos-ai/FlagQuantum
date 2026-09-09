@@ -1,0 +1,39 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "base_commit": "0a26c3643074b7ea83dcee1dd04a8879071cff25",
+  "scope": "Private-image single-GPU Bell-state independent Job",
+  "experimentId": "8c6627f1-5606-4f54-b71b-4461a0e04b35",
+  "jobId": "f2d7cdfd-8382-44a0-b3cb-87967a0773f2",
+  "status": "Succeed",
+  "image": "flagquantum-runtime:v0.2.0-cu128-a100",
+  "resources": {
+    "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+    "acceleratorCount": 1,
+    "cpuCores": 4,
+    "memGib": 8
+  },
+  "result": {
+    "framework": "FlagQuantum",
+    "version": "0.2.0",
+    "device": "cuda:0",
+    "dtype": "torch.complex64",
+    "gpu_name": "NVIDIA A100-SXM4-40GB",
+    "visible_gpus": 1,
+    "probabilities": [
+      0.4999999701976776,
+      0.0,
+      0.0,
+      0.4999999701976776
+    ],
+    "max_abs_error": 0.0,
+    "peak_allocated_bytes": 8524800
+  },
+  "run_id_matched_receipt": true,
+  "scientific_result_retrieved": true,
+  "scalability_claim_allowed": false,
+  "notes": [
+    "Validates one private-image single-A100 forward task only",
+    "Does not validate training, multi-GPU or multi-node execution"
+  ]
+}

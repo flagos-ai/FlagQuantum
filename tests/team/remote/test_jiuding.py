@@ -225,6 +225,32 @@ def test_different_queue_receipt_is_rejected(client):
         )
 
 
+def test_status_filters_jobs_by_experiment_at_the_server(client):
+    client._request = Mock(
+        return_value={
+            "jobInfos": [
+                {
+                    "id": "job",
+                    "experimentId": "exp",
+                    "queueId": "q",
+                    "status": "Succeed",
+                }
+            ]
+        }
+    )
+
+    jobs = client.status(
+        {"endpoint": client.endpoint, "queueId": "q", "experimentId": "exp"}
+    )
+
+    assert jobs == [
+        {"id": "job", "status": "Succeed", "createdTime": None, "endTime": None}
+    ]
+    path, body, _ = client._request.call_args.args
+    assert path == "/api/v1/job/select"
+    assert body["experimentId"] == "exp"
+
+
 def test_http_and_redirect_targets_cannot_be_configured():
     for endpoint in (
         "http://example.com",
@@ -338,6 +364,77 @@ def test_first_job_resolves_exact_public_catalog_image(client, tmp_path):
     resource = calls[1].args[1]["advanceConfigInfos"][0]["resourceConfigList"][0]
     assert resource["basicImage"] == ("harbor.example/pytorch-26.03-py3-sshd:v2.0.1")
     assert resource["imageRegion"] == "PUBLIC"
+
+
+def test_submit_resolves_exact_private_catalog_image(client, tmp_path):
+    script = tmp_path / "gpu.py"
+    script.write_text("def main(): return 42")
+    client._catalog_image = Mock(
+        return_value={
+            "id": "private-image-id",
+            "name": "flagquantum-runtime",
+            "tag": "v0.2.0",
+            "registryUrl": "harbor.internal/flagquantum-runtime:v0.2.0",
+        }
+    )
+    client._request = Mock(
+        side_effect=[
+            {"experimentId": "exp"},
+            {
+                "experimentSummaryInfos": [
+                    {
+                        "experimentId": "exp",
+                        "advanceConfigInfos": [
+                            {
+                                "confId": "conf",
+                                "configName": "config1",
+                                "resourceConfigList": [
+                                    {
+                                        "queueId": "q",
+                                        "roleInfoList": [
+                                            {
+                                                "name": "Master",
+                                                "replicas": 1,
+                                                "resourceRequestDetail": {
+                                                    "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+                                                    "acceleratorCount": 1,
+                                                    "cpuCores": 2,
+                                                    "memGib": 2,
+                                                    "sharedMemGib": 1,
+                                                    "rdmaSharedCount": 0,
+                                                },
+                                            }
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                        "creatorId": "u",
+                        "nativeCluster": "default-cluster",
+                    }
+                ]
+            },
+            {"jobId": "job"},
+        ]
+    )
+
+    receipt = client.submit(
+        script,
+        image="flagquantum-runtime:v0.2.0",
+        image_region="PRIVATE",
+        receipt=tmp_path / "receipt.json",
+        gpus=1,
+    )
+
+    assert receipt["jobId"] == "job"
+    client._catalog_image.assert_called_once_with(
+        "flagquantum-runtime:v0.2.0", "PRIVATE"
+    )
+    resource = client._request.call_args_list[0].args[1]["advanceConfigInfos"][0][
+        "resourceConfigList"
+    ][0]
+    assert resource["basicImage"] == ("harbor.internal/flagquantum-runtime:v0.2.0")
+    assert resource["imageRegion"] == "PRIVATE"
 
 
 def test_uncertain_launch_retains_experiment_and_never_recreates(client, tmp_path):

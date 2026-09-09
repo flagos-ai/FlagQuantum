@@ -83,7 +83,8 @@ Use `gpus=1` to request one GPU; larger GPU counts are rejected.
 ```python
 receipt = client.submit(
     "/shared/my_project/experiment_gpu.py",
-    image="<compatible CUDA image from client.images()>",
+    image="flagquantum-runtime:v0.2.0-cu128-a100",
+    image_region="PRIVATE",
     pythonpath="/shared/my_project",
     receipt="/shared/my_project/gpu-001.json",
     gpus=1, cpus=4, memory_gib=8,
@@ -150,3 +151,9 @@ Separately, the final worker and GPU Bell example ran on one visible A100 40GB
 in the existing development workspace: `cuda:0`, complex64, maximum state
 error 0. See [GPU development evidence](../development/evidence/jiuding_bell_gpu_20260909.json).
 No additional queued test was left running.
+
+The private `flagquantum-runtime:v0.2.0-cu128-a100` image completed the same
+GPU Bell task as an independent Job on 2026-09-09. Job
+`f2d7cdfd-8382-44a0-b3cb-87967a0773f2` reached `Succeed` on one A100 40GB;
+the run-bound result was retrieved from persistent storage and had maximum
+state error 0. See [private-image GPU evidence](../development/evidence/jiuding_bell_private_gpu_20260909.json).
