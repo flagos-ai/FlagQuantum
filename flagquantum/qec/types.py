@@ -221,7 +221,12 @@ class RepetitionMemoryResult:
     def __post_init__(self) -> None:
         if self.rounds <= 0:
             raise ValueError("rounds must be positive")
-        if self.feedback_mode not in {"compiled_lookup", "offline_pauli_frame"}:
+        if self.feedback_mode not in {
+            "compiled_lookup",
+            "offline_pauli_frame",
+            "runtime_decoder",
+            "runtime_pauli_frame",
+        }:
             raise ValueError("unsupported repetition feedback mode")
         if any(
             event.round_index >= self.rounds for event in self.error_schedule.events
@@ -239,7 +244,7 @@ class RepetitionMemoryResult:
             raise ValueError("execution semantics must be recorded")
         if self.bit_flip_events < 0 or self.readout_errors < 0:
             raise ValueError("noise event counts must be non-negative")
-        if self.feedback_mode == "compiled_lookup" and any(
+        if self.feedback_mode in {"compiled_lookup", "runtime_decoder"} and any(
             shot.decoded_data_bits != shot.raw_final_data_bits
             for shot in self.shot_records
         ):
@@ -251,6 +256,14 @@ class RepetitionMemoryResult:
             for shot in self.shot_records
         ):
             raise ValueError("offline mode must apply only the decoder readout frame")
+        if self.feedback_mode == "runtime_pauli_frame" and any(
+            shot.decoded_data_bits
+            != PauliFrame.from_corrections(shot.executed_feedback).apply(
+                shot.raw_final_data_bits
+            )
+            for shot in self.shot_records
+        ):
+            raise ValueError("runtime frame mode must apply its executed frame")
 
     @property
     def shot_count(self) -> int:

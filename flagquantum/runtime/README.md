@@ -16,6 +16,14 @@ bit-flip and readout sampling kernels remain in Simulation. The current dynamic
 profile rejects general Kraus channels, correlated readout, device-timing
 profiles, and noisy gradients.
 
+A private bounded feedback plan may declare measurement decision points for
+the local trajectory path. Runtime validates those points, invokes a stateless
+controller with the shot's observation history, applies bounded physical-X or
+Pauli-frame-X actions, and records true bits, observed bits, decisions, and
+frame evolution. This is synchronous local development evidence; it is not a
+stable plugin or hard-real-time/provider controller contract. Explicit batched
+feedback fails closed.
+
 ## Local CPU path
 
 The shortest supported path is:

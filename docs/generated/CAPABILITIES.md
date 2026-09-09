@@ -301,17 +301,17 @@ Lower validated Kraus noise models into FlagQuantum IR and execute exact density
 
 ### Repetition-code memory experiment
 
-Run a bounded three-data-qubit memory experiment with timed errors or circuit-location bit-flip/readout noise, compiled feedback or offline Pauli-frame correction, and finite-shot logical-result records.
+Run a bounded three-data-qubit memory experiment with timed errors or circuit-location bit-flip/readout noise, compiled feedback, per-round Runtime decoder feedback, or Pauli-frame correction, with finite-shot logical-result records.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.run_repetition_memory_noise_sweep`, `flagquantum.qec.RepetitionNoiseProfile`, `flagquantum.qec.ErrorSchedule`, `flagquantum.qec.Decoder`
-- **Runtime modes:** `local_statevector_compiled_feedback`, `local_statevector_offline_pauli_frame`, `local_statevector_noisy_trajectory`
+- **Public API:** `flagquantum.qec.run_repetition_memory_experiment`, `flagquantum.qec.run_repetition_memory_noise_sweep`, `flagquantum.qec.RepetitionNoiseProfile`, `flagquantum.qec.ErrorSchedule`, `flagquantum.qec.Decoder`, `flagquantum.qec.StreamingDecoder`
+- **Runtime modes:** `local_statevector_compiled_feedback`, `local_statevector_runtime_decoder`, `local_statevector_runtime_pauli_frame`, `local_statevector_offline_pauli_frame`, `local_statevector_noisy_trajectory`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../flagquantum/qec/README.md)
 - **Documentation:** [guide](../../flagquantum/qec/README.md)
-- **Known boundary:** A local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules plus one circuit-location stochastic profile: independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Sweeps report finite-shot observations only, not logical suppression or thresholds. General channels/codes, correlated or timing noise, real-time decoding, provider hardware, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The namespace is not exported from the stable package root.
+- **Known boundary:** A synchronous local reference for one fixed three-data-qubit repetition-code profile. It supports bounded deterministic X-error schedules, replaceable per-round trajectory decoding with physical-X or Pauli-frame-X actions, and one circuit-location stochastic profile: independent bit flips after parity-check CNOTs and independent syndrome/final-readout confusion. The middle data wire has two CNOT noise opportunities per round while edge wires have one. Feedback traces separate true and observed bits, actions, and frame evolution. Sweeps report finite-shot observations only, not logical suppression or thresholds. Batched decoder feedback, measurement-error-tolerant temporal decoding, general channels/codes, correlated or timing noise, hard-real-time/provider control, gradients, distributed execution, capacity, performance, and fault-tolerance claims remain unsupported. The feedback records are private subinterfaces and the namespace is not exported from the stable package root.
 
 
 ## Distributed execution

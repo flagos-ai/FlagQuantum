@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase18_dynamic_noise_bridge_verified",
+  "status": "phase19_runtime_decoder_feedback_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -610,6 +610,48 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE18_EVIDENCE.md"
   },
   "phase18_completed": true,
+  "phase19": {
+    "runtime_authority": "flagquantum.runtime.dynamic",
+    "qec_authority": "flagquantum.qec",
+    "feedback_contract": "private_bounded_measurement_decision_points",
+    "decoder_contract": "flagquantum.qec.StreamingDecoder",
+    "reference_decoder": "flagquantum.qec.RepetitionStreamingLookupDecoder",
+    "decoder_input": "complete_available_ordered_syndrome_history_per_round",
+    "feedback_modes": [
+      "runtime_decoder",
+      "runtime_pauli_frame"
+    ],
+    "action_profile": [
+      "none",
+      "physical_x",
+      "frame_x"
+    ],
+    "frame_semantics": "parity_reduced_x_frame_adjusts_later_syndrome_interpretation_and_final_readout",
+    "trace_fields": [
+      "true_measurement_bits",
+      "observed_measurement_bits",
+      "decoder_action",
+      "frame_before",
+      "frame_after"
+    ],
+    "execution_strategy": "trajectory",
+    "auto_strategy_resolution": "trajectory_when_feedback_plan_present",
+    "batched_feedback": "unsupported_fail_closed",
+    "replaceable_decoder_changes_execution": true,
+    "compiled_runtime_frame_outcome_crosscheck": true,
+    "stable_plugin_type": false,
+    "hard_realtime_claim": false,
+    "provider_execution": "unsupported_fail_closed",
+    "general_code_support": false,
+    "logical_error_suppression_claim": false,
+    "threshold_claim": false,
+    "fault_tolerance_claim": false,
+    "public_root_export": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE19_EVIDENCE.md"
+  },
+  "phase19_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

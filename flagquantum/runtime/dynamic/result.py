@@ -5,6 +5,8 @@ from typing import Any, Mapping
 
 import torch
 
+from ._feedback import DynamicFeedbackTrace
+
 
 @dataclass(frozen=True)
 class DynamicExecutionResult:
@@ -19,6 +21,7 @@ class DynamicExecutionResult:
     mid_circuit_measurements_available: bool = True
     provider_metadata: Mapping[str, Any] = field(default_factory=dict)
     statistics: Mapping[str, Any] = field(default_factory=dict)
+    feedback_traces: tuple[DynamicFeedbackTrace, ...] = ()
 
     @property
     def final_samples(self) -> torch.Tensor:

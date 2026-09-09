@@ -13,6 +13,7 @@ from flagquantum.qec import (
     RepetitionLookupDecoder,
     RepetitionMemoryShot,
     RepetitionNoiseProfile,
+    RepetitionStreamingLookupDecoder,
     SyndromeRound,
     run_repetition_memory_experiment,
     run_repetition_memory_noise_sweep,
@@ -90,6 +91,81 @@ def test_offline_pauli_frame_restores_single_error_without_physical_feedback(
         assert not shot.logical_failure
 
 
+@pytest.mark.parametrize("feedback_mode", ("runtime_decoder", "runtime_pauli_frame"))
+@pytest.mark.parametrize("error_round", (0, 1, 2))
+@pytest.mark.parametrize("wire", (0, 1, 2))
+def test_runtime_streaming_feedback_corrects_single_error(
+    feedback_mode: str, error_round: int, wire: int
+) -> None:
+    result = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(error_round, wire),)),
+        rounds=3,
+        shots=2,
+        seed=97,
+        strategy="trajectory",
+        feedback_mode=feedback_mode,
+    )
+
+    assert result.logical_error_rate == 0.0
+    for shot in result.shot_records:
+        assert shot.executed_feedback[error_round].wire == wire
+        assert shot.raw_final_data_bits == tuple(
+            int(feedback_mode == "runtime_pauli_frame" and index == wire)
+            for index in range(3)
+        )
+        assert shot.decoded_data_bits == (0, 0, 0)
+
+
+def test_replacing_streaming_decoder_changes_runtime_execution() -> None:
+    class WrongWireDecoder:
+        def decode_round(self, syndrome_history) -> Correction:
+            return Correction(len(syndrome_history) - 1, 1)
+
+    result = run_repetition_memory_experiment(
+        error_schedule=ErrorSchedule((ErrorEvent(0, 0),)),
+        rounds=1,
+        shots=1,
+        seed=101,
+        strategy="trajectory",
+        feedback_mode="runtime_decoder",
+        feedback_decoder=WrongWireDecoder(),
+    )
+
+    shot = result.shot_records[0]
+    assert shot.executed_feedback == (Correction(0, 1),)
+    assert shot.raw_final_data_bits == (1, 1, 0)
+    assert shot.logical_failure
+
+
+def test_streaming_lookup_decoder_consumes_available_history() -> None:
+    decoder = RepetitionStreamingLookupDecoder()
+    history = (SyndromeRound(0, (0, 0)), SyndromeRound(1, (0, 1)))
+
+    assert decoder.decode_round(history) == Correction(1, 2)
+
+
+@pytest.mark.parametrize("wire", (0, 1, 2))
+def test_compiled_runtime_and_frame_modes_agree_on_logical_outcome(wire: int) -> None:
+    schedule = ErrorSchedule((ErrorEvent(1, wire),))
+    results = tuple(
+        run_repetition_memory_experiment(
+            error_schedule=schedule,
+            rounds=3,
+            shots=4,
+            seed=103,
+            strategy="trajectory",
+            feedback_mode=mode,
+        )
+        for mode in ("compiled_lookup", "runtime_decoder", "runtime_pauli_frame")
+    )
+
+    assert tuple(result.logical_failures for result in results) == (0, 0, 0)
+    assert all(
+        all(shot.decoded_data_bits == (0, 0, 0) for shot in result.shot_records)
+        for result in results
+    )
+
+
 @pytest.mark.parametrize("feedback_mode", ("compiled_lookup", "offline_pauli_frame"))
 def test_two_same_round_errors_are_recorded_as_a_logical_failure(
     feedback_mode: str,
@@ -161,6 +237,8 @@ def test_repetition_memory_validation_fails_closed() -> None:
         run_repetition_memory_experiment(feedback_mode="realtime")
     with pytest.raises(ValueError, match="requires syndrome history"):
         RepetitionLookupDecoder().decode(())
+    with pytest.raises(ValueError, match="requires syndrome history"):
+        RepetitionStreamingLookupDecoder().decode_round(())
     with pytest.raises(ValueError, match="check index exceeds syndrome width"):
         SyndromeRound(0, (0, 0), (DetectionEvent(0, 2),))
     with pytest.raises(ValueError, match="feedback rounds must align"):

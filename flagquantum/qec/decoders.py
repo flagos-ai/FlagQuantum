@@ -15,6 +15,13 @@ class Decoder(Protocol):
     def decode(self, syndrome_history: Sequence[SyndromeRound]) -> DecodeResult: ...
 
 
+@runtime_checkable
+class StreamingDecoder(Protocol):
+    """Select one bounded correction from the history available this round."""
+
+    def decode_round(self, syndrome_history: Sequence[SyndromeRound]) -> Correction: ...
+
+
 @dataclass(frozen=True)
 class RepetitionLookupDecoder:
     """Decode the terminal adjacent-check syndrome of three data qubits."""
@@ -43,4 +50,31 @@ class RepetitionLookupDecoder:
         )
 
 
-__all__ = ("Decoder", "RepetitionLookupDecoder")
+@dataclass(frozen=True)
+class RepetitionStreamingLookupDecoder:
+    """Select immediate repetition-code feedback from the latest syndrome."""
+
+    def decode_round(self, syndrome_history: Sequence[SyndromeRound]) -> Correction:
+        history = tuple(syndrome_history)
+        if not history:
+            raise ValueError("streaming repetition decoder requires syndrome history")
+        if tuple(item.round_index for item in history) != tuple(range(len(history))):
+            raise ValueError("syndrome history must be dense and ordered from zero")
+        bits = history[-1].bits
+        if len(bits) != 2:
+            raise ValueError("repetition syndrome must contain two binary values")
+        wire = {
+            (0, 0): None,
+            (1, 0): 0,
+            (1, 1): 1,
+            (0, 1): 2,
+        }[bits]
+        return Correction(round_index=history[-1].round_index, wire=wire)
+
+
+__all__ = (
+    "Decoder",
+    "RepetitionLookupDecoder",
+    "RepetitionStreamingLookupDecoder",
+    "StreamingDecoder",
+)

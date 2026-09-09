@@ -685,3 +685,28 @@ the middle repetition-code data wire has two CNOT noise opportunities per
 round while edge wires have one. Phase 18 does not authorize calibrated-device,
 logical-suppression, threshold, real-time-decoder, provider, scalability,
 performance, or fault-tolerance claims.
+
+## Phase 19 bounded Runtime decoder-feedback authorization
+
+Phase 19 may add private, framework-neutral measurement decision points to the
+local dynamic trajectory executor. Runtime owns point validation, true and
+observed measurement records, invocation order, bounded physical-X or
+Pauli-frame-X actions, frame evolution, and shot-resolved traces. Runtime must
+not import QEC concepts. Batched feedback fails closed; `auto` selects the
+trajectory path when a private feedback plan is present.
+
+QEC may adapt those records to a `StreamingDecoder` that consumes all syndrome
+rounds available at the current decision. The repetition reference may execute
+immediate physical correction or update an X Pauli frame. A frame adjusts the
+interpretation of later parity checks and final data readout; it does not alter
+the quantum state. Replacing the streaming decoder must observably change
+continued execution, rather than merely changing post-run analysis.
+
+Acceptance requires agreement of logical outcomes across compiled lookup,
+Runtime physical feedback, and Runtime frame feedback for bounded single-error
+cases; shot traces separating true from observed bits; and rejection of
+unmeasured decision bits, out-of-range actions, and batched feedback. This is a
+local synchronous reference loop, not a stable plugin type or hard-real-time
+controller contract. General codes, provider execution, latency, gradients,
+logical suppression, thresholds, scale, performance, and fault tolerance
+remain outside the authorized claim.

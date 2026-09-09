@@ -18,6 +18,13 @@ from ...simulation.statevector.operations import (
     _statevector_layout,
 )
 from ._conditions import classical_width, instruction_condition_clauses
+from ._feedback import (
+    DynamicFeedbackAction,
+    DynamicFeedbackDecision,
+    DynamicFeedbackObservation,
+    DynamicFeedbackPlan,
+    DynamicFeedbackTrace,
+)
 from ._noise import (
     apply_noise_after_instruction as _apply_noise_after_instruction,
 )
@@ -25,6 +32,29 @@ from ._noise import apply_readout_error as _apply_readout_error
 from ._noise import validate_dynamic_noise as _validate_dynamic_noise
 from .circuit import DynamicCircuit
 from .result import DynamicExecutionResult
+
+
+def _validate_feedback_plan(
+    circuit: DynamicCircuit, feedback_plan: DynamicFeedbackPlan
+) -> None:
+    measurement_positions = {
+        int(instruction.metadata["classical_bit"]): instruction_index
+        for instruction_index, instruction in enumerate(circuit._instructions)
+        if instruction.name == "measure"
+    }
+    for point in feedback_plan.points:
+        if point.trigger_classical_bit not in measurement_positions:
+            raise ValueError("feedback trigger does not name a measured bit")
+        trigger_position = measurement_positions[point.trigger_classical_bit]
+        if any(bit not in measurement_positions for bit in point.classical_bits):
+            raise ValueError("feedback point references an unmeasured bit")
+        if any(
+            measurement_positions[bit] > trigger_position
+            for bit in point.classical_bits
+        ):
+            raise ValueError("feedback point reads a measurement after its trigger")
+    if any(wire >= circuit.n_wires for wire in feedback_plan.allowed_wires):
+        raise ValueError("feedback allowed wire is outside the circuit")
 
 
 def _measure_wire(
@@ -90,6 +120,7 @@ def _run_dynamic_trajectory(
     shots: int,
     seed: int | None = None,
     noise_model: NoiseModel | None = None,
+    feedback_plan: DynamicFeedbackPlan | None = None,
 ) -> DynamicExecutionResult:
     """Execute independent statevector trajectories with classical feedback."""
 
@@ -119,6 +150,12 @@ def _run_dynamic_trajectory(
     batched_states = []
     batched_samples = []
     batched_classical = []
+    feedback_traces = []
+    points_by_trigger = (
+        {}
+        if feedback_plan is None
+        else {point.trigger_classical_bit: point for point in feedback_plan.points}
+    )
     for batch_index in range(circuit.bsz):
         final_states = []
         final_samples = []
@@ -126,7 +163,11 @@ def _run_dynamic_trajectory(
         for _ in range(int(shots)):
             state = initial_states[batch_index : batch_index + 1]
             classical = [-1] * width
+            true_classical = [-1] * width
             branch_trace = []
+            feedback_observations = []
+            feedback_decisions = []
+            frame_x_wires: set[int] = set()
             for instruction_index, instruction in enumerate(circuit._instructions):
                 clauses = instruction_condition_clauses(instruction)
                 for bit_index, _expected in {
@@ -162,9 +203,76 @@ def _run_dynamic_trajectory(
                     )
                     bit = int(observed.item())
                     readout_errors += count
-                    classical[int(instruction.metadata["classical_bit"])] = bit
+                    classical_bit = int(instruction.metadata["classical_bit"])
+                    classical[classical_bit] = bit
+                    true_classical[classical_bit] = true_bit
                     measurement_count += 1
                     branch_trace.append((instruction_index, bit))
+                    point = points_by_trigger.get(classical_bit)
+                    if point is not None:
+                        if any(classical[item] < 0 for item in point.classical_bits):
+                            raise RuntimeError(
+                                f"feedback point {point.name!r} reads an unmeasured bit"
+                            )
+                        observation = DynamicFeedbackObservation(
+                            point_name=point.name,
+                            decision_index=len(feedback_observations),
+                            classical_bits=point.classical_bits,
+                            true_bits=tuple(
+                                true_classical[item] for item in point.classical_bits
+                            ),
+                            observed_bits=tuple(
+                                classical[item] for item in point.classical_bits
+                            ),
+                            frame_x_wires_before=tuple(sorted(frame_x_wires)),
+                        )
+                        feedback_observations.append(observation)
+                        action = feedback_plan.controller.decide(
+                            tuple(feedback_observations)
+                        )
+                        if not isinstance(action, DynamicFeedbackAction):
+                            raise TypeError(
+                                "feedback controller must return DynamicFeedbackAction"
+                            )
+                        if action.mode != "none":
+                            if action.mode not in feedback_plan.allowed_action_modes:
+                                raise ValueError(
+                                    "feedback action mode is outside the plan"
+                                )
+                            if action.wire not in feedback_plan.allowed_wires:
+                                raise ValueError("feedback wire is outside the plan")
+                            if action.wire >= circuit.n_wires:
+                                raise ValueError("feedback wire is outside the circuit")
+                        if action.mode == "physical_x":
+                            feedback_instruction = Instruction("x", (action.wire,))
+                            state = _apply_instruction(
+                                state,
+                                feedback_instruction,
+                                n_wires=circuit.n_wires,
+                            )
+                            state, applications, events = (
+                                _apply_noise_after_instruction(
+                                    state,
+                                    feedback_instruction,
+                                    noise_model,
+                                    n_wires=circuit.n_wires,
+                                    generator=generator,
+                                )
+                            )
+                            noise_channel_applications += applications
+                            bit_flip_events += events
+                        elif action.mode == "frame_x":
+                            if action.wire in frame_x_wires:
+                                frame_x_wires.remove(action.wire)
+                            else:
+                                frame_x_wires.add(action.wire)
+                        feedback_decisions.append(
+                            DynamicFeedbackDecision(
+                                observation=observation,
+                                action=action,
+                                frame_x_wires_after=tuple(sorted(frame_x_wires)),
+                            )
+                        )
                 elif instruction.name == "reset":
                     state, bit = _measure_wire(
                         state,
@@ -220,8 +328,12 @@ def _run_dynamic_trajectory(
                 )
                 sample[wire] = observed[0]
                 readout_errors += count
+            for wire in frame_x_wires:
+                sample[wire] ^= 1
             final_samples.append(sample.tolist())
             classical_rows.append(classical)
+            if feedback_plan is not None:
+                feedback_traces.append(DynamicFeedbackTrace(tuple(feedback_decisions)))
             branch_counts[
                 ",".join(f"{index}:{bit}" for index, bit in branch_trace)
             ] += 1
@@ -268,7 +380,11 @@ def _run_dynamic_trajectory(
             "noise_channel_application_count": noise_channel_applications,
             "bit_flip_event_count": bit_flip_events,
             "readout_error_count": readout_errors,
+            "feedback_decision_count": sum(
+                len(trace.decisions) for trace in feedback_traces
+            ),
         },
+        feedback_traces=tuple(feedback_traces),
     )
 
 
@@ -496,6 +612,7 @@ def run_dynamic(
     strategy: str = "auto",
     max_batched_bytes: int = 256 * 1024**2,
     noise_model: NoiseModel | None = None,
+    _feedback_plan: DynamicFeedbackPlan | None = None,
 ) -> DynamicExecutionResult:
     """Execute dynamic shots using a reference or vectorized trajectory path."""
 
@@ -512,6 +629,14 @@ def run_dynamic(
             if isinstance(value, torch.Tensor) and value.requires_grad:
                 raise RuntimeError("dynamic trajectory execution is not differentiable")
     _validate_dynamic_noise(circuit, noise_model)
+    if _feedback_plan is not None:
+        if not isinstance(_feedback_plan, DynamicFeedbackPlan):
+            raise TypeError("_feedback_plan must be a DynamicFeedbackPlan or None")
+        if strategy == "batched":
+            raise ValueError(
+                "decoder feedback is available only with trajectory execution"
+            )
+        _validate_feedback_plan(circuit, _feedback_plan)
 
     element_size = torch.empty((), dtype=circuit.dtype).element_size()
     estimated_bytes = int(shots) * (2**circuit.n_wires) * element_size * 3
@@ -524,6 +649,8 @@ def run_dynamic(
     use_batched = strategy == "batched" or (
         strategy == "auto" and int(shots) >= 32 and batched_compatible
     )
+    if _feedback_plan is not None:
+        use_batched = False
     if use_batched:
         return _run_dynamic_batched(
             circuit,
@@ -536,6 +663,7 @@ def run_dynamic(
         shots=int(shots),
         seed=seed,
         noise_model=noise_model,
+        feedback_plan=_feedback_plan,
     )
 
 

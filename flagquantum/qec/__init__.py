@@ -1,6 +1,11 @@
 """Experimental quantum-error-correction domain."""
 
-from .decoders import Decoder, RepetitionLookupDecoder
+from .decoders import (
+    Decoder,
+    RepetitionLookupDecoder,
+    RepetitionStreamingLookupDecoder,
+    StreamingDecoder,
+)
 from .noise import RepetitionNoiseProfile, run_repetition_memory_noise_sweep
 from .repetition import run_repetition_memory_experiment
 from .types import (
@@ -27,9 +32,11 @@ __all__ = (
     "PauliFrame",
     "RepetitionNoiseProfile",
     "RepetitionLookupDecoder",
+    "RepetitionStreamingLookupDecoder",
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
     "SyndromeRound",
+    "StreamingDecoder",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
 )

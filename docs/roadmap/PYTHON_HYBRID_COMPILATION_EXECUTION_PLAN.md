@@ -788,6 +788,30 @@ Exit gate:
 - public-root, provider, gradient, threshold, scale, and performance claims
   remain unchanged.
 
+### Phase 19 — Runtime decoder feedback and Pauli-frame evolution
+
+Add private measurement decision points to the local trajectory executor.
+Runtime records true and observed measurement values, calls one bounded
+controller after each declared point, executes a physical X or updates an X
+Pauli frame, and records the resulting per-shot decision trace. Keep the
+contract framework-neutral and keep QEC concepts in the QEC adapter.
+
+Add a `StreamingDecoder` for the repetition-code reference. It consumes the
+complete syndrome history available each round. Provide separate Runtime
+physical-correction and Runtime Pauli-frame modes; frame state adjusts later
+syndrome interpretation and final readout without modifying quantum state.
+
+Exit gate:
+
+- replacing the streaming decoder changes continued execution and its trace;
+- compiled lookup, Runtime physical feedback, and Runtime frame feedback agree
+  on bounded single-error logical outcomes;
+- traces separate true bits, observed bits, actions, and frame evolution;
+- decision points and actions outside the declared plan fail closed;
+- batched feedback, stable plugin publication, provider/hard-real-time control,
+  general codes, gradients, suppression, thresholds, scale, and performance
+  remain unsupported.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -934,3 +958,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 16 QEC domain and repetition-code memory workflow verified
 - [x] Phase 17 timed errors, history decoding, and offline Pauli frames verified
 - [x] Phase 18 bounded dynamic noise and QEC finite-shot sweeps verified
+- [x] Phase 19 Runtime decoder feedback and Pauli-frame evolution verified

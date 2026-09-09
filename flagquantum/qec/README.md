@@ -13,12 +13,16 @@ domain.
 The first experimental profile contains a three-data-qubit repetition code, a
 bounded deterministic X-error schedule, a two-bit-syndrome lookup decoder, and
 a fixed-round memory experiment using the private bounded hybrid compiler.
-`compiled_lookup` performs immediate reference feedback; the separate
-`offline_pauli_frame` mode leaves the data uncorrected until a decoder-produced
-frame is applied to final readout. Executed feedback and decoder advice are
-reported separately. A replaceable `Decoder` consumes the complete syndrome
-history after execution; it is not yet called in a real-time control loop. The
-namespace is not exported from the stable `flagquantum` root API.
+`compiled_lookup` performs immediate reference feedback inside the lowered
+circuit; the separate `offline_pauli_frame` mode leaves the data uncorrected
+until a decoder-produced frame is applied after execution. Two local Runtime
+modes call a replaceable `StreamingDecoder` after every syndrome round and
+either apply a physical X (`runtime_decoder`) or update an X Pauli frame
+(`runtime_pauli_frame`). The frame adjusts later syndrome interpretation and
+final readout without changing the quantum state. Shot traces retain true and
+observed bits, actions, and frame evolution. This is not a hard-real-time or
+provider feedback contract. The namespace is not exported from the stable
+`flagquantum` root API.
 
 `RepetitionNoiseProfile` maps code-specific circuit locations onto the existing
 backend-neutral `NoiseModel`: a data bit-flip channel is sampled after matching
@@ -41,7 +45,9 @@ or logical-suppression evidence.
    python tools/check_architecture.py
    ```
 
-The stochastic profile is limited to independent bit flips and independent
-readout confusion. No general Kraus/correlated/timing-noise,
-logical-error-suppression, threshold, fault-tolerance, realtime-hardware, or
-performance claim follows from the workflow.
+Runtime decoder feedback is trajectory-only; explicit batched feedback fails
+closed. The stochastic profile is limited to independent bit flips and
+independent readout confusion. No general Kraus/correlated/timing-noise,
+measurement-error-tolerant temporal decoder, logical-error-suppression,
+threshold, fault-tolerance, realtime-hardware, or performance claim follows
+from the workflow.

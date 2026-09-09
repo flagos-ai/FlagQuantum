@@ -674,3 +674,51 @@ def test_phase18_bridges_bounded_noise_into_dynamic_execution() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE18_EVIDENCE.md"
     )
     assert contract["phase18_completed"] is True
+
+
+def test_phase19_runs_replaceable_decoders_inside_trajectory_execution() -> None:
+    contract = _contract()
+    phase19 = contract["phase19"]
+
+    assert phase19["runtime_authority"] == "flagquantum.runtime.dynamic"
+    assert phase19["qec_authority"] == "flagquantum.qec"
+    assert phase19["feedback_contract"] == (
+        "private_bounded_measurement_decision_points"
+    )
+    assert phase19["decoder_contract"] == "flagquantum.qec.StreamingDecoder"
+    assert phase19["decoder_input"] == (
+        "complete_available_ordered_syndrome_history_per_round"
+    )
+    assert phase19["feedback_modes"] == [
+        "runtime_decoder",
+        "runtime_pauli_frame",
+    ]
+    assert phase19["action_profile"] == ["none", "physical_x", "frame_x"]
+    assert phase19["trace_fields"] == [
+        "true_measurement_bits",
+        "observed_measurement_bits",
+        "decoder_action",
+        "frame_before",
+        "frame_after",
+    ]
+    assert phase19["execution_strategy"] == "trajectory"
+    assert phase19["auto_strategy_resolution"] == (
+        "trajectory_when_feedback_plan_present"
+    )
+    assert phase19["batched_feedback"] == "unsupported_fail_closed"
+    assert phase19["replaceable_decoder_changes_execution"] is True
+    assert phase19["compiled_runtime_frame_outcome_crosscheck"] is True
+    assert phase19["stable_plugin_type"] is False
+    assert phase19["hard_realtime_claim"] is False
+    assert phase19["provider_execution"] == "unsupported_fail_closed"
+    assert phase19["general_code_support"] is False
+    assert phase19["logical_error_suppression_claim"] is False
+    assert phase19["threshold_claim"] is False
+    assert phase19["fault_tolerance_claim"] is False
+    assert phase19["public_root_export"] is False
+    assert phase19["default_path_change"] is False
+    assert phase19["performance_claim"] is False
+    assert phase19["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE19_EVIDENCE.md"
+    )
+    assert contract["phase19_completed"] is True

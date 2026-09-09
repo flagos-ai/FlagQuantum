@@ -11,6 +11,7 @@ from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...core.parameters import is_parameterized_value
 from ...noise import NoiseModel
 from ._conditions import instruction_condition_clauses
+from ._feedback import DynamicFeedbackPlan
 from .circuit import DynamicCircuit
 from .execution import run_dynamic
 from .result import DynamicExecutionResult
@@ -178,6 +179,7 @@ def execute_hybrid_dynamic_session(
     strategy: str = "auto",
     max_batched_bytes: int = 256 * 1024**2,
     noise_model: NoiseModel | None = None,
+    _feedback_plan: DynamicFeedbackPlan | None = None,
 ) -> DynamicExecutionResult:
     """Execute one private, compiler-lowered local dynamic session."""
 
@@ -199,6 +201,7 @@ def execute_hybrid_dynamic_session(
         strategy=strategy,
         max_batched_bytes=max_batched_bytes,
         noise_model=noise_model,
+        _feedback_plan=_feedback_plan,
     )
     statistics = dict(result.statistics)
     statistics.update(
