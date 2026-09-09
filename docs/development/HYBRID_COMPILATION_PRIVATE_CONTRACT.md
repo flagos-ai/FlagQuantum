@@ -440,3 +440,36 @@ unrolling, post-loop operations consume explicit loop results, and tensor
 carry or loop-target shadowing is rejected. This phase remains private and
 makes no public API, default-path, general Python, accelerator, distributed,
 capacity, or performance claim.
+
+## Phase 10 explicit branch-carried classical-state authorization
+
+Phase 10 may merge direct rebinding of existing scalar, index, and bool locals
+across an `if/else`. Capture computes one deterministic carried-name list and
+uses it for the `scf.if` operands and results and for both region signatures.
+Each side yields its selected values plus the linear quantum effect. When only
+one side assigns a name, the other side explicitly yields the unchanged region
+argument, preserving Python's existing-binding semantics without a hidden
+mutable cell.
+
+The merged `scf.if` results replace the outer bindings, so subsequent gate
+parameters, wire expressions, and compile-time-resolved conditions consume
+SSA results rather than pre-branch values. Assignments must be direct branch
+body single-name assignments, preserve the IR type, and remain within the
+restricted expression vocabulary. Tensor and tensor-view state, augmented
+assignment, and writes performed by nested branch or loop regions fail closed.
+
+For dynamic-session lowering, branch-carried classical state is accepted only
+when the predicate is resolved during specialization. A mid-circuit
+measurement predicate still lowers both quantum-effect-only branches into
+classical conditions; exporting different scalar, index, or bool values from
+those branches would require a Runtime classical-expression representation
+that Core `CircuitIR` does not currently own. Compiler therefore rejects that
+case with a dedicated diagnostic before branch execution.
+
+Phase 10 acceptance is complete when both specialized paths carry scalar,
+index, and bool values into post-branch gates and measurement wires, one-sided
+assignment has explicit pass-through, and tensor, nested, or
+measurement-dependent carry fails closed. Runtime and Simulation remain
+unchanged. The feature stays private and makes no public API, default-path,
+general Python, finite-shot-gradient, accelerator, distributed, capacity, or
+performance claim.

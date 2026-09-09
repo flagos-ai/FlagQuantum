@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase9_loop_carried_classical_state_verified",
+  "status": "phase10_branch_carried_classical_state_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -328,6 +328,30 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE9_EVIDENCE.md"
   },
   "phase9_completed": true,
+  "phase10": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.capture_source",
+    "control_operation": "scf.if",
+    "carried_value_types": [
+      "scalar_float32_or_float64",
+      "index",
+      "bool"
+    ],
+    "carried_value_representation": "explicit_operands_region_arguments_yields_and_results",
+    "assignment_profile": "direct_branch_body_local_name_rebinding",
+    "one_sided_assignment": "unchanged_block_argument_passthrough",
+    "post_branch_values": "explicit_scf_if_results",
+    "runtime_lowering_profile": "specialization_resolved_predicates_only",
+    "measurement_dependent_carried_state": "unsupported_fail_closed",
+    "tensor_carried_state": "unsupported_fail_closed",
+    "nested_carried_state": "unsupported_fail_closed",
+    "runtime_change_required": false,
+    "simulation_change_required": false,
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "public_api_change": false,
+    "default_path_change": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE10_EVIDENCE.md"
+  },
+  "phase10_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

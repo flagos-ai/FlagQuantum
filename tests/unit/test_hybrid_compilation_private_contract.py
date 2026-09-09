@@ -319,3 +319,36 @@ def test_phase9_represents_loop_carried_classical_state_explicitly() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE9_EVIDENCE.md"
     )
     assert contract["phase9_completed"] is True
+
+
+def test_phase10_merges_branch_carried_state_without_runtime_mutation() -> None:
+    contract = _contract()
+    phase10 = contract["phase10"]
+
+    assert phase10["control_operation"] == "scf.if"
+    assert phase10["carried_value_types"] == [
+        "scalar_float32_or_float64",
+        "index",
+        "bool",
+    ]
+    assert phase10["carried_value_representation"] == (
+        "explicit_operands_region_arguments_yields_and_results"
+    )
+    assert phase10["assignment_profile"] == ("direct_branch_body_local_name_rebinding")
+    assert phase10["one_sided_assignment"] == ("unchanged_block_argument_passthrough")
+    assert phase10["post_branch_values"] == "explicit_scf_if_results"
+    assert phase10["runtime_lowering_profile"] == (
+        "specialization_resolved_predicates_only"
+    )
+    assert phase10["measurement_dependent_carried_state"] == ("unsupported_fail_closed")
+    assert phase10["tensor_carried_state"] == "unsupported_fail_closed"
+    assert phase10["nested_carried_state"] == "unsupported_fail_closed"
+    assert phase10["runtime_change_required"] is False
+    assert phase10["simulation_change_required"] is False
+    assert phase10["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase10["public_api_change"] is False
+    assert phase10["default_path_change"] is False
+    assert phase10["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE10_EVIDENCE.md"
+    )
+    assert contract["phase10_completed"] is True

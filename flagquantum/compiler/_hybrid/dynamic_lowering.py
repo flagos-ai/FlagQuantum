@@ -203,6 +203,12 @@ class _DynamicLowerer:
                     operands[1:],
                     conditions=conditions,
                 )
+            if len(operands) != 2:
+                self.fail(
+                    operation,
+                    "dynamic.measurement_branch_carry",
+                    "measurement-dependent branches cannot carry classical values",
+                )
             if any(bit == predicate.classical_bit for bit, _ in conditions):
                 self.fail(
                     operation,

@@ -436,55 +436,115 @@ class _Capture:
         if condition.type != BOOL:
             self.fail(statement.test, "control.condition", "if condition must be bool")
         input_effect = self.require_effect(statement)
+        saved_environment = self.environment
+        carried_names = self.direct_branch_carried_names(statement, saved_environment)
+        carried_inputs = tuple(
+            self.require_classical_carry(statement, name, saved_environment[name])
+            for name in carried_names
+        )
         serial = self._next_region_serial()
-        then_region = self.capture_effect_region(
-            statement.body, f"if{serial}.then", origin=statement
+        then_region = self.capture_branch_region(
+            statement.body,
+            f"if{serial}.then",
+            origin=statement,
+            carried_names=carried_names,
+            carried_inputs=carried_inputs,
         )
-        else_region = self.capture_effect_region(
-            statement.orelse, f"if{serial}.else", origin=statement
+        else_region = self.capture_branch_region(
+            statement.orelse,
+            f"if{serial}.else",
+            origin=statement,
+            carried_names=carried_names,
+            carried_inputs=carried_inputs,
         )
-        result = self.new_value(QUANTUM_EFFECT)
+        results = tuple(
+            self.new_value(value.type) for value in (*carried_inputs, input_effect)
+        )
         self.operations.append(
             Operation(
                 "scf.if",
-                operands=(condition, input_effect),
-                results=(result,),
+                operands=(condition, *carried_inputs, input_effect),
+                results=results,
                 regions=(then_region, else_region),
                 location=self.location(statement),
             )
         )
-        self.effect = result
+        self.environment.update(zip(carried_names, results[:-1]))
+        self.effect = results[-1]
 
-    def capture_effect_region(
-        self, statements: Sequence[ast.stmt], scope: str, *, origin: ast.AST
+    def capture_branch_region(
+        self,
+        statements: Sequence[ast.stmt],
+        scope: str,
+        *,
+        origin: ast.AST,
+        carried_names: tuple[str, ...],
+        carried_inputs: tuple[Value, ...],
     ) -> Region:
         saved_scope = self.scope
         saved_environment = self.environment
         saved_operations = self.operations
         saved_effect = self.effect
+        block_carried = tuple(
+            self.new_value(value.type, scope=scope) for value in carried_inputs
+        )
         block_effect = self.new_value(QUANTUM_EFFECT, scope=scope)
         self.scope = scope
         self.environment = dict(saved_environment)
+        self.environment.update(zip(carried_names, block_carried))
         self.operations = []
         self.effect = block_effect
         try:
             self.capture_statements(statements, allow_return=False)
-            self.reject_outer_binding_writes(saved_environment, origin)
+            self.reject_outer_binding_writes(
+                saved_environment,
+                origin,
+                allowed=frozenset(carried_names),
+            )
             location_node = statements[-1] if statements else origin
+            carried_outputs = tuple(
+                self.require_matching_carry(
+                    location_node,
+                    name,
+                    carried_input.type,
+                    self.environment.get(name),
+                )
+                for name, carried_input in zip(carried_names, carried_inputs)
+            )
             output_effect = self.require_effect(location_node)
             self.operations.append(
                 Operation(
                     "scf.yield",
-                    operands=(output_effect,),
+                    operands=(*carried_outputs, output_effect),
                     location=self.location(location_node),
                 )
             )
-            return Region((Block((block_effect,), tuple(self.operations)),))
+            return Region(
+                (
+                    Block(
+                        (*block_carried, block_effect),
+                        tuple(self.operations),
+                    ),
+                )
+            )
         finally:
             self.scope = saved_scope
             self.environment = saved_environment
             self.operations = saved_operations
             self.effect = saved_effect
+
+    def direct_branch_carried_names(
+        self, statement: ast.If, outer: dict[str, _Binding]
+    ) -> tuple[str, ...]:
+        names: list[str] = []
+        for child in (*statement.body, *statement.orelse):
+            if not isinstance(child, ast.Assign):
+                continue
+            for target in child.targets:
+                if isinstance(target, ast.Name) and target.id in outer:
+                    if target.id not in names:
+                        names.append(target.id)
+        return tuple(names)
 
     def capture_for(self, statement: ast.For) -> None:
         if statement.orelse:

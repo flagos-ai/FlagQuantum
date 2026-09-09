@@ -90,6 +90,29 @@ def bool_carried_feedback(layers):
 """,
     (INDEX,),
 )
+BRANCH_CARRIED_PROGRAM = capture_source(
+    """
+def branch_carried_feedback(select_first, theta):
+    angle = theta
+    wire = 0
+    enabled = False
+    if select_first:
+        angle = theta + theta
+        wire = 1
+        enabled = True
+    else:
+        angle = theta
+        wire = 0
+        enabled = False
+    if enabled:
+        qp.RX(angle, wires=wire)
+    else:
+        qp.RY(angle, wires=wire)
+    bit = qp.measure(wires=wire)
+    return bit
+""",
+    (BOOL, scalar_type("float64")),
+)
 
 
 def _lowered():
@@ -401,3 +424,86 @@ def nested_carry(theta):
 """
     with pytest.raises(HybridCaptureError, match="control.classical_carry"):
         capture_source(nested_carry, (scalar_type("float64"),))
+
+
+@pytest.mark.parametrize(
+    ("select_first", "gate", "wire", "expected"),
+    ((True, "rx", 1, 0), (False, "ry", 0, 1)),
+)
+def test_capture_and_execute_branch_carried_classical_state(
+    select_first: bool, gate: str, wire: int, expected: int
+) -> None:
+    branch = next(
+        operation
+        for operation in BRANCH_CARRIED_PROGRAM.body.blocks[0].operations
+        if operation.name == "scf.if"
+    )
+
+    assert len(branch.operands) == 5  # predicate, angle, wire, bool, effect
+    assert len(branch.results) == 4
+    for region in branch.regions:
+        block = region.blocks[0]
+        assert len(block.arguments) == 4
+        assert len(block.operations[-1].operands) == 4
+
+    lowered = lower_dynamic_program(
+        BRANCH_CARRIED_PROGRAM,
+        (select_first, torch.tensor(torch.pi, dtype=torch.float64)),
+        circuit_dtype="complex128",
+    )
+    rotation = lowered.circuit.instructions[0]
+
+    assert rotation.name == gate
+    assert rotation.wires == (wire,)
+    result = execute_hybrid_dynamic_session(
+        lowered.circuit, shots=16, seed=7, strategy="batched"
+    )
+    assert torch.all(result.classical_bits[:, 0] == expected)
+    assert torch.all(result.samples[:, wire] == expected)
+
+
+def test_branch_carry_rejects_tensor_nested_and_measurement_dependent_state() -> None:
+    tensor_carry = """
+def tensor_branch(flag, data):
+    if flag:
+        data = data
+    bit = qp.measure(wires=0)
+    return bit
+"""
+    with pytest.raises(HybridCaptureError, match="classical_carry_type"):
+        capture_source(tensor_carry, (BOOL, tensor_type("float32", (1,))))
+
+    nested_carry = """
+def nested_branch(first, second, theta):
+    angle = theta
+    if first:
+        if second:
+            angle = angle + theta
+    qp.RX(angle, wires=0)
+    bit = qp.measure(wires=0)
+    return bit
+"""
+    with pytest.raises(HybridCaptureError, match="control.classical_carry"):
+        capture_source(
+            nested_carry,
+            (BOOL, BOOL, scalar_type("float64")),
+        )
+
+    measurement_carry = capture_source(
+        """
+def measurement_branch(theta):
+    angle = theta
+    bit = qp.measure(wires=0)
+    if bit:
+        angle = theta + theta
+    qp.RX(angle, wires=1)
+    return bit
+""",
+        (scalar_type("float64"),),
+    )
+    with pytest.raises(SpecializationError, match="measurement_branch_carry"):
+        lower_dynamic_program(
+            measurement_carry,
+            (torch.tensor(0.2, dtype=torch.float64),),
+            circuit_dtype="complex128",
+        )

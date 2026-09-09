@@ -187,7 +187,7 @@ def branch(weights, data):
     assert "scf.if" in [operation.name for operation in operations(program)]
 
 
-def test_outer_classical_write_inside_branch_fails_closed() -> None:
+def test_outer_scalar_write_inside_branch_is_explicitly_carried() -> None:
     source = """
 def branch(weights, data):
     qp.AngleEmbedding(data, wires=range(4))
@@ -198,7 +198,16 @@ def branch(weights, data):
     return qp.expval(qp.PauliZ(0))
 """
 
-    with pytest.raises(HybridCaptureError) as caught:
-        capture_source(source, (WEIGHTS, DATA))
+    program = capture_source(source, (WEIGHTS, DATA))
+    branch = next(
+        operation for operation in operations(program) if operation.name == "scf.if"
+    )
 
-    assert caught.value.diagnostic.code == "control.classical_carry"
+    assert len(branch.operands) == 3  # predicate, scalar, effect
+    assert len(branch.results) == 2
+    assert all(len(region.blocks[0].arguments) == 2 for region in branch.regions)
+    assert all(
+        len(region.blocks[0].operations[-1].operands) == 2 for region in branch.regions
+    )
+    else_block = branch.regions[1].blocks[0]
+    assert else_block.operations[-1].operands[0] == else_block.arguments[0]

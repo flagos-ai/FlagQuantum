@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-9 bounded vertical slices complete**
+Status: **Phases 1-10 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -558,6 +558,31 @@ Exit gate:
 - no Runtime, Simulation, public API, default-path, or performance change is
   introduced.
 
+### Phase 10 — explicit branch-carried classical state
+
+Extend restricted capture so an `if/else` may update existing scalar, index,
+or bool locals and expose the selected values after the branch. Every carried
+name is represented explicitly as an `scf.if` operand, an argument of both
+regions, a yield from both regions, and an `scf.if` result. If only one side
+assigns a name, the other side yields its unchanged block argument.
+
+Dynamic lowering accepts this profile only when the predicate is resolved by
+specialization. A predicate produced by mid-circuit measurement cannot export
+classical state into the static Core `CircuitIR`; that case fails before either
+branch is lowered. Tensor state, nested branch/loop writes, augmented
+assignment, finite-shot gradients, and general runtime classical expressions
+remain unsupported.
+
+Exit gate:
+
+- scalar, index, bool, and effect values have matching branch signatures;
+- one-sided assignments have explicit unchanged-value pass-through;
+- post-branch gates and measurement wires consume `scf.if` results;
+- both specialized paths produce deterministic expected circuits and outcomes;
+- tensor, nested, and measurement-dependent carried state fail closed;
+- Runtime, Simulation, public API, default path, and performance claims remain
+  unchanged.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -689,3 +714,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 8 non-trainable parameterized dynamic-session slice verified
 - [x] Phase 9 explicit loop-carried classical-state contract authorized
 - [x] Phase 9 scalar/index carry capture and dynamic execution verified
+- [x] Phase 10 explicit branch-carried classical-state contract authorized
+- [x] Phase 10 scalar/index/bool merge and dynamic execution verified
