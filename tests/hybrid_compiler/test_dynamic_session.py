@@ -149,6 +149,32 @@ def branch_loop_carried_feedback(enabled, theta, delta):
 """,
     (BOOL, scalar_type("float64"), scalar_type("float64")),
 )
+MEASUREMENT_CONJUNCTION_PROGRAM = capture_source(
+    """
+def measurement_conjunction():
+    qp.H(wires=0)
+    qp.H(wires=1)
+    first = qp.measure(wires=0)
+    second = qp.measure(wires=1)
+    if first and not second:
+        qp.X(wires=2)
+    return first
+""",
+    (),
+)
+MEASUREMENT_COMPARISON_PROGRAM = capture_source(
+    """
+def measurement_comparison():
+    qp.H(wires=0)
+    bit = qp.measure(wires=0)
+    if bit == False:
+        qp.X(wires=1)
+    else:
+        qp.X(wires=2)
+    return bit
+""",
+    (),
+)
 
 
 def _lowered():
@@ -585,3 +611,132 @@ def test_nested_loop_still_obeys_cumulative_unroll_ceiling() -> None:
             circuit_dtype="complex128",
             max_unrolled_iterations=1,
         )
+
+
+@pytest.mark.parametrize("strategy", ("trajectory", "batched"))
+def test_measurement_negation_and_conjunction_control_gate(
+    strategy: str,
+) -> None:
+    lowered = lower_dynamic_program(MEASUREMENT_CONJUNCTION_PROGRAM)
+    controlled = lowered.circuit.instructions[-1]
+
+    assert controlled.name == "x"
+    assert controlled.metadata["conditions"] == ((0, 1), (1, 0))
+    result = execute_hybrid_dynamic_session(
+        lowered.circuit,
+        shots=128,
+        seed=23,
+        strategy=strategy,
+    )
+    first = result.classical_bits[:, 0]
+    second = result.classical_bits[:, 1]
+    expected = first * (1 - second)
+
+    assert set(zip(first.tolist(), second.tolist())) == {
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+    }
+    assert torch.equal(result.samples[:, 2], expected)
+
+
+def test_measurement_bool_comparison_controls_both_branches() -> None:
+    lowered = lower_dynamic_program(MEASUREMENT_COMPARISON_PROGRAM)
+    first_gate, second_gate = lowered.circuit.instructions[-2:]
+
+    assert first_gate.metadata["conditions"] == ((0, 0),)
+    assert second_gate.metadata["conditions"] == ((0, 1),)
+    result = execute_hybrid_dynamic_session(
+        lowered.circuit, shots=128, seed=29, strategy="batched"
+    )
+    bit = result.classical_bits[:, 0]
+
+    assert set(bit.tolist()) == {0, 1}
+    assert torch.equal(result.samples[:, 1], 1 - bit)
+    assert torch.equal(result.samples[:, 2], bit)
+
+    inequality = capture_source(
+        """
+def measurement_inequality():
+    bit = qp.measure(wires=0)
+    if bit != True:
+        qp.X(wires=1)
+    else:
+        qp.X(wires=2)
+    return bit
+""",
+        (),
+    )
+    inequality_ir = lower_dynamic_program(inequality).circuit
+    assert inequality_ir.instructions[-2].metadata["conditions"] == ((0, 0),)
+    assert inequality_ir.instructions[-1].metadata["conditions"] == ((0, 1),)
+
+
+def test_measurement_boolean_profile_rejects_disjunction_and_nonconjunctive_paths() -> (
+    None
+):
+    disjunction = """
+def disjunction():
+    first = qp.measure(wires=0)
+    second = qp.measure(wires=1)
+    if first or second:
+        qp.X(wires=2)
+    return first
+"""
+    with pytest.raises(HybridCaptureError, match="only boolean conjunction"):
+        capture_source(disjunction, ())
+
+    inline_measurement = """
+def inline_measurement():
+    first = qp.measure(wires=0)
+    if first and qp.measure(wires=1):
+        qp.X(wires=2)
+    return first
+"""
+    with pytest.raises(HybridCaptureError, match="must be assigned"):
+        capture_source(inline_measurement, ())
+
+    negated_conjunction = capture_source(
+        """
+def negated_conjunction():
+    first = qp.measure(wires=0)
+    second = qp.measure(wires=1)
+    if not (first and second):
+        qp.X(wires=2)
+    return first
+""",
+        (),
+    )
+    with pytest.raises(SpecializationError, match="negating a measurement conjunction"):
+        lower_dynamic_program(negated_conjunction)
+
+    conjunction_else = capture_source(
+        """
+def conjunction_else():
+    first = qp.measure(wires=0)
+    second = qp.measure(wires=1)
+    if first and second:
+        qp.X(wires=2)
+    else:
+        qp.X(wires=3)
+    return first
+""",
+        (),
+    )
+    with pytest.raises(SpecializationError, match="empty else branch"):
+        lower_dynamic_program(conjunction_else)
+
+    measurement_comparison = capture_source(
+        """
+def measurement_comparison():
+    first = qp.measure(wires=0)
+    second = qp.measure(wires=1)
+    if first == second:
+        qp.X(wires=2)
+    return first
+""",
+        (),
+    )
+    with pytest.raises(SpecializationError, match="one bool constant"):
+        lower_dynamic_program(measurement_comparison)

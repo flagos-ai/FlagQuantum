@@ -222,18 +222,24 @@ class _Verifier:
                 self.error(
                     "arith.type", f"{name} requires equal scalar operand/result types"
                 )
+        elif name == "arith.not" and len(operands) == 1 and len(results) == 1:
+            if operands[0].type != BOOL or results[0].type != BOOL:
+                self.error("arith.bool_type", "arith.not requires bool -> bool")
+        elif name == "arith.and" and len(operands) == 2 and len(results) == 1:
+            if any(value.type != BOOL for value in (*operands, *results)):
+                self.error("arith.bool_type", "arith.and requires bool, bool -> bool")
         elif name == "arith.cmp" and len(operands) == 2 and len(results) == 1:
             predicates = {"eq", "ne", "lt", "le", "gt", "ge"}
             if operation.attributes.get("predicate") not in predicates:
                 self.error("arith.predicate", "arith.cmp predicate is unsupported")
             if (
                 operands[0].type != operands[1].type
-                or not _is_scalar(operands[0].type)
+                or (not _is_scalar(operands[0].type) and operands[0].type != BOOL)
                 or results[0].type != BOOL
             ):
                 self.error(
                     "arith.cmp_type",
-                    "arith.cmp requires equal scalars and returns bool",
+                    "arith.cmp requires equal scalar or bool values and returns bool",
                 )
         elif name == "scf.if":
             self._verify_if(operation)

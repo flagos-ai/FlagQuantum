@@ -268,6 +268,12 @@ class _Specializer:
                 return (operands[0] % operands[1],)
             except (RuntimeError, TypeError, ValueError, ZeroDivisionError) as exc:
                 self.fail(operation, "arith.remainder", f"remainder failed: {exc}")
+        if name == "arith.not":
+            return (not self.as_predicate(operation, operands[0]),)
+        if name == "arith.and":
+            left = self.as_predicate(operation, operands[0])
+            right = self.as_predicate(operation, operands[1])
+            return (left and right,)
         if name == "arith.cmp":
             predicate = operation.attributes["predicate"]
             comparisons = {

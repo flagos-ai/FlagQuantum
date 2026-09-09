@@ -277,7 +277,41 @@ class _Capture:
                 operands=(left, right),
                 result_types=(left.type,),
             )[0]
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            self.reject_inline_measurement(node)
+            operand = self.emit_expression(node.operand)
+            if operand.type != BOOL:
+                self.fail(node, "arith.bool_type", "not requires one bool operand")
+            return self.emit(
+                node,
+                "arith.not",
+                operands=(operand,),
+                result_types=(BOOL,),
+            )[0]
+        if isinstance(node, ast.BoolOp):
+            self.reject_inline_measurement(node)
+            if not isinstance(node.op, ast.And) or len(node.values) < 2:
+                self.fail(
+                    node,
+                    "arith.boolean_expression",
+                    "only boolean conjunction is supported",
+                )
+            result = self.emit_expression(node.values[0])
+            if result.type != BOOL:
+                self.fail(node, "arith.bool_type", "and requires bool operands")
+            for value_node in node.values[1:]:
+                right = self.emit_expression(value_node)
+                if right.type != BOOL:
+                    self.fail(node, "arith.bool_type", "and requires bool operands")
+                result = self.emit(
+                    node,
+                    "arith.and",
+                    operands=(result, right),
+                    result_types=(BOOL,),
+                )[0]
+            return result
         if isinstance(node, ast.Compare):
+            self.reject_inline_measurement(node)
             if len(node.ops) != 1 or len(node.comparators) != 1:
                 self.fail(
                     node, "arith.comparison", "chained comparisons are unsupported"
@@ -339,6 +373,18 @@ class _Capture:
             "expression.unsupported",
             f"unsupported expression {type(node).__name__}",
         )
+
+    def reject_inline_measurement(self, node: ast.expr) -> None:
+        if any(
+            isinstance(child, ast.Call)
+            and _call_name(child).replace("_", "").lower() == "measure"
+            for child in ast.walk(node)
+        ):
+            self.fail(
+                node,
+                "quantum.measurement_expression",
+                "measurements must be assigned before boolean composition",
+            )
 
     def emit_constant(self, node: ast.Constant, expected_type: IRType | None) -> Value:
         raw = node.value

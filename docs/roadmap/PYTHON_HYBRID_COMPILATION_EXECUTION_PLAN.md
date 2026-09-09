@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-11 bounded vertical slices complete**
+Status: **Phases 1-12 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -608,6 +608,32 @@ Exit gate:
 - Runtime, Simulation, public API, default path, and performance claims remain
   unchanged.
 
+### Phase 12 — measurement boolean predicates
+
+Extend the Program IR with boolean `not` and `and`, and permit equality or
+inequality between one measurement boolean and a bool constant. Compiler keeps
+these values symbolic and lowers the accepted subset to the existing sorted
+`conditions` tuple on Core instructions. Runtime already interprets that tuple
+as a conjunction for both reference and batched trajectory execution, so no new
+classical runtime or serialized Core type is introduced.
+
+The first profile supports direct measurement literals, one-literal negation,
+bool comparison, and conjunctions of distinct literals. A conjunction may
+guard quantum work only in its true branch because its false complement is a
+disjunction. Boolean `or`, negation of a conjunction, measurement-to-measurement
+comparison, inline measurement calls inside a boolean expression, and
+measurement-dependent carried state remain unsupported.
+
+Exit gate:
+
+- two top-level measurements produce independently addressable bool SSA values;
+- `first and not second` lowers to conditions `((0, 1), (1, 0))`;
+- bool comparison lowers true and false branches to complementary conditions;
+- reference and batched trajectories agree shot-wise with the predicate;
+- unsupported non-conjunctive expressions fail before Runtime execution;
+- Runtime, Simulation, public API, default path, and performance claims remain
+  unchanged.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -743,3 +769,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 10 scalar/index/bool merge and dynamic execution verified
 - [x] Phase 11 nested structured-state propagation contract authorized
 - [x] Phase 11 loop/branch and branch/loop value-flow slices verified
+- [x] Phase 12 measurement-boolean predicate contract authorized
+- [x] Phase 12 negation, comparison, and conjunctive feedback verified

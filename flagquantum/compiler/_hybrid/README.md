@@ -44,6 +44,15 @@ operation explicitly carries any outer state updated below it. Tensor state,
 loop-target shadowing, and classical state escaping a measurement-dependent
 branch fail closed.
 
+Measurement booleans may be assigned to names and composed as a single-literal
+`not`, equality/inequality with a bool constant, or an `and` of distinct
+measurement literals. Compiler lowers that subset to the existing conjunctive
+`conditions` metadata consumed by both dynamic trajectory strategies. An
+`and` predicate may have quantum work only in its true branch because the
+complement is a disjunction. Boolean `or`, negated conjunctions, comparisons
+between measurements, and inline measurement calls in a boolean expression
+fail closed.
+
 `specialize.py` selects one bounded runtime path and records an ephemeral gate
 trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 `Parameter` slots. Runtime tensor slices stay in a separate binding map by

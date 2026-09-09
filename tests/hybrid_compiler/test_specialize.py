@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from flagquantum.compiler._hybrid import (
+    BOOL,
     INDEX,
     SpecializationError,
     capture_source,
@@ -166,3 +167,27 @@ def indexed(wire, data):
                 torch.zeros(4, dtype=torch.float64),
             ),
         )
+
+
+@pytest.mark.parametrize(
+    ("first", "second", "gate"),
+    ((True, False, "x"), (True, True, "h"), (False, False, "h")),
+)
+def test_static_boolean_not_and_conjunction_specialize(
+    first: bool, second: bool, gate: str
+) -> None:
+    captured = capture_source(
+        """
+def boolean_select(first, second):
+    if first and not second:
+        qp.X(wires=0)
+    else:
+        qp.H(wires=0)
+    return qp.expval(qp.PauliZ(0))
+""",
+        (BOOL, BOOL),
+    )
+
+    trace = specialize_program(captured, (first, second))
+
+    assert tuple(item.name for item in trace.gates) == (gate,)

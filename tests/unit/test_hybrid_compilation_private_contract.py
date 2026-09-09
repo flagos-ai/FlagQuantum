@@ -385,3 +385,40 @@ def test_phase11_threads_state_through_nested_structured_regions() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE11_EVIDENCE.md"
     )
     assert contract["phase11_completed"] is True
+
+
+def test_phase12_uses_existing_conjunctive_runtime_conditions() -> None:
+    contract = _contract()
+    phase12 = contract["phase12"]
+
+    assert phase12["program_ir_operations"] == [
+        "arith.not",
+        "arith.and",
+        "arith.cmp",
+    ]
+    assert phase12["measurement_predicate_profile"] == [
+        "direct_measurement_bool",
+        "single_literal_negation",
+        "single_literal_bool_equality_or_inequality",
+        "conjunction_of_distinct_measurement_literals",
+    ]
+    assert phase12["runtime_representation"] == (
+        "existing_instruction_conditions_conjunction"
+    )
+    assert phase12["multiple_measurements_supported"] is True
+    assert phase12["conjunction_else_branch"] == "must_have_no_quantum_work"
+    assert phase12["disjunction_supported"] is False
+    assert phase12["negated_conjunction_supported"] is False
+    assert phase12["measurement_to_measurement_comparison_supported"] is False
+    assert phase12["inline_measurement_composition"] == "unsupported_fail_closed"
+    assert phase12["measurement_dependent_carried_state"] == ("unsupported_fail_closed")
+    assert phase12["runtime_change_required"] is False
+    assert phase12["simulation_change_required"] is False
+    assert phase12["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase12["public_api_change"] is False
+    assert phase12["default_path_change"] is False
+    assert phase12["performance_claim"] is False
+    assert phase12["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE12_EVIDENCE.md"
+    )
+    assert contract["phase12_completed"] is True

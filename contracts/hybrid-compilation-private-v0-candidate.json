@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase11_nested_structured_state_verified",
+  "status": "phase12_measurement_boolean_predicates_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -378,6 +378,36 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE11_EVIDENCE.md"
   },
   "phase11_completed": true,
+  "phase12": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.lower_dynamic_program",
+    "program_ir_operations": [
+      "arith.not",
+      "arith.and",
+      "arith.cmp"
+    ],
+    "measurement_predicate_profile": [
+      "direct_measurement_bool",
+      "single_literal_negation",
+      "single_literal_bool_equality_or_inequality",
+      "conjunction_of_distinct_measurement_literals"
+    ],
+    "runtime_representation": "existing_instruction_conditions_conjunction",
+    "multiple_measurements_supported": true,
+    "conjunction_else_branch": "must_have_no_quantum_work",
+    "disjunction_supported": false,
+    "negated_conjunction_supported": false,
+    "measurement_to_measurement_comparison_supported": false,
+    "inline_measurement_composition": "unsupported_fail_closed",
+    "measurement_dependent_carried_state": "unsupported_fail_closed",
+    "runtime_change_required": false,
+    "simulation_change_required": false,
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "public_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE12_EVIDENCE.md"
+  },
+  "phase12_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

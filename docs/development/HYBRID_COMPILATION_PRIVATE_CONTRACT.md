@@ -503,3 +503,34 @@ expected trajectory outcomes. Runtime and Simulation remain unchanged. The
 feature stays private and makes no public API, default-path, general Python,
 finite-shot-gradient, accelerator, distributed, capacity, or performance
 claim.
+
+## Phase 12 measurement-boolean predicate authorization
+
+Phase 12 may add `arith.not` and `arith.and` to the private Program IR and may
+apply existing `arith.cmp` to equal bool values. Source capture accepts `not`
+on a bool, an `and` of two or more bool expressions, and `==` or `!=` between a
+measurement-derived bool and a bool constant. Measurements used in a composed
+expression must first be assigned to local names; inline measurement calls are
+rejected so capture never changes Python short-circuit measurement semantics.
+
+Dynamic lowering retains measurement values symbolically as classical-bit
+literals. Negation flips one literal's expected value, bool comparison either
+preserves or flips it, and conjunction merges distinct literals into one
+sorted tuple. Contradictory literals specialize to false. The resulting tuple
+is stored in existing Core instruction `conditions` metadata, which both local
+trajectory strategies already evaluate as a conjunction. This phase therefore
+adds no Runtime or Simulation representation.
+
+The complement of a multi-literal conjunction is a disjunction and cannot be
+represented by one existing conditions tuple. Such a conjunction may guard
+quantum work only in its true branch; a non-empty quantum else branch fails
+closed. Boolean `or`, negated conjunction, measurement-to-measurement
+comparison, repeated testing under an enclosing condition, and classical
+values escaping a measurement-dependent branch remain unsupported.
+
+Phase 12 acceptance is complete when `first and not second` controls a gate
+exactly for classical register values `(1, 0)`, a bool comparison produces
+complementary true/false gate conditions, and reference and batched execution
+agree with every shot's recorded measurement values. The feature stays private
+and makes no public API, default-path, finite-shot-gradient, accelerator,
+distributed, capacity, or performance claim.
