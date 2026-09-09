@@ -205,6 +205,39 @@ class JiudingClient:
             "AIRS-Zone-ID": w["zoneId"],
         }
 
+    def _resolve_compute_target(self, target: str) -> tuple[str, str]:
+        if not isinstance(target, str):
+            raise TypeError("target must be a string")
+        provider, separator, resource = target.partition(":")
+        if separator != ":" or provider.lower() != "jiuding" or not resource:
+            raise ValueError(
+                "target must use 'jiuding:<chip-type>' or "
+                "'jiuding:<chip-type>/<model>'"
+            )
+        chip_type, model_separator, model = resource.partition("/")
+        chip_type = chip_type.lower()
+        if chip_type not in {"cpu", "gpu", "mlu", "npu", "xpu"}:
+            raise ValueError("Jiuding chip type must be cpu, gpu, mlu, npu or xpu")
+        if model_separator and not model:
+            raise ValueError("target model must not be empty")
+        if chip_type == "cpu":
+            if model_separator:
+                raise ValueError("jiuding:cpu does not accept a model")
+            return chip_type, ""
+        if chip_type != "gpu":
+            raise NotImplementedError(
+                f"{target!r} is reserved but not implemented by JiudingClient"
+            )
+        available_model = self.workspace().get("acceleratorModel", "")
+        if not available_model:
+            raise RuntimeError("The selected Jiuding queue exposes no GPU model")
+        if model and model != available_model:
+            raise ValueError(
+                f"target model {model!r} does not match queue model "
+                f"{available_model!r}"
+            )
+        return chip_type, available_model
+
     def _workspace_record(self, reference: str) -> dict:
         context = self.workspace()
         matches = [
@@ -242,18 +275,18 @@ class JiudingClient:
         self,
         name: str,
         *,
+        target: str,
         image: str,
         image_region: str = "PRIVATE",
         cpus: int = 4,
         memory_gib: int = 16,
-        gpus: int = 1,
-        accelerator_model: str | None = None,
         description: str = "",
     ) -> dict:
         """Create and start one workspace in the current project and queue.
 
         This explicit infrastructure operation is separate from ``run()``.
-        It does not enable privileged mode, Jupyter, or automatic snapshots.
+        ``target`` names CPU or one GPU model. The operation does not enable
+        privileged mode, Jupyter, or automatic snapshots.
         """
         if not re.fullmatch(r"[a-z][a-z0-9-]{1,30}[a-z0-9]", name):
             raise ValueError("name must be 3-32 lowercase letters, digits or hyphens")
@@ -261,12 +294,9 @@ class JiudingClient:
             raise ValueError("cpus must be a positive integer")
         if type(memory_gib) is not int or memory_gib < 2:
             raise ValueError("memory_gib must be an integer of at least 2")
-        if type(gpus) is not int or gpus not in (0, 1):
-            raise ValueError("gpus must be 0 or 1")
         context = self.workspace()
-        model = accelerator_model or context.get("acceleratorModel", "")
-        if gpus and not model:
-            raise ValueError("accelerator_model is required for a GPU workspace")
+        chip_type, model = self._resolve_compute_target(target)
+        accelerator_count = int(chip_type == "gpu")
         catalog_image = self._catalog_image(image, image_region)
         body = {
             "name": name,
@@ -290,8 +320,8 @@ class JiudingClient:
                 "clusterName": context.get("clusterName", ""),
                 "priority": "",
                 "resourceDetail": {
-                    "acceleratorModel": model if gpus else "",
-                    "acceleratorCount": gpus,
+                    "acceleratorModel": model,
+                    "acceleratorCount": accelerator_count,
                     "cpuCores": cpus,
                     "memGib": memory_gib,
                     "quotaItemId": 0,
@@ -311,10 +341,11 @@ class JiudingClient:
             "image": f"{catalog_image['name']}:{catalog_image['tag']}",
             "queueId": context["queueId"],
             "resources": {
+                "target": target,
                 "cpus": cpus,
                 "memory_gib": memory_gib,
-                "gpus": gpus,
-                "accelerator_model": model if gpus else "",
+                "gpus": accelerator_count,
+                "accelerator_model": model,
             },
         }
 
@@ -409,6 +440,7 @@ class JiudingClient:
         self,
         script: str | Path,
         *,
+        target: str,
         image: str,
         receipt: str | Path,
         image_region: str = "PUBLIC",
@@ -416,13 +448,12 @@ class JiudingClient:
         pythonpath: str | Path | None = None,
         cpus: int = 2,
         memory_gib: int = 2,
-        gpus: int = 0,
-        accelerator_model: str | None = None,
     ) -> dict:
         """Run a shared Python file's main() and persist its JSON return value.
 
-        One instance with zero or one GPU. Receipt path must be new and on shared
-        storage. Reusing it is rejected, including after an ambiguous timeout.
+        ``target`` explicitly selects CPU or one GPU. Receipt path must be new
+        and on shared storage. Reusing it is rejected, including after an
+        ambiguous timeout.
         """
         if (
             type(cpus) is not int
@@ -431,8 +462,8 @@ class JiudingClient:
             or memory_gib < 2
         ):
             raise ValueError("cpus must be positive and memory_gib >= 2")
-        if type(gpus) is not int or gpus not in (0, 1):
-            raise ValueError("gpus must be 0 or 1; multi-GPU jobs are not supported")
+        chip_type, target_model = self._resolve_compute_target(target)
+        gpus = int(chip_type == "gpu")
         script, receipt = Path(script).resolve(), Path(receipt).resolve()
         if not script.is_file() or not receipt.parent.is_dir():
             raise ValueError(
@@ -487,15 +518,11 @@ class JiudingClient:
                     "Jiuding image catalog returned no executable image URL"
                 )
             models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
-        if accelerator_model is not None and accelerator_model not in models:
+        if gpus and target_model not in models:
             raise ValueError(
-                "accelerator_model must match a model observed with this image and queue"
+                "target model must match a model observed with this image and queue"
             )
-        if gpus and accelerator_model is None and len(models) != 1:
-            raise ValueError(
-                f"Select one accelerator_model from the observed models: {models}"
-            )
-        model = accelerator_model or (models[0] if models else "")
+        model = target_model or (models[0] if models else "")
         run_id = uuid.uuid4().hex
         result_path = receipt.parent / (run_id + ".result.json")
         command = shlex.join(
@@ -588,6 +615,7 @@ class JiudingClient:
             "result_path": str(result_path),
             "submission": "unknown",
             "resources": {
+                "target": target,
                 "cpus": cpus,
                 "memory_gib": memory_gib,
                 "gpus": gpus,

@@ -19,12 +19,11 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
     "flagquantum-dev",
+    target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
     image="flagquantum-runtime:v0.2.0-cu128-a100",
     image_region="PRIVATE",
     cpus=4,
     memory_gib=16,
-    gpus=1,
-    accelerator_model="NVIDIA_A100-SXM4-40GB",
 )
 print(client.workspace_state(created["id"]))
 ```
@@ -46,6 +45,7 @@ print(client.images())   # images observed in this queue's existing jobs
 
 receipt = client.submit(
     "/shared/my_project/experiment.py",
+    target="jiuding:cpu",
     image="<choose a compatible image from the list>",
     pythonpath="/shared/my_project",
     receipt="/shared/my_project/run-001.json",
@@ -78,24 +78,31 @@ Keep ordinary function calls and imports inside the shared project. Run `main()`
 locally for debugging. Remote submission adds process isolation and platform
 scheduling; it does not change fq.run or PyTorch training semantics. This first
 adapter allocates one instance (default 2 cores, 2 GiB, 0 GPUs).
-Use `gpus=1` to request one GPU; larger GPU counts are rejected.
+Select GPU execution explicitly with `target="jiuding:gpu"`; this first adapter
+allocates exactly one GPU. CPU is a first-class target, never an implicit
+fallback from an unavailable accelerator.
 
 ```python
 receipt = client.submit(
     "/shared/my_project/experiment_gpu.py",
+    target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
     image="flagquantum-runtime:v0.2.0-cu128-a100",
     image_region="PRIVATE",
     pythonpath="/shared/my_project",
     receipt="/shared/my_project/gpu-001.json",
-    gpus=1, cpus=4, memory_gib=8,
+    cpus=4, memory_gib=8,
 )
 value = client.result(receipt, timeout=180)
 ```
 
 The GPU script selects `fq.ExecutionOptions(device="cuda:0")`. Requesting a GPU
 allocates a resource; numerical device selection remains in the user program.
-The adapter derives the GPU model from prior jobs using the selected image and
-queue. If several models are observed, pass `accelerator_model=` explicitly.
+The generic `jiuding:gpu` target resolves to the selected queue's GPU model. A
+`jiuding:gpu/<model>` target requires an exact model match.
+The target namespace recognizes `cpu`, `gpu`, `mlu`, `npu` and `xpu` so its
+meaning remains stable as Jiuding adds adapters. Only CPU and single-GPU paths
+are implemented today. MLU, NPU and XPU targets fail before any platform
+mutation; they are reserved names, not capability claims.
 It checks the saved resource configuration before launching. The worker requires
 CUDA and exactly one visible GPU before calling `main()`. The provided
 `examples/remote/jiuding_bell_gpu.py` also verifies that the result is on CUDA.

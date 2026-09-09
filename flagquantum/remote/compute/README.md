@@ -6,6 +6,9 @@ start/stop control, one CPU or single-GPU task instance, automatic workspace
 context discovery, create-and-start submission, status, waiting, shared JSON
 results, and stopping active jobs. It uses the standard library and direct
 HTTPS calls.
+Compute selection uses `jiuding:<chip-type>` or
+`jiuding:<chip-type>/<model>`. CPU and GPU are implemented; MLU, NPU and XPU
+are recognized reserved names that fail closed until real adapters exist.
 It does not own circuit execution, numerical backend selection, gradients,
 distributed launch, or the QPU shots/counts contracts. No Stable Core exports
 are added. These adapter-specific interfaces are not frozen.

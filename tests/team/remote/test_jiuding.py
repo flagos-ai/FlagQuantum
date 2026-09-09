@@ -118,6 +118,7 @@ def test_create_workspace_uses_explicit_non_privileged_configuration(client):
 
     created = client.create_workspace(
         "flagquantum-dev",
+        target="jiuding:gpu",
         image="flagquantum-runtime:v0.2.0",
         cpus=8,
         memory_gib=32,
@@ -125,6 +126,7 @@ def test_create_workspace_uses_explicit_non_privileged_configuration(client):
 
     assert created["id"] == "workspace-id"
     assert created["resources"] == {
+        "target": "jiuding:gpu",
         "cpus": 8,
         "memory_gib": 32,
         "gpus": 1,
@@ -180,12 +182,12 @@ def test_uncertain_create_is_not_retried(client, tmp_path):
     receipt = tmp_path / "receipt.json"
     client._request = Mock(side_effect=RuntimeError("timeout"))
     with pytest.raises(RuntimeError, match="timeout"):
-        client.submit(script, image="image", receipt=receipt)
+        client.submit(script, target="jiuding:cpu", image="image", receipt=receipt)
     saved = json.loads(receipt.read_text())
     assert saved["submission"] == "unknown"
     assert "test-token" not in receipt.read_text()
     with pytest.raises(FileExistsError):
-        client.submit(script, image="image", receipt=receipt)
+        client.submit(script, target="jiuding:cpu", image="image", receipt=receipt)
     assert client._request.call_count == 1
 
 
@@ -281,7 +283,12 @@ def test_submit_creates_then_launches_once_with_zero_gpu(client, tmp_path):
             {"jobId": "job"},
         ]
     )
-    receipt = client.submit(script, image="image", receipt=tmp_path / "receipt.json")
+    receipt = client.submit(
+        script,
+        target="jiuding:cpu",
+        image="image",
+        receipt=tmp_path / "receipt.json",
+    )
     assert receipt["jobId"] == "job"
     calls = client._request.call_args_list
     assert [c.args[0] for c in calls] == [
@@ -352,9 +359,9 @@ def test_first_job_resolves_exact_public_catalog_image(client, tmp_path):
 
     receipt = client.submit(
         script,
+        target="jiuding:gpu",
         image="pytorch-26.03-py3-sshd:v2.0.1",
         receipt=tmp_path / "receipt.json",
-        gpus=1,
     )
 
     assert receipt["jobId"] == "job"
@@ -420,10 +427,10 @@ def test_submit_resolves_exact_private_catalog_image(client, tmp_path):
 
     receipt = client.submit(
         script,
+        target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
         image="flagquantum-runtime:v0.2.0",
         image_region="PRIVATE",
         receipt=tmp_path / "receipt.json",
-        gpus=1,
     )
 
     assert receipt["jobId"] == "job"
@@ -460,12 +467,12 @@ def test_uncertain_launch_retains_experiment_and_never_recreates(client, tmp_pat
         ]
     )
     with pytest.raises(RuntimeError, match="timeout"):
-        client.submit(script, image="image", receipt=path)
+        client.submit(script, target="jiuding:cpu", image="image", receipt=path)
     saved = json.loads(path.read_text())
     assert saved["experimentId"] == "exp"
     assert saved["submission"] == "launch_unknown"
     with pytest.raises(FileExistsError):
-        client.submit(script, image="image", receipt=path)
+        client.submit(script, target="jiuding:cpu", image="image", receipt=path)
     assert client._request.call_count == 3
 
 
@@ -485,15 +492,31 @@ def test_cancel_only_active_jobs_without_archiving(client):
     )
 
 
-@pytest.mark.parametrize("gpus", [-1, 2, 8, True, 1.0])
-def test_unsupported_gpu_counts_rejected_before_network(client, tmp_path, gpus):
+@pytest.mark.parametrize("chip_type", ["mlu", "npu", "xpu"])
+def test_reserved_targets_fail_before_network(client, tmp_path, chip_type):
     client._request = Mock()
-    with pytest.raises(ValueError, match="gpus"):
+    with pytest.raises(NotImplementedError, match="reserved"):
         client.submit(
             tmp_path / "missing.py",
+            target=f"jiuding:{chip_type}",
             image="image",
             receipt=tmp_path / "r.json",
-            gpus=gpus,
+        )
+    client._request.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "target",
+    ["gpu", "other:gpu", "jiuding:tpu", "jiuding:gpu/", "jiuding:cpu/model"],
+)
+def test_invalid_compute_targets_fail_before_network(client, tmp_path, target):
+    client._request = Mock()
+    with pytest.raises((ValueError, NotImplementedError)):
+        client.submit(
+            tmp_path / "missing.py",
+            target=target,
+            image="image",
+            receipt=tmp_path / "r.json",
         )
     client._request.assert_not_called()
 
@@ -546,18 +569,20 @@ def test_gpu_submit_validates_saved_resources_before_launch(client, tmp_path, mi
     receipt = tmp_path / "r.json"
     if mismatch:
         with pytest.raises(RuntimeError, match="differs"):
-            client.submit(script, image="image", receipt=receipt, gpus=1)
+            client.submit(script, target="jiuding:gpu", image="image", receipt=receipt)
         assert client._request.call_count == 2
         assert json.loads(receipt.read_text())["submission"] == "created"
     else:
-        record = client.submit(script, image="image", receipt=receipt, gpus=1)
+        record = client.submit(
+            script, target="jiuding:gpu", image="image", receipt=receipt
+        )
         assert record["resources"]["gpus"] == 1
         assert saved["resourceConfigList"][0]["roleInfoList"][0]["replicas"] == 1
         assert "--gpus 1" in saved["command"]
         assert client._request.call_count == 3
 
 
-def test_ambiguous_gpu_model_requires_selection(client, tmp_path):
+def test_gpu_target_must_match_model_observed_for_image(client, tmp_path):
     script = tmp_path / "gpu.py"
     script.write_text("def main(): return 42")
     client._jobs = Mock(
@@ -572,8 +597,13 @@ def test_ambiguous_gpu_model_requires_selection(client, tmp_path):
         ]
     )
     client._request = Mock()
-    with pytest.raises(ValueError, match="Select one"):
-        client.submit(script, image="image", receipt=tmp_path / "r.json", gpus=1)
+    with pytest.raises(ValueError, match="target model"):
+        client.submit(
+            script,
+            target="jiuding:gpu",
+            image="image",
+            receipt=tmp_path / "r.json",
+        )
     client._request.assert_not_called()
 
 

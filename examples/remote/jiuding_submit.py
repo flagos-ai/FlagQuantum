@@ -14,23 +14,28 @@ def main():
         "--receipt", required=True, type=Path, help="New receipt path on shared storage"
     )
     parser.add_argument("--workspace", help="Defaults to current platform pod")
-    parser.add_argument("--gpus", type=int, choices=(0, 1), default=0)
+    parser.add_argument(
+        "--target",
+        required=True,
+        help="Jiuding compute target, for example jiuding:cpu or jiuding:gpu",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
+    gpu = args.target.partition(":")[2].partition("/")[0].lower() == "gpu"
     client = JiudingClient(workspace=args.workspace)
     receipt = client.submit(
         root
         / (
             "examples/remote/jiuding_bell_gpu.py"
-            if args.gpus
+            if gpu
             else "examples/remote/jiuding_bell.py"
         ),
+        target=args.target,
         image=args.image,
         receipt=args.receipt,
         pythonpath=root,
-        gpus=args.gpus,
-        cpus=4 if args.gpus else 2,
-        memory_gib=8 if args.gpus else 2,
+        cpus=4 if gpu else 2,
+        memory_gib=8 if gpu else 2,
     )
     print(json.dumps(receipt), flush=True)
     value = client.result(receipt, timeout=180)
