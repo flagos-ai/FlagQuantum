@@ -49,7 +49,8 @@ The experimental [Jiuding adapter](../guides/JIUDING.md) has a real CPU Bell-sta
 task and shared-result check recorded under
 [development evidence](../development/evidence/jiuding_bell_cpu_20260909.json).
 It requires an existing workspace, compatible image and shared source/result
-storage. Automatic uploading, image builds, GPU/multinode jobs, log streaming,
+storage. The adapter accepts zero or one GPU per job and checks GPU visibility
+before executing a GPU task. Automatic uploading, image builds, multi-GPU/multinode jobs, log streaming,
 and recovery that automatically relaunches partially submitted work are absent.
 This implementation evidence does not promote an entry in the generated
 capability catalog or establish a released API, training or scalability claim.

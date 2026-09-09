@@ -36,7 +36,11 @@ def test_worker_returns_run_bound_json_and_rejects_nonfinite(tmp_path, monkeypat
     monkeypatch.setattr("sys.argv", ["worker", str(script), str(output), "run"])
     monkeypatch.setattr("sys.path", list(__import__("sys").path))
     _worker.main()
-    assert json.loads(output.read_text()) == {"run_id": "run", "value": {"answer": 42}}
+    assert json.loads(output.read_text()) == {
+        "run_id": "run",
+        "value": {"answer": 42},
+        "worker": {"requested_gpus": 0},
+    }
     other = tmp_path / "invalid.json"
     script.write_text("def main(): return float('nan')")
     monkeypatch.setattr("sys.argv", ["worker", str(script), str(other), "other"])
@@ -239,3 +243,117 @@ def test_cancel_only_active_jobs_without_archiving(client):
         "/api/v1/job/cancel",
         {"jobIds": ["active"]},
     )
+
+
+@pytest.mark.parametrize("gpus", [-1, 2, 8, True, 1.0])
+def test_unsupported_gpu_counts_rejected_before_network(client, tmp_path, gpus):
+    client._request = Mock()
+    with pytest.raises(ValueError, match="gpus"):
+        client.submit(
+            tmp_path / "missing.py",
+            image="image",
+            receipt=tmp_path / "r.json",
+            gpus=gpus,
+        )
+    client._request.assert_not_called()
+
+
+@pytest.mark.parametrize("mismatch", [False, True])
+def test_gpu_submit_validates_saved_resources_before_launch(client, tmp_path, mismatch):
+    script = tmp_path / "gpu.py"
+    script.write_text("def main(): return 42")
+    client._jobs = Mock(
+        return_value=[
+            {
+                "queueId": "q",
+                "basicImage": "image",
+                "imageRegion": "PUBLIC",
+                "roleInfos": [
+                    {
+                        "resourceRequestDetail": {
+                            "acceleratorModel": "NVIDIA_A100-SXM4-40GB"
+                        }
+                    }
+                ],
+            }
+        ]
+    )
+    saved = {}
+
+    def request(path, body, headers):
+        if path == "/api/v1/experiment":
+            saved.update(body["advanceConfigInfos"][0])
+            saved["confId"] = "conf"
+            if mismatch:
+                saved["resourceConfigList"][0]["roleInfoList"][0][
+                    "resourceRequestDetail"
+                ]["acceleratorCount"] = 0
+            return {"experimentId": "exp"}
+        if path == "/api/v1/experiment/select":
+            return {
+                "experimentSummaryInfos": [
+                    {
+                        "experimentId": "exp",
+                        "advanceConfigInfos": [saved],
+                        "creatorId": "u",
+                        "nativeCluster": "default-cluster",
+                    }
+                ]
+            }
+        return {"jobId": "job"}
+
+    client._request = Mock(side_effect=request)
+    receipt = tmp_path / "r.json"
+    if mismatch:
+        with pytest.raises(RuntimeError, match="differs"):
+            client.submit(script, image="image", receipt=receipt, gpus=1)
+        assert client._request.call_count == 2
+        assert json.loads(receipt.read_text())["submission"] == "created"
+    else:
+        record = client.submit(script, image="image", receipt=receipt, gpus=1)
+        assert record["resources"]["gpus"] == 1
+        assert saved["resourceConfigList"][0]["roleInfoList"][0]["replicas"] == 1
+        assert "--gpus 1" in saved["command"]
+        assert client._request.call_count == 3
+
+
+def test_ambiguous_gpu_model_requires_selection(client, tmp_path):
+    script = tmp_path / "gpu.py"
+    script.write_text("def main(): return 42")
+    client._jobs = Mock(
+        return_value=[
+            {
+                "queueId": "q",
+                "basicImage": "image",
+                "imageRegion": "PUBLIC",
+                "roleInfos": [{"resourceRequestDetail": {"acceleratorModel": model}}],
+            }
+            for model in ("NVIDIA_A100", "NVIDIA_H100")
+        ]
+    )
+    client._request = Mock()
+    with pytest.raises(ValueError, match="Select one"):
+        client.submit(script, image="image", receipt=tmp_path / "r.json", gpus=1)
+    client._request.assert_not_called()
+
+
+@pytest.mark.parametrize("available,count", [(False, 0), (True, 2)])
+def test_gpu_worker_fails_before_user_code_without_one_gpu(
+    tmp_path, monkeypatch, available, count
+):
+    from flagquantum.compute.registry import get_platform_runtime
+    from flagquantum.remote.compute import _worker
+
+    output = tmp_path / "result.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["worker", str(tmp_path / "missing.py"), str(output), "run", "--gpus", "1"],
+    )
+    monkeypatch.setattr(
+        get_platform_runtime("cuda"),
+        "discover",
+        lambda: (None,) * count if available else (),
+    )
+    with pytest.raises(RuntimeError, match="exactly one CUDA"):
+        _worker.main()
+    assert not output.exists()

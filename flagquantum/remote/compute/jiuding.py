@@ -235,10 +235,12 @@ class JiudingClient:
         pythonpath: str | Path | None = None,
         cpus: int = 2,
         memory_gib: int = 2,
+        gpus: int = 0,
+        accelerator_model: str | None = None,
     ) -> dict:
         """Run a shared Python file's main() and persist its JSON return value.
 
-        One CPU instance, no GPUs. Receipt path must be new and on shared
+        One instance with zero or one GPU. Receipt path must be new and on shared
         storage. Reusing it is rejected, including after an ambiguous timeout.
         """
         if (
@@ -248,6 +250,8 @@ class JiudingClient:
             or memory_gib < 2
         ):
             raise ValueError("cpus must be positive and memory_gib >= 2")
+        if type(gpus) is not int or gpus not in (0, 1):
+            raise ValueError("gpus must be 0 or 1; multi-GPU jobs are not supported")
         script, receipt = Path(script).resolve(), Path(receipt).resolve()
         if not script.is_file() or not receipt.parent.is_dir():
             raise ValueError(
@@ -263,6 +267,23 @@ class JiudingClient:
         ]
         if not examples:
             raise ValueError("Choose an image returned by client.images()")
+        models = sorted(
+            {
+                role.get("resourceRequestDetail", {}).get("acceleratorModel")
+                for job in examples
+                for role in job.get("roleInfos", [])
+                if role.get("resourceRequestDetail", {}).get("acceleratorModel")
+            }
+        )
+        if accelerator_model is not None and accelerator_model not in models:
+            raise ValueError(
+                "accelerator_model must match a model observed with this image and queue"
+            )
+        if gpus and accelerator_model is None and len(models) != 1:
+            raise ValueError(
+                f"Select one accelerator_model from the observed models: {models}"
+            )
+        model = accelerator_model or (models[0] if models else "")
         run_id = uuid.uuid4().hex
         result_path = receipt.parent / (run_id + ".result.json")
         command = shlex.join(
@@ -273,6 +294,8 @@ class JiudingClient:
                 str(script),
                 str(result_path),
                 run_id,
+                "--gpus",
+                str(gpus),
             ]
         )
         if pythonpath is not None:
@@ -280,12 +303,6 @@ class JiudingClient:
             if not root.is_dir():
                 raise ValueError("pythonpath must be a shared source directory")
             command = "env " + shlex.quote("PYTHONPATH=" + str(root)) + " " + command
-        model = (
-            examples[0]
-            .get("roleInfos", [{}])[0]
-            .get("resourceRequestDetail", {})
-            .get("acceleratorModel", "")
-        )
         resource = {
             "queueId": w["queueId"],
             "priority": "high",
@@ -302,7 +319,7 @@ class JiudingClient:
                     "resourceRegion": w["resourceRegion"],
                     "resourceRequestDetail": {
                         "acceleratorModel": model,
-                        "acceleratorCount": 0,
+                        "acceleratorCount": gpus,
                         "cpuCores": cpus,
                         "memGib": memory_gib,
                         "sharedMemGib": 1,
@@ -358,6 +375,12 @@ class JiudingClient:
             "receipt": str(receipt),
             "result_path": str(result_path),
             "submission": "unknown",
+            "resources": {
+                "cpus": cpus,
+                "memory_gib": memory_gib,
+                "gpus": gpus,
+                "accelerator_model": model,
+            },
         }
         with receipt.open("x") as file:
             json.dump(record, file)
@@ -389,6 +412,24 @@ class JiudingClient:
         if len(configs) != 1 or not configs[0].get("confId"):
             raise RuntimeError("Expected one executable experiment configuration")
         config = configs[0]
+        if gpus:
+            resources = config.get("resourceConfigList", [])
+            roles = resources[0].get("roleInfoList", []) if len(resources) == 1 else []
+            request = (
+                roles[0].get("resourceRequestDetail", {}) if len(roles) == 1 else {}
+            )
+            if (
+                len(roles) != 1
+                or roles[0].get("replicas") != 1
+                or resources[0].get("queueId") != w["queueId"]
+                or request.get("acceleratorCount") != gpus
+                or request.get("acceleratorModel") != model
+                or request.get("cpuCores") != cpus
+                or request.get("memGib") != memory_gib
+            ):
+                raise RuntimeError(
+                    "Saved GPU resource configuration differs from request; Job was not launched"
+                )
         # Request shape verified against the platform's bundled airsctl using a
         # loopback fake gateway, then exercised directly on the real platform.
         launch = {

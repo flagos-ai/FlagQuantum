@@ -1,0 +1,27 @@
+{
+  "date": "2026-09-09",
+  "scope": "Single GPU adapter submission and existing-workspace CUDA forward verification; not a successful scheduled GPU job",
+  "scheduled_job": {
+    "experiment_id": "cb31a8f1-83ed-483a-a42e-54f86ae7a6e1",
+    "job_id": "aede25bb-ef19-4083-83d3-fb4c06472c49",
+    "requested_resources": {"gpus": 1, "cpus": 4, "memory_gib": 8, "accelerator_model": "NVIDIA_A100-SXM4-40GB"},
+    "observation": "Pending throughout 180-second wait; cancellation requested and terminal state confirmed",
+    "terminal_status": "Cancelled",
+    "end_time_epoch_ms": "1788942990123",
+    "numerical_result": null
+  },
+  "existing_workspace_check": {
+    "execution": "Final worker implementation with CUDA_VISIBLE_DEVICES=0 in the already allocated development workspace",
+    "framework": "FlagQuantum",
+    "version": "0.2.0",
+    "qubits": 2,
+    "device": "cuda:0",
+    "dtype": "torch.complex64",
+    "gpu_name": "NVIDIA A100-SXM4-40GB",
+    "visible_gpus": 1,
+    "probabilities": [0.4999999701976776, 0.0, 0.0, 0.4999999701976776],
+    "max_abs_error": 0.0,
+    "peak_allocated_bytes": 8524800
+  },
+  "limitations": ["No scheduled GPU success yet", "No queue quota diagnosis", "No training validation", "No multi-GPU or multinode claim"]
+}
