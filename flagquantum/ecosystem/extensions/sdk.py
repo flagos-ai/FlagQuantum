@@ -333,6 +333,34 @@ def discover_extensions(kind: str) -> ExtensionRegistry:
     return registry
 
 
+def compile_with_extension(
+    program: CircuitIR,
+    *,
+    extension: str,
+    target: Mapping[str, Any] | None = None,
+) -> CircuitIR:
+    """Compile FlagQuantum IR with one explicitly selected installed extension."""
+
+    if not isinstance(program, CircuitIR):
+        raise TypeError("program must be a CircuitIR")
+    handle = discover_extensions("compiler").negotiate(
+        "compiler",
+        extension,
+        CapabilityRequest(required=frozenset({"circuit_ir"})),
+    )
+    handle.start(ExtensionConfig())
+    try:
+        compiled = handle.invoke("compile", program, target=target)
+        if not isinstance(compiled, CircuitIR):
+            raise ExtensionLifecycleError(
+                f"extension {extension!r} returned {type(compiled).__name__}; "
+                "expected CircuitIR"
+            )
+        return compiled
+    finally:
+        handle.close()
+
+
 _REGISTRY: ContextVar[ExtensionRegistry] = ContextVar(
     "flagquantum_extension_registry", default=ExtensionRegistry()
 )

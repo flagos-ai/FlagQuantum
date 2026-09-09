@@ -28,6 +28,7 @@ from .sdk import (
     OperatorExtension,
     PlannerExtension,
     ProviderExtension,
+    compile_with_extension,
     discover_extensions,
     extension_scope,
 )
@@ -54,6 +55,7 @@ __all__ = (
     "OperatorExtension",
     "PlannerExtension",
     "ProviderExtension",
+    "compile_with_extension",
     "discover_extensions",
     "extension_scope",
     "check_manifest_serialization",

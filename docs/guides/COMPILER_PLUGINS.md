@@ -36,28 +36,23 @@ the plugin.
 Discovery is explicit and limited to compiler extensions:
 
 ```python
-from flagquantum.ecosystem.extensions import (
-    CapabilityRequest,
-    ExtensionConfig,
-    discover_extensions,
-)
+from flagquantum.ecosystem.extensions import compile_with_extension
 
-registry = discover_extensions("compiler")
-handle = registry.negotiate(
-    "compiler",
-    "qsteed",
-    CapabilityRequest(required=frozenset({"circuit_ir"})),
+compiled_ir = compile_with_extension(
+    source_ir,
+    extension="qsteed",
+    target={
+        "basis_gates": ("h", "x", "rx", "ry", "rz", "cx"),
+        "coupling_map": ((0, 1), (1, 2)),
+    },
 )
-handle.start(ExtensionConfig())
-try:
-    compiled_ir = handle.invoke("compile", source_ir, target=target)
-finally:
-    handle.close()
 ```
 
 Missing packages, incompatible SDK versions, capability rejection, compilation
 errors, and cleanup failures are reported as extension boundary errors. There is
-no implicit compiler substitution or fallback.
+no implicit compiler selection, substitution, or fallback. Authors and advanced
+hosts can use `discover_extensions` and `ExtensionRegistry` directly when they
+need explicit lifecycle control.
 
 ## Author verification
 

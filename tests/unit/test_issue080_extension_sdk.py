@@ -16,6 +16,7 @@ from flagquantum.ecosystem.extensions import (
     ExtensionLifecycleError,
     ExtensionManifest,
     ExtensionRegistry,
+    compile_with_extension,
     discover_extensions,
     extension_scope,
 )
@@ -87,6 +88,35 @@ def test_compiler_discovery_loads_only_requested_kind(monkeypatch):
     registry = discover_extensions("compiler")
 
     assert tuple(registry.entries) == (("compiler", "reference_compiler"),)
+
+
+def test_compile_with_extension_is_an_explicit_complete_user_journey(monkeypatch):
+    compiler = COMPILER_REFERENCE.ReferenceCircuitCompiler()
+
+    class EntryPoint:
+        name = "compiler.reference_compiler"
+
+        @staticmethod
+        def load():
+            return lambda: compiler
+
+    monkeypatch.setattr(
+        extension_sdk.metadata,
+        "entry_points",
+        lambda *, group: (EntryPoint(),),
+    )
+    source = fq.Circuit(2).h(0).cx(0, 1).to_ir()
+    target = {"basis_gates": ("h", "cx")}
+
+    compiled = compile_with_extension(
+        source,
+        extension="reference_compiler",
+        target=target,
+    )
+
+    assert compiled.metadata["reference_compiler_target"] == target
+    assert compiled.instructions == source.instructions
+    assert not compiler.active
 
 
 def test_discovery_rejects_entry_point_manifest_mismatch(monkeypatch):

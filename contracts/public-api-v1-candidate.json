@@ -121,6 +121,7 @@
         "PlannerExtension",
         "ProviderExtension",
         "check_manifest_serialization",
+        "compile_with_extension",
         "discover_extensions",
         "extension_scope",
         "run_backend_conformance",

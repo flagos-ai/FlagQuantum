@@ -23,8 +23,21 @@ describe a complete circuit transpiler such as QSteed.
   have the form `compiler.<manifest-name>` and resolve to zero-argument factories.
 - Reuse `ExtensionRegistry`, capability negotiation, lifecycle containment, and
   error handling. Do not introduce another plugin registry.
+- Provide `compile_with_extension(program, *, extension, target=None)` as the
+  explicit one-call user journey. It performs discovery, `circuit_ir`
+  capability negotiation, activation, compilation, result-type validation, and
+  cleanup without changing the default compiler path.
 - Do not model pulse programs as `CircuitIR`. A pulse-level plugin requires an
   approved FlagQuantum-owned pulse artifact before it can join this contract.
+
+## Naming and alternatives
+
+`compile_with_extension` states both the operation and the selected mechanism.
+It is distinct from built-in target-aware `compiler.compile` and
+target-independent `compiler.optimize`. Adding an extension parameter to either
+built-in operation was rejected because it would mix plugin discovery into the
+default compiler path. A second registry or compiler manager was rejected as
+duplicate authority.
 
 ## Acceptance
 
@@ -33,4 +46,11 @@ describe a complete circuit transpiler such as QSteed.
 - load, compatibility, negotiation, invocation, and cleanup failures fail closed;
 - compiler conformance proves `CircuitIR` ownership, input immutability,
   deterministic output, and lifecycle cleanup;
+- the one-call journey selects one named compiler, forwards its target, returns
+  `CircuitIR`, always closes the extension, and never falls back;
 - a standalone package can register a compiler without changing FlagQuantum.
+
+## First-public-alpha release note
+
+Installed circuit compilers can now be selected explicitly through
+`compile_with_extension`; the default FlagQuantum compiler remains unchanged.
