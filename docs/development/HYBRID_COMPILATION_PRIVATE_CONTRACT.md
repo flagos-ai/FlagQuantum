@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-21 implemented and verified under the repository owner's
+Status: Phases 1-22 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -757,3 +757,23 @@ public export, device-specific optimization, or performance claim. Acceptance
 requires deterministic and idempotent normalization, static and dynamic
 lowering equivalence against the unoptimized oracle, preserved parameter
 autograd edges, and fail-closed invalid-pass boundaries.
+
+## Phase 22 structured-control-flow simplification authorization
+
+Phase 22 may simplify only structured control whose outcome is established by
+the verified constant analysis. A constant `scf.if` may be replaced by the
+selected region body. Its explicit classical carried values and linear quantum
+effect are rewired from the operation results to the selected `scf.yield`
+operands. A statically empty `scf.for` may be removed by rewiring its results to
+the initial carried operands.
+
+The transformation must preserve value types, definition-before-use, and
+single-use linear effects and must pass the ordinary verifier before later
+lowering. Nonconstant branches and loops that may execute remain represented;
+measurement-dependent control must not be resolved by Compiler. Static and
+dynamic optimized lowering must agree with their unoptimized differential
+oracles.
+
+This phase does not authorize general loop unrolling, loop-invariant code
+motion, speculative execution, target-specific transformation, a target IR,
+stable pass plugins, public exports, or performance claims.

@@ -78,7 +78,10 @@ The optional structure cache is bounded and reports hit, miss, and eviction.
 `passes.py` owns the verified Program IR normalization stage used by both static
 specialization and dynamic lowering. The first concrete analyses are constant
 facts and whole-program SSA use counts. The first transformations fold supported
-constant-only arithmetic and remove only unused constants. Verification runs
+constant-only arithmetic, inline a compile-time-selected `scf.if` region,
+eliminate statically empty `scf.for` regions, and remove only unused constants.
+Control simplification rewires explicit carried SSA values and the linear
+quantum effect to the selected yield or initial loop values. Verification runs
 before the pipeline and after every pass; at most 32 passes are accepted. Each
 lowered result retains both the source and optimized semantic identities plus
 per-pass operation counts. The private `optimize=False` path is a differential

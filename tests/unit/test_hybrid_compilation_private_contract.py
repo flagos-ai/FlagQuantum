@@ -805,3 +805,41 @@ def test_phase21_adds_a_verified_program_normalization_stage() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE21_EVIDENCE.md"
     )
     assert contract["phase21_completed"] is True
+
+
+def test_phase22_simplifies_only_compile_time_structured_control() -> None:
+    contract = _contract()
+    phase22 = contract["phase22"]
+
+    assert phase22["pass"] == "structured_control_flow_simplification"
+    assert phase22["constant_if"] == (
+        "inline_selected_region_and_rewire_results_to_yield_values"
+    )
+    assert phase22["empty_for"] == (
+        "remove_loop_and_rewire_results_to_initial_carried_values"
+    )
+    assert phase22["rewired_values"] == [
+        "classical_ssa",
+        "linear_quantum_effect",
+    ]
+    assert phase22["preserved_dynamic_control"] == (
+        "nonconstant_if_and_nonempty_or_dynamic_for"
+    )
+    assert phase22["verification"] == "after_control_flow_transformation"
+    assert phase22["static_lowering_differential_oracle"] is True
+    assert phase22["dynamic_lowering_differential_oracle"] is True
+    assert phase22["representative_operation_count"] == {
+        "before": 19,
+        "after": 5,
+    }
+    assert phase22["general_loop_unrolling"] is False
+    assert phase22["loop_invariant_code_motion"] is False
+    assert phase22["target_ir_added"] is False
+    assert phase22["stable_pass_extension_api"] is False
+    assert phase22["public_root_export"] is False
+    assert phase22["stable_api_change"] is False
+    assert phase22["performance_claim"] is False
+    assert phase22["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE22_EVIDENCE.md"
+    )
+    assert contract["phase22_completed"] is True

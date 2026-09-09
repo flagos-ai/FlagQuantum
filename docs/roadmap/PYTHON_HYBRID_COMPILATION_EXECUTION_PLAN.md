@@ -848,6 +848,25 @@ Exit gate:
 - no target IR, target dialect, stable pass extension API, or performance claim
   is introduced.
 
+### Phase 22 — structured-control-flow simplification
+
+Extend the verified normalization pipeline with one transformation over the
+existing structured Program IR. Inline only an `scf.if` whose Boolean predicate
+is known by constant analysis, and remove only an `scf.for` whose constant
+bounds prove it has zero iterations. Rewire classical carried values and the
+linear quantum effect through the selected yield or initial loop operands.
+
+Exit gate:
+
+- selected branches preserve their quantum operation order and carried values;
+- unselected branch operations are absent from the optimized program;
+- empty loop bodies are absent and loop-carried values retain initial values;
+- measurement-dependent and otherwise unresolved control remains represented;
+- static and dynamic lowering match their unoptimized differential oracles;
+- the resulting Program IR passes the ordinary SSA/type/effect verifier;
+- no general unrolling, loop motion, target IR, public API, or performance claim
+  is introduced.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -997,3 +1016,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 19 Runtime decoder feedback and Pauli-frame evolution verified
 - [x] Phase 20 detection-event temporal decoding verified
 - [x] Phase 21 verified Program IR normalization implemented and verified
+- [x] Phase 22 structured-control-flow simplification implemented and verified

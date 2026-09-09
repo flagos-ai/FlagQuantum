@@ -38,6 +38,7 @@ from .passes import (
     HybridOptimizationResult,
     HybridProgramAnalysis,
     PassRecord,
+    StructuredControlFlowSimplificationPass,
     analyze_program,
     run_pass_pipeline,
 )
@@ -73,6 +74,7 @@ __all__ = (
     "SourceLocation",
     "SpecializationError",
     "SpecializedTrace",
+    "StructuredControlFlowSimplificationPass",
     "TraceGate",
     "Value",
     "ValueId",

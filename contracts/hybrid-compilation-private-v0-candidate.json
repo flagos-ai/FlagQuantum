@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase21_verified_hybrid_pass_pipeline",
+  "status": "phase22_structured_control_flow_simplification_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -714,6 +714,32 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE21_EVIDENCE.md"
   },
   "phase21_completed": true,
+  "phase22": {
+    "pass": "structured_control_flow_simplification",
+    "constant_if": "inline_selected_region_and_rewire_results_to_yield_values",
+    "empty_for": "remove_loop_and_rewire_results_to_initial_carried_values",
+    "rewired_values": [
+      "classical_ssa",
+      "linear_quantum_effect"
+    ],
+    "preserved_dynamic_control": "nonconstant_if_and_nonempty_or_dynamic_for",
+    "verification": "after_control_flow_transformation",
+    "static_lowering_differential_oracle": true,
+    "dynamic_lowering_differential_oracle": true,
+    "representative_operation_count": {
+      "before": 19,
+      "after": 5
+    },
+    "general_loop_unrolling": false,
+    "loop_invariant_code_motion": false,
+    "target_ir_added": false,
+    "stable_pass_extension_api": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE22_EVIDENCE.md"
+  },
+  "phase22_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

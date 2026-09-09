@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any, Mapping, Protocol, Sequence
 
-from .model import Block, HybridProgram, Operation, Region, ValueId
+from .model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .verifier import verify_program
 
 
@@ -160,6 +160,117 @@ class ConstantFoldPass:
         )
 
 
+def _substitute_value(value: Value, substitutions: Mapping[ValueId, Value]) -> Value:
+    visited: set[ValueId] = set()
+    current = value
+    while current.id in substitutions:
+        if current.id in visited:
+            raise ValueError("hybrid SSA substitution contains a cycle")
+        visited.add(current.id)
+        current = substitutions[current.id]
+    return current
+
+
+@dataclass(frozen=True)
+class StructuredControlFlowSimplificationPass:
+    """Inline constant branches and remove statically empty loops."""
+
+    name: str = "structured_control_flow_simplification"
+
+    def run(
+        self, program: HybridProgram, analysis: HybridProgramAnalysis
+    ) -> HybridProgram:
+        def rewrite_block(
+            block: Block,
+            inherited: Mapping[ValueId, Value] | None = None,
+        ) -> Block:
+            substitutions = dict(inherited or {})
+            rewritten: list[Operation] = []
+            for original in block.operations:
+                operands = tuple(
+                    _substitute_value(value, substitutions)
+                    for value in original.operands
+                )
+                operation = (
+                    original
+                    if operands == original.operands
+                    else replace(original, operands=operands)
+                )
+                if self._is_constant_branch(operation, analysis):
+                    predicate = bool(analysis.constant_values[operation.operands[0].id])
+                    selected = operation.regions[0 if predicate else 1].blocks[0]
+                    branch_bindings = dict(substitutions)
+                    branch_bindings.update(
+                        (argument.id, operand)
+                        for argument, operand in zip(
+                            selected.arguments, operation.operands[1:]
+                        )
+                    )
+                    selected_block = rewrite_block(selected, branch_bindings)
+                    terminator = selected_block.operations[-1]
+                    rewritten.extend(selected_block.operations[:-1])
+                    substitutions.update(
+                        (result.id, yielded)
+                        for result, yielded in zip(
+                            operation.results, terminator.operands
+                        )
+                    )
+                    continue
+                if self._is_empty_loop(operation, analysis):
+                    substitutions.update(
+                        (result.id, initial)
+                        for result, initial in zip(
+                            operation.results, operation.operands[3:]
+                        )
+                    )
+                    continue
+                regions = tuple(
+                    Region(
+                        tuple(
+                            rewrite_block(nested, substitutions)
+                            for nested in region.blocks
+                        )
+                    )
+                    for region in operation.regions
+                )
+                rewritten.append(
+                    operation
+                    if regions == operation.regions
+                    else replace(operation, regions=regions)
+                )
+            return Block(block.arguments, tuple(rewritten))
+
+        return HybridProgram(
+            program.name,
+            Region(tuple(rewrite_block(block) for block in program.body.blocks)),
+            location=program.location,
+        )
+
+    @staticmethod
+    def _is_constant_branch(
+        operation: Operation, analysis: HybridProgramAnalysis
+    ) -> bool:
+        if operation.name != "scf.if":
+            return False
+        value = analysis.constant_values.get(operation.operands[0].id)
+        return isinstance(value, bool)
+
+    @staticmethod
+    def _is_empty_loop(operation: Operation, analysis: HybridProgramAnalysis) -> bool:
+        if operation.name != "scf.for":
+            return False
+        bounds = tuple(
+            analysis.constant_values.get(operand.id)
+            for operand in operation.operands[:3]
+        )
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) for value in bounds
+        ):
+            return False
+        lower, upper, step = bounds
+        return step != 0 and len(range(lower, upper, step)) == 0
+
+
 @dataclass(frozen=True)
 class DeadConstantEliminationPass:
     """Remove constants whose SSA results have no uses after folding."""
@@ -219,6 +330,7 @@ class HybridOptimizationResult:
 
 DEFAULT_HYBRID_PASSES: tuple[HybridProgramPass, ...] = (
     ConstantFoldPass(),
+    StructuredControlFlowSimplificationPass(),
     DeadConstantEliminationPass(),
 )
 
@@ -270,6 +382,7 @@ __all__ = (
     "HybridProgramAnalysis",
     "HybridProgramPass",
     "PassRecord",
+    "StructuredControlFlowSimplificationPass",
     "analyze_program",
     "run_pass_pipeline",
 )
