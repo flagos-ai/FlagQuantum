@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from importlib import import_module
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .circuit import Circuit
+    from .core.ir import CircuitIR, MeasurementNode
+    from .noise import NoiseModel
+    from .runtime.contracts import ExecutionOptions, ExecutionResult
+    from .runtime.execution_plan import ExecutionPlan
 
 from .version import __version__
 
@@ -48,42 +55,31 @@ def compile(
 ) -> Any:
     """Compile a circuit with FlagQuantum or one named installed compiler."""
 
-    ir = import_module(".core.ir", __name__).ensure_circuit_ir(program)
-    if compiler is None or compiler == "flagquantum":
-        if target is not None:
-            raise ValueError(
-                "fq.compile target selection requires a named external compiler; "
-                "use flagquantum.compiler.compile for manual topology compilation"
-            )
-        return import_module(".compiler", __name__).compile(ir)
-    if not isinstance(compiler, str) or not compiler.strip():
-        raise TypeError("compiler must be a non-empty installed compiler name")
+    return import_module(".api", __name__).compile_program(
+        program, compiler=compiler, target=target
+    )
 
-    resolved_target: Mapping[str, Any] | None
-    if isinstance(target, str):
-        provider_name, separator, backend = target.partition(":")
-        if separator != ":" or not provider_name or not backend:
-            raise ValueError("target must use the form 'provider:backend'")
-        if provider_name.lower() != "quafu":
-            raise ValueError(f"unsupported compiler target provider {provider_name!r}")
-        provider = import_module(".remote", __name__).QuafuProvider()
-        resolved_target = {
-            "provider": "quafu",
-            "backend": backend,
-            "chip_info": provider.fetch_chip_info(backend),
-        }
-    elif target is None:
-        resolved_target = None
-    elif isinstance(target, Mapping):
-        resolved_target = dict(target)
-    else:
-        raise TypeError("target must be 'provider:backend', a mapping, or None")
 
-    extensions = import_module(".ecosystem.extensions", __name__)
-    return extensions.compile_with_extension(
-        ir,
-        extension=compiler.strip(),
-        target=resolved_target,
+def run(
+    program_or_plan: Circuit | CircuitIR | ExecutionPlan,
+    *,
+    options: ExecutionOptions | None = None,
+    measurements: Sequence[MeasurementNode] | None = None,
+    noise_model: NoiseModel | None = None,
+    compiler: str | None = None,
+    target: str | None = None,
+    shots: int | None = None,
+) -> ExecutionResult:
+    """Execute locally, or compile and execute on one named remote target."""
+
+    return import_module(".api", __name__).run_program(
+        program_or_plan,
+        options=options,
+        measurements=measurements,
+        noise_model=noise_model,
+        compiler=compiler,
+        target=target,
+        shots=shots,
     )
 
 
@@ -114,8 +110,6 @@ def __getattr__(name: str) -> Any:
         "RuntimePolicy",
     }:
         return getattr(import_module(".runtime.contracts", __name__), name)
-    if name == "run":
-        return getattr(import_module(".runtime.execution", __name__), name)
     if name in {"TrainingResult", "train"}:
         return getattr(import_module(".runtime.training", __name__), name)
     if name == "plan":

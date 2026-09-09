@@ -38,28 +38,25 @@ The normal user journey names the compiler and hardware target directly:
 ```python
 import flagquantum as fq
 
-compiled_ir = fq.compile(
+result = fq.run(
     circuit,
     compiler="qsteed",
     target="quafu:ScQ-P10",
+    shots=1024,
 )
-
-from flagquantum.deployment import deploy_circuit
-from flagquantum.remote import QuafuProvider
-
-result = deploy_circuit(compiled_ir, QuafuProvider(), shots=1024)
 ```
 
 The plugin receives the current Quafu chip snapshot, selects a physical
-subgraph, and returns logical `CircuitIR` with the ordered physical mapping in
-`compiled_ir.metadata["execution_target"]["target_qubits"]`. The circuit still
-uses logical wires `0..N-1`. Deployment packaging preserves the compiled
-circuit and carries that mapping into Quafu submission without another user
-parameter or a second compilation pass.
+subgraph, and returns logical `CircuitIR` with an ordered physical mapping. The
+circuit still uses logical wires `0..N-1`; FlagQuantum carries that mapping
+through packaging and submission without another user parameter or compilation
+pass. The result remains `fq.ExecutionResult`; access counts with
+`result.measurement("counts")` and provider-specific details with
+`result.native()`.
 
-`deploy_circuit` is the normal remote-execution entry point and creates the
-sealed deployment package internally. Call `create_deployment_package`
-explicitly only to inspect, persist, sign, or submit that artifact later.
+Call `fq.compile` separately when the compiled IR must be inspected. Call
+`create_deployment_package` only to persist, sign, or submit the sealed artifact
+later.
 
 Advanced hosts may pass an explicit target mapping:
 

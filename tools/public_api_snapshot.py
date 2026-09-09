@@ -225,6 +225,9 @@ def validate() -> tuple[str, ...]:
         and extension_protocol_contract.get("root_manifest_change") is True
     ):
         authorized_changes.update(extension_protocol_contract.get("root_additions", ()))
+        authorized_changes.update(
+            extension_protocol_contract.get("protected_root_changes", ())
+        )
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (

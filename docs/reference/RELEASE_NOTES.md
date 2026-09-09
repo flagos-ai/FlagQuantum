@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Extended `fq.run` with the explicit
+  `compiler="qsteed", target="quafu:<backend>", shots=...` remote journey. It
+  performs compilation, sealed packaging, submission, and result retrieval
+  without changing the `ExecutionResult` return type or silently selecting a
+  compiler, provider, or fallback.
 - Added `fq.compile(circuit, compiler="qsteed", target="quafu:<backend>")` as
   the direct compiler-selection journey. QSteed results retain logical wire
   numbers and carry an ordered physical `target_qubits` mapping through

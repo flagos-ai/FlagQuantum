@@ -18,10 +18,9 @@ tests, and rendered in the
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
-| Execute | `fq.run` | `fq.ExecutionResult` |
+| Execute locally or remotely | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
-| Execute on a remote target | `flagquantum.deployment.deploy_circuit` | Provider deployment result |
 | Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
@@ -83,12 +82,23 @@ the responsibility of `DeploymentPackage`.
 `flagquantum.simulation.tensor_network.run_tensor_network` are advanced interfaces for callers
 that explicitly need native backend result objects or backend-specific controls.
 
-Remote execution remains separate from `fq.run`, whose result is always
-`fq.ExecutionResult`. Compile for the selected target and pass the compiled IR
-directly to `flagquantum.deployment.deploy_circuit`; it creates the sealed
-package internally. `create_deployment_package` is the expert boundary for
-callers that need to inspect, persist, sign, or delay submission of that
-artifact.
+For remote execution, name the compiler and provider target explicitly:
+
+```python
+result = fq.run(
+    circuit,
+    compiler="qsteed",
+    target="quafu:ScQ-P10",
+    shots=1024,
+)
+counts = result.measurement("counts").value[0]
+```
+
+This path compiles, packages, submits, and waits for the remote result without
+changing the stable `fq.ExecutionResult` return type. It never selects or
+substitutes a compiler or provider implicitly. Use `fq.compile` to inspect the
+compiled IR, and `create_deployment_package` when the sealed artifact must be
+persisted, signed, or submitted later.
 
 ## Optimize a program
 

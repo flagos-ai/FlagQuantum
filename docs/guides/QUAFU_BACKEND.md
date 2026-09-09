@@ -44,28 +44,22 @@ For explicit backend selection:
 
 ```python
 import flagquantum as fq
-import flagquantum.deployment as fqd
-from flagquantum.remote import QuafuProvider
-
-provider = QuafuProvider(result_timeout=1800)
 
 circuit = fq.Circuit(2)
 circuit.h(0).cx(0, 1)
-compiled = fq.compile(
+result = fq.run(
     circuit,
     compiler="qsteed",
     target="quafu:ScQ-P10",
-)
-result = fqd.deploy_circuit(
-    compiled,
-    provider,
     shots=1024,
 )
 ```
 
-`deploy_circuit` creates and validates the deployment package internally. Use
-`create_deployment_package` directly only when the sealed QASM, target mapping,
-or identity evidence must be inspected, stored, or submitted later.
+`fq.run` compiles, packages, submits, and waits for the Quafu result. It returns
+the same `fq.ExecutionResult` type as local execution; counts are available as
+`result.measurement("counts")`. Use `fq.compile` or
+`create_deployment_package` separately only when the compiled IR or sealed
+deployment artifact must be inspected, stored, or submitted later.
 
 Quafu reports queue state but not qubit capacity from the status endpoint.
 FlagQuantum therefore retains the requested width in discovered profiles; the

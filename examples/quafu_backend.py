@@ -10,8 +10,6 @@ from __future__ import annotations
 import os
 
 import flagquantum as fq
-import flagquantum.deployment as fqd
-from flagquantum.remote import QuafuProvider
 
 
 def main() -> None:
@@ -20,15 +18,10 @@ def main() -> None:
 
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    compiled = fq.compile(
+    result = fq.run(
         circuit,
         compiler="qsteed",
         target="quafu:ScQ-P10",
-    )
-    provider = QuafuProvider(result_timeout=1800)
-    result = fqd.deploy_circuit(
-        compiled,
-        provider,
         shots=1024,
     )
     print(result.handle.task_id, result.counts)
