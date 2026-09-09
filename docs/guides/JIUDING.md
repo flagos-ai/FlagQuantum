@@ -1,4 +1,4 @@
-# Jiuding CPU tasks (experimental)
+# Jiuding CPU and single-GPU tasks (experimental)
 
 Run from a Jiuding development workspace with injected AK/SK credentials.
 The client reads `/etc/accesskey/user-ak` and `user-sk` automatically; explicit
@@ -47,8 +47,28 @@ def main():
 Keep ordinary function calls and imports inside the shared project. Run `main()`
 locally for debugging. Remote submission adds process isolation and platform
 scheduling; it does not change fq.run or PyTorch training semantics. This first
-adapter allocates exactly one CPU instance (default 2 cores, 2 GiB, 0 GPUs).
-It does not claim GPU/multinode support or choose a sharding strategy.
+adapter allocates one instance (default 2 cores, 2 GiB, 0 GPUs).
+Use `gpus=1` to request one GPU; larger GPU counts are rejected.
+
+```python
+receipt = client.submit(
+    "/shared/my_project/experiment_gpu.py",
+    image="<compatible CUDA image from client.images()>",
+    pythonpath="/shared/my_project",
+    receipt="/shared/my_project/gpu-001.json",
+    gpus=1, cpus=4, memory_gib=8,
+)
+value = client.result(receipt, timeout=180)
+```
+
+The GPU script selects `fq.ExecutionOptions(device="cuda:0")`. Requesting a GPU
+allocates a resource; numerical device selection remains in the user program.
+The adapter derives the GPU model from prior jobs using the selected image and
+queue. If several models are observed, pass `accelerator_model=` explicitly.
+It checks the saved resource configuration before launching. The worker requires
+CUDA and exactly one visible GPU before calling `main()`. The provided
+`examples/remote/jiuding_bell_gpu.py` also verifies that the result is on CUDA.
+This path does not choose a sharding strategy or launch multiple nodes.
 
 ## Lifecycle and recovery
 
@@ -72,7 +92,7 @@ archive/delete experiments. Check status afterward to verify termination.
 If launch is still uncertain and no jobs are visible, an empty status/cancel
 result does not establish that no job exists. Queue quota availability and
 scheduler delay remain platform concerns. Log streaming, automatic resume from
-partial creation, GPU tasks and result downloads are not implemented.
+partial creation, multi-GPU tasks and result downloads are not implemented.
 
 Queue detail and job-snapshot endpoints returned 403 for the test account.
 The adapter uses its authorized workspace and job queries instead. Endpoint
@@ -91,3 +111,12 @@ the complex64 state matched the expected Bell state with maximum absolute
 error 0. See [the development record](../development/evidence/jiuding_bell_cpu_20260909.json).
 The calculation used the example's normal `fq.Circuit` and `fq.run` path.
 It validates this CPU forward task only, not training or GPU capacity.
+
+The single-GPU request was accepted on the same date (job
+`aede25bb-ef19-4083-83d3-fb4c06472c49`) but remained Pending for the 180-second
+test window. It was cancelled and its terminal `Cancelled` state confirmed.
+This does not establish available queue quota or successful GPU scheduling.
+Separately, the final worker and GPU Bell example ran on one visible A100 40GB
+in the existing development workspace: `cuda:0`, complex64, maximum state
+error 0. See [GPU development evidence](../development/evidence/jiuding_bell_gpu_20260909.json).
+No additional queued test was left running.

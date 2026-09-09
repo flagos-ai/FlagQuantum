@@ -1,7 +1,7 @@
 # Remote compute
 
 This directory owns experimental adapters to external CPU/GPU job systems.
-Jiuding currently supports one CPU instance, automatic workspace context
+Jiuding currently supports one CPU or single-GPU instance, automatic workspace context
 discovery, create-and-start submission, status, waiting, shared JSON results,
 and stopping active jobs. It uses the standard library and direct HTTPS calls.
 It does not own circuit execution, numerical backend selection, gradients,
@@ -17,5 +17,6 @@ The caller must provision the shared code and a compatible image first.
 Read `docs/guides/JIUDING.md` for the supported journey and limits. Run
 `python -m pytest tests/team/remote/test_jiuding.py -q` for offline behavior
 tests. No test in that file creates real tasks. The Bell example provides a
-small CPU numerical check for live acceptance. A new provider-wide contract,
+small CPU numerical check for live acceptance; `jiuding_bell_gpu.py` checks
+CUDA execution with one visible GPU. A new provider-wide contract,
 root export or distributed claim requires a separate reviewed change.
