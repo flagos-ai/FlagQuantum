@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-12 bounded vertical slices complete**
+Status: **Phases 1-13 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -634,6 +634,32 @@ Exit gate:
 - Runtime, Simulation, public API, default path, and performance claims remain
   unchanged.
 
+### Phase 13 — bounded canonical measurement predicates
+
+Extend Program IR with boolean `or` and represent symbolic measurement
+predicates as canonical DNF. Conjunction distributes over clauses,
+disjunction unions clauses, negation applies bounded De Morgan expansion, and
+measurement equality/inequality lowers to XNOR/XOR. Contradictory, duplicate,
+and subsumed clauses are removed with deterministic ordering.
+
+One conjunction continues to use Core `conditions`; predicates requiring more
+than one clause use private `condition_clauses`. Local reference and batched
+trajectory execution evaluates these clauses as OR-of-AND. The configurable
+default limit is 64 clauses. Unsupported expansion, conditional measurement,
+measurement-dependent carried state, and provider export of complex clauses
+fail closed.
+
+Exit gate:
+
+- disjunction and negated conjunction agree with recorded bits shot by shot;
+- equality and inequality between measurements implement XNOR and XOR;
+- general quantum true/false branches receive exact complementary predicates;
+- canonicalization is stable and removes contradictions and subsumption;
+- the clause ceiling and malformed runtime metadata fail explicitly;
+- simple conjunction metadata remains backward compatible;
+- public API, default path, stochastic-gradient, and performance claims remain
+  unchanged.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -771,3 +797,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 11 loop/branch and branch/loop value-flow slices verified
 - [x] Phase 12 measurement-boolean predicate contract authorized
 - [x] Phase 12 negation, comparison, and conjunctive feedback verified
+- [x] Phase 13 bounded canonical predicate contract authorized
+- [x] Phase 13 disjunction, complement, XOR/XNOR, and exact quantum branches verified

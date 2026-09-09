@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-5 implemented and verified under the repository owner's
+Status: Phases 1-13 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -534,3 +534,35 @@ complementary true/false gate conditions, and reference and batched execution
 agree with every shot's recorded measurement values. The feature stays private
 and makes no public API, default-path, finite-shot-gradient, accelerator,
 distributed, capacity, or performance claim.
+
+## Phase 13 bounded general measurement-predicate authorization
+
+Phase 13 may add `arith.or` and extend symbolic measurement predicates to a
+canonical disjunctive normal form (DNF): an ordered disjunction of ordered
+conjunctions of classical-bit literals. Capture accepts `and`, `or`, `not`,
+bool equality/inequality, and equality/inequality between two previously
+assigned measurement booleans. Inline measurement composition remains
+rejected so Python short-circuit evaluation cannot silently change which
+measurements occur.
+
+Dynamic lowering computes exact conjunction, disjunction, complement, XOR,
+and XNOR over the canonical DNF. It removes contradictory, duplicate, and
+subsumed clauses and sorts all remaining literals and clauses. Expansion is
+bounded by `max_condition_clauses`, defaulting to 64; exceeding the bound fails
+before Runtime execution. A single conjunction retains the existing
+`conditions` metadata. Two or more clauses use private `condition_clauses`
+metadata, evaluated as OR-of-AND by both local trajectory strategies.
+
+This representation permits exact quantum work in both sides of a general
+measurement-dependent `if`, including nested retests that simplify under an
+enclosing predicate. Conditional measurement and measurement-dependent
+classical values escaping a branch remain unsupported. Provider dialects that
+do not explicitly understand DNF reject complex predicates instead of
+exporting them as unconditional gates.
+
+Phase 13 acceptance requires shot-wise agreement for disjunction, negated
+conjunction, XOR/XNOR, and complementary quantum branches; deterministic
+canonical metadata; explicit rejection of malformed or excessive clause sets;
+and no regression to simple conjunctions. The feature stays private and makes
+no public API, default-path, finite-shot-gradient, accelerator, distributed,
+capacity, or performance claim.

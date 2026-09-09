@@ -16,7 +16,7 @@ from ...simulation.statevector.operations import (
     _apply_single_qubit_fixed,
     _statevector_layout,
 )
-from ._conditions import classical_width, instruction_conditions
+from ._conditions import classical_width, instruction_condition_clauses
 from .circuit import DynamicCircuit
 from .result import DynamicExecutionResult
 
@@ -118,20 +118,22 @@ def _run_dynamic_trajectory(
             classical = [-1] * width
             branch_trace = []
             for instruction_index, instruction in enumerate(circuit._instructions):
-                conditions = instruction_conditions(instruction)
-                skip = False
-                for bit_index, expected in conditions:
+                clauses = instruction_condition_clauses(instruction)
+                for bit_index, _expected in {
+                    term for clause in clauses for term in clause
+                }:
                     if classical[bit_index] < 0:
                         raise RuntimeError(
                             f"classical bit {bit_index} was read before measurement"
                         )
-                    if classical[bit_index] != expected:
-                        skip = True
-                        break
+                skip = bool(clauses) and not any(
+                    all(classical[bit] == expected for bit, expected in clause)
+                    for clause in clauses
+                )
                 if skip:
                     conditional_skipped += 1
                     continue
-                if conditions:
+                if clauses:
                     conditional_applied += 1
                 if instruction.name == "measure":
                     state, bit = _measure_wire(
@@ -288,15 +290,23 @@ def _run_dynamic_batched(
 
     for instruction_index, instruction in enumerate(circuit._instructions):
         active = torch.ones(int(shots), dtype=torch.bool, device=circuit.device)
-        conditions = instruction_conditions(instruction)
-        for bit_index, expected in conditions:
+        clauses = instruction_condition_clauses(instruction)
+        for bit_index in {bit for clause in clauses for bit, _ in clause}:
             if bool(torch.any(classical[:, bit_index] < 0)):
                 raise RuntimeError(
                     f"classical bit {bit_index} was read before measurement"
                 )
-            active &= classical[:, bit_index] == expected
+        if clauses:
+            active = torch.zeros(int(shots), dtype=torch.bool, device=circuit.device)
+            for clause in clauses:
+                clause_active = torch.ones(
+                    int(shots), dtype=torch.bool, device=circuit.device
+                )
+                for bit_index, expected in clause:
+                    clause_active &= classical[:, bit_index] == expected
+                active |= clause_active
         active_count = int(torch.count_nonzero(active).item())
-        if conditions:
+        if clauses:
             conditional_applied += active_count
             conditional_skipped += int(shots) - active_count
         if active_count == 0:

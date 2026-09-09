@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase12_measurement_boolean_predicates_verified",
+  "status": "phase13_bounded_canonical_predicates_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -408,6 +408,41 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE12_EVIDENCE.md"
   },
   "phase12_completed": true,
+  "phase13": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.lower_dynamic_program",
+    "program_ir_operations": [
+      "arith.not",
+      "arith.and",
+      "arith.or",
+      "arith.cmp"
+    ],
+    "measurement_predicate_profile": [
+      "boolean_disjunction",
+      "negated_conjunction",
+      "measurement_bool_equality_or_inequality",
+      "measurement_to_measurement_equality_or_inequality",
+      "exact_quantum_if_else"
+    ],
+    "runtime_representation": "canonical_dnf_condition_clauses",
+    "simple_conjunction_compatibility": "existing_instruction_conditions",
+    "canonicalization": [
+      "sort_literals_and_clauses",
+      "remove_contradictory_and_duplicate_clauses",
+      "remove_subsumed_clauses"
+    ],
+    "default_max_condition_clauses": 64,
+    "clause_limit_policy": "unsupported_fail_closed",
+    "inline_measurement_composition": "unsupported_fail_closed",
+    "conditional_measurement": "unsupported_fail_closed",
+    "measurement_dependent_carried_state": "unsupported_fail_closed",
+    "provider_dialect_complex_predicates": "unsupported_fail_closed",
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "public_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE13_EVIDENCE.md"
+  },
+  "phase13_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

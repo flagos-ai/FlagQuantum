@@ -290,22 +290,26 @@ class _Capture:
             )[0]
         if isinstance(node, ast.BoolOp):
             self.reject_inline_measurement(node)
-            if not isinstance(node.op, ast.And) or len(node.values) < 2:
+            if not isinstance(node.op, (ast.And, ast.Or)) or len(node.values) < 2:
                 self.fail(
                     node,
                     "arith.boolean_expression",
-                    "only boolean conjunction is supported",
+                    "boolean expression requires and/or with at least two operands",
                 )
+            operation = "arith.and" if isinstance(node.op, ast.And) else "arith.or"
+            spelling = "and" if isinstance(node.op, ast.And) else "or"
             result = self.emit_expression(node.values[0])
             if result.type != BOOL:
-                self.fail(node, "arith.bool_type", "and requires bool operands")
+                self.fail(node, "arith.bool_type", f"{spelling} requires bool operands")
             for value_node in node.values[1:]:
                 right = self.emit_expression(value_node)
                 if right.type != BOOL:
-                    self.fail(node, "arith.bool_type", "and requires bool operands")
+                    self.fail(
+                        node, "arith.bool_type", f"{spelling} requires bool operands"
+                    )
                 result = self.emit(
                     node,
-                    "arith.and",
+                    operation,
                     operands=(result, right),
                     result_types=(BOOL,),
                 )[0]

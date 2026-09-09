@@ -9,7 +9,7 @@ import torch
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...core.parameters import is_parameterized_value
-from ._conditions import instruction_conditions
+from ._conditions import instruction_condition_clauses
 from .circuit import DynamicCircuit
 from .execution import run_dynamic
 from .result import DynamicExecutionResult
@@ -63,19 +63,36 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
             instruction.matrix
         ):
             raise ValueError("hybrid dynamic CircuitIR must be bound before execution")
-        conditions = instruction_conditions(instruction)
+        clauses = instruction_condition_clauses(instruction)
         if any(
-            bit < 0 or expected not in {0, 1} for bit, expected in conditions
-        ) or len({bit for bit, _ in conditions}) != len(conditions):
+            bit < 0 or expected not in {0, 1}
+            for clause in clauses
+            for bit, expected in clause
+        ) or any(len({bit for bit, _ in clause}) != len(clause) for clause in clauses):
             raise ValueError(
-                "classical conditions require unique bits and binary values"
+                "classical condition clauses require unique bits and binary values"
             )
-        if any(bit not in measured for bit, _ in conditions):
+        if any(tuple(sorted(clause)) != clause for clause in clauses):
+            raise ValueError("classical condition clauses must be canonically ordered")
+        if "condition_clauses" in instruction.metadata and (
+            len(clauses) < 2
+            or tuple(sorted(clauses, key=lambda item: (len(item), item))) != clauses
+            or len(set(clauses)) != len(clauses)
+            or any(
+                set(left).issubset(right)
+                for index, left in enumerate(clauses)
+                for right in clauses[index + 1 :]
+            )
+        ):
+            raise ValueError(
+                "condition_clauses must be canonical, distinct, and minimal"
+            )
+        if any(bit not in measured for clause in clauses for bit, _ in clause):
             raise ValueError(
                 f"instruction {index} reads a classical bit before measurement"
             )
         if instruction.name == "measure":
-            if conditions:
+            if clauses:
                 raise ValueError(
                     "conditional measurement is outside the Phase 7 profile"
                 )
@@ -103,7 +120,7 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
             raise ValueError(
                 "Phase 8 rotations require one bound real scalar theta parameter"
             )
-        elif set(instruction.metadata) - {"conditions"}:
+        elif set(instruction.metadata) - {"conditions", "condition_clauses"}:
             raise ValueError("gate metadata is outside the dynamic profile")
         if instruction.name in _ALLOWED_ROTATIONS:
             rotation_count += 1

@@ -9,6 +9,7 @@ import flagquantum as fq
 import flagquantum.deployment as deployment
 import flagquantum.errors as fqe
 from flagquantum.compiler import CouplingMap
+from flagquantum.core.ir import Instruction
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
@@ -91,6 +92,22 @@ def test_dynamic_ir_round_trip_and_qasm3_export() -> None:
     assert "c[1] = measure q[0];" in qasm
     assert "reset q[0];" in qasm
     assert "if (c[1] == true) { x q[1]; }" in qasm
+
+
+def test_qasm3_export_fails_closed_on_private_dnf_conditions() -> None:
+    circuit = DynamicCircuit(3)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(1, classical_bit=1)
+    circuit._append_dynamic(
+        Instruction(
+            "x",
+            (2,),
+            metadata={"condition_clauses": (((0, 1),), ((1, 1),))},
+        )
+    )
+
+    with pytest.raises(ValueError, match="DNF-aware execution path"):
+        export_dynamic_qasm3(circuit)
 
 
 def test_dynamic_execution_supports_batched_initial_states() -> None:

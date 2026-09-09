@@ -274,6 +274,10 @@ class _Specializer:
             left = self.as_predicate(operation, operands[0])
             right = self.as_predicate(operation, operands[1])
             return (left and right,)
+        if name == "arith.or":
+            left = self.as_predicate(operation, operands[0])
+            right = self.as_predicate(operation, operands[1])
+            return (left or right,)
         if name == "arith.cmp":
             predicate = operation.attributes["predicate"]
             comparisons = {

@@ -225,9 +225,13 @@ class _Verifier:
         elif name == "arith.not" and len(operands) == 1 and len(results) == 1:
             if operands[0].type != BOOL or results[0].type != BOOL:
                 self.error("arith.bool_type", "arith.not requires bool -> bool")
-        elif name == "arith.and" and len(operands) == 2 and len(results) == 1:
+        elif (
+            name in {"arith.and", "arith.or"}
+            and len(operands) == 2
+            and len(results) == 1
+        ):
             if any(value.type != BOOL for value in (*operands, *results)):
-                self.error("arith.bool_type", "arith.and requires bool, bool -> bool")
+                self.error("arith.bool_type", f"{name} requires bool, bool -> bool")
         elif name == "arith.cmp" and len(operands) == 2 and len(results) == 1:
             predicates = {"eq", "ne", "lt", "le", "gt", "ge"}
             if operation.attributes.get("predicate") not in predicates:

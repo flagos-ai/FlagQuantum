@@ -8,7 +8,7 @@ from typing import Callable
 import torch
 
 from ._conditions import classical_width as _classical_width
-from ._conditions import instruction_conditions as _instruction_conditions
+from ._conditions import instruction_condition_clauses as _instruction_condition_clauses
 from .circuit import DynamicCircuit
 from .execution import run_dynamic
 from .result import DynamicExecutionResult
@@ -24,6 +24,7 @@ class DynamicFeatureSet:
     supported_conditional_gates: tuple[str, ...] = ()
     max_condition_bits: int | None = None
     condition_values: tuple[int, ...] = (0, 1)
+    supports_disjunctive_conditions: bool = False
     returns_mid_circuit_measurements: bool = True
     supports_repeated_measurement: bool = True
 
@@ -63,6 +64,7 @@ LOCAL_TRAJECTORY_FEATURES = DynamicFeatureSet(
         "cz",
         "swap",
     ),
+    supports_disjunctive_conditions=True,
 )
 
 QISKIT_AER_DYNAMIC_FEATURES = DynamicFeatureSet(
@@ -88,7 +90,7 @@ def assess_dynamic_features(
     blockers: list[str] = []
     measured: set[int] = set()
     for instruction in circuit._instructions:
-        conditions = _instruction_conditions(instruction)
+        clauses = _instruction_condition_clauses(instruction)
         if instruction.name == "measure":
             if not features.mid_circuit_measurement:
                 blockers.append("mid_circuit_measurement_unsupported")
@@ -98,17 +100,22 @@ def assess_dynamic_features(
             measured.add(bit)
         if instruction.name == "reset" and not features.reset:
             blockers.append("reset_unsupported")
-        if conditions:
-            if (
-                features.max_condition_bits is not None
-                and len(conditions) > features.max_condition_bits
+        if clauses:
+            if features.max_condition_bits is not None and any(
+                len(clause) > features.max_condition_bits for clause in clauses
             ):
                 blockers.append("condition_width_exceeds_limit")
-            if any(value not in features.condition_values for _, value in conditions):
+            if len(clauses) > 1 and not features.supports_disjunctive_conditions:
+                blockers.append("disjunctive_conditions_unsupported")
+            if any(
+                value not in features.condition_values
+                for clause in clauses
+                for _, value in clause
+            ):
                 blockers.append("condition_value_unsupported")
             if instruction.name not in features.supported_conditional_gates:
                 blockers.append(f"conditional_gate_unsupported:{instruction.name}")
-            if any(bit not in measured for bit, _ in conditions):
+            if any(bit not in measured for clause in clauses for bit, _ in clause):
                 blockers.append("classical_bit_read_before_measurement")
     return DynamicFeatureReport(not blockers, tuple(dict.fromkeys(blockers)))
 

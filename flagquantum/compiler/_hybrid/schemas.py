@@ -30,6 +30,7 @@ OPERATION_SCHEMAS = {
     "arith.rem": OperationSchema(2, 2, 1, 1, 0),
     "arith.not": OperationSchema(1, 1, 1, 1, 0),
     "arith.and": OperationSchema(2, 2, 1, 1, 0),
+    "arith.or": OperationSchema(2, 2, 1, 1, 0),
     "arith.cmp": OperationSchema(
         2, 2, 1, 1, 0, required_attributes=frozenset({"predicate"})
     ),

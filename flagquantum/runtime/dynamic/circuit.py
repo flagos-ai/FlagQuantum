@@ -83,6 +83,7 @@ class DynamicCircuit(Circuit):
         if any(
             instruction.metadata.get("is_dynamic")
             or instruction.metadata.get("conditions")
+            or instruction.metadata.get("condition_clauses")
             for instruction in self._instructions
         ):
             raise CapabilityError(

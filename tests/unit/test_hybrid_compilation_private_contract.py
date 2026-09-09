@@ -422,3 +422,45 @@ def test_phase12_uses_existing_conjunctive_runtime_conditions() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE12_EVIDENCE.md"
     )
     assert contract["phase12_completed"] is True
+
+
+def test_phase13_uses_bounded_canonical_dnf_conditions() -> None:
+    contract = _contract()
+    phase13 = contract["phase13"]
+
+    assert phase13["program_ir_operations"] == [
+        "arith.not",
+        "arith.and",
+        "arith.or",
+        "arith.cmp",
+    ]
+    assert phase13["measurement_predicate_profile"] == [
+        "boolean_disjunction",
+        "negated_conjunction",
+        "measurement_bool_equality_or_inequality",
+        "measurement_to_measurement_equality_or_inequality",
+        "exact_quantum_if_else",
+    ]
+    assert phase13["runtime_representation"] == "canonical_dnf_condition_clauses"
+    assert phase13["simple_conjunction_compatibility"] == (
+        "existing_instruction_conditions"
+    )
+    assert phase13["canonicalization"] == [
+        "sort_literals_and_clauses",
+        "remove_contradictory_and_duplicate_clauses",
+        "remove_subsumed_clauses",
+    ]
+    assert phase13["default_max_condition_clauses"] == 64
+    assert phase13["clause_limit_policy"] == "unsupported_fail_closed"
+    assert phase13["inline_measurement_composition"] == "unsupported_fail_closed"
+    assert phase13["conditional_measurement"] == "unsupported_fail_closed"
+    assert phase13["measurement_dependent_carried_state"] == ("unsupported_fail_closed")
+    assert phase13["provider_dialect_complex_predicates"] == ("unsupported_fail_closed")
+    assert phase13["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase13["public_api_change"] is False
+    assert phase13["default_path_change"] is False
+    assert phase13["performance_claim"] is False
+    assert phase13["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE13_EVIDENCE.md"
+    )
+    assert contract["phase13_completed"] is True

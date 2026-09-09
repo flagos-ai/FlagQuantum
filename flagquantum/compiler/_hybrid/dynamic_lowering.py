@@ -57,17 +57,26 @@ class _MeasurementRef:
 
 @dataclass(frozen=True)
 class _ClassicalPredicate:
-    terms: tuple[tuple[int, int], ...]
+    clauses: tuple[tuple[tuple[int, int], ...], ...]
 
 
 _EFFECT = object()
 
 
+_TRUE_CLAUSES: tuple[tuple[tuple[int, int], ...], ...] = ((),)
+_FALSE_CLAUSES: tuple[tuple[tuple[int, int], ...], ...] = ()
+
+
 class _DynamicLowerer:
-    def __init__(self, *, max_unrolled_iterations: int) -> None:
+    def __init__(
+        self, *, max_unrolled_iterations: int, max_condition_clauses: int
+    ) -> None:
         if int(max_unrolled_iterations) <= 0:
             raise ValueError("max_unrolled_iterations must be positive")
         self.max_unrolled_iterations = int(max_unrolled_iterations)
+        if int(max_condition_clauses) <= 0:
+            raise ValueError("max_condition_clauses must be positive")
+        self.max_condition_clauses = int(max_condition_clauses)
         self.unrolled_iterations = 0
         self.instructions: list[Instruction] = []
         self.bindings: dict[str, Any] = {}
@@ -91,7 +100,7 @@ class _DynamicLowerer:
         outer: Mapping[ValueId, Any],
         arguments: Sequence[Any],
         *,
-        conditions: tuple[tuple[int, int], ...] = (),
+        conditions: tuple[tuple[tuple[int, int], ...], ...] = _TRUE_CLAUSES,
     ) -> tuple[Any, ...]:
         if len(block.arguments) != len(arguments):
             raise SpecializationError(
@@ -131,7 +140,7 @@ class _DynamicLowerer:
         operands: tuple[Any, ...],
         environment: Mapping[ValueId, Any],
         *,
-        conditions: tuple[tuple[int, int], ...],
+        conditions: tuple[tuple[tuple[int, int], ...], ...],
     ) -> tuple[Any, ...]:
         name = operation.name
         if name == "arith.constant":
@@ -147,6 +156,8 @@ class _DynamicLowerer:
             return (self.negate_predicate(operation, operands[0]),)
         if name == "arith.and":
             return (self.conjoin_predicates(operation, operands),)
+        if name == "arith.or":
+            return (self.disjoin_predicates(operation, operands),)
         if name == "arith.cmp":
             predicate = operation.attributes["predicate"]
             if any(
@@ -187,7 +198,7 @@ class _DynamicLowerer:
             return (_EFFECT,)
         if name == "quantum.measure":
             self.require_effect(operation, operands[1])
-            if conditions:
+            if conditions != _TRUE_CLAUSES:
                 self.fail(
                     operation,
                     "dynamic.conditional_measurement",
@@ -217,47 +228,28 @@ class _DynamicLowerer:
                     operands[1:],
                     conditions=conditions,
                 )
-            predicate_terms = self.predicate_terms(operation, predicate)
+            predicate_clauses = self.predicate_clauses(predicate)
             if len(operands) != 2:
                 self.fail(
                     operation,
                     "dynamic.measurement_branch_carry",
                     "measurement-dependent branches cannot carry classical values",
                 )
-            if any(
-                outer_bit == bit
-                for outer_bit, _ in conditions
-                for bit, _ in predicate_terms
-            ):
-                self.fail(
-                    operation,
-                    "dynamic.condition",
-                    "retesting a measurement in a nested branch is unsupported",
-                )
-            if len(predicate_terms) > 1 and self.region_has_quantum_work(
-                operation.regions[1]
-            ):
-                self.fail(
-                    operation,
-                    "dynamic.conjunction_else",
-                    "a measurement conjunction requires an empty else branch",
-                )
+            then_conditions = self.and_clauses(operation, conditions, predicate_clauses)
+            else_conditions = self.and_clauses(
+                operation, conditions, self.not_clauses(operation, predicate_clauses)
+            )
             then_result = self.execute_region(
                 operation.regions[0],
                 environment,
                 operands[1:],
-                conditions=(*conditions, *predicate_terms),
-            )
-            else_terms = (
-                ((predicate_terms[0][0], 1 - predicate_terms[0][1]),)
-                if len(predicate_terms) == 1
-                else ()
+                conditions=then_conditions,
             )
             else_result = self.execute_region(
                 operation.regions[1],
                 environment,
                 operands[1:],
-                conditions=(*conditions, *else_terms),
+                conditions=else_conditions,
             )
             if then_result != else_result or then_result != (_EFFECT,):
                 self.fail(
@@ -320,7 +312,7 @@ class _DynamicLowerer:
         outer: Mapping[ValueId, Any],
         arguments: Sequence[Any],
         *,
-        conditions: tuple[tuple[int, int], ...],
+        conditions: tuple[tuple[tuple[int, int], ...], ...],
     ) -> tuple[Any, ...]:
         if len(region.blocks) != 1:
             raise SpecializationError(
@@ -334,11 +326,18 @@ class _DynamicLowerer:
         self,
         name: str,
         wires: tuple[int, ...],
-        conditions: tuple[tuple[int, int], ...],
+        conditions: tuple[tuple[tuple[int, int], ...], ...],
         *,
         parameter: Any | None = None,
     ) -> None:
-        metadata = {} if not conditions else {"conditions": tuple(sorted(conditions))}
+        if conditions == _FALSE_CLAUSES:
+            return
+        if conditions == _TRUE_CLAUSES:
+            metadata = {}
+        elif len(conditions) == 1:
+            metadata = {"conditions": conditions[0]}
+        else:
+            metadata = {"condition_clauses": conditions}
         params: dict[str, Any] = {}
         if parameter is not None:
             slot = f"hybrid_dynamic_p{len(self.bindings)}"
@@ -348,50 +347,103 @@ class _DynamicLowerer:
             Instruction(name, wires, params=params, metadata=metadata)
         )
 
-    def predicate_terms(
+    def predicate_clauses(
+        self, value: _MeasurementRef | _ClassicalPredicate
+    ) -> tuple[tuple[tuple[int, int], ...], ...]:
+        if isinstance(value, _MeasurementRef):
+            return (((value.classical_bit, 1),),)
+        return value.clauses
+
+    def canonicalize_clauses(
         self,
         operation: Operation,
-        value: _MeasurementRef | _ClassicalPredicate,
-    ) -> tuple[tuple[int, int], ...]:
-        if isinstance(value, _MeasurementRef):
-            return ((value.classical_bit, 1),)
-        if not value.terms:
+        clauses: Sequence[Sequence[tuple[int, int]]],
+    ) -> tuple[tuple[tuple[int, int], ...], ...]:
+        canonical: set[tuple[tuple[int, int], ...]] = set()
+        for clause in clauses:
+            terms: dict[int, int] = {}
+            contradictory = False
+            for bit, expected in clause:
+                previous = terms.get(bit)
+                if previous is not None and previous != expected:
+                    contradictory = True
+                    break
+                terms[bit] = expected
+            if not contradictory:
+                normalized = tuple(sorted(terms.items()))
+                if not normalized:
+                    return _TRUE_CLAUSES
+                canonical.add(normalized)
+        reduced = tuple(
+            clause
+            for clause in sorted(canonical, key=lambda item: (len(item), item))
+            if not any(
+                set(other).issubset(clause) for other in canonical if other != clause
+            )
+        )
+        if len(reduced) > self.max_condition_clauses:
             self.fail(
                 operation,
-                "dynamic.classical_expression",
-                "classical predicate cannot be empty",
+                "dynamic.condition_clause_limit",
+                f"predicate exceeds {self.max_condition_clauses} canonical clauses",
             )
-        return value.terms
+        return reduced
+
+    def and_clauses(self, operation: Operation, left: Any, right: Any) -> Any:
+        if not left or not right:
+            return _FALSE_CLAUSES
+        return self.canonicalize_clauses(
+            operation, tuple((*a, *b) for a in left for b in right)
+        )
+
+    def or_clauses(self, operation: Operation, left: Any, right: Any) -> Any:
+        return self.canonicalize_clauses(operation, (*left, *right))
+
+    def not_clauses(self, operation: Operation, clauses: Any) -> Any:
+        if clauses == _FALSE_CLAUSES:
+            return _TRUE_CLAUSES
+        if clauses == _TRUE_CLAUSES:
+            return _FALSE_CLAUSES
+        result = _TRUE_CLAUSES
+        for clause in clauses:
+            complement = tuple(((bit, 1 - expected),) for bit, expected in clause)
+            result = self.and_clauses(operation, result, complement)
+        return result
 
     def negate_predicate(self, operation: Operation, value: Any) -> Any:
         if isinstance(value, _MeasurementRef):
-            return _ClassicalPredicate(((value.classical_bit, 0),))
+            return _ClassicalPredicate((((value.classical_bit, 0),),))
         if isinstance(value, _ClassicalPredicate):
-            if len(value.terms) != 1:
-                self.fail(
-                    operation,
-                    "dynamic.classical_expression",
-                    "negating a measurement conjunction is unsupported",
-                )
-            bit, expected = value.terms[0]
-            return _ClassicalPredicate(((bit, 1 - expected),))
+            return _ClassicalPredicate(self.not_clauses(operation, value.clauses))
         return not self.as_predicate(operation, value)
 
     def conjoin_predicates(self, operation: Operation, values: tuple[Any, ...]) -> Any:
-        terms: dict[int, int] = {}
+        result = _TRUE_CLAUSES
         for value in values:
             if not isinstance(value, (_MeasurementRef, _ClassicalPredicate)):
                 if not self.as_predicate(operation, value):
                     return False
                 continue
-            for bit, expected in self.predicate_terms(operation, value):
-                previous = terms.get(bit)
-                if previous is not None and previous != expected:
-                    return False
-                terms[bit] = expected
-        if not terms:
+            result = self.and_clauses(operation, result, self.predicate_clauses(value))
+        if result == _FALSE_CLAUSES:
+            return False
+        if result == _TRUE_CLAUSES:
             return True
-        return _ClassicalPredicate(tuple(sorted(terms.items())))
+        return _ClassicalPredicate(result)
+
+    def disjoin_predicates(self, operation: Operation, values: tuple[Any, ...]) -> Any:
+        result = _FALSE_CLAUSES
+        for value in values:
+            if not isinstance(value, (_MeasurementRef, _ClassicalPredicate)):
+                if self.as_predicate(operation, value):
+                    return True
+                continue
+            result = self.or_clauses(operation, result, self.predicate_clauses(value))
+        if result == _FALSE_CLAUSES:
+            return False
+        if result == _TRUE_CLAUSES:
+            return True
+        return _ClassicalPredicate(result)
 
     def compare_predicate(
         self,
@@ -399,38 +451,42 @@ class _DynamicLowerer:
         predicate: str,
         values: tuple[Any, ...],
     ) -> Any:
-        symbolic = [
-            value
-            for value in values
-            if isinstance(value, (_MeasurementRef, _ClassicalPredicate))
-        ]
-        constants = [
-            value
-            for value in values
-            if not isinstance(value, (_MeasurementRef, _ClassicalPredicate))
-        ]
-        if (
-            predicate not in {"eq", "ne"}
-            or len(symbolic) != 1
-            or len(constants) != 1
-            or not isinstance(constants[0], bool)
-        ):
+        if predicate not in {"eq", "ne"}:
             self.fail(
                 operation,
                 "dynamic.classical_expression",
-                "measurement comparison requires one bool constant with == or !=",
+                "measurement predicates support only == or !=",
             )
-        result = symbolic[0]
-        should_negate = (predicate == "eq") != constants[0]
-        return self.negate_predicate(operation, result) if should_negate else result
-
-    def region_has_quantum_work(self, region: Region) -> bool:
-        return any(
-            operation.name.startswith("quantum.")
-            or any(self.region_has_quantum_work(nested) for nested in operation.regions)
-            for block in region.blocks
-            for operation in block.operations
-        )
+        left, right = values
+        left_symbolic = isinstance(left, (_MeasurementRef, _ClassicalPredicate))
+        right_symbolic = isinstance(right, (_MeasurementRef, _ClassicalPredicate))
+        if left_symbolic and right_symbolic:
+            equal = self.disjoin_predicates(
+                operation,
+                (
+                    self.conjoin_predicates(operation, (left, right)),
+                    self.conjoin_predicates(
+                        operation,
+                        (
+                            self.negate_predicate(operation, left),
+                            self.negate_predicate(operation, right),
+                        ),
+                    ),
+                ),
+            )
+            return (
+                equal if predicate == "eq" else self.negate_predicate(operation, equal)
+            )
+        symbolic = left if left_symbolic else right
+        constant = right if left_symbolic else left
+        if not (left_symbolic or right_symbolic) or not isinstance(constant, bool):
+            self.fail(
+                operation,
+                "dynamic.classical_expression",
+                "measurement comparison requires a measurement predicate or bool constant",
+            )
+        should_negate = (predicate == "eq") != constant
+        return self.negate_predicate(operation, symbolic) if should_negate else symbolic
 
     def as_predicate(self, operation: Operation, value: Any) -> bool:
         shape = _runtime_shape(value)
@@ -465,6 +521,7 @@ def lower_dynamic_program(
     *,
     circuit_dtype: str = "complex64",
     max_unrolled_iterations: int = 10_000,
+    max_condition_clauses: int = 64,
 ) -> LoweredDynamicProgram:
     """Lower a bounded measurement-feedback program without executing numerics."""
 
@@ -503,7 +560,10 @@ def lower_dynamic_program(
             "dynamic.dtype",
             f"{circuit_dtype} requires scalar inputs declared as {real_dtype}",
         )
-    lowerer = _DynamicLowerer(max_unrolled_iterations=max_unrolled_iterations)
+    lowerer = _DynamicLowerer(
+        max_unrolled_iterations=max_unrolled_iterations,
+        max_condition_clauses=max_condition_clauses,
+    )
     lowerer.execute_block(entry, {}, (*inputs, _EFFECT))
     if not lowerer.instructions or lowerer.measurement_count == 0:
         raise SpecializationError(
