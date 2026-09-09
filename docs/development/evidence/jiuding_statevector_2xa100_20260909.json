@@ -1,0 +1,90 @@
+{
+  "schema": "flagquantum.jiuding_distributed_statevector_development_evidence",
+  "date": "2026-09-09",
+  "scope": "Single-node two-GPU NCCL correctness validation for one rank-sharded statevector",
+  "workspace": {
+    "name": "flagquantum-b30886cb-2xa100",
+    "id": "19800a5f-6e59-43ae-b8b6-fa0a3bac9d4d",
+    "target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "accelerator_count": 2,
+    "node_count": 1
+  },
+  "image": {
+    "name": "flagquantum-runtime:v0.2.0-b30886cb-cu128-a100",
+    "id": "77b1b518-cadc-42f6-9a42-6df33ebf3420",
+    "runtime_source_commit": "b30886cb",
+    "validation_driver_commit": "b2b734da"
+  },
+  "environment": {
+    "gpu_model": "NVIDIA A100-SXM4-40GB",
+    "gpu_memory_mib_per_device": 40960,
+    "driver_version": "535.161.08",
+    "pytorch_version": "2.7.1+cu128",
+    "cuda_runtime_version": "12.8",
+    "nccl_version": "2.26.2",
+    "gpu_pair_topology": "NV12"
+  },
+  "execution": {
+    "command": "torchrun --standalone --nproc-per-node=2 /tmp/flagquantum-statevector-2gpu.py --backend nccl",
+    "executor": "pytorch_native_distributed_statevector_v1",
+    "backend": "nccl",
+    "world_size": 2,
+    "local_world_size": 2,
+    "distribution_semantics": "sharded_across_ranks",
+    "full_state_materialization": false,
+    "rank_ownership": [
+      {
+        "rank": 0,
+        "device": "cuda:0",
+        "amplitude_start": 0,
+        "amplitude_end": 8,
+        "local_amplitudes": 8
+      },
+      {
+        "rank": 1,
+        "device": "cuda:1",
+        "amplitude_start": 8,
+        "amplitude_end": 16,
+        "local_amplitudes": 8
+      }
+    ],
+    "distributed_gate_count": 4,
+    "local_gate_count": 3,
+    "communication_primitive": "torch.distributed.collective",
+    "intra_node_communication_count": 3,
+    "intra_node_communication_bytes": 160,
+    "inter_node_communication_count": 0,
+    "inter_node_communication_bytes": 0,
+    "cross_shard_fusion": {
+      "enabled": true,
+      "fused_gate_count": 3,
+      "fused_communication_count": 3,
+      "baseline_communication_count": 4,
+      "fused_communication_bytes": 160,
+      "baseline_communication_bytes": 224
+    }
+  },
+  "correctness": {
+    "dense_reference_comparison_passed": true,
+    "random_circuit_comparison_passed": true,
+    "fused_and_unfused_results_matched": true,
+    "pipelined_and_synchronous_results_matched": true,
+    "process_exit_code": 0
+  },
+  "claims": {
+    "two_gpu_visibility_validated": true,
+    "single_node_nccl_validated": true,
+    "statevector_sharding_validated": true,
+    "cross_rank_communication_validated": true,
+    "distributed_backward_validated": false,
+    "distributed_optimizer_validated": false,
+    "multi_node_validated": false,
+    "strong_scaling_validated": false,
+    "scalability_claim_allowed": false,
+    "release_gate_allowed": false
+  },
+  "blockers": [
+    "forward_only_no_sharded_backward_or_optimizer",
+    "no_fixed-load_single-GPU-versus-two-GPU timing comparison"
+  ]
+}
