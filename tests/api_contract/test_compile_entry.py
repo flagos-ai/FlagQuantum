@@ -155,18 +155,21 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
     expected = object()
     captured = {}
 
-    def run_statevector(program, *, target):
-        captured.update(program=program, target=target)
+    def run(program, *, target, outputs=None):
+        captured.update(program=program, target=target, outputs=outputs)
         return expected
 
-    monkeypatch.setattr(
-        "flagquantum.remote.compute.jiuding.run_statevector", run_statevector
-    )
+    monkeypatch.setattr("flagquantum.remote.compute.jiuding.run", run)
 
-    result = fq.run(circuit, target="jiuding:gpu")
+    output = fq.expectation(fq.Z(0))
+    result = fq.run(circuit, target="jiuding:gpu", outputs=output)
 
     assert result is expected
-    assert captured == {"program": circuit, "target": "jiuding:gpu"}
+    assert captured == {
+        "program": circuit,
+        "target": "jiuding:gpu",
+        "outputs": output,
+    }
 
 
 @pytest.mark.parametrize(
@@ -174,9 +177,8 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
     [
         ("compiler", "flagquantum", "does not accept compiler"),
         ("target_qubits", (0,), "does not accept target_qubits"),
-        ("outputs", fq.probabilities(), "returns the exact statevector"),
-        ("shots", 1024, "returns the exact statevector"),
-        ("name", "bell", "returns the exact statevector"),
+        ("shots", 1024, "does not accept shots or name"),
+        ("name", "bell", "does not accept shots or name"),
     ],
 )
 def test_fq_run_jiuding_rejects_unsupported_controls(keyword, value, message):

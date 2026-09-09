@@ -225,12 +225,24 @@ export JIUDING_WORKSPACE=flagquantum-runtime
 import flagquantum as fq
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
-result = fq.run(circuit, target="jiuding:gpu")
+state = fq.run(circuit, target="jiuding:gpu")
+probabilities = fq.run(
+    circuit,
+    target="jiuding:gpu",
+    outputs=fq.probabilities(),
+)
+correlation = fq.run(
+    circuit,
+    target="jiuding:gpu",
+    outputs=fq.expectation(fq.X(0) @ fq.X(1)),
+)
 ```
 
-This path currently returns an exact statevector. It deliberately rejects
-shots, output requests, noise models, compiler selection and execution plans
-instead of silently changing their meaning. Numerical execution occurs on the
-workspace GPU; the returned statevector is materialized in the caller process.
+Without `outputs`, this path returns an exact statevector. Probability and
+expectation requests are reduced on the workspace GPU, so they do not transfer
+the full statevector. It deliberately rejects sampled outputs, shots, noise
+models, compiler selection and execution plans instead of silently changing
+their meaning. Numerical execution occurs on the workspace GPU; requested
+results are materialized in the caller process.
 The production workspace and root entry point were validated on 2026-09-09;
 see [the root-entry evidence](../development/evidence/jiuding_root_run_20260909.json).

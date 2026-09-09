@@ -99,13 +99,15 @@ def run(
         torch.Size([1, 4])
     """
 
+    from .runtime.execution_plan import ExecutionPlan
+
     remote_requested = (
         compiler is not None or target is not None or target_qubits is not None
     )
     if not remote_requested:
         if name is not None:
             raise TypeError("name is a direct fq.run keyword only for remote execution")
-        if hasattr(program_or_plan, "identity") and outputs is not None:
+        if isinstance(program_or_plan, ExecutionPlan) and outputs is not None:
             raise TypeError("outputs must be None when executing an ExecutionPlan")
         if shots is not None and options is not None and options.shots is not None:
             raise TypeError("shots was specified both directly and in ExecutionOptions")
@@ -147,17 +149,14 @@ def run(
             raise TypeError(
                 "options and noise_model are not yet supported by Jiuding workspace execution"
             )
-        if outputs is not None or shots is not None or name is not None:
-            raise TypeError(
-                "Jiuding workspace execution currently returns the exact statevector; "
-                "outputs, shots and name are not accepted"
-            )
-        if hasattr(program_or_plan, "identity"):
+        if shots is not None or name is not None:
+            raise TypeError("Jiuding workspace execution does not accept shots or name")
+        if isinstance(program_or_plan, ExecutionPlan):
             raise TypeError(
                 "Jiuding workspace execution requires a Circuit or CircuitIR, not an ExecutionPlan"
             )
         jiuding = import_module(".remote.compute.jiuding", __package__)
-        return jiuding.run_statevector(program_or_plan, target=target)
+        return jiuding.run(program_or_plan, target=target, outputs=outputs)
 
     if compiler is None or target is None:
         raise TypeError("remote execution requires both compiler and target")

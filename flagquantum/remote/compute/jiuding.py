@@ -29,6 +29,29 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 _DEFAULT_CLIENTS: dict[str, "JiudingClient"] = {}
 
 
+def _decode_tensor(payload: dict):
+    import torch
+
+    dtype_name = payload.get("dtype")
+    dtypes = {
+        "float32": torch.float32,
+        "float64": torch.float64,
+        "complex64": torch.complex64,
+        "complex128": torch.complex128,
+    }
+    if dtype_name not in dtypes:
+        raise RuntimeError("Jiuding workspace returned an unsupported result dtype")
+    raw = base64.b64decode(payload["data"], validate=True)
+    storage_dtype = {
+        "complex64": torch.float32,
+        "complex128": torch.float64,
+    }.get(dtype_name, dtypes[dtype_name])
+    value = torch.frombuffer(bytearray(raw), dtype=storage_dtype)
+    if dtype_name.startswith("complex"):
+        value = value.view(dtypes[dtype_name])
+    return value.reshape(tuple(int(item) for item in payload["shape"])).clone()
+
+
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -427,7 +450,7 @@ class JiudingClient:
             return dict(cached)
         health = {
             "schema": "flagquantum.jiuding.workspace_executor",
-            "version": "1.0",
+            "version": "1.1",
             "operation": "health",
         }
         try:
@@ -503,39 +526,13 @@ class JiudingClient:
     ):
         """Run a circuit on the warm workspace and return a normal ExecutionResult."""
 
-        self.start_executor(target=target, port=port, timeout=timeout)
-        from ...core.ir import ensure_circuit_ir
-
-        ir = ensure_circuit_ir(program)
-        chip_type, model = self._resolve_compute_target(target)
-        effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
-        response = self._executor_request(
-            {
-                "schema": "flagquantum.jiuding.workspace_executor",
-                "version": "1.0",
-                "operation": "statevector",
-                "request_id": uuid.uuid4().hex,
-                "target": effective_target,
-                "program": ir.to_dict(),
-            },
+        response, effective_target = self._execute(
+            program,
+            target=target,
             port=port,
             timeout=timeout,
         )
-        state_payload = response["state"]
-        dtype_name = state_payload.get("dtype")
-        if dtype_name not in {"complex64", "complex128"}:
-            raise RuntimeError("Jiuding workspace returned an unsupported state dtype")
-        import torch
-
-        real_dtype = torch.float32 if dtype_name == "complex64" else torch.float64
-        complex_dtype = (
-            torch.complex64 if dtype_name == "complex64" else torch.complex128
-        )
-        raw = base64.b64decode(state_payload["data"], validate=True)
-        state = torch.frombuffer(bytearray(raw), dtype=real_dtype).view(complex_dtype)
-        state = state.reshape(
-            tuple(int(item) for item in state_payload["shape"])
-        ).clone()
+        state = _decode_tensor(response["state"])
         from ...runtime.result import ExecutionResult
 
         evidence = dict(response.get("evidence", {}))
@@ -553,6 +550,111 @@ class JiudingClient:
                 "cpu_fallback_used": evidence.get("cpu_fallback_used"),
             },
         )
+
+    def run(
+        self,
+        program,
+        *,
+        target: str,
+        outputs=None,
+        port: int = 57621,
+        timeout: float = 30,
+    ):
+        """Run exact statevector, probability or expectation outputs."""
+
+        if outputs is None:
+            return self.run_statevector(
+                program,
+                target=target,
+                port=port,
+                timeout=timeout,
+            )
+        from ...core.ir import ensure_circuit_ir
+        from ...observables import lower_outputs
+
+        ir = ensure_circuit_ir(program)
+        measurements = lower_outputs(
+            outputs,
+            n_wires=ir.n_wires,
+            shots=None,
+        )
+        assert measurements is not None
+        supported = {"expectation_identity", "expectation_ps", "probabilities"}
+        if any(item.kind not in supported for item in measurements):
+            raise ValueError(
+                "Jiuding resident execution supports fq.probabilities() and "
+                "fq.expectation(...) only"
+            )
+        response, effective_target = self._execute(
+            ir,
+            target=target,
+            measurements=measurements,
+            port=port,
+            timeout=timeout,
+        )
+        from ...runtime.result import ExecutionResult, MeasurementResult
+
+        results = tuple(
+            MeasurementResult(
+                kind=item["kind"],
+                wires=tuple(int(wire) for wire in item["wires"]),
+                value=_decode_tensor(item["value"]),
+                shots=item.get("shots"),
+                metadata=dict(item.get("metadata", {})),
+                statistics=dict(item.get("statistics", {})),
+            )
+            for item in response["measurements"]
+        )
+        evidence = dict(response.get("evidence", {}))
+        return ExecutionResult(
+            measurements=results,
+            runtime={
+                "execution_path": "jiuding_workspace_executor",
+                "device": evidence.get("device"),
+                "elapsed_seconds": evidence.get("elapsed_seconds"),
+            },
+            provenance={
+                "requested_target": target,
+                "selected_target": effective_target,
+                "accelerator": evidence.get("accelerator"),
+                "cpu_fallback_used": evidence.get("cpu_fallback_used"),
+            },
+        )
+
+    def _execute(
+        self,
+        program,
+        *,
+        target: str,
+        measurements=(),
+        port: int,
+        timeout: float,
+    ) -> tuple[dict, str]:
+        from dataclasses import replace
+
+        from ...core.ir import ensure_circuit_ir
+
+        ir = ensure_circuit_ir(program)
+        if measurements:
+            ir = replace(ir, measurements=tuple(measurements))
+        else:
+            ir = replace(ir, measurements=())
+        self.start_executor(target=target, port=port, timeout=timeout)
+        chip_type, model = self._resolve_compute_target(target)
+        effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
+        response = self._executor_request(
+            {
+                "schema": "flagquantum.jiuding.workspace_executor",
+                "version": "1.1",
+                "operation": "measurements" if measurements else "statevector",
+                "request_id": uuid.uuid4().hex,
+                "target": effective_target,
+                "program": ir.to_dict(),
+            },
+            port=port,
+            timeout=timeout,
+        )
+        return response, effective_target
 
     def workspace_state(self, reference: str) -> dict:
         """Return the current non-secret state of one project workspace."""
@@ -1067,7 +1169,7 @@ class JiudingClient:
                 )
 
 
-def run_statevector(program, *, target: str):
+def run(program, *, target: str, outputs=None):
     """Execute through the process-local resident Jiuding workspace client."""
 
     workspace = os.environ.get("JIUDING_WORKSPACE", "").strip()
@@ -1075,4 +1177,4 @@ def run_statevector(program, *, target: str):
     if client is None:
         client = JiudingClient(workspace=workspace or None)
         _DEFAULT_CLIENTS[workspace] = client
-    return client.run_statevector(program, target=target)
+    return client.run(program, target=target, outputs=outputs)

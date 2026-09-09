@@ -8,10 +8,11 @@ import json
 import socket
 import struct
 import time
+from dataclasses import replace
 from typing import Any
 
 SCHEMA = "flagquantum.jiuding.workspace_executor"
-VERSION = "1.0"
+VERSION = "1.1"
 MAX_MESSAGE_BYTES = 8 * 1024 * 1024
 
 
@@ -47,18 +48,26 @@ def write_message(stream: Any, value: dict[str, Any]) -> None:
     stream.flush()
 
 
-def _encode_state(state: Any) -> dict[str, Any]:
+def _encode_tensor(value: Any) -> dict[str, Any]:
     import torch
 
-    flat = state.detach().contiguous().reshape(-1).cpu()
-    real_dtype = torch.float32 if flat.dtype == torch.complex64 else torch.float64
-    if flat.dtype not in (torch.complex64, torch.complex128):
-        raise TypeError(f"unsupported state dtype {flat.dtype}")
-    data = flat.view(real_dtype).numpy().tobytes()
+    flat = value.detach().contiguous().reshape(-1).cpu()
+    if flat.dtype not in (
+        torch.float32,
+        torch.float64,
+        torch.complex64,
+        torch.complex128,
+    ):
+        raise TypeError(f"unsupported result dtype {flat.dtype}")
+    storage = (
+        flat.view(torch.float32)
+        if flat.dtype == torch.complex64
+        else flat.view(torch.float64) if flat.dtype == torch.complex128 else flat
+    )
     return {
         "dtype": str(flat.dtype).removeprefix("torch."),
-        "shape": list(state.shape),
-        "data": base64.b64encode(data).decode("ascii"),
+        "shape": list(value.shape),
+        "data": base64.b64encode(storage.numpy().tobytes()).decode("ascii"),
     }
 
 
@@ -82,7 +91,7 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
                 platform.is_available() if device.startswith("cuda") else False
             ),
         }
-    if operation != "statevector":
+    if operation not in {"statevector", "measurements"}:
         raise ValueError(f"unsupported workspace executor operation {operation!r}")
     if request.get("target") != target:
         raise ValueError("request target does not match the resident executor target")
@@ -92,6 +101,16 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
     from flagquantum.runtime.options import ExecutionOptions
 
     program = CircuitIR.from_dict(request["program"])
+    measurements = program.measurements
+    if operation == "measurements":
+        if not measurements:
+            raise ValueError("measurement execution requires at least one request")
+        supported = {"expectation_identity", "expectation_ps", "probabilities"}
+        if any(item.kind not in supported for item in measurements):
+            raise ValueError(
+                "resident execution supports probabilities and expectations only"
+            )
+    program = replace(program, measurements=())
     started = time.perf_counter()
     result = run(
         program,
@@ -107,26 +126,45 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
     from flagquantum.compute import get_platform_runtime
 
     platform = get_platform_runtime(state.device.type)
-    platform.synchronize(state.device)
-    elapsed = time.perf_counter() - started
     accelerator = next(
         (item.name for item in platform.discover() if item.device == state.device), ""
     )
-    return {
+    response: dict[str, Any] = {
         "schema": SCHEMA,
         "version": VERSION,
         "ok": True,
         "request_id": request.get("request_id"),
-        "state": _encode_state(state),
         "evidence": {
             "target": target,
             "device": str(state.device),
             "dtype": str(state.dtype).removeprefix("torch."),
-            "elapsed_seconds": elapsed,
             "cpu_fallback_used": False,
             "accelerator": accelerator,
         },
     }
+    if operation == "statevector":
+        platform.synchronize(state.device)
+        response["evidence"]["elapsed_seconds"] = time.perf_counter() - started
+        response["state"] = _encode_tensor(state)
+        return response
+
+    from flagquantum.runtime.measurements import execute_measurements
+
+    results = execute_measurements(state, measurements, n_wires=program.n_wires)
+    platform.synchronize(state.device)
+    response["evidence"]["elapsed_seconds"] = time.perf_counter() - started
+    response["measurements"] = [
+        {
+            "kind": item.kind,
+            "wires": list(item.wires),
+            "value": _encode_tensor(item.value),
+            "shots": item.shots,
+            "metadata": dict(item.metadata),
+            "statistics": dict(item.statistics),
+        }
+        for item in results
+    ]
+    return response
 
 
 def serve(*, host: str, port: int, target: str, device: str) -> None:

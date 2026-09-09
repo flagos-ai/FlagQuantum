@@ -2,6 +2,7 @@
 
 import base64
 import io
+from dataclasses import replace
 
 import pytest
 import torch
@@ -9,6 +10,7 @@ import torch
 import flagquantum as fq
 from flagquantum.remote.compute import _workspace_executor as executor
 from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.runtime.result import ExecutionResult
 
 pytestmark = pytest.mark.unit
 
@@ -33,6 +35,44 @@ def test_cpu_executor_runs_bell_state_and_reports_actual_path():
     assert response["request_id"] == "bell"
     assert response["evidence"]["device"] == "cpu"
     assert response["evidence"]["cpu_fallback_used"] is False
+
+
+def test_cpu_executor_returns_measurements_without_statevector():
+    from flagquantum.observables import lower_outputs
+
+    ir = fq.Circuit(2).h(0).cx(0, 1).to_ir()
+    measurements = lower_outputs(
+        (
+            fq.probabilities(),
+            fq.expectation(fq.X(0) @ fq.X(1), name="xx"),
+        ),
+        n_wires=2,
+        shots=None,
+    )
+    assert measurements is not None
+    request = {
+        "schema": executor.SCHEMA,
+        "version": executor.VERSION,
+        "operation": "measurements",
+        "request_id": "bell-measurements",
+        "target": "jiuding:cpu",
+        "program": replace(ir, measurements=measurements).to_dict(),
+    }
+
+    response = executor.execute(request, target="jiuding:cpu", device="cpu")
+
+    assert "state" not in response
+    probabilities, expectation = response["measurements"]
+    probability_values = torch.frombuffer(
+        bytearray(base64.b64decode(probabilities["value"]["data"])),
+        dtype=torch.float32,
+    ).reshape(probabilities["value"]["shape"])
+    expectation_value = torch.frombuffer(
+        bytearray(base64.b64decode(expectation["value"]["data"])),
+        dtype=torch.float32,
+    ).reshape(expectation["value"]["shape"])
+    torch.testing.assert_close(probability_values, torch.tensor([[0.5, 0.0, 0.0, 0.5]]))
+    torch.testing.assert_close(expectation_value, torch.tensor([1.0]))
 
 
 def test_protocol_round_trip_and_size_limit():
@@ -133,18 +173,64 @@ def test_default_workspace_client_is_reused(monkeypatch):
     monkeypatch.setenv("JIUDING_WORKSPACE", "flagquantum-runtime")
     clients = []
 
-    def execute(client, program, *, target):
+    def execute(client, program, *, target, outputs=None):
         clients.append(client)
         return program
 
-    monkeypatch.setattr(JiudingClient, "run_statevector", execute)
+    monkeypatch.setattr(JiudingClient, "run", execute)
     circuit = fq.Circuit(1)
 
-    assert jiuding.run_statevector(circuit, target="jiuding:gpu") is circuit
-    assert jiuding.run_statevector(circuit, target="jiuding:gpu") is circuit
+    assert jiuding.run(circuit, target="jiuding:gpu") is circuit
+    assert jiuding.run(circuit, target="jiuding:gpu") is circuit
     assert clients[0] is clients[1]
     assert clients[0].workspace_name == "flagquantum-runtime"
     jiuding._DEFAULT_CLIENTS.clear()
+
+
+def test_client_reconstructs_remote_measurement_results(monkeypatch):
+    client = JiudingClient(workspace="test")
+    value = torch.tensor([[0.25, 0.75]], dtype=torch.float32)
+    encoded = base64.b64encode(value.numpy().tobytes()).decode()
+    monkeypatch.setattr(
+        client,
+        "_execute",
+        lambda *_, **__: (
+            {
+                "measurements": [
+                    {
+                        "kind": "probabilities",
+                        "wires": [0],
+                        "value": {
+                            "dtype": "float32",
+                            "shape": [1, 2],
+                            "data": encoded,
+                        },
+                        "shots": None,
+                        "metadata": {"fq_output_index": 0},
+                        "statistics": {},
+                    }
+                ],
+                "evidence": {
+                    "device": "cuda:0",
+                    "elapsed_seconds": 0.01,
+                    "accelerator": "A100",
+                    "cpu_fallback_used": False,
+                },
+            },
+            "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+        ),
+    )
+
+    result = client.run(
+        fq.Circuit(1),
+        target="jiuding:gpu",
+        outputs=fq.probabilities(),
+    )
+
+    assert isinstance(result, ExecutionResult)
+    torch.testing.assert_close(result.probabilities, value)
+    assert result.state is None
+    assert result.runtime["device"] == "cuda:0"
 
 
 def test_start_executor_reuses_verified_health(monkeypatch):
