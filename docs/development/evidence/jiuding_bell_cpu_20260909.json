@@ -1,0 +1,52 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "base_commit": "9cd38efc",
+  "scope": "CPU forward Bell-state example; experimental adapter",
+  "experimentId": "2ce1d352-56e8-4de9-ab87-50140d3839ce",
+  "jobId": "33295f22-cce9-4c66-8782-c5fd23cea908",
+  "status": "Succeed",
+  "resources": [
+    {
+      "name": "Master",
+      "replicas": 1,
+      "resourceRequestDetail": {
+        "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+        "acceleratorCount": 0,
+        "cpuCores": 2,
+        "memGib": 2,
+        "sharedMemGib": 1,
+        "acceleratorResourceName": "nvidia.com/gpu",
+        "rdmaSharedCount": 0,
+        "fbMemGib": "0",
+        "cpuModel": "",
+        "acceleratorMemGib": 0
+      },
+      "extraLabelInfo": {},
+      "resourceRegion": "ACCELERATOR_SUITE"
+    }
+  ],
+  "result": {
+    "run_id": "15ce99766ab74c8aa3e093d1eb8da5b3",
+    "value": {
+      "framework": "FlagQuantum",
+      "version": "0.2.0",
+      "qubits": 2,
+      "device": "cpu",
+      "dtype": "torch.complex64",
+      "probabilities": [
+        0.4999999701976776,
+        0.0,
+        0.0,
+        0.4999999701976776
+      ],
+      "max_abs_error": 0.0
+    }
+  },
+  "scientific_result_retrieved": true,
+  "scalability_claim_allowed": false,
+  "notes": [
+    "Not a released provider contract",
+    "No GPU, distributed or training validation"
+  ]
+}

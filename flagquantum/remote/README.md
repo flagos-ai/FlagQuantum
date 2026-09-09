@@ -18,3 +18,7 @@ control-plane test double lives in `flagquantum.testing`; it is not a local
 compute implementation. Run `python -m pytest
 tests/test_amazon_braket_provider.py tests/test_cloud_providers.py
 tests/test_quafu_calibration.py -q`.
+
+The first classical compute adapter now lives under [`compute/`](compute/README.md).
+Its experimental Jiuding path submits one CPU Python task from an existing
+workspace and reads a shared result; it does not extend the QPU result model.

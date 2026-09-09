@@ -22,3 +22,8 @@ audit and release policy.
 Planned capabilities belong in roadmap documents labeled **future intent**.
 They do not appear as supported rows here until executable manifests and tests
 exist.
+
+Unpromoted implementation evidence: the experimental
+[Jiuding CPU adapter guide](../guides/JIUDING.md) links its concrete task journey
+and limits. Its [Bell-state task record](../development/evidence/jiuding_bell_cpu_20260909.json)
+is development evidence, not a new supported row or a capability promotion.
