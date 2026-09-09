@@ -1,0 +1,58 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "implementation_commit": "59a517cd",
+  "scope": "Resident computational- and Pauli-basis samples and counts through fq.run",
+  "image": {
+    "id": "b530c8fe-7c8e-437c-806c-0403efce2f2a",
+    "name": "flagquantum-runtime",
+    "tag": "v0.2.0-59a517cd-cu128-a100",
+    "build_id": "185",
+    "status": 10,
+    "wheel_sha256": "ae46789659b29acc884fe2b215a7d2eeeb44532fe8281196907c75be8834c4f1"
+  },
+  "workspace": {
+    "id": "aba3ed62-08df-4b08-8f1e-9305657633ba",
+    "name": "flagquantum-runtime-a100",
+    "status_after_validation": 1,
+    "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+    "accelerator_count": 1,
+    "cpu_cores": 4,
+    "memory_gib": 16
+  },
+  "replaced_workspace": {
+    "id": "6950cd8c-0181-43ca-adb0-afa44bcf40ef",
+    "name": "flagquantum-runtime-gpu",
+    "final_status": 2,
+    "stopped_after_replacement": true
+  },
+  "result": {
+    "program": "two-qubit Bell state",
+    "shots_per_output": 256,
+    "selected_target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "device": "cuda:0",
+    "sample_shape": [1, 256, 2],
+    "computational_counts_cold": [{"00": 126, "11": 130}],
+    "computational_counts_warm": [{"00": 122, "11": 134}],
+    "pauli_xx_counts_cold": [{"00": 120, "11": 136}],
+    "pauli_xx_counts_warm": [{"00": 133, "11": 123}],
+    "cold_total_seconds": 21.65510775000439,
+    "cold_remote_seconds": 0.5643015149980783,
+    "warm_total_seconds": 0.02497679200314451,
+    "warm_remote_seconds": 0.00761760026216507,
+    "cpu_fallback_used": false,
+    "statevector_transferred": false,
+    "result_transfer": "device_to_host",
+    "counts_aggregation": "host"
+  },
+  "claims": {
+    "computational_basis_sampling_validated": true,
+    "pauli_basis_sampling_validated": true,
+    "counts_shot_accounting_validated": true,
+    "full_state_transfer_avoided": true,
+    "single_gpu_forward_validated": true,
+    "training_validated": false,
+    "multi_gpu_validated": false,
+    "multi_node_validated": false
+  }
+}

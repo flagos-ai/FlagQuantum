@@ -74,3 +74,9 @@ Pauli-expectation reduction. Its wheel SHA-256 is
 `3f8d0b4d1cef2fca0276cf8deb3ee81bede2050cddff0e0db94a94f7c1a205c3`; live
 measurements are recorded in
 [`jiuding_remote_measurements_20260909.json`](../../docs/development/evidence/jiuding_remote_measurements_20260909.json).
+
+The `v0.2.0-59a517cd-cu128-a100` build adds resident computational- and
+Pauli-basis samples and counts. Its wheel SHA-256 is
+`ae46789659b29acc884fe2b215a7d2eeeb44532fe8281196907c75be8834c4f1`; live
+results and the device-to-host boundary are recorded in
+[`jiuding_remote_sampling_20260909.json`](../../docs/development/evidence/jiuding_remote_sampling_20260909.json).

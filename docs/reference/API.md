@@ -288,6 +288,25 @@ Use `result.measurement(index_or_name)` for a specific request,
 when intentionally depending on an unstable backend-native object. Backend
 attributes are not implicitly forwarded through `ExecutionResult`.
 
+The same output requests work on a resident Jiuding compute target. Sampling
+and count reduction execute without returning the full statevector:
+
+```python
+result = fq.run(
+    circuit,
+    target="jiuding:gpu",
+    outputs=(fq.samples(wires=(0, 1)), fq.counts(wires=(0, 1))),
+    shots=1024,
+)
+
+bit_samples = result.require_samples()
+outcome_counts = result.counts
+```
+
+Set `JIUDING_WORKSPACE` when calling from outside the workspace. Inspect
+`result.runtime` and `result.provenance` for the selected device, result
+transfer, counts aggregation, and CPU-fallback evidence.
+
 ## Noise
 
 Stable noisy execution accepts a `flagquantum.noise.NoiseModel` during planning:
