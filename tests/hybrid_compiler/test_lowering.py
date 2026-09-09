@@ -6,6 +6,7 @@ import torch
 from flagquantum.compiler import optimize
 from flagquantum.compiler._hybrid import (
     CircuitStructureCache,
+    SpecializationError,
     capture_source,
     specialize_and_lower,
     tensor_type,
@@ -198,3 +199,18 @@ def test_parameter_values_are_excluded_from_template_identity() -> None:
 
     assert first.selected_structure_identity == second.selected_structure_identity
     assert first.circuit_template.content_hash == second.circuit_template.content_hash
+
+
+def test_lowering_exposes_and_can_reject_nonsmooth_control_boundary() -> None:
+    data = torch.zeros(4, dtype=torch.float64)
+    weights = torch.zeros((1, 4), dtype=torch.float64)
+
+    lowered = specialize_and_lower(program(), (weights, data))
+
+    assert lowered.nonsmooth_control_decisions
+    with pytest.raises(SpecializationError, match="gradient.nonsmooth_control"):
+        specialize_and_lower(
+            program(),
+            (weights, data),
+            require_smooth_gradients=True,
+        )

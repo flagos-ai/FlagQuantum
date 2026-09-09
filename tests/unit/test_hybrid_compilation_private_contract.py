@@ -156,3 +156,37 @@ def test_phase4_reuses_existing_execution_and_result_contracts() -> None:
     assert phase4["public_api_change"] is False
     assert phase4["default_path_change"] is False
     assert contract["phase4_completed"] is True
+
+
+def test_phase5_reuses_adjoint_and_preserves_branchwise_tensor_vjp() -> None:
+    contract = _contract()
+    phase5 = contract["phase5"]
+
+    assert phase5["compiler_handoff_artifact"] == "flagquantum.core.ir.CircuitIR"
+    assert phase5["gradient_executor"].endswith(
+        ".execute_torch_distributed_statevector_reverse"
+    )
+    assert phase5["gradient_method"] == "statevector_adjoint"
+    assert phase5["execution_scope"] == "local_cpu_single_device_fast_path"
+    assert phase5["observable_profile"] == "sum_of_single_wire_pauli_z_terms"
+    assert phase5["forward_execution_count"] == 1
+    assert phase5["adjoint_seed"] == "sum_of_observable_term_adjoints"
+    assert phase5["source_tensor_views_preserved"] is True
+    assert phase5["control_flow_gradient"] == "selected_branch_only"
+    assert phase5["predicate_gradient"] is False
+    assert phase5["comparison_boundary"] == "fail_closed_when_smoothness_is_required"
+    assert phase5["reference_methods"] == [
+        "dense_pytorch_autograd",
+        "central_finite_difference",
+    ]
+    assert phase5["parameter_shift_execution_fallback"] is False
+    assert phase5["optimizer_acceptance"] == "seeded_objective_decreases"
+    assert phase5["higher_order_gradient_claim"] is False
+    assert phase5["finite_shot_gradient_claim"] is False
+    assert phase5["noisy_gradient_claim"] is False
+    assert phase5["accelerator_gradient_claim"] is False
+    assert phase5["distributed_gradient_claim"] is False
+    assert phase5["performance_claim"] is False
+    assert phase5["public_api_change"] is False
+    assert phase5["default_path_change"] is False
+    assert contract["phase5_completed"] is True

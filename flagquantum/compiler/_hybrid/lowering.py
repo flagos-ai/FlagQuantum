@@ -25,6 +25,7 @@ class LoweredHybridProgram:
     selected_structure_identity: str
     cache_event: str
     evicted_cache_key: str | None = None
+    nonsmooth_control_decisions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "bindings", MappingProxyType(dict(self.bindings)))
@@ -162,6 +163,7 @@ def lower_trace(
         selected_structure_identity=structure_identity,
         cache_event=event,
         evicted_cache_key=evicted,
+        nonsmooth_control_decisions=trace.nonsmooth_control_decisions,
     )
 
 
@@ -171,11 +173,15 @@ def specialize_and_lower(
     *,
     circuit_dtype: str = "complex64",
     max_unrolled_iterations: int = 10_000,
+    require_smooth_gradients: bool = False,
     cache: CircuitStructureCache | None = None,
 ) -> LoweredHybridProgram:
     """Specialize one path and lower it without numerical execution."""
 
     trace = specialize_program(
-        program, inputs, max_unrolled_iterations=max_unrolled_iterations
+        program,
+        inputs,
+        max_unrolled_iterations=max_unrolled_iterations,
+        require_smooth_gradients=require_smooth_gradients,
     )
     return lower_trace(trace, circuit_dtype=circuit_dtype, cache=cache)

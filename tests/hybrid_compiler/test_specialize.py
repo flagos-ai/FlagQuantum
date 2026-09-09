@@ -88,6 +88,25 @@ def test_branch_change_changes_selected_structure_identity() -> None:
     assert first.structure_identity != second.structure_identity
 
 
+def test_ordered_comparison_boundary_is_observable_and_optionally_rejected() -> None:
+    data = torch.zeros(4, dtype=torch.float64)
+    weights = torch.zeros((1, 4), dtype=torch.float64)
+
+    trace = specialize_program(program(), (weights, data))
+
+    assert trace.nonsmooth_control_decisions
+    assert set(trace.nonsmooth_control_decisions) == {
+        "gt:equality_boundary",
+        "lt:equality_boundary",
+    }
+    with pytest.raises(SpecializationError, match="gradient.nonsmooth_control"):
+        specialize_program(
+            program(),
+            (weights, data),
+            require_smooth_gradients=True,
+        )
+
+
 def test_runtime_input_signature_is_validated_before_specialization() -> None:
     invalid_data = torch.zeros(5, dtype=torch.float64)
     weights = torch.zeros((1, 4), dtype=torch.float64)

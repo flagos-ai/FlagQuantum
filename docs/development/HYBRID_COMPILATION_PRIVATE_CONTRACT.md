@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-4 implemented and verified under the repository owner's
+Status: Phases 1-5 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -223,4 +223,51 @@ expectation per batch item. The result reports `local_statevector` and
 `single_device_fast_path`. No Runtime, Simulation, root API, public contract, or
 default-path implementation changed. Unknown observable axes now fail during
 private Program IR verification rather than acquiring an accidental execution
-meaning. Phase 5 VJP work remains separately gated.
+meaning. That forward handoff is the input to the separately reviewed Phase 5
+contract below.
+
+## Phase 5 local CPU VJP authorization
+
+Phase 5 may connect the bound `CircuitIR` to the existing Runtime-owned
+statevector reverse executor. The accepted observable profile is a sum of one
+or more single-wire Pauli-Z terms. Runtime may extend its internal reverse
+executor from one Z wire to several Z wires by evaluating the circuit once and
+constructing one adjoint seed equal to the sum of the term adjoints. Numerical
+gate derivatives and statevector primitives remain Simulation-owned.
+
+The gradient chain must preserve the original PyTorch scalar tensor views used
+by lowering. Backward therefore accumulates from the existing private adjoint
+result through those views into the original `weights` and `data` tensors;
+host scalar conversion, detachment, NumPy conversion, or replacement by copied
+leaf tensors is forbidden.
+
+Control-flow derivatives are branchwise. Backward follows only the gates
+selected during the corresponding forward specialization; comparison
+predicates themselves are not differentiated. Equality at an ordered
+comparison threshold is a non-smooth control boundary. Specialization must
+record such boundaries and, when smooth gradients are explicitly required,
+fail with a Compiler-owned diagnostic before lowering or execution.
+
+Acceptance compares the adjoint VJP against dense PyTorch statevector autograd
+and central finite differences away from branch boundaries. Parameter shift is
+not an execution fallback. A deterministic optimization check must decrease a
+seeded objective over multiple steps. The reverse result summary must identify
+the adjoint method, observable profile, selected wires, and local
+`single_device_fast_path` semantics.
+
+This authorization does not cover higher-order derivatives, finite-shot or
+noisy gradients, general Pauli strings or weighted Hamiltonians, accelerators,
+distributed-gradient claims, performance claims, a public hybrid API, or a
+change to the default `fq.run`/`fq.plan` path.
+
+Phase 5 acceptance is complete. The existing statevector adjoint executor now
+supports a sum of single-wire Z terms using one forward state and one combined
+adjoint seed while preserving its original single-wire call form. Positive,
+negative, and mixed branch paths match both dense PyTorch statevector autograd
+and central finite differences for the original `weights` and `data` tensors.
+A six-step deterministic optimization trajectory decreases monotonically.
+Ordered-comparison equality boundaries are recorded and fail before lowering
+when smooth gradients are required. The result summary exposes
+`statevector_adjoint`, the accepted observable profile, selected wires, and
+local backward semantics. Phase 6 PyTorch graph-compilation work remains
+separately gated.

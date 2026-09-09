@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Sequence
 
 import torch
 import torch.distributed as dist
@@ -38,20 +38,20 @@ def _communication_aware_layout_enabled() -> bool:
 
 
 def _communication_aware_wire_layout(
-    ir: CircuitIR, *, observable_wire: int, world_size: int
-) -> tuple[CircuitIR, int, tuple[int, ...]]:
+    ir: CircuitIR, *, observable_wires: tuple[int, ...], world_size: int
+) -> tuple[CircuitIR, tuple[int, ...], tuple[int, ...]]:
     """Use the shared alignment-aware layout for differentiable execution."""
 
     if not _communication_aware_layout_enabled():
         identity = tuple(range(ir.n_wires))
-        return ir, observable_wire, identity
+        return ir, observable_wires, identity
     remapped, permutation = communication_aware_wire_layout(
         ir,
         world_size=world_size,
-        preferred_local_wires=(observable_wire,),
+        preferred_local_wires=observable_wires,
         optimization_target="training_step",
     )
-    return remapped, permutation[observable_wire], permutation
+    return remapped, tuple(permutation[wire] for wire in observable_wires), permutation
 
 
 def _parameter_layout(
@@ -93,6 +93,7 @@ class TorchDistributedStatevectorGradientResult:
     local_amplitudes: int
     total_amplitudes: int
     logical_to_physical_wires: tuple[int, ...]
+    observable_wires: tuple[int, ...]
     layout_optimization_target: str
     backward_evidence: BackwardExecutionEvidence
 
@@ -134,6 +135,9 @@ class TorchDistributedStatevectorGradientResult:
             "backend": self.backend,
             "logical_to_physical_wires": self.logical_to_physical_wires,
             "layout_optimization_target": self.layout_optimization_target,
+            "gradient_method": "statevector_adjoint",
+            "observable_profile": "sum_of_single_wire_pauli_z_terms",
+            "observable_wires": self.observable_wires,
             "distribution_semantics": (
                 "sharded_across_ranks"
                 if self.world_size > 1
@@ -252,17 +256,17 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         ir: CircuitIR,
         slots: tuple[tuple[int, str, int], ...],
         policy: StatevectorCheckpointPolicy,
-        observable_wire: int,
+        observable_wires: tuple[int, ...],
         device: torch.device,
         process_group: Any | None,
         evidence: BackwardExecutionEvidence,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
-        from .reverse_adjoint import _local_expectation_z
+        from .reverse_adjoint import _local_expectation_z_sum
 
         ctx.slots = slots
         ctx.policy = policy
-        ctx.observable_wire = observable_wire
+        ctx.observable_wires = observable_wires
         ctx.device = device
         ctx.process_group = process_group
         ctx.evidence = evidence
@@ -294,11 +298,13 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
             if policy.strategy == "reversible_adjoint"
             else ()
         )
-        value = _local_expectation_z(
+        value = _local_expectation_z_sum(
             result.shard_state,
             plan=result.plan,
             n_wires=ir.n_wires,
-            wire=result.logical_to_physical_wires[observable_wire],
+            wires=tuple(
+                result.logical_to_physical_wires[wire] for wire in observable_wires
+            ),
         )
         if dist.is_initialized() and dist.get_world_size(process_group) > 1:
             dist.all_reduce(value, op=dist.ReduceOp.SUM, group=process_group)
@@ -352,7 +358,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
                     ctx.ir,
                     ctx.slots,
                     ctx.saved_tensors,
-                    observable_wire=ctx.observable_wire,
+                    observable_wires=ctx.observable_wires,
                     device=ctx.device,
                     policy=ctx.policy,
                     process_group=ctx.process_group,
@@ -403,15 +409,26 @@ def execute_torch_distributed_statevector_reverse(
     circuit_or_ir: Any,
     *,
     observable_wire: int = 0,
+    observable_wires: Sequence[int] | None = None,
     checkpoint_policy: StatevectorCheckpointPolicy | None = None,
     device: torch.device | str | None = None,
     process_group: Any | None = None,
 ) -> TorchDistributedStatevectorGradientResult:
-    """Return a differentiable global Z expectation from rank-local shards."""
+    """Return a differentiable global sum of single-wire Z expectations."""
 
     ir = ensure_circuit_ir(circuit_or_ir)
-    if observable_wire < 0 or observable_wire >= ir.n_wires:
-        raise ValueError(f"observable wire {observable_wire} is outside the circuit")
+    selected_observable_wires = (
+        (observable_wire,) if observable_wires is None else tuple(observable_wires)
+    )
+    if not selected_observable_wires:
+        raise ValueError("observable_wires must contain at least one wire")
+    if any(type(wire) is not int for wire in selected_observable_wires):
+        raise TypeError("observable wires must be integers")
+    outside = tuple(
+        wire for wire in selected_observable_wires if wire < 0 or wire >= ir.n_wires
+    )
+    if outside:
+        raise ValueError(f"observable wires {outside} are outside the circuit")
     backend = (
         dist.get_backend(process_group) if dist.is_initialized() else "single_process"
     )
@@ -428,10 +445,12 @@ def execute_torch_distributed_statevector_reverse(
         )
     (
         execution_ir,
-        execution_observable_wire,
+        execution_observable_wires,
         execution_mapping,
     ) = _communication_aware_wire_layout(
-        ir, observable_wire=observable_wire, world_size=world_size
+        ir,
+        observable_wires=selected_observable_wires,
+        world_size=world_size,
     )
     if _persistent_wire_layout_enabled() and world_size > 1:
         execution_ir = schedule_statevector_dependency_dag(
@@ -477,7 +496,7 @@ def execute_torch_distributed_statevector_reverse(
         execution_ir,
         slots,
         policy,
-        execution_observable_wire,
+        execution_observable_wires,
         resolved_device,
         process_group,
         evidence,
@@ -496,6 +515,7 @@ def execute_torch_distributed_statevector_reverse(
         local_amplitudes=plan.shards[rank].local_amplitudes,
         total_amplitudes=plan.total_amplitudes,
         logical_to_physical_wires=execution_mapping,
+        observable_wires=selected_observable_wires,
         layout_optimization_target="training_step",
         backward_evidence=evidence,
     )

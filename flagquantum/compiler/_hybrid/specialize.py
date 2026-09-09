@@ -57,6 +57,7 @@ class SpecializedTrace:
     gates: tuple[TraceGate, ...]
     observables: tuple[tuple[str, int], ...]
     control_decisions: tuple[str, ...]
+    nonsmooth_control_decisions: tuple[str, ...]
 
     @property
     def structure_identity(self) -> str:
@@ -184,6 +185,7 @@ class _Specializer:
         self.gates: list[TraceGate] = []
         self.observables: tuple[tuple[str, int], ...] = ()
         self.control_decisions: list[str] = []
+        self.nonsmooth_control_decisions: list[str] = []
 
     def fail(self, operation: Operation, code: str, message: str) -> NoReturn:
         raise SpecializationError(code, message, operation.location)
@@ -267,6 +269,7 @@ class _Specializer:
             except (RuntimeError, TypeError, ValueError, ZeroDivisionError) as exc:
                 self.fail(operation, "arith.remainder", f"remainder failed: {exc}")
         if name == "arith.cmp":
+            predicate = operation.attributes["predicate"]
             comparisons = {
                 "eq": lambda: operands[0] == operands[1],
                 "ne": lambda: operands[0] != operands[1],
@@ -275,7 +278,14 @@ class _Specializer:
                 "gt": lambda: operands[0] > operands[1],
                 "ge": lambda: operands[0] >= operands[1],
             }
-            return (comparisons[operation.attributes["predicate"]](),)
+            result = comparisons[predicate]()
+            if predicate in {"lt", "le", "gt", "ge"} and self.as_predicate(
+                operation, operands[0] == operands[1]
+            ):
+                self.nonsmooth_control_decisions.append(
+                    f"{predicate}:equality_boundary"
+                )
+            return (result,)
         if name == "scf.if":
             selected = self.as_predicate(operation, operands[0])
             self.control_decisions.append(f"if:{str(selected).lower()}")
@@ -401,9 +411,12 @@ def specialize_program(
     inputs: Sequence[Any],
     *,
     max_unrolled_iterations: int = 10_000,
+    require_smooth_gradients: bool = False,
 ) -> SpecializedTrace:
     """Select one bounded runtime path without executing numerical kernels."""
 
+    if type(require_smooth_gradients) is not bool:
+        raise TypeError("require_smooth_gradients must be a bool")
     verify_program(program)
     entry = program.body.blocks[0]
     declared_inputs = entry.arguments[:-1]
@@ -424,10 +437,17 @@ def specialize_program(
         raise SpecializationError(
             "quantum.observable", "specialized program produced no observable"
         )
+    if require_smooth_gradients and specializer.nonsmooth_control_decisions:
+        raise SpecializationError(
+            "gradient.nonsmooth_control",
+            "runtime inputs lie on an ordered-comparison boundary; "
+            "branchwise smooth gradients are undefined",
+        )
     return SpecializedTrace(
         program_identity=program.semantic_identity,
         input_signature_identity=input_identity,
         gates=tuple(specializer.gates),
         observables=specializer.observables,
         control_decisions=tuple(specializer.control_decisions),
+        nonsmooth_control_decisions=tuple(specializer.nonsmooth_control_decisions),
     )

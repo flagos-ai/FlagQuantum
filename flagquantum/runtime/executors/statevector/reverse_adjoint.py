@@ -112,6 +112,49 @@ def _local_expectation_z_adjoint(
     return adjoint
 
 
+def _local_expectation_z_sum(
+    shard_state: Any, *, plan: Any, n_wires: int, wires: tuple[int, ...]
+) -> torch.Tensor:
+    """Evaluate a sum of single-wire Z terms from one final shard state."""
+
+    total = torch.zeros(
+        (),
+        dtype=shard_state.amplitudes.real.dtype,
+        device=shard_state.amplitudes.device,
+    )
+    for wire in wires:
+        total = total + _local_expectation_z(
+            shard_state,
+            plan=plan,
+            n_wires=n_wires,
+            wire=wire,
+        )
+    return total
+
+
+def _local_expectation_z_sum_adjoint(
+    shard_state: Any, *, plan: Any, n_wires: int, wires: tuple[int, ...]
+) -> torch.Tensor:
+    """Construct one adjoint seed for a sum of single-wire Z terms."""
+
+    adjoint = torch.zeros_like(shard_state.amplitudes)
+    local_count = shard_state.shard.local_amplitudes
+    with torch.no_grad():
+        for start in range(0, local_count, _reverse_chunk_amplitudes()):
+            end = min(local_count, start + _reverse_chunk_amplitudes())
+            indices = _storage_global_indices(shard_state, start, end, plan=plan)
+            for wire in wires:
+                adjoint[:, start:end].add_(
+                    _z_expectation_adjoint_chunk(
+                        shard_state.amplitudes[:, start:end],
+                        indices,
+                        n_wires=n_wires,
+                        wire=wire,
+                    )
+                )
+    return adjoint
+
+
 def _apply_one_gate(
     shard_state: Any,
     *,
@@ -376,7 +419,7 @@ def _explicit_sharded_adjoint(
     slots: tuple[tuple[int, str, int], ...],
     saved_parameters: tuple[torch.Tensor, ...],
     *,
-    observable_wire: int,
+    observable_wires: tuple[int, ...],
     device: torch.device,
     policy: StatevectorCheckpointPolicy,
     process_group: Any | None = None,
@@ -511,9 +554,14 @@ def _explicit_sharded_adjoint(
         )
     )
     evidence.saved_forward_state_reused = saved_final_state is not None
-    final_observable_wire = persistent_mapping[observable_wire]
-    adjoint = _local_expectation_z_adjoint(
-        final_state, plan=plan, n_wires=ir.n_wires, wire=final_observable_wire
+    final_observable_wires = tuple(
+        persistent_mapping[wire] for wire in observable_wires
+    )
+    adjoint = _local_expectation_z_sum_adjoint(
+        final_state,
+        plan=plan,
+        n_wires=ir.n_wires,
+        wires=final_observable_wires,
     )
     reversible_state = final_state if policy.strategy == "reversible_adjoint" else None
     if reversible_state is None:

@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase4_local_cpu_forward_verified",
+  "status": "phase5_local_cpu_vjp_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -177,6 +177,34 @@
     "default_path_change": false
   },
   "phase4_completed": true,
+  "phase5": {
+    "compiler_handoff_artifact": "flagquantum.core.ir.CircuitIR",
+    "gradient_executor": "flagquantum.runtime.executors.statevector.reverse.execute_torch_distributed_statevector_reverse",
+    "gradient_method": "statevector_adjoint",
+    "execution_scope": "local_cpu_single_device_fast_path",
+    "observable_profile": "sum_of_single_wire_pauli_z_terms",
+    "forward_execution_count": 1,
+    "adjoint_seed": "sum_of_observable_term_adjoints",
+    "source_tensor_views_preserved": true,
+    "control_flow_gradient": "selected_branch_only",
+    "predicate_gradient": false,
+    "comparison_boundary": "fail_closed_when_smoothness_is_required",
+    "reference_methods": [
+      "dense_pytorch_autograd",
+      "central_finite_difference"
+    ],
+    "parameter_shift_execution_fallback": false,
+    "optimizer_acceptance": "seeded_objective_decreases",
+    "higher_order_gradient_claim": false,
+    "finite_shot_gradient_claim": false,
+    "noisy_gradient_claim": false,
+    "accelerator_gradient_claim": false,
+    "distributed_gradient_claim": false,
+    "performance_claim": false,
+    "public_api_change": false,
+    "default_path_change": false
+  },
+  "phase5_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

@@ -243,6 +243,60 @@ def test_parameter_shift_and_finite_difference_match_native_vjp():
     assert float(theta.grad) == pytest.approx(finite_difference, abs=2e-4)
 
 
+def test_multi_z_sum_uses_one_forward_and_one_combined_adjoint(monkeypatch):
+    import flagquantum.runtime.executors.statevector.reverse as reverse
+
+    calls = 0
+    execute_forward = reverse.execute_torch_distributed_statevector
+
+    def counted_forward(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return execute_forward(*args, **kwargs)
+
+    monkeypatch.setattr(
+        reverse,
+        "execute_torch_distributed_statevector",
+        counted_forward,
+    )
+    theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
+    phi = torch.tensor(-0.37, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(2, dtype=torch.complex128).rx(0, theta).ry(1, phi).cx(0, 1)
+    dense = circuit.expectation_z(0) + circuit.expectation_z(1)
+    expected = torch.autograd.grad(dense, (theta, phi), retain_graph=True)
+
+    result = execute_torch_distributed_statevector_reverse(
+        circuit,
+        observable_wires=(0, 1),
+    )
+    result.backward()
+
+    assert calls == 1
+    torch.testing.assert_close(result.value, dense.squeeze(), atol=1e-10, rtol=1e-10)
+    torch.testing.assert_close(theta.grad, expected[0], atol=1e-10, rtol=1e-10)
+    torch.testing.assert_close(phi.grad, expected[1], atol=1e-10, rtol=1e-10)
+    summary = result.summary()
+    assert summary["gradient_method"] == "statevector_adjoint"
+    assert summary["observable_profile"] == "sum_of_single_wire_pauli_z_terms"
+    assert summary["observable_wires"] == (0, 1)
+    assert summary["backward_distribution_semantics"] == "single_device_fast_path"
+
+
+def test_multi_z_sum_rejects_empty_or_invalid_wire_sets():
+    theta = torch.tensor(0.2, requires_grad=True)
+    circuit = fq.Circuit(1).rx(0, theta)
+
+    with pytest.raises(ValueError, match="at least one"):
+        execute_torch_distributed_statevector_reverse(circuit, observable_wires=())
+    with pytest.raises(TypeError, match="integers"):
+        execute_torch_distributed_statevector_reverse(
+            circuit,
+            observable_wires=(0.5,),
+        )
+    with pytest.raises(ValueError, match="outside"):
+        execute_torch_distributed_statevector_reverse(circuit, observable_wires=(1,))
+
+
 def test_checkpoint_policy_is_versioned_and_fail_closed():
     assert StatevectorCheckpointPolicy().strategy == "auto"
     assert StatevectorCheckpointPolicy().version == "statevector_checkpoint_v2"
