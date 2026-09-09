@@ -13,6 +13,7 @@ allowed_top_level_directories = [
     "ecosystem",
     "experimental",
     "noise",
+    "observables",
     "compute",
     "remote",
     "runtime",

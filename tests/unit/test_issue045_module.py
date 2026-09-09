@@ -197,32 +197,29 @@ def test_fq_run_executes_ordered_measurement_requests() -> None:
     result = fq.run(
         circuit,
         options=fq.ExecutionOptions(mode="statevector"),
-        measurements=(
-            fq.MeasurementNode("expectation_z", (0, 1)),
-            fq.MeasurementNode("sample", (1,), shots=4, metadata={"seed": 7}),
-            fq.MeasurementNode(
-                "counts",
-                (0,),
-                shots=4,
-                metadata={"seed": 7, "format": "int"},
-            ),
+        outputs=(
+            fq.expectation(fq.Z(0) + fq.Z(1)),
+            fq.samples((1,)),
+            fq.counts((0,)),
         ),
+        shots=4,
     )
 
     assert all(isinstance(item, fq.MeasurementResult) for item in result.measurements)
     assert tuple(item.kind for item in result.measurements) == (
-        "expectation_z",
+        "expectation_ps",
+        "expectation_ps",
         "sample",
         "counts",
     )
     torch.testing.assert_close(
-        result.measurements[0].value,
-        torch.tensor([[-1.0, 1.0]]),
+        result.expectation(),
+        torch.tensor([0.0]),
     )
-    assert result.measurements[1].value.tolist() == [[[0], [0], [0], [0]]]
-    assert result.measurements[2].value == [{1: 4}]
-    assert result.samples is result.measurements[1].value
-    assert result.summary()["measurement_count"] == 3
+    assert result.measurements[2].value.tolist() == [[[0], [0], [0], [0]]]
+    assert result.measurements[3].value == [{"1": 4}]
+    assert result.samples is result.measurements[2].value
+    assert result.summary()["measurement_count"] == 4
 
 
 def test_fq_run_is_the_uniform_execution_entry_point() -> None:

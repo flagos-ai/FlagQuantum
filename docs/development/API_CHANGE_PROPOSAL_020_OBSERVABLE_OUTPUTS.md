@@ -30,9 +30,10 @@ no direct accessors for probabilities or counts.
   `require_samples()` for explicit selection and validation.
 - A Hamiltonian expectation lowers to Pauli-term requests and is recombined by
   the stable result boundary. Identity terms are handled exactly.
-- Sampling and counts remain computational-basis requests in this change.
-  Observable-basis sampling is not silently approximated and requires a future
-  explicit contract.
+- Sampling and counts accept either computational-basis wires or one unweighted
+  Pauli product. Pauli-basis samples are drawn from the exact joint distribution
+  reconstructed through the backend's Pauli expectation capability; sums,
+  weights, and unsupported backends fail closed.
 - Remote execution accepts only outputs the provider workflow can prove. The
   current Quafu path supports one full-register counts request and fails closed
   for unsupported output shapes or kinds.

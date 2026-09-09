@@ -87,7 +87,7 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
             metadata={"deployment_artifact_sha256": "artifact-17"},
         )
 
-    monkeypatch.setattr("flagquantum.api.compile_program", compile_target)
+    monkeypatch.setattr("flagquantum._api.compile", compile_target)
     monkeypatch.setattr("flagquantum.remote.QuafuProvider", Provider)
     monkeypatch.setattr("flagquantum.deployment.deploy_circuit", deploy_target)
 

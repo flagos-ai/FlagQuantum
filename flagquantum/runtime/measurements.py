@@ -14,10 +14,13 @@ from .result import MeasurementResult
 
 _SUPPORTED_KINDS = {
     "counts",
+    "counts_ps",
+    "expectation_identity",
     "expectation_ps",
     "expectation_z",
     "probabilities",
     "sample",
+    "sample_ps",
 }
 _DEFAULT_MAX_MARGINAL_WIRES = 8
 
@@ -128,7 +131,10 @@ def validate_measurements(
             raise ValueError(
                 "postselection is currently supported only for sample/counts"
             )
-        if kind in {"sample", "counts"} and request.shots is None:
+        if (
+            kind in {"sample", "sample_ps", "counts", "counts_ps"}
+            and request.shots is None
+        ):
             raise ValueError(f"{kind} measurement requires a positive shots value")
         if kind == "probabilities":
             limit = int(metadata.get("max_marginal_wires", _DEFAULT_MAX_MARGINAL_WIRES))
@@ -140,7 +146,14 @@ def validate_measurements(
                     f"2**{len(wires)} Pauli contractions; increase "
                     "max_marginal_wires explicitly to accept that cost"
                 )
-        if kind == "expectation_ps":
+        if kind in {"sample_ps", "counts_ps"}:
+            limit = int(metadata.get("max_marginal_wires", _DEFAULT_MAX_MARGINAL_WIRES))
+            if len(wires) > limit:
+                raise ValueError(
+                    f"Pauli-basis sampling over {len(wires)} wires requires "
+                    f"2**{len(wires)} contractions; the supported limit is {limit}"
+                )
+        if kind in {"expectation_ps", "sample_ps", "counts_ps"}:
             axes = {
                 axis: tuple(int(wire) for wire in metadata.get(axis, ()))
                 for axis in ("x", "y", "z")
@@ -150,7 +163,7 @@ def validate_measurements(
                 _validate_wires(axis_wires, n_wires)
                 if set(axis_wires) != set(wires):
                     raise ValueError(
-                        "expectation_ps request wires must match metadata x/y/z wires"
+                        f"{kind} request wires must match metadata x/y/z wires"
                     )
 
 
@@ -234,6 +247,59 @@ def _counts_from_samples(
             encoded.append(int(bitstring, 2) if format == "int" else bitstring)
         outputs.append(dict(Counter(encoded)))
     return outputs
+
+
+def _sample_pauli_product(
+    target: Any,
+    *,
+    shots: int,
+    wires: tuple[int, ...],
+    metadata: dict[str, Any],
+) -> torch.Tensor:
+    expectation = getattr(target, "expectation_ps", None)
+    if not callable(expectation):
+        raise CapabilityError(
+            f"{type(target).__name__} does not support Pauli-basis sampling"
+        )
+    axes_by_wire = {
+        wire: axis for axis in ("x", "y", "z") for wire in metadata.get(axis, ())
+    }
+    subset_expectations: list[torch.Tensor | None] = [None]
+    template: torch.Tensor | None = None
+    for mask in range(1, 1 << len(wires)):
+        axes = {
+            axis: tuple(
+                wire
+                for index, wire in enumerate(wires)
+                if mask & (1 << index) and axes_by_wire[wire] == axis
+            )
+            for axis in ("x", "y", "z")
+        }
+        template = expectation(**axes)
+        subset_expectations.append(template)
+    assert template is not None
+    probabilities = []
+    for outcome in range(1 << len(wires)):
+        value = torch.ones_like(template)
+        for mask, term in enumerate(subset_expectations[1:], start=1):
+            parity = sum(
+                (outcome >> (len(wires) - index - 1)) & 1
+                for index in range(len(wires))
+                if mask & (1 << index)
+            )
+            value = value + (-term if parity % 2 else term)
+        probabilities.append(value / (1 << len(wires)))
+    distribution = torch.stack(probabilities, dim=-1)
+    distribution = torch.clamp(distribution, min=0)
+    distribution = distribution / distribution.sum(dim=-1, keepdim=True)
+    indices = torch.multinomial(
+        distribution,
+        shots,
+        replacement=True,
+        generator=_generator(target, metadata),
+    )
+    shifts = torch.arange(len(wires) - 1, -1, -1, device=indices.device)
+    return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
 
 
 def _shot_statistics(
@@ -325,7 +391,15 @@ def execute_measurements(
             n_wires,
         )
 
-        if kind == "expectation_z":
+        if kind == "expectation_identity":
+            target = measurement_target()
+            method = getattr(target, "expectation_ps", None)
+            if not callable(method):
+                raise CapabilityError(
+                    f"{type(target).__name__} does not support expectations"
+                )
+            value = torch.ones_like(method(z=(0,)))
+        elif kind == "expectation_z":
             target = measurement_target()
             method = getattr(target, "expectation_z", None)
             if not callable(method):
@@ -360,6 +434,25 @@ def execute_measurements(
             )
             if value is None:
                 value = _marginal_probabilities(measurement_target(), wires)
+        elif kind in {"sample_ps", "counts_ps"}:
+            target = measurement_target()
+            assert request.shots is not None
+            samples = _sample_pauli_product(
+                target,
+                shots=request.shots,
+                wires=wires,
+                metadata=metadata,
+            )
+            counts = (
+                _counts_from_samples(
+                    samples,
+                    format=str(metadata.get("format", "bin")),
+                )
+                if kind == "counts_ps"
+                else None
+            )
+            value = samples if counts is None else counts
+            sampling_statistics = {}
         else:
             target = measurement_target()
             assert request.shots is not None
@@ -392,7 +485,7 @@ def execute_measurements(
                         **_shot_statistics(samples, counts=counts),
                         **sampling_statistics,
                     }
-                    if kind in {"sample", "counts"}
+                    if kind in {"sample", "sample_ps", "counts", "counts_ps"}
                     else {}
                 ),
             )

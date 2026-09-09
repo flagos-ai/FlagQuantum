@@ -12,7 +12,7 @@ protected_paths = [
     "pyproject.toml",
     "requirements*.txt",
     "flagquantum/__init__.py",
-    "flagquantum/api.py",
+    "flagquantum/_api.py",
     "flagquantum/core/_artifacts.py",
     "flagquantum/core/ir/**",
     "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
@@ -38,7 +38,7 @@ owns = [
     "flagquantum/circuit.py",
     "flagquantum/noise/**",
     "flagquantum/ops/**",
-    "flagquantum/measurement/**",
+    "flagquantum/observables/**",
 ]
 
 [teams.compiler]

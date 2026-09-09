@@ -2,19 +2,34 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from importlib import import_module
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .circuit import Circuit
+    from .core.ir import CircuitIR
+    from .noise import NoiseModel
+    from .observables import OutputRequest
+    from .runtime.execution_plan import ExecutionPlan
+    from .runtime.options import ExecutionOptions
+    from .runtime.result import ExecutionResult
 
 
-def compile_program(
+def compile(
     program: Any,
     *,
-    compiler: str | None,
-    target: str | Mapping[str, Any] | None,
-    target_qubits: Any = None,
+    compiler: str | None = None,
+    target: str | Mapping[str, Any] | None = None,
+    target_qubits: Sequence[int] | None = None,
 ) -> Any:
-    """Compile through the built-in pipeline or one installed compiler."""
+    """Compile a circuit with FlagQuantum or one named installed compiler.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> fq.compile(fq.Circuit(2).h(0).cx(0, 1)).n_wires
+        2
+    """
 
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     if compiler is None or compiler == "flagquantum":
@@ -63,28 +78,57 @@ def compile_program(
     )
 
 
-def run_program(
-    program_or_plan: Any,
+def run(
+    program_or_plan: Circuit | CircuitIR | ExecutionPlan,
     *,
-    options: Any,
-    measurements: Any,
-    noise_model: Any,
-    compiler: str | None,
-    target: str | None,
-    target_qubits: Any,
-    shots: int | None,
-    name: str | None,
-) -> Any:
-    """Execute one local plan or one explicit remote QPU workflow."""
+    options: ExecutionOptions | None = None,
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
+    noise_model: NoiseModel | None = None,
+    compiler: str | None = None,
+    target: str | None = None,
+    target_qubits: Sequence[int] | None = None,
+    shots: int | None = None,
+    name: str | None = None,
+) -> ExecutionResult:
+    """Execute locally, or compile and execute on one named remote target.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
+        >>> fq.run(circuit, outputs=fq.probabilities()).probabilities.shape
+        torch.Size([1, 4])
+    """
 
     remote_requested = (
         compiler is not None or target is not None or target_qubits is not None
     )
     if not remote_requested:
-        if shots is not None or name is not None:
+        if name is not None:
+            raise TypeError("name is a direct fq.run keyword only for remote execution")
+        if hasattr(program_or_plan, "identity") and outputs is not None:
+            raise TypeError("outputs must be None when executing an ExecutionPlan")
+        if shots is not None and options is not None and options.shots is not None:
+            raise TypeError("shots was specified both directly and in ExecutionOptions")
+        selected_shots = shots if shots is not None else getattr(options, "shots", None)
+        selected_seed = getattr(options, "seed", None)
+        measurements = None
+        if outputs is not None:
+            ir = import_module(".core.ir", __package__).ensure_circuit_ir(
+                program_or_plan
+            )
+            measurements = import_module(".observables", __package__).lower_outputs(
+                outputs,
+                n_wires=ir.n_wires,
+                shots=selected_shots,
+                seed=selected_seed,
+            )
+            import_module(".runtime.measurements", __package__).validate_measurements(
+                measurements,
+                n_wires=ir.n_wires,
+            )
+        elif shots is not None:
             raise TypeError(
-                "shots and name are direct fq.run keywords only for remote "
-                "execution; use ExecutionOptions(shots=...) locally"
+                "local shots requires fq.samples(...) or fq.counts(...) output"
             )
         return import_module(".runtime.execution", __package__).run(
             program_or_plan,
@@ -95,9 +139,9 @@ def run_program(
 
     if compiler is None or target is None:
         raise TypeError("remote execution requires both compiler and target")
-    if options is not None or measurements is not None or noise_model is not None:
+    if options is not None or noise_model is not None:
         raise TypeError(
-            "options, measurements, and noise_model are local execution inputs; "
+            "options and noise_model are local execution inputs; "
             "compile the remote circuit before requesting provider-specific behavior"
         )
     if type(shots) is not int or shots <= 0:
@@ -109,7 +153,27 @@ def run_program(
     if separator != ":" or provider_name.lower() != "quafu":
         raise ValueError("remote fq.run currently supports target='quafu:<backend>'")
 
-    compiled = compile_program(
+    output_types = import_module(".observables", __package__)
+    requested = output_types.counts() if outputs is None else outputs
+    requested = (
+        (requested,)
+        if isinstance(requested, output_types.OutputRequest)
+        else tuple(requested)
+    )
+    source_ir = import_module(".core.ir", __package__).ensure_circuit_ir(
+        program_or_plan
+    )
+    if (
+        len(requested) != 1
+        or requested[0].kind != "counts"
+        or requested[0].observable is not None
+        or requested[0].wires not in {(), tuple(range(source_ir.n_wires))}
+    ):
+        raise ValueError(
+            "remote Quafu execution currently supports one full-register "
+            "fq.counts() output"
+        )
+    compiled = compile(
         program_or_plan,
         compiler=compiler,
         target=target,
@@ -133,6 +197,14 @@ def run_program(
                 value=[counts],
                 shots=native.shots,
                 metadata={
+                    "fq_output_index": 0,
+                    "fq_output_kind": "counts",
+                    "fq_output_name": requested[0].name,
+                    **(
+                        {"name": requested[0].name}
+                        if requested[0].name is not None
+                        else {}
+                    ),
                     "provider": native.handle.provider,
                     "backend": native.handle.backend_name,
                     "task_id": native.handle.task_id,
@@ -153,6 +225,41 @@ def run_program(
     )
     object.__setattr__(result, "_native_output", native)
     return result
+
+
+def plan(
+    program: Circuit | CircuitIR,
+    *,
+    options: ExecutionOptions | None = None,
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
+    noise_model: NoiseModel | None = None,
+) -> ExecutionPlan:
+    """Build a backend-neutral execution plan.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> fq.plan(fq.Circuit(1).h(0)).state_mode
+        'statevector'
+    """
+
+    ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
+    measurements = import_module(".observables", __package__).lower_outputs(
+        outputs,
+        n_wires=ir.n_wires,
+        shots=getattr(options, "shots", None),
+        seed=getattr(options, "seed", None),
+    )
+    if measurements is not None:
+        import_module(".runtime.measurements", __package__).validate_measurements(
+            measurements,
+            n_wires=ir.n_wires,
+        )
+    return import_module(".runtime.planner", __package__).plan(
+        program,
+        options=options,
+        measurements=measurements,
+        noise_model=noise_model,
+    )
 
 
 __all__: tuple[str, ...] = ()

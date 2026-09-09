@@ -157,7 +157,7 @@ def test_automatic_and_explicit_plan_paths_are_equivalent() -> None:
     "keyword,value",
     [
         ("options", fq.ExecutionOptions()),
-        ("measurements", ()),
+        ("outputs", fq.probabilities()),
         ("noise_model", object()),
     ],
 )

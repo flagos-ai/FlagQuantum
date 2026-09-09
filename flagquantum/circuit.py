@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 import torch
 
-from .core.ir import CircuitIR, Instruction, MeasurementNode
+from .core.ir import CircuitIR, Instruction
 from .core.operator_schema import (
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
@@ -28,6 +28,7 @@ from .errors import ValidationError
 
 if TYPE_CHECKING:
     from .noise import NoiseModel
+    from .observables import OutputRequest
     from .runtime.execution_plan import ExecutionPlan
     from .runtime.options import ExecutionOptions
     from .runtime.result import ExecutionResult
@@ -329,7 +330,7 @@ class Circuit:
         self,
         *,
         options: ExecutionOptions | None = None,
-        measurements: Sequence[MeasurementNode] | None = None,
+        outputs: OutputRequest | Sequence[OutputRequest] | None = None,
         noise_model: NoiseModel | None = None,
     ) -> ExecutionResult:
         """Execute the circuit and return an :class:`ExecutionResult`.
@@ -339,13 +340,18 @@ class Circuit:
         :mod:`flagquantum.runtime`.
         """
 
-        from .runtime.execution import run as run_circuit
+        from ._api import run
 
-        return run_circuit(
+        return run(
             self,
             options=options,
-            measurements=measurements,
+            outputs=outputs,
             noise_model=noise_model,
+            compiler=None,
+            target=None,
+            target_qubits=None,
+            shots=None,
+            name=None,
         )
 
     def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
@@ -457,17 +463,17 @@ class Circuit:
         self,
         *,
         options: ExecutionOptions | None = None,
-        measurements: Sequence[MeasurementNode] | None = None,
+        outputs: OutputRequest | Sequence[OutputRequest] | None = None,
         noise_model: NoiseModel | None = None,
     ) -> ExecutionPlan:
         """Plan this circuit using stable backend-neutral execution options."""
 
-        from .runtime.planner import plan
+        from ._api import plan
 
         return plan(
             self,
             options=options,
-            measurements=measurements,
+            outputs=outputs,
             noise_model=noise_model,
         )
 

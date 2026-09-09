@@ -18,6 +18,7 @@ EXECUTION_PLAN = ROOT / "contracts" / "execution-plan-v1-candidate.json"
 MODULE_TRAINING = ROOT / "contracts" / "module-training-v1-candidate.json"
 ERRORS_MODULE = ROOT / "contracts" / "errors-module-boundary-v1-candidate.json"
 EXTENSION_PROTOCOL = ROOT / "contracts" / "extension-protocol-v1-candidate.json"
+OBSERVABLE_OUTPUTS = ROOT / "contracts" / "observable-outputs-v1-candidate.json"
 
 
 def _load(path: Path) -> dict[str, object]:
@@ -79,6 +80,8 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
             authorized_additions.update(extension_contract["root_additions"])
         for extension in extension_contract["stable_extensions"]:
             authorized_additions.update(extension["additions"])
+    observable_outputs = _load(OBSERVABLE_OUTPUTS)
+    authorized_additions.update(observable_outputs["root_additions"])
     authorized_additions.update(candidate.get("approved_namespace_additions", ()))
     assert set(classified) == set(exports) | authorized_additions
 
@@ -165,7 +168,7 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
 
     final_core = set(stable_core["retain"]) | set(stable_core["planned_additions"])
 
-    assert len(final_core) == 23
+    assert len(final_core) == 31
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core

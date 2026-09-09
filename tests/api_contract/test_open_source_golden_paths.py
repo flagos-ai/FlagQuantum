@@ -12,14 +12,12 @@ pytestmark = pytest.mark.integration
 
 def test_bell_circuit_build_execute_and_measure() -> None:
     circuit = fq.Circuit(n_qubits=2).h(0).cx(0, 1)
-    request = fq.MeasurementNode("probabilities", (0, 1))
-
-    result = fq.run(circuit, measurements=(request,))
+    result = fq.run(circuit, outputs=fq.probabilities())
 
     assert result.plan is not None
     assert result.state is not None
     assert torch.allclose(
-        result.measurements[0].value,
+        result.probabilities,
         torch.tensor([[0.5, 0.0, 0.0, 0.5]]),
         atol=1e-6,
     )

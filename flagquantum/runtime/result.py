@@ -160,6 +160,77 @@ class ExecutionResult:
             return self.value
         raise ExecutionError("execution result does not contain a module value")
 
+    @property
+    def probabilities(self) -> torch.Tensor:
+        """Return the unique requested probability tensor."""
+
+        return self._unique_tensor_measurement("probabilities")
+
+    @property
+    def counts(self) -> list[dict[str | int, int]]:
+        """Return the unique requested outcome counts."""
+
+        matches = tuple(
+            item for item in self.measurements if item.kind in {"counts", "counts_ps"}
+        )
+        if not matches:
+            raise ExecutionError("execution result does not contain counts")
+        if len(matches) > 1:
+            raise ExecutionError(
+                "execution result contains multiple counts outputs; "
+                "select one with measurement(...)"
+            )
+        value = matches[0].value
+        if not isinstance(value, list):
+            raise ExecutionError("counts output has an invalid result type")
+        return value
+
+    @property
+    def expectations(self) -> tuple[torch.Tensor, ...]:
+        """Return requested expectation values in output order."""
+
+        return tuple(value for _, _, value in self._expectation_outputs())
+
+    def _unique_tensor_measurement(self, kind: str) -> torch.Tensor:
+        matches = tuple(item for item in self.measurements if item.kind == kind)
+        if not matches:
+            raise ExecutionError(f"execution result does not contain {kind}")
+        if len(matches) > 1:
+            raise ExecutionError(
+                f"execution result contains multiple {kind} outputs; "
+                "select one with measurement(...)"
+            )
+        value = matches[0].value
+        if not isinstance(value, torch.Tensor):
+            raise ExecutionError(f"{kind} output has an invalid result type")
+        return value
+
+    def _expectation_outputs(self) -> tuple[tuple[int, str | None, torch.Tensor], ...]:
+        grouped: dict[int, list[MeasurementResult]] = {}
+        legacy_index = 0
+        for item in self.measurements:
+            if not item.kind.startswith("expectation"):
+                continue
+            index = item.metadata.get("fq_output_index")
+            if index is None:
+                index = legacy_index
+                legacy_index += 1
+            grouped.setdefault(int(index), []).append(item)
+        outputs: list[tuple[int, str | None, torch.Tensor]] = []
+        for index, items in sorted(grouped.items()):
+            value: torch.Tensor | None = None
+            for item in items:
+                if not isinstance(item.value, torch.Tensor):
+                    raise ExecutionError(
+                        "expectation output has an invalid result type"
+                    )
+                coefficient = float(item.metadata.get("fq_coefficient", 1.0))
+                term = coefficient * item.value
+                value = term if value is None else value + term
+            assert value is not None
+            outputs.append((index, items[0].metadata.get("fq_output_name"), value))
+        return tuple(outputs)
+
     def measurement(self, selector: int | str) -> MeasurementResult:
         """Return one requested measurement by position, name, or unique kind."""
 
@@ -192,27 +263,28 @@ class ExecutionResult:
     def expectation(self, selector: int | str | None = None) -> torch.Tensor:
         """Return one expectation tensor from the requested measurements."""
 
+        outputs = self._expectation_outputs()
+        if not outputs:
+            raise ExecutionError("execution result does not contain an expectation")
         if selector is None:
-            matches = tuple(
-                item
-                for item in self.measurements
-                if item.kind.startswith("expectation")
-            )
-            if not matches:
-                raise ExecutionError("execution result does not contain an expectation")
-            if len(matches) > 1:
+            if len(outputs) != 1:
                 raise ExecutionError(
                     "execution result contains multiple expectations; select one by "
-                    "index or metadata name"
+                    "output index or name"
                 )
-            result = matches[0]
+            return outputs[0][2]
+        if type(selector) is int:
+            matches = tuple(item for item in outputs if item[0] == selector)
+        elif isinstance(selector, str) and selector:
+            matches = tuple(item for item in outputs if item[1] == selector)
         else:
-            result = self.measurement(selector)
-        if not result.kind.startswith("expectation") or not isinstance(
-            result.value, torch.Tensor
-        ):
-            raise ExecutionError("selected measurement is not a tensor expectation")
-        return result.value
+            raise TypeError(
+                "expectation selector must be an integer or non-empty string"
+            )
+        if len(matches) != 1:
+            message = "ambiguous" if matches else "missing"
+            raise ExecutionError(f"expectation selector {selector!r} is {message}")
+        return matches[0][2]
 
     def native(self) -> object:
         """Return the explicitly unstable backend-native output when available."""

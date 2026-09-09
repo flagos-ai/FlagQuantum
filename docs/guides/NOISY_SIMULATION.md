@@ -28,10 +28,10 @@ noise = (
 exact = fq.run(
     circuit,
     noise_model=noise,
-    mode="density_matrix",
-    measurements=(fq.MeasurementNode("expectation_z", (0, 1)),),
+    options=fq.ExecutionOptions(mode="density_matrix"),
+    outputs=fq.expectation(fq.Z(0) + fq.Z(1)),
 )
-exact_z = exact.measurements[0].value
+exact_z = exact.expectation()
 
 sampled = fqr.run_noisy_mps(
     circuit,

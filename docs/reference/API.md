@@ -234,34 +234,35 @@ the corresponding stable category.
 
 ## Measurements
 
-Pass ordered `MeasurementNode` requests to `fq.plan` or `fq.run`. They are
-embedded in the executable plan before identity is computed. Requests may
-instead already exist in `CircuitIR.measurements`, but supplying both forms is
-an error: FlagQuantum never silently replaces or appends measurements.
+Describe mathematical observables with `fq.X`, `fq.Y`, and `fq.Z`, then request
+named outputs from `fq.plan` or `fq.run`. Pauli products use `@`; Hamiltonian
+sums and real coefficients use ordinary arithmetic.
 
 ```python
-requests = (
-    fq.MeasurementNode("expectation_z", (0, 1)),
-    fq.MeasurementNode(
-        "expectation_ps",
-        (0, 1),
-        metadata={"x": (0,), "z": (1,)},
-    ),
-    fq.MeasurementNode("sample", (0, 1), shots=1024, metadata={"seed": 7}),
+outputs = (
+    fq.expectation(fq.Z(0) + fq.Z(1), name="magnetization"),
+    fq.expectation(fq.X(0) @ fq.Z(1), name="correlation"),
+    fq.samples(wires=(0, 1)),
 )
-plan = fq.plan(circuit, measurements=requests)
+plan = fq.plan(
+    circuit,
+    outputs=outputs,
+    options=fq.ExecutionOptions(shots=1024, seed=7),
+)
 result = fq.run(plan)
 
-z_values = result.expectation(0)
-xz_value = result.expectation(1)
+z_sum = result.expectation("magnetization")
+xz_value = result.expectation("correlation")
 bit_samples = result.require_samples()
 ```
 
-Supported measurement kinds are `expectation_z`, `expectation_ps`,
-`probabilities`, `sample`, and `counts`. Sampling and counts are in the
-computational basis. A `sample` request is also projected to
-`ExecutionResult.samples` for consumers of the original result contract.
-Unsupported measurement kinds and missing shot counts fail explicitly.
+The public output factories are `expectation`, `probabilities`, `samples`, and
+`counts`. Sampling and counts accept computational-basis wires or one
+unweighted Pauli product, such as `fq.samples(fq.X(0) @ fq.Y(1))`, and require a
+positive shot count. Use `result.expectation()`, `result.expectations`,
+`result.probabilities`, `result.samples`, and `result.counts` for the ordinary
+typed result path. Unsupported output kinds and missing shot counts fail before
+execution.
 
 Use `result.measurement(index_or_name)` for a specific request,
 `result.statevector()` for a required statevector, and `result.native()` only
@@ -291,33 +292,9 @@ Pauli-Z contractions. The default limit is eight wires because the cost is
 `2**len(wires)` contractions; callers must set `max_marginal_wires` explicitly
 to accept a larger exponential calculation.
 
-Sampling and counts support bounded postselection without materializing a
-dense state:
-
-```python
-request = fq.MeasurementNode(
-    "counts",
-    (1,),
-    shots=1024,
-    metadata={
-        "seed": 7,
-        "postselect": {0: 1},
-        "max_postselection_draw_multiplier": 1024,
-    },
-)
-result = fq.run(
-    circuit,
-    options=fq.ExecutionOptions(mode="mps"),
-    measurements=(request,),
-)
-print(result.measurements[0].statistics["acceptance_rate"])
-```
-
-Shot-based results report bit probabilities, binomial standard errors, draw
-counts, and postselection acceptance rates in `MeasurementResult.statistics`.
-If the requested number of conditioned samples cannot be retained within the
-explicit draw bound, execution fails instead of returning a biased or
-short-count result.
+Core IR measurement nodes remain available to Runtime implementers for advanced
+capabilities such as bounded postselection, but are intentionally absent from
+the root user API.
 
 ## Hardware Pauli measurements
 

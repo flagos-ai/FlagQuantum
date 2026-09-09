@@ -31,6 +31,9 @@ ERRORS_MODULE_CONTRACT = ROOT / "contracts" / "errors-module-boundary-v1-candida
 EXTENSION_PROTOCOL_CONTRACT = (
     ROOT / "contracts" / "extension-protocol-v1-candidate.json"
 )
+OBSERVABLE_OUTPUTS_CONTRACT = (
+    ROOT / "contracts" / "observable-outputs-v1-candidate.json"
+)
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -188,6 +191,9 @@ def validate() -> tuple[str, ...]:
     extension_protocol_contract = json.loads(
         EXTENSION_PROTOCOL_CONTRACT.read_text(encoding="utf-8")
     )
+    observable_outputs_contract = json.loads(
+        OBSERVABLE_OUTPUTS_CONTRACT.read_text(encoding="utf-8")
+    )
     actual = generate()
     names = actual["stable_exports"]
     assert isinstance(names, list)
@@ -228,6 +234,8 @@ def validate() -> tuple[str, ...]:
         authorized_changes.update(
             extension_protocol_contract.get("protected_root_changes", ())
         )
+    authorized_changes.update(observable_outputs_contract.get("root_additions", ()))
+    authorized_changes.update(observable_outputs_contract.get("root_removals", ()))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -272,6 +280,7 @@ def validate() -> tuple[str, ...]:
         expected_signatures.update(
             extension_protocol_contract.get("root_signatures", {})
         )
+    expected_signatures.update(observable_outputs_contract.get("signatures", {}))
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -326,6 +335,10 @@ def _validate_authorized_execution_options(
         "Module.save_checkpoint": fq.Module.save_checkpoint,
         "Module.load_checkpoint": fq.Module.load_checkpoint,
         "compile": fq.compile,
+        "counts": fq.counts,
+        "expectation": fq.expectation,
+        "probabilities": fq.probabilities,
+        "samples": fq.samples,
         "train": fq.train,
     }
     for name, expected_signature in expected_signatures.items():
@@ -383,6 +396,9 @@ def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]
     for name in result_contract["accessors"]:
         if not callable(getattr(fq.ExecutionResult, str(name), None)):
             errors.append(f"ExecutionResult stable accessor is missing: {name}")
+    for name in result_contract.get("properties", ()):
+        if not isinstance(getattr(fq.ExecutionResult, str(name), None), property):
+            errors.append(f"ExecutionResult stable property is missing: {name}")
     if "__getattr__" in fq.ExecutionResult.__dict__:
         errors.append("ExecutionResult must not delegate backend-native attributes")
     summary = fq.ExecutionResult().summary()

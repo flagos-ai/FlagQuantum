@@ -17,9 +17,9 @@ exact = fq.run(
     circuit,
     noise_model=noise,
     options=fq.ExecutionOptions(mode="density_matrix"),
-    measurements=(fq.MeasurementNode("expectation_z", (0, 1)),),
+    outputs=fq.expectation(fq.Z(0) + fq.Z(1)),
 )
-exact_z = exact.measurements[0].value
+exact_z = exact.expectation()
 
 # Low-entanglement scale-out path: sampled MPS quantum trajectories.
 sampled = fqr.run_noisy_mps(

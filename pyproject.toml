@@ -130,7 +130,7 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "flagquantum/__init__.py" = ["F401", "F403"]
-"flagquantum/api.py" = ["F401"]
+"flagquantum/observables/__init__.py" = ["E743", "N802"]
 "flagquantum/simulation/tensor.py" = ["F822"]
 
 [tool.mypy]

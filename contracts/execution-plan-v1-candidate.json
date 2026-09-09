@@ -7,8 +7,8 @@
   "implementation_authorized": true,
   "root_manifest_authorized": true,
   "proposed_signatures": {
-    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'"
+    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
   },
   "contract": {
     "kind": "immutable_factory_value",

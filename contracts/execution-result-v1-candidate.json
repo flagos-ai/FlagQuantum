@@ -7,10 +7,10 @@
   "root_manifest_change": false,
   "protected_root_changes": ["ExecutionResult", "MeasurementResult"],
   "public_signatures": {
-    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'",
-    "Circuit.plan": "(self, *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
-    "Circuit.run": "(self, *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'"
+    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+    "Circuit.plan": "(self, *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "Circuit.run": "(self, *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'"
   },
   "measurement_rules": {
     "program_measurements_are_canonical": true,
@@ -53,6 +53,7 @@
       "native",
       "summary"
     ],
+    "properties": ["probabilities", "counts", "expectations"],
     "missing_data_failure": "RuntimeError",
     "implicit_native_attribute_delegation": false,
     "native_output_stability": "none",

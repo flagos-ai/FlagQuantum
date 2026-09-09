@@ -2,16 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from importlib import import_module
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from .circuit import Circuit
-    from .core.ir import CircuitIR, MeasurementNode
-    from .noise import NoiseModel
-    from .runtime.contracts import ExecutionOptions, ExecutionResult
-    from .runtime.execution_plan import ExecutionPlan
+from typing import Any
 
 from .version import __version__
 
@@ -26,80 +18,30 @@ __all__ = (
     "IRSerializationError",
     "IRValidationError",
     "IR_VERSION",
+    "I",
     "Instruction",
-    "MeasurementNode",
     "MeasurementResult",
     "Module",
-    "ObservableNode",
+    "Observable",
+    "OutputRequest",
     "Parameter",
     "ParameterExpression",
     "RuntimePolicy",
     "TrainingResult",
+    "X",
+    "Y",
+    "Z",
     "compile",
+    "counts",
+    "expectation",
     "plan",
+    "probabilities",
     "run",
+    "samples",
     "train",
     "__version__",
     "experimental",
 )
-
-
-def compile(
-    program: Any,
-    *,
-    compiler: str | None = None,
-    target: str | Mapping[str, Any] | None = None,
-    target_qubits: Sequence[int] | None = None,
-) -> Any:
-    """Compile a circuit with FlagQuantum or one named installed compiler.
-
-    Examples:
-        >>> import flagquantum as fq
-        >>> fq.compile(fq.Circuit(2).h(0).cx(0, 1)).n_wires
-        2
-    """
-
-    return import_module(".api", __name__).compile_program(
-        program,
-        compiler=compiler,
-        target=target,
-        target_qubits=target_qubits,
-    )
-
-
-def run(
-    program_or_plan: Circuit | CircuitIR | ExecutionPlan,
-    *,
-    options: ExecutionOptions | None = None,
-    measurements: Sequence[MeasurementNode] | None = None,
-    noise_model: NoiseModel | None = None,
-    compiler: str | None = None,
-    target: str | None = None,
-    target_qubits: Sequence[int] | None = None,
-    shots: int | None = None,
-    name: str | None = None,
-) -> ExecutionResult:
-    """Execute locally, or compile and execute on one named remote target.
-
-    Examples:
-        >>> import flagquantum as fq
-        >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
-        >>> request = fq.MeasurementNode("probabilities", (0, 1))
-        >>> fq.run(circuit, measurements=(request,)).measurement(request.kind).wires
-        (0, 1)
-    """
-
-    return import_module(".api", __name__).run_program(
-        program_or_plan,
-        options=options,
-        measurements=measurements,
-        noise_model=noise_model,
-        compiler=compiler,
-        target=target,
-        target_qubits=target_qubits,
-        shots=shots,
-        name=name,
-    )
 
 
 def __getattr__(name: str) -> Any:
@@ -113,8 +55,6 @@ def __getattr__(name: str) -> Any:
         "IRValidationError",
         "IR_VERSION",
         "Instruction",
-        "MeasurementNode",
-        "ObservableNode",
     }:
         return getattr(import_module(".core.ir", __name__), name)
     if name in {"Parameter", "ParameterExpression"}:
@@ -131,8 +71,21 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module(".runtime.contracts", __name__), name)
     if name in {"TrainingResult", "train"}:
         return getattr(import_module(".runtime.training", __name__), name)
-    if name == "plan":
-        return getattr(import_module(".runtime.planner", __name__), name)
+    if name in {
+        "I",
+        "Observable",
+        "OutputRequest",
+        "X",
+        "Y",
+        "Z",
+        "counts",
+        "expectation",
+        "probabilities",
+        "samples",
+    }:
+        return getattr(import_module(".observables", __name__), name)
+    if name in {"compile", "plan", "run"}:
+        return getattr(import_module("._api", __name__), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

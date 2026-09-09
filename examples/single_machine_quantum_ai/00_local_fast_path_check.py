@@ -50,16 +50,16 @@ def main() -> None:
         .ry(3, theta=-0.4)
         .rzz(2, 3, theta=0.3)
     )
-    measurements = (fq.MeasurementNode("expectation_z", (0, 1, 2, 3)),)
+    output = fq.expectation(fq.Z(0) + fq.Z(1) + fq.Z(2) + fq.Z(3))
     results = {}
     reference = None
     for mode in ("statevector", "mps", "tensor_network"):
         result = fq.run(
             preflight_circuit,
             options=fq.ExecutionOptions(mode=mode, precision="complex64"),
-            measurements=measurements,
+            outputs=output,
         )
-        value = result.measurements[0].value
+        value = result.expectation()
         if reference is None:
             reference = value
         results[mode] = {

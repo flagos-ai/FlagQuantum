@@ -154,10 +154,12 @@ def test_multi_qubit_custom_unitary_fails_closed_until_basis_order_is_defined() 
 
 
 def test_execution_measurement_requests_are_not_silently_discarded() -> None:
+    from flagquantum.core.ir import MeasurementNode
+
     ir = fq.CircuitIR(
         1,
         (fq.Instruction("h", (0,)),),
-        measurements=(fq.MeasurementNode("sample", (0,), shots=10),),
+        measurements=(MeasurementNode("sample", (0,), shots=10),),
     )
 
     with pytest.raises(QiskitConversionError) as captured:

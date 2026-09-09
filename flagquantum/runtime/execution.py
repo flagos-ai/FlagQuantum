@@ -1086,7 +1086,8 @@ def _normalize_execution_output(
         (
             item.value
             for item in measurement_results
-            if item.kind == "sample" and isinstance(item.value, torch.Tensor)
+            if item.kind in {"sample", "sample_ps"}
+            and isinstance(item.value, torch.Tensor)
         ),
         result.samples,
     )

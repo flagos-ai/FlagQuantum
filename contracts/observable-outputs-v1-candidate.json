@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "approved_pending_implementation",
+  "status": "implemented_and_verified",
   "approval": {
     "approved_at": "2026-09-09",
     "approved_by": "API owner via explicit user directive"
@@ -22,17 +22,18 @@
     "ObservableNode"
   ],
   "signatures": {
-    "run": "(program_or_plan, *, options=None, outputs=None, noise_model=None, compiler=None, target=None, target_qubits=None, shots=None, name=None)",
-    "plan": "(program, *, options=None, outputs=None, noise_model=None)",
-    "expectation": "(observable, *, name=None)",
-    "probabilities": "(wires=None, *, name=None)",
-    "samples": "(wires=None, *, name=None)",
-    "counts": "(wires=None, *, name=None)"
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "expectation": "(observable: 'Observable', *, name: 'str | None' = None) -> 'OutputRequest'",
+    "probabilities": "(wires: 'Iterable[int] | int | None' = None, *, name: 'str | None' = None) -> 'OutputRequest'",
+    "samples": "(wires: 'Iterable[int] | int | Observable | None' = None, *, name: 'str | None' = None) -> 'OutputRequest'",
+    "counts": "(wires: 'Iterable[int] | int | Observable | None' = None, *, name: 'str | None' = None) -> 'OutputRequest'"
   },
   "rules": {
     "measurement_nodes_are_internal": true,
     "unsupported_outputs_fail_closed": true,
     "hamiltonian_terms_recombine_at_result_boundary": true,
+    "pauli_basis_sampling_requires_one_unweighted_product": true,
     "silent_basis_rotation": false
   }
 }

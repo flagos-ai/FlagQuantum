@@ -9,9 +9,9 @@
   "public_signature_superseded_by": "contracts/execution-result-v1-candidate.json",
   "public_signatures": {
     "plan": "(program: 'Any', *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
-    "run": "(program: 'Any', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'",
-    "Circuit.plan": "(self, *, options: 'ExecutionOptions | None' = None) -> 'ExecutionPlan'",
-    "Circuit.run": "(self, *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'Any | None' = None) -> 'ExecutionResult'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+    "Circuit.plan": "(self, *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "Circuit.run": "(self, *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionResult'",
     "RuntimePolicy": "(execution_options: 'ExecutionOptions' = <factory>, observable: 'ObservableKind' = 'z', observable_wires: 'tuple[int, ...]' = (0,), correctness_debug: 'bool' = False) -> None"
   },
   "contract": {

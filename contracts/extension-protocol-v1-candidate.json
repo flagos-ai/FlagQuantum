@@ -9,7 +9,7 @@
   "protected_root_changes": ["run"],
   "root_signatures": {
     "compile": "(program: 'Any', *, compiler: 'str | None' = None, target: 'str | Mapping[str, Any] | None' = None, target_qubits: 'Sequence[int] | None' = None) -> 'Any'",
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, measurements: 'Sequence[MeasurementNode] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
   },
   "stable_extensions": [
     {

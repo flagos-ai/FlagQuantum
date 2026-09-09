@@ -13,33 +13,33 @@ pytestmark = pytest.mark.unit
 
 def test_explicit_measurements_are_embedded_in_the_executable_plan() -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
-    request = fq.MeasurementNode(
-        "probabilities", (0, 1), metadata={"name": "bell_probabilities"}
-    )
+    request = fq.probabilities((0, 1), name="bell_probabilities")
 
-    plan = fq.plan(circuit, measurements=(request,))
+    plan = fq.plan(circuit, outputs=request)
     restored = fq.ExecutionPlan.from_json(plan.to_json())
     result = fq.run(restored)
 
     assert restored.program_fingerprint == plan.program_fingerprint
     assert result.plan is restored
     torch.testing.assert_close(
-        result.measurement("bell_probabilities").value,
+        result.probabilities,
         torch.tensor([[0.5, 0.0, 0.0, 0.5]]),
     )
 
 
 def test_explicit_measurements_never_overwrite_program_measurements() -> None:
+    from flagquantum.core.ir import MeasurementNode
+
     program = fq.CircuitIR(
         n_wires=1,
         instructions=(),
-        measurements=(fq.MeasurementNode("probabilities", (0,)),),
+        measurements=(MeasurementNode("probabilities", (0,)),),
     )
 
     with pytest.raises(ValueError, match="already contains measurement requests"):
         fq.plan(
             program,
-            measurements=(fq.MeasurementNode("expectation_z", (0,)),),
+            outputs=fq.expectation(fq.Z(0)),
         )
 
 
@@ -75,7 +75,7 @@ def test_noisy_density_probability_measurement_uses_wire_order_and_readout() -> 
 
     result = fq.run(
         circuit,
-        measurements=(fq.MeasurementNode("probabilities", (1, 0)),),
+        outputs=fq.probabilities((1, 0)),
         noise_model=noise_model,
     )
 
@@ -83,7 +83,7 @@ def test_noisy_density_probability_measurement_uses_wire_order_and_readout() -> 
     # requested wire order is still (1, 0), so the returned basis order is
     # explicitly tied to the request rather than an internal tensor layout.
     torch.testing.assert_close(
-        result.measurement(0).value,
+        result.probabilities,
         torch.tensor([[1.0, 0.0, 0.0, 0.0]]),
     )
 
@@ -92,13 +92,11 @@ def test_result_accessors_are_explicit_and_backend_attributes_do_not_leak() -> N
     circuit = fq.Circuit(1).x(0)
     result = fq.run(
         circuit,
-        measurements=(
-            fq.MeasurementNode("expectation_z", (0,), metadata={"name": "energy"}),
-        ),
+        outputs=fq.expectation(fq.Z(0), name="energy"),
     )
 
-    torch.testing.assert_close(result.expectation(), torch.tensor([[-1.0]]))
-    assert result.measurement("energy") is result.measurement(0)
+    torch.testing.assert_close(result.expectation(), torch.tensor([-1.0]))
+    assert result.expectation("energy") is not None
     assert result.statevector() is result.state
     assert result.native() is result.state
     assert result.summary()["schema"] == "flagquantum.execution_result.summary"
