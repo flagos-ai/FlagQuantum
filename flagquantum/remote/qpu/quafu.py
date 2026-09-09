@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import time
+from collections.abc import Sequence
 from typing import Any, Mapping
 from urllib import parse
 
@@ -23,6 +25,45 @@ from .contracts import (
 )
 from .http import HttpQuantumProvider, ProviderCredentials
 from .result_parsing import _extract_counts
+
+_QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
+_QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
+
+
+def _submission_options(
+    qasm: str,
+    *,
+    n_wires: int,
+    options: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate the Quafu contract for an already compiled logical circuit."""
+
+    if "compiler" not in options or options["compiler"] is not None:
+        raise ValueError("precompiled Quafu submissions require compiler=None")
+    raw_qubits = options.get("target_qubits")
+    if not isinstance(raw_qubits, Sequence) or isinstance(raw_qubits, (str, bytes)):
+        raise ValueError("precompiled Quafu submissions require target_qubits")
+    target_qubits = [int(qubit) for qubit in raw_qubits]
+    if (
+        len(target_qubits) != n_wires
+        or len(set(target_qubits)) != n_wires
+        or any(qubit < 0 for qubit in target_qubits)
+    ):
+        raise ValueError(
+            "target_qubits must contain one unique physical qubit per logical wire"
+        )
+    declaration = _QREG_DECLARATION.search(qasm)
+    if declaration is None or int(declaration.group(1)) != n_wires:
+        raise ValueError(
+            "Quafu QASM must declare logical qreg q[N] matching target_qubits"
+        )
+    body = _QREG_DECLARATION.sub("", qasm, count=1)
+    if any(int(index) >= n_wires for index in _QUBIT_REFERENCE.findall(body)):
+        raise ValueError("Quafu QASM may reference only logical q[0] through q[N-1]")
+    resolved = dict(options)
+    resolved["compiler"] = None
+    resolved["target_qubits"] = target_qubits
+    return resolved
 
 
 class QuafuProvider(HttpQuantumProvider):
@@ -135,6 +176,11 @@ class QuafuProvider(HttpQuantumProvider):
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         validate_deployment_package(package)
+        options = _submission_options(
+            package.qasm,
+            n_wires=package.n_wires,
+            options=dict(package.metadata.get("provider_options", {})),
+        )
         query = parse.urlencode(
             {"name": package.name, "chip": package.backend.name, "shots": package.shots}
         )
@@ -142,8 +188,7 @@ class QuafuProvider(HttpQuantumProvider):
             self._url(f"/task/run/?{query}"),
             {
                 "circuit": package.qasm,
-                "compile": bool(package.metadata.get("provider_compile", True)),
-                "options": dict(package.metadata.get("provider_options", {})),
+                "options": options,
             },
             self._headers(),
             self.timeout,
@@ -171,11 +216,12 @@ class QuafuProvider(HttpQuantumProvider):
         chip: str,
         name: str,
         shots: int,
+        target_qubits: Sequence[int],
     ) -> ProviderTaskHandle:
-        """Submit OpenQASM 2.0 while requesting no provider compilation.
+        """Submit precompiled logical OpenQASM 2.0 to ordered physical qubits.
 
-        Quafu may still lower gates or remap qubits. The returned ``transpiled``
-        program, when present, is the authoritative execution representation.
+        ``q[i]`` remains logical wire ``i``; ``target_qubits[i]`` identifies the
+        physical qubit selected for that wire. Quafu receives ``compiler=None``.
         """
 
         program = str(qasm)
@@ -187,13 +233,18 @@ class QuafuProvider(HttpQuantumProvider):
             raise ValueError("Quafu QASM submission requires chip and name")
         if int(shots) <= 0 or int(shots) % 1024:
             raise ValueError("Quafu shots must be a positive multiple of 1024")
+        options = _submission_options(
+            program,
+            n_wires=len(target_qubits),
+            options={"compiler": None, "target_qubits": target_qubits},
+        )
         digest = hashlib.sha256(program.encode()).hexdigest()
         query = parse.urlencode(
             {"name": task_name, "chip": backend, "shots": int(shots)}
         )
         response = self.transport.post_json(
             self._url(f"/task/run/?{query}"),
-            {"circuit": program, "compile": False, "options": {}},
+            {"circuit": program, "options": options},
             self._headers(),
             self.timeout,
         )
@@ -211,7 +262,8 @@ class QuafuProvider(HttpQuantumProvider):
             "routing_evidence_sha256": digest,
             "deployment_artifact_sha256": digest,
             "submitted_qasm_sha256": digest,
-            "compile": False,
+            "compiler": None,
+            "target_qubits": options["target_qubits"],
         }
         if isinstance(response, Mapping):
             receipt["submit"] = dict(response)

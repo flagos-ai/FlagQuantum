@@ -30,6 +30,12 @@
     "execution_entry": "fq.run",
     "measurement_kind": "probabilities"
   },
+  "precompiled_submission": {
+    "qasm_qubits": "logical_zero_based_contiguous",
+    "compiler": null,
+    "target_qubits": "ordered_physical_qubit_for_each_logical_wire",
+    "deprecated_compile_flag_allowed": false
+  },
   "task_states": ["Pending", "Running", "Finished", "Failed", "Cancelled"],
   "error_categories": [
     "precheck.badCircuit",

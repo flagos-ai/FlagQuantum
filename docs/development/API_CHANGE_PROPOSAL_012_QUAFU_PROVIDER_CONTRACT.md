@@ -26,7 +26,24 @@ API 收敛分支已经区分本地 `ExecutionPlan` 与 provider-facing
 5. Quafu adapter 真实路径仍依赖已经从 API 收敛分支移除的
    `fq.experimental.QPUTwin`。
 
+另外，旧实现仍向任务请求写入已废弃的顶层 `compile` 布尔字段，
+且未将逻辑线路与有序物理比特映射绑定，会使已编译线路的提交语义不完整。
+
 ## 决策
+
+### 0. 已编译线路提交契约
+
+QSteed 等本地编译器输出的 OpenQASM 必须继续使用连续逻辑序号
+`q[0]...q[N-1]`，不得将物理比特号写入 QASM。提交时三项信息缺一不可：
+
+- `circuit`：使用逻辑序号的完整 OpenQASM 2.0；
+- `options.compiler=None`：明确表示不请求云端再编译；
+- `options.target_qubits`：长度为 N 的有序物理比特列表，第 i 项对应逻辑
+  `q[i]`。
+
+顶层 `compile` 布尔字段已废弃，FlagQuantum 不再发送、接受或记录该字段。
+物理映射缺失、重复、长度不匹配，或 QASM 寄存器宽度与之
+不一致时，Provider 必须在网络请求前失败。
 
 ### 1. 三层比特序必须分别命名
 

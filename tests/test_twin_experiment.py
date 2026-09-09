@@ -19,12 +19,12 @@ from flagquantum.twin import QPUDigitalTwin, TwinExperiment
 
 SUBMITTED_QASM = """OPENQASM 2.0;
 include "qelib1.inc";
-qreg q[5];
+qreg q[2];
 creg c[2];
-h q[3];
-cx q[3],q[4];
-measure q[3] -> c[0];
-measure q[4] -> c[1];
+h q[0];
+cx q[0],q[1];
+measure q[0] -> c[0];
+measure q[1] -> c[1];
 """
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -80,6 +80,8 @@ def _handle(experiment, *, digest=None):
             "routing_evidence_sha256": program_identity,
             "deployment_artifact_sha256": program_identity,
             "submitted_qasm_sha256": program_identity,
+            "compiler": None,
+            "target_qubits": list(experiment.target_qubits),
         },
     )
 
@@ -104,12 +106,13 @@ def test_experiment_binds_prediction_program_receipt_and_result():
     class Provider:
         provider = "quafu"
 
-        def submit_qasm(self, qasm, *, chip, name, shots):
-            assert (qasm, chip, name, shots) == (
+        def submit_qasm(self, qasm, *, chip, name, shots, target_qubits):
+            assert (qasm, chip, name, shots, target_qubits) == (
                 SUBMITTED_QASM,
                 "Baihua",
                 "frozen-bell",
                 1024,
+                (3, 4),
             )
             return _handle(experiment)
 
@@ -151,7 +154,7 @@ def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
     response = json.loads(
         (FIXTURES / "quafu_result_service_transpile.json").read_text(encoding="utf-8")
     )
-    # Sanitized from a live Shenglian compile=False probe on 2026-09-09.
+    # Sanitized historical response proving the service may report a rewrite.
     experiment = _experiment(
         submitted_qasm=response["circuit"],
         shots=response["shots"],
@@ -186,7 +189,7 @@ def test_experiment_rejects_receipt_or_result_from_another_program():
     class Provider:
         provider = "quafu"
 
-        def submit_qasm(self, qasm, *, chip, name, shots):
+        def submit_qasm(self, qasm, *, chip, name, shots, target_qubits):
             return _handle(experiment, digest="0" * 64)
 
     with pytest.raises(RuntimeError, match="receipt"):

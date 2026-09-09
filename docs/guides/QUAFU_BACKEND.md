@@ -35,6 +35,11 @@ hardware comparisons as post-execution diagnostics. A returned `transpiled`
 circuit is retained as execution evidence, never presented as a circuit known
 before submission.
 
+Precompiled submission uses one explicit contract: the OpenQASM program keeps
+logical indices `q[0]` through `q[N-1]`; `options.target_qubits[i]` names the
+physical qubit for logical wire `i`; and `options.compiler` is `None`. The
+obsolete top-level `compile` flag is neither sent nor accepted by the adapter.
+
 For explicit backend selection:
 
 ```python
@@ -53,12 +58,11 @@ package = fqd.create_deployment_package(
     backend=backend,
     shots=1024,
     metadata={
-        "provider_compile": True,
         "provider_options": {
-            "compiler": "quarkcircuit",
+            "compiler": None,
             "correct": False,
             "open_dd": None,
-            "target_qubits": [],
+            "target_qubits": [0, 1],
         },
     },
 )

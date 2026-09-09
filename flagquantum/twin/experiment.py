@@ -43,6 +43,7 @@ class TwinExperiment:
     prediction: TwinPrediction
     name: str
     backend_name: str
+    target_qubits: tuple[int, ...]
     submitted_qasm: str
     submitted_qasm_identity: str
     shots: int
@@ -77,6 +78,7 @@ class TwinExperiment:
             prediction=prediction,
             name=task_name,
             backend_name=twin.snapshot.backend_name,
+            target_qubits=twin.snapshot.physical_qubits,
             submitted_qasm=program,
             submitted_qasm_identity=_sha256(program),
             shots=shot_count,
@@ -87,6 +89,14 @@ class TwinExperiment:
             raise ValueError("unsupported twin experiment schema")
         if self.prediction.snapshot_identity != self.snapshot_identity:
             raise ValueError("experiment prediction does not match its snapshot")
+        if (
+            len(self.target_qubits) != self.prediction.n_wires
+            or len(set(self.target_qubits)) != len(self.target_qubits)
+            or any(qubit < 0 for qubit in self.target_qubits)
+        ):
+            raise ValueError(
+                "target_qubits must map each logical wire to one physical qubit"
+            )
         if _sha256(self.submitted_qasm) != self.submitted_qasm_identity:
             raise ValueError("submitted_qasm_identity does not match submitted_qasm")
 
@@ -106,6 +116,7 @@ class TwinExperiment:
             chip=self.backend_name,
             name=self.name,
             shots=self.shots,
+            target_qubits=self.target_qubits,
         )
         if handle.provider != "quafu" or handle.backend_name != self.backend_name:
             raise RuntimeError("provider receipt identifies a different QPU target")
@@ -170,6 +181,7 @@ class TwinExperiment:
             "prediction": self.prediction.to_dict(),
             "name": self.name,
             "backend_name": self.backend_name,
+            "target_qubits": list(self.target_qubits),
             "submitted_qasm": self.submitted_qasm,
             "submitted_qasm_identity": self.submitted_qasm_identity,
             "shots": self.shots,

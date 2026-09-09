@@ -1,5 +1,7 @@
 """Tests for quantum cloud provider adapters."""
 
+import pytest
+
 import flagquantum as fq
 import flagquantum.deployment as fqd
 from flagquantum.deployment import CloudBackendProfile
@@ -51,6 +53,8 @@ def _package(provider, n_wires=2, *, metadata=None):
     circuit = fq.Circuit(n_wires)
     circuit.h(0).cx(0, 1)
     backend = CloudBackendProfile(provider=provider, name="chip", n_wires=8)
+    if provider == "quafu" and metadata is None:
+        metadata = {"provider_options": {"compiler": None, "target_qubits": [3, 4]}}
     return fqd.create_deployment_package(
         circuit, backend=backend, shots=8, metadata=metadata
     )
@@ -146,7 +150,11 @@ def test_quafu_provider_uses_platform_endpoint_and_token_header():
     assert url.startswith("https://quafu.test/task/run/?")
     assert "chip=chip" in url
     assert payload["circuit"].startswith("OPENQASM")
-    assert payload["compile"] is True
+    assert "compile" not in payload
+    assert payload["options"] == {
+        "compiler": None,
+        "target_qubits": [3, 4],
+    }
     assert headers == {"token": "secret"}
 
 
@@ -250,17 +258,57 @@ def test_quafu_provider_fetches_verbatim_chip_info():
     assert transport.gets[0][1] == {"token": "secret"}
 
 
-def test_quafu_provider_submits_qasm_without_requesting_compile():
+def test_quafu_provider_submits_precompiled_logical_qasm_with_mapping():
     transport = FakeTransport()
     provider = QuafuProvider(
         base_url="https://quafu.test", token="secret", transport=transport
     )
     qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\n'
 
-    handle = provider.submit_qasm(qasm, chip="Baihua", name="direct", shots=1024)
+    handle = provider.submit_qasm(
+        qasm,
+        chip="Baihua",
+        name="direct",
+        shots=1024,
+        target_qubits=(3, 4),
+    )
 
     _, payload, headers, _ = transport.posts[0]
-    assert payload == {"circuit": qasm, "compile": False, "options": {}}
+    assert payload == {
+        "circuit": qasm,
+        "options": {"compiler": None, "target_qubits": [3, 4]},
+    }
     assert headers == {"token": "secret"}
-    assert handle.payload["compile"] is False
+    assert handle.payload["compiler"] is None
+    assert handle.payload["target_qubits"] == [3, 4]
     assert len(handle.payload["submitted_qasm_sha256"]) == 64
+
+
+def test_quafu_provider_rejects_missing_or_invalid_physical_mapping():
+    provider = QuafuProvider(base_url="https://quafu.test", transport=FakeTransport())
+    qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\n'
+
+    with pytest.raises(ValueError, match="target_qubits"):
+        provider.submit(
+            _package("quafu", metadata={"provider_options": {"compiler": None}})
+        )
+    with pytest.raises(ValueError, match="compiler=None"):
+        provider.submit(
+            _package("quafu", metadata={"provider_options": {"target_qubits": [3, 4]}})
+        )
+    with pytest.raises(ValueError, match="logical qreg"):
+        provider.submit_qasm(
+            qasm.replace("q[2]", "q[3]"),
+            chip="Baihua",
+            name="direct",
+            shots=1024,
+            target_qubits=(3, 4),
+        )
+    with pytest.raises(ValueError, match="logical q"):
+        provider.submit_qasm(
+            qasm + "x q[2];\n",
+            chip="Baihua",
+            name="direct",
+            shots=1024,
+            target_qubits=(3, 4),
+        )

@@ -43,12 +43,12 @@ def main() -> None:
         backend=backend,
         shots=1024,
         metadata={
-            "provider_compile": True,
             "provider_options": {
-                "compiler": "quarkcircuit",
+                "compiler": None,
                 "correct": False,
                 "open_dd": None,
-                "target_qubits": [],
+                # Logical q[i] is executed on target_qubits[i].
+                "target_qubits": [0, 1],
             },
         },
     )
