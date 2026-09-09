@@ -129,6 +129,11 @@ process and SSH channel. The worker listens only on workspace loopback,
 executes through FlagQuantum Runtime, rejects target mismatches, records the
 actual device and CPU-fallback status, and returns a normal `ExecutionResult`.
 Call `client.close()` or use the context manager to release the local channel.
+If the workspace has restarted, the next readiness check discards its cached
+SSH endpoint, discovers the replacement endpoint, and starts a new worker.
+An interrupted execution request is never retried automatically because its
+completion status may be ambiguous; the following explicit call performs
+readiness recovery before submitting new work.
 
 This initial path intentionally supports statevector results only. It is not a
 replacement for Jiuding batch scheduling, multi-node launch, or a public

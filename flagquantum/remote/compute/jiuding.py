@@ -374,6 +374,18 @@ class JiudingClient:
         self._executor_health.pop(port, None)
         if process is not None and process.poll() is None:
             process.terminate()
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+
+    def _reset_workspace_connection(self) -> None:
+        """Discard transport facts that can change when a workspace restarts."""
+
+        self.close()
+        self._ssh_command = None
+        self._workspace = None
 
     def close(self) -> None:
         """Close persistent SSH channels owned by this client."""
@@ -417,6 +429,10 @@ class JiudingClient:
                 health, port=port, timeout=min(timeout, 5)
             )
         except (RuntimeError, TimeoutError):
+            self._reset_workspace_connection()
+            chip_type, model = self._resolve_compute_target(target)
+            device = "cuda:0" if chip_type == "gpu" else "cpu"
+            effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
             command = shlex.join(
                 [
                     python,

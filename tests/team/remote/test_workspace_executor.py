@@ -147,3 +147,24 @@ def test_start_executor_reuses_verified_health(monkeypatch):
     )
 
     assert client.start_executor(target="jiuding:cpu") == health
+
+
+def test_workspace_restart_discards_cached_transport(monkeypatch):
+    from unittest.mock import Mock
+
+    client = JiudingClient(workspace="test")
+    client._workspace = {"id": "old"}
+    client._ssh_command = ("ssh", "old")
+    process = Mock()
+    process.poll.return_value = None
+    client._executor_channels[57621] = process
+    client._executor_health[57621] = {"ok": True}
+
+    client._reset_workspace_connection()
+
+    assert client._workspace is None
+    assert client._ssh_command is None
+    assert client._executor_channels == {}
+    assert client._executor_health == {}
+    process.terminate.assert_called_once_with()
+    process.wait.assert_called_once_with(timeout=1)
