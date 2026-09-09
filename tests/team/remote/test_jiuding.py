@@ -63,6 +63,7 @@ def client():
         resourceRegion="CUSTOMIZED_ACCELERATOR",
         creatorId="u",
         creatorName="user",
+        acceleratorModel="NVIDIA_A100-SXM4-40GB",
         storageInfo=[],
     )
     client._auth = Mock(return_value={"AIRS-Token": "test-token"})
@@ -195,6 +196,78 @@ def test_submit_creates_then_launches_once_with_zero_gpu(client, tmp_path):
     resource = calls[0].args[1]["advanceConfigInfos"][0]["resourceConfigList"][0]
     assert resource["roleInfoList"][0]["resourceRequestDetail"]["acceleratorCount"] == 0
     assert "test-token" not in json.dumps(receipt)
+
+
+def test_first_job_resolves_exact_public_catalog_image(client, tmp_path):
+    script = tmp_path / "gpu.py"
+    script.write_text("def main(): return 42")
+    client._jobs = Mock(return_value=[])
+    config = {
+        "confId": "conf",
+        "configName": "config1",
+        "resourceConfigList": [
+            {
+                "queueId": "q",
+                "roleInfoList": [
+                    {
+                        "name": "Master",
+                        "replicas": 1,
+                        "resourceRequestDetail": {
+                            "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+                            "acceleratorCount": 1,
+                            "cpuCores": 2,
+                            "memGib": 2,
+                            "sharedMemGib": 1,
+                            "rdmaSharedCount": 0,
+                        },
+                    }
+                ],
+            }
+        ],
+    }
+    client._request = Mock(
+        side_effect=[
+            {
+                "items": [
+                    {
+                        "id": "image-id",
+                        "name": "pytorch-26.03-py3-sshd",
+                        "tag": "v2.0.1",
+                        "status": 10,
+                        "clusterId": "c",
+                        "baseUrl": "harbor.example/pytorch-26.03-py3-sshd:v2.0.1",
+                    }
+                ]
+            },
+            {"experimentId": "exp"},
+            {
+                "experimentSummaryInfos": [
+                    {
+                        "experimentId": "exp",
+                        "advanceConfigInfos": [config],
+                        "creatorId": "u",
+                        "nativeCluster": "default-cluster",
+                    }
+                ]
+            },
+            {"jobId": "job"},
+        ]
+    )
+
+    receipt = client.submit(
+        script,
+        image="pytorch-26.03-py3-sshd:v2.0.1",
+        receipt=tmp_path / "receipt.json",
+        gpus=1,
+    )
+
+    assert receipt["jobId"] == "job"
+    client._jobs.assert_not_called()
+    calls = client._request.call_args_list
+    assert calls[0].args[0] == "/api/v1/images/select"
+    resource = calls[1].args[1]["advanceConfigInfos"][0]["resourceConfigList"][0]
+    assert resource["basicImage"] == ("harbor.example/pytorch-26.03-py3-sshd:v2.0.1")
+    assert resource["imageRegion"] == "PUBLIC"
 
 
 def test_uncertain_launch_retains_experiment_and_never_recreates(client, tmp_path):

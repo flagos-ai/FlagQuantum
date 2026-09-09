@@ -187,6 +187,11 @@ class JiudingClient:
             self._workspace["storageInfo"] = w.get("advanceConfig", {}).get(
                 "storageInfo", []
             )
+            self._workspace["acceleratorModel"] = (
+                w.get("quotaDetail", {})
+                .get("resourceDetail", {})
+                .get("acceleratorModel", "")
+            )
         return json.loads(json.dumps(self._workspace))
 
     def _headers(self) -> dict:
@@ -218,6 +223,46 @@ class JiudingClient:
                 if j.get("queueId") == w["queueId"] and j.get("basicImage")
             }
         )
+
+    def _public_image(self, image: str) -> dict:
+        """Resolve one exact public image through Jiuding's image catalog."""
+        leaf = image.rsplit("/", 1)[-1]
+        name, separator, tag = leaf.partition(":")
+        if not separator or not name or not tag:
+            raise ValueError("Use an exact image name and tag, such as name:v1")
+        result = self._request(
+            "/api/v1/images/select",
+            {
+                "imageStatus": [10],
+                "repoTypes": "PUBLIC",
+                "clusterId": self.workspace()["clusterId"],
+                "name": name,
+                "paging": {"page": 1, "pageSize": 100},
+            },
+            self._headers(),
+        )
+        items = result.get("items")
+        if not isinstance(items, list):
+            raise RuntimeError("Jiuding image catalog response missing items")
+        matches = {
+            item["id"]: item
+            for item in items
+            if isinstance(item, dict)
+            and item.get("id")
+            and item.get("status") == 10
+            and item.get("clusterId") == self.workspace()["clusterId"]
+            and (
+                f"{item.get('name')}:{item.get('tag')}" in (image, leaf)
+                or item.get("baseUrl") == image
+                or item.get("registryUrl") == image
+            )
+        }
+        if len(matches) != 1:
+            raise ValueError("Image was not uniquely resolved in the public catalog")
+        resolved = next(iter(matches.values()))
+        if not resolved.get("baseUrl"):
+            raise RuntimeError("Jiuding image catalog returned no executable image URL")
+        return resolved
 
     @staticmethod
     def _save(path: Path, receipt: dict) -> None:
@@ -260,21 +305,38 @@ class JiudingClient:
         w = self.workspace()
         if w["queueStatus"] != "QUEUE_STATUS_ACTIVE":
             raise RuntimeError("Workspace queue is not active")
-        examples = [
-            j
-            for j in self._jobs()
-            if j.get("queueId") == w["queueId"] and j.get("basicImage") == image
-        ]
-        if not examples:
-            raise ValueError("Choose an image returned by client.images()")
-        models = sorted(
-            {
-                role.get("resourceRequestDetail", {}).get("acceleratorModel")
-                for job in examples
-                for role in job.get("roleInfos", [])
-                if role.get("resourceRequestDetail", {}).get("acceleratorModel")
-            }
+        catalog_image = (
+            self._public_image(image) if ":" in image and "/" not in image else None
         )
+        examples = (
+            []
+            if catalog_image
+            else [
+                j
+                for j in self._jobs()
+                if j.get("queueId") == w["queueId"] and j.get("basicImage") == image
+            ]
+        )
+        if catalog_image:
+            executable_image = catalog_image["baseUrl"]
+            image_region = "PUBLIC"
+            models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
+        elif examples:
+            executable_image = image
+            image_region = examples[0]["imageRegion"]
+            models = sorted(
+                {
+                    role.get("resourceRequestDetail", {}).get("acceleratorModel")
+                    for job in examples
+                    for role in job.get("roleInfos", [])
+                    if role.get("resourceRequestDetail", {}).get("acceleratorModel")
+                }
+            )
+        else:
+            catalog_image = self._public_image(image)
+            executable_image = catalog_image["baseUrl"]
+            image_region = "PUBLIC"
+            models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
         if accelerator_model is not None and accelerator_model not in models:
             raise ValueError(
                 "accelerator_model must match a model observed with this image and queue"
@@ -306,8 +368,8 @@ class JiudingClient:
         resource = {
             "queueId": w["queueId"],
             "priority": "high",
-            "basicImage": image,
-            "imageRegion": examples[0]["imageRegion"],
+            "basicImage": executable_image,
+            "imageRegion": image_region,
             "clusterId": w["clusterId"],
             "zoneId": w["zoneId"],
             "podRestartPolicy": "Never",
