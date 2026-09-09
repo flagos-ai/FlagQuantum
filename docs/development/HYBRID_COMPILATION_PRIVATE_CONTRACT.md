@@ -473,3 +473,33 @@ measurement-dependent carry fails closed. Runtime and Simulation remain
 unchanged. The feature stays private and makes no public API, default-path,
 general Python, finite-shot-gradient, accelerator, distributed, capacity, or
 performance claim.
+
+## Phase 11 nested structured-state propagation authorization
+
+Phase 11 may discover writes to an outer scalar, index, or bool recursively
+through supported nested `if` and `for` statements. A name updated in an inner
+region is included in the carried signature of every enclosing structured
+operation. Each level therefore receives and yields an explicit SSA value;
+there is no closure mutation, runtime cell, global table, or stale outer-value
+fallback.
+
+The first nested profiles are an outer bounded loop containing an inner branch
+and an outer compile-time-resolved branch containing an inner bounded loop.
+Within those profiles, scalar angles, index wires, and bool selectors may flow
+from the entry block through nested region arguments and results into later
+gates and measurements. Region-local names remain local unless they correspond
+to a binding visible at the enclosing operation.
+
+Lowering continues to specialize predicates and bounded trip counts. Nested
+loop iterations contribute to the same cumulative unroll ceiling; no nested
+path bypasses the configured bound. Quantum effects remain linear at every
+region boundary. A measurement-dependent branch still cannot export classical
+state, and measurement inside any loop remains unsupported. Tensor carried
+state and loop-target shadowing also continue to fail closed.
+
+Phase 11 acceptance is complete when loop-around-branch and branch-around-loop
+programs produce matching nested signatures, deterministic gate traces, and
+expected trajectory outcomes. Runtime and Simulation remain unchanged. The
+feature stays private and makes no public API, default-path, general Python,
+finite-shot-gradient, accelerator, distributed, capacity, or performance
+claim.

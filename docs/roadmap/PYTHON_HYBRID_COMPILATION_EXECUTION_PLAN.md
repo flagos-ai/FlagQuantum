@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-10 bounded vertical slices complete**
+Status: **Phases 1-11 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -583,6 +583,31 @@ Exit gate:
 - Runtime, Simulation, public API, default path, and performance claims remain
   unchanged.
 
+### Phase 11 — nested structured state propagation
+
+Generalize carried-name discovery across nested supported `if` and `for`
+statements. If an inner region updates an outer scalar, index, or bool, every
+enclosing structured operation must carry that name explicitly. This creates a
+continuous SSA chain from the entry value through each region argument, yield,
+and result to the post-structure consumer.
+
+The accepted vertical slice covers an outer bounded loop containing branches
+that update angle, wire, and selector state, and an outer branch containing a
+bounded loop that accumulates an angle. Lowering still specializes all
+classical predicates and bounded trip counts before handing one bound
+`CircuitIR` to Runtime.
+
+Exit gate:
+
+- recursive discovery is deterministic and limited to supported statements;
+- outer and inner region signatures explicitly contain the same required state;
+- loop-then-branch and branch-then-loop paths preserve Python value flow;
+- cumulative nested unrolling remains subject to the configured ceiling;
+- measurement-dependent state escape, tensor state, and loop measurement fail
+  closed;
+- Runtime, Simulation, public API, default path, and performance claims remain
+  unchanged.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -716,3 +741,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 9 scalar/index carry capture and dynamic execution verified
 - [x] Phase 10 explicit branch-carried classical-state contract authorized
 - [x] Phase 10 scalar/index/bool merge and dynamic execution verified
+- [x] Phase 11 nested structured-state propagation contract authorized
+- [x] Phase 11 loop/branch and branch/loop value-flow slices verified

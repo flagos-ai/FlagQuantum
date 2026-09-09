@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase10_branch_carried_classical_state_verified",
+  "status": "phase11_nested_structured_state_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -352,6 +352,32 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE10_EVIDENCE.md"
   },
   "phase10_completed": true,
+  "phase11": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.capture_source",
+    "assignment_discovery": "recursive_structured_if_for_analysis",
+    "supported_nesting": [
+      "for_contains_if",
+      "if_contains_for"
+    ],
+    "carried_value_types": [
+      "scalar_float32_or_float64",
+      "index",
+      "bool"
+    ],
+    "state_transport": "explicit_ssa_at_every_enclosing_structured_region",
+    "quantum_effect_transport": "linear_region_argument_and_result",
+    "nested_loop_unroll_accounting": "cumulative_configured_ceiling",
+    "measurement_dependent_carried_state": "unsupported_fail_closed",
+    "loop_measurement_supported": false,
+    "tensor_carried_state": "unsupported_fail_closed",
+    "runtime_change_required": false,
+    "simulation_change_required": false,
+    "public_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE11_EVIDENCE.md"
+  },
+  "phase11_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

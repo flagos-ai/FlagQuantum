@@ -352,3 +352,36 @@ def test_phase10_merges_branch_carried_state_without_runtime_mutation() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE10_EVIDENCE.md"
     )
     assert contract["phase10_completed"] is True
+
+
+def test_phase11_threads_state_through_nested_structured_regions() -> None:
+    contract = _contract()
+    phase11 = contract["phase11"]
+
+    assert phase11["assignment_discovery"] == ("recursive_structured_if_for_analysis")
+    assert phase11["supported_nesting"] == [
+        "for_contains_if",
+        "if_contains_for",
+    ]
+    assert phase11["carried_value_types"] == [
+        "scalar_float32_or_float64",
+        "index",
+        "bool",
+    ]
+    assert phase11["state_transport"] == (
+        "explicit_ssa_at_every_enclosing_structured_region"
+    )
+    assert phase11["quantum_effect_transport"] == ("linear_region_argument_and_result")
+    assert phase11["nested_loop_unroll_accounting"] == ("cumulative_configured_ceiling")
+    assert phase11["measurement_dependent_carried_state"] == ("unsupported_fail_closed")
+    assert phase11["loop_measurement_supported"] is False
+    assert phase11["tensor_carried_state"] == "unsupported_fail_closed"
+    assert phase11["runtime_change_required"] is False
+    assert phase11["simulation_change_required"] is False
+    assert phase11["public_api_change"] is False
+    assert phase11["default_path_change"] is False
+    assert phase11["performance_claim"] is False
+    assert phase11["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE11_EVIDENCE.md"
+    )
+    assert contract["phase11_completed"] is True

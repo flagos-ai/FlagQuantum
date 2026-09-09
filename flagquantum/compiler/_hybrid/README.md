@@ -39,8 +39,10 @@ outer scalar, index, and bool names through explicit `scf.for` region arguments,
 results, and yields. Compile-time-resolved `if` branches may merge the same
 classical types through explicit `scf.if` operands, region arguments, yields,
 and results, including pass-through on a side that does not assign the name.
-Tensor state, loop-target shadowing, nested-region writes, and classical state
-escaping a measurement-dependent branch fail closed.
+Assignment discovery follows nested `if` and `for` regions, so each enclosing
+operation explicitly carries any outer state updated below it. Tensor state,
+loop-target shadowing, and classical state escaping a measurement-dependent
+branch fail closed.
 
 `specialize.py` selects one bounded runtime path and records an ephemeral gate
 trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core

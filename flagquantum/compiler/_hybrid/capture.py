@@ -437,7 +437,9 @@ class _Capture:
             self.fail(statement.test, "control.condition", "if condition must be bool")
         input_effect = self.require_effect(statement)
         saved_environment = self.environment
-        carried_names = self.direct_branch_carried_names(statement, saved_environment)
+        carried_names = self.structured_carried_names(
+            (*statement.body, *statement.orelse), saved_environment
+        )
         carried_inputs = tuple(
             self.require_classical_carry(statement, name, saved_environment[name])
             for name in carried_names
@@ -533,17 +535,28 @@ class _Capture:
             self.operations = saved_operations
             self.effect = saved_effect
 
-    def direct_branch_carried_names(
-        self, statement: ast.If, outer: dict[str, _Binding]
+    def structured_carried_names(
+        self, statements: Sequence[ast.stmt], outer: dict[str, _Binding]
     ) -> tuple[str, ...]:
         names: list[str] = []
-        for child in (*statement.body, *statement.orelse):
-            if not isinstance(child, ast.Assign):
-                continue
-            for target in child.targets:
-                if isinstance(target, ast.Name) and target.id in outer:
-                    if target.id not in names:
-                        names.append(target.id)
+        for statement in statements:
+            if isinstance(statement, ast.Assign):
+                for target in statement.targets:
+                    if isinstance(target, ast.Name) and target.id in outer:
+                        if target.id not in names:
+                            names.append(target.id)
+            elif isinstance(statement, ast.If):
+                nested = self.structured_carried_names(
+                    (*statement.body, *statement.orelse), outer
+                )
+                for name in nested:
+                    if name not in names:
+                        names.append(name)
+            elif isinstance(statement, ast.For):
+                nested = self.structured_carried_names(statement.body, outer)
+                for name in nested:
+                    if name not in names:
+                        names.append(name)
         return tuple(names)
 
     def capture_for(self, statement: ast.For) -> None:
@@ -552,7 +565,7 @@ class _Capture:
         lower, upper, step, descriptor = self.loop_bounds(statement.iter)
         input_effect = self.require_effect(statement)
         saved_environment = self.environment
-        carried_names = self.direct_loop_carried_names(statement, saved_environment)
+        carried_names = self.loop_carried_names(statement, saved_environment)
         carried_inputs = tuple(
             self.require_classical_carry(statement, name, saved_environment[name])
             for name in carried_names
@@ -627,7 +640,7 @@ class _Capture:
         self.environment.update(zip(carried_names, results[:-1]))
         self.effect = results[-1]
 
-    def direct_loop_carried_names(
+    def loop_carried_names(
         self, statement: ast.For, outer: dict[str, _Binding]
     ) -> tuple[str, ...]:
         target_names = {
@@ -640,15 +653,7 @@ class _Capture:
                 "control.target_shadow",
                 "loop targets may not overwrite outer bindings: " + ", ".join(shadowed),
             )
-        names: list[str] = []
-        for child in statement.body:
-            if not isinstance(child, ast.Assign):
-                continue
-            for target in child.targets:
-                if isinstance(target, ast.Name) and target.id in outer:
-                    if target.id not in names:
-                        names.append(target.id)
-        return tuple(names)
+        return self.structured_carried_names(statement.body, outer)
 
     def require_classical_carry(
         self, node: ast.AST, name: str, binding: _Binding
@@ -661,7 +666,7 @@ class _Capture:
             self.fail(
                 node,
                 "control.classical_carry_type",
-                f"loop-carried binding {name!r} must be scalar, index, or bool",
+                f"carried binding {name!r} must be scalar, index, or bool",
             )
         return binding
 
@@ -676,7 +681,7 @@ class _Capture:
             self.fail(
                 node,
                 "control.classical_carry_type",
-                f"loop-carried binding {name!r} must preserve type {expected_type}",
+                f"carried binding {name!r} must preserve type {expected_type}",
             )
         return binding
 
