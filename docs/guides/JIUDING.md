@@ -99,6 +99,41 @@ The GPU script selects `fq.ExecutionOptions(device="cuda:0")`. Requesting a GPU
 allocates a resource; numerical device selection remains in the user program.
 The generic `jiuding:gpu` target resolves to the selected queue's GPU model. A
 `jiuding:gpu/<model>` target requires an exact model match.
+
+## Repeated low-latency execution
+
+Batch Jobs are appropriate for isolated, schedulable workloads, but their
+container startup time dominates tiny circuits. For interactive or repeated
+statevector work, keep one development workspace running and reuse a resident
+executor:
+
+```python
+import flagquantum as fq
+from flagquantum.remote.compute.jiuding import JiudingClient
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+with JiudingClient(workspace="flagquantum-dev") as client:
+    first = client.run_statevector(
+        circuit,
+        target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    )
+    second = client.run_statevector(
+        circuit,
+        target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    )
+```
+
+The first call verifies the workspace, establishes SSH, and starts the worker
+when necessary. Later calls on the same client reuse both the resident Python
+process and SSH channel. The worker listens only on workspace loopback,
+executes through FlagQuantum Runtime, rejects target mismatches, records the
+actual device and CPU-fallback status, and returns a normal `ExecutionResult`.
+Call `client.close()` or use the context manager to release the local channel.
+
+This initial path intentionally supports statevector results only. It is not a
+replacement for Jiuding batch scheduling, multi-node launch, or a public
+multi-user service. Large full-state transfers remain bounded by the protocol
+message limit; use batch artifacts for large outputs.
 The target namespace recognizes `cpu`, `gpu`, `mlu`, `npu` and `xpu` so its
 meaning remains stable as Jiuding adds adapters. Only CPU and single-GPU paths
 are implemented today. MLU, NPU and XPU targets fail before any platform

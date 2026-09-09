@@ -4,8 +4,9 @@ This directory owns experimental adapters to external CPU/GPU job systems.
 Jiuding currently supports explicit development-workspace creation and
 start/stop control, one CPU or single-GPU task instance, automatic workspace
 context discovery, create-and-start submission, status, waiting, shared JSON
-results, and stopping active jobs. It uses the standard library and direct
-HTTPS calls.
+results, stopping active jobs, and a loopback-only resident statevector
+executor for low-latency work in an already-running workspace. It uses the
+standard library and direct HTTPS/SSH calls.
 Compute selection uses `jiuding:<chip-type>` or
 `jiuding:<chip-type>/<model>`. CPU and GPU are implemented; MLU, NPU and XPU
 are recognized reserved names that fail closed until real adapters exist.
@@ -20,8 +21,10 @@ Complex functions and local imports can live in that script's shared project.
 The caller must provision the shared code and a compatible image first.
 
 Read `docs/guides/JIUDING.md` for the supported journey and limits. Run
-`python -m pytest tests/team/remote/test_jiuding.py -q` for offline behavior
-tests. No test in that file creates real tasks. The Bell example provides a
+`python -m pytest tests/team/remote/test_jiuding.py
+tests/team/remote/test_workspace_executor.py -q` for offline behavior tests.
+No test in those files creates real tasks. The Bell example provides a
 small CPU numerical check for live acceptance; `jiuding_bell_gpu.py` checks
-CUDA execution with one visible GPU. A new provider-wide contract,
-root export or distributed claim requires a separate reviewed change.
+CUDA execution with one visible GPU; `jiuding_workspace_bell.py` exercises the
+resident path. A new provider-wide contract, root export or distributed claim
+requires a separate reviewed change.

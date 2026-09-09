@@ -12,8 +12,11 @@ import hmac
 import json
 import os
 import re
+import select
 import shlex
 import socket
+import struct
+import subprocess
 import sys
 import time
 import uuid
@@ -59,6 +62,9 @@ class JiudingClient:
         self._token = ""
         self._expires = 0.0
         self._workspace: dict | None = None
+        self._ssh_command: tuple[str, ...] | None = None
+        self._executor_channels: dict[int, subprocess.Popen] = {}
+        self._executor_health: dict[int, dict] = {}
 
     def _request(self, path: str, body: dict | None, headers: dict) -> dict:
         request = Request(
@@ -252,6 +258,279 @@ class JiudingClient:
         if len(matches) != 1:
             raise RuntimeError("Workspace was not uniquely resolved in this project")
         return matches[0]
+
+    def _ssh_base(self) -> list[str]:
+        """Build a constrained SSH command from the platform workspace record."""
+
+        if self._ssh_command is not None:
+            return list(self._ssh_command)
+        record = self._workspace_record(self.workspace()["id"])
+        login = record.get("SSHLogin")
+        if not isinstance(login, str):
+            raise RuntimeError("Jiuding workspace exposes no SSH login")
+        tokens = shlex.split(login)
+        if not tokens or tokens[0] != "ssh":
+            raise RuntimeError("Jiuding workspace returned an invalid SSH login")
+        endpoint = next(
+            (item for item in tokens[1:] if re.fullmatch(r"[\w.-]+@[\w.-]+", item)),
+            None,
+        )
+        ports = [
+            tokens[index + 1] for index, item in enumerate(tokens[:-1]) if item == "-p"
+        ]
+        if endpoint is None or len(ports) != 1 or not ports[0].isdigit():
+            raise RuntimeError("Jiuding workspace returned an invalid SSH endpoint")
+        identity = hashlib.sha256(
+            f"{self.endpoint}\0{endpoint}\0{ports[0]}".encode()
+        ).hexdigest()[:16]
+        command = (
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=15",
+            "-o",
+            "ControlMaster=auto",
+            "-o",
+            "ControlPersist=300",
+            "-o",
+            f"ControlPath=/tmp/fq-jiuding-{identity}",
+            "-p",
+            ports[0],
+            endpoint,
+        )
+        self._ssh_command = command
+        return list(command)
+
+    def _executor_request(self, payload: dict, *, port: int, timeout: float) -> dict:
+        from ._workspace_executor import MAX_MESSAGE_BYTES
+
+        if not 1024 <= port <= 65535:
+            raise ValueError("port must be between 1024 and 65535")
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+        encoded = json.dumps(payload, allow_nan=False, separators=(",", ":")).encode()
+        if len(encoded) > MAX_MESSAGE_BYTES:
+            raise ValueError("workspace executor request exceeds the size limit")
+        frame = struct.pack("!I", len(encoded)) + encoded
+        process = self._executor_channels.get(port)
+        if process is None or process.poll() is not None:
+            command = [*self._ssh_base(), "-W", f"127.0.0.1:{port}"]
+            process = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                bufsize=0,
+            )
+            self._executor_channels[port] = process
+        assert process.stdin is not None and process.stdout is not None
+        deadline = time.monotonic() + timeout
+        try:
+            process.stdin.write(frame)
+            process.stdin.flush()
+
+            def read_exact(size: int) -> bytes:
+                chunks = bytearray()
+                while len(chunks) < size:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError
+                    ready, _, _ = select.select([process.stdout], [], [], remaining)
+                    if not ready:
+                        raise TimeoutError
+                    chunk = os.read(process.stdout.fileno(), size - len(chunks))
+                    if not chunk:
+                        raise EOFError
+                    chunks.extend(chunk)
+                return bytes(chunks)
+
+            size = struct.unpack("!I", read_exact(4))[0]
+            if size <= 0 or size > MAX_MESSAGE_BYTES:
+                raise ValueError("invalid workspace executor response size")
+            stdout = read_exact(size)
+        except TimeoutError:
+            self._close_executor_channel(port)
+            raise TimeoutError("Jiuding workspace executor request timed out") from None
+        except (BrokenPipeError, EOFError, OSError, ValueError):
+            self._close_executor_channel(port)
+            raise RuntimeError("Jiuding workspace executor is unavailable") from None
+        try:
+            response = json.loads(stdout)
+            if not isinstance(response, dict):
+                raise TypeError
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise RuntimeError(
+                "Jiuding workspace executor returned invalid data"
+            ) from exc
+        if not response.get("ok"):
+            raise RuntimeError(
+                f"Jiuding workspace execution failed: {response.get('message', '')}"
+            )
+        return response
+
+    def _close_executor_channel(self, port: int) -> None:
+        process = self._executor_channels.pop(port, None)
+        self._executor_health.pop(port, None)
+        if process is not None and process.poll() is None:
+            process.terminate()
+
+    def close(self) -> None:
+        """Close persistent SSH channels owned by this client."""
+
+        for port in tuple(self._executor_channels):
+            self._close_executor_channel(port)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def start_executor(
+        self,
+        *,
+        target: str,
+        port: int = 57621,
+        timeout: float = 30,
+        python: str = "/opt/conda/bin/python",
+    ) -> dict:
+        """Ensure one loopback-only resident executor is ready in the workspace."""
+
+        chip_type, model = self._resolve_compute_target(target)
+        device = "cuda:0" if chip_type == "gpu" else "cpu"
+        effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
+        cached = self._executor_health.get(port)
+        if (
+            cached is not None
+            and cached.get("target") == effective_target
+            and cached.get("device") == device
+        ):
+            return dict(cached)
+        health = {
+            "schema": "flagquantum.jiuding.workspace_executor",
+            "version": "1.0",
+            "operation": "health",
+        }
+        try:
+            response = self._executor_request(
+                health, port=port, timeout=min(timeout, 5)
+            )
+        except (RuntimeError, TimeoutError):
+            command = shlex.join(
+                [
+                    python,
+                    "-m",
+                    "flagquantum.remote.compute._workspace_executor",
+                    "--port",
+                    str(port),
+                    "--target",
+                    effective_target,
+                    "--device",
+                    device,
+                ]
+            )
+            remote = (
+                "nohup "
+                + command
+                + " </dev/null >/tmp/flagquantum-workspace-executor.log 2>&1 &"
+            )
+            started = subprocess.run(
+                [*self._ssh_base(), remote],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
+                check=False,
+            )
+            if started.returncode:
+                raise RuntimeError("Failed to start Jiuding workspace executor")
+            deadline = time.monotonic() + timeout
+            while True:
+                try:
+                    response = self._executor_request(
+                        health,
+                        port=port,
+                        timeout=min(5, max(0.1, deadline - time.monotonic())),
+                    )
+                    break
+                except (RuntimeError, TimeoutError):
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError(
+                            "Jiuding workspace executor did not become ready"
+                        ) from None
+                    time.sleep(0.2)
+        if (
+            response.get("target") != effective_target
+            or response.get("device") != device
+        ):
+            raise RuntimeError(
+                "Resident executor target differs from the requested target"
+            )
+        if chip_type == "gpu" and not response.get("cuda_available"):
+            raise RuntimeError("Resident executor cannot access CUDA")
+        self._executor_health[port] = dict(response)
+        return dict(response)
+
+    def run_statevector(
+        self,
+        program,
+        *,
+        target: str,
+        port: int = 57621,
+        timeout: float = 30,
+    ):
+        """Run a circuit on the warm workspace and return a normal ExecutionResult."""
+
+        self.start_executor(target=target, port=port, timeout=timeout)
+        from ...core.ir import ensure_circuit_ir
+
+        ir = ensure_circuit_ir(program)
+        chip_type, model = self._resolve_compute_target(target)
+        effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
+        response = self._executor_request(
+            {
+                "schema": "flagquantum.jiuding.workspace_executor",
+                "version": "1.0",
+                "operation": "statevector",
+                "request_id": uuid.uuid4().hex,
+                "target": effective_target,
+                "program": ir.to_dict(),
+            },
+            port=port,
+            timeout=timeout,
+        )
+        state_payload = response["state"]
+        dtype_name = state_payload.get("dtype")
+        if dtype_name not in {"complex64", "complex128"}:
+            raise RuntimeError("Jiuding workspace returned an unsupported state dtype")
+        import torch
+
+        real_dtype = torch.float32 if dtype_name == "complex64" else torch.float64
+        complex_dtype = (
+            torch.complex64 if dtype_name == "complex64" else torch.complex128
+        )
+        raw = base64.b64decode(state_payload["data"], validate=True)
+        state = torch.frombuffer(bytearray(raw), dtype=real_dtype).view(complex_dtype)
+        state = state.reshape(
+            tuple(int(item) for item in state_payload["shape"])
+        ).clone()
+        from ...runtime.result import ExecutionResult
+
+        evidence = dict(response.get("evidence", {}))
+        return ExecutionResult(
+            state=state,
+            runtime={
+                "execution_path": "jiuding_workspace_executor",
+                "device": evidence.get("device"),
+                "elapsed_seconds": evidence.get("elapsed_seconds"),
+            },
+            provenance={
+                "requested_target": target,
+                "selected_target": effective_target,
+                "accelerator": evidence.get("accelerator"),
+                "cpu_fallback_used": evidence.get("cpu_fallback_used"),
+            },
+        )
 
     def workspace_state(self, reference: str) -> dict:
         """Return the current non-secret state of one project workspace."""
