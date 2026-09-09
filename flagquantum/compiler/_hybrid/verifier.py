@@ -270,6 +270,7 @@ class _Verifier:
                     not isinstance(term, tuple)
                     or len(term) != 2
                     or not isinstance(term[0], str)
+                    or term[0] not in {"x", "y", "z"}
                     or not isinstance(term[1], int)
                     or term[1] < 0
                     for term in terms
@@ -277,7 +278,7 @@ class _Verifier:
             ):
                 self.error(
                     "quantum.observable",
-                    "expectation terms must contain observable names and non-negative wires",
+                    "expectation terms must contain Pauli X/Y/Z names and non-negative wires",
                 )
 
     def _verify_constant(self, operation: Operation) -> None:

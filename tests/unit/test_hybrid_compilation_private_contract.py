@@ -127,3 +127,32 @@ def test_phase3_reuses_circuit_ir_and_separates_values_from_structure() -> None:
     assert phase3["default_path_change"] is False
     assert phase3["runtime_execution"] is False
     assert _contract()["phase3_completed"] is True
+
+
+def test_phase4_reuses_existing_execution_and_result_contracts() -> None:
+    contract = _contract()
+    phase4 = contract["phase4"]
+
+    assert phase4["compiler_handoff_artifact"] == "flagquantum.core.ir.CircuitIR"
+    assert (
+        phase4["expectation_request_artifact"] == "flagquantum.core.ir.MeasurementNode"
+    )
+    assert phase4["runtime_entry_point"] == "flagquantum.runtime.execution.run"
+    assert phase4["result_artifact"] == "flagquantum.runtime.result.ExecutionResult"
+    assert phase4["result_accessor"] == "ExecutionResult.expectation"
+    assert phase4["execution_mode"] == "statevector"
+    assert phase4["execution_device"] == "cpu"
+    assert phase4["distribution_semantics"] == "single_device_fast_path"
+    assert phase4["expectation_shape"] == "one_scalar_per_batch_item"
+    assert phase4["term_grouping"] == "shared_fq_output_index"
+    assert phase4["compiler_emits_existing_measurement_contract"] is True
+    assert phase4["runtime_imports_hybrid_compiler"] is False
+    assert phase4["runtime_source_change_required"] is False
+    assert phase4["simulation_source_change_required"] is False
+    assert phase4["new_execution_entry_point"] is False
+    assert phase4["new_result_type"] is False
+    assert phase4["gradient_claim"] is False
+    assert phase4["performance_claim"] is False
+    assert phase4["public_api_change"] is False
+    assert phase4["default_path_change"] is False
+    assert contract["phase4_completed"] is True

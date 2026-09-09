@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-3 implemented and verified under the repository owner's
+Status: Phases 1-4 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -172,4 +172,55 @@ Phase 3 acceptance is complete: positive, negative, zero, and mixed gate
 selection match hand-built circuit structures; late-bound tensor views preserve
 their autograd edges; template identity excludes values; bounded cache events
 are observable; and the existing Compiler accepts both templates and bound
-circuits. Phase 4 Runtime/Simulation work remains separately gated.
+circuits. That compiler-owned handoff is the input to the separately reviewed
+Phase 4 contract below.
+
+## Phase 4 local CPU forward authorization
+
+Phase 4 may complete the forward-only vertical slice by encoding the captured
+single expectation in the existing Core `MeasurementNode` representation on the
+same `CircuitIR` that already carries the lowered instructions. Each Pauli term
+uses the same `fq_output_index`, so the existing `ExecutionResult.expectation()`
+accessor returns their sum as one scalar per batch item. The existing
+`ObservableNode` terms remain available as semantic circuit annotations; they
+do not constitute a second execution request or result type.
+
+The handoff is exactly:
+
+```text
+Compiler-owned specialization and lowering
+  -> Core-owned CircuitIR with MeasurementNode requests
+  -> existing Runtime plan and one-attempt execution
+  -> existing Simulation local CPU statevector
+  -> existing ExecutionResult.expectation()
+```
+
+Runtime must not import `flagquantum.compiler._hybrid`. It accepts only the
+Core-owned artifact and remains responsible for planning, execution lifecycle,
+measurement dispatch, and result assembly. Simulation remains responsible for
+statevector evolution and Pauli expectation numerics. No new executor,
+execution result, public export, serialized public schema, or backend-selection
+rule is authorized.
+
+Phase 4 is restricted to analytic, forward-only, local CPU statevector
+execution with `single_device_fast_path` semantics. It does not claim a VJP,
+gradient preservation through the runtime, finite-shot behavior, noise,
+accelerator support, distributed execution, performance improvement, or
+production support. The existing public/default `fq.run` and `fq.plan` paths
+must not import or invoke hybrid capture or specialization when hybrid
+compilation is unused.
+
+Phase 4 acceptance requires all golden positive, negative, zero, and mixed
+branch patterns to match an explicit hand-built circuit reference, including
+the grouped scalar expectation and execution metadata. Compiler specialization
+errors must remain compiler errors, while planning/execution failures retain
+their existing Runtime or Simulation exception ownership.
+
+Phase 4 acceptance is complete. The compiler-produced `CircuitIR` passes through
+the existing compiler, Runtime planner, and local CPU statevector path; all four
+golden branch classes match the explicit reference and return one grouped
+expectation per batch item. The result reports `local_statevector` and
+`single_device_fast_path`. No Runtime, Simulation, root API, public contract, or
+default-path implementation changed. Unknown observable axes now fail during
+private Program IR verification rather than acquiring an accidental execution
+meaning. Phase 5 VJP work remains separately gated.

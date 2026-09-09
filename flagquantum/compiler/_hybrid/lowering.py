@@ -8,7 +8,7 @@ from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
-from ...core.ir import CircuitIR, Instruction, ObservableNode
+from ...core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from ...core.parameters import Parameter, bind_parameter_value
 from .model import HybridProgram
 from .specialize import SpecializedTrace, specialize_program
@@ -98,6 +98,25 @@ def _template(
     observables = tuple(
         ObservableNode(pauli, (wire,)) for pauli, wire in trace.observables
     )
+    term_count = len(trace.observables)
+    measurements = tuple(
+        MeasurementNode(
+            "expectation_ps",
+            (wire,),
+            metadata={
+                "fq_output_index": 0,
+                "fq_output_kind": "expectation",
+                "fq_output_name": None,
+                "fq_output_term": term_index,
+                "fq_output_terms": term_count,
+                "fq_coefficient": 1.0,
+                "x": (wire,) if pauli == "x" else (),
+                "y": (wire,) if pauli == "y" else (),
+                "z": (wire,) if pauli == "z" else (),
+            },
+        )
+        for term_index, (pauli, wire) in enumerate(trace.observables)
+    )
     referenced_wires = [
         wire for instruction in instructions for wire in instruction.wires
     ] + [wire for observable in observables for wire in observable.wires]
@@ -107,6 +126,7 @@ def _template(
         n_wires=max(referenced_wires) + 1,
         instructions=tuple(instructions),
         observables=observables,
+        measurements=measurements,
         dtype=circuit_dtype,
     )
     return circuit, bindings

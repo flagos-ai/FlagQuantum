@@ -150,6 +150,35 @@ def test_linear_quantum_effect_cannot_be_reused() -> None:
     assert "effect.reuse" in codes(caught.value)
 
 
+def test_unknown_expectation_axis_fails_before_lowering() -> None:
+    effect = value("entry", 0, QUANTUM_EFFECT)
+    expectation = value("entry", 1, F64)
+    program = HybridProgram(
+        "unknown_axis",
+        Region(
+            (
+                Block(
+                    arguments=(effect,),
+                    operations=(
+                        Operation(
+                            "quantum.expectation",
+                            operands=(effect,),
+                            results=(expectation,),
+                            attributes={"terms": (("unknown", 0),)},
+                        ),
+                        Operation("program.return", operands=(expectation,)),
+                    ),
+                ),
+            )
+        ),
+    )
+
+    with pytest.raises(HybridVerificationError) as caught:
+        verify_program(program)
+
+    assert "quantum.observable" in codes(caught.value)
+
+
 def test_branch_argument_signature_must_match_carried_effect() -> None:
     condition = value("entry", 0, BOOL)
     effect = value("entry", 1, QUANTUM_EFFECT)

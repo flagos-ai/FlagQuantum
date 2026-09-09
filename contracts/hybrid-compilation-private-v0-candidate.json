@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase3_path_specialization_verified",
+  "status": "phase4_local_cpu_forward_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -154,6 +154,29 @@
     "runtime_execution": false
   },
   "phase3_completed": true,
+  "phase4": {
+    "compiler_handoff_artifact": "flagquantum.core.ir.CircuitIR",
+    "expectation_request_artifact": "flagquantum.core.ir.MeasurementNode",
+    "runtime_entry_point": "flagquantum.runtime.execution.run",
+    "result_artifact": "flagquantum.runtime.result.ExecutionResult",
+    "result_accessor": "ExecutionResult.expectation",
+    "execution_mode": "statevector",
+    "execution_device": "cpu",
+    "distribution_semantics": "single_device_fast_path",
+    "expectation_shape": "one_scalar_per_batch_item",
+    "term_grouping": "shared_fq_output_index",
+    "compiler_emits_existing_measurement_contract": true,
+    "runtime_imports_hybrid_compiler": false,
+    "runtime_source_change_required": false,
+    "simulation_source_change_required": false,
+    "new_execution_entry_point": false,
+    "new_result_type": false,
+    "gradient_claim": false,
+    "performance_claim": false,
+    "public_api_change": false,
+    "default_path_change": false
+  },
+  "phase4_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

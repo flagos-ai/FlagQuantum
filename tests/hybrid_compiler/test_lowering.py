@@ -10,7 +10,7 @@ from flagquantum.compiler._hybrid import (
     specialize_and_lower,
     tensor_type,
 )
-from flagquantum.core.ir import CircuitIR, Instruction, ObservableNode
+from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.parameters import Parameter
 
 pytestmark = pytest.mark.unit
@@ -86,6 +86,38 @@ def test_lowered_mixed_path_matches_hand_built_circuit_ir() -> None:
             Instruction("cx", (3, 0)),
         ),
         observables=(ObservableNode("z", (0,)), ObservableNode("z", (3,))),
+        measurements=(
+            MeasurementNode(
+                "expectation_ps",
+                (0,),
+                metadata={
+                    "fq_output_index": 0,
+                    "fq_output_kind": "expectation",
+                    "fq_output_name": None,
+                    "fq_output_term": 0,
+                    "fq_output_terms": 2,
+                    "fq_coefficient": 1.0,
+                    "x": (),
+                    "y": (),
+                    "z": (0,),
+                },
+            ),
+            MeasurementNode(
+                "expectation_ps",
+                (3,),
+                metadata={
+                    "fq_output_index": 0,
+                    "fq_output_kind": "expectation",
+                    "fq_output_name": None,
+                    "fq_output_term": 1,
+                    "fq_output_terms": 2,
+                    "fq_coefficient": 1.0,
+                    "x": (),
+                    "y": (),
+                    "z": (3,),
+                },
+            ),
+        ),
     )
 
     assert tuple((item.name, item.wires) for item in bound.instructions) == tuple(
@@ -95,6 +127,7 @@ def test_lowered_mixed_path_matches_hand_built_circuit_ir() -> None:
         if "theta" in reference.params:
             assert torch.equal(actual.params["theta"], reference.params["theta"])
     assert bound.observables == expected.observables
+    assert bound.measurements == expected.measurements
 
 
 def test_template_uses_slots_and_binding_preserves_autograd_edges() -> None:
