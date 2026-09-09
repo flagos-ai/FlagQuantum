@@ -10,9 +10,17 @@ provided.
 Individual extensions remain experimental by default and require independent
 qualification.
 
-Supported extension kinds are execution backends, kernels, operators, compiler
-passes, devices, providers, measurement collectors, and planners. Protocols
-define the minimum lifecycle and operation surface for each kind.
+Supported extension kinds are execution backends, circuit compilers, compiler
+passes, kernels, operators, devices, providers, measurement collectors, and
+planners. A circuit compiler accepts and returns FlagQuantum `CircuitIR`;
+compiler passes remain the smaller transformation hook.
+
+Installed packages are discovered only through an explicit, kind-specific
+`discover_extensions(...)` call. They register zero-argument factories in the
+`flagquantum.extensions` Python entry-point group. Discovery validates the
+entry-point identity against the manifest and adds the result to the existing
+immutable registry; it does not introduce a second plugin registry. See
+[`COMPILER_PLUGINS.md`](../guides/COMPILER_PLUGINS.md).
 
 ## Compatibility lifecycle
 
@@ -39,13 +47,15 @@ Raw tokens, passwords, API keys, secrets, and credentials are rejected from
 `ExtensionConfig`. Providers must obtain credentials through a host-owned
 resolver and must not include them in manifests, errors, measurements, or
 serialized payloads. Extensions execute with the Python process's authority;
-only trusted packages should be installed.
+discovery is not a sandbox, and only trusted packages should be installed.
+Importing FlagQuantum does not discover, import, or activate extensions.
 
 ## Conformance
 
-`flagquantum.ecosystem.extensions` supplies reusable backend and provider checks covering
-manifest/payload serialization, capability honesty, PyTorch gradients,
-dtype/device preservation, isolated errors, and cleanup. The conformance
-submodule remains an equivalent explicit import path. Reference extensions are
-in `examples/extensions/reference_extensions.py` and import only the public SDK
-plus PyTorch.
+`flagquantum.ecosystem.extensions` supplies reusable backend, provider, and
+circuit-compiler checks covering manifest/payload serialization, capability
+honesty, PyTorch gradients, dtype/device preservation, CircuitIR ownership,
+determinism, isolated errors, and cleanup. The conformance submodule remains an
+equivalent explicit import path. Reference extensions are in
+`examples/extensions/reference_extensions.py` and
+`examples/extensions/reference_compiler_extension.py`.

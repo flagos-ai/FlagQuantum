@@ -5,15 +5,19 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from importlib import metadata
 from types import MappingProxyType
 from typing import Any, Iterator, Mapping, Protocol, Sequence, runtime_checkable
 
+from ...core.ir import CircuitIR
 from ...errors import CapabilityError, ExecutionError, FlagQuantumError
 
 SDK_API_VERSION = "1.0"
+EXTENSION_ENTRY_POINT_GROUP = "flagquantum.extensions"
 EXTENSION_KINDS = frozenset(
     {
         "backend",
+        "compiler",
         "kernel",
         "operator",
         "compiler_pass",
@@ -146,6 +150,18 @@ class CompilerPassExtension(Extension, Protocol):
 
 
 @runtime_checkable
+class CompilerExtension(Extension, Protocol):
+    """Circuit-level compiler that consumes and returns FlagQuantum IR."""
+
+    def compile(
+        self,
+        program: CircuitIR,
+        *,
+        target: Mapping[str, Any] | None = None,
+    ) -> CircuitIR: ...
+
+
+@runtime_checkable
 class DeviceExtension(Extension, Protocol):
     def devices(self) -> Sequence[Mapping[str, Any]]: ...
 
@@ -271,6 +287,50 @@ class ExtensionRegistry:
                 + "; ".join(blockers or ("request rejected",))
             )
         return ExtensionHandle(extension, response)
+
+
+def discover_extensions(kind: str) -> ExtensionRegistry:
+    """Discover installed extensions of one kind without activating them.
+
+    Entry points use the ``flagquantum.extensions`` group and names of the form
+    ``<kind>.<manifest-name>``. Their value must resolve to a zero-argument
+    extension factory.
+    """
+
+    if kind not in EXTENSION_KINDS:
+        raise ValueError(f"unknown extension kind {kind!r}")
+    prefix = f"{kind}."
+    registry = ExtensionRegistry()
+    discovered = metadata.entry_points(group=EXTENSION_ENTRY_POINT_GROUP)
+    for entry_point in sorted(discovered, key=lambda item: item.name):
+        if not entry_point.name.startswith(prefix):
+            continue
+        manifest_name = entry_point.name.removeprefix(prefix)
+        if not manifest_name:
+            raise ExtensionCompatibilityError(
+                f"entry point {entry_point.name!r} has no extension name"
+            )
+        try:
+            factory = entry_point.load()
+            extension = factory()
+        except Exception as exc:
+            raise ExtensionCompatibilityError(
+                f"extension entry point {entry_point.name!r} failed to load: "
+                f"{type(exc).__name__}: {exc}"
+            ) from exc
+        manifest = getattr(extension, "manifest", None)
+        if manifest is None:
+            raise ExtensionCompatibilityError(
+                f"extension entry point {entry_point.name!r} returned an object "
+                "without a manifest"
+            )
+        if manifest.kind != kind or manifest.name != manifest_name:
+            raise ExtensionCompatibilityError(
+                f"entry point {entry_point.name!r} does not match manifest "
+                f"{manifest.kind}/{manifest.name}"
+            )
+        registry = registry.with_extension(extension)
+    return registry
 
 
 _REGISTRY: ContextVar[ExtensionRegistry] = ContextVar(

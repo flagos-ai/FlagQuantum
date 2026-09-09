@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "status": "approved",
-  "proposal": "docs/development/API_CHANGE_PROPOSAL_007_ALPHA_FREEZE_READINESS.md",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_019_COMPILER_EXTENSIONS.md",
   "target": "first-public-alpha",
   "implementation_authorized": true,
   "root_manifest_change": false,
@@ -12,12 +12,14 @@
         "SDK_API_VERSION",
         "CapabilityRequest",
         "CapabilityResponse",
+        "CompilerExtension",
         "CompilerPassExtension",
         "ConformanceReport",
         "DeviceExtension",
         "ExecutionBackendExtension",
         "ExtensionCompatibilityError",
         "ExtensionConfig",
+        "EXTENSION_ENTRY_POINT_GROUP",
         "ExtensionError",
         "ExtensionHandle",
         "ExtensionLifecycleError",
@@ -29,20 +31,24 @@
         "PlannerExtension",
         "ProviderExtension",
         "check_manifest_serialization",
+        "discover_extensions",
         "extension_scope",
         "run_backend_conformance",
+        "run_compiler_conformance",
         "run_provider_conformance"
       ],
       "new_namespace_only": [
         "SDK_API_VERSION",
         "CapabilityRequest",
         "CapabilityResponse",
+        "CompilerExtension",
         "CompilerPassExtension",
         "ConformanceReport",
         "DeviceExtension",
         "ExecutionBackendExtension",
         "ExtensionCompatibilityError",
         "ExtensionConfig",
+        "EXTENSION_ENTRY_POINT_GROUP",
         "ExtensionError",
         "ExtensionHandle",
         "ExtensionLifecycleError",
@@ -54,8 +60,10 @@
         "PlannerExtension",
         "ProviderExtension",
         "check_manifest_serialization",
+        "discover_extensions",
         "extension_scope",
         "run_backend_conformance",
+        "run_compiler_conformance",
         "run_provider_conformance"
       ]
     }
@@ -75,7 +83,10 @@
     "cleanup_attempted_after_failed_start": true,
     "credential_values_in_serializable_config": false,
     "root_exports_added": false,
-    "individual_extension_default_stability": "experimental"
+    "individual_extension_default_stability": "experimental",
+    "discovery": "explicit_and_kind_specific",
+    "entry_point_group": "flagquantum.extensions",
+    "compiler_boundary": "circuit_ir_to_circuit_ir"
   },
   "decisions": {
     "noise_parameter_name": "noise_model",
@@ -85,6 +96,7 @@
   },
   "evidence": {
     "third_party_example": "examples/extensions/reference_extensions.py",
+    "compiler_example": "examples/extensions/reference_compiler_extension.py",
     "public_imports_only_test": "tests/api_contract/test_extension_protocol_semantics.py",
     "golden_paths": "tests/api_contract/test_open_source_golden_paths.py"
   },

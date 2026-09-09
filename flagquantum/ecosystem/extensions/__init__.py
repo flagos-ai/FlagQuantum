@@ -4,12 +4,15 @@ from .conformance import (
     ConformanceReport,
     check_manifest_serialization,
     run_backend_conformance,
+    run_compiler_conformance,
     run_provider_conformance,
 )
 from .sdk import (
+    EXTENSION_ENTRY_POINT_GROUP,
     SDK_API_VERSION,
     CapabilityRequest,
     CapabilityResponse,
+    CompilerExtension,
     CompilerPassExtension,
     DeviceExtension,
     ExecutionBackendExtension,
@@ -25,14 +28,17 @@ from .sdk import (
     OperatorExtension,
     PlannerExtension,
     ProviderExtension,
+    discover_extensions,
     extension_scope,
 )
 
 __all__ = (
     "SDK_API_VERSION",
+    "EXTENSION_ENTRY_POINT_GROUP",
     "CapabilityRequest",
     "CapabilityResponse",
     "ConformanceReport",
+    "CompilerExtension",
     "CompilerPassExtension",
     "DeviceExtension",
     "ExecutionBackendExtension",
@@ -48,8 +54,10 @@ __all__ = (
     "OperatorExtension",
     "PlannerExtension",
     "ProviderExtension",
+    "discover_extensions",
     "extension_scope",
     "check_manifest_serialization",
     "run_backend_conformance",
+    "run_compiler_conformance",
     "run_provider_conformance",
 )

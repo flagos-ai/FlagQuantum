@@ -8,9 +8,15 @@ It does not own compiler passes, numerical kernels, execution scheduling, or
 provider implementations. An extension implements those domain contracts; the
 extension package only validates and contains its lifecycle.
 
-Start with `sdk.py` for the protocol and `conformance.py` for executable checks.
-The shortest working example is `examples/extensions/reference_extensions.py`.
-Run:
+Installed extensions register zero-argument factories in the
+`flagquantum.extensions` Python entry-point group. Discovery is explicit and
+kind-specific, so importing FlagQuantum never loads third-party packages. See
+`docs/guides/COMPILER_PLUGINS.md` for the circuit-compiler path.
+
+Start with `sdk.py` for the protocol, `conformance.py` for executable checks,
+and `examples/extensions/reference_extensions.py` or
+`examples/extensions/reference_compiler_extension.py` for the shortest working
+implementations. Run:
 
 ```bash
 python -m pytest tests/unit/test_issue080_extension_sdk.py \

@@ -454,7 +454,7 @@ def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[st
     }
     if set(extensions.__all__) != expected:
         errors.append(
-            "flagquantum.ecosystem.extensions exports differ from Proposal 007"
+            "flagquantum.ecosystem.extensions exports differ from its approved contract"
         )
     leaked = sorted(expected & set(fq.__all__))
     if leaked:
@@ -463,7 +463,7 @@ def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[st
             + ", ".join(leaked)
         )
     if extensions.SDK_API_VERSION != contract["protocol_semantics"]["sdk_api_version"]:
-        errors.append("extension SDK API version differs from Proposal 007")
+        errors.append("extension SDK API version differs from its approved contract")
     mappings = {
         extensions.ExtensionError: FlagQuantumError,
         extensions.ExtensionCompatibilityError: CapabilityError,
@@ -471,9 +471,7 @@ def _validate_authorized_extension_protocol(contract: dict[str, Any]) -> list[st
     }
     for specific, category in mappings.items():
         if not issubclass(specific, category):
-            errors.append(
-                f"{specific.__name__} is outside its Proposal 007 error category"
-            )
+            errors.append(f"{specific.__name__} is outside its approved error category")
     return errors
 
 

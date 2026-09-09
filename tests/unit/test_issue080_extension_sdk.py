@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+import flagquantum.ecosystem.extensions.sdk as extension_sdk
 from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     ExtensionCompatibilityError,
@@ -15,10 +16,12 @@ from flagquantum.ecosystem.extensions import (
     ExtensionLifecycleError,
     ExtensionManifest,
     ExtensionRegistry,
+    discover_extensions,
     extension_scope,
 )
 from flagquantum.ecosystem.extensions.conformance import (
     run_backend_conformance,
+    run_compiler_conformance,
     run_provider_conformance,
 )
 
@@ -29,6 +32,14 @@ assert SPEC and SPEC.loader
 REFERENCE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(REFERENCE)
 
+COMPILER_REFERENCE_PATH = ROOT / "examples/extensions/reference_compiler_extension.py"
+COMPILER_SPEC = importlib.util.spec_from_file_location(
+    "reference_compiler_extension", COMPILER_REFERENCE_PATH
+)
+assert COMPILER_SPEC and COMPILER_SPEC.loader
+COMPILER_REFERENCE = importlib.util.module_from_spec(COMPILER_SPEC)
+COMPILER_SPEC.loader.exec_module(COMPILER_REFERENCE)
+
 
 def test_reference_backend_and_provider_pass_conformance_without_root_mutation():
     root_before = set(fq.__all__)
@@ -38,6 +49,83 @@ def test_reference_backend_and_provider_pass_conformance_without_root_mutation()
     assert "cleanup" in provider_report.checks
     assert set(fq.__all__) == root_before
     assert "ReferenceTorchBackend" not in dir(fq)
+
+
+def test_reference_compiler_preserves_ir_ownership_and_determinism():
+    report = run_compiler_conformance(COMPILER_REFERENCE.ReferenceCircuitCompiler())
+
+    assert report.checks == (
+        "manifest_serialization",
+        "circuit_ir",
+        "input_immutable",
+        "deterministic",
+        "cleanup",
+    )
+
+
+def test_compiler_discovery_loads_only_requested_kind(monkeypatch):
+    class EntryPoint:
+        def __init__(self, name, factory):
+            self.name = name
+            self._factory = factory
+
+        def load(self):
+            return self._factory
+
+    def entry_points(*, group):
+        assert group == "flagquantum.extensions"
+        return (
+            EntryPoint("provider.must_not_load", lambda: 1 / 0),
+            EntryPoint(
+                "compiler.reference_compiler",
+                COMPILER_REFERENCE.ReferenceCircuitCompiler,
+            ),
+        )
+
+    monkeypatch.setattr(extension_sdk.metadata, "entry_points", entry_points)
+
+    registry = discover_extensions("compiler")
+
+    assert tuple(registry.entries) == (("compiler", "reference_compiler"),)
+
+
+def test_discovery_rejects_entry_point_manifest_mismatch(monkeypatch):
+    class EntryPoint:
+        name = "compiler.wrong_name"
+
+        @staticmethod
+        def load():
+            return COMPILER_REFERENCE.ReferenceCircuitCompiler
+
+    monkeypatch.setattr(
+        extension_sdk.metadata,
+        "entry_points",
+        lambda *, group: (EntryPoint(),),
+    )
+
+    with pytest.raises(ExtensionCompatibilityError, match="does not match manifest"):
+        discover_extensions("compiler")
+
+
+def test_discovery_contains_entry_point_load_failure(monkeypatch):
+    class EntryPoint:
+        name = "compiler.broken"
+
+        @staticmethod
+        def load():
+            raise ImportError("missing compiler dependency")
+
+    monkeypatch.setattr(
+        extension_sdk.metadata,
+        "entry_points",
+        lambda *, group: (EntryPoint(),),
+    )
+
+    with pytest.raises(
+        ExtensionCompatibilityError,
+        match="compiler.broken.*ImportError.*missing compiler dependency",
+    ):
+        discover_extensions("compiler")
 
 
 def test_registration_is_immutable_task_local_and_serializable():
@@ -105,6 +193,7 @@ def test_all_protocol_kinds_are_declared_without_import_side_effects():
         "KernelExtension",
         "OperatorExtension",
         "CompilerPassExtension",
+        "CompilerExtension",
         "DeviceExtension",
         "ProviderExtension",
         "MeasurementCollectorExtension",

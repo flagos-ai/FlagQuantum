@@ -91,8 +91,9 @@ This catalog is generated from the machine-validated
 | Audit semantic loss at a framework boundary | Qiskit IR interoperability | Experimental | [Run example](../../docs/reference/API.md) |
 | Prototype mid-circuit measurement and feed-forward | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
 | Assess backend support before execution | Dynamic circuits and backend assessment | Experimental | [Run example](../../docs/reference/API.md) |
-| Prototype a FlagQuantum extension | Extension SDK | Experimental | [Run example](../../examples/extensions/reference_extensions.py) |
-| Register custom framework behavior | Extension SDK | Experimental | [Run example](../../examples/extensions/reference_extensions.py) |
+| Prototype a FlagQuantum extension | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
+| Register custom framework behavior | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
+| Install an external circuit compiler | Extension SDK | Experimental | [Run example](../../docs/guides/COMPILER_PLUGINS.md) |
 
 ## Build and compile
 
@@ -451,9 +452,9 @@ Build and qualify optional extensions through the Ecosystem extension protocol.
 - **Hardware:** `extension_defined`
 - **Gradient support:** `extension_defined`
 - **Distribution semantics:** `extension_defined`
-- **Start:** [quick example](../../examples/extensions/reference_extensions.py)
+- **Start:** [quick example](../../docs/guides/COMPILER_PLUGINS.md)
 - **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
-- **Known boundary:** The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified.
+- **Known boundary:** The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified. Compiler plugins currently exchange CircuitIR only; pulse and native-binary artifacts are not supported.
 
 
 ## Validated public performance claims

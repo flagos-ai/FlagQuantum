@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added explicit discovery for independently installed circuit-compiler plugins
+  through the existing Ecosystem extension registry. Entry-point identity,
+  capability negotiation, CircuitIR ownership, determinism, lifecycle cleanup,
+  and fail-closed errors are covered by reusable conformance tests; pulse-level
+  artifacts remain outside this circuit-level contract.
 - Validated the declared Qiskit 2.0.x/2.5.x, Aer 0.17.x, and PennyLane
   0.44.1/0.45.1 interoperability window with real dependencies. Corrected the
   Qiskit golden path to use the diagnostic `export_qiskit()` /

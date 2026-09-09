@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from ...core.ir import CircuitIR, Instruction
 from .sdk import (
     CapabilityRequest,
     ExtensionConfig,
@@ -81,9 +82,39 @@ def run_provider_conformance(extension: Any) -> ConformanceReport:
     return ConformanceReport(extension.manifest.name, tuple(checks))
 
 
+def run_compiler_conformance(extension: Any) -> ConformanceReport:
+    """Validate circuit-IR ownership, determinism, lifecycle, and cleanup."""
+
+    checks = [check_manifest_serialization(extension)]
+    registry = ExtensionRegistry().with_extension(extension)
+    request = CapabilityRequest(required=frozenset({"circuit_ir"}))
+    handle = registry.negotiate("compiler", extension.manifest.name, request)
+    handle.start(ExtensionConfig())
+    try:
+        source = CircuitIR(2, (Instruction("h", (0,)),))
+        source_hash = source.content_hash
+        target = {"basis_gates": ("h", "cx")}
+        first = handle.invoke("compile", source, target=target)
+        second = handle.invoke("compile", source, target=target)
+        if not isinstance(first, CircuitIR) or not isinstance(second, CircuitIR):
+            raise AssertionError("compiler must return CircuitIR")
+        if source.content_hash != source_hash:
+            raise AssertionError("compiler mutated its input CircuitIR")
+        if first.content_hash != second.content_hash:
+            raise AssertionError("compiler output is not deterministic")
+        checks.extend(("circuit_ir", "input_immutable", "deterministic"))
+    finally:
+        handle.close()
+    if getattr(extension, "active", False):
+        raise AssertionError("compiler leaked active lifecycle state")
+    checks.append("cleanup")
+    return ConformanceReport(extension.manifest.name, tuple(checks))
+
+
 __all__ = (
     "ConformanceReport",
     "check_manifest_serialization",
     "run_backend_conformance",
+    "run_compiler_conformance",
     "run_provider_conformance",
 )
