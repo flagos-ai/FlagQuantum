@@ -539,7 +539,7 @@ def test_capture_and_execute_branch_carried_classical_state(
     assert torch.all(result.samples[:, wire] == expected)
 
 
-def test_branch_carry_rejects_tensor_and_measurement_dependent_state() -> None:
+def test_branch_carry_rejects_tensor_state() -> None:
     tensor_carry = """
 def tensor_branch(flag, data):
     if flag:
@@ -550,24 +550,125 @@ def tensor_branch(flag, data):
     with pytest.raises(HybridCaptureError, match="classical_carry_type"):
         capture_source(tensor_carry, (BOOL, tensor_type("float32", (1,))))
 
+
+@pytest.mark.parametrize("strategy", ("trajectory", "batched"))
+def test_measurement_branch_carries_scalar_index_and_bool_state(strategy: str) -> None:
     measurement_carry = capture_source(
         """
-def measurement_branch(theta):
-    angle = theta
+def measurement_branch(zero, half_turn, delta):
+    qp.H(wires=0)
+    angle = zero
+    wire = 1
+    enabled = False
     bit = qp.measure(wires=0)
     if bit:
-        angle = theta + theta
-    qp.RX(angle, wires=1)
+        angle = half_turn
+        wire = 2
+        enabled = True
+    for layer in range(2):
+        angle = angle + delta
+    if enabled:
+        qp.X(wires=3)
+    if angle > zero:
+        qp.X(wires=4)
+    qp.RX(angle, wires=wire)
     return bit
 """,
-        (scalar_type("float64"),),
+        (
+            scalar_type("float64"),
+            scalar_type("float64"),
+            scalar_type("float64"),
+        ),
     )
-    with pytest.raises(SpecializationError, match="measurement_branch_carry"):
-        lower_dynamic_program(
-            measurement_carry,
-            (torch.tensor(0.2, dtype=torch.float64),),
-            circuit_dtype="complex128",
-        )
+    lowered = lower_dynamic_program(
+        measurement_carry,
+        (
+            torch.tensor(0.0, dtype=torch.float64),
+            torch.tensor(torch.pi, dtype=torch.float64),
+            torch.tensor(0.0, dtype=torch.float64),
+        ),
+        circuit_dtype="complex128",
+    )
+    rotations = tuple(
+        instruction
+        for instruction in lowered.circuit.instructions
+        if instruction.name == "rx"
+    )
+    assert tuple((item.wires, item.metadata["conditions"]) for item in rotations) == (
+        ((2,), ((0, 1),)),
+        ((1,), ((0, 0),)),
+    )
+    result = execute_hybrid_dynamic_session(
+        lowered.circuit, shots=128, seed=43, strategy=strategy
+    )
+    bit = result.classical_bits[:, 0]
+    assert set(bit.tolist()) == {0, 1}
+    assert torch.equal(result.samples[:, 1], torch.zeros_like(bit))
+    assert torch.equal(result.samples[:, 2], bit)
+    assert torch.equal(result.samples[:, 3], bit)
+    assert torch.equal(result.samples[:, 4], bit)
+
+
+def test_measurement_dependent_value_cases_obey_configured_ceiling() -> None:
+    program = capture_source(
+        """
+def value_case_limit():
+    wire = 0
+    first = qp.measure(wires=0)
+    second = qp.measure(wires=1)
+    third = qp.measure(wires=2)
+    if first:
+        wire = 1
+    if second:
+        wire = 2
+    if third:
+        wire = 3
+    qp.X(wires=wire)
+    return first
+""",
+        (),
+    )
+
+    with pytest.raises(SpecializationError, match="value expansion exceeds 3 cases"):
+        lower_dynamic_program(program, max_condition_clauses=3)
+
+
+def test_equal_measurement_dependent_cases_coalesce_to_unconditional_value() -> None:
+    program = capture_source(
+        """
+def equal_cases():
+    wire = 1
+    bit = qp.measure(wires=0)
+    if bit:
+        wire = 1
+    qp.X(wires=wire)
+    return bit
+""",
+        (),
+    )
+
+    gate = lower_dynamic_program(program).circuit.instructions[-1]
+    assert gate.wires == (1,)
+    assert gate.metadata == {}
+
+
+def test_measurement_dependent_loop_bound_fails_closed() -> None:
+    program = capture_source(
+        """
+def dynamic_bound():
+    layers = 1
+    bit = qp.measure(wires=0)
+    if bit:
+        layers = 2
+    for layer in range(layers):
+        qp.X(wires=1)
+    return bit
+""",
+        (),
+    )
+
+    with pytest.raises(SpecializationError, match="measurement-dependent loop bounds"):
+        lower_dynamic_program(program)
 
 
 def test_loop_carries_state_through_nested_branches() -> None:

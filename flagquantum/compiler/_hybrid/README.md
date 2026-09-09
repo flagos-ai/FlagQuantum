@@ -53,6 +53,14 @@ strategies. The default expansion ceiling is 64 clauses. Inline measurement
 composition, conditional measurement, excessive expansion, and provider
 dialects without explicit complex-predicate support fail closed.
 
+Scalar, index, and bool values may leave a measurement-dependent branch as
+bounded condition-partitioned SSA cases. Later arithmetic and comparisons are
+evaluated per case; quantum parameters and wires lower to mutually exclusive
+conditioned instructions. Static bounded loops may carry these values.
+Conditional measurement, measurement-derived loop bounds or program returns,
+case expansion beyond the configured ceiling, and stochastic gradients fail
+closed.
+
 `specialize.py` selects one bounded runtime path and records an ephemeral gate
 trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 `Parameter` slots. Runtime tensor slices stay in a separate binding map by

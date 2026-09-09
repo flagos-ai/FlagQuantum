@@ -1,6 +1,6 @@
 # Private hybrid compilation contract
 
-Status: Phases 1-13 implemented and verified under the repository owner's
+Status: Phases 1-14 implemented and verified under the repository owner's
 2026-09-09 direction to record and execute the Python-first hybrid compilation
 plan.
 
@@ -566,3 +566,26 @@ canonical metadata; explicit rejection of malformed or excessive clause sets;
 and no regression to simple conjunctions. The feature stays private and makes
 no public API, default-path, finite-shot-gradient, accelerator, distributed,
 capacity, or performance claim.
+
+## Phase 14 measurement-dependent SSA merge authorization
+
+Phase 14 may preserve scalar, index, and bool results from a
+measurement-dependent `scf.if` as bounded condition-partitioned SSA cases.
+Each case pairs one runtime value with the canonical measurement predicate
+under which that value exists. Nested conditional values are flattened, dead
+cases are removed, and identical primitive or shared runtime values may be
+coalesced by disjoining their predicates.
+
+Arithmetic, remainder, Boolean composition, and comparisons distribute over
+the bounded case product. A later quantum gate with a conditional parameter or
+wire is split into mutually exclusive Core instructions carrying the matching
+classical conditions. Subsequent structured branches and statically bounded
+loops may consume and carry these values. This preserves per-shot value flow
+without adding a mutable classical store or a second public program IR.
+
+The number of live value cases shares the configured
+`max_condition_clauses` ceiling and fails closed when exceeded. Conditional
+measurement, measurement-dependent loop bounds, measurement-dependent program
+returns, and finite-shot gradients remain unsupported. Phase 14 changes no
+public API, default path, or Core serialization schema and makes no performance
+claim.

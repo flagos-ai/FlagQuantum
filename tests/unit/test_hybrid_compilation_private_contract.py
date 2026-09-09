@@ -464,3 +464,45 @@ def test_phase13_uses_bounded_canonical_dnf_conditions() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE13_EVIDENCE.md"
     )
     assert contract["phase13_completed"] is True
+
+
+def test_phase14_merges_measurement_dependent_ssa_values() -> None:
+    contract = _contract()
+    phase14 = contract["phase14"]
+
+    assert phase14["value_representation"] == (
+        "bounded_condition_partitioned_ssa_cases"
+    )
+    assert phase14["carried_value_types"] == [
+        "scalar_float32_or_float64",
+        "index",
+        "bool",
+    ]
+    assert phase14["supported_consumers"] == [
+        "arithmetic_add_or_remainder",
+        "boolean_and_or_not",
+        "scalar_or_bool_comparison",
+        "quantum_gate_parameter",
+        "quantum_gate_wire",
+        "subsequent_structured_if_or_bounded_for",
+    ]
+    assert phase14["lowering_strategy"] == (
+        "split_consumers_over_mutually_exclusive_canonical_conditions"
+    )
+    assert phase14["equal_case_coalescing"] is True
+    assert phase14["case_limit"] == "max_condition_clauses"
+    assert phase14["case_limit_policy"] == "unsupported_fail_closed"
+    assert phase14["conditional_measurement"] == "unsupported_fail_closed"
+    assert phase14["measurement_dependent_loop_bounds"] == ("unsupported_fail_closed")
+    assert phase14["measurement_dependent_program_return"] == (
+        "unsupported_fail_closed"
+    )
+    assert phase14["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase14["public_api_change"] is False
+    assert phase14["default_path_change"] is False
+    assert phase14["core_ir_schema_change"] is False
+    assert phase14["performance_claim"] is False
+    assert phase14["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE14_EVIDENCE.md"
+    )
+    assert contract["phase14_completed"] is True

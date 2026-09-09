@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-13 bounded vertical slices complete**
+Status: **Phases 1-14 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -660,6 +660,32 @@ Exit gate:
 - public API, default path, stochastic-gradient, and performance claims remain
   unchanged.
 
+### Phase 14 — measurement-dependent SSA value merging
+
+Represent scalar, index, and bool values leaving a measurement-dependent
+branch as bounded condition-partitioned SSA cases. Classical operations
+distribute over these cases, while quantum consumers split into mutually
+exclusive conditioned instructions. Equal cases are coalesced where identity
+or primitive equality is unambiguous.
+
+The representation is compiler-private and lowers back into existing Core
+instructions plus Phase 13 condition metadata. It therefore introduces no
+public classical-store abstraction and no Core schema change. Static bounded
+loops can carry conditional values, but measurement-dependent loop bounds,
+conditional measurement, dynamic program returns, and stochastic gradients
+remain rejected.
+
+Exit gate:
+
+- a measurement branch exports scalar, index, and bool values together;
+- post-branch arithmetic preserves the correct per-shot scalar parameter;
+- conditional wire selection splits gates under exclusive predicates;
+- a carried bool controls a later structured branch exactly;
+- reference and batched trajectories agree with recorded measurement bits;
+- case growth is bounded by the configured predicate ceiling;
+- public API, Core schema, default path, and performance claims remain
+  unchanged.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -799,3 +825,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 12 negation, comparison, and conjunctive feedback verified
 - [x] Phase 13 bounded canonical predicate contract authorized
 - [x] Phase 13 disjunction, complement, XOR/XNOR, and exact quantum branches verified
+- [x] Phase 14 measurement-dependent SSA merge contract authorized
+- [x] Phase 14 scalar/index/bool value partitioning and consumer splitting verified

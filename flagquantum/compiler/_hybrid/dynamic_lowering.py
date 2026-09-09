@@ -60,6 +60,13 @@ class _ClassicalPredicate:
     clauses: tuple[tuple[tuple[int, int], ...], ...]
 
 
+@dataclass(frozen=True)
+class _ConditionalValue:
+    cases: tuple[tuple[tuple[tuple[tuple[int, int], ...], ...], Any], ...] = field(
+        compare=False
+    )
+
+
 _EFFECT = object()
 
 
@@ -146,10 +153,18 @@ class _DynamicLowerer:
         if name == "arith.constant":
             return (operation.attributes["value"],)
         if name == "arith.add":
-            return (operands[0] + operands[1],)
+            return (
+                self.map_conditional_values(
+                    operation, operands, lambda left, right: left + right
+                ),
+            )
         if name == "arith.rem":
             try:
-                return (operands[0] % operands[1],)
+                return (
+                    self.map_conditional_values(
+                        operation, operands, lambda left, right: left % right
+                    ),
+                )
             except (RuntimeError, TypeError, ValueError, ZeroDivisionError) as exc:
                 self.fail(operation, "arith.remainder", f"remainder failed: {exc}")
         if name == "arith.not":
@@ -161,40 +176,53 @@ class _DynamicLowerer:
         if name == "arith.cmp":
             predicate = operation.attributes["predicate"]
             if any(
-                isinstance(value, (_MeasurementRef, _ClassicalPredicate))
+                isinstance(
+                    value,
+                    (_MeasurementRef, _ClassicalPredicate, _ConditionalValue),
+                )
                 for value in operands
             ):
                 return (self.compare_predicate(operation, predicate, operands),)
-            comparisons = {
-                "eq": lambda: operands[0] == operands[1],
-                "ne": lambda: operands[0] != operands[1],
-                "lt": lambda: operands[0] < operands[1],
-                "le": lambda: operands[0] <= operands[1],
-                "gt": lambda: operands[0] > operands[1],
-                "ge": lambda: operands[0] >= operands[1],
-            }
-            return (comparisons[predicate](),)
+            return (self.compare_values(predicate, *operands),)
         if name in {"quantum.h", "quantum.x"}:
             self.require_effect(operation, operands[1])
-            wire = self.as_index(operation, operands[0])
-            self.append_gate(name.removeprefix("quantum."), (wire,), conditions)
+            for case_conditions, values in self.conditional_product(
+                operation, (operands[0],)
+            ):
+                wire = self.as_index(operation, values[0])
+                self.append_gate(
+                    name.removeprefix("quantum."),
+                    (wire,),
+                    self.and_clauses(operation, conditions, case_conditions),
+                )
             return (_EFFECT,)
         if name in {"quantum.rx", "quantum.ry"}:
             self.require_effect(operation, operands[2])
-            wire = self.as_index(operation, operands[1])
-            self.append_gate(
-                name.removeprefix("quantum."),
-                (wire,),
-                conditions,
-                parameter=operands[0],
-            )
+            for case_conditions, values in self.conditional_product(
+                operation, operands[:2]
+            ):
+                parameter, raw_wire = values
+                wire = self.as_index(operation, raw_wire)
+                self.append_gate(
+                    name.removeprefix("quantum."),
+                    (wire,),
+                    self.and_clauses(operation, conditions, case_conditions),
+                    parameter=parameter,
+                )
             return (_EFFECT,)
         if name == "quantum.cx":
             self.require_effect(operation, operands[2])
-            wires = tuple(self.as_index(operation, value) for value in operands[:2])
-            if wires[0] == wires[1]:
-                self.fail(operation, "quantum.wires", "CX wires must be distinct")
-            self.append_gate("cx", wires, conditions)
+            for case_conditions, values in self.conditional_product(
+                operation, operands[:2]
+            ):
+                wires = tuple(self.as_index(operation, value) for value in values)
+                if wires[0] == wires[1]:
+                    self.fail(operation, "quantum.wires", "CX wires must be distinct")
+                self.append_gate(
+                    "cx",
+                    wires,
+                    self.and_clauses(operation, conditions, case_conditions),
+                )
             return (_EFFECT,)
         if name == "quantum.measure":
             self.require_effect(operation, operands[1])
@@ -203,6 +231,12 @@ class _DynamicLowerer:
                     operation,
                     "dynamic.conditional_measurement",
                     "the first dynamic profile forbids measurement inside a branch",
+                )
+            if isinstance(operands[0], _ConditionalValue):
+                self.fail(
+                    operation,
+                    "dynamic.conditional_measurement_target",
+                    "measurement-dependent wires are unsupported",
                 )
             wire = self.as_index(operation, operands[0])
             classical_bit = self.measurement_count
@@ -220,7 +254,10 @@ class _DynamicLowerer:
             return (_MeasurementRef(classical_bit), _EFFECT)
         if name == "scf.if":
             predicate = operands[0]
-            if not isinstance(predicate, (_MeasurementRef, _ClassicalPredicate)):
+            if not isinstance(
+                predicate,
+                (_MeasurementRef, _ClassicalPredicate, _ConditionalValue),
+            ):
                 selected = self.as_predicate(operation, predicate)
                 return self.execute_region(
                     operation.regions[0 if selected else 1],
@@ -228,13 +265,7 @@ class _DynamicLowerer:
                     operands[1:],
                     conditions=conditions,
                 )
-            predicate_clauses = self.predicate_clauses(predicate)
-            if len(operands) != 2:
-                self.fail(
-                    operation,
-                    "dynamic.measurement_branch_carry",
-                    "measurement-dependent branches cannot carry classical values",
-                )
+            predicate_clauses = self.predicate_clauses(operation, predicate)
             then_conditions = self.and_clauses(operation, conditions, predicate_clauses)
             else_conditions = self.and_clauses(
                 operation, conditions, self.not_clauses(operation, predicate_clauses)
@@ -251,14 +282,37 @@ class _DynamicLowerer:
                 operands[1:],
                 conditions=else_conditions,
             )
-            if then_result != else_result or then_result != (_EFFECT,):
+            if (
+                not then_result
+                or not else_result
+                or (then_result[-1] is not _EFFECT or else_result[-1] is not _EFFECT)
+            ):
                 self.fail(
                     operation,
                     "dynamic.branch_effect",
-                    "dynamic branches must yield only the quantum effect",
+                    "dynamic branches must yield the quantum effect",
                 )
-            return (_EFFECT,)
+            if len(then_result) != len(else_result):
+                self.fail(
+                    operation,
+                    "dynamic.branch_results",
+                    "dynamic branches returned different result counts",
+                )
+            merged = tuple(
+                self.merge_conditional_values(
+                    operation,
+                    ((then_conditions, then_value), (else_conditions, else_value)),
+                )
+                for then_value, else_value in zip(then_result[:-1], else_result[:-1])
+            )
+            return (*merged, _EFFECT)
         if name == "scf.for":
+            if any(isinstance(value, _ConditionalValue) for value in operands[:3]):
+                self.fail(
+                    operation,
+                    "dynamic.loop_bounds",
+                    "measurement-dependent loop bounds are unsupported",
+                )
             lower, upper, step = (
                 self.as_index(operation, value) for value in operands[:3]
             )
@@ -348,11 +402,31 @@ class _DynamicLowerer:
         )
 
     def predicate_clauses(
-        self, value: _MeasurementRef | _ClassicalPredicate
+        self,
+        operation: Operation,
+        value: _MeasurementRef | _ClassicalPredicate | _ConditionalValue,
     ) -> tuple[tuple[tuple[int, int], ...], ...]:
         if isinstance(value, _MeasurementRef):
             return (((value.classical_bit, 1),),)
-        return value.clauses
+        if isinstance(value, _ClassicalPredicate):
+            return value.clauses
+        result = _FALSE_CLAUSES
+        for case_conditions, case_value in value.cases:
+            if isinstance(
+                case_value,
+                (_MeasurementRef, _ClassicalPredicate, _ConditionalValue),
+            ):
+                truth = self.predicate_clauses(operation, case_value)
+            elif self.as_predicate(operation, case_value):
+                truth = _TRUE_CLAUSES
+            else:
+                truth = _FALSE_CLAUSES
+            result = self.or_clauses(
+                operation,
+                result,
+                self.and_clauses(operation, case_conditions, truth),
+            )
+        return result
 
     def canonicalize_clauses(
         self,
@@ -374,6 +448,31 @@ class _DynamicLowerer:
                 if not normalized:
                     return _TRUE_CLAUSES
                 canonical.add(normalized)
+        changed = True
+        while changed:
+            changed = False
+            ordered = tuple(canonical)
+            for index, left in enumerate(ordered):
+                left_terms = dict(left)
+                for right in ordered[index + 1 :]:
+                    right_terms = dict(right)
+                    if left_terms.keys() != right_terms.keys():
+                        continue
+                    differing = tuple(
+                        bit for bit in left_terms if left_terms[bit] != right_terms[bit]
+                    )
+                    if len(differing) != 1:
+                        continue
+                    common = tuple(term for term in left if term[0] != differing[0])
+                    if not common:
+                        return _TRUE_CLAUSES
+                    canonical.discard(left)
+                    canonical.discard(right)
+                    canonical.add(common)
+                    changed = True
+                    break
+                if changed:
+                    break
         reduced = tuple(
             clause
             for clause in sorted(canonical, key=lambda item: (len(item), item))
@@ -415,16 +514,24 @@ class _DynamicLowerer:
             return _ClassicalPredicate((((value.classical_bit, 0),),))
         if isinstance(value, _ClassicalPredicate):
             return _ClassicalPredicate(self.not_clauses(operation, value.clauses))
+        if isinstance(value, _ConditionalValue):
+            return _ClassicalPredicate(
+                self.not_clauses(operation, self.predicate_clauses(operation, value))
+            )
         return not self.as_predicate(operation, value)
 
     def conjoin_predicates(self, operation: Operation, values: tuple[Any, ...]) -> Any:
         result = _TRUE_CLAUSES
         for value in values:
-            if not isinstance(value, (_MeasurementRef, _ClassicalPredicate)):
+            if not isinstance(
+                value, (_MeasurementRef, _ClassicalPredicate, _ConditionalValue)
+            ):
                 if not self.as_predicate(operation, value):
                     return False
                 continue
-            result = self.and_clauses(operation, result, self.predicate_clauses(value))
+            result = self.and_clauses(
+                operation, result, self.predicate_clauses(operation, value)
+            )
         if result == _FALSE_CLAUSES:
             return False
         if result == _TRUE_CLAUSES:
@@ -434,11 +541,15 @@ class _DynamicLowerer:
     def disjoin_predicates(self, operation: Operation, values: tuple[Any, ...]) -> Any:
         result = _FALSE_CLAUSES
         for value in values:
-            if not isinstance(value, (_MeasurementRef, _ClassicalPredicate)):
+            if not isinstance(
+                value, (_MeasurementRef, _ClassicalPredicate, _ConditionalValue)
+            ):
                 if self.as_predicate(operation, value):
                     return True
                 continue
-            result = self.or_clauses(operation, result, self.predicate_clauses(value))
+            result = self.or_clauses(
+                operation, result, self.predicate_clauses(operation, value)
+            )
         if result == _FALSE_CLAUSES:
             return False
         if result == _TRUE_CLAUSES:
@@ -451,6 +562,20 @@ class _DynamicLowerer:
         predicate: str,
         values: tuple[Any, ...],
     ) -> Any:
+        if any(isinstance(value, _ConditionalValue) for value in values):
+            cases: list[tuple[Any, Any]] = []
+            for case_conditions, case_values in self.conditional_product(
+                operation, values
+            ):
+                if any(
+                    isinstance(value, (_MeasurementRef, _ClassicalPredicate))
+                    for value in case_values
+                ):
+                    result = self.compare_predicate(operation, predicate, case_values)
+                else:
+                    result = self.compare_values(predicate, *case_values)
+                cases.append((case_conditions, result))
+            return self.merge_conditional_values(operation, cases)
         if predicate not in {"eq", "ne"}:
             self.fail(
                 operation,
@@ -458,8 +583,9 @@ class _DynamicLowerer:
                 "measurement predicates support only == or !=",
             )
         left, right = values
-        left_symbolic = isinstance(left, (_MeasurementRef, _ClassicalPredicate))
-        right_symbolic = isinstance(right, (_MeasurementRef, _ClassicalPredicate))
+        symbolic_types = (_MeasurementRef, _ClassicalPredicate, _ConditionalValue)
+        left_symbolic = isinstance(left, symbolic_types)
+        right_symbolic = isinstance(right, symbolic_types)
         if left_symbolic and right_symbolic:
             equal = self.disjoin_predicates(
                 operation,
@@ -487,6 +613,99 @@ class _DynamicLowerer:
             )
         should_negate = (predicate == "eq") != constant
         return self.negate_predicate(operation, symbolic) if should_negate else symbolic
+
+    def compare_values(self, predicate: str, left: Any, right: Any) -> Any:
+        comparisons = {
+            "eq": lambda: left == right,
+            "ne": lambda: left != right,
+            "lt": lambda: left < right,
+            "le": lambda: left <= right,
+            "gt": lambda: left > right,
+            "ge": lambda: left >= right,
+        }
+        return comparisons[predicate]()
+
+    def conditional_product(
+        self, operation: Operation, values: Sequence[Any]
+    ) -> tuple[tuple[Any, tuple[Any, ...]], ...]:
+        products: tuple[tuple[Any, tuple[Any, ...]], ...] = ((_TRUE_CLAUSES, ()),)
+        for value in values:
+            cases = (
+                value.cases
+                if isinstance(value, _ConditionalValue)
+                else ((_TRUE_CLAUSES, value),)
+            )
+            expanded: list[tuple[Any, tuple[Any, ...]]] = []
+            for product_conditions, product_values in products:
+                for case_conditions, case_value in cases:
+                    combined = self.and_clauses(
+                        operation, product_conditions, case_conditions
+                    )
+                    if combined:
+                        expanded.append((combined, (*product_values, case_value)))
+            if len(expanded) > self.max_condition_clauses:
+                self.fail(
+                    operation,
+                    "dynamic.value_case_limit",
+                    f"value expansion exceeds {self.max_condition_clauses} cases",
+                )
+            products = tuple(expanded)
+        return products
+
+    def merge_conditional_values(
+        self,
+        operation: Operation,
+        cases: Sequence[tuple[Any, Any]],
+    ) -> Any:
+        flattened: list[tuple[Any, Any]] = []
+        for outer_conditions, value in cases:
+            nested = (
+                value.cases
+                if isinstance(value, _ConditionalValue)
+                else ((_TRUE_CLAUSES, value),)
+            )
+            for inner_conditions, inner_value in nested:
+                combined = self.and_clauses(
+                    operation, outer_conditions, inner_conditions
+                )
+                if combined:
+                    flattened.append((combined, inner_value))
+        merged: list[tuple[Any, Any]] = []
+        for conditions, value in flattened:
+            for index, (existing_conditions, existing_value) in enumerate(merged):
+                if self.same_runtime_value(value, existing_value):
+                    merged[index] = (
+                        self.or_clauses(operation, existing_conditions, conditions),
+                        existing_value,
+                    )
+                    break
+            else:
+                merged.append((conditions, value))
+        if len(merged) > self.max_condition_clauses:
+            self.fail(
+                operation,
+                "dynamic.value_case_limit",
+                f"value expansion exceeds {self.max_condition_clauses} cases",
+            )
+        if len(merged) == 1 and merged[0][0] == _TRUE_CLAUSES:
+            return merged[0][1]
+        return _ConditionalValue(tuple(merged))
+
+    def map_conditional_values(
+        self, operation: Operation, values: Sequence[Any], function: Any
+    ) -> Any:
+        cases = tuple(
+            (conditions, function(*case_values))
+            for conditions, case_values in self.conditional_product(operation, values)
+        )
+        return self.merge_conditional_values(operation, cases)
+
+    def same_runtime_value(self, left: Any, right: Any) -> bool:
+        if left is right:
+            return True
+        if type(left) is type(right) and isinstance(left, (bool, int, float, str)):
+            return bool(left == right)
+        return False
 
     def as_predicate(self, operation: Operation, value: Any) -> bool:
         shape = _runtime_shape(value)

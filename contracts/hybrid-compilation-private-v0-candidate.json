@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase13_bounded_canonical_predicates_verified",
+  "status": "phase14_measurement_dependent_ssa_merge_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -443,6 +443,37 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE13_EVIDENCE.md"
   },
   "phase13_completed": true,
+  "phase14": {
+    "compiler_entry_point": "flagquantum.compiler._hybrid.lower_dynamic_program",
+    "value_representation": "bounded_condition_partitioned_ssa_cases",
+    "carried_value_types": [
+      "scalar_float32_or_float64",
+      "index",
+      "bool"
+    ],
+    "supported_consumers": [
+      "arithmetic_add_or_remainder",
+      "boolean_and_or_not",
+      "scalar_or_bool_comparison",
+      "quantum_gate_parameter",
+      "quantum_gate_wire",
+      "subsequent_structured_if_or_bounded_for"
+    ],
+    "lowering_strategy": "split_consumers_over_mutually_exclusive_canonical_conditions",
+    "equal_case_coalescing": true,
+    "case_limit": "max_condition_clauses",
+    "case_limit_policy": "unsupported_fail_closed",
+    "conditional_measurement": "unsupported_fail_closed",
+    "measurement_dependent_loop_bounds": "unsupported_fail_closed",
+    "measurement_dependent_program_return": "unsupported_fail_closed",
+    "stochastic_gradient_policy": "unsupported_fail_closed",
+    "public_api_change": false,
+    "default_path_change": false,
+    "core_ir_schema_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE14_EVIDENCE.md"
+  },
+  "phase14_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,
