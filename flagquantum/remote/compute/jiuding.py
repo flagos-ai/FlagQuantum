@@ -38,6 +38,7 @@ def _decode_tensor(payload: dict):
         "float64": torch.float64,
         "complex64": torch.complex64,
         "complex128": torch.complex128,
+        "int64": torch.int64,
     }
     if dtype_name not in dtypes:
         raise RuntimeError("Jiuding workspace returned an unsupported result dtype")
@@ -450,7 +451,7 @@ class JiudingClient:
             return dict(cached)
         health = {
             "schema": "flagquantum.jiuding.workspace_executor",
-            "version": "1.1",
+            "version": "1.2",
             "operation": "health",
         }
         try:
@@ -557,12 +558,17 @@ class JiudingClient:
         *,
         target: str,
         outputs=None,
+        shots: int | None = None,
         port: int = 57621,
         timeout: float = 30,
     ):
-        """Run exact statevector, probability or expectation outputs."""
+        """Run statevector or requested measurements in a resident workspace."""
 
         if outputs is None:
+            if shots is not None:
+                raise TypeError(
+                    "shots requires fq.samples(...) or fq.counts(...) output"
+                )
             return self.run_statevector(
                 program,
                 target=target,
@@ -576,14 +582,21 @@ class JiudingClient:
         measurements = lower_outputs(
             outputs,
             n_wires=ir.n_wires,
-            shots=None,
+            shots=shots,
         )
         assert measurements is not None
-        supported = {"expectation_identity", "expectation_ps", "probabilities"}
+        supported = {
+            "counts",
+            "counts_ps",
+            "expectation_identity",
+            "expectation_ps",
+            "probabilities",
+            "sample",
+            "sample_ps",
+        }
         if any(item.kind not in supported for item in measurements):
             raise ValueError(
-                "Jiuding resident execution supports fq.probabilities() and "
-                "fq.expectation(...) only"
+                "Jiuding resident execution received an unsupported output request"
             )
         response, effective_target = self._execute(
             ir,
@@ -592,13 +605,54 @@ class JiudingClient:
             port=port,
             timeout=timeout,
         )
+        import torch
+
         from ...runtime.result import ExecutionResult, MeasurementResult
+
+        def decode_value(value):
+            if isinstance(value, dict) and {"dtype", "shape", "data"} <= value.keys():
+                return _decode_tensor(value)
+            if isinstance(value, dict) and set(value) == {"counts"}:
+                rows = value["counts"]
+                if not isinstance(rows, list):
+                    raise RuntimeError("Jiuding workspace returned invalid counts")
+                decoded = []
+                for row in rows:
+                    if not isinstance(row, list):
+                        raise RuntimeError("Jiuding workspace returned invalid counts")
+                    counts = {}
+                    for entry in row:
+                        if not isinstance(entry, dict) or set(entry) != {
+                            "outcome",
+                            "count",
+                        }:
+                            raise RuntimeError(
+                                "Jiuding workspace returned invalid counts"
+                            )
+                        outcome, count = entry["outcome"], entry["count"]
+                        if (
+                            not isinstance(outcome, (str, int))
+                            or isinstance(outcome, bool)
+                            or type(count) is not int
+                            or count < 0
+                        ):
+                            raise RuntimeError(
+                                "Jiuding workspace returned invalid counts"
+                            )
+                        if outcome in counts:
+                            raise RuntimeError(
+                                "Jiuding workspace returned duplicate count outcomes"
+                            )
+                        counts[outcome] = count
+                    decoded.append(counts)
+                return decoded
+            raise RuntimeError("Jiuding workspace returned an unsupported result value")
 
         results = tuple(
             MeasurementResult(
                 kind=item["kind"],
                 wires=tuple(int(wire) for wire in item["wires"]),
-                value=_decode_tensor(item["value"]),
+                value=decode_value(item["value"]),
                 shots=item.get("shots"),
                 metadata=dict(item.get("metadata", {})),
                 statistics=dict(item.get("statistics", {})),
@@ -606,18 +660,31 @@ class JiudingClient:
             for item in response["measurements"]
         )
         evidence = dict(response.get("evidence", {}))
+        first_samples = next(
+            (
+                item.value
+                for item in results
+                if item.kind in {"sample", "sample_ps"}
+                and isinstance(item.value, torch.Tensor)
+            ),
+            None,
+        )
         return ExecutionResult(
+            samples=first_samples,
             measurements=results,
             runtime={
                 "execution_path": "jiuding_workspace_executor",
                 "device": evidence.get("device"),
                 "elapsed_seconds": evidence.get("elapsed_seconds"),
+                "result_transfer": evidence.get("result_transfer"),
+                "counts_aggregation": evidence.get("counts_aggregation"),
             },
             provenance={
                 "requested_target": target,
                 "selected_target": effective_target,
                 "accelerator": evidence.get("accelerator"),
                 "cpu_fallback_used": evidence.get("cpu_fallback_used"),
+                "statevector_transferred": evidence.get("statevector_transferred"),
             },
         )
 
@@ -645,7 +712,7 @@ class JiudingClient:
         response = self._executor_request(
             {
                 "schema": "flagquantum.jiuding.workspace_executor",
-                "version": "1.1",
+                "version": "1.2",
                 "operation": "measurements" if measurements else "statevector",
                 "request_id": uuid.uuid4().hex,
                 "target": effective_target,
@@ -1169,7 +1236,7 @@ class JiudingClient:
                 )
 
 
-def run(program, *, target: str, outputs=None):
+def run(program, *, target: str, outputs=None, shots: int | None = None):
     """Execute through the process-local resident Jiuding workspace client."""
 
     workspace = os.environ.get("JIUDING_WORKSPACE", "").strip()
@@ -1177,4 +1244,4 @@ def run(program, *, target: str, outputs=None):
     if client is None:
         client = JiudingClient(workspace=workspace or None)
         _DEFAULT_CLIENTS[workspace] = client
-    return client.run(program, target=target, outputs=outputs)
+    return client.run(program, target=target, outputs=outputs, shots=shots)

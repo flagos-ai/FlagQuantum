@@ -149,14 +149,19 @@ def run(
             raise TypeError(
                 "options and noise_model are not yet supported by Jiuding workspace execution"
             )
-        if shots is not None or name is not None:
-            raise TypeError("Jiuding workspace execution does not accept shots or name")
+        if name is not None:
+            raise TypeError("Jiuding workspace execution does not accept name")
         if isinstance(program_or_plan, ExecutionPlan):
             raise TypeError(
                 "Jiuding workspace execution requires a Circuit or CircuitIR, not an ExecutionPlan"
             )
         jiuding = import_module(".remote.compute.jiuding", __package__)
-        return jiuding.run(program_or_plan, target=target, outputs=outputs)
+        return jiuding.run(
+            program_or_plan,
+            target=target,
+            outputs=outputs,
+            shots=shots,
+        )
 
     if compiler is None or target is None:
         raise TypeError("remote execution requires both compiler and target")

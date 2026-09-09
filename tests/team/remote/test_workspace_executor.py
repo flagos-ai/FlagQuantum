@@ -75,6 +75,43 @@ def test_cpu_executor_returns_measurements_without_statevector():
     torch.testing.assert_close(expectation_value, torch.tensor([1.0]))
 
 
+def test_cpu_executor_returns_samples_and_counts_without_statevector():
+    from flagquantum.observables import lower_outputs
+
+    ir = fq.Circuit(2).h(0).cx(0, 1).to_ir()
+    measurements = lower_outputs(
+        (fq.samples(wires=(0, 1)), fq.counts(wires=(0, 1))),
+        n_wires=2,
+        shots=32,
+        seed=7,
+    )
+    assert measurements is not None
+    response = executor.execute(
+        {
+            "schema": executor.SCHEMA,
+            "version": executor.VERSION,
+            "operation": "measurements",
+            "request_id": "bell-sampling",
+            "target": "jiuding:cpu",
+            "program": replace(ir, measurements=measurements).to_dict(),
+        },
+        target="jiuding:cpu",
+        device="cpu",
+    )
+
+    assert "state" not in response
+    samples, counts = response["measurements"]
+    assert samples["value"]["dtype"] == "int64"
+    assert samples["value"]["shape"] == [1, 32, 2]
+    count_values = {
+        entry["outcome"]: entry["count"] for entry in counts["value"]["counts"][0]
+    }
+    assert sum(count_values.values()) == 32
+    assert set(count_values) <= {"00", "11"}
+    assert response["evidence"]["statevector_transferred"] is False
+    assert response["evidence"]["counts_aggregation"] == "host"
+
+
 def test_protocol_round_trip_and_size_limit():
     stream = io.BytesIO()
     executor.write_message(stream, {"ok": True})
@@ -173,7 +210,7 @@ def test_default_workspace_client_is_reused(monkeypatch):
     monkeypatch.setenv("JIUDING_WORKSPACE", "flagquantum-runtime")
     clients = []
 
-    def execute(client, program, *, target, outputs=None):
+    def execute(client, program, *, target, outputs=None, shots=None):
         clients.append(client)
         return program
 
@@ -231,6 +268,80 @@ def test_client_reconstructs_remote_measurement_results(monkeypatch):
     torch.testing.assert_close(result.probabilities, value)
     assert result.state is None
     assert result.runtime["device"] == "cuda:0"
+
+
+def test_client_reconstructs_remote_samples_and_counts(monkeypatch):
+    client = JiudingClient(workspace="test")
+    samples = torch.tensor([[[0, 0], [1, 1]]], dtype=torch.int64)
+    encoded = base64.b64encode(samples.numpy().tobytes()).decode()
+    monkeypatch.setattr(
+        client,
+        "_execute",
+        lambda *_, **__: (
+            {
+                "measurements": [
+                    {
+                        "kind": "sample",
+                        "wires": [0, 1],
+                        "value": {
+                            "dtype": "int64",
+                            "shape": [1, 2, 2],
+                            "data": encoded,
+                        },
+                        "shots": 2,
+                        "metadata": {"fq_output_index": 0},
+                        "statistics": {},
+                    },
+                    {
+                        "kind": "counts",
+                        "wires": [0, 1],
+                        "value": {
+                            "counts": [
+                                [
+                                    {"outcome": 0, "count": 1},
+                                    {"outcome": 3, "count": 1},
+                                ]
+                            ]
+                        },
+                        "shots": 2,
+                        "metadata": {"fq_output_index": 1},
+                        "statistics": {},
+                    },
+                ],
+                "evidence": {
+                    "device": "cuda:0",
+                    "elapsed_seconds": 0.01,
+                    "accelerator": "A100",
+                    "cpu_fallback_used": False,
+                },
+            },
+            "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+        ),
+    )
+
+    result = client.run(
+        fq.Circuit(2),
+        target="jiuding:gpu",
+        outputs=(fq.samples(), fq.counts()),
+        shots=2,
+    )
+
+    torch.testing.assert_close(result.require_samples(), samples)
+    assert result.counts == [{0: 1, 3: 1}]
+    assert result.state is None
+
+
+def test_client_requires_outputs_for_shots():
+    client = JiudingClient(workspace="test")
+
+    with pytest.raises(TypeError, match="requires fq.samples"):
+        client.run(fq.Circuit(1), target="jiuding:cpu", shots=4)
+    with pytest.raises(ValueError, match="requires shots"):
+        client.run(
+            fq.Circuit(1),
+            target="jiuding:cpu",
+            outputs=fq.samples(),
+        )
 
 
 def test_start_executor_reuses_verified_health(monkeypatch):

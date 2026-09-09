@@ -155,8 +155,8 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
     expected = object()
     captured = {}
 
-    def run(program, *, target, outputs=None):
-        captured.update(program=program, target=target, outputs=outputs)
+    def run(program, *, target, outputs=None, shots=None):
+        captured.update(program=program, target=target, outputs=outputs, shots=shots)
         return expected
 
     monkeypatch.setattr("flagquantum.remote.compute.jiuding.run", run)
@@ -169,6 +169,33 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
         "program": circuit,
         "target": "jiuding:gpu",
         "outputs": output,
+        "shots": None,
+    }
+
+
+def test_fq_run_passes_jiuding_sampling_controls(monkeypatch):
+    expected = object()
+    captured = {}
+
+    def run(program, *, target, outputs=None, shots=None):
+        captured.update(target=target, outputs=outputs, shots=shots)
+        return expected
+
+    monkeypatch.setattr("flagquantum.remote.compute.jiuding.run", run)
+    output = fq.counts()
+
+    result = fq.run(
+        fq.Circuit(2).h(0).cx(0, 1),
+        target="jiuding:gpu",
+        outputs=output,
+        shots=1024,
+    )
+
+    assert result is expected
+    assert captured == {
+        "target": "jiuding:gpu",
+        "outputs": output,
+        "shots": 1024,
     }
 
 
@@ -177,8 +204,7 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
     [
         ("compiler", "flagquantum", "does not accept compiler"),
         ("target_qubits", (0,), "does not accept target_qubits"),
-        ("shots", 1024, "does not accept shots or name"),
-        ("name", "bell", "does not accept shots or name"),
+        ("name", "bell", "does not accept name"),
     ],
 )
 def test_fq_run_jiuding_rejects_unsupported_controls(keyword, value, message):

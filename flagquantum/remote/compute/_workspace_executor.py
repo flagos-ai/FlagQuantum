@@ -12,7 +12,7 @@ from dataclasses import replace
 from typing import Any
 
 SCHEMA = "flagquantum.jiuding.workspace_executor"
-VERSION = "1.1"
+VERSION = "1.2"
 MAX_MESSAGE_BYTES = 8 * 1024 * 1024
 
 
@@ -57,6 +57,7 @@ def _encode_tensor(value: Any) -> dict[str, Any]:
         torch.float64,
         torch.complex64,
         torch.complex128,
+        torch.int64,
     ):
         raise TypeError(f"unsupported result dtype {flat.dtype}")
     storage = (
@@ -69,6 +70,27 @@ def _encode_tensor(value: Any) -> dict[str, Any]:
         "shape": list(value.shape),
         "data": base64.b64encode(storage.numpy().tobytes()).decode("ascii"),
     }
+
+
+def _encode_measurement_value(value: Any) -> dict[str, Any]:
+    if hasattr(value, "detach"):
+        return _encode_tensor(value)
+    if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
+        raise TypeError("unsupported measurement result value")
+    rows = []
+    for row in value:
+        if any(
+            not isinstance(outcome, (str, int))
+            or isinstance(outcome, bool)
+            or type(count) is not int
+            or count < 0
+            for outcome, count in row.items()
+        ):
+            raise TypeError("invalid counts result")
+        rows.append(
+            [{"outcome": outcome, "count": count} for outcome, count in row.items()]
+        )
+    return {"counts": rows}
 
 
 def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, Any]:
@@ -105,10 +127,18 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
     if operation == "measurements":
         if not measurements:
             raise ValueError("measurement execution requires at least one request")
-        supported = {"expectation_identity", "expectation_ps", "probabilities"}
+        supported = {
+            "counts",
+            "counts_ps",
+            "expectation_identity",
+            "expectation_ps",
+            "probabilities",
+            "sample",
+            "sample_ps",
+        }
         if any(item.kind not in supported for item in measurements):
             raise ValueError(
-                "resident execution supports probabilities and expectations only"
+                "resident execution received an unsupported measurement request"
             )
     program = replace(program, measurements=())
     started = time.perf_counter()
@@ -153,11 +183,22 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
     results = execute_measurements(state, measurements, n_wires=program.n_wires)
     platform.synchronize(state.device)
     response["evidence"]["elapsed_seconds"] = time.perf_counter() - started
+    response["evidence"].update(
+        {
+            "statevector_transferred": False,
+            "result_transfer": "device_to_host",
+            "counts_aggregation": (
+                "host"
+                if any(item.kind in {"counts", "counts_ps"} for item in results)
+                else "not_requested"
+            ),
+        }
+    )
     response["measurements"] = [
         {
             "kind": item.kind,
             "wires": list(item.wires),
-            "value": _encode_tensor(item.value),
+            "value": _encode_measurement_value(item.value),
             "shots": item.shots,
             "metadata": dict(item.metadata),
             "statistics": dict(item.statistics),
