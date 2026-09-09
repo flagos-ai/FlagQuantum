@@ -37,14 +37,14 @@ def _json_mapping(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 @dataclass(frozen=True)
 class TwinExperiment:
-    """A prediction frozen together with the exact physical program to execute."""
+    """A prediction frozen together with the exact program submitted to a QPU."""
 
     snapshot_identity: str
     prediction: TwinPrediction
     name: str
     backend_name: str
-    physical_qasm: str
-    physical_qasm_identity: str
+    submitted_qasm: str
+    submitted_qasm_identity: str
     shots: int
     schema: str = _EXPERIMENT_SCHEMA
 
@@ -54,17 +54,17 @@ class TwinExperiment:
         twin: QPUDigitalTwin,
         circuit: Any,
         *,
-        physical_qasm: str,
+        submitted_qasm: str,
         name: str,
         shots: int,
     ) -> "TwinExperiment":
-        """Freeze the model, prediction, and physical program before submission."""
+        """Freeze the model, prediction, and submitted program before dispatch."""
 
-        program = str(physical_qasm)
+        program = str(submitted_qasm)
         task_name = str(name).strip()
         shot_count = int(shots)
         if not program.lstrip().startswith("OPENQASM 2.0;"):
-            raise ValueError("twin hardware experiments require physical OpenQASM 2.0")
+            raise ValueError("twin hardware experiments require OpenQASM 2.0")
         if not task_name:
             raise ValueError("twin hardware experiment name cannot be empty")
         if shot_count <= 0 or shot_count % 1024:
@@ -77,8 +77,8 @@ class TwinExperiment:
             prediction=prediction,
             name=task_name,
             backend_name=twin.snapshot.backend_name,
-            physical_qasm=program,
-            physical_qasm_identity=_sha256(program),
+            submitted_qasm=program,
+            submitted_qasm_identity=_sha256(program),
             shots=shot_count,
         )
 
@@ -87,32 +87,30 @@ class TwinExperiment:
             raise ValueError("unsupported twin experiment schema")
         if self.prediction.snapshot_identity != self.snapshot_identity:
             raise ValueError("experiment prediction does not match its snapshot")
-        if _sha256(self.physical_qasm) != self.physical_qasm_identity:
-            raise ValueError("physical_qasm_identity does not match physical_qasm")
+        if _sha256(self.submitted_qasm) != self.submitted_qasm_identity:
+            raise ValueError("submitted_qasm_identity does not match submitted_qasm")
 
     @property
     def identity(self) -> str:
         return _payload_identity(self.to_dict())
 
     def submit(self, provider: Any) -> ProviderTaskHandle:
-        """Submit the frozen physical program and verify the returned receipt."""
+        """Submit the frozen program and verify the returned receipt."""
 
         if getattr(provider, "provider", None) != "quafu" or not hasattr(
-            provider, "submit_physical_qasm"
+            provider, "submit_qasm"
         ):
             raise TypeError("TwinExperiment.submit requires a Quafu provider")
-        handle = provider.submit_physical_qasm(
-            self.physical_qasm,
+        handle = provider.submit_qasm(
+            self.submitted_qasm,
             chip=self.backend_name,
             name=self.name,
             shots=self.shots,
         )
         if handle.provider != "quafu" or handle.backend_name != self.backend_name:
             raise RuntimeError("provider receipt identifies a different QPU target")
-        if handle.payload.get("physical_qasm_sha256") != self.physical_qasm_identity:
-            raise RuntimeError(
-                "provider receipt does not match the frozen physical QASM"
-            )
+        if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:
+            raise RuntimeError("provider receipt does not match the submitted QASM")
         return handle
 
     def validate_result(
@@ -131,16 +129,21 @@ class TwinExperiment:
             )
         if handle.provider != "quafu" or handle.backend_name != self.backend_name:
             raise RuntimeError("provider result identifies a different QPU target")
-        if handle.payload.get("physical_qasm_sha256") != self.physical_qasm_identity:
-            raise RuntimeError(
-                "provider result does not match the frozen physical QASM"
-            )
+        if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:
+            raise RuntimeError("provider result does not match the submitted QASM")
         if result.shots != self.shots:
             raise RuntimeError(
                 "provider result shot count does not match the experiment"
             )
 
         metadata = _json_mapping(result.metadata)
+        reported_backend = metadata.get("chip")
+        if (
+            isinstance(reported_backend, str)
+            and reported_backend.strip()
+            and reported_backend != self.backend_name
+        ):
+            raise RuntimeError("provider result identifies a different QPU target")
         executed_qasm = metadata.get("transpiled")
         if not isinstance(executed_qasm, str) or not executed_qasm.strip():
             executed_qasm = metadata.get("circuit")
@@ -153,7 +156,7 @@ class TwinExperiment:
             provider=handle.provider,
             backend_name=handle.backend_name,
             task_id=handle.task_id,
-            physical_qasm_identity=self.physical_qasm_identity,
+            submitted_qasm_identity=self.submitted_qasm_identity,
             executed_qasm_identity=executed_identity,
             counts=counts,
             validation=self.prediction.compare_counts(counts),
@@ -167,8 +170,8 @@ class TwinExperiment:
             "prediction": self.prediction.to_dict(),
             "name": self.name,
             "backend_name": self.backend_name,
-            "physical_qasm": self.physical_qasm,
-            "physical_qasm_identity": self.physical_qasm_identity,
+            "submitted_qasm": self.submitted_qasm,
+            "submitted_qasm_identity": self.submitted_qasm_identity,
             "shots": self.shots,
         }
 
@@ -181,7 +184,7 @@ class TwinHardwareReport:
     provider: str
     backend_name: str
     task_id: str
-    physical_qasm_identity: str
+    submitted_qasm_identity: str
     executed_qasm_identity: str | None
     counts: Mapping[str, int]
     validation: TwinValidationReport
@@ -190,9 +193,9 @@ class TwinHardwareReport:
 
     @property
     def predictive_validation_valid(self) -> bool:
-        """Whether the provider confirmed the exact frozen physical program."""
+        """Whether the executed program exactly matches the submitted program."""
 
-        return self.executed_qasm_identity == self.physical_qasm_identity
+        return self.executed_qasm_identity == self.submitted_qasm_identity
 
     @property
     def identity(self) -> str:
@@ -205,7 +208,7 @@ class TwinHardwareReport:
             "provider": self.provider,
             "backend_name": self.backend_name,
             "task_id": self.task_id,
-            "physical_qasm_identity": self.physical_qasm_identity,
+            "submitted_qasm_identity": self.submitted_qasm_identity,
             "executed_qasm_identity": self.executed_qasm_identity,
             "predictive_validation_valid": self.predictive_validation_valid,
             "counts": dict(sorted(self.counts.items())),

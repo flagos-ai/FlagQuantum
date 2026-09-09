@@ -8,7 +8,8 @@
 
 - `QuafuProvider` 已实现 token 验证、backend discovery、chip-info、submit、status、cancel、
   result 和有界轮询；
-- 支持标准 `DeploymentPackage` 和不允许 provider 二次编译的 sealed physical QASM；
+- 支持标准 `DeploymentPackage` 和请求关闭Provider编译的直接QASM提交；真机证据
+  表明该请求不保证线路原样执行，返回的`transpiled`线路才是执行身份来源；
 - submission receipt、routing evidence 和 deployment artifact identity 能贯穿到结果；
 - 结果执行 shot accounting，已有默认保留 portal bit order 和显式 legacy reverse 选项；
 - Mock 测试覆盖 token、提交、轮询、校准读取、物理 QASM 和基本结果；

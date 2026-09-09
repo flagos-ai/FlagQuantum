@@ -250,19 +250,17 @@ def test_quafu_provider_fetches_verbatim_chip_info():
     assert transport.gets[0][1] == {"token": "secret"}
 
 
-def test_quafu_provider_submits_sealed_physical_qasm_without_compile():
+def test_quafu_provider_submits_qasm_without_requesting_compile():
     transport = FakeTransport()
     provider = QuafuProvider(
         base_url="https://quafu.test", token="secret", transport=transport
     )
     qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\n'
 
-    handle = provider.submit_physical_qasm(
-        qasm, chip="Baihua", name="physical", shots=1024
-    )
+    handle = provider.submit_qasm(qasm, chip="Baihua", name="direct", shots=1024)
 
     _, payload, headers, _ = transport.posts[0]
     assert payload == {"circuit": qasm, "compile": False, "options": {}}
     assert headers == {"token": "secret"}
     assert handle.payload["compile"] is False
-    assert len(handle.payload["physical_qasm_sha256"]) == 64
+    assert len(handle.payload["submitted_qasm_sha256"]) == 64

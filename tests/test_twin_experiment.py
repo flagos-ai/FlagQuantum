@@ -17,7 +17,7 @@ from flagquantum.remote.qpu import (
 )
 from flagquantum.twin import QPUDigitalTwin, TwinExperiment
 
-PHYSICAL_QASM = """OPENQASM 2.0;
+SUBMITTED_QASM = """OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[5];
 creg c[2];
@@ -47,37 +47,44 @@ def _chip_info():
     }
 
 
-def _experiment(*, physical_qasm=PHYSICAL_QASM, shots=1024):
+def _experiment(
+    *,
+    submitted_qasm=SUBMITTED_QASM,
+    shots=1024,
+    backend_name="Baihua",
+    circuit=None,
+    physical_qubits=(3, 4),
+):
     twin = QPUDigitalTwin.from_quafu_chip_info(
-        _chip_info(), backend_name="Baihua", physical_qubits=(3, 4)
+        _chip_info(), backend_name=backend_name, physical_qubits=physical_qubits
     )
     return TwinExperiment.prepare(
         twin,
-        fq.Circuit(2).h(0).cx(0, 1),
-        physical_qasm=physical_qasm,
+        circuit if circuit is not None else fq.Circuit(2).h(0).cx(0, 1),
+        submitted_qasm=submitted_qasm,
         name="frozen-bell",
         shots=shots,
     )
 
 
 def _handle(experiment, *, digest=None):
-    program_identity = digest or experiment.physical_qasm_identity
+    program_identity = digest or experiment.submitted_qasm_identity
     return ProviderTaskHandle(
         provider="quafu",
         task_id="task-42",
-        backend_name="Baihua",
+        backend_name=experiment.backend_name,
         payload={
             "deployment_receipt_schema": "flagquantum_submission_receipt_v1",
-            "deployment_package_schema": "flagquantum_physical_qasm_v1",
+            "deployment_package_schema": "flagquantum_submitted_qasm_v1",
             "deployment_program_format": "openqasm-2",
             "routing_evidence_sha256": program_identity,
             "deployment_artifact_sha256": program_identity,
-            "physical_qasm_sha256": program_identity,
+            "submitted_qasm_sha256": program_identity,
         },
     )
 
 
-def _result(experiment, *, executed_qasm=PHYSICAL_QASM):
+def _result(experiment, *, executed_qasm=SUBMITTED_QASM):
     handle = _handle(experiment)
     metadata = build_result_metadata(
         handle,
@@ -97,9 +104,9 @@ def test_experiment_binds_prediction_program_receipt_and_result():
     class Provider:
         provider = "quafu"
 
-        def submit_physical_qasm(self, qasm, *, chip, name, shots):
+        def submit_qasm(self, qasm, *, chip, name, shots):
             assert (qasm, chip, name, shots) == (
-                PHYSICAL_QASM,
+                SUBMITTED_QASM,
                 "Baihua",
                 "frozen-bell",
                 1024,
@@ -110,8 +117,8 @@ def test_experiment_binds_prediction_program_receipt_and_result():
     report = experiment.validate_result(_result(experiment), receipt=handle)
 
     assert (
-        handle.payload["physical_qasm_sha256"]
-        == hashlib.sha256(PHYSICAL_QASM.encode()).hexdigest()
+        handle.payload["submitted_qasm_sha256"]
+        == hashlib.sha256(SUBMITTED_QASM.encode()).hexdigest()
     )
     assert report.task_id == "task-42"
     assert report.predictive_validation_valid is True
@@ -124,7 +131,7 @@ def test_rewritten_or_missing_executed_program_fails_closed():
 
     receipt = _handle(experiment)
     rewritten = experiment.validate_result(
-        _result(experiment, executed_qasm=PHYSICAL_QASM + "\n"), receipt=receipt
+        _result(experiment, executed_qasm=SUBMITTED_QASM + "\n"), receipt=receipt
     )
     missing = experiment.validate_result(
         _result(experiment, executed_qasm=None), receipt=receipt
@@ -139,7 +146,14 @@ def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
     response = json.loads(
         (FIXTURES / "quafu_result_service_transpile.json").read_text(encoding="utf-8")
     )
-    experiment = _experiment(physical_qasm=response["circuit"], shots=response["shots"])
+    # Sanitized from a live Shenglian compile=False probe on 2026-09-09.
+    experiment = _experiment(
+        submitted_qasm=response["circuit"],
+        shots=response["shots"],
+        backend_name=response["chip"],
+        circuit=fq.Circuit(1).h(0),
+        physical_qubits=(3,),
+    )
     receipt = _handle(experiment)
 
     class Transport:
@@ -150,8 +164,8 @@ def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
     result = provider.fetch_result(receipt)
     report = experiment.validate_result(result, receipt=receipt)
 
-    assert result.metadata["circuit"] == experiment.physical_qasm
-    assert result.metadata["transpiled"] != experiment.physical_qasm
+    assert result.metadata["circuit"] == experiment.submitted_qasm
+    assert result.metadata["transpiled"] != experiment.submitted_qasm
     assert (
         report.executed_qasm_identity
         == hashlib.sha256(response["transpiled"].encode()).hexdigest()
@@ -166,15 +180,15 @@ def test_experiment_rejects_receipt_or_result_from_another_program():
     class Provider:
         provider = "quafu"
 
-        def submit_physical_qasm(self, qasm, *, chip, name, shots):
+        def submit_qasm(self, qasm, *, chip, name, shots):
             return _handle(experiment, digest="0" * 64)
 
     with pytest.raises(RuntimeError, match="receipt"):
         experiment.submit(Provider())
 
     foreign = _result(experiment)
-    foreign.handle.payload["physical_qasm_sha256"] = "0" * 64
-    with pytest.raises(RuntimeError, match="frozen physical QASM"):
+    foreign.handle.payload["submitted_qasm_sha256"] = "0" * 64
+    with pytest.raises(RuntimeError, match="submitted QASM"):
         experiment.validate_result(foreign, receipt=foreign.handle)
 
 
@@ -190,3 +204,19 @@ def test_experiment_rejects_result_from_another_task_receipt():
 
     with pytest.raises(RuntimeError, match="task receipt"):
         experiment.validate_result(result, receipt=other_receipt)
+
+
+def test_experiment_rejects_provider_result_reporting_another_backend():
+    experiment = _experiment()
+    receipt = _handle(experiment)
+    result = DeploymentResult(
+        handle=receipt,
+        counts={"00": 512, "11": 512},
+        shots=1024,
+        metadata=build_result_metadata(
+            receipt, {"chip": "Dongling", "transpiled": SUBMITTED_QASM}
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="different QPU target"):
+        experiment.validate_result(result, receipt=receipt)

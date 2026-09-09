@@ -164,7 +164,7 @@ class QuafuProvider(HttpQuantumProvider):
             ),
         )
 
-    def submit_physical_qasm(
+    def submit_qasm(
         self,
         qasm: str,
         *,
@@ -172,15 +172,19 @@ class QuafuProvider(HttpQuantumProvider):
         name: str,
         shots: int,
     ) -> ProviderTaskHandle:
-        """Submit an already-mapped OpenQASM 2.0 circuit without recompilation."""
+        """Submit OpenQASM 2.0 while requesting no provider compilation.
+
+        Quafu may still lower gates or remap qubits. The returned ``transpiled``
+        program, when present, is the authoritative execution representation.
+        """
 
         program = str(qasm)
         backend = str(chip).strip()
         task_name = str(name).strip()
         if not program.lstrip().startswith("OPENQASM 2.0;"):
-            raise ValueError("physical Quafu submission requires OpenQASM 2.0")
+            raise ValueError("Quafu QASM submission requires OpenQASM 2.0")
         if not backend or not task_name:
-            raise ValueError("physical Quafu submission requires chip and name")
+            raise ValueError("Quafu QASM submission requires chip and name")
         if int(shots) <= 0 or int(shots) % 1024:
             raise ValueError("Quafu shots must be a positive multiple of 1024")
         digest = hashlib.sha256(program.encode()).hexdigest()
@@ -202,11 +206,11 @@ class QuafuProvider(HttpQuantumProvider):
             raise RuntimeError("quafu submit response does not contain a task id.")
         receipt = {
             "deployment_receipt_schema": DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
-            "deployment_package_schema": "flagquantum_physical_qasm_v1",
+            "deployment_package_schema": "flagquantum_submitted_qasm_v1",
             "deployment_program_format": "openqasm-2",
             "routing_evidence_sha256": digest,
             "deployment_artifact_sha256": digest,
-            "physical_qasm_sha256": digest,
+            "submitted_qasm_sha256": digest,
             "compile": False,
         }
         if isinstance(response, Mapping):

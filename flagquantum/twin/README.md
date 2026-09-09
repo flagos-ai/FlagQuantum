@@ -12,7 +12,7 @@ in `simulation`, `noise`, and `remote/qpu` respectively.
 ## Public entry points
 
 - `QPUDigitalTwin`: a frozen device model bound to a physical mapping;
-- `TwinExperiment`: a prediction bound to the exact physical program submitted;
+- `TwinExperiment`: a prediction bound to the exact program submitted;
 - `TwinHardwareReport`: a result bound to its experiment and remote task;
 - `TwinSnapshot`: immutable calibration and model identity;
 - `TwinPrediction`: ideal and calibration-conditioned probabilities;
@@ -33,7 +33,7 @@ prediction = twin.predict(fq.Circuit(2).h(0).cx(0, 1))
 report = prediction.compare_counts({"00": 500, "11": 500})
 ```
 
-For hardware validation, freeze the prediction and physical program before
+For hardware validation, freeze the prediction and submitted program before
 submission. Remote polling remains the provider's responsibility:
 
 ```python
@@ -42,7 +42,7 @@ from flagquantum.twin import TwinExperiment
 experiment = TwinExperiment.prepare(
     twin,
     circuit,
-    physical_qasm=physical_qasm,
+    submitted_qasm=submitted_qasm,
     name="frozen-bell",
     shots=1024,
 )
@@ -55,6 +55,8 @@ hardware_report = experiment.validate_result(result, receipt=handle)
 `predictive_validation_valid` is true only when the provider returns the exact
 executed OpenQASM and its digest matches the program frozen before submission.
 Missing or rewritten programs fail closed; their metrics remain diagnostic.
+Quafu may lower gates or remap qubits even when compilation was not requested,
+so a successful submission receipt alone never proves execution identity.
 
 Run the focused checks with:
 
