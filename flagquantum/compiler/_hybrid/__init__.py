@@ -9,6 +9,12 @@ from .capture import (
     capture_function,
     capture_source,
 )
+from .lowering import (
+    CircuitStructureCache,
+    LoweredHybridProgram,
+    lower_trace,
+    specialize_and_lower,
+)
 from .model import (
     BOOL,
     INDEX,
@@ -24,6 +30,12 @@ from .model import (
     scalar_type,
     tensor_type,
 )
+from .specialize import (
+    SpecializationError,
+    SpecializedTrace,
+    TraceGate,
+    specialize_program,
+)
 from .verifier import HybridVerificationError, verify_program
 
 __all__ = (
@@ -32,18 +44,26 @@ __all__ = (
     "QUANTUM_EFFECT",
     "Block",
     "CaptureDiagnostic",
+    "CircuitStructureCache",
     "HybridProgram",
     "HybridCaptureError",
     "HybridVerificationError",
     "IRType",
+    "LoweredHybridProgram",
     "Operation",
     "Region",
     "SourceLocation",
+    "SpecializationError",
+    "SpecializedTrace",
+    "TraceGate",
     "Value",
     "ValueId",
     "capture_function",
     "capture_source",
+    "lower_trace",
     "scalar_type",
     "tensor_type",
+    "specialize_and_lower",
+    "specialize_program",
     "verify_program",
 )

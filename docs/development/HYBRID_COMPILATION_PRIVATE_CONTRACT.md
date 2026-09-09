@@ -1,8 +1,8 @@
 # Private hybrid compilation contract
 
-Status: Phase 1 semantic migration and Phase 2 restricted Python capture
-implemented and verified under the repository owner's 2026-09-09 direction to
-record and execute the Python-first hybrid compilation plan.
+Status: Phases 1-3 implemented and verified under the repository owner's
+2026-09-09 direction to record and execute the Python-first hybrid compilation
+plan.
 
 ## Purpose
 
@@ -143,3 +143,33 @@ Phase 2 acceptance is complete. The captured golden source preserves nested
 tensor-axis loops and data-dependent quantum gate selection, and the prohibited
 construct suite fails with source-located diagnostics. Phase 3 specialization
 and `CircuitIR` lowering remain separately gated.
+
+## Phase 3 specialization and lowering authorization
+
+Phase 3 may interpret a verified `HybridProgram` against one runtime input set
+to select structured branches and unroll bounded loops into an ephemeral quantum
+trace. The trace is not a restored `QuantumIR` and is not serialized or exposed;
+it exists only to lower the selected path into the existing Core-owned
+`CircuitIR`.
+
+Parameterized gates lower first to a `CircuitIR` template containing stable
+Core `Parameter` slots. Actual scalar tensor views are retained separately by
+reference and may be bound into a circuit without `.item()`, detachment, NumPy
+conversion, or scalar copying. Angle embedding lowers to one RX operation per
+declared wire. Program structure, input signature, selected quantum structure,
+and parameter values remain distinct identity dimensions; parameter values
+must not affect reusable structure identity.
+
+A bounded LRU structure cache is permitted only when hit, miss, and eviction
+are observable in the returned private result. Unsupported input signatures,
+non-scalar predicates, invalid loop bounds, invalid wires, and unsupported
+dynamic effects fail before Simulation.
+
+Phase 3 does not authorize Runtime integration, numerical execution, VJP,
+public/default-path integration, or performance claims.
+
+Phase 3 acceptance is complete: positive, negative, zero, and mixed gate
+selection match hand-built circuit structures; late-bound tensor views preserve
+their autograd edges; template identity excludes values; bounded cache events
+are observable; and the existing Compiler accepts both templates and bound
+circuits. Phase 4 Runtime/Simulation work remains separately gated.

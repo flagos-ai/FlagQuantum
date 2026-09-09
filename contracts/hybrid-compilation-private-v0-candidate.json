@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase2_restricted_python_capture_verified",
+  "status": "phase3_path_specialization_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -127,6 +127,33 @@
     "default_path_change": false
   },
   "phase2_completed": true,
+  "phase3": {
+    "private_entry_points": [
+      "flagquantum.compiler._hybrid.specialize_program",
+      "flagquantum.compiler._hybrid.lower_trace",
+      "flagquantum.compiler._hybrid.specialize_and_lower"
+    ],
+    "semantic_flow": [
+      "verified_hybrid_program",
+      "runtime_path_specialization",
+      "ephemeral_quantum_trace",
+      "parameterized_circuit_ir_template",
+      "late_bound_circuit_ir"
+    ],
+    "identity_dimensions": [
+      "program_structure",
+      "input_signature",
+      "selected_quantum_structure"
+    ],
+    "parameter_values_excluded_from_structure_identity": true,
+    "tensor_parameters_preserved_by_reference": true,
+    "angle_embedding_lowering": "rx_per_wire",
+    "cache_policy": "bounded_visible_lru",
+    "public_api_change": false,
+    "default_path_change": false,
+    "runtime_execution": false
+  },
+  "phase3_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

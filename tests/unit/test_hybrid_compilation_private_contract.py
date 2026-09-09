@@ -107,3 +107,23 @@ def test_phase2_capture_is_private_structural_and_non_executing() -> None:
     assert phase2["public_api_change"] is False
     assert phase2["default_path_change"] is False
     assert _contract()["phase2_completed"] is True
+
+
+def test_phase3_reuses_circuit_ir_and_separates_values_from_structure() -> None:
+    phase3 = _contract()["phase3"]
+
+    assert phase3["semantic_flow"] == [
+        "verified_hybrid_program",
+        "runtime_path_specialization",
+        "ephemeral_quantum_trace",
+        "parameterized_circuit_ir_template",
+        "late_bound_circuit_ir",
+    ]
+    assert phase3["parameter_values_excluded_from_structure_identity"] is True
+    assert phase3["tensor_parameters_preserved_by_reference"] is True
+    assert phase3["angle_embedding_lowering"] == "rx_per_wire"
+    assert phase3["cache_policy"] == "bounded_visible_lru"
+    assert phase3["public_api_change"] is False
+    assert phase3["default_path_change"] is False
+    assert phase3["runtime_execution"] is False
+    assert _contract()["phase3_completed"] is True

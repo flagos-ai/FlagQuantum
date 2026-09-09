@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-2 complete; Phase 3 not started**
+Status: **Phases 1-3 complete; Phase 4 not started**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -632,3 +632,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 1 private semantic slice implemented and verified
 - [x] Phase 2 private capture contract authorized
 - [x] Phase 2 restricted Python capture implemented and verified
+- [x] Phase 3 private specialization/lowering contract authorized
+- [x] Phase 3 path specialization and `CircuitIR` lowering verified

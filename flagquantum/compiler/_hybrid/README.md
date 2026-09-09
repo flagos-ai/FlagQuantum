@@ -37,3 +37,9 @@ program.
 Straight-line local temporaries are supported. A branch or loop may not rewrite
 an outer classical binding yet: that requires explicit region-carried values
 and therefore fails closed instead of silently using a stale value.
+
+`specialize.py` selects one bounded runtime path and records an ephemeral gate
+trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
+`Parameter` slots. Runtime tensor slices stay in a separate binding map by
+reference; reusable structure identity never serializes or hashes their values.
+The optional structure cache is bounded and reports hit, miss, and eviction.
