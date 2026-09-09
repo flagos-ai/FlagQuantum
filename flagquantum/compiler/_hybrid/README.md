@@ -34,9 +34,11 @@ restricted Python source into that representation without invoking the function
 or reading tensor values. It remains compilation only and does not execute the
 program.
 
-Straight-line local temporaries are supported. A branch or loop may not rewrite
-an outer classical binding yet: that requires explicit region-carried values
-and therefore fails closed instead of silently using a stale value.
+Straight-line local temporaries are supported. Bounded `for` loops may rebind
+outer scalar, index, and bool names through explicit `scf.for` region arguments,
+results, and yields. Tensor state, loop-target shadowing, and writes from nested
+or conditional regions fail closed. Branches may not rewrite outer classical
+bindings yet.
 
 `specialize.py` selects one bounded runtime path and records an ephemeral gate
 trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core

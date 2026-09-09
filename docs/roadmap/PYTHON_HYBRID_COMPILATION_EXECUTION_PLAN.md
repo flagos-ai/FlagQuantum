@@ -1,6 +1,6 @@
 # Python-first hybrid quantum-classical compilation execution plan
 
-Status: **Phases 1-8 bounded vertical slices complete**
+Status: **Phases 1-9 bounded vertical slices complete**
 Owner: Compiler, with Integration approval for cross-domain contracts
 Initial target: local CPU `single_device_fast_path`
 Implementation language constraint: no FlagQuantum-authored C++ in Phases 0-6
@@ -533,6 +533,31 @@ Exit gate:
 - no finite-shot gradient, graph-compilation, accelerator, distributed, or
   performance claim is introduced.
 
+### Phase 9 — explicit loop-carried classical state
+
+Extend restricted capture so a bounded `for` loop may update an outer scalar,
+index, or bool local and make the final value available after the loop. Capture
+must represent every carried value explicitly as an `scf.for` operand, body
+argument, yield operand, and operation result. Lowering continues to specialize
+and unroll the loop; Runtime and Simulation contracts do not change.
+
+The accepted source profile is deliberately narrow: assignments must target one
+existing local name directly in the loop body and preserve its IR type. Tensor
+state, loop-target shadowing, writes from nested loops or branches, augmented
+assignment, measurement inside loops, and dynamic finite-shot gradients remain
+unsupported and fail closed.
+
+Exit gate:
+
+- scalar and index state are visible in the verified `scf.for` signature;
+- every iteration consumes the prior carried value and yields its successor;
+- post-loop quantum operations consume the explicit loop result;
+- dynamic execution observes the expected accumulated angles and wire choices;
+- invalid carry types, target shadowing, nested/conditional writes, and loop
+  measurement fail closed;
+- no Runtime, Simulation, public API, default-path, or performance change is
+  introduced.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -662,3 +687,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 7 measurement-value, conditional-session, shot, and gradient-policy slice verified
 - [x] Phase 8 parameter-slot and bounded-loop contract authorized
 - [x] Phase 8 non-trainable parameterized dynamic-session slice verified
+- [x] Phase 9 explicit loop-carried classical-state contract authorized
+- [x] Phase 9 scalar/index carry capture and dynamic execution verified

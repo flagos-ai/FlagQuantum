@@ -409,3 +409,34 @@ and feedback outcomes, and the unroll, binding, dtype, and gradient exclusions
 fail closed. The extension remains private and makes no public API, default
 path, `torch.compile`, accelerator, distributed, capacity, or performance
 claim.
+
+## Phase 9 explicit loop-carried classical-state authorization
+
+Phase 9 may represent rebinding of an existing scalar, index, or bool local in
+the direct body of a bounded `for` loop. Capture identifies those names before
+building the region and represents each value explicitly in all four places
+required by structured SSA: the `scf.for` operands, body block arguments,
+`scf.yield` operands, and `scf.for` results. The result values replace the
+outer bindings after the loop, so subsequent gates consume the verified
+post-loop state instead of a stale pre-loop value.
+
+The source profile accepts only single-name assignments that already satisfy
+the restricted expression vocabulary and preserve the binding's IR type.
+Scalar, index, and bool values are eligible. Tensor and tensor-view state,
+quantum effects, loop-target shadowing, augmented assignment, and rebinding
+from nested loops or conditional regions remain unsupported and fail closed.
+Locals created only inside the loop remain region-local and do not escape.
+
+Dynamic lowering requires no new Runtime representation: bounded loops are
+still specialized and unrolled, each iteration receives the prior carried
+tuple, and emitted RX/RY instructions continue to use ordered Core `Parameter`
+slots. Measurement inside a loop and all finite-shot gradients remain outside
+the profile. Runtime and Simulation receive the same bound `CircuitIR` as in
+Phase 8 and therefore require no source changes.
+
+Phase 9 acceptance is complete when verified IR exposes matching carried
+signatures, accumulated scalar angles and index-selected wires survive
+unrolling, post-loop operations consume explicit loop results, and tensor
+carry or loop-target shadowing is rejected. This phase remains private and
+makes no public API, default-path, general Python, accelerator, distributed,
+capacity, or performance claim.

@@ -288,3 +288,34 @@ def test_phase8_separates_dynamic_parameters_from_specialized_structure() -> Non
         "docs/development/HYBRID_COMPILATION_PHASE8_EVIDENCE.md"
     )
     assert contract["phase8_completed"] is True
+
+
+def test_phase9_represents_loop_carried_classical_state_explicitly() -> None:
+    contract = _contract()
+    phase9 = contract["phase9"]
+
+    assert phase9["control_operation"] == "scf.for"
+    assert phase9["carried_value_types"] == [
+        "scalar_float32_or_float64",
+        "index",
+        "bool",
+    ]
+    assert phase9["carried_value_representation"] == (
+        "explicit_region_arguments_results_and_yields"
+    )
+    assert phase9["assignment_profile"] == ("direct_loop_body_local_name_rebinding")
+    assert phase9["post_loop_values"] == "explicit_scf_for_results"
+    assert phase9["loop_target_shadowing"] == "unsupported_fail_closed"
+    assert phase9["tensor_carried_state"] == "unsupported_fail_closed"
+    assert phase9["conditional_carried_state"] == "unsupported_fail_closed"
+    assert phase9["nested_carried_state"] == "unsupported_fail_closed"
+    assert phase9["loop_measurement_supported"] is False
+    assert phase9["runtime_change_required"] is False
+    assert phase9["simulation_change_required"] is False
+    assert phase9["stochastic_gradient_policy"] == "unsupported_fail_closed"
+    assert phase9["public_api_change"] is False
+    assert phase9["default_path_change"] is False
+    assert phase9["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE9_EVIDENCE.md"
+    )
+    assert contract["phase9_completed"] is True

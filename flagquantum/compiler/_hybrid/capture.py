@@ -491,49 +491,134 @@ class _Capture:
             self.fail(statement, "control.for_else", "for-else is unsupported")
         lower, upper, step, descriptor = self.loop_bounds(statement.iter)
         input_effect = self.require_effect(statement)
+        saved_environment = self.environment
+        carried_names = self.direct_loop_carried_names(statement, saved_environment)
+        carried_inputs = tuple(
+            self.require_classical_carry(statement, name, saved_environment[name])
+            for name in carried_names
+        )
         serial = self._next_region_serial()
         loop_scope = f"for{serial}"
         iteration = self.new_value(INDEX, scope=loop_scope)
+        block_carried = tuple(
+            self.new_value(value.type, scope=loop_scope) for value in carried_inputs
+        )
         block_effect = self.new_value(QUANTUM_EFFECT, scope=loop_scope)
 
         saved_scope = self.scope
-        saved_environment = self.environment
         saved_operations = self.operations
         saved_effect = self.effect
         self.scope = loop_scope
         self.environment = dict(saved_environment)
+        self.environment.update(zip(carried_names, block_carried))
         self.operations = []
         self.effect = block_effect
         try:
             self.bind_loop_target(statement.target, descriptor, iteration)
             self.capture_statements(statement.body, allow_return=False)
-            self.reject_outer_binding_writes(saved_environment, statement)
+            self.reject_outer_binding_writes(
+                saved_environment,
+                statement,
+                allowed=frozenset(carried_names),
+            )
+            carried_outputs = tuple(
+                self.require_matching_carry(
+                    statement,
+                    name,
+                    carried_input.type,
+                    self.environment.get(name),
+                )
+                for name, carried_input in zip(carried_names, carried_inputs)
+            )
             output_effect = self.require_effect(statement)
             self.operations.append(
                 Operation(
                     "scf.yield",
-                    operands=(output_effect,),
+                    operands=(*carried_outputs, output_effect),
                     location=self.location(statement),
                 )
             )
-            body = Region((Block((iteration, block_effect), tuple(self.operations)),))
+            body = Region(
+                (
+                    Block(
+                        (iteration, *block_carried, block_effect),
+                        tuple(self.operations),
+                    ),
+                )
+            )
         finally:
             self.scope = saved_scope
             self.environment = saved_environment
             self.operations = saved_operations
             self.effect = saved_effect
 
-        result = self.new_value(QUANTUM_EFFECT)
+        results = tuple(
+            self.new_value(value.type) for value in (*carried_inputs, input_effect)
+        )
         self.operations.append(
             Operation(
                 "scf.for",
-                operands=(lower, upper, step, input_effect),
-                results=(result,),
+                operands=(lower, upper, step, *carried_inputs, input_effect),
+                results=results,
                 regions=(body,),
                 location=self.location(statement),
             )
         )
-        self.effect = result
+        self.environment.update(zip(carried_names, results[:-1]))
+        self.effect = results[-1]
+
+    def direct_loop_carried_names(
+        self, statement: ast.For, outer: dict[str, _Binding]
+    ) -> tuple[str, ...]:
+        target_names = {
+            node.id for node in ast.walk(statement.target) if isinstance(node, ast.Name)
+        }
+        shadowed = sorted(target_names & outer.keys())
+        if shadowed:
+            self.fail(
+                statement.target,
+                "control.target_shadow",
+                "loop targets may not overwrite outer bindings: " + ", ".join(shadowed),
+            )
+        names: list[str] = []
+        for child in statement.body:
+            if not isinstance(child, ast.Assign):
+                continue
+            for target in child.targets:
+                if isinstance(target, ast.Name) and target.id in outer:
+                    if target.id not in names:
+                        names.append(target.id)
+        return tuple(names)
+
+    def require_classical_carry(
+        self, node: ast.AST, name: str, binding: _Binding
+    ) -> Value:
+        if (
+            not isinstance(binding, Value)
+            or binding.type.linear
+            or binding.type.kind not in {"scalar", "index", "bool"}
+        ):
+            self.fail(
+                node,
+                "control.classical_carry_type",
+                f"loop-carried binding {name!r} must be scalar, index, or bool",
+            )
+        return binding
+
+    def require_matching_carry(
+        self,
+        node: ast.AST,
+        name: str,
+        expected_type: IRType,
+        binding: _Binding | None,
+    ) -> Value:
+        if not isinstance(binding, Value) or binding.type != expected_type:
+            self.fail(
+                node,
+                "control.classical_carry_type",
+                f"loop-carried binding {name!r} must preserve type {expected_type}",
+            )
+        return binding
 
     def loop_bounds(
         self, node: ast.expr
@@ -836,12 +921,16 @@ class _Capture:
         return self.effect
 
     def reject_outer_binding_writes(
-        self, outer: dict[str, _Binding], node: ast.AST
+        self,
+        outer: dict[str, _Binding],
+        node: ast.AST,
+        *,
+        allowed: frozenset[str] = frozenset(),
     ) -> None:
         changed = sorted(
             name
             for name, binding in outer.items()
-            if self.environment.get(name) != binding
+            if name not in allowed and self.environment.get(name) != binding
         )
         if changed:
             self.fail(

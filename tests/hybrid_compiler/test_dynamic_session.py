@@ -8,6 +8,7 @@ import torch
 from flagquantum.compiler._hybrid import (
     BOOL,
     INDEX,
+    HybridCaptureError,
     SpecializationError,
     capture_source,
     lower_dynamic_program,
@@ -57,6 +58,37 @@ def static_branch_feedback(use_ry, theta):
 STATIC_BRANCH_PROGRAM = capture_source(
     STATIC_BRANCH_SOURCE,
     (BOOL, scalar_type("float32")),
+)
+LOOP_CARRIED_SOURCE = """
+def loop_carried_feedback(theta, delta, layers):
+    angle = theta
+    wire = 0
+    for layer in range(layers):
+        angle = angle + delta
+        wire = (wire + 1) % 2
+        qp.RX(angle, wires=wire)
+    qp.RY(angle, wires=2)
+    bit = qp.measure(wires=1)
+    return bit
+"""
+LOOP_CARRIED_PROGRAM = capture_source(
+    LOOP_CARRIED_SOURCE,
+    (scalar_type("float64"), scalar_type("float64"), INDEX),
+)
+BOOL_CARRIED_PROGRAM = capture_source(
+    """
+def bool_carried_feedback(layers):
+    enabled = False
+    for layer in range(layers):
+        enabled = layer == 0
+    if enabled:
+        qp.X(wires=0)
+    else:
+        qp.X(wires=1)
+    bit = qp.measure(wires=0)
+    return bit
+""",
+    (INDEX,),
 )
 
 
@@ -280,3 +312,92 @@ def loop_measurement():
     )
     with pytest.raises(SpecializationError, match="dynamic.loop_measurement"):
         lower_dynamic_program(loop_measurement)
+
+
+def test_capture_and_execute_loop_carried_scalar_and_index_state() -> None:
+    loop = next(
+        operation
+        for operation in LOOP_CARRIED_PROGRAM.body.blocks[0].operations
+        if operation.name == "scf.for"
+    )
+    body = loop.regions[0].blocks[0]
+
+    assert len(loop.operands) == 6  # lower, upper, step, angle, wire, effect
+    assert len(loop.results) == 3
+    assert len(body.arguments) == 4  # iteration, angle, wire, effect
+    assert len(body.operations[-1].operands) == 3
+
+    theta = torch.tensor(0.0, dtype=torch.float64)
+    delta = torch.tensor(torch.pi, dtype=torch.float64)
+    lowered = lower_dynamic_program(
+        LOOP_CARRIED_PROGRAM,
+        (theta, delta, 2),
+        circuit_dtype="complex128",
+    )
+
+    assert tuple(item.name for item in lowered.circuit.instructions) == (
+        "rx",
+        "rx",
+        "ry",
+        "measure",
+    )
+    assert tuple(item.wires for item in lowered.circuit.instructions) == (
+        (1,),
+        (0,),
+        (2,),
+        (1,),
+    )
+    bound_angles = tuple(value for _, value in lowered.ordered_bindings)
+    assert torch.equal(bound_angles[0], torch.tensor(torch.pi, dtype=torch.float64))
+    assert torch.equal(bound_angles[1], torch.tensor(2 * torch.pi, dtype=torch.float64))
+    assert bound_angles[2] is bound_angles[1]
+
+    result = execute_hybrid_dynamic_session(
+        lowered.circuit, shots=32, seed=13, strategy="batched"
+    )
+    assert torch.all(result.classical_bits[:, 0] == 1)
+    assert torch.all(result.samples[:, 1] == 1)
+
+
+@pytest.mark.parametrize(("layers", "expected"), ((0, 0), (1, 1), (2, 0)))
+def test_loop_carried_bool_selects_post_loop_branch(layers: int, expected: int) -> None:
+    lowered = lower_dynamic_program(BOOL_CARRIED_PROGRAM, (layers,))
+    result = execute_hybrid_dynamic_session(lowered.circuit, shots=8, seed=2)
+
+    assert torch.all(result.classical_bits[:, 0] == expected)
+    assert torch.all(result.samples[:, 0] == expected)
+
+
+def test_loop_carry_rejects_tensor_state_and_target_shadowing() -> None:
+    tensor_carry = """
+def tensor_carry(data):
+    for layer in range(1):
+        data = data
+    bit = qp.measure(wires=0)
+    return bit
+"""
+    with pytest.raises(HybridCaptureError, match="classical_carry_type"):
+        capture_source(tensor_carry, (tensor_type("float32", (1,)),))
+
+    target_shadow = """
+def target_shadow(layer):
+    for layer in range(1):
+        qp.X(wires=0)
+    bit = qp.measure(wires=0)
+    return bit
+"""
+    with pytest.raises(HybridCaptureError, match="control.target_shadow"):
+        capture_source(target_shadow, (INDEX,))
+
+    nested_carry = """
+def nested_carry(theta):
+    angle = theta
+    for outer in range(1):
+        for inner in range(1):
+            angle = angle + theta
+        qp.RX(angle, wires=0)
+    bit = qp.measure(wires=0)
+    return bit
+"""
+    with pytest.raises(HybridCaptureError, match="control.classical_carry"):
+        capture_source(nested_carry, (scalar_type("float64"),))
