@@ -1,0 +1,29 @@
+FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime
+
+# Upload the wheel to personal storage before starting the build.
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Shanghai \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+LABEL org.opencontainers.image.title="FlagQuantum Jiuding runtime" \
+      org.opencontainers.image.description="Minimal NVIDIA GPU job runtime for FlagQuantum on Jiuding" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.flagquantum.image.class="runtime_only" \
+      org.flagquantum.sc27.release_evidence="false"
+
+COPY flagquantum-0.2.0-py3-none-any.whl /tmp/flagquantum-0.2.0-py3-none-any.whl
+
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends openssh-server tzdata \
+    && mkdir -p /run/sshd \
+    && python -m pip install --no-deps /tmp/flagquantum-0.2.0-py3-none-any.whl \
+    && rm -f /tmp/flagquantum-0.2.0-py3-none-any.whl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -c "import flagquantum, torch; assert torch.version.cuda"
+
+WORKDIR /workspace
