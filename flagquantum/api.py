@@ -12,12 +12,13 @@ def compile_program(
     *,
     compiler: str | None,
     target: str | Mapping[str, Any] | None,
+    target_qubits: Any = None,
 ) -> Any:
     """Compile through the built-in pipeline or one installed compiler."""
 
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     if compiler is None or compiler == "flagquantum":
-        if target is not None:
+        if target is not None or target_qubits is not None:
             raise ValueError(
                 "fq.compile target selection requires a named external compiler; "
                 "use flagquantum.compiler.compile for manual topology compilation"
@@ -26,7 +27,7 @@ def compile_program(
     if not isinstance(compiler, str) or not compiler.strip():
         raise TypeError("compiler must be a non-empty installed compiler name")
 
-    resolved_target: Mapping[str, Any] | None
+    resolved_target: dict[str, Any] | None
     if isinstance(target, str):
         provider_name, separator, backend = target.partition(":")
         if separator != ":" or not provider_name or not backend:
@@ -39,10 +40,18 @@ def compile_program(
             "backend": backend,
             "chip_info": provider.fetch_chip_info(backend),
         }
+        if target_qubits is not None:
+            resolved_target["target_qubits"] = target_qubits
     elif target is None:
+        if target_qubits is not None:
+            raise ValueError("target_qubits requires a compiler target")
         resolved_target = None
     elif isinstance(target, Mapping):
         resolved_target = dict(target)
+        if target_qubits is not None:
+            if "target_qubits" in resolved_target:
+                raise ValueError("target_qubits was specified twice")
+            resolved_target["target_qubits"] = target_qubits
     else:
         raise TypeError("target must be 'provider:backend', a mapping, or None")
 
@@ -62,12 +71,15 @@ def run_program(
     noise_model: Any,
     compiler: str | None,
     target: str | None,
+    target_qubits: Any,
     shots: int | None,
     name: str | None,
 ) -> Any:
     """Execute one local plan or one explicit remote QPU workflow."""
 
-    remote_requested = compiler is not None or target is not None
+    remote_requested = (
+        compiler is not None or target is not None or target_qubits is not None
+    )
     if not remote_requested:
         if shots is not None or name is not None:
             raise TypeError(
@@ -97,7 +109,12 @@ def run_program(
     if separator != ":" or provider_name.lower() != "quafu":
         raise ValueError("remote fq.run currently supports target='quafu:<backend>'")
 
-    compiled = compile_program(program_or_plan, compiler=compiler, target=target)
+    compiled = compile_program(
+        program_or_plan,
+        compiler=compiler,
+        target=target,
+        target_qubits=target_qubits,
+    )
     remote = import_module(".remote", __package__)
     deployment_options: dict[str, Any] = {"shots": shots}
     if name is not None:
@@ -107,6 +124,7 @@ def run_program(
     )
     contracts = import_module(".runtime.contracts", __package__)
     counts = {str(key): int(value) for key, value in native.counts.items()}
+    execution_target = dict(compiled.metadata.get("execution_target", {}))
     result = contracts.ExecutionResult(
         measurements=(
             contracts.MeasurementResult(
@@ -127,6 +145,8 @@ def run_program(
             "task_id": native.handle.task_id,
             "compiler": compiler,
             "target": target,
+            "target_qubits": tuple(execution_target.get("target_qubits", ())),
+            "name": name.strip() if name is not None else "flagquantum_job",
             "deployment": dict(native.metadata),
         },
         runtime={"mode": "remote_qpu", "shots": native.shots},

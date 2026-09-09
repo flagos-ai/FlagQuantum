@@ -41,6 +41,12 @@ describe a complete circuit transpiler such as QSteed.
   Quafu, the facade obtains the current chip snapshot and passes it to the
   selected compiler; the plugin returns logical `CircuitIR` plus an ordered
   physical `target_qubits` mapping.
+- Let `fq.compile` and remote `fq.run` accept an optional ordered
+  `target_qubits` mapping. When omitted, the compiler selects a connected
+  physical subgraph. When supplied, the compiler must validate the mapping
+  against the current calibration snapshot and restrict routing to that
+  subgraph; invalid, unavailable, duplicate, or disconnected selections fail
+  before submission.
 - Do not model pulse programs as `CircuitIR`. A pulse-level plugin requires an
   approved FlagQuantum-owned pulse artifact before it can join this contract.
 
@@ -67,6 +73,9 @@ duplicate authority.
   supplied name must be non-empty. The workflow performs no hidden compiler or
   provider fallback and preserves the provider-native result behind the stable
   result boundary;
+- an explicit physical mapping is preserved in the compiled IR, deployment
+  submission, and stable result provenance without rewriting logical QASM wire
+  indices;
 - a standalone package can register a compiler without changing FlagQuantum.
 
 ## First-public-alpha release note

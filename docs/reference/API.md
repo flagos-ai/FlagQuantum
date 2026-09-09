@@ -89,6 +89,8 @@ result = fq.run(
     circuit,
     compiler="qsteed",
     target="quafu:ScQ-P10",
+    # Optional ordered logical-to-physical mapping:
+    # target_qubits=(17, 18),
     shots=1024,
     name="bell calibration",
 )
@@ -104,6 +106,12 @@ persisted, signed, or submitted later.
 `name` is optional. Omitting it uses the deployment default; an explicitly
 provided name is trimmed and must not be empty. The provider-assigned task ID
 remains independent of this display name.
+
+`target_qubits` is also optional. When omitted, the selected compiler chooses a
+physical subgraph. When provided, its order maps logical wires to physical
+qubits and compilation fails unless the current target snapshot proves that
+the selection is valid and connected. An explicit mapping is never silently
+replaced.
 
 ## Optimize a program
 

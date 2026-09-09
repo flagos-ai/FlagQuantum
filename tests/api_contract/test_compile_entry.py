@@ -51,6 +51,14 @@ def test_fq_compile_resolves_quafu_target_for_named_plugin(monkeypatch):
         },
     }
 
+    fq.compile(
+        source,
+        compiler="qsteed",
+        target="quafu:ScQ-P10",
+        target_qubits=(4, 3),
+    )
+    assert captured["target"]["target_qubits"] == (4, 3)
+
 
 def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
     circuit = fq.Circuit(2).h(0).cx(0, 1)
@@ -60,8 +68,13 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
     class Provider:
         pass
 
-    def compile_target(program, *, compiler, target):
-        captured.update(program=program, compiler=compiler, target=target)
+    def compile_target(program, *, compiler, target, target_qubits=None):
+        captured.update(
+            program=program,
+            compiler=compiler,
+            target=target,
+            target_qubits=target_qubits,
+        )
         return compiled
 
     def deploy_target(program, provider, *, shots, name=None):
@@ -93,6 +106,7 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
         "program": circuit,
         "compiler": "qsteed",
         "target": "quafu:ScQ-P10",
+        "target_qubits": None,
         "compiled": compiled,
         "provider": captured["provider"],
         "shots": 1024,
@@ -106,13 +120,17 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
         target="quafu:ScQ-P10",
         shots=1024,
         name="  bell calibration  ",
+        target_qubits=(4, 3),
     )
     assert captured["name"] == "bell calibration"
+    assert captured["target_qubits"] == (4, 3)
 
 
 def test_fq_run_remote_controls_fail_closed_when_incomplete():
     circuit = fq.Circuit(1).x(0)
 
+    with pytest.raises(ValueError, match="requires a compiler target"):
+        fq.compile(circuit, compiler="qsteed", target_qubits=(0,))
     with pytest.raises(TypeError, match="both compiler and target"):
         fq.run(circuit, compiler="qsteed", shots=1024)
     with pytest.raises(ValueError, match="positive integer"):

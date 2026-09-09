@@ -58,6 +58,23 @@ Call `fq.compile` separately when the compiled IR must be inspected. Call
 `create_deployment_package` only to persist, sign, or submit the sealed artifact
 later.
 
+By default QSteed selects the physical subgraph. Expert callers can lock the
+ordered logical-to-physical mapping while retaining the same validation and
+routing path:
+
+```python
+compiled_ir = fq.compile(
+    circuit,
+    compiler="qsteed",
+    target="quafu:Dongling",
+    target_qubits=(17, 18),
+)
+```
+
+The plugin verifies that the physical qubits exist in the current calibration
+snapshot and form a connected subgraph. It never substitutes a different
+physical mapping when an explicit mapping was requested.
+
 Advanced hosts may pass an explicit target mapping:
 
 ```python

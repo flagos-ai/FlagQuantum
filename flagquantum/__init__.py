@@ -52,11 +52,15 @@ def compile(
     *,
     compiler: str | None = None,
     target: str | Mapping[str, Any] | None = None,
+    target_qubits: Sequence[int] | None = None,
 ) -> Any:
     """Compile a circuit with FlagQuantum or one named installed compiler."""
 
     return import_module(".api", __name__).compile_program(
-        program, compiler=compiler, target=target
+        program,
+        compiler=compiler,
+        target=target,
+        target_qubits=target_qubits,
     )
 
 
@@ -68,6 +72,7 @@ def run(
     noise_model: NoiseModel | None = None,
     compiler: str | None = None,
     target: str | None = None,
+    target_qubits: Sequence[int] | None = None,
     shots: int | None = None,
     name: str | None = None,
 ) -> ExecutionResult:
@@ -80,6 +85,7 @@ def run(
         noise_model=noise_model,
         compiler=compiler,
         target=target,
+        target_qubits=target_qubits,
         shots=shots,
         name=name,
     )

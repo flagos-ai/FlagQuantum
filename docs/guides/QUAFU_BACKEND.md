@@ -51,6 +51,8 @@ result = fq.run(
     circuit,
     compiler="qsteed",
     target="quafu:ScQ-P10",
+    # Optional: lock logical q[0], q[1] to these physical qubits.
+    # target_qubits=(17, 18),
     shots=1024,
     name="bell calibration",
 )
@@ -63,6 +65,11 @@ the same `fq.ExecutionResult` type as local execution; counts are available as
 deployment artifact must be inspected, stored, or submitted later.
 The name is optional, but an explicitly provided name must not be empty; Quafu
 still assigns the immutable task ID.
+
+If `target_qubits` is omitted, QSteed selects a connected physical subgraph
+from the current calibration snapshot. If supplied, its order defines the
+logical-to-physical mapping and the compiler fails before submission unless the
+selection exists, is unique, and is connected.
 
 Quafu reports queue state but not qubit capacity from the status endpoint.
 FlagQuantum therefore retains the requested width in discovered profiles; the
