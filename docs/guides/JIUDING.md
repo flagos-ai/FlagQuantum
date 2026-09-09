@@ -18,9 +18,9 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 
 client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
-    "flagquantum-runtime",
+    "flagquantum-runtime-gpu",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-ef3affbd-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-7b588ea5-cu128-a100",
     image_region="PRIVATE",
     cpus=4,
     memory_gib=16,
@@ -31,10 +31,10 @@ print(client.workspace_state(created["id"]))
 Creation starts the workspace but does not enable privileged mode, Jupyter
 Cloud IDE or automatic snapshots. It is an explicit billable infrastructure
 operation and is never triggered by `fq.run()`. Use
-`client.stop_workspace("flagquantum-runtime")` to stop it without saving a
-container snapshot and `client.start_workspace("flagquantum-runtime")` to restart
-it. Source code and durable results must remain on mounted storage; stopping a
-workspace does not make its container filesystem durable.
+`client.stop_workspace("flagquantum-runtime-gpu")` to stop it without saving a
+container snapshot and `client.start_workspace("flagquantum-runtime-gpu")` to
+restart it. Source code and durable results must remain on mounted storage;
+stopping a workspace does not make its container filesystem durable.
 
 ```python
 from pathlib import Path
@@ -86,7 +86,7 @@ fallback from an unavailable accelerator.
 receipt = client.submit(
     "/shared/my_project/experiment_gpu.py",
     target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    image="flagquantum-runtime:v0.2.0-cu128-a100",
+    image="flagquantum-runtime:v0.2.0-7b588ea5-cu128-a100",
     image_region="PRIVATE",
     pythonpath="/shared/my_project",
     receipt="/shared/my_project/gpu-001.json",
@@ -112,7 +112,7 @@ import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 circuit = fq.Circuit(2).h(0).cx(0, 1)
-with JiudingClient(workspace="flagquantum-runtime") as client:
+with JiudingClient(workspace="flagquantum-runtime-gpu") as client:
     first = client.run_statevector(
         circuit,
         target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
@@ -218,7 +218,7 @@ the stable root entry point. Calls in the same Python process reuse its resident
 executor and SSH channel:
 
 ```bash
-export JIUDING_WORKSPACE=flagquantum-runtime
+export JIUDING_WORKSPACE=flagquantum-runtime-gpu
 ```
 
 ```python
@@ -246,3 +246,7 @@ their meaning. Numerical execution occurs on the workspace GPU; requested
 results are materialized in the caller process.
 The production workspace and root entry point were validated on 2026-09-09;
 see [the root-entry evidence](../development/evidence/jiuding_root_run_20260909.json).
+
+GPU-side probability and Pauli-expectation reduction was validated with the
+`v0.2.0-7b588ea5-cu128-a100` image. See
+[the remote-measurement evidence](../development/evidence/jiuding_remote_measurements_20260909.json).

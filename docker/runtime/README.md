@@ -68,3 +68,9 @@ workspace executor. Its clean-build wheel SHA-256 is
 `f5eac87203950659f78b1342db20f0193882cd1fb07f9002dc7f835c047098e0`.
 Pure-image startup and warm Bell-state measurements are recorded in
 [`jiuding_warm_executor_image_20260909.json`](../../docs/development/evidence/jiuding_warm_executor_image_20260909.json).
+
+The `v0.2.0-7b588ea5-cu128-a100` build adds resident GPU-side probability and
+Pauli-expectation reduction. Its wheel SHA-256 is
+`3f8d0b4d1cef2fca0276cf8deb3ee81bede2050cddff0e0db94a94f7c1a205c3`; live
+measurements are recorded in
+[`jiuding_remote_measurements_20260909.json`](../../docs/development/evidence/jiuding_remote_measurements_20260909.json).

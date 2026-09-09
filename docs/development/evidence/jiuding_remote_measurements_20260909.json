@@ -1,0 +1,65 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-09",
+  "implementation_commit": "7b588ea5",
+  "scope": "GPU-side probability and Pauli-expectation reduction through fq.run",
+  "image": {
+    "id": "8fd87714-92ac-4413-ad68-1e634a1e6671",
+    "name": "flagquantum-runtime",
+    "tag": "v0.2.0-7b588ea5-cu128-a100",
+    "status": 10,
+    "size": "7.10GiB",
+    "wheel_sha256": "3f8d0b4d1cef2fca0276cf8deb3ee81bede2050cddff0e0db94a94f7c1a205c3"
+  },
+  "workspace": {
+    "id": "6950cd8c-0181-43ca-adb0-afa44bcf40ef",
+    "name": "flagquantum-runtime-gpu",
+    "status_after_validation": 1,
+    "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+    "accelerator_count": 1,
+    "cpu_cores": 4,
+    "memory_gib": 16
+  },
+  "replaced_workspace": {
+    "id": "641e867f-5c4e-455d-9ba3-e32d73099ae1",
+    "name": "flagquantum-runtime",
+    "final_status": 2,
+    "stopped_after_replacement": true
+  },
+  "result": {
+    "program": "two-qubit Bell state",
+    "selected_target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "device": "cuda:0",
+    "cpu_fallback_used": false,
+    "full_state_absent_from_measurement_results": true,
+    "probabilities_assertion_passed": true,
+    "pauli_expectations_assertion_passed": true,
+    "state_cold_total_seconds": 21.99733058399579,
+    "probability_total_seconds": [
+      0.09472079199622385,
+      0.022809374997450504
+    ],
+    "probability_remote_seconds": [
+      0.07839112542569637,
+      0.004911264404654503
+    ],
+    "expectation_total_seconds": [
+      0.024982916002045386,
+      0.024758833002124447
+    ],
+    "expectation_remote_seconds": [
+      0.005257748067378998,
+      0.008340328931808472
+    ]
+  },
+  "claims": {
+    "probability_reduction_validated": true,
+    "pauli_x_y_z_and_identity_expectations_validated": true,
+    "full_state_transfer_avoided_for_measurements": true,
+    "single_gpu_forward_validated": true,
+    "sampled_outputs_validated": false,
+    "training_validated": false,
+    "multi_gpu_validated": false,
+    "multi_node_validated": false
+  }
+}
