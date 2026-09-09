@@ -10,7 +10,8 @@
 
 - 新增候选公共命名空间 `flagquantum.twin`，不增加根命名空间导出；
 - 首批入口为 `QPUDigitalTwin`、`TwinSnapshot`、`TwinPrediction` 和
-  `TwinValidationReport`；
+  `TwinValidationReport`；硬件验证入口增加 `TwinExperiment` 和
+  `TwinHardwareReport`，不引入重复的任务轮询或Run Manager；
 - Twin拥有校准条件化设备模型、冻结预测和真机比较；
 - Noise拥有噪声语义，Simulation拥有数值执行，Remote拥有厂商校准获取与任务控制；
 - Q-ATLAS、阶段编号、候选状态机和实验数据流程不进入正式公共命名空间。
@@ -27,4 +28,6 @@
 - 快照绑定设备画像、噪声模型、物理映射和采集时间；
 - 预测复用现有Noise与Simulation执行链路；
 - 真机计数比较产生可序列化、身份绑定的验证报告；
+- 物理线路在提交前冻结，提交回执和结果必须携带相同摘要；只有Provider返回的
+  实际执行线路与冻结线路精确一致时，报告才允许标记预测验证有效；
 - `twin` 不被 Simulation、Noise 或 Remote 反向导入。

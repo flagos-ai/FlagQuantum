@@ -9,6 +9,8 @@ import pytest
 import flagquantum as fq
 from flagquantum.twin import (
     QPUDigitalTwin,
+    TwinExperiment,
+    TwinHardwareReport,
     TwinPrediction,
     TwinSnapshot,
     TwinValidationReport,
@@ -38,6 +40,8 @@ def test_twin_namespace_is_small_and_domain_named():
 
     assert fqt.__all__ == (
         "QPUDigitalTwin",
+        "TwinExperiment",
+        "TwinHardwareReport",
         "TwinPrediction",
         "TwinSnapshot",
         "TwinValidationReport",
@@ -46,6 +50,8 @@ def test_twin_namespace_is_small_and_domain_named():
         value in fqt.__all__
         for value in (
             QPUDigitalTwin.__name__,
+            TwinExperiment.__name__,
+            TwinHardwareReport.__name__,
             TwinPrediction.__name__,
             TwinSnapshot.__name__,
             TwinValidationReport.__name__,
