@@ -28,7 +28,8 @@ from .result_parsing import _extract_counts
 class QuafuProvider(HttpQuantumProvider):
     """HTTP adapter for the Quafu SQC cloud ``quafusqc`` contract.
 
-    Authentication defaults to the same ``QPU_API_TOKEN`` environment variable
+    Authentication defaults to the provider-specific ``QUAFU_API_TOKEN`` environment
+    variable
     used by ``quafusqc``. Tokens passed explicitly always take precedence.
     """
 
@@ -42,7 +43,7 @@ class QuafuProvider(HttpQuantumProvider):
         reverse_result_bits: bool = False,
         **kwargs: Any,
     ) -> None:
-        resolved_token = token or os.getenv("QPU_API_TOKEN")
+        resolved_token = token or os.getenv("QUAFU_API_TOKEN")
         super().__init__(
             provider="quafu",
             base_url=base_url,
@@ -63,7 +64,7 @@ class QuafuProvider(HttpQuantumProvider):
 
         if not self.credentials.token:
             raise RuntimeError(
-                "A Quafu token is required; pass token=... or set QPU_API_TOKEN."
+                "A Quafu token is required; pass token=... or set QUAFU_API_TOKEN."
             )
         return self.transport.get_json(
             self._url("/task/verify"), self._headers(), self.timeout

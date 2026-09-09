@@ -189,7 +189,7 @@ def test_quafu_provider_uses_official_token_env_and_status_discovery(monkeypatch
                 return {"Dongling": 0, "Miaofeng": "Offline"}
             return super().get_json(url, headers, timeout)
 
-    monkeypatch.setenv("QPU_API_TOKEN", "env-secret")
+    monkeypatch.setenv("QUAFU_API_TOKEN", "env-secret")
     transport = StatusTransport()
     provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
 

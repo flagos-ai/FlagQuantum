@@ -1,6 +1,6 @@
 """Submit a Bell circuit to Quafu SQC with the FlagQuantum deployment API.
 
-Set ``QPU_API_TOKEN`` before running this example.  Quafu tokens must never be
+Set ``QUAFU_API_TOKEN`` before running this example.  Quafu tokens must never be
 committed to source control and currently expire after 30 days.
 """
 
@@ -14,8 +14,8 @@ from flagquantum.remote import QuafuProvider
 
 
 def main() -> None:
-    if not os.getenv("QPU_API_TOKEN"):
-        raise RuntimeError("Set QPU_API_TOKEN before submitting to Quafu SQC")
+    if not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError("Set QUAFU_API_TOKEN before submitting to Quafu SQC")
 
     provider = QuafuProvider(result_timeout=1800)
     available = provider.discover_backends(2)
