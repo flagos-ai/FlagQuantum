@@ -1,0 +1,101 @@
+{
+  "schema": "flagquantum.jiuding_distributed_statevector_training_development_evidence",
+  "date": "2026-09-10",
+  "scope": "Single-node two-A100 sharded statevector backward and Adam optimizer validation",
+  "workspace": {
+    "name": "flagquantum-b30886cb-2xa100",
+    "id": "19800a5f-6e59-43ae-b8b6-fa0a3bac9d4d",
+    "target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    "accelerator_count": 2,
+    "node_count": 1
+  },
+  "image": {
+    "name": "flagquantum-runtime:v0.2.0-b30886cb-cu128-a100",
+    "id": "77b1b518-cadc-42f6-9a42-6df33ebf3420",
+    "runtime_source_commit": "b30886cb",
+    "validation_driver_commit": "7592e06d"
+  },
+  "environment": {
+    "gpu_model": "NVIDIA A100-SXM4-40GB",
+    "gpu_memory_mib_per_device": 40960,
+    "driver_version": "535.161.08",
+    "pytorch_version": "2.7.1+cu128",
+    "cuda_runtime_version": "12.8",
+    "nccl_version": "2.26.2",
+    "gpu_pair_topology": "NV12"
+  },
+  "backward_validation": {
+    "command": "torchrun --standalone --nproc-per-node=2 /tmp/flagquantum-statevector-reverse-2gpu.py --backend nccl",
+    "executor": "pytorch_native_sharded_statevector_reverse_v1",
+    "world_size": 2,
+    "local_world_size": 2,
+    "distribution_semantics": "sharded_across_ranks",
+    "forward_distribution_semantics": "sharded_across_ranks",
+    "backward_distribution_semantics": "sharded_across_ranks",
+    "gradient_method": "statevector_adjoint",
+    "gradient_reduction": "all_reduce_sum",
+    "gradient_distribution": "replicated_after_all_reduce",
+    "gradients": [
+      -0.190451979637146,
+      0.8325780034065247
+    ],
+    "dense_reference_comparison_passed": true,
+    "backward_uses_full_state_replay": false,
+    "full_state_materialization": false,
+    "backward_communication_count": 2,
+    "backward_communication_bytes": 16,
+    "gradient_collective_count": 1,
+    "gradient_collective_bytes": 8,
+    "process_exit_code": 0
+  },
+  "training_validation": {
+    "command": "torchrun --standalone --nproc-per-node=2 /tmp/flagquantum-statevector-training-2gpu.py --backend nccl --steps 2 --checkpoint-dir /tmp/fq-statevector-training-checkpoints",
+    "executor": "pytorch_native_sharded_statevector_training_v1",
+    "optimizer": "adam",
+    "world_size": 2,
+    "local_world_size": 2,
+    "completed_steps": 2,
+    "distribution_semantics": "sharded_across_ranks",
+    "gradient_ownership_semantics": "reduced_across_ranks",
+    "parameter_ownership_semantics": "sharded_across_ranks",
+    "optimizer_state_ownership_semantics": "sharded_across_ranks",
+    "optimizer_update_semantics": "sharded_across_ranks",
+    "rank_ownership": [
+      {
+        "rank": 0,
+        "owned_parameter": "parameter:0",
+        "optimizer_state_count": 1
+      },
+      {
+        "rank": 1,
+        "owned_parameter": "parameter:1",
+        "optimizer_state_count": 1
+      }
+    ],
+    "update_route": "owner_step_then_broadcast",
+    "gradient_reduction": "all_reduce_sum",
+    "communication_events": 6,
+    "communication_bytes": 32,
+    "checkpoint_resume_matched_uninterrupted_training": true,
+    "loss_after_resume": 0.8767350316047668,
+    "cleanup_verified": true,
+    "process_exit_code": 0
+  },
+  "claims": {
+    "single_node_two_gpu_backward_validated": true,
+    "dense_reference_gradient_validated": true,
+    "sharded_optimizer_update_validated": true,
+    "owner_local_optimizer_state_validated": true,
+    "checkpoint_resume_validated": true,
+    "multi_node_validated": false,
+    "fixed_load_strong_scaling_validated": false,
+    "capacity_expansion_validated": false,
+    "scalability_claim_allowed": false,
+    "release_gate_allowed": false
+  },
+  "blockers": [
+    "release capacity evidence is pending",
+    "multi-node acceptance is pending",
+    "fixed-load single-GPU versus two-GPU timing is pending"
+  ]
+}
