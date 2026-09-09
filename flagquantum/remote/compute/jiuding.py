@@ -11,6 +11,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import shlex
 import socket
 import sys
@@ -155,10 +156,7 @@ class JiudingClient:
             matches = [
                 w
                 for w in self._pages(
-                    "/api/v1/workspaces/select",
-                    {"queryStatus": [7, 1]},
-                    "items",
-                    self._auth(),
+                    "/api/v1/workspaces/select", {}, "items", self._auth()
                 )
                 if (
                     w.get("name") == self.workspace_name
@@ -192,6 +190,9 @@ class JiudingClient:
                 .get("resourceDetail", {})
                 .get("acceleratorModel", "")
             )
+            self._workspace["clusterName"] = w.get("quotaDetail", {}).get(
+                "clusterName", ""
+            )
         return json.loads(json.dumps(self._workspace))
 
     def _headers(self) -> dict:
@@ -203,6 +204,141 @@ class JiudingClient:
             "AIRS-Cluster-ID": w["clusterId"],
             "AIRS-Zone-ID": w["zoneId"],
         }
+
+    def _workspace_record(self, reference: str) -> dict:
+        context = self.workspace()
+        matches = [
+            item
+            for item in self._pages(
+                "/api/v1/workspaces/select", {}, "items", self._auth()
+            )
+            if item.get("id") == reference or item.get("name") == reference
+            if item.get("projId") == context["projId"]
+            and item.get("projsetId") == context["projsetId"]
+        ]
+        if len(matches) != 1:
+            raise RuntimeError("Workspace was not uniquely resolved in this project")
+        return matches[0]
+
+    def workspace_state(self, reference: str) -> dict:
+        """Return the current non-secret state of one project workspace."""
+        item = self._workspace_record(reference)
+        fields = (
+            "id",
+            "name",
+            "status",
+            "queueId",
+            "queueName",
+            "imageId",
+            "imageName",
+            "imageRegion",
+            "lastStartTime",
+            "lastStopTime",
+            "failReason",
+        )
+        return {field: item.get(field) for field in fields}
+
+    def create_workspace(
+        self,
+        name: str,
+        *,
+        image: str,
+        image_region: str = "PRIVATE",
+        cpus: int = 4,
+        memory_gib: int = 16,
+        gpus: int = 1,
+        accelerator_model: str | None = None,
+        description: str = "",
+    ) -> dict:
+        """Create and start one workspace in the current project and queue.
+
+        This explicit infrastructure operation is separate from ``run()``.
+        It does not enable privileged mode, Jupyter, or automatic snapshots.
+        """
+        if not re.fullmatch(r"[a-z][a-z0-9-]{1,30}[a-z0-9]", name):
+            raise ValueError("name must be 3-32 lowercase letters, digits or hyphens")
+        if type(cpus) is not int or cpus < 1:
+            raise ValueError("cpus must be a positive integer")
+        if type(memory_gib) is not int or memory_gib < 2:
+            raise ValueError("memory_gib must be an integer of at least 2")
+        if type(gpus) is not int or gpus not in (0, 1):
+            raise ValueError("gpus must be 0 or 1")
+        context = self.workspace()
+        model = accelerator_model or context.get("acceleratorModel", "")
+        if gpus and not model:
+            raise ValueError("accelerator_model is required for a GPU workspace")
+        catalog_image = self._catalog_image(image, image_region)
+        body = {
+            "name": name,
+            "imageId": catalog_image["id"],
+            "imageRegion": image_region,
+            "dataset": {"types": 1, "items": []},
+            "modelType": "PRIVATE",
+            "description": description,
+            "store": 50,
+            "creatorName": context["creatorName"],
+            "isAutoSaveSnap": False,
+            "autoSaveFrequency": 7,
+            "autoSaveTime": "03",
+            "resourceRegion": context["resourceRegion"],
+            "queueId": context["queueId"],
+            "queueName": context["queueName"],
+            "clusterId": context["clusterId"],
+            "zoneId": context["zoneId"],
+            "advanceConfig": {"storageInfo": context["storageInfo"]},
+            "quotaDetail": {
+                "clusterName": context.get("clusterName", ""),
+                "priority": "",
+                "resourceDetail": {
+                    "acceleratorModel": model if gpus else "",
+                    "acceleratorCount": gpus,
+                    "cpuCores": cpus,
+                    "memGib": memory_gib,
+                    "quotaItemId": 0,
+                    "sharedMemGib": memory_gib // 2,
+                },
+            },
+            "modelVersionIdItems": [],
+            "isJupyterCloudIde": False,
+            "isPrivileged": False,
+        }
+        created = self._request("/api/v1/workspaces/create", body, self._headers())
+        if not created.get("id"):
+            raise RuntimeError("Workspace creation returned no ID; outcome uncertain")
+        return {
+            "id": created["id"],
+            "name": name,
+            "image": f"{catalog_image['name']}:{catalog_image['tag']}",
+            "queueId": context["queueId"],
+            "resources": {
+                "cpus": cpus,
+                "memory_gib": memory_gib,
+                "gpus": gpus,
+                "accelerator_model": model if gpus else "",
+            },
+        }
+
+    def start_workspace(self, reference: str) -> dict:
+        """Request startup of one stopped workspace in the current project."""
+        item = self._workspace_record(reference)
+        return self._request(
+            f"/api/v1/workspaces/{item['id']}/restart",
+            {
+                "id": item["id"],
+                "userId": item["creatorId"],
+                "isPrivileged": bool(item.get("isPrivileged", False)),
+            },
+            self._headers(),
+        )
+
+    def stop_workspace(self, reference: str) -> dict:
+        """Stop one workspace without creating a container snapshot."""
+        item = self._workspace_record(reference)
+        return self._request(
+            f"/api/v1/workspaces/{item['id']}/stop",
+            {"id": item["id"], "userId": item["creatorId"], "saveSnapshot": False},
+            self._headers(),
+        )
 
     def _jobs(self):
         w = self.workspace()
@@ -224,8 +360,10 @@ class JiudingClient:
             }
         )
 
-    def _public_image(self, image: str) -> dict:
-        """Resolve one exact public image through Jiuding's image catalog."""
+    def _catalog_image(self, image: str, image_region: str = "PUBLIC") -> dict:
+        """Resolve one exact image through Jiuding's image catalog."""
+        if image_region not in ("PUBLIC", "PRIVATE"):
+            raise ValueError("image_region must be PUBLIC or PRIVATE")
         leaf = image.rsplit("/", 1)[-1]
         name, separator, tag = leaf.partition(":")
         if not separator or not name or not tag:
@@ -234,7 +372,7 @@ class JiudingClient:
             "/api/v1/images/select",
             {
                 "imageStatus": [10],
-                "repoTypes": "PUBLIC",
+                "repoTypes": image_region,
                 "clusterId": self.workspace()["clusterId"],
                 "name": name,
                 "paging": {"page": 1, "pageSize": 100},
@@ -258,11 +396,8 @@ class JiudingClient:
             )
         }
         if len(matches) != 1:
-            raise ValueError("Image was not uniquely resolved in the public catalog")
-        resolved = next(iter(matches.values()))
-        if not resolved.get("baseUrl"):
-            raise RuntimeError("Jiuding image catalog returned no executable image URL")
-        return resolved
+            raise ValueError("Image was not uniquely resolved in the Jiuding catalog")
+        return next(iter(matches.values()))
 
     @staticmethod
     def _save(path: Path, receipt: dict) -> None:
@@ -306,7 +441,7 @@ class JiudingClient:
         if w["queueStatus"] != "QUEUE_STATUS_ACTIVE":
             raise RuntimeError("Workspace queue is not active")
         catalog_image = (
-            self._public_image(image) if ":" in image and "/" not in image else None
+            self._catalog_image(image) if ":" in image and "/" not in image else None
         )
         examples = (
             []
@@ -318,7 +453,11 @@ class JiudingClient:
             ]
         )
         if catalog_image:
-            executable_image = catalog_image["baseUrl"]
+            executable_image = catalog_image.get("baseUrl")
+            if not executable_image:
+                raise RuntimeError(
+                    "Jiuding image catalog returned no executable image URL"
+                )
             image_region = "PUBLIC"
             models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
         elif examples:
@@ -333,8 +472,12 @@ class JiudingClient:
                 }
             )
         else:
-            catalog_image = self._public_image(image)
-            executable_image = catalog_image["baseUrl"]
+            catalog_image = self._catalog_image(image)
+            executable_image = catalog_image.get("baseUrl")
+            if not executable_image:
+                raise RuntimeError(
+                    "Jiuding image catalog returned no executable image URL"
+                )
             image_region = "PUBLIC"
             models = [w["acceleratorModel"]] if w.get("acceleratorModel") else []
         if accelerator_model is not None and accelerator_model not in models:

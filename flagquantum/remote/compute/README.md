@@ -1,9 +1,11 @@
 # Remote compute
 
 This directory owns experimental adapters to external CPU/GPU job systems.
-Jiuding currently supports one CPU or single-GPU instance, automatic workspace context
-discovery, create-and-start submission, status, waiting, shared JSON results,
-and stopping active jobs. It uses the standard library and direct HTTPS calls.
+Jiuding currently supports explicit development-workspace creation and
+start/stop control, one CPU or single-GPU task instance, automatic workspace
+context discovery, create-and-start submission, status, waiting, shared JSON
+results, and stopping active jobs. It uses the standard library and direct
+HTTPS calls.
 It does not own circuit execution, numerical backend selection, gradients,
 distributed launch, or the QPU shots/counts contracts. No Stable Core exports
 are added. These adapter-specific interfaces are not frozen.

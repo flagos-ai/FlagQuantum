@@ -57,6 +57,7 @@ def client():
         projId="p",
         projsetId="ps",
         queueId="q",
+        queueName="test-queue",
         clusterId="c",
         zoneId="z",
         queueStatus="QUEUE_STATUS_ACTIVE",
@@ -64,6 +65,7 @@ def client():
         creatorId="u",
         creatorName="user",
         acceleratorModel="NVIDIA_A100-SXM4-40GB",
+        clusterName="airs-beijing-01",
         storageInfo=[],
     )
     client._auth = Mock(return_value={"AIRS-Token": "test-token"})
@@ -102,6 +104,74 @@ def test_workspace_discards_embedded_service_token():
     workspace["jupyterServiceToken"] = "secret"
     client._pages = Mock(return_value=[workspace])
     assert "secret" not in json.dumps(client.workspace())
+
+
+def test_create_workspace_uses_explicit_non_privileged_configuration(client):
+    client._catalog_image = Mock(
+        return_value={
+            "id": "private-image",
+            "name": "flagquantum-runtime",
+            "tag": "v0.2.0",
+        }
+    )
+    client._request = Mock(return_value={"id": "workspace-id"})
+
+    created = client.create_workspace(
+        "flagquantum-dev",
+        image="flagquantum-runtime:v0.2.0",
+        cpus=8,
+        memory_gib=32,
+    )
+
+    assert created["id"] == "workspace-id"
+    assert created["resources"] == {
+        "cpus": 8,
+        "memory_gib": 32,
+        "gpus": 1,
+        "accelerator_model": "NVIDIA_A100-SXM4-40GB",
+    }
+    client._catalog_image.assert_called_once_with(
+        "flagquantum-runtime:v0.2.0", "PRIVATE"
+    )
+    path, body, _ = client._request.call_args.args
+    assert path == "/api/v1/workspaces/create"
+    assert body["imageId"] == "private-image"
+    assert body["queueId"] == "q"
+    assert body["isAutoSaveSnap"] is False
+    assert body["isJupyterCloudIde"] is False
+    assert body["isPrivileged"] is False
+    assert body["quotaDetail"]["resourceDetail"] == {
+        "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+        "acceleratorCount": 1,
+        "cpuCores": 8,
+        "memGib": 32,
+        "quotaItemId": 0,
+        "sharedMemGib": 16,
+    }
+
+
+def test_workspace_lifecycle_uses_resolved_owner_and_never_saves_on_stop(client):
+    client._workspace_record = Mock(
+        return_value={
+            "id": "workspace-id",
+            "creatorId": "owner",
+            "isPrivileged": False,
+        }
+    )
+    client._request = Mock(side_effect=[{"accepted": True}, {"accepted": True}])
+
+    assert client.start_workspace("flagquantum-dev") == {"accepted": True}
+    assert client.stop_workspace("flagquantum-dev") == {"accepted": True}
+
+    start, stop = client._request.call_args_list
+    assert start.args[:2] == (
+        "/api/v1/workspaces/workspace-id/restart",
+        {"id": "workspace-id", "userId": "owner", "isPrivileged": False},
+    )
+    assert stop.args[:2] == (
+        "/api/v1/workspaces/workspace-id/stop",
+        {"id": "workspace-id", "userId": "owner", "saveSnapshot": False},
+    )
 
 
 def test_uncertain_create_is_not_retried(client, tmp_path):

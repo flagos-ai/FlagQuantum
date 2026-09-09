@@ -7,6 +7,36 @@ in memory and refresh according to the server expiry. Requests use HTTPS,
 reject redirects, have a 20-second socket timeout, and are not retried blindly.
 No CLI installation or manual project/queue IDs are required.
 
+## Development workspaces
+
+FlagQuantum can also create and control a Jiuding development workspace. The
+client uses an existing visible workspace only to identify the project, queue,
+cluster and storage context; the new workspace is a separate platform resource.
+
+```python
+from flagquantum.remote.compute.jiuding import JiudingClient
+
+client = JiudingClient(workspace="fq-image-build-upload")
+created = client.create_workspace(
+    "flagquantum-dev",
+    image="flagquantum-runtime:v0.2.0-cu128-a100",
+    image_region="PRIVATE",
+    cpus=4,
+    memory_gib=16,
+    gpus=1,
+    accelerator_model="NVIDIA_A100-SXM4-40GB",
+)
+print(client.workspace_state(created["id"]))
+```
+
+Creation starts the workspace but does not enable privileged mode, Jupyter
+Cloud IDE or automatic snapshots. It is an explicit billable infrastructure
+operation and is never triggered by `fq.run()`. Use
+`client.stop_workspace("flagquantum-dev")` to stop it without saving a
+container snapshot and `client.start_workspace("flagquantum-dev")` to restart
+it. Source code and durable results must remain on mounted storage; stopping a
+workspace does not make its container filesystem durable.
+
 ```python
 from pathlib import Path
 from flagquantum.remote.compute.jiuding import JiudingClient
