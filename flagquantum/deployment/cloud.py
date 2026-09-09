@@ -229,23 +229,59 @@ def create_deployment_package(
     """Compile and serialize a trained circuit for cloud deployment."""
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
+    execution_target = ir.metadata.get("execution_target")
+    if execution_target is not None and not isinstance(execution_target, Mapping):
+        raise ValueError("execution_target metadata must be a mapping")
     if backend is None:
-        backend = CloudBackendProfile.simulator(ir.n_wires)
+        if execution_target:
+            provider = str(execution_target.get("provider", "")).strip()
+            name = str(execution_target.get("backend", "")).strip()
+            if not provider or not name:
+                raise ValueError("execution_target requires provider and backend")
+            backend = CloudBackendProfile(
+                provider=provider, name=name, n_wires=ir.n_wires
+            )
+        else:
+            backend = CloudBackendProfile.simulator(ir.n_wires)
     if ir.n_wires > backend.n_wires:
         raise ValueError("Circuit uses more wires than the deployment backend exposes.")
+    target_bound = bool(
+        execution_target
+        and execution_target.get("provider") == backend.provider
+        and execution_target.get("backend") == backend.name
+    )
+    if execution_target and not target_bound:
+        raise ValueError("compiled execution_target does not match deployment backend")
+    if target_bound:
+        target_qubits = execution_target.get("target_qubits")
+        if execution_target.get("compiler", "missing") is not None:
+            raise ValueError("compiled Quafu target requires compiler=None")
+        if (
+            not isinstance(target_qubits, Sequence)
+            or isinstance(target_qubits, (str, bytes))
+            or len(target_qubits) != ir.n_wires
+        ):
+            raise ValueError("compiled target must map every logical wire")
     existing_routing = ir.metadata.get("routing")
     routing_reused = bool(
-        isinstance(existing_routing, Mapping)
-        and backend.coupling_map is not None
-        and tuple(existing_routing.get("coupling_edges", ()))
-        == backend.coupling_map.edges
-        and existing_routing.get("mapping_restored") is True
+        target_bound
+        or (
+            isinstance(existing_routing, Mapping)
+            and backend.coupling_map is not None
+            and tuple(existing_routing.get("coupling_edges", ()))
+            == backend.coupling_map.edges
+            and existing_routing.get("mapping_restored") is True
+        )
     )
-    compiled_ir = compile_program(
-        ir,
-        coupling_map=None if routing_reused else backend.coupling_map,
-        routing_strategy=routing_strategy,
-        optimize=optimize,
+    compiled_ir = (
+        ir
+        if target_bound
+        else compile_program(
+            ir,
+            coupling_map=None if routing_reused else backend.coupling_map,
+            routing_strategy=routing_strategy,
+            optimize=optimize,
+        )
     )
     qasm = emit_openqasm(compiled_ir, version=qasm_version)
     package_metadata = {
@@ -255,6 +291,19 @@ def create_deployment_package(
         "target_backend": backend.name,
     }
     package_metadata.update(dict(metadata or {}))
+    if target_bound:
+        provider_options = dict(package_metadata.get("provider_options", {}))
+        required_options = {
+            "compiler": execution_target.get("compiler"),
+            "target_qubits": list(target_qubits),
+        }
+        for key, value in required_options.items():
+            if key in provider_options and provider_options[key] != value:
+                raise ValueError(
+                    f"provider_options.{key} conflicts with compiled target"
+                )
+            provider_options[key] = value
+        package_metadata["provider_options"] = provider_options
     routing_plan = dict(compiled_ir.metadata.get("routing", {}) or {})
     strategy_selection = compiled_ir.metadata.get("routing_strategy_selection")
     if strategy_selection:

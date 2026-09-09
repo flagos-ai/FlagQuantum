@@ -48,23 +48,17 @@ import flagquantum.deployment as fqd
 from flagquantum.remote import QuafuProvider
 
 provider = QuafuProvider(result_timeout=1800)
-backend = next(item for item in provider.discover_backends(2)
-               if item.name == "Dongling")
 
 circuit = fq.Circuit(2)
 circuit.h(0).cx(0, 1)
-package = fqd.create_deployment_package(
+compiled = fq.compile(
     circuit,
-    backend=backend,
+    compiler="qsteed",
+    target="quafu:ScQ-P10",
+)
+package = fqd.create_deployment_package(
+    compiled,
     shots=1024,
-    metadata={
-        "provider_options": {
-            "compiler": None,
-            "correct": False,
-            "open_dd": None,
-            "target_qubits": [0, 1],
-        },
-    },
 )
 result = provider.run(package)
 ```

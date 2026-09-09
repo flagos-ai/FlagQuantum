@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Added `fq.compile(circuit, compiler="qsteed", target="quafu:<backend>")` as
+  the direct compiler-selection journey. QSteed results retain logical wire
+  numbers and carry an ordered physical `target_qubits` mapping through
+  deployment; Quafu submission now uses `compiler=None` and no deprecated
+  top-level compile flag.
 - Added explicit discovery for independently installed circuit-compiler plugins
   through the existing Ecosystem extension registry. Entry-point identity,
   capability negotiation, CircuitIR ownership, determinism, lifecycle cleanup,

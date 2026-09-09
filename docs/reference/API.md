@@ -16,6 +16,7 @@ tests, and rendered in the
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
+| Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
 | Execute | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |

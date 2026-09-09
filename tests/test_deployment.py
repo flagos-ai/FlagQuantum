@@ -123,6 +123,31 @@ def test_deployment_reuses_compatible_compiled_routing_plan():
     )
 
 
+def test_deployment_preserves_compiler_bound_target_and_submission_options():
+    compiled = replace(
+        fq.Circuit(2).h(0).cx(0, 1).to_ir(),
+        metadata={
+            "execution_target": {
+                "provider": "quafu",
+                "backend": "ScQ-P10",
+                "compiler": None,
+                "target_qubits": [3, 4],
+            }
+        },
+    )
+
+    package = fqd.create_deployment_package(compiled, shots=1024)
+
+    assert package.backend.provider == "quafu"
+    assert package.backend.name == "ScQ-P10"
+    assert package.ir is compiled
+    assert package.metadata["provider_options"] == {
+        "compiler": None,
+        "target_qubits": [3, 4],
+    }
+    validate_deployment_package(package)
+
+
 def test_qcis_emitter_uses_native_gate_decomposition():
     theta = torch.tensor(0.25)
     circuit = fq.Circuit(2)

@@ -75,8 +75,11 @@ def test_candidate_classifies_every_historical_stable_export_exactly_once() -> N
     )
     extension_contract = _load(EXTENSION_PROTOCOL)
     if extension_contract["implementation_authorized"] is True:
+        if extension_contract["root_manifest_change"] is True:
+            authorized_additions.update(extension_contract["root_additions"])
         for extension in extension_contract["stable_extensions"]:
             authorized_additions.update(extension["additions"])
+    authorized_additions.update(candidate.get("approved_namespace_additions", ()))
     assert set(classified) == set(exports) | authorized_additions
 
 
@@ -91,7 +94,10 @@ def test_pre_public_renames_have_one_stable_destination() -> None:
     }
 
     assert set(pre_public_renames) <= set(candidate["remove_before_public"])
-    assert set(pre_public_renames.values()) <= stable_extensions
+    root_exports = {
+        f"flagquantum.{symbol}" for symbol in candidate["stable_core"]["retain"]
+    }
+    assert set(pre_public_renames.values()) <= stable_extensions | root_exports
 
 
 def test_current_manifest_is_the_implemented_stable_core() -> None:
@@ -143,6 +149,7 @@ def test_non_root_exports_are_not_accessible_at_root() -> None:
     new_namespace_only.update(
         replacement.rsplit(".", 1)[-1] for replacement in pre_public_renames.values()
     )
+    new_namespace_only.difference_update(candidate["stable_core"]["retain"])
 
     for name in sorted(replacements | removals | new_namespace_only):
         with pytest.raises(AttributeError):
@@ -158,7 +165,7 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
 
     final_core = set(stable_core["retain"]) | set(stable_core["planned_additions"])
 
-    assert len(final_core) == 22
+    assert len(final_core) == 23
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core

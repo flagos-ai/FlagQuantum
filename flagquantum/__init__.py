@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from importlib import import_module
 from typing import Any
 
@@ -30,12 +31,60 @@ __all__ = (
     "ParameterExpression",
     "RuntimePolicy",
     "TrainingResult",
+    "compile",
     "plan",
     "run",
     "train",
     "__version__",
     "experimental",
 )
+
+
+def compile(
+    program: Any,
+    *,
+    compiler: str | None = None,
+    target: str | Mapping[str, Any] | None = None,
+) -> Any:
+    """Compile a circuit with FlagQuantum or one named installed compiler."""
+
+    ir = import_module(".core.ir", __name__).ensure_circuit_ir(program)
+    if compiler is None or compiler == "flagquantum":
+        if target is not None:
+            raise ValueError(
+                "fq.compile target selection requires a named external compiler; "
+                "use flagquantum.compiler.compile for manual topology compilation"
+            )
+        return import_module(".compiler", __name__).compile(ir)
+    if not isinstance(compiler, str) or not compiler.strip():
+        raise TypeError("compiler must be a non-empty installed compiler name")
+
+    resolved_target: Mapping[str, Any] | None
+    if isinstance(target, str):
+        provider_name, separator, backend = target.partition(":")
+        if separator != ":" or not provider_name or not backend:
+            raise ValueError("target must use the form 'provider:backend'")
+        if provider_name.lower() != "quafu":
+            raise ValueError(f"unsupported compiler target provider {provider_name!r}")
+        provider = import_module(".remote", __name__).QuafuProvider()
+        resolved_target = {
+            "provider": "quafu",
+            "backend": backend,
+            "chip_info": provider.fetch_chip_info(backend),
+        }
+    elif target is None:
+        resolved_target = None
+    elif isinstance(target, Mapping):
+        resolved_target = dict(target)
+    else:
+        raise TypeError("target must be 'provider:backend', a mapping, or None")
+
+    extensions = import_module(".ecosystem.extensions", __name__)
+    return extensions.compile_with_extension(
+        ir,
+        extension=compiler.strip(),
+        target=resolved_target,
+    )
 
 
 def __getattr__(name: str) -> Any:

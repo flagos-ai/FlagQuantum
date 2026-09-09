@@ -28,6 +28,7 @@
       "RuntimePolicy",
       "TrainingResult",
       "__version__",
+      "compile",
       "experimental",
       "plan",
       "run",
@@ -59,12 +60,6 @@
         "tensor_network_amplitude",
         "tensor_network_amplitudes",
         "tensor_network_expectations"
-      ]
-    },
-    {
-      "namespace": "flagquantum.compiler",
-      "symbols": [
-        "compile"
       ]
     },
     {
@@ -150,6 +145,9 @@
       ]
     }
   ],
+  "approved_namespace_additions": [
+    "run_noisy_statevector"
+  ],
   "experimental": [
     {
       "namespace": "flagquantum.experimental.distributed",
@@ -192,7 +190,7 @@
     "info"
   ],
   "pre_public_renames": {
-    "compile_for_backend": "flagquantum.compiler.compile"
+    "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
     "root_export_budget": 25,

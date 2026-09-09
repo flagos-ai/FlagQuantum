@@ -37,7 +37,7 @@ def legacy_root_names() -> tuple[str, ...]:
     for section_name in ("stable_extensions", "experimental"):
         for section in candidate[section_name]:
             names.extend(section["symbols"])
-    return tuple(sorted(set(names)))
+    return tuple(sorted(set(names) - set(candidate["stable_core"]["retain"])))
 
 
 def violations_for_text(text: str, *, names: Iterable[str]) -> tuple[str, ...]:

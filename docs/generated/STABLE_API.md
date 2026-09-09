@@ -22,6 +22,7 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.RuntimePolicy` | Stable | executable contract |
 | `fq.TrainingResult` | Stable | executable contract |
 | `fq.__version__` | Stable | executable contract |
+| `fq.compile` | Stable | executable contract |
 | `fq.experimental` | Stable | executable contract |
 | `fq.plan` | Stable | executable contract |
 | `fq.run` | Stable | executable contract |

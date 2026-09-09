@@ -4,7 +4,11 @@
   "proposal": "docs/development/API_CHANGE_PROPOSAL_019_COMPILER_EXTENSIONS.md",
   "target": "first-public-alpha",
   "implementation_authorized": true,
-  "root_manifest_change": false,
+  "root_manifest_change": true,
+  "root_additions": ["compile"],
+  "root_signatures": {
+    "compile": "(program: 'Any', *, compiler: 'str | None' = None, target: 'str | Mapping[str, Any] | None' = None) -> 'Any'"
+  },
   "stable_extensions": [
     {
       "namespace": "flagquantum.ecosystem.extensions",
@@ -84,7 +88,8 @@
     },
     "cleanup_attempted_after_failed_start": true,
     "credential_values_in_serializable_config": false,
-    "root_exports_added": false,
+    "root_exports_added": true,
+    "root_compile_entry": "fq.compile(program, compiler=name, target=provider:backend)",
     "individual_extension_default_stability": "experimental",
     "discovery": "explicit_and_kind_specific",
     "entry_point_group": "flagquantum.extensions",

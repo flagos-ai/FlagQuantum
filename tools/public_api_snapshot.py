@@ -220,6 +220,11 @@ def validate() -> tuple[str, ...]:
         authorized_changes.update(
             errors_module_contract.get("protected_root_changes", ())
         )
+    if (
+        extension_protocol_contract.get("implementation_authorized") is True
+        and extension_protocol_contract.get("root_manifest_change") is True
+    ):
+        authorized_changes.update(extension_protocol_contract.get("root_additions", ()))
     missing = sorted(set(names) - set(historical_exports) - authorized_changes)
     if missing:
         return (
@@ -260,6 +265,10 @@ def validate() -> tuple[str, ...]:
         )
     if errors_module_contract.get("implementation_authorized") is True:
         expected_signatures.update(errors_module_contract.get("public_signatures", {}))
+    if extension_protocol_contract.get("implementation_authorized") is True:
+        expected_signatures.update(
+            extension_protocol_contract.get("root_signatures", {})
+        )
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -313,6 +322,7 @@ def _validate_authorized_execution_options(
         "Module.execute": fq.Module.execute,
         "Module.save_checkpoint": fq.Module.save_checkpoint,
         "Module.load_checkpoint": fq.Module.load_checkpoint,
+        "compile": fq.compile,
         "train": fq.train,
     }
     for name, expected_signature in expected_signatures.items():

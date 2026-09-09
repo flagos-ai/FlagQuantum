@@ -33,7 +33,30 @@ the plugin.
 
 ## Host use
 
-Discovery is explicit and limited to compiler extensions:
+The normal user journey names the compiler and hardware target directly:
+
+```python
+import flagquantum as fq
+
+compiled_ir = fq.compile(
+    circuit,
+    compiler="qsteed",
+    target="quafu:ScQ-P10",
+)
+
+from flagquantum.deployment import create_deployment_package
+
+package = create_deployment_package(compiled_ir, shots=1024)
+```
+
+The plugin receives the current Quafu chip snapshot, selects a physical
+subgraph, and returns logical `CircuitIR` with the ordered physical mapping in
+`compiled_ir.metadata["execution_target"]["target_qubits"]`. The circuit still
+uses logical wires `0..N-1`. Deployment packaging preserves the compiled
+circuit and carries that mapping into Quafu submission without another user
+parameter or a second compilation pass.
+
+Advanced hosts may pass an explicit target mapping:
 
 ```python
 from flagquantum.ecosystem.extensions import compile_with_extension

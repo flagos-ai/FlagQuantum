@@ -27,6 +27,9 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
     errors_module = json.loads(
         (ROOT / "contracts/errors-module-boundary-v1-candidate.json").read_text()
     )
+    extensions = json.loads(
+        (ROOT / "contracts/extension-protocol-v1-candidate.json").read_text()
+    )
     authorized_additions = (
         {options["root_addition"]}
         if options["root_manifest_authorized"] is True
@@ -36,6 +39,11 @@ def test_baseline_covers_current_stable_export_manifest() -> None:
         authorized_additions.add(plan["root_addition"])
     if errors_module["implementation_authorized"] is True:
         authorized_additions.update(errors_module["stable_extension"]["additions"])
+    if (
+        extensions["implementation_authorized"] is True
+        and extensions["root_manifest_change"] is True
+    ):
+        authorized_additions.update(extensions["root_additions"])
 
     assert (
         set(manifest["stable_exports"])

@@ -24,19 +24,26 @@ describe a complete circuit transpiler such as QSteed.
 - Reuse `ExtensionRegistry`, capability negotiation, lifecycle containment, and
   error handling. Do not introduce another plugin registry.
 - Provide `compile_with_extension(program, *, extension, target=None)` as the
-  explicit one-call user journey. It performs discovery, `circuit_ir`
+  expert one-call extension journey. It performs discovery, `circuit_ir`
   capability negotiation, activation, compilation, result-type validation, and
   cleanup without changing the default compiler path.
+- Add `fq.compile(program, compiler=None, target=None)` as the stable user
+  journey. Omitting `compiler` uses the built-in FlagQuantum compiler. A named
+  compiler selects exactly that installed extension without fallback.
+- Accept the compact target locator `provider:backend` at the root facade. For
+  Quafu, the facade obtains the current chip snapshot and passes it to the
+  selected compiler; the plugin returns logical `CircuitIR` plus an ordered
+  physical `target_qubits` mapping.
 - Do not model pulse programs as `CircuitIR`. A pulse-level plugin requires an
   approved FlagQuantum-owned pulse artifact before it can join this contract.
 
 ## Naming and alternatives
 
-`compile_with_extension` states both the operation and the selected mechanism.
-It is distinct from built-in target-aware `compiler.compile` and
-target-independent `compiler.optimize`. Adding an extension parameter to either
-built-in operation was rejected because it would mix plugin discovery into the
-default compiler path. A second registry or compiler manager was rejected as
+`fq.compile(..., compiler="qsteed")` states the user intent directly and keeps
+the built-in default. `compile_with_extension` remains the explicit expert
+mechanism beneath it; built-in target-aware `flagquantum.compiler.compile` and
+target-independent `flagquantum.compiler.optimize` retain their existing
+responsibilities. A second registry or compiler manager remains rejected as
 duplicate authority.
 
 ## Acceptance
@@ -53,4 +60,4 @@ duplicate authority.
 ## First-public-alpha release note
 
 Installed circuit compilers can now be selected explicitly through
-`compile_with_extension`; the default FlagQuantum compiler remains unchanged.
+`fq.compile`; the default FlagQuantum compiler remains unchanged.
