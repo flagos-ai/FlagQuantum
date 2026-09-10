@@ -1172,3 +1172,30 @@ against the actual fully bound source, target snapshot, and executable artifact.
 Deployment may carry the same immutable bundle through its side-effect-free
 dry run after Runtime verification. Neither layer rewrites evidence or performs
 provider submission, and ProgramArtifact v1/v2 remain unchanged.
+
+## Phase 42 Physical resource allocation proposal
+
+Phase 42 proposes the next bounded physical-compilation capability: a source
+program may use fewer logical wires than the target snapshot provides physical
+slots, and deterministic routing may temporarily move logical state through an
+initially idle slot. The additional slot is compiler routing workspace in the
+standard zero state, not a user-visible logical wire, QEC syndrome ancilla, or
+fault-tolerant resource claim.
+
+The current version-2 contracts cannot express this without ambiguity. Their
+layout is a complete permutation at equal capacity, while ProgramArtifact v2
+requires dense full-register samples. Merely increasing final `CircuitIR.n_wires`
+would therefore expose physical workspace as user output. The proposed version-3
+profile separates logical wires, dense compilation-local physical slots,
+adapter-owned provider identifiers, and ordered result positions. It adds nullable
+physical occupancy, an injective sparse placement, mandatory workspace cleanup,
+and an authenticated projection from physical result slots into logical-wire order.
+
+The proposal preserves ProgramArtifact v1/v2 and compilation evidence 1.0/2.0.
+It introduces no second instruction authority and excludes provider identifier
+binding, provider submission, mid-circuit ancilla reuse, arbitrary ancilla states,
+observable remapping, calibration-aware allocation, and all QEC/FTOC claims. The
+exact candidate is recorded in
+`contracts/physical-resource-allocation-v3-candidate.json`; implementation requires
+the exact approval token specified by
+`docs/development/API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION.md`.

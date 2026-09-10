@@ -1,0 +1,92 @@
+{
+  "schema": "flagquantum.physical_resource_allocation_candidate_contract",
+  "status": "proposed_owner_approval_required",
+  "proposed_on": "2026-09-10",
+  "approved_on": null,
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_025_PHYSICAL_RESOURCE_ALLOCATION",
+  "program_artifact_candidate_version": "3.0",
+  "compilation_evidence_candidate_version": "3.0",
+  "physical_plan_candidate_version": "3.0",
+  "prior_version_policy": "strict_read_only_compatibility",
+  "wire_domains": [
+    "logical_wire",
+    "physical_slot",
+    "provider_qubit_identifier",
+    "result_position"
+  ],
+  "semantic_profile": {
+    "authoritative_source": "flagquantum.core.ir.CircuitIR",
+    "logical_capacity": "source_circuit_n_wires",
+    "physical_capacity": "greater_than_or_equal_to_logical_capacity",
+    "physical_slot_domain": "dense_target_snapshot_local_indices",
+    "initial_layout": "injective_logical_to_physical",
+    "occupancy": "complete_nullable_physical_to_logical",
+    "workspace_initial_state": "standard_zero",
+    "workspace_usage": "compiler_inserted_swap_routing_only",
+    "final_layout": "declared_logical_result_physical_slots",
+    "final_workspace_occupancy": "null",
+    "result_order": "logical_wire_order",
+    "second_target_ir": false
+  },
+  "program_artifact_v3_result_fields": [
+    "kind",
+    "logical_wires",
+    "physical_result_slots",
+    "ordering",
+    "shots_source"
+  ],
+  "physical_plan_v3_added_fields": [
+    "logical_wire_count",
+    "physical_slot_count",
+    "initial_physical_to_logical",
+    "pre_restore_physical_to_logical",
+    "final_physical_to_logical",
+    "logical_result_physical_slots",
+    "allocation_identity"
+  ],
+  "mapping_transition_v3_added_fields": [
+    "physical_to_logical_before",
+    "physical_to_logical_after"
+  ],
+  "compatibility": {
+    "coupling_map_changed": false,
+    "directed_coupling_map_v2_semantics_changed": false,
+    "program_artifact_v1_changed": false,
+    "program_artifact_v2_changed": false,
+    "compilation_evidence_v1_changed": false,
+    "compilation_evidence_v2_changed": false,
+    "automatic_prior_version_promotion": false,
+    "public_root_export": false,
+    "default_path_change": false
+  },
+  "ownership": {
+    "core": "strict_artifact_evidence_projection_and_version_dispatch",
+    "compiler": "allocation_routing_cleanup_legalization_schedule_and_emission",
+    "runtime": "binding_and_logical_result_validation_only",
+    "deployment": "verified_immutable_dry_run_handoff_only",
+    "provider_identifier_binding": "excluded_requires_separate_review"
+  },
+  "excluded_claims": [
+    "user_controlled_ancillas",
+    "nonzero_workspace_initialization",
+    "dynamic_ancilla_reuse",
+    "mid_circuit_measurement_or_reset",
+    "qec_syndrome_extraction",
+    "fault_tolerant_resource_expansion",
+    "observable_remapping",
+    "provider_identifier_binding_or_submission",
+    "calibration_or_noise_aware_allocation",
+    "gate_duration_pulse_or_crosstalk",
+    "qpu_correctness_fidelity_capacity_latency_or_performance"
+  ],
+  "implementation": {
+    "authorized": false,
+    "compiler_allocation_added": false,
+    "physical_plan_v3_added": false,
+    "program_artifact_v3_added": false,
+    "core_evidence_v3_added": false,
+    "runtime_verifier_added": false,
+    "deployment_adapter_added": false
+  }
+}
