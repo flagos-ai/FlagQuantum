@@ -2,12 +2,19 @@
 
 ## Status
 
-**Proposed; implementation not authorized.**
+**Approved on 2026-09-10; Core and Compiler implementation complete.**
 
 Date: 2026-09-10
 
 Approval token:
 `approve API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE`
+
+The API owner supplied the exact token on 2026-09-10. Core now owns the strict
+value model, canonical JSON, version dispatch, limits, nested validation, and
+bundle identity. Compiler constructs and verifies bundles only from the actual
+`ArtifactCompilationResult`, retained `PhysicalCircuitPlan`, target snapshot,
+source artifact or binding result, and executable artifact. Runtime and
+Deployment adapters remain separate follow-on work.
 
 ## Problem
 
@@ -188,18 +195,18 @@ the consuming workflow, not retroactively inferred by the artifact reader.
 
 ## Implementation gates
 
-1. Record the exact candidate schema and limits before implementation.
-2. Receive the exact approval token from the API owner.
-3. Implement the strict Core value model and duplicate-key-safe reader without
+1. **Complete:** record the exact candidate schema and limits before implementation.
+2. **Complete:** receive the exact approval token from the API owner.
+3. **Complete:** implement the strict Core value model and duplicate-key-safe reader without
    changing ProgramArtifact v1 or v2.
-4. Add Compiler construction from `ArtifactCompilationResult`; no stage may be
+4. **Complete:** add Compiler construction from `ArtifactCompilationResult`; no stage may be
    reconstructed from detached hashes.
-5. Add verification against the actual source artifact or binding result,
+5. **Complete:** add verification against the actual source artifact or binding result,
    target snapshot, final executable artifact, and physical plan.
-6. Add deterministic round-trip, unknown-field, limit, non-finite, duplicate,
+6. **Complete for Core and Compiler:** add deterministic round-trip, unknown-field, limit, non-finite, duplicate,
    sensitive-content, nested-tamper, and hash-seed tests.
-7. Add Runtime and Deployment read-only adapters in separate bounded phases.
-8. Keep the type internal until a later public naming and lifecycle review.
+7. **Pending:** add Runtime and Deployment read-only adapters in separate bounded phases.
+8. **Complete:** keep the type internal until a later public naming and lifecycle review.
 
 ## Acceptance
 
@@ -217,8 +224,11 @@ the consuming workflow, not retroactively inferred by the artifact reader.
 
 ## Approval
 
-To authorize implementation, reply with the exact token:
+The API owner approved the proposal on 2026-09-10 with the exact token:
 
 ```text
 approve API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE
 ```
+
+This approval authorizes the gated implementation described above; it does not
+authorize a public root export or changes to ProgramArtifact v1/v2.

@@ -1248,11 +1248,12 @@ Contract gate:
   compatibility, and security exclusions;
 - [x] a machine-readable candidate contract and contract tests pin the design;
 - [x] ProgramArtifact v1/v2 remain unchanged;
-- [ ] API owner supplies the exact Proposal 023 approval token;
-- [ ] Core implements canonical serialization and strict reading;
-- [ ] Compiler constructs the bundle from actual Phase 36 evidence;
+- [x] API owner supplied the exact Proposal 023 approval token;
+- [x] Core implements canonical serialization and strict reading;
+- [x] Compiler constructs the bundle from actual Phase 36 evidence;
 - [ ] Runtime and Deployment add read-only verification adapters;
-- [ ] cross-process round-trip, tamper, limit, and hash-seed tests pass.
+- [x] Core/Compiler cross-process round-trip, tamper, limit, and hash-seed tests
+  pass.
 
 ## 12. File and team ownership plan
 
@@ -1421,4 +1422,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 35 Verified artifact-to-artifact target compilation completed
 - [x] Phase 36 Physical mapping and dependency-schedule plan completed
 - [x] Phase 37 Compilation-evidence bundle contract proposed
-- [ ] Phase 37 Compilation-evidence bundle implementation awaiting approval
+- [x] Phase 37 Core and Compiler evidence-bundle implementation completed
+- [ ] Phase 37 Runtime and Deployment evidence adapters pending

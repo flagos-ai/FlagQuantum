@@ -15,17 +15,18 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_candidate_is_proposed_but_not_authorized() -> None:
+def test_candidate_records_approved_core_compiler_scope() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "proposed_not_authorized"
+    assert candidate["status"] == "approved_core_compiler_implementation_complete"
+    assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE"
     )
     assert candidate["implementation"] == {
-        "authorized": False,
-        "core_value_model_added": False,
-        "compiler_builder_added": False,
+        "authorized": True,
+        "core_value_model_added": True,
+        "compiler_builder_added": True,
         "runtime_verifier_added": False,
         "deployment_adapter_added": False,
         "provider_submission_added": False,

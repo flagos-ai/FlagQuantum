@@ -10,11 +10,19 @@ from flagquantum.compiler.artifact_compilation import (
     ArtifactCompilationResult,
     compile_circuit_artifact_for_target,
 )
+from flagquantum.compiler.compilation_evidence import (
+    CompilationEvidenceError,
+    build_compilation_evidence_bundle,
+    verify_compilation_evidence_bundle,
+)
 from flagquantum.compiler.routing import CouplingMap
 from flagquantum.core._artifacts import (
     ProgramArtifactV2,
     bind_circuit_artifact,
     read_program_artifact_json,
+)
+from flagquantum.core._compilation_evidence import (
+    read_compilation_evidence_bundle_json,
 )
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.parameters import Parameter
@@ -208,3 +216,39 @@ def test_artifact_compilation_rejects_executable_as_source() -> None:
 
     with pytest.raises(ArtifactCompilationError, match="circuit-ir-1.0"):
         _compile(executable)
+
+
+def test_compilation_evidence_survives_canonical_cross_process_handoff() -> None:
+    result = _compile(_artifact())
+    bundle = build_compilation_evidence_bundle(
+        result,
+        snapshot=_snapshot(),
+        producer="flagquantum.compiler",
+    )
+    restored = read_compilation_evidence_bundle_json(bundle.to_json())
+
+    verify_compilation_evidence_bundle(
+        restored,
+        result,
+        snapshot=_snapshot(),
+    )
+    assert restored == bundle
+    assert restored.physical_plan.plan_identity == result.physical_plan.plan_identity
+    assert restored.output["executable_artifact_identity"] == (
+        result.executable_artifact.artifact_identity
+    )
+    assert restored.output["artifact_compilation_identity"] == (
+        result.compilation_identity
+    )
+
+    mismatched_snapshot = replace(
+        _snapshot(),
+        captured_at=(_NOW + timedelta(minutes=1)).isoformat(),
+        snapshot_id="",
+    )
+    with pytest.raises(CompilationEvidenceError, match="snapshot"):
+        verify_compilation_evidence_bundle(
+            restored,
+            result,
+            snapshot=mismatched_snapshot,
+        )

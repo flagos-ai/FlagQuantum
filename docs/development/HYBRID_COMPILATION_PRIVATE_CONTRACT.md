@@ -1124,6 +1124,9 @@ proposal deliberately excludes circuit payload duplication, TargetIR,
 execution requests, provider state, timing and pulse claims, calibration-aware
 optimization, and fault-tolerant expansion.
 
-This phase authorizes documentation and candidate-contract tests only. Core,
-Compiler, Runtime, and Deployment implementation remains blocked until the API
-owner supplies the exact approval token recorded by Proposal 023.
+The API owner supplied the exact Proposal 023 token on 2026-09-10. Core now
+implements the strict value model, canonical JSON, limits, nested validation,
+and deterministic bundle identity. Compiler constructs and verifies the bundle
+from the actual retained compilation objects and target snapshot. Runtime and
+Deployment adapters remain separate follow-on work; no public export or default
+path changes are included.
