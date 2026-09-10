@@ -207,6 +207,91 @@ def _checkpoint_writer_lease_path(root: Path) -> Path:
     return root / "ACTIVE_WRITER.json"
 
 
+def _break_stale_checkpoint_writer_lease(lease: Path, stale_seconds: float) -> str:
+    issue = ""
+    try:
+        existing = json.loads(lease.read_text(encoding="utf-8"))
+        heartbeat = float(
+            existing.get(
+                "heartbeat_unix_seconds",
+                existing.get("created_unix_seconds", 0.0),
+            )
+        )
+        age = max(0.0, time.time() - heartbeat)
+        if age < stale_seconds:
+            issue = (
+                "checkpoint writer lease is not stale: "
+                f"age_seconds={age:.3f}, stale_seconds={stale_seconds:.3f}"
+            )
+        elif existing.get("hostname") == socket.gethostname():
+            pid = int(existing.get("pid", -1))
+            if pid <= 0:
+                issue = "checkpoint writer lease contains an invalid PID"
+            else:
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    pass
+                except PermissionError:
+                    issue = "checkpoint writer lease PID is still active"
+                else:
+                    issue = "checkpoint writer lease PID is still active"
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        age = max(0.0, time.time() - lease.stat().st_mtime)
+        if age < stale_seconds:
+            issue = (
+                "invalid checkpoint writer lease is not old enough to break: "
+                f"age_seconds={age:.3f}, stale_seconds={stale_seconds:.3f}"
+            )
+    if not issue:
+        lease.unlink(missing_ok=True)
+    return issue
+
+
+def _write_checkpoint_writer_lease(
+    lease: Path,
+    *,
+    world_size: int,
+    contract_fingerprint: str,
+) -> str:
+    try:
+        descriptor = os.open(
+            lease,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            0o600,
+        )
+        now = time.time()
+        payload = (
+            json.dumps(
+                {
+                    "schema": "sharded_mps_checkpoint_writer_lease_v1",
+                    "contract_fingerprint": contract_fingerprint,
+                    "world_size": world_size,
+                    "hostname": socket.gethostname(),
+                    "pid": os.getpid(),
+                    "created_unix_seconds": now,
+                    "heartbeat_unix_seconds": now,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("utf-8")
+        try:
+            os.write(descriptor, payload)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except FileExistsError:
+        return (
+            "checkpoint directory has an active writer lease; inspect "
+            "ACTIVE_WRITER.json before explicitly breaking a stale lease"
+        )
+    except OSError as error:
+        return f"checkpoint writer lease acquisition failed: {error}"
+    return ""
+
+
 def _acquire_checkpoint_writer_lease(
     root: Path,
     *,
@@ -220,82 +305,13 @@ def _acquire_checkpoint_writer_lease(
     if rank == 0:
         lease = _checkpoint_writer_lease_path(root)
         if allow_break and lease.exists():
-            stale_issue = ""
-            try:
-                existing = json.loads(lease.read_text(encoding="utf-8"))
-                heartbeat = float(
-                    existing.get(
-                        "heartbeat_unix_seconds",
-                        existing.get("created_unix_seconds", 0.0),
-                    )
-                )
-                age = max(0.0, time.time() - heartbeat)
-                if age < stale_seconds:
-                    stale_issue = (
-                        "checkpoint writer lease is not stale: "
-                        f"age_seconds={age:.3f}, stale_seconds={stale_seconds:.3f}"
-                    )
-                elif existing.get("hostname") == socket.gethostname():
-                    pid = int(existing.get("pid", -1))
-                    if pid <= 0:
-                        stale_issue = "checkpoint writer lease contains an invalid PID"
-                    else:
-                        try:
-                            os.kill(pid, 0)
-                        except ProcessLookupError:
-                            pass
-                        except PermissionError:
-                            stale_issue = "checkpoint writer lease PID is still active"
-                        else:
-                            stale_issue = "checkpoint writer lease PID is still active"
-            except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
-                age = max(0.0, time.time() - lease.stat().st_mtime)
-                if age < stale_seconds:
-                    stale_issue = (
-                        "invalid checkpoint writer lease is not old enough to break: "
-                        f"age_seconds={age:.3f}, stale_seconds={stale_seconds:.3f}"
-                    )
-            if stale_issue:
-                issue = stale_issue
-            else:
-                lease.unlink(missing_ok=True)
-        try:
-            if issue:
-                raise FileExistsError
-            descriptor = os.open(
+            issue = _break_stale_checkpoint_writer_lease(lease, stale_seconds)
+        if not issue:
+            issue = _write_checkpoint_writer_lease(
                 lease,
-                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-                0o600,
+                world_size=world_size,
+                contract_fingerprint=contract_fingerprint,
             )
-            payload = (
-                json.dumps(
-                    {
-                        "schema": "sharded_mps_checkpoint_writer_lease_v1",
-                        "contract_fingerprint": contract_fingerprint,
-                        "world_size": world_size,
-                        "hostname": socket.gethostname(),
-                        "pid": os.getpid(),
-                        "created_unix_seconds": time.time(),
-                        "heartbeat_unix_seconds": time.time(),
-                    },
-                    sort_keys=True,
-                    separators=(",", ":"),
-                )
-                + "\n"
-            ).encode("utf-8")
-            try:
-                os.write(descriptor, payload)
-                os.fsync(descriptor)
-            finally:
-                os.close(descriptor)
-        except FileExistsError:
-            if not issue:
-                issue = (
-                    "checkpoint directory has an active writer lease; inspect "
-                    "ACTIVE_WRITER.json before explicitly breaking a stale lease"
-                )
-        except OSError as error:
-            issue = f"checkpoint writer lease acquisition failed: {error}"
     reports = all_gather_json({"rank": rank, "issue": issue})
     failures = tuple(str(report["issue"]) for report in reports if report.get("issue"))
     if failures:
