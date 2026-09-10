@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from numbers import Number
-from typing import Sequence
+from typing import Sequence, TypeAlias
 
 import torch
 
@@ -52,6 +52,14 @@ class _StatevectorFusedGateStep:
 class _StatevectorCXSequenceStep:
     controls: tuple[int, ...]
     targets: tuple[int, ...]
+
+
+_StatevectorProgramStep: TypeAlias = (
+    _StatevectorGateStep
+    | _StatevectorRXRZLoopStep
+    | _StatevectorFusedGateStep
+    | _StatevectorCXSequenceStep
+)
 
 
 def _instruction_matrix(
@@ -111,13 +119,21 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
 
 def _compile_statevector_program(
     instructions: Sequence[Instruction], n_wires: int, *, enable_triton_loop: bool
-) -> tuple[
-    _StatevectorGateStep
-    | _StatevectorRXRZLoopStep
-    | _StatevectorFusedGateStep
-    | _StatevectorCXSequenceStep,
-    ...,
-]:
+) -> tuple[_StatevectorProgramStep, ...]:
+    program = _fuse_rx_rz_loops(
+        instructions,
+        n_wires,
+        enable_triton_loop=enable_triton_loop,
+    )
+    return tuple(_fuse_cx_sequences(_fuse_gate_sequences(program)))
+
+
+def _fuse_rx_rz_loops(
+    instructions: Sequence[Instruction],
+    n_wires: int,
+    *,
+    enable_triton_loop: bool,
+) -> list[_StatevectorGateStep | _StatevectorRXRZLoopStep]:
     program: list[_StatevectorGateStep | _StatevectorRXRZLoopStep] = []
     index = 0
     while index < len(instructions):
@@ -179,6 +195,12 @@ def _compile_statevector_program(
                 )
             )
             index += 1
+    return program
+
+
+def _fuse_gate_sequences(
+    program: Sequence[_StatevectorGateStep | _StatevectorRXRZLoopStep],
+) -> list[_StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep]:
     fused_program: list[
         _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep
     ] = []
@@ -249,12 +271,15 @@ def _compile_statevector_program(
                 )
             )
         index = cursor
-    optimized_program: list[
-        _StatevectorGateStep
-        | _StatevectorRXRZLoopStep
-        | _StatevectorFusedGateStep
-        | _StatevectorCXSequenceStep
-    ] = []
+    return fused_program
+
+
+def _fuse_cx_sequences(
+    fused_program: Sequence[
+        _StatevectorGateStep | _StatevectorRXRZLoopStep | _StatevectorFusedGateStep
+    ],
+) -> list[_StatevectorProgramStep]:
+    optimized_program: list[_StatevectorProgramStep] = []
     index = 0
     while index < len(fused_program):
         fused_step = fused_program[index]
@@ -286,7 +311,7 @@ def _compile_statevector_program(
         else:
             optimized_program.extend(cx_steps)
         index = cursor
-    return tuple(optimized_program)
+    return optimized_program
 
 
 def _statevector_layout(
