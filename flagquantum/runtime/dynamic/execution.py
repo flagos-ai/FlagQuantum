@@ -529,6 +529,46 @@ def _active_shot_mask(
     return active, True
 
 
+def _measure_or_reset_active_shots(
+    state: torch.Tensor,
+    active: torch.Tensor,
+    instruction: Instruction,
+    n_wires: int,
+    noise_model: NoiseModel | None,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, int]:
+    """Measure active shots, applying readout noise or reset correction."""
+
+    indices = torch.nonzero(active, as_tuple=False).reshape(-1)
+    selected, bits = _measure_wires_batched(
+        state.index_select(0, indices),
+        instruction.wires[0],
+        n_wires,
+        generator=generator,
+    )
+    state = state.index_copy(0, indices, selected)
+    if instruction.name == "measure":
+        recorded, readout_errors = _apply_readout_error(
+            bits,
+            instruction.wires[0],
+            noise_model,
+            generator=generator,
+        )
+        return state, indices, recorded, readout_errors
+
+    one_indices = indices[bits == 1]
+    if one_indices.numel():
+        reset_mask = torch.zeros(state.shape[0], dtype=torch.bool, device=state.device)
+        reset_mask[one_indices] = True
+        state = _apply_masked_instruction(
+            state,
+            reset_mask,
+            Instruction("x", instruction.wires),
+            n_wires=n_wires,
+        )
+    return state, indices, bits, 0
+
+
 def _run_dynamic_batched(
     circuit: DynamicCircuit,
     *,
@@ -568,23 +608,15 @@ def _run_dynamic_batched(
             continue
 
         if instruction.name in {"measure", "reset"}:
-            indices = torch.nonzero(active, as_tuple=False).reshape(-1)
-            selected, bits = _measure_wires_batched(
-                state.index_select(0, indices),
-                instruction.wires[0],
+            state, indices, recorded, count = _measure_or_reset_active_shots(
+                state,
+                active,
+                instruction,
                 circuit.n_wires,
-                generator=generator,
+                noise_model,
+                generator,
             )
-            state = state.index_copy(0, indices, selected)
-            recorded = bits
-            if instruction.name == "measure":
-                recorded, count = _apply_readout_error(
-                    bits,
-                    instruction.wires[0],
-                    noise_model,
-                    generator=generator,
-                )
-                readout_errors += count
+            readout_errors += count
             recorded_bits = torch.full(
                 (int(shots),), -1, dtype=torch.int64, device=circuit.device
             )
@@ -597,18 +629,6 @@ def _run_dynamic_batched(
                 measurement_count += active_count
             else:
                 reset_count += active_count
-                one_indices = indices[bits == 1]
-                if one_indices.numel():
-                    reset_mask = torch.zeros(
-                        int(shots), dtype=torch.bool, device=circuit.device
-                    )
-                    reset_mask[one_indices] = True
-                    state = _apply_masked_instruction(
-                        state,
-                        reset_mask,
-                        Instruction("x", instruction.wires),
-                        n_wires=circuit.n_wires,
-                    )
         else:
             state = _apply_masked_instruction(
                 state,
