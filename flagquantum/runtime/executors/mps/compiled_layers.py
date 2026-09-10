@@ -29,6 +29,7 @@ _PreparedMPSOutput = (
     tuple[torch.Tensor]
     | tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]]
 )
+_MPSLayerItem = tuple[int, Instruction, tuple[int, ...]]
 
 
 def require_layer_cache_drained(
@@ -65,6 +66,152 @@ def device_memory_metadata(device: torch.device) -> dict[str, int | None]:
     }
 
 
+def _collect_compiled_layer(
+    instructions: Sequence[Instruction], layer_start: int
+) -> tuple[_MPSLayerItem, ...]:
+    first = instructions[layer_start]
+    layer: list[_MPSLayerItem] = []
+    used: set[int] = set()
+    for index in range(layer_start, len(instructions)):
+        candidate = instructions[index]
+        wires = tuple(int(wire) for wire in candidate.wires)
+        if candidate.name != first.name or used.intersection(wires):
+            break
+        used.update(wires)
+        layer.append((index, candidate, wires))
+    return tuple(layer)
+
+
+def _prepare_one_site_layer(
+    layer: Sequence[_MPSLayerItem],
+    *,
+    state: RankOwnedMPSState,
+    bsz: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> dict[int, _PreparedMPSOutput]:
+    precomputed: dict[int, _PreparedMPSOutput] = {}
+    buckets: dict[tuple[int, ...], list[_MPSLayerItem]] = {}
+    for item in layer:
+        _, _, wires = item
+        if state.owner(wires[0]) == state.rank:
+            key = tuple(state.local_tensors[wires[0]].shape)
+            buckets.setdefault(key, []).append(item)
+    for bucket in buckets.values():
+        _, sample, sample_wires = bucket[0]
+        sample_matrix = _instruction_matrix_for_mps(
+            sample, bsz=bsz, device=device, dtype=dtype
+        )
+        if sample_matrix.ndim == 2:
+            sample_matrix = sample_matrix.expand(bsz, -1, -1)
+        capacity = site_kernel_bucket_capacity(
+            state.local_tensors[sample_wires[0]], sample_matrix
+        )
+        for start in range(0, len(bucket), capacity):
+            chunk = bucket[start : start + capacity]
+            updated = apply_compiled_mps_one_site_bucket(
+                tuple(candidate for _, candidate, _ in chunk),
+                tuple(state.local_tensors[wires[0]] for _, _, wires in chunk),
+                bsz=bsz,
+                device=device,
+                dtype=dtype,
+            )
+            for position, (index, _, wires) in enumerate(chunk):
+                value = updated[position]
+                precomputed[index] = (value,)
+                state.local_tensors[wires[0]] = value
+    return precomputed
+
+
+def _prepare_two_site_layer(
+    layer: Sequence[_MPSLayerItem],
+    *,
+    layer_start: int,
+    state: RankOwnedMPSState,
+    bsz: int,
+    device: torch.device,
+    dtype: torch.dtype,
+    factorization_workspace_policy: FactorizationWorkspacePolicy,
+    factorization_memory_provider: MemoryProvider,
+) -> tuple[dict[int, _PreparedMPSOutput], list[dict[str, Any]]]:
+    precomputed: dict[int, _PreparedMPSOutput] = {}
+    factorization_records: list[dict[str, Any]] = []
+    buckets: dict[tuple[tuple[int, ...], tuple[int, ...]], list[_MPSLayerItem]] = {}
+    for item in layer:
+        _, _, wires = item
+        left = min(wires)
+        if state.owner(left) == state.rank and state.owner(left + 1) == state.rank:
+            shape_pair = (
+                tuple(state.local_tensors[left].shape),
+                tuple(state.local_tensors[left + 1].shape),
+            )
+            buckets.setdefault(shape_pair, []).append(item)
+    for bucket in buckets.values():
+        _, sample, sample_wires = bucket[0]
+        sample_left = min(sample_wires)
+        sample_matrix = _instruction_matrix_for_mps(
+            sample, bsz=bsz, device=device, dtype=dtype
+        )
+        if sample_matrix.ndim == 2:
+            sample_matrix = sample_matrix.expand(bsz, -1, -1)
+        capacity = site_kernel_bucket_capacity(
+            state.local_tensors[sample_left],
+            state.local_tensors[sample_left + 1],
+            sample_matrix,
+        )
+        start = 0
+        while start < len(bucket):
+            requested = min(capacity, len(bucket) - start)
+            decision = plan_rxx_factorization_microbatch(
+                state.local_tensors[sample_left],
+                state.local_tensors[sample_left + 1],
+                sample_matrix,
+                requested_chunk_size=requested,
+                policy=factorization_workspace_policy,
+                memory_provider=factorization_memory_provider,
+            )
+            chunk = bucket[start : start + decision.selected_chunk_size]
+            factorization_records.append(
+                {
+                    **decision.as_dict(),
+                    "layer_start": layer_start,
+                    "bucket_item_start": start,
+                }
+            )
+            isolate_factorizations = (
+                state.config.max_bond is not None and int(state.config.max_bond) >= 128
+            )
+            split_outputs = apply_compiled_mps_two_site_bucket(
+                tuple(candidate for _, candidate, _ in chunk),
+                tuple(state.local_tensors[min(wires)] for _, _, wires in chunk),
+                tuple(state.local_tensors[min(wires) + 1] for _, _, wires in chunk),
+                state.config,
+                bsz=bsz,
+                device=device,
+                dtype=dtype,
+                isolate_factorizations=isolate_factorizations,
+                svd_driver=factorization_workspace_policy.svd_driver,
+            )
+            record = factorization_records[-1]
+            record["batched_contraction_enabled"] = True
+            record["batched_factorization_enabled"] = not isolate_factorizations
+            if isolate_factorizations:
+                record["reason"] = "high_bond_batched_factorization_quarantine"
+            record["staging_workspace_pool"] = {
+                "enabled": False,
+                "reason": "staging_pool_correctness_quarantine",
+                **factorization_workspace_pool().stats(),
+            }
+            for position, (index, _, wires) in enumerate(chunk):
+                left = min(wires)
+                updated_left, updated_right, info = split_outputs[position]
+                precomputed[index] = (updated_left, updated_right, info)
+                state.local_tensors[left] = updated_left
+                state.local_tensors[left + 1] = updated_right
+            start += decision.selected_chunk_size
+    return precomputed, factorization_records
+
+
 def prepare_compiled_mps_layer(
     instructions: Sequence[Instruction],
     *,
@@ -76,140 +223,31 @@ def prepare_compiled_mps_layer(
     factorization_workspace_policy: FactorizationWorkspacePolicy,
     factorization_memory_provider: MemoryProvider,
 ) -> tuple[
-    tuple[tuple[int, Instruction, tuple[int, ...]], ...],
+    tuple[_MPSLayerItem, ...],
     dict[int, _PreparedMPSOutput],
     tuple[dict[str, Any], ...],
 ]:
     """Prepare one disjoint rotation layer in a bounded tensor scope."""
-    first = instructions[layer_start]
-    layer: list[tuple[int, Instruction, tuple[int, ...]]] = []
-    used: set[int] = set()
-    for index in range(layer_start, len(instructions)):
-        candidate = instructions[index]
-        wires = tuple(int(wire) for wire in candidate.wires)
-        if candidate.name != first.name or used.intersection(wires):
-            break
-        used.update(wires)
-        layer.append((index, candidate, wires))
-
-    precomputed: dict[int, _PreparedMPSOutput] = {}
-    factorization_records: list[dict[str, Any]] = []
-    if first.name == "ry":
-        buckets: dict[
-            tuple[int, ...], list[tuple[int, Instruction, tuple[int, ...]]]
-        ] = {}
-        for item in layer:
-            _, _, wires = item
-            if state.owner(wires[0]) == state.rank:
-                key = tuple(state.local_tensors[wires[0]].shape)
-                buckets.setdefault(key, []).append(item)
-        for bucket in buckets.values():
-            _, sample, sample_wires = bucket[0]
-            sample_matrix = _instruction_matrix_for_mps(
-                sample, bsz=bsz, device=device, dtype=dtype
-            )
-            if sample_matrix.ndim == 2:
-                sample_matrix = sample_matrix.expand(bsz, -1, -1)
-            capacity = site_kernel_bucket_capacity(
-                state.local_tensors[sample_wires[0]], sample_matrix
-            )
-            for start in range(0, len(bucket), capacity):
-                chunk = bucket[start : start + capacity]
-                updated = apply_compiled_mps_one_site_bucket(
-                    tuple(candidate for _, candidate, _ in chunk),
-                    tuple(state.local_tensors[wires[0]] for _, _, wires in chunk),
-                    bsz=bsz,
-                    device=device,
-                    dtype=dtype,
-                )
-                for position, (index, _, wires) in enumerate(chunk):
-                    value = updated[position]
-                    precomputed[index] = (value,)
-                    state.local_tensors[wires[0]] = value
-    elif first.name in {"rxx", "ryy", "rzz"}:
-        two_site_buckets: dict[
-            tuple[tuple[int, ...], tuple[int, ...]],
-            list[tuple[int, Instruction, tuple[int, ...]]],
-        ] = {}
-        for item in layer:
-            _, _, wires = item
-            left = min(wires)
-            if state.owner(left) == state.rank and state.owner(left + 1) == state.rank:
-                shape_pair = (
-                    tuple(state.local_tensors[left].shape),
-                    tuple(state.local_tensors[left + 1].shape),
-                )
-                two_site_buckets.setdefault(shape_pair, []).append(item)
-        for bucket in two_site_buckets.values():
-            _, sample, sample_wires = bucket[0]
-            sample_left = min(sample_wires)
-            sample_matrix = _instruction_matrix_for_mps(
-                sample, bsz=bsz, device=device, dtype=dtype
-            )
-            if sample_matrix.ndim == 2:
-                sample_matrix = sample_matrix.expand(bsz, -1, -1)
-            capacity = site_kernel_bucket_capacity(
-                state.local_tensors[sample_left],
-                state.local_tensors[sample_left + 1],
-                sample_matrix,
-            )
-            start = 0
-            while start < len(bucket):
-                requested = min(capacity, len(bucket) - start)
-                decision = plan_rxx_factorization_microbatch(
-                    state.local_tensors[sample_left],
-                    state.local_tensors[sample_left + 1],
-                    sample_matrix,
-                    requested_chunk_size=requested,
-                    policy=factorization_workspace_policy,
-                    memory_provider=factorization_memory_provider,
-                )
-                chunk = bucket[start : start + decision.selected_chunk_size]
-                factorization_records.append(
-                    {
-                        **decision.as_dict(),
-                        "layer_start": layer_start,
-                        "bucket_item_start": start,
-                    }
-                )
-                isolate_factorizations = (
-                    state.config.max_bond is not None
-                    and int(state.config.max_bond) >= 128
-                )
-                split_outputs = apply_compiled_mps_two_site_bucket(
-                    tuple(candidate for _, candidate, _ in chunk),
-                    tuple(state.local_tensors[min(wires)] for _, _, wires in chunk),
-                    tuple(state.local_tensors[min(wires) + 1] for _, _, wires in chunk),
-                    state.config,
-                    bsz=bsz,
-                    device=device,
-                    dtype=dtype,
-                    isolate_factorizations=isolate_factorizations,
-                    svd_driver=factorization_workspace_policy.svd_driver,
-                )
-                factorization_records[-1]["batched_contraction_enabled"] = True
-                factorization_records[-1][
-                    "batched_factorization_enabled"
-                ] = not isolate_factorizations
-                if isolate_factorizations:
-                    factorization_records[-1][
-                        "reason"
-                    ] = "high_bond_batched_factorization_quarantine"
-                factorization_records[-1]["staging_workspace_pool"] = {
-                    "enabled": False,
-                    "reason": "staging_pool_correctness_quarantine",
-                    **factorization_workspace_pool().stats(),
-                }
-                for position, (index, _, wires) in enumerate(chunk):
-                    left = min(wires)
-                    updated_left, updated_right, info = split_outputs[position]
-                    precomputed[index] = (updated_left, updated_right, info)
-                    state.local_tensors[left] = updated_left
-                    state.local_tensors[left + 1] = updated_right
-                start += decision.selected_chunk_size
+    layer = _collect_compiled_layer(instructions, layer_start)
+    if layer[0][1].name == "ry":
+        precomputed = _prepare_one_site_layer(
+            layer, state=state, bsz=bsz, device=device, dtype=dtype
+        )
+        factorization_records: list[dict[str, Any]] = []
+    elif layer[0][1].name in {"rxx", "ryy", "rzz"}:
+        precomputed, factorization_records = _prepare_two_site_layer(
+            layer,
+            layer_start=layer_start,
+            state=state,
+            bsz=bsz,
+            device=device,
+            dtype=dtype,
+            factorization_workspace_policy=factorization_workspace_policy,
+            factorization_memory_provider=factorization_memory_provider,
+        )
     else:  # pragma: no cover - guarded by the caller
-        raise ValueError(f"unsupported compiled MPS layer {first.name!r}")
-    return tuple(layer), precomputed, tuple(factorization_records)
+        raise ValueError(f"unsupported compiled MPS layer {layer[0][1].name!r}")
+    return layer, precomputed, tuple(factorization_records)
 
 
 __all__ = (
