@@ -269,10 +269,7 @@ def plan_from_json(text: str) -> ExecutionPlan:
     return plan_from_dict(payload)
 
 
-def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
-    if not isinstance(payload, Mapping):
-        raise TypeError("execution plan payload must be a mapping")
-    values = dict(payload)
+def _validate_plan_schema(values: Mapping[str, Any]) -> None:
     unknown = set(values) - _TOP_LEVEL_FIELDS
     missing = _TOP_LEVEL_FIELDS - set(values)
     if unknown or missing:
@@ -292,28 +289,21 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             f"unsupported ExecutionPlan version {values['version']!r}",
         )
 
-    program_payload = _require_mapping("program", values["program"])
-    try:
-        program = CircuitIR.from_dict(program_payload)
-    except (IRSerializationError, KeyError, TypeError, ValueError) as exc:
-        raise ExecutionPlanContractError(
-            "program_fingerprint_mismatch", str(exc)
-        ) from exc
 
+def _validate_plan_options(values: Mapping[str, Any]) -> dict[str, Any]:
     from .options import ExecutionOptions
 
-    requested_payload = _require_mapping(
-        "requested_options", values["requested_options"]
-    )
+    requested = _require_mapping("requested_options", values["requested_options"])
     try:
-        ExecutionOptions.from_dict(requested_payload)
+        ExecutionOptions.from_dict(requested)
     except (TypeError, ValueError) as exc:
         raise ExecutionPlanContractError(
             "options_fingerprint_mismatch", str(exc)
         ) from exc
+
     resolved = _require_mapping("resolved_options", values["resolved_options"])
-    expected_option_fields = {field.name for field in fields(ExecutionOptions)}
-    if set(resolved) != expected_option_fields:
+    expected_fields = {field.name for field in fields(ExecutionOptions)}
+    if set(resolved) != expected_fields:
         raise ExecutionPlanContractError(
             "options_fingerprint_mismatch",
             "resolved options fields do not match ExecutionOptions v1",
@@ -324,6 +314,61 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         raise ExecutionPlanContractError(
             "options_fingerprint_mismatch", str(exc)
         ) from exc
+    return resolved
+
+
+def _validate_plan_identity(
+    values: Mapping[str, Any],
+    *,
+    program: CircuitIR,
+    resolved: Mapping[str, Any],
+    fingerprints: Mapping[str, Any],
+    environment: Mapping[str, Any],
+    decision: Mapping[str, Any],
+) -> None:
+    expected_fingerprints = {
+        "program": program.content_hash,
+        "options": canonical_hash(resolved),
+        "environment": canonical_hash(environment),
+        "compiler": canonical_hash(_compiler_identity()),
+    }
+    reasons = {
+        "program": "program_fingerprint_mismatch",
+        "options": "options_fingerprint_mismatch",
+        "environment": "environment_incompatible",
+        "compiler": "compiler_incompatible",
+    }
+    for name in _FINGERPRINT_NAMES:
+        if fingerprints[name] != expected_fingerprints[name]:
+            raise ExecutionPlanContractError(
+                reasons[name], f"{name} fingerprint mismatch"
+            )
+    if environment != _environment_requirements(decision):
+        raise ExecutionPlanContractError(
+            "environment_incompatible",
+            "environment requirements disagree with the execution decision",
+        )
+    if values["identity"] != _identity(values, compiler=_compiler_identity()):
+        raise ExecutionPlanContractError(
+            "identity_mismatch", "ExecutionPlan identity does not match its payload"
+        )
+
+
+def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(payload, Mapping):
+        raise TypeError("execution plan payload must be a mapping")
+    values = dict(payload)
+    _validate_plan_schema(values)
+
+    program_payload = _require_mapping("program", values["program"])
+    try:
+        program = CircuitIR.from_dict(program_payload)
+    except (IRSerializationError, KeyError, TypeError, ValueError) as exc:
+        raise ExecutionPlanContractError(
+            "program_fingerprint_mismatch", str(exc)
+        ) from exc
+
+    resolved = _validate_plan_options(values)
 
     fingerprints = _require_mapping("fingerprints", values["fingerprints"])
     if set(fingerprints) != set(_FINGERPRINT_NAMES):
@@ -346,31 +391,14 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         )
     _validate_extensions(extensions)
 
-    expected_fingerprints = {
-        "program": program.content_hash,
-        "options": canonical_hash(resolved),
-        "environment": canonical_hash(environment),
-        "compiler": canonical_hash(_compiler_identity()),
-    }
-    for name in _FINGERPRINT_NAMES:
-        if fingerprints[name] != expected_fingerprints[name]:
-            reason = {
-                "program": "program_fingerprint_mismatch",
-                "options": "options_fingerprint_mismatch",
-                "environment": "environment_incompatible",
-                "compiler": "compiler_incompatible",
-            }[name]
-            raise ExecutionPlanContractError(reason, f"{name} fingerprint mismatch")
-    if environment != _environment_requirements(decision):
-        raise ExecutionPlanContractError(
-            "environment_incompatible",
-            "environment requirements disagree with the execution decision",
-        )
-    expected_identity = _identity(values, compiler=_compiler_identity())
-    if values["identity"] != expected_identity:
-        raise ExecutionPlanContractError(
-            "identity_mismatch", "ExecutionPlan identity does not match its payload"
-        )
+    _validate_plan_identity(
+        values,
+        program=program,
+        resolved=resolved,
+        fingerprints=fingerprints,
+        environment=environment,
+        decision=decision,
+    )
     normalized: object = json.loads(canonical_json(values))
     if not isinstance(normalized, dict):
         raise ExecutionPlanContractError(
