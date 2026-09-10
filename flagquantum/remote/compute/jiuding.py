@@ -1197,10 +1197,16 @@ class JiudingClient(_ProgramSubmissionMixin):
         while True:
             jobs = self.status(receipt)
             if jobs and all(j["status"] == "Succeed" for j in jobs):
-                result = json.loads(Path(receipt["result_path"]).read_text())
-                if result.get("run_id") != receipt["run_id"]:
-                    raise RuntimeError("Result does not belong to this submission")
-                return decode_job_result(result["value"], receipt)
+                if receipt.get("artifact_transport") == "workspace_ssh":
+                    from ._managed_program import read_managed_result
+
+                    value = read_managed_result(self, receipt)
+                else:
+                    result = json.loads(Path(receipt["result_path"]).read_text())
+                    if result.get("run_id") != receipt["run_id"]:
+                        raise RuntimeError("Result does not belong to this submission")
+                    value = result["value"]
+                return decode_job_result(value, receipt)
             if any(
                 j["status"]
                 not in ("Pending", "Scheduling", "Starting", "Running", "Succeed")

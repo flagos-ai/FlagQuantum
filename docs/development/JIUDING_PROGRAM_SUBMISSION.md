@@ -17,8 +17,7 @@ client = JiudingClient(workspace="my-workspace")
 receipt = client.submit_program(
     fq.Circuit(2).h(0).cx(0, 1),
     target="jiuding:gpu",
-    image="flagquantum-dev:v1",
-    receipt="/shared/jobs/bell.json",
+    image="flagquantum-runtime:v1",
     outputs=fq.counts(),
     shots=1024,
 )
@@ -26,18 +25,21 @@ result = client.result(receipt, timeout=600)
 print(result.counts)
 ```
 
-The receipt location remains explicit because the batch container and caller
-must see the same durable storage. Image selection also remains explicit; an
-unverified image is never guessed. The adapter writes a bounded program request
-and minimal runner beside the receipt, submits through the existing idempotent
-job path, and restores a normal `ExecutionResult`.
+By default, the adapter uses the selected workspace's SSH connection to stage a
+bounded request, a minimal runner and a content-addressed FlagQuantum source
+snapshot under `/share/project/.flagquantum`. It submits through the existing
+job path and fetches the run-bound result through the same connection. Repeated
+submissions of unchanged source reuse the snapshot. Image selection remains
+explicit; an unverified image is never guessed.
 
-Pass `pythonpath=` only when the image provides the runtime dependencies but
-the job should load a newer FlagQuantum source tree from shared storage.
+Pass `receipt=` to use expert-managed shared storage instead. In that mode,
+`pythonpath=` may select a shared FlagQuantum source tree supplied by the user.
 
 ## Boundaries
 
 - Existing script-based `submit()` behavior is unchanged.
+- Managed transfer requires a running workspace with SSH and writable
+  `/share/project`; failure is explicit and never falls back silently.
 - Program execution uses the ordinary Runtime and requested CPU or GPU device.
 - CPU fallback is not enabled or hidden.
 - Receipt identity remains available after client-process failure.

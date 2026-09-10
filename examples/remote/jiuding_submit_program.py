@@ -2,7 +2,6 @@
 
 import argparse
 import json
-from pathlib import Path
 
 import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
@@ -11,7 +10,6 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", required=True)
-    parser.add_argument("--receipt", required=True, type=Path)
     parser.add_argument("--workspace")
     parser.add_argument("--target", default="jiuding:gpu")
     args = parser.parse_args()
@@ -21,13 +19,12 @@ def main() -> None:
         fq.Circuit(2).h(0).cx(0, 1),
         target=args.target,
         image=args.image,
-        receipt=args.receipt,
         outputs=fq.counts(),
         shots=1024,
         cpus=4,
         memory_gib=8,
     )
-    print(json.dumps({"job_id": receipt["jobId"], "receipt": str(args.receipt)}))
+    print(json.dumps({"job_id": receipt["jobId"]}))
 
     result = client.result(receipt, timeout=600)
     print(result.counts)

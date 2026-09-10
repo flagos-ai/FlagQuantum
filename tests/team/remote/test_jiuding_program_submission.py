@@ -80,6 +80,30 @@ def test_submit_program_builds_shared_bundle_without_user_script(
     assert receipt["submission_kind"] == "flagquantum_program"
 
 
+def test_submit_program_manages_artifacts_when_receipt_is_omitted(monkeypatch) -> None:
+    client = _client()
+    submit = Mock(return_value={"jobId": "job-1"})
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._managed_program.submit_managed_program",
+        submit,
+    )
+
+    receipt = client.submit_program(
+        fq.Circuit(2).h(0).cx(0, 1),
+        target="jiuding:gpu",
+        image="flagquantum-runtime:v1",
+        outputs=fq.counts(wires=(0, 1)),
+        shots=1024,
+    )
+
+    assert receipt == {"jobId": "job-1"}
+    assert submit.call_args.kwargs["selected_target"] == (
+        "jiuding:gpu/NVIDIA_A100-SXM4-40GB"
+    )
+    assert submit.call_args.kwargs["operation"] == "measurements"
+    assert submit.call_args.args[1].measurements[0].shots == 1024
+
+
 def test_program_request_executes_through_standard_runtime(
     tmp_path: Path,
     monkeypatch,
@@ -209,6 +233,37 @@ def test_client_result_decodes_program_receipt(tmp_path: Path, monkeypatch) -> N
 
     assert result.to_statevector().shape == (2,)
     assert result.provenance["selected_target"] == "jiuding:cpu"
+
+
+def test_client_result_fetches_managed_artifact(monkeypatch) -> None:
+    client = _client()
+    managed_result = {
+        "run_id": "run-1",
+        "value": {
+            "schema": SCHEMA,
+            "version": VERSION,
+            "ok": True,
+            "request_id": "batch-program",
+            "state": _encode_tensor(torch.tensor([1.0, 0.0], dtype=torch.complex64)),
+            "evidence": {"device": "cpu", "target": "jiuding:cpu"},
+        },
+    }
+    receipt = {
+        "run_id": "run-1",
+        "result_path": "/share/project/.flagquantum/jobs/1/result.json",
+        "artifact_transport": "workspace_ssh",
+        "resources": {"target": "jiuding:cpu"},
+    }
+    monkeypatch.setattr(client, "status", Mock(return_value=[{"status": "Succeed"}]))
+    read = Mock(return_value=managed_result["value"])
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._managed_program.read_managed_result", read
+    )
+
+    result = client.result(receipt)
+
+    assert result.to_statevector().shape == (2,)
+    read.assert_called_once_with(client, receipt)
 
 
 def test_submit_program_rejects_shots_without_sampling_output(tmp_path: Path) -> None:

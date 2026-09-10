@@ -22,7 +22,7 @@ class _ProgramSubmissionMixin:
         *,
         target: str,
         image: str,
-        receipt: str | Path,
+        receipt: str | Path | None = None,
         outputs: OutputRequest | Sequence[OutputRequest] | None = None,
         shots: int | None = None,
         image_region: str = "PRIVATE",
@@ -51,6 +51,20 @@ class _ProgramSubmissionMixin:
             operation = "measurements"
         _, model = self._resolve_compute_target(target)
         selected_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
+        if receipt is None:
+            from ._managed_program import submit_managed_program
+
+            return submit_managed_program(
+                self,
+                ir,
+                target=target,
+                selected_target=selected_target,
+                operation=operation,
+                image=image,
+                image_region=image_region,
+                cpus=cpus,
+                memory_gib=memory_gib,
+            )
         receipt_path = Path(receipt).resolve()
         if receipt_path.exists():
             raise FileExistsError(f"receipt already exists: {receipt_path}")

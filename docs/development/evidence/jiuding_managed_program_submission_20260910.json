@@ -1,0 +1,50 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-10",
+  "implementation_base": "a9f06f80",
+  "scope": "Circuit submission with workspace-managed source, request and result artifacts",
+  "experimentId": "68149a7a-ce18-42bb-ac68-265b0c28402e",
+  "jobId": "1b64c2b7-3a7c-4feb-8687-9b18a892a0b8",
+  "status": "Succeed",
+  "image": "flagquantum-runtime:v0.2.0-cu128-a100",
+  "artifactTransport": "workspace_ssh",
+  "sourceSnapshot": "2611404c681cad3954a9",
+  "resources": {
+    "target": "jiuding:gpu",
+    "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+    "acceleratorCount": 1,
+    "cpuCores": 4,
+    "memGib": 8
+  },
+  "program": {
+    "description": "Two-qubit Bell state",
+    "shots": 1024,
+    "outputs": "counts",
+    "explicitReceiptPath": false,
+    "explicitPythonPath": false
+  },
+  "result": {
+    "counts": {
+      "00": 511,
+      "11": 513
+    },
+    "unexpectedOutcomeCount": 0,
+    "device": "cuda:0",
+    "accelerator": "NVIDIA A100-SXM4-40GB",
+    "numericalExecutionSeconds": 0.5727625414729118,
+    "platformJobSeconds": 14.424,
+    "cpuFallbackUsed": false,
+    "statevectorTransferred": false,
+    "resultTransfer": "device_to_host",
+    "countsAggregation": "host"
+  },
+  "claims": {
+    "managedSourceStagingValidated": true,
+    "managedRequestStagingValidated": true,
+    "managedResultRetrievalValidated": true,
+    "standardExecutionResultValidated": true,
+    "singleGpuForwardValidated": true,
+    "statisticalBellCorrelationValidated": true,
+    "scalabilityClaimAllowed": false
+  }
+}
