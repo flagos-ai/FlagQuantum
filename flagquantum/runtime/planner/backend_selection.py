@@ -138,6 +138,44 @@ def _validated_output_target(target: str) -> OutputTarget:
     raise ValueError(f"unsupported output target: {target!r}")
 
 
+def _normalized_requested_backend(requested_backend: str) -> str:
+    aliases = {
+        "tn": "tensor_network",
+        "distributed_tensor_network": "tensor_network",
+        "distributed_statevector": "statevector",
+        "adaptive_mps": "mps",
+        "distributed_mps": "mps",
+    }
+    normalized = aliases.get(requested_backend, requested_backend)
+    if normalized not in {"auto", "statevector", "mps", "tensor_network"}:
+        raise ValueError(f"unsupported requested backend: {normalized!r}")
+    return normalized
+
+
+def _select_candidate(
+    candidates: tuple[BackendCost, ...],
+    *,
+    requested_backend: str,
+    target: OutputTarget,
+) -> tuple[str, tuple[str, ...]]:
+    if requested_backend != "auto":
+        forced = next(item for item in candidates if item.backend == requested_backend)
+        warnings = (
+            ()
+            if forced.available
+            else ("forced_backend_has_predicted_degradation_or_blockers",)
+        )
+        return requested_backend, warnings
+
+    available = tuple(item for item in candidates if item.available)
+    if not available and target == "full_state":
+        # No compressed representation can satisfy a full-state contract;
+        # retain the exact dense/sharded path and let its hard preflight fail.
+        return "statevector", ()
+    selected = max(available or candidates, key=lambda item: item.score)
+    return selected.backend, ()
+
+
 def select_backend_by_cost(
     circuit_or_ir: Any,
     *,
@@ -164,16 +202,7 @@ def select_backend_by_cost(
     _validated_output_target(target)
     if int(target_count) < 1:
         raise ValueError("target_count must be >= 1")
-    aliases = {
-        "tn": "tensor_network",
-        "distributed_tensor_network": "tensor_network",
-        "distributed_statevector": "statevector",
-        "adaptive_mps": "mps",
-        "distributed_mps": "mps",
-    }
-    requested_backend = aliases.get(requested_backend, requested_backend)
-    if requested_backend not in {"auto", "statevector", "mps", "tensor_network"}:
-        raise ValueError(f"unsupported requested backend: {requested_backend!r}")
+    requested_backend = _normalized_requested_backend(requested_backend)
 
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     width, locality, max_cut_gates = _interaction_metrics(ir)
@@ -329,20 +358,11 @@ def select_backend_by_cost(
             blockers=tn_blockers,
         ),
     )
-    warnings: tuple[str, ...] = ()
-    if requested_backend != "auto":
-        selected = requested_backend
-        forced = next(item for item in candidates if item.backend == selected)
-        if not forced.available:
-            warnings = ("forced_backend_has_predicted_degradation_or_blockers",)
-    else:
-        available = tuple(item for item in candidates if item.available)
-        if not available and target == "full_state":
-            # No compressed representation can satisfy a full-state contract;
-            # retain the exact dense/sharded path and let its hard preflight fail.
-            selected = "statevector"
-        else:
-            selected = max(available or candidates, key=lambda item: item.score).backend
+    selected, warnings = _select_candidate(
+        candidates,
+        requested_backend=requested_backend,
+        target=target,
+    )
 
     return BackendSelection(
         selected_backend=selected,
