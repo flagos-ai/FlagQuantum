@@ -17,7 +17,7 @@ def _execute_minimal_mps_sharded_backward(
     *,
     execution_backend: str = "auto",
 ) -> dict[str, Any]:
-    """Execute the constrained two-rank Phase 5 MPS backward skeleton."""
+    """Execute the constrained two-rank MPS backward path."""
 
     import numpy as np
 
