@@ -1,6 +1,6 @@
 """Experimental dense-island state representation.
 
-Phase 1 supports immediate merge/split for gates spanning adjacent islands.
+Gates spanning adjacent islands are applied through immediate merge and split.
 """
 
 from __future__ import annotations
