@@ -10,31 +10,32 @@ from typing import Any, Mapping
 import torch
 
 from ..core.ir import CircuitIR
+from ..core.parameters import ParameterExpression
 
 
 class BuilderBindings:
     """Task-local dynamic tensors consumed by one reusable circuit program."""
 
     def __init__(self) -> None:
-        self._values: ContextVar[tuple[torch.Tensor, ...]] = ContextVar(
-            "flagquantum_builder_bindings", default=()
+        self._values: ContextVar[tuple[torch.Tensor, ...] | None] = ContextVar(
+            "flagquantum_builder_bindings", default=None
         )
 
     def bind(self, values: tuple[torch.Tensor, ...]) -> None:
         self._values.set(values)
 
     def clear(self) -> None:
-        self._values.set(())
+        self._values.set(None)
 
     def value(self, index: int) -> torch.Tensor:
         values = self._values.get()
-        if not values:
+        if values is None:
             raise RuntimeError("compiled circuit parameter slots are not bound")
         return values[index]
 
     def values(self) -> tuple[torch.Tensor, ...]:
         values = self._values.get()
-        if not values:
+        if values is None:
             raise RuntimeError("compiled circuit parameter slots are not bound")
         return values
 
@@ -63,21 +64,52 @@ class SlotParameterMapping(Mapping[str, Any]):
         return len(self._keys)
 
 
+def _snapshot_value(value: Any) -> Any:
+    """Copy IR value containers and detach their PyTorch tensor leaves."""
+
+    if isinstance(value, torch.Tensor):
+        return value.detach().clone().requires_grad_(value.requires_grad)
+    if isinstance(value, ParameterExpression):
+        return replace(value, args=tuple(_snapshot_value(item) for item in value.args))
+    if isinstance(value, Mapping):
+        return {key: _snapshot_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return tuple(_snapshot_value(item) for item in value)
+    if isinstance(value, list):
+        return [_snapshot_value(item) for item in value]
+    return value
+
+
 def detached_ir_snapshot(ir: CircuitIR) -> CircuitIR:
-    """Materialize dynamic parameter slots without retaining an autograd graph."""
+    """Materialize slots and detach tensors throughout supported IR values."""
 
     instructions = []
     for instruction in ir.instructions:
-        params = {
-            name: (
-                value.detach().clone().requires_grad_(value.requires_grad)
-                if isinstance(value, torch.Tensor)
-                else value
+        instructions.append(
+            replace(
+                instruction,
+                params=_snapshot_value(instruction.params),
+                matrix=_snapshot_value(instruction.matrix),
+                metadata=_snapshot_value(instruction.metadata),
             )
-            for name, value in instruction.params.items()
-        }
-        instructions.append(replace(instruction, params=params))
-    return replace(ir, instructions=tuple(instructions))
+        )
+    return replace(
+        ir,
+        instructions=tuple(instructions),
+        observables=tuple(
+            replace(
+                observable,
+                coefficient=_snapshot_value(observable.coefficient),
+                metadata=_snapshot_value(observable.metadata),
+            )
+            for observable in ir.observables
+        ),
+        measurements=tuple(
+            replace(measurement, metadata=_snapshot_value(measurement.metadata))
+            for measurement in ir.measurements
+        ),
+        metadata=_snapshot_value(ir.metadata),
+    )
 
 
 @dataclass(frozen=True)
