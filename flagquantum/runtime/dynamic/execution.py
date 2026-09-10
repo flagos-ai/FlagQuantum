@@ -35,6 +35,15 @@ from .circuit import DynamicCircuit
 from .result import DynamicExecutionResult
 
 
+def _random_generator(device: torch.device | str, seed: int | None) -> torch.Generator:
+    """Create the device-local generator shared by dynamic execution modes."""
+
+    generator = torch.Generator(device=torch.device(device).type)
+    if seed is not None:
+        generator.manual_seed(int(seed))
+    return generator
+
+
 def _validate_feedback_plan(
     circuit: DynamicCircuit, feedback_plan: DynamicFeedbackPlan
 ) -> None:
@@ -321,9 +330,7 @@ def _run_dynamic_trajectory(
     noise_channel_applications = 0
     bit_flip_events = 0
     readout_errors = 0
-    generator = torch.Generator(device=torch.device(circuit.device).type)
-    if seed is not None:
-        generator.manual_seed(int(seed))
+    generator = _random_generator(circuit.device, seed)
     initial_states = circuit.initial_state()
     batched_states = []
     batched_samples = []
@@ -590,9 +597,7 @@ def _run_dynamic_batched(
 ) -> DynamicExecutionResult:
     width = classical_width(circuit)
     started = perf_counter()
-    generator = torch.Generator(device=torch.device(circuit.device).type)
-    if seed is not None:
-        generator.manual_seed(int(seed))
+    generator = _random_generator(circuit.device, seed)
 
     state = circuit.initial_state().repeat_interleave(int(shots), dim=0)
     classical = torch.full(
