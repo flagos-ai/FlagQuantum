@@ -13,15 +13,9 @@ from ...simulation.statevector.dynamic_noise import (
 from .circuit import DynamicCircuit
 
 
-def validate_dynamic_noise(
-    circuit: DynamicCircuit, noise_model: NoiseModel | None
+def _validate_gate_noise_rules(
+    circuit: DynamicCircuit, noise_model: NoiseModel
 ) -> None:
-    if noise_model is None:
-        return
-    if not isinstance(noise_model, NoiseModel):
-        raise TypeError("dynamic noise_model must be a NoiseModel or None")
-    if noise_model.device_profile is not None:
-        raise ValueError("device-profile timing noise is outside the dynamic profile")
     for rule in noise_model.rules:
         if set(rule.gate_names).intersection({"measure", "reset"}):
             raise ValueError(
@@ -35,11 +29,29 @@ def validate_dynamic_noise(
             wire < 0 or wire >= circuit.n_wires for wire in rule.wires
         ):
             raise ValueError("dynamic noise rule wire is outside the circuit")
-    for readout_rule in noise_model.readout_rules:
-        if isinstance(readout_rule.error, CorrelatedReadoutError):
+
+
+def _validate_readout_noise_rules(
+    circuit: DynamicCircuit, noise_model: NoiseModel
+) -> None:
+    for rule in noise_model.readout_rules:
+        if isinstance(rule.error, CorrelatedReadoutError):
             raise ValueError("correlated readout is outside the dynamic noise profile")
-        if any(wire < 0 or wire >= circuit.n_wires for wire in readout_rule.wires):
+        if any(wire < 0 or wire >= circuit.n_wires for wire in rule.wires):
             raise ValueError("dynamic readout wire is outside the circuit")
+
+
+def validate_dynamic_noise(
+    circuit: DynamicCircuit, noise_model: NoiseModel | None
+) -> None:
+    if noise_model is None:
+        return
+    if not isinstance(noise_model, NoiseModel):
+        raise TypeError("dynamic noise_model must be a NoiseModel or None")
+    if noise_model.device_profile is not None:
+        raise ValueError("device-profile timing noise is outside the dynamic profile")
+    _validate_gate_noise_rules(circuit, noise_model)
+    _validate_readout_noise_rules(circuit, noise_model)
 
 
 def apply_noise_after_instruction(
@@ -82,7 +94,12 @@ def apply_readout_error(
                 raise ValueError(
                     "correlated readout is outside the dynamic noise profile"
                 )
-            return sample_dynamic_readout(bits, rule.error, generator=generator)
+            observed: torch.Tensor
+            error_count: int
+            observed, error_count = sample_dynamic_readout(
+                bits, rule.error, generator=generator
+            )
+            return observed, error_count
     return bits, 0
 
 
