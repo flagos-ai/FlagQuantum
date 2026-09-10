@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.program_artifact_v1_compatibility_fixture",
-  "expected_content_hash": "4c98b6a8665aa09fe66917edefeebf39d02bfeef4805da1b1e71d672922f9480",
+  "expected_content_hash": "0e78aa7d52bce7ff4b1485b11054266bbacc996ea38a4ba1446375d316df517c",
   "artifact": {
     "schema": "flagquantum.program_artifact",
     "version": "1.0",
@@ -16,7 +16,7 @@
       "shape": [2],
       "instructions": [
         {
-          "name": "h",
+          "opcode": "h",
           "wires": [0],
           "params": {},
           "matrix": null,

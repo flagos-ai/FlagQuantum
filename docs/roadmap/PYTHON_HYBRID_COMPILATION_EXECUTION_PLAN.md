@@ -1103,6 +1103,33 @@ Exit gate:
 - no Core schema, Compiler adapter, Runtime, Deployment, public API, or provider
   behavior changes in this phase.
 
+### Phase 31.1 — circuit-profile and write-policy revision
+
+Revise Proposal 022 before approval so v2 covers the repository's demonstrated
+v1 circuit use case as well as verified executable text. Add a strict
+`circuit-ir-1.0` profile whose mapping round-trips through Core `CircuitIR` and
+whose payload digest equals the canonical CircuitIR content hash by construction.
+
+After eventual approval, all new artifact writes use v2 and v1 becomes read-only.
+Automatic migration is deliberately narrower than v1 reading: accept only v1
+circuit artifacts with empty metadata, capability hints, and parent hashes plus
+a strictly valid CircuitIR payload. Other v1 artifacts remain readable but fail
+automatic migration rather than guessing lost semantics or identity roles.
+
+Exit gate:
+
+- the v1 fixture is a genuinely consumable CircuitIR artifact, not merely a
+  mapping accepted by the generic v1 envelope;
+- the pinned v2 circuit candidate has independently reproduced payload,
+  CircuitIR, and envelope identities;
+- circuit and executable profiles share one v2 top-level field set;
+- target, compilation, requirements, and result schema are null for the
+  target-independent circuit profile;
+- symbolic circuit parameters remain describable while executable profiles stay
+  fully bound;
+- new-write-v2 and v1-read-only policy is explicit;
+- implementation remains unauthorized pending the unchanged approval token.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1262,3 +1289,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 29 verified deterministic target-text emission implemented and verified
 - [x] Phase 30 strict target-text conformance implemented and verified
 - [x] Phase 31 ProgramArtifact v2 contract proposal completed; implementation awaits approval
+- [x] Phase 31.1 added circuit profile and v1-read-only migration policy; implementation awaits approval

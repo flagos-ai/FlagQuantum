@@ -997,3 +997,23 @@ The proposal is not approval. Until the exact approval token is supplied, no
 v2 reader/writer, Core schema change, Compiler adapter, Runtime adapter,
 Deployment integration, public export, or provider submission is authorized.
 The private Phase 29/30 records remain the only implemented target-text path.
+
+## Phase 31.1 circuit-profile proposal revision authorization
+
+Phase 31.1 may revise Proposal 022 before approval to add a strict
+`circuit-ir-1.0` profile alongside the three executable-text profiles. The
+circuit payload must round-trip through Core `CircuitIR`; its canonical payload
+digest and CircuitIR content hash have separate roles but equal values. Circuit
+artifacts are target-independent, so requirements, target, compilation, and
+result-schema fields are null.
+
+The revision may specify that all new artifact writes use v2 after approval and
+v1 becomes read-only. Automatic v1 migration is allowed only for circuit kind,
+empty metadata, empty flat capability hints, empty opaque parent hashes, and a
+strictly valid CircuitIR payload. All other v1 artifacts remain readable but
+fail automatic migration. A pinned v2 circuit candidate records the proposed
+canonical identities.
+
+This revision remains unapproved. It changes no Core reader, writer, hash,
+Compiler adapter, Runtime adapter, Deployment behavior, public export, or
+provider path.

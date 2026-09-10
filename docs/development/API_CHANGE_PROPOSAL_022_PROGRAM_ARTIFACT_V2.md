@@ -1,4 +1,4 @@
-# API Change Proposal 022: ProgramArtifact v2 executable-text profile
+# API Change Proposal 022: ProgramArtifact v2 circuit and executable profiles
 
 ## Status
 
@@ -39,13 +39,14 @@ Creating an unrelated `ExecutableArtifact` envelope would violate ARCH-002.
 ## Decision proposed
 
 Add version `2.0` to the existing `flagquantum.program_artifact` schema lineage.
-The first v2 profile is deliberately narrow: a fully bound, static,
-UTF-8-encoded target-text executable that has passed target legalization,
-logical scheduling, deterministic emission, and strict conformance.
+The first v2 release has two profile families: canonical Core `CircuitIR` and
+fully bound static target text that has passed target legalization, logical
+scheduling, deterministic emission, and strict conformance.
 
-Version dispatch remains owned by Core. Compiler constructs the executable
-profile through an explicit adapter only after Phase 30 succeeds. Runtime and
-Deployment consume it only through separately approved adapters.
+Version dispatch remains owned by Core. Core constructs the circuit profile;
+Compiler constructs executable profiles through an explicit adapter only after
+Phase 30 succeeds. Runtime and Deployment consume them only through separately
+approved adapters.
 
 ### Initial envelope
 
@@ -68,13 +69,12 @@ result_schema
 artifact_identity
 ```
 
-Normative fixed values for the initial profile are:
+Normative fixed values are:
 
 ```text
 schema   = "flagquantum.program_artifact"
 version  = "2.0"
-kind     = "executable"
-encoding = "utf-8"
+kind     = "circuit" | "executable"
 ```
 
 Unknown and missing top-level fields fail closed. Strings are not coerced from
@@ -82,7 +82,21 @@ numbers or arbitrary objects.
 
 ### Profile and payload
 
-`profile` is a closed record:
+`profile` is a closed record. The circuit profile is:
+
+```text
+name       = "circuit-ir-1.0"
+media_type = "application/vnd.flagquantum.circuit-ir+json;version=1.0"
+encoding   = "canonical-json"
+kind       = "circuit"
+```
+
+Its payload is the exact `CircuitIR.to_dict()` mapping and must round-trip
+through `CircuitIR.from_dict()`. Its payload bytes are the canonical JSON
+encoding used by `CircuitIR.content_hash`; consequently `payload_sha256` and
+`circuit_content_hash` have distinct roles but equal values for this profile.
+
+The executable profiles are:
 
 ```text
 name       = "openqasm-2.0" | "openqasm-3.0" | "qcis-1.0"
@@ -90,20 +104,23 @@ media_type = exact value registered for the selected name
 encoding   = "utf-8"
 ```
 
-`payload` is canonical text, not bytes and not a URL. Its UTF-8 encoding must
-be nonempty and at most 16 MiB. `payload_sha256` is the lowercase SHA-256 of
-those exact bytes. The reader recomputes and compares it before parsing.
+For executable profiles, `payload` is canonical text, not bytes and not a URL.
+For the circuit profile it is a canonical JSON mapping. The encoded payload
+must be nonempty and at most 16 MiB. `payload_sha256` is the lowercase SHA-256
+of the exact profile-defined bytes. The reader recomputes and compares it
+before parsing.
 
 Large blob references, QIR/native binary payloads, signatures, compression,
 and encryption require later profiles and are not inferred from this schema.
 
 ### Compilation identity chain
 
-`circuit_content_hash` is the final legalized Core `CircuitIR.content_hash`.
-It is not renamed to source identity because the current vertical slice does
-not retain the pre-specialization source-program identity through every stage.
+`circuit_content_hash` is the payload CircuitIR hash for `circuit-ir-1.0` and
+the final legalized Core `CircuitIR.content_hash` for executable profiles. It
+is not renamed to source identity because the current vertical slice does not
+retain the pre-specialization source-program identity through every stage.
 
-`target` contains only:
+For executable profiles, `target` contains only:
 
 ```text
 snapshot_id
@@ -118,28 +135,35 @@ emission_identity
 conformance_identity
 ```
 
-Every identity is a lowercase 64-character SHA-256 digest. These are
+For `circuit-ir-1.0`, both `target` and `compilation` are null because an
+uncompiled circuit is not target-bound. Every populated identity is a lowercase
+64-character SHA-256 digest. These are
 role-named identities, not positional interpretations of v1 parent hashes.
 Target provider names, backend locators, accounts, and queue state are not
 artifact identity.
 
 ### Requirements, parameters, and results
 
-`requirements` is the canonical serialized Core `RequirementSet` used during
-target legalization, including its fallback authorizations. The receiver
-reconstructs and validates it with the Core schema; it does not treat v1 flat
-capability strings as equivalent.
+For executable profiles, `requirements` is the canonical serialized Core
+`RequirementSet` used during target legalization, including its fallback
+authorizations. For `circuit-ir-1.0` it is null; target-independent circuit
+semantics remain in CircuitIR. The receiver does not treat v1 flat capability
+strings as equivalent.
 
-The initial `parameter_schema` is:
+Executable profiles use:
 
 ```text
 binding = "fully_bound"
 parameters = []
 ```
 
-Unbound runtime parameters are outside the first profile.
+The circuit profile derives a sorted parameter-name list from CircuitIR and
+uses `binding="fully_bound"` or `binding="symbolic"`. Parameter values and
+expressions remain authoritative in CircuitIR; the schema is a validated index,
+not a duplicate binding store. Unbound runtime parameters remain outside the
+initial executable profiles.
 
-The initial `result_schema` is:
+Executable profiles use:
 
 ```text
 kind = "samples"
@@ -150,6 +174,8 @@ shots_source = "execution_request"
 Shots are deliberately absent from the artifact. Requested repetitions,
 seeds, mitigation policy, timeouts, priorities, and result-delivery options
 belong to the execution request and must not change artifact identity.
+For `circuit-ir-1.0`, `result_schema` is null because CircuitIR measurements and
+observables remain authoritative and may not yet be executable-profile legal.
 
 ### Artifact identity
 
@@ -171,7 +197,7 @@ v1 serialization.
 
 ## Closed data and security policy
 
-The first v2 executable profile has no free-form metadata or extension map.
+The first v2 profiles have no free-form metadata or extension map.
 All records use exact string keys and finite JSON scalars, lists, and maps
 defined by the schema. Duplicate keys, key coercion, unknown keys, non-finite
 numbers, and callable `to_dict()` projection are rejected at the serialized
@@ -204,9 +230,14 @@ authorization, encryption, and secure transport remain separate concerns.
 - Add explicit version dispatch; do not make the v1 constructor accept v2.
 - An old v1-only reader must reject v2 exactly as an unsupported version.
 - A new reader accepts v1 through the unchanged v1 path and v2 through the
-  strict executable-profile validator.
-- Do not automatically upgrade v1 metadata into v2 fields.
-- Do not downgrade v2 executable artifacts to v1.
+  strict profile validator.
+- New artifact writes use v2; v1 is a read-only compatibility path.
+- A deterministic v1-to-v2 migration is allowed only when v1 has
+  `kind="circuit"`, empty metadata, empty `required_capabilities`, empty
+  `parent_hashes`, and a payload accepted by `CircuitIR.from_dict()`.
+- Any other v1 artifact remains readable but fails automatic migration with a
+  typed reason. No v1 metadata or opaque parent role is guessed.
+- Do not downgrade v2 artifacts to v1.
 - Do not reinterpret v1 `parent_hashes`, `required_capabilities`, or metadata.
 - Freeze the Phase 31 v1 compatibility fixture before implementation and run
   it in every v2 reader change.
@@ -217,8 +248,8 @@ internal adapters have conformance evidence.
 
 ## Ownership and adapters
 
-- Core owns schema/version dispatch, canonical encoding, limits, and identity
-  verification.
+- Core owns schema/version dispatch, canonical encoding, circuit-profile
+  construction, v1 circuit migration, limits, and identity verification.
 - Compiler owns construction from verified Phase 29/30 results and must not
   submit or execute artifacts.
 - Runtime owns compatibility checks against an execution request and target;
@@ -233,6 +264,8 @@ internal adapters have conformance evidence.
 
 - Mandatory v1 metadata conventions: not a closed or versioned shared contract.
 - A new generic `ExecutableArtifact`: duplicates the ARCH-002 authority.
+- Keeping v2 executable-only: would leave the repository's only demonstrated
+  v1 circuit use case on the legacy writer without a technical need.
 - Putting shots or provider target locator in the artifact: mixes program,
   request, and deployment identities.
 - Storing credentials or job state: creates a security and lifecycle violation.
@@ -245,14 +278,16 @@ internal adapters have conformance evidence.
 
 ## Implementation gates after approval
 
-1. Core implements the strict v2 value model and version dispatcher while the
-   v1 compatibility fixture remains byte/hash stable.
-2. Compiler adds a one-way adapter from successful Phase 30 conformance into
+1. Core implements the strict v2 value model, circuit profile, bounded v1
+   circuit migration, and version dispatcher while the v1 compatibility fixture
+   remains byte/hash stable.
+2. Core makes all new circuit-artifact writes use v2 while preserving v1 reads.
+3. Compiler adds a one-way adapter from successful Phase 30 conformance into
    the v2 executable profile.
-3. Round-trip, unknown-field, limits, non-finite, sensitive-content, payload
+4. Round-trip, unknown-field, limits, non-finite, sensitive-content, payload
    tamper, identity tamper, and hash-seed tests pass.
-4. Runtime adds read-only compatibility preflight without submission.
-5. Deployment dry-run adaptation is proposed separately before any provider
+5. Runtime adds read-only compatibility preflight without submission.
+6. Deployment dry-run adaptation is proposed separately before any provider
    call.
 
 ## Acceptance
@@ -261,6 +296,8 @@ internal adapters have conformance evidence.
   this proposal.
 - The pinned v1 fixture is accepted by the unchanged v1 reader and retains its
   existing content hash.
+- The fixture payload is also accepted by `CircuitIR.from_dict()` and migrates
+  to the pinned v2 circuit candidate without semantic or identity ambiguity.
 - Candidate tests prove payload and artifact identities use separate inputs.
 - Candidate tests prove shots, credentials, task state, and provider locators
   are excluded.

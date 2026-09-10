@@ -25,7 +25,7 @@ execution request; and excludes credentials and provider lifecycle state.
 | Size, nesting, entry, and string limits are explicit | pass |
 | Request and sensitive provider state are excluded | pass |
 | v1 fixture remains accepted by the unchanged reader | pass |
-| v1 fixture retains hash `4c98b6a...2f9480` | pass |
+| v1 generic-envelope fixture retained its then-pinned hash | superseded by Phase 31.1 consumable-circuit fixture |
 | Phase 31 candidate and v1 compatibility tests | 7 passed |
 | Hybrid compiler, proposal, and private-contract focused suite | 222 passed |
 

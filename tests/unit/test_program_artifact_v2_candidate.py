@@ -7,12 +7,16 @@ from pathlib import Path
 import pytest
 
 from flagquantum.core._artifacts import ProgramArtifact
+from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts" / "program-artifact-v2-candidate.json"
 V1_FIXTURE = ROOT / "tests" / "fixtures" / "program_artifact_v1_compatibility.json"
+V2_CIRCUIT_FIXTURE = (
+    ROOT / "tests" / "fixtures" / "program_artifact_v2_circuit_candidate.json"
+)
 
 
 def _candidate() -> dict[str, object]:
@@ -29,6 +33,7 @@ def test_candidate_is_unapproved_and_does_not_change_any_implementation() -> Non
     assert candidate["implementation"] == {
         "authorized": False,
         "core_schema_changed": False,
+        "core_v1_migrator_added": False,
         "compiler_adapter_added": False,
         "runtime_adapter_added": False,
         "deployment_adapter_added": False,
@@ -36,34 +41,56 @@ def test_candidate_is_unapproved_and_does_not_change_any_implementation() -> Non
     }
 
 
-def test_candidate_has_one_closed_executable_text_profile_family() -> None:
+def test_candidate_has_closed_circuit_and_executable_profile_families() -> None:
     candidate = _candidate()
 
     assert candidate["envelope_schema"] == "flagquantum.program_artifact"
     assert candidate["version"] == "2.0"
-    assert candidate["initial_kind"] == "executable"
+    assert candidate["initial_kinds"] == ["circuit", "executable"]
     assert candidate["profiles"] == {
+        "circuit-ir-1.0": {
+            "kind": "circuit",
+            "media_type": ("application/vnd.flagquantum.circuit-ir+json;version=1.0"),
+            "encoding": "canonical-json",
+            "payload": "strict_circuit_ir_to_dict",
+            "requirements": None,
+            "target": None,
+            "compilation": None,
+            "result_schema": None,
+        },
         "openqasm-2.0": {
+            "kind": "executable",
             "media_type": "text/x-openqasm;version=2.0;charset=utf-8",
             "encoding": "utf-8",
         },
         "openqasm-3.0": {
+            "kind": "executable",
             "media_type": "text/x-openqasm;version=3.0;charset=utf-8",
             "encoding": "utf-8",
         },
         "qcis-1.0": {
+            "kind": "executable",
             "media_type": "text/x-qcis;version=1.0;charset=utf-8",
             "encoding": "utf-8",
         },
     }
     assert candidate["parameter_schema"] == {
-        "binding": "fully_bound",
-        "parameters": [],
+        "circuit-ir-1.0": {
+            "binding": ["fully_bound", "symbolic"],
+            "parameters": "sorted_names_derived_from_circuit_ir",
+        },
+        "executable_text_profiles": {
+            "binding": "fully_bound",
+            "parameters": [],
+        },
     }
     assert candidate["result_schema"] == {
-        "kind": "samples",
-        "wires": "dense_zero_based_full_register",
-        "shots_source": "execution_request",
+        "circuit-ir-1.0": None,
+        "executable_text_profiles": {
+            "kind": "samples",
+            "wires": "dense_zero_based_full_register",
+            "shots_source": "execution_request",
+        },
     }
 
 
@@ -74,7 +101,7 @@ def test_candidate_separates_payload_program_compile_and_envelope_identity() -> 
     assert identities == {
         "payload": "payload_sha256",
         "final_circuit": "circuit_content_hash",
-        "target": "target.snapshot_id",
+        "target": "target.snapshot_id_when_executable",
         "compilation": [
             "target_legalization_identity",
             "schedule_identity",
@@ -136,6 +163,7 @@ def test_candidate_sets_explicit_bounded_closed_data_limits() -> None:
 def test_v1_golden_fixture_remains_accepted_with_the_exact_existing_hash() -> None:
     fixture = json.loads(V1_FIXTURE.read_text(encoding="utf-8"))
     artifact = ProgramArtifact.from_dict(fixture["artifact"])
+    circuit = CircuitIR.from_dict(fixture["artifact"]["payload"])
 
     assert artifact.to_dict() == fixture["artifact"]
     assert artifact.content_hash == fixture["expected_content_hash"]
@@ -146,6 +174,57 @@ def test_v1_golden_fixture_remains_accepted_with_the_exact_existing_hash() -> No
         allow_nan=False,
     ).encode("utf-8")
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_content_hash"]
+    assert (
+        circuit.content_hash
+        == "60ed04925dc8565b3ff880b6252fe2cc6eefa0635b989497d988f1522c3bb8bb"
+    )
+
+
+def test_v1_circuit_migration_is_narrow_and_all_new_writes_are_v2() -> None:
+    candidate = _candidate()
+
+    assert candidate["v1_circuit_migration"] == {
+        "source_kind": "circuit",
+        "required_empty_fields": [
+            "metadata",
+            "required_capabilities",
+            "parent_hashes",
+        ],
+        "payload_validation": "flagquantum.core.ir.CircuitIR.from_dict",
+        "destination_profile": "circuit-ir-1.0",
+        "other_v1_artifacts": ("readable_but_automatic_migration_fails_closed"),
+    }
+    assert candidate["write_policy_after_approval"] == {
+        "new_artifacts": "v2_only",
+        "v1": "read_only_compatibility",
+    }
+
+
+def test_pinned_v2_circuit_candidate_has_canonical_payload_and_envelope_hashes() -> (
+    None
+):
+    artifact = json.loads(V2_CIRCUIT_FIXTURE.read_text(encoding="utf-8"))
+    payload_bytes = json.dumps(
+        artifact["payload"],
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("utf-8")
+    payload_sha256 = hashlib.sha256(payload_bytes).hexdigest()
+    body = {key: value for key, value in artifact.items() if key != "artifact_identity"}
+    body_bytes = json.dumps(
+        body,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    ).encode("utf-8")
+
+    assert CircuitIR.from_dict(artifact["payload"]).content_hash == payload_sha256
+    assert artifact["payload_sha256"] == payload_sha256
+    assert artifact["circuit_content_hash"] == payload_sha256
+    assert hashlib.sha256(body_bytes).hexdigest() == artifact["artifact_identity"]
 
 
 def test_candidate_requires_explicit_version_dispatch_without_conversion() -> None:

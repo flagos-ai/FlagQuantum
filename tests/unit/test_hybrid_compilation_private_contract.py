@@ -1006,7 +1006,7 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     phase27 = contract["phase27"]
 
     assert contract["status"] == (
-        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+        "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved"
     )
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
@@ -1058,7 +1058,7 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
     phase28 = contract["phase28"]
 
     assert contract["status"] == (
-        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+        "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved"
     )
     assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase28["output_artifact"] == (
@@ -1103,7 +1103,7 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
     phase29 = contract["phase29"]
 
     assert contract["status"] == (
-        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+        "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved"
     )
     assert phase29["input"] == (
         "flagquantum.compiler.target_legalization.TargetLegalizationResult"
@@ -1140,7 +1140,7 @@ def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> No
     phase30 = contract["phase30"]
 
     assert contract["status"] == (
-        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+        "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved"
     )
     assert phase30["inputs"] == [
         "flagquantum.compiler.target_emission.TargetEmissionResult",
@@ -1182,7 +1182,7 @@ def test_phase31_proposes_same_lineage_v2_without_implementing_it() -> None:
     phase31 = contract["phase31"]
 
     assert contract["status"] == (
-        "phase31_program_artifact_v2_proposal_complete_implementation_unapproved"
+        "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved"
     )
     assert phase31["proposal"] == (
         "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md"
@@ -1215,3 +1215,39 @@ def test_phase31_proposes_same_lineage_v2_without_implementing_it() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE31_EVIDENCE.md"
     )
     assert contract["phase31_completed"] is True
+
+
+def test_phase31_1_adds_circuit_profile_without_implementing_v2() -> None:
+    contract = _contract()
+    phase31_1 = contract["phase31_1"]
+
+    assert contract["status"] == (
+        "phase31_1_v2_circuit_profile_revision_complete_implementation_unapproved"
+    )
+    assert phase31_1["profiles"] == [
+        "circuit-ir-1.0",
+        "openqasm-2.0",
+        "openqasm-3.0",
+        "qcis-1.0",
+    ]
+    assert phase31_1["v2_circuit_fixture"] == (
+        "tests/fixtures/program_artifact_v2_circuit_candidate.json"
+    )
+    assert phase31_1["v1_fixture_is_strict_circuit_ir"] is True
+    assert phase31_1["new_write_policy_after_approval"] == "v2_only"
+    assert phase31_1["v1_policy_after_approval"] == "read_only_compatibility"
+    assert phase31_1["automatic_v1_migration"] == (
+        "strict_circuit_only_fail_closed_otherwise"
+    )
+    assert phase31_1["implementation_authorized"] is False
+    assert phase31_1["core_schema_changed"] is False
+    assert phase31_1["compiler_adapter_added"] is False
+    assert phase31_1["runtime_adapter_added"] is False
+    assert phase31_1["deployment_adapter_added"] is False
+    assert phase31_1["public_root_export"] is False
+    assert phase31_1["default_path_change"] is False
+    assert phase31_1["performance_claim"] is False
+    assert phase31_1["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE31_1_EVIDENCE.md"
+    )
+    assert contract["phase31_1_completed"] is True
