@@ -13,7 +13,6 @@ from flagquantum.runtime.executors.mps.records import (
 )
 from flagquantum.runtime.executors.mps.reverse import (
     _qr_forward,
-    _reverse_execution_segments,
     _static_exact_qr_record,
     _validate_svd_gaps,
 )
@@ -22,6 +21,7 @@ from flagquantum.runtime.executors.mps.reverse_planning import (
     clear_mps_reverse_segment_cache,
     mps_reverse_segment_cache_stats,
     plan_mps_canonicalization_bonds,
+    plan_mps_reverse_segments,
 )
 from flagquantum.runtime.executors.mps.reverse_transport import (
     all_reduce_reverse_layer_records,
@@ -304,10 +304,10 @@ def test_owner_local_reverse_segments_stop_at_dependencies_and_boundaries():
     tape = MPSReverseTape.build(
         records, saved_tensor_bytes=1, checkpoint_policy=MPSReverseCheckpointPolicy()
     )
-    segments = _reverse_execution_segments(tape, fuse_owner_local=True)
+    segments = plan_mps_reverse_segments(tape, fuse_owner_local=True)
     assert [len(item) for item in segments] == [2, 1, 1, 2]
     assert all(len({record.compute_owner for record in item}) == 1 for item in segments)
-    assert len(_reverse_execution_segments(tape, fuse_owner_local=False)) == 6
+    assert len(plan_mps_reverse_segments(tape, fuse_owner_local=False)) == 6
 
 
 def test_reverse_segment_cache_is_bounded_and_maps_current_tape_records():
