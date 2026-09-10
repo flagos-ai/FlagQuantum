@@ -1,13 +1,29 @@
-# Jiuding CPU and single-GPU tasks (experimental)
+# Jiuding execution (experimental)
 
-Run from a Jiuding development workspace with injected AK/SK credentials.
-The client reads `/etc/accesskey/user-ak` and `user-sk` automatically; explicit
-`JIUDING_AK` and `JIUDING_SK` environment values override those files only when
-both are set. A partial environment pair is rejected instead of being combined
-with an injected file. Tokens stay in memory and refresh according to the server
-expiry. Requests use HTTPS, reject redirects, have a 20-second socket timeout,
-and are not retried blindly. No CLI installation or manual project/queue IDs are
-required.
+Inside a Jiuding development workspace, the client reads the injected
+`/etc/accesskey/user-ak` and `user-sk` automatically. Outside Jiuding, set both
+`JIUDING_AK` and `JIUDING_SK`; these environment values override injected files
+only as a complete pair. Partial credentials are rejected. Tokens stay in memory
+and refresh according to the server expiry. Requests use HTTPS, reject redirects,
+have a 20-second socket timeout, and are not retried blindly. No CLI installation
+or manual project and queue IDs are required.
+
+## Choose an execution path
+
+Jiuding has two primary execution paths. They return the same FlagQuantum
+result type but have different latency and lifecycle semantics.
+
+| Need | Entry point | Required resource | Lifecycle |
+| --- | --- | --- | --- |
+| Interactive or repeated execution | [`fq.run(..., target="jiuding:...")`](#repeated-low-latency-workspace-execution) | A running development workspace | Reuses one resident process and SSH channel; no Job ID |
+| Isolated, schedulable, recoverable work | [`JiudingClient.submit_program(...)`](#recoverable-batch-execution) | A running workspace, runtime image and queue capacity | Creates a batch Job; recoverable by Job ID |
+
+Use `fq.run` when startup latency would dominate the calculation. Use
+`submit_program` when the work should survive the caller process, wait in the
+queue, or be recovered later. Neither path creates a development workspace
+implicitly. `JiudingClient.submit()` is the advanced escape hatch for an
+existing Python script and shared-storage layout; ordinary circuit users do
+not need it.
 
 ## Development workspaces
 
@@ -42,6 +58,8 @@ Set `accelerator_count=2` or higher only for an explicitly distributed
 workspace. A larger allocation exposes devices to the workspace; it does not
 turn replicated work into sharded execution. Launch a supported distributed
 FlagQuantum engine under `torchrun` and retain its distribution evidence.
+
+## Custom script jobs (advanced)
 
 ```python
 from pathlib import Path
@@ -107,34 +125,74 @@ allocates a resource; numerical device selection remains in the user program.
 The generic `jiuding:gpu` target resolves to the selected queue's GPU model. A
 `jiuding:gpu/<model>` target requires an exact model match.
 
-## Repeated low-latency execution
+## Recoverable batch execution
 
-Batch Jobs are appropriate for isolated, schedulable workloads, but their
-container startup time dominates tiny circuits. For interactive or repeated
-statevector work, keep one development workspace running and reuse a resident
-executor:
+Submit a circuit directly when it should run as an independent Jiuding Job:
 
 ```python
 import flagquantum as fq
 from flagquantum.remote.compute.jiuding import JiudingClient
 
-circuit = fq.Circuit(2).h(0).cx(0, 1)
-with JiudingClient(workspace="example-resident-a100") as client:
-    first = client.run_statevector(
-        circuit,
-        target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    )
-    second = client.run_statevector(
-        circuit,
-        target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
-    )
+client = JiudingClient(workspace="my-workspace")
+receipt = client.submit_program(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="jiuding:gpu",
+    image="flagquantum-runtime:v1",
+    outputs=fq.counts(),
+    shots=1024,
+)
+print(receipt["jobId"])
+
+result = client.result(receipt, timeout=600)
+print(result.counts)
 ```
 
+The default path stages the bounded program request, runner, source snapshot,
+receipt and result under `/share/project/.flagquantum`. The image remains an
+explicit choice. If the local process exits, restore the same Job without
+submitting another one:
+
+```python
+client = JiudingClient(workspace="my-workspace")
+receipt = client.restore_receipt("<jiuding-job-id>")
+result = client.result(receipt, timeout=600)
+```
+
+Keep the Job ID until the result is collected. `result()` waits for the existing
+Job; it never interprets a timeout as permission to resubmit. Use
+`receipt="/shared/.../run.json"` only when you intentionally manage the shared
+artifacts yourself. See
+[`jiuding_submit_program.py`](../../examples/remote/jiuding_submit_program.py)
+for the runnable command-line example.
+
+## Repeated low-latency workspace execution
+
+Batch Jobs are appropriate for isolated, schedulable workloads, but their
+container startup time dominates tiny circuits. For interactive or repeated
+work, keep one development workspace running and reuse a resident executor.
+Set the workspace once, then use the normal FlagQuantum entry point:
+
+```python
+import flagquantum as fq
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+result = fq.run(
+    circuit,
+    target="jiuding:gpu",
+    outputs=fq.expectation(fq.X(0) @ fq.X(1)),
+)
+print(result.expectation())
+```
+
+Inside the selected Jiuding workspace, no workspace name is required. Otherwise,
+set `JIUDING_WORKSPACE` to the running workspace name before starting Python.
 The first call verifies the workspace, establishes SSH, and starts the worker
-when necessary. Later calls on the same client reuse both the resident Python
-process and SSH channel. The worker listens only on workspace loopback,
-executes through FlagQuantum Runtime, rejects target mismatches, records the
-actual device and CPU-fallback status, and returns a normal `ExecutionResult`.
+when necessary. Later calls in the same process reuse both the resident Python
+process and SSH channel. Use `JiudingClient(workspace=...)` directly when one
+process must address workspaces explicitly. The worker listens only on workspace
+loopback, executes through FlagQuantum Runtime, rejects target mismatches,
+records the actual device and CPU-fallback status, and returns a normal
+`ExecutionResult`.
 Call `client.close()` or use the context manager to release the local channel.
 If the workspace has restarted, the next readiness check discards its cached
 SSH endpoint, discovers the replacement endpoint, and starts a new worker.
@@ -235,11 +293,17 @@ The platform requires two operations: POST experiment saves configuration; POST
 job starts it. The adapter performs both and saves an exclusive receipt before
 creation, then updates it after each stage. If creation or launch fails or times
 out, inspect the saved experiment name/ID on the platform before any new submit.
-An existing receipt is never silently overwritten to resubmit. The receipt is
-a local experimental JSON artifact, not a Stable Core serialization contract.
+An existing receipt is never silently overwritten to resubmit. Receipts are
+experimental provider artifacts, not Stable Core serialization contracts.
 
-After disconnecting, load the receipt with `json.loads(Path(...).read_text())`
-and use `client.status(receipt)` or `client.result(receipt)`. Result acceptance
+For the default `submit_program()` path, retain the returned `jobId` and call
+`restore_receipt(job_id)` after reconnecting. The managed receipt and result
+remain in the workspace's shared project storage. Restoration only locates the
+existing receipt; it does not create an experiment or Job.
+
+For `submit()` or expert-managed `submit_program(receipt=...)`, load the local
+receipt with `json.loads(Path(...).read_text())` after disconnecting and use
+`client.status(receipt)` or `client.result(receipt)`. Result acceptance
 requires platform `Succeed` and a shared artifact whose run_id matches the
 receipt; platform success alone is insufficient. This matching prevents stale
 result confusion, not adversarial tampering of shared storage. Large tensors
