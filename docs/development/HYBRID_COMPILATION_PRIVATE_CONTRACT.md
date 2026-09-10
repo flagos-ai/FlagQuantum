@@ -1318,3 +1318,17 @@ verification, Deployment preparation, target-capability APIs, provider binding o
 submission, and QEC/FTOC semantics. It requires the exact approval token in
 `docs/development/API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE.md` before any
 module or symbol is added.
+
+The API owner supplied the exact Proposal 026 token on 2026-09-10. Phase 51 adds
+the approved `flagquantum.experimental.artifacts` module with exactly six names.
+`ProgramArtifact` and `CompilationEvidence` are frozen branded role views over
+the immutable Core values. They expose common version, producer, identity and
+canonical representation access without returning a versioned concrete class as
+the public contract.
+
+The load functions accept bounded JSON text and delegate version dispatch and
+semantic validation to Core. The dump functions accept only their exact branded
+view and return Core canonical JSON without migration or identity change. The
+experimental package discovers the domain lazily. No stable export, constructor,
+binding, compilation, verification, Deployment, provider, or default-path change
+is included.

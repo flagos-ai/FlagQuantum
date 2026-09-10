@@ -2,10 +2,15 @@
 
 ## Status
 
-**Proposed on 2026-09-10; owner approval required before implementation.**
+**Approved on 2026-09-10; experimental read-only preview complete.**
 
 Approval token:
 `approve API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE`
+
+The API owner supplied the exact token on 2026-09-10. The approved implementation
+adds the six-symbol read-only preview, frozen branded role views, strict Core
+dispatch, canonical dumping, bounded text input/output, and lazy experimental
+discovery. It does not add a stable export or workflow operation.
 
 ## Problem
 
@@ -49,7 +54,7 @@ ProgramArtifact:
   version
   kind
   producer
-  payload_sha256
+  payload_sha256 | null
   artifact_identity | content_hash
   to_dict()
   to_json()
@@ -136,15 +141,16 @@ This proposal does not authorize:
 ## Implementation gates
 
 1. **Complete:** record this proposal and exact machine-readable candidate.
-2. Receive the exact approval token from the API owner.
-3. Add the reserved `experimental.artifacts` domain and only the six approved
+2. **Complete:** receive the exact approval token from the API owner.
+3. **Complete:** add the reserved `experimental.artifacts` domain and only the six approved
    symbols.
-4. Add frozen role views and strict load/dump delegation without changing Core
+4. **Complete:** add frozen role views and strict load/dump delegation without changing Core
    serialization.
-5. Pin v1/v2/v3 round trips, identity preservation, duplicate/unknown/size failure,
+5. **Complete:** pin v1/v2/v3 round trips, identity preservation, duplicate/unknown/size failure,
    lookalike rejection, lazy import behavior, and the stable public API snapshot.
-6. Publish preview documentation that states the lifecycle and excluded operations.
-7. Keep stable promotion and workflow operations behind later proposals.
+6. **Complete:** publish preview documentation that states the lifecycle and excluded operations.
+7. **Complete for this proposal:** keep stable promotion and workflow operations
+   behind later proposals.
 
 ## Acceptance
 
@@ -158,8 +164,8 @@ This proposal does not authorize:
 - No compiler, Runtime, Deployment, provider, or QEC/FTOC capability becomes
   public by implication.
 
-## Approval required
+## Approval
 
-Implementation may begin only after the API owner supplies exactly:
+The API owner approved this bounded implementation with exactly:
 
 `approve API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE`

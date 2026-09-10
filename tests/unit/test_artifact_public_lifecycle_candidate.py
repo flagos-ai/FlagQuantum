@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 from pathlib import Path
 
@@ -18,9 +17,10 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_candidate_records_exact_unapproved_preview_surface() -> None:
+def test_candidate_records_exact_approved_preview_surface() -> None:
     candidate = _candidate()
-    assert candidate["status"] == "proposed_awaiting_owner_approval"
+    assert candidate["status"] == "approved_experimental_read_only_complete"
+    assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE"
     )
@@ -47,14 +47,14 @@ def test_candidate_preserves_core_versions_and_stable_api() -> None:
     assert "artifacts" not in flagquantum.__all__
 
 
-def test_candidate_is_not_implemented_before_owner_approval() -> None:
+def test_candidate_records_completed_bounded_implementation() -> None:
     candidate = _candidate()
     assert candidate["implementation"] == {
-        "authorized": False,
-        "experimental_domain_added": False,
-        "role_views_added": False,
-        "loaders_added": False,
-        "dumpers_added": False,
+        "authorized": True,
+        "experimental_domain_added": True,
+        "role_views_added": True,
+        "loaders_added": True,
+        "dumpers_added": True,
         "stable_exports_added": False,
     }
-    assert importlib.util.find_spec("flagquantum.experimental.artifacts") is None
+    assert "artifacts" in flagquantum.experimental.__all__
