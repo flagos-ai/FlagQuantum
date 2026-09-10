@@ -114,6 +114,54 @@ def _pauli_axes(metadata: dict[str, Any]) -> dict[str, tuple[int, ...]]:
     }
 
 
+def _validate_sampling_request(
+    kind: str,
+    wires: tuple[int, ...],
+    shots: int | None,
+    metadata: dict[str, Any],
+    n_wires: int,
+) -> None:
+    conditions = _postselection(metadata, n_wires)
+    if conditions and kind not in {"sample", "counts"}:
+        raise ValueError("postselection is currently supported only for sample/counts")
+    if kind in {"sample", "sample_ps", "counts", "counts_ps"} and shots is None:
+        raise ValueError(f"{kind} measurement requires a positive shots value")
+    if kind not in {"probabilities", "sample_ps", "counts_ps"}:
+        return
+    limit = int(metadata.get("max_marginal_wires", _DEFAULT_MAX_MARGINAL_WIRES))
+    if kind == "probabilities" and limit < 1:
+        raise ValueError("max_marginal_wires must be positive")
+    if len(wires) <= limit:
+        return
+    if kind == "probabilities":
+        raise ValueError(
+            f"marginal probabilities over {len(wires)} wires require "
+            f"2**{len(wires)} Pauli contractions; increase "
+            "max_marginal_wires explicitly to accept that cost"
+        )
+    raise ValueError(
+        f"Pauli-basis sampling over {len(wires)} wires requires "
+        f"2**{len(wires)} contractions; the supported limit is {limit}"
+    )
+
+
+def _validate_pauli_request(
+    kind: str,
+    wires: tuple[int, ...],
+    metadata: dict[str, Any],
+    n_wires: int,
+) -> None:
+    if kind not in {"expectation_ps", "sample_ps", "counts_ps"}:
+        return
+    axes = _pauli_axes(metadata)
+    if not any(axes.values()):
+        return
+    axis_wires = axes["x"] + axes["y"] + axes["z"]
+    _validate_wires(axis_wires, n_wires)
+    if set(axis_wires) != set(wires):
+        raise ValueError(f"{kind} request wires must match metadata x/y/z wires")
+
+
 def validate_measurements(
     requests: Sequence[MeasurementNode],
     *,
@@ -133,39 +181,8 @@ def validate_measurements(
             n_wires,
         )
         metadata = dict(request.metadata)
-        conditions = _postselection(metadata, n_wires)
-        if conditions and kind not in {"sample", "counts"}:
-            raise ValueError(
-                "postselection is currently supported only for sample/counts"
-            )
-        if (
-            kind in {"sample", "sample_ps", "counts", "counts_ps"}
-            and request.shots is None
-        ):
-            raise ValueError(f"{kind} measurement requires a positive shots value")
-        if kind in {"probabilities", "sample_ps", "counts_ps"}:
-            limit = int(metadata.get("max_marginal_wires", _DEFAULT_MAX_MARGINAL_WIRES))
-            if kind == "probabilities" and limit < 1:
-                raise ValueError("max_marginal_wires must be positive")
-            if len(wires) > limit:
-                detail = (
-                    f"marginal probabilities over {len(wires)} wires require "
-                    f"2**{len(wires)} Pauli contractions; increase "
-                    "max_marginal_wires explicitly to accept that cost"
-                    if kind == "probabilities"
-                    else f"Pauli-basis sampling over {len(wires)} wires requires "
-                    f"2**{len(wires)} contractions; the supported limit is {limit}"
-                )
-                raise ValueError(detail)
-        if kind in {"expectation_ps", "sample_ps", "counts_ps"}:
-            axes = _pauli_axes(metadata)
-            if any(axes.values()):
-                axis_wires = axes["x"] + axes["y"] + axes["z"]
-                _validate_wires(axis_wires, n_wires)
-                if set(axis_wires) != set(wires):
-                    raise ValueError(
-                        f"{kind} request wires must match metadata x/y/z wires"
-                    )
+        _validate_sampling_request(kind, wires, request.shots, metadata, n_wires)
+        _validate_pauli_request(kind, wires, metadata, n_wires)
 
 
 def _sample(
