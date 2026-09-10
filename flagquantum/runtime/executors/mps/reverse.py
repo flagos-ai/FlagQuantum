@@ -489,6 +489,40 @@ def _validate_reverse_request(
         )
 
 
+def _evaluate_reverse_objective(
+    state: RankOwnedMPSState,
+    tape: MPSReverseTape,
+    *,
+    observable: Mapping[int, str] | None,
+    observable_terms: Sequence[tuple[Mapping[int, str], torch.Tensor | float]] | None,
+    hamiltonian_terms: Sequence[tuple[Mapping[int, str], torch.Tensor | float]] | None,
+    compile_observables: bool,
+) -> tuple[torch.Tensor, dict[int, torch.Tensor], str]:
+    if hamiltonian_terms is not None:
+        coefficients = _parse_heisenberg_hamiltonian_terms(state, hamiltonian_terms)
+        if coefficients is None:
+            raise MPSReverseContractError(
+                "hamiltonian_terms currently supports Z fields and adjacent "
+                "XX, YY, or ZZ couplings"
+            )
+        value, adjoints = _heisenberg_mpo_energy_and_adjoints(state, coefficients)
+        return value, adjoints, "heisenberg_mpo_five_channel_scan"
+    if observable_terms is None:
+        adjoint_wires = {wire for record in tape.records for wire in record.wires}
+        value, adjoints = _expectation_and_adjoints(
+            state,
+            observable or {0: "z"},
+            adjoint_wires=tuple(adjoint_wires),
+        )
+        return value, adjoints, "single_observable_scan"
+    fused = _parse_z_zz_terms(state, observable_terms) is not None
+    value, adjoints = _multi_observable_mse_and_adjoints(
+        state, observable_terms, compiled_observables=compile_observables
+    )
+    execution = "fused_z_zz_channel_scan" if fused else "single_observable_scan"
+    return value, adjoints, execution
+
+
 def execute_torch_distributed_mps_reverse(
     circuit_or_ir: Any,
     *,
@@ -1025,31 +1059,14 @@ def execute_torch_distributed_mps_reverse(
         degeneracy_tolerance,
         allow_degenerate=gradient_policy == "approximate",
     )
-    fused_z_zz_objective = False
-    fused_heisenberg_objective = False
-    if hamiltonian_terms is not None:
-        coefficients = _parse_heisenberg_hamiltonian_terms(state, hamiltonian_terms)
-        if coefficients is None:
-            raise MPSReverseContractError(
-                "hamiltonian_terms currently supports Z fields and adjacent "
-                "XX, YY, or ZZ couplings"
-            )
-        fused_heisenberg_objective = True
-        value, adjoints = _heisenberg_mpo_energy_and_adjoints(state, coefficients)
-    elif observable_terms is None:
-        objective_adjoint_wires = {
-            wire for record in tape.records for wire in record.wires
-        }
-        value, adjoints = _expectation_and_adjoints(
-            state,
-            observable or {0: "z"},
-            adjoint_wires=tuple(objective_adjoint_wires),
-        )
-    else:
-        fused_z_zz_objective = _parse_z_zz_terms(state, observable_terms) is not None
-        value, adjoints = _multi_observable_mse_and_adjoints(
-            state, observable_terms, compiled_observables=compile_observables
-        )
+    value, adjoints, objective_execution = _evaluate_reverse_objective(
+        state,
+        tape,
+        observable=observable,
+        observable_terms=observable_terms,
+        hamiltonian_terms=hamiltonian_terms,
+        compile_observables=compile_observables,
+    )
     occurrences = [0] * len(parameters)
     owners: list[set[int]] = [set() for _ in parameters]
     for record in tape.records:
@@ -1114,24 +1131,14 @@ def execute_torch_distributed_mps_reverse(
         world_size=world,
         rank=rank,
         _backward=backward,
-        objective_scan_pairs=(
-            1 if (fused_z_zz_objective or fused_heisenberg_objective) else 0
-        ),
+        objective_scan_pairs=int(objective_execution != "single_observable_scan"),
         objective_scan_forward_messages=(
-            (world - 1) if (fused_z_zz_objective or fused_heisenberg_objective) else 0
+            world - 1 if objective_execution != "single_observable_scan" else 0
         ),
         objective_scan_reverse_messages=(
-            (world - 1) if (fused_z_zz_objective or fused_heisenberg_objective) else 0
+            world - 1 if objective_execution != "single_observable_scan" else 0
         ),
-        objective_execution=(
-            "heisenberg_mpo_five_channel_scan"
-            if fused_heisenberg_objective
-            else (
-                "fused_z_zz_channel_scan"
-                if fused_z_zz_objective
-                else "single_observable_scan"
-            )
-        ),
+        objective_execution=objective_execution,
         reverse_tape_segments=len(reverse_segments),
         fused_reverse_segments=fused_segment_count,
         reverse_autograd_grad_invocations=reverse_autograd_calls,
