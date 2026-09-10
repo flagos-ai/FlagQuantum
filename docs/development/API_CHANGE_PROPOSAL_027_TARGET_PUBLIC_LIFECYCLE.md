@@ -2,10 +2,15 @@
 
 ## Status
 
-**Proposed on 2026-09-10; owner approval required before implementation.**
+**Approved on 2026-09-10; experimental read-only match preview complete.**
 
 Approval token:
 `approve API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE`
+
+The API owner supplied the exact token on 2026-09-10. The approved implementation
+adds the eight-symbol read-only preview, frozen branded role views, bounded and
+duplicate-safe loading, canonical dumping, identity-preserving fact inspection,
+and explicit-time pure matching. It adds no stable export or workflow operation.
 
 ## Problem
 
@@ -145,17 +150,19 @@ submission, receipts, jobs, results, QEC/FTOC semantics, or stable promotion.
 ## Implementation gates
 
 1. **Complete:** record this proposal and exact machine-readable candidate.
-2. Receive the exact approval token from the API owner.
-3. Add the lazy `experimental.targets` domain with only the eight approved names.
-4. Implement frozen role views, bounded duplicate-safe loaders, exact dumpers, and
-   detached/immutable inspection results.
-5. Implement deterministic explicit-time matching and bind its input identities and
-   evaluation timestamp into the match view.
-6. Test canonical round trips, identity preservation, all fact states, stale and
-   not-yet-valid snapshots, preference counts, malformed/duplicate/unknown/oversized
-   input, naive time, lookalikes, laziness, and stable API preservation.
-7. Publish preview documentation and keep discovery, workflow, provider, and stable
-   promotion behind later proposals.
+2. **Complete:** receive the exact approval token from the API owner.
+3. **Complete:** add the lazy `experimental.targets` domain with only the eight
+   approved names.
+4. **Complete:** implement frozen role views, bounded duplicate-safe loaders, exact
+   dumpers, and detached/immutable inspection results.
+5. **Complete:** implement deterministic explicit-time matching and bind its input
+   identities and evaluation timestamp into the match view.
+6. **Complete:** test canonical round trips, identity preservation, fact-state
+   distinction, stale and not-yet-valid snapshots, preference counts, malformed/
+   duplicate/unknown/oversized input, naive time, lookalikes, laziness, and stable
+   API preservation.
+7. **Complete:** publish preview documentation and keep discovery, workflow,
+   provider, and stable promotion behind later proposals.
 
 ## Acceptance
 
@@ -171,8 +178,8 @@ submission, receipts, jobs, results, QEC/FTOC semantics, or stable promotion.
 - No discovery, physical binding, workflow, provider, or QEC/FTOC capability becomes
   public by implication.
 
-## Approval required
+## Approval
 
-Implementation may begin only after the API owner supplies exactly:
+The API owner approved this bounded implementation with exactly:
 
 `approve API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE`

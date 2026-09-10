@@ -1338,11 +1338,25 @@ is included.
 Phase 52 records Proposal 027 and its exact candidate without adding an API. The
 proposed `flagquantum.experimental.targets` domain contains frozen role views for
 snapshots, requirement sets, and match results; bounded duplicate-safe load/dump
-functions; identity-validated fact inspection; and a pure matcher requiring an explicit
-timezone-aware evaluation instant.
+functions; identity-validated fact inspection; and a pure matcher requiring an
+explicit timezone-aware evaluation instant.
 
 The proposal does not export Core dataclasses or expose construction, discovery,
 refresh, extension handlers, physical-slot/provider-qubit binding, artifact
 workflows, Runtime, Deployment, submission, or stable APIs. Implementation requires
 the exact approval token in
 `docs/development/API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE.md`.
+
+The API owner supplied the exact Proposal 027 token on 2026-09-10. Phase 53 adds
+the approved `flagquantum.experimental.targets` module with exactly eight names.
+Frozen branded views expose identity-validated snapshots and requirement sets,
+plus match results bound to both input identities and an explicit canonical UTC
+evaluation timestamp.
+
+Loaders accept bounded text, reject duplicate keys at every depth, and delegate
+closed-schema, vocabulary, semantic, and identity validation to Core. Fact
+inspection preserves absent, unknown, unmeasured, unsupported, exposure, value,
+source, and blocker states through immutable mappings. The matcher performs no
+discovery or refresh and cannot read the wall clock because `evaluated_at` is
+mandatory. Stable exports, provider binding, Compiler workflows, Runtime,
+Deployment, and default behavior remain unchanged.

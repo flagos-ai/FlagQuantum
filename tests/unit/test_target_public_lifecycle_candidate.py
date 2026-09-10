@@ -18,9 +18,10 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_candidate_records_exact_unapproved_target_preview() -> None:
+def test_candidate_records_exact_approved_target_preview() -> None:
     candidate = _candidate()
-    assert candidate["status"] == "proposed_awaiting_owner_approval"
+    assert candidate["status"] == "approved_experimental_read_only_match_complete"
+    assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE"
     )
@@ -52,14 +53,14 @@ def test_candidate_requires_deterministic_bounded_read_only_matching() -> None:
     assert "targets" not in flagquantum.__all__
 
 
-def test_candidate_is_not_implemented_before_owner_approval() -> None:
+def test_candidate_records_the_implemented_bounded_surface() -> None:
     candidate = _candidate()
     assert candidate["implementation"] == {
-        "authorized": False,
-        "experimental_domain_added": False,
-        "role_views_added": False,
-        "loaders_and_dumpers_added": False,
-        "pure_matcher_added": False,
+        "authorized": True,
+        "experimental_domain_added": True,
+        "role_views_added": True,
+        "loaders_and_dumpers_added": True,
+        "pure_matcher_added": True,
         "stable_exports_added": False,
     }
-    assert importlib.util.find_spec("flagquantum.experimental.targets") is None
+    assert importlib.util.find_spec("flagquantum.experimental.targets") is not None
