@@ -2,10 +2,12 @@
 
 Run from a Jiuding development workspace with injected AK/SK credentials.
 The client reads `/etc/accesskey/user-ak` and `user-sk` automatically; explicit
-`JIUDING_AK` / `JIUDING_SK` environment values override those files. Tokens stay
-in memory and refresh according to the server expiry. Requests use HTTPS,
-reject redirects, have a 20-second socket timeout, and are not retried blindly.
-No CLI installation or manual project/queue IDs are required.
+`JIUDING_AK` and `JIUDING_SK` environment values override those files only when
+both are set. A partial environment pair is rejected instead of being combined
+with an injected file. Tokens stay in memory and refresh according to the server
+expiry. Requests use HTTPS, reject redirects, have a 20-second socket timeout,
+and are not retried blindly. No CLI installation or manual project/queue IDs are
+required.
 
 ## Development workspaces
 

@@ -41,6 +41,37 @@ _SUPPORTED_RESIDENT_MEASUREMENTS = {
 }
 
 
+def _load_credentials() -> tuple[str, str]:
+    """Load one complete Jiuding credential pair without mixing sources."""
+    ak = os.environ.get("JIUDING_AK")
+    sk = os.environ.get("JIUDING_SK")
+    if ak is not None or sk is not None:
+        if ak is None or sk is None:
+            raise RuntimeError(
+                "Set both JIUDING_AK and JIUDING_SK; partial environment "
+                "credentials are not allowed"
+            )
+    else:
+        try:
+            ak = base64.b64decode(
+                b"".join(Path("/etc/accesskey/user-ak").read_bytes().split()),
+                validate=True,
+            ).decode()
+            sk = base64.b64decode(
+                b"".join(Path("/etc/accesskey/user-sk").read_bytes().split()),
+                validate=True,
+            ).decode()
+        except (OSError, ValueError):
+            raise RuntimeError(
+                "Set both JIUDING_AK and JIUDING_SK, or use a Jiuding "
+                "workspace with both injected credential files"
+            ) from None
+    ak, sk = ak.strip(), sk.strip()
+    if not ak or not sk:
+        raise RuntimeError("Jiuding credentials must not be empty")
+    return ak, sk
+
+
 def _measurement_program(program, *, outputs, shots):
     from dataclasses import replace
 
@@ -132,23 +163,7 @@ class JiudingClient:
 
     def _auth(self) -> dict:
         if time.monotonic() >= self._expires:
-            credentials = []
-            for suffix in ("AK", "SK"):
-                value = os.environ.get("JIUDING_" + suffix)
-                if not value:
-                    source = Path("/etc/accesskey/user-" + suffix.lower())
-                    try:
-                        value = base64.b64decode(
-                            b"".join(source.read_bytes().split()), validate=True
-                        ).decode()
-                    except (OSError, ValueError):
-                        raise RuntimeError(
-                            f"Set JIUDING_{suffix} or use a Jiuding workspace with injected credentials"
-                        ) from None
-                credentials.append(value.strip())
-            ak, sk = credentials
-            if not ak or not sk:
-                raise RuntimeError("Jiuding credentials must not be empty")
+            ak, sk = _load_credentials()
             path = "/api/v1/users/token/exchange"
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             digest = hashlib.sha256(f"POST\n{path}\n{stamp}".encode()).hexdigest()
