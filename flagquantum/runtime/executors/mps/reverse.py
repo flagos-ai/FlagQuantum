@@ -329,6 +329,75 @@ def _prepare_local_reverse_two_site_layer(
     return prepared, saved
 
 
+def _prepare_prefetched_reverse_two_site_layer(
+    layer: Sequence[tuple[int, Instruction, int]],
+    prefetch: ReverseLayerHaloPrefetch,
+    *,
+    state: RankOwnedMPSState,
+    selected_factorizations: set[int],
+    bsz: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> tuple[dict[int, _PreparedTwoSite], dict[int, _SavedFactorization]]:
+    prepared: dict[int, _PreparedTwoSite] = {}
+    saved: dict[int, _SavedFactorization] = {}
+    for index, instruction, left_wire in layer:
+        left_owner = state.owner(left_wire)
+        right_owner = state.owner(left_wire + 1)
+        if (
+            state.rank != left_owner
+            or left_owner == right_owner
+            or index not in prefetch.received
+        ):
+            continue
+        before_left = state.local_tensors[left_wire].detach().clone()
+        before_right = prefetch.received[index].detach().clone()
+        if index in selected_factorizations:
+            with torch.no_grad():
+                contracted = contract_mps_two_site_bucket(
+                    (instruction,),
+                    (before_left,),
+                    (before_right,),
+                    bsz=bsz,
+                    device=device,
+                    dtype=dtype,
+                    compiled=True,
+                )[0]
+            pair_leaf, after_left, after_right, info = factor_mps_reverse_pair(
+                contracted,
+                left_dim=int(before_left.shape[1]),
+                right_dim=int(before_right.shape[-1]),
+                config=state.config,
+            )
+            saved[index] = pair_leaf, after_left, after_right
+        else:
+            with torch.enable_grad():
+                outputs, info = apply_rank_local_mps_instruction(
+                    instruction,
+                    (
+                        before_left.detach().requires_grad_(True),
+                        before_right.detach().requires_grad_(True),
+                    ),
+                    state.config,
+                    bsz=bsz,
+                    device=device,
+                    dtype=dtype,
+                )
+                after_left, after_right = outputs
+        if info is None:
+            raise MPSReverseContractError(
+                "two-site reverse preparation requires split metadata"
+            )
+        prepared[index] = (
+            before_left,
+            before_right,
+            after_left.detach(),
+            after_right.detach(),
+            dict(info),
+        )
+    return prepared, saved
+
+
 def _static_exact_qr_record(
     left_shape: Sequence[int],
     right_shape: Sequence[int],
@@ -573,73 +642,17 @@ def execute_torch_distributed_mps_reverse(
             precomputed_factorizations.update(saved)
             layer_halo_wait_seconds += _finish_layer_halo_prefetch(layer_prefetch)
             if layer_prefetch is not None:
-                # Every left owner can factor its disjoint boundary pair as
-                # soon as the layer halo arrives.  Commit/send remains in IR
-                # order below, but the expensive contraction/SVD no longer
-                # serializes on per-instruction metadata.
-                for candidate_index, candidate, left_wire in layer:
-                    left_owner = state.owner(left_wire)
-                    right_owner = state.owner(left_wire + 1)
-                    if (
-                        rank != left_owner
-                        or left_owner == right_owner
-                        or candidate_index not in layer_prefetch.received
-                    ):
-                        continue
-                    before_left = state.local_tensors[left_wire].detach().clone()
-                    before_right = (
-                        layer_prefetch.received[candidate_index].detach().clone()
-                    )
-                    saved_factorization = None
-                    if candidate_index in selected_factorizations:
-                        with torch.no_grad():
-                            contracted = contract_mps_two_site_bucket(
-                                (candidate,),
-                                (before_left,),
-                                (before_right,),
-                                bsz=bsz,
-                                device=resolved_device,
-                                dtype=resolved_dtype,
-                                compiled=True,
-                            )[0]
-                        pair_leaf, after_left, after_right, info = (
-                            factor_mps_reverse_pair(
-                                contracted,
-                                left_dim=int(before_left.shape[1]),
-                                right_dim=int(before_right.shape[-1]),
-                                config=state.config,
-                            )
-                        )
-                        saved_factorization = (pair_leaf, after_left, after_right)
-                    else:
-                        with torch.enable_grad():
-                            outputs, info = apply_rank_local_mps_instruction(
-                                candidate,
-                                (
-                                    before_left.detach().requires_grad_(True),
-                                    before_right.detach().requires_grad_(True),
-                                ),
-                                state.config,
-                                bsz=bsz,
-                                device=resolved_device,
-                                dtype=resolved_dtype,
-                            )
-                            after_left, after_right = outputs
-                    if info is None:
-                        raise MPSReverseContractError(
-                            "two-site reverse preparation requires split metadata"
-                        )
-                    precomputed_rxx[candidate_index] = (
-                        before_left,
-                        before_right,
-                        after_left.detach(),
-                        after_right.detach(),
-                        dict(info),
-                    )
-                    if saved_factorization is not None:
-                        precomputed_factorizations[candidate_index] = (
-                            saved_factorization
-                        )
+                prepared, saved = _prepare_prefetched_reverse_two_site_layer(
+                    layer,
+                    layer_prefetch,
+                    state=state,
+                    selected_factorizations=selected_factorizations,
+                    bsz=bsz,
+                    device=resolved_device,
+                    dtype=resolved_dtype,
+                )
+                precomputed_rxx.update(prepared)
+                precomputed_factorizations.update(saved)
                 layer_entries = tuple(
                     (candidate_index, state.owner(left_wire))
                     for candidate_index, _, left_wire in layer
