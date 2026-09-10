@@ -101,6 +101,62 @@ def _claim_evidence_type(payload: Mapping[str, Any]) -> str:
     return "unknown"
 
 
+def _audit_sharded_payload(
+    payload: Mapping[str, Any],
+    *,
+    world_size: int,
+    claim: bool,
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    if world_size <= 1:
+        errors.append("sharded_across_ranks requires world_size > 1")
+    if "local_world_size" not in payload:
+        errors.append("sharded payload must report local_world_size")
+    if "node_count" not in payload:
+        errors.append("sharded payload must report node_count")
+    if not _has_nonempty(
+        payload,
+        ("rank_placement", "rank_shards", "shards", "local_memory_bytes_by_rank"),
+    ):
+        errors.append(
+            "sharded payload must report per-rank ownership or rank placement"
+        )
+    if not _rank_memory_reported(payload):
+        errors.append("sharded payload must report per-rank memory evidence")
+    if not _communication_evidence_reported(payload):
+        errors.append("sharded payload must report communication evidence")
+    warnings = (
+        []
+        if claim
+        else ["sharded_across_ranks payload does not allow scalability claim"]
+    )
+    return errors, warnings
+
+
+def _audit_claim_semantics(
+    semantics: str,
+    *,
+    claim: bool,
+    world_size: int,
+) -> list[str]:
+    errors: list[str] = []
+    if semantics == "unknown":
+        errors.append("missing distribution_semantics")
+    if claim and semantics not in SCALABLE_DISTRIBUTION_SEMANTICS:
+        errors.append(
+            "scalability_claim_allowed requires distribution_semantics='sharded_across_ranks'"
+        )
+    if semantics in SINGLE_DEVICE_DISTRIBUTION_SEMANTICS and claim:
+        errors.append("single-device fast paths cannot claim distributed scalability")
+    if semantics in SINGLE_DEVICE_DISTRIBUTION_SEMANTICS and world_size > 1:
+        errors.append("single-device fast paths require world_size <= 1")
+    if semantics in REPLICATED_DISTRIBUTION_SEMANTICS and claim:
+        errors.append("replicated execution cannot claim single-workload scalability")
+    if semantics in INCOMPLETE_DISTRIBUTION_SEMANTICS and claim:
+        errors.append("incomplete or hybrid execution cannot claim full scalability")
+    return errors
+
+
 def audit_distributed_scalability(
     payload: Mapping[str, Any],
 ) -> DistributedScalabilityAudit:
@@ -116,51 +172,21 @@ def audit_distributed_scalability(
     claim = bool(payload.get("scalability_claim_allowed", False))
     evidence_type = _claim_evidence_type(payload)
     world_size = int(payload.get("world_size", 1) or 1)
-    errors: list[str] = []
+    errors = _audit_claim_semantics(
+        semantics,
+        claim=claim,
+        world_size=world_size,
+    )
     warnings: list[str] = []
 
-    if semantics == "unknown":
-        errors.append("missing distribution_semantics")
-
-    if claim and semantics not in SCALABLE_DISTRIBUTION_SEMANTICS:
-        errors.append(
-            "scalability_claim_allowed requires distribution_semantics='sharded_across_ranks'"
-        )
-
-    if semantics in SINGLE_DEVICE_DISTRIBUTION_SEMANTICS and claim:
-        errors.append("single-device fast paths cannot claim distributed scalability")
-
-    if semantics in SINGLE_DEVICE_DISTRIBUTION_SEMANTICS and world_size > 1:
-        errors.append("single-device fast paths require world_size <= 1")
-
-    if semantics in REPLICATED_DISTRIBUTION_SEMANTICS and claim:
-        errors.append("replicated execution cannot claim single-workload scalability")
-
-    if semantics in INCOMPLETE_DISTRIBUTION_SEMANTICS and claim:
-        errors.append("incomplete or hybrid execution cannot claim full scalability")
-
     if semantics in SCALABLE_DISTRIBUTION_SEMANTICS:
-        if world_size <= 1:
-            errors.append("sharded_across_ranks requires world_size > 1")
-        if "local_world_size" not in payload:
-            errors.append("sharded payload must report local_world_size")
-        if "node_count" not in payload:
-            errors.append("sharded payload must report node_count")
-        if not _has_nonempty(
+        sharded_errors, sharded_warnings = _audit_sharded_payload(
             payload,
-            ("rank_placement", "rank_shards", "shards", "local_memory_bytes_by_rank"),
-        ):
-            errors.append(
-                "sharded payload must report per-rank ownership or rank placement"
-            )
-        if not _rank_memory_reported(payload):
-            errors.append("sharded payload must report per-rank memory evidence")
-        if not _communication_evidence_reported(payload):
-            errors.append("sharded payload must report communication evidence")
-        if not claim:
-            warnings.append(
-                "sharded_across_ranks payload does not allow scalability claim"
-            )
+            world_size=world_size,
+            claim=claim,
+        )
+        errors.extend(sharded_errors)
+        warnings.extend(sharded_warnings)
 
     if semantics == "rank_local_replicated_kernel" and world_size > 1:
         warnings.append(
