@@ -223,6 +223,61 @@ def _initial_runtime_metrics(
     }
 
 
+def _prepare_batched_rotation_matrices(
+    circuit: Circuit,
+    program: Sequence[_StatevectorProgramStep],
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
+    rx_ry_rz_steps = tuple(
+        step
+        for step in program
+        if isinstance(step, _StatevectorFusedGateStep)
+        and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
+        and len(step.wires) == 1
+    )
+    rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
+    if rx_ry_rz_steps:
+        region_angles = _rotation_region_angles(
+            circuit, rx_ry_rz_steps, state, parameter_bindings
+        )
+        if region_angles is not None:
+            matrices = _batched_rx_ry_rz_matrices(region_angles).to(dtype=state.dtype)
+            rx_ry_rz_matrices = {
+                id(step): matrices[index] for index, step in enumerate(rx_ry_rz_steps)
+            }
+
+    rotation_matrices: dict[int, torch.Tensor] = {}
+    rotation_patterns = {
+        tuple(item.name for item in step.instructions)
+        for step in program
+        if isinstance(step, _StatevectorFusedGateStep)
+        and len(step.instructions) >= 2
+        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
+    }
+    for names in rotation_patterns:
+        rotation_steps = tuple(
+            step
+            for step in program
+            if isinstance(step, _StatevectorFusedGateStep)
+            and tuple(item.name for item in step.instructions) == names
+        )
+        region_angles = _rotation_region_angles(
+            circuit, rotation_steps, state, parameter_bindings
+        )
+        if region_angles is None:
+            continue
+        matrices = _batched_rotation_sequence_matrices(
+            region_angles,
+            names=names,
+            dtype=state.dtype,
+        )
+        rotation_matrices.update(
+            {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
+        )
+    return rx_ry_rz_matrices, rotation_matrices
+
+
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
@@ -249,59 +304,17 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         circuit._last_statevector_runtime = _initial_runtime_metrics(
             program, enable_triton_loop=enable_triton_loop
         )
-        rx_ry_rz_steps = tuple(
-            step
-            for step in program
-            if isinstance(step, _StatevectorFusedGateStep)
-            and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
-            and len(step.wires) == 1
-        )
-        batched_rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
-        if rx_ry_rz_steps:
-            region_angles = _rotation_region_angles(
-                circuit, rx_ry_rz_steps, output, parameter_bindings
+        batched_rx_ry_rz_matrices, batched_rotation_matrices = (
+            _prepare_batched_rotation_matrices(
+                circuit,
+                program,
+                output,
+                parameter_bindings,
             )
-            if region_angles is not None:
-                matrices = _batched_rx_ry_rz_matrices(region_angles).to(
-                    dtype=output.dtype
-                )
-                batched_rx_ry_rz_matrices = {
-                    id(step): matrices[index]
-                    for index, step in enumerate(rx_ry_rz_steps)
-                }
+        )
         circuit._last_statevector_runtime["batched_rx_ry_rz_regions"] = len(
             batched_rx_ry_rz_matrices
         )
-        batched_rotation_matrices: dict[int, torch.Tensor] = {}
-        rotation_patterns = {
-            tuple(item.name for item in step.instructions)
-            for step in program
-            if isinstance(step, _StatevectorFusedGateStep)
-            and len(step.instructions) >= 2
-            and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
-        }
-        for names in rotation_patterns:
-            rotation_steps = tuple(
-                step
-                for step in program
-                if isinstance(step, _StatevectorFusedGateStep)
-                and tuple(item.name for item in step.instructions) == names
-            )
-            region_angles = _rotation_region_angles(
-                circuit, rotation_steps, output, parameter_bindings
-            )
-            if region_angles is not None:
-                matrices = _batched_rotation_sequence_matrices(
-                    region_angles,
-                    names=names,
-                    dtype=output.dtype,
-                )
-                batched_rotation_matrices.update(
-                    {
-                        id(step): matrices[index]
-                        for index, step in enumerate(rotation_steps)
-                    }
-                )
         circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = len(
             batched_rotation_matrices
         )
