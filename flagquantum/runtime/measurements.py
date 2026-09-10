@@ -395,6 +395,46 @@ def _marginal_probabilities(
     )
 
 
+def _execute_shot_measurement(
+    target: Any,
+    request: MeasurementNode,
+    kind: str,
+    wires: tuple[int, ...],
+    metadata: dict[str, Any],
+    n_wires: int,
+) -> tuple[torch.Tensor | list[dict[str | int, int]], dict[str, Any]]:
+    assert request.shots is not None
+    if kind in {"sample_ps", "counts_ps"}:
+        samples = _sample_pauli_product(
+            target,
+            shots=request.shots,
+            wires=wires,
+            metadata=metadata,
+        )
+        sampling_statistics: dict[str, Any] = {}
+    else:
+        samples, sampling_statistics = _sample(
+            target,
+            shots=request.shots,
+            wires=wires,
+            metadata=metadata,
+            n_wires=n_wires,
+        )
+    counts = (
+        _counts_from_samples(
+            samples,
+            format=str(metadata.get("format", "bin")),
+        )
+        if kind in {"counts", "counts_ps"}
+        else None
+    )
+    value = samples if counts is None else counts
+    return value, {
+        **_shot_statistics(samples, counts=counts),
+        **sampling_statistics,
+    }
+
+
 def execute_measurements(
     output: Any,
     requests: Sequence[MeasurementNode],
@@ -425,6 +465,7 @@ def execute_measurements(
         )
 
         value: torch.Tensor | list[dict[str | int, int]]
+        statistics: dict[str, Any] = {}
         if kind == "expectation_identity":
             target = measurement_target()
             method = getattr(target, "expectation_ps", None)
@@ -470,32 +511,14 @@ def execute_measurements(
             )
         else:
             target = measurement_target()
-            assert request.shots is not None
-            if kind in {"sample_ps", "counts_ps"}:
-                samples = _sample_pauli_product(
-                    target,
-                    shots=request.shots,
-                    wires=wires,
-                    metadata=metadata,
-                )
-                sampling_statistics: dict[str, Any] = {}
-            else:
-                samples, sampling_statistics = _sample(
-                    target,
-                    shots=request.shots,
-                    wires=wires,
-                    metadata=metadata,
-                    n_wires=n_wires,
-                )
-            counts = (
-                _counts_from_samples(
-                    samples,
-                    format=str(metadata.get("format", "bin")),
-                )
-                if kind in {"counts", "counts_ps"}
-                else None
+            value, statistics = _execute_shot_measurement(
+                target,
+                request,
+                kind,
+                wires,
+                metadata,
+                n_wires,
             )
-            value = samples if counts is None else counts
 
         results.append(
             MeasurementResult(
@@ -504,14 +527,7 @@ def execute_measurements(
                 value=value,
                 shots=request.shots,
                 metadata=metadata,
-                statistics=(
-                    {
-                        **_shot_statistics(samples, counts=counts),
-                        **sampling_statistics,
-                    }
-                    if kind in {"sample", "sample_ps", "counts", "counts_ps"}
-                    else {}
-                ),
+                statistics=statistics,
             )
         )
     return tuple(results)
