@@ -34,6 +34,7 @@ from .operations import (
     _StatevectorCXSequenceStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
+    _StatevectorProgramStep,
     _StatevectorRXRZLoopStep,
     _triton_parameterized_single_qubit_matrix_enabled,
     _triton_ry_rz_pair_enabled,
@@ -42,7 +43,7 @@ from .operations import (
 )
 
 if TYPE_CHECKING:
-    from ...circuit import Circuit
+    from ...circuit import Circuit, _StatevectorExecutionStatistics
 
 
 def _initial_state(circuit: Circuit) -> torch.Tensor:
@@ -164,6 +165,64 @@ def _fused_constant_matrix(
     return cached
 
 
+def _initial_runtime_metrics(
+    program: Sequence[_StatevectorProgramStep], *, enable_triton_loop: bool
+) -> _StatevectorExecutionStatistics:
+    loop_steps = tuple(
+        step for step in program if isinstance(step, _StatevectorRXRZLoopStep)
+    )
+    return {
+        "triton_single_qubit_loop_enabled": enable_triton_loop,
+        "triton_single_qubit_loop_regions": len(loop_steps),
+        "triton_single_qubit_loop_gates": sum(
+            2 * len(step.pairs) for step in loop_steps
+        ),
+        "triton_ry_rz_pair_candidates": sum(
+            isinstance(step, _StatevectorFusedGateStep)
+            and tuple(item.name for item in step.instructions) == ("ry", "rz")
+            for step in program
+        ),
+        "triton_ry_rz_pair_executed": 0,
+        "triton_single_qubit_matrix_regions": 0,
+        "diagonal_elementwise_gates": sum(
+            isinstance(step, _StatevectorGateStep)
+            and canonical_opcode(step.instruction.name) in _DIAGONAL_STATEVECTOR_GATES
+            for step in program
+        ),
+        "permutation_gates": sum(
+            isinstance(step, _StatevectorGateStep)
+            and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
+            for step in program
+        )
+        + sum(
+            len(step.controls)
+            for step in program
+            if isinstance(step, _StatevectorCXSequenceStep)
+        ),
+        "triton_cx_sequence_regions": sum(
+            isinstance(step, _StatevectorCXSequenceStep) for step in program
+        ),
+        "fixed_single_qubit_specialized_gates": sum(
+            isinstance(step, _StatevectorGateStep)
+            and canonical_opcode(step.instruction.name) == "y"
+            for step in program
+        ),
+        "fused_gate_regions": sum(
+            isinstance(step, _StatevectorFusedGateStep) for step in program
+        ),
+        "fused_gate_count": sum(
+            len(step.instructions)
+            for step in program
+            if isinstance(step, _StatevectorFusedGateStep)
+        ),
+        "dependency_reordered_single_qubit_regions": sum(
+            isinstance(step, _StatevectorFusedGateStep) and step.dependency_reordered
+            for step in program
+        ),
+        "statevector_apply_count": len(program),
+    }
+
+
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
@@ -187,62 +246,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_triton_loop=enable_triton_loop,
             )
             circuit._backend_programs[program_key] = program
-        fused_steps = tuple(
-            step for step in program if isinstance(step, _StatevectorRXRZLoopStep)
+        circuit._last_statevector_runtime = _initial_runtime_metrics(
+            program, enable_triton_loop=enable_triton_loop
         )
-        triton_ry_rz_pairs = sum(
-            isinstance(step, _StatevectorFusedGateStep)
-            and tuple(item.name for item in step.instructions) == ("ry", "rz")
-            for step in program
-        )
-        circuit._last_statevector_runtime = {
-            "triton_single_qubit_loop_enabled": enable_triton_loop,
-            "triton_single_qubit_loop_regions": len(fused_steps),
-            "triton_single_qubit_loop_gates": sum(
-                2 * len(step.pairs) for step in fused_steps
-            ),
-            "triton_ry_rz_pair_candidates": triton_ry_rz_pairs,
-            "triton_ry_rz_pair_executed": 0,
-            "triton_single_qubit_matrix_regions": 0,
-            "diagonal_elementwise_gates": sum(
-                isinstance(step, _StatevectorGateStep)
-                and canonical_opcode(step.instruction.name)
-                in _DIAGONAL_STATEVECTOR_GATES
-                for step in program
-            ),
-            "permutation_gates": sum(
-                isinstance(step, _StatevectorGateStep)
-                and canonical_opcode(step.instruction.name) in {"x", "cx", "swap"}
-                for step in program
-            )
-            + sum(
-                len(step.controls)
-                for step in program
-                if isinstance(step, _StatevectorCXSequenceStep)
-            ),
-            "triton_cx_sequence_regions": sum(
-                isinstance(step, _StatevectorCXSequenceStep) for step in program
-            ),
-            "fixed_single_qubit_specialized_gates": sum(
-                isinstance(step, _StatevectorGateStep)
-                and canonical_opcode(step.instruction.name) == "y"
-                for step in program
-            ),
-            "fused_gate_regions": sum(
-                isinstance(step, _StatevectorFusedGateStep) for step in program
-            ),
-            "fused_gate_count": sum(
-                len(step.instructions)
-                for step in program
-                if isinstance(step, _StatevectorFusedGateStep)
-            ),
-            "dependency_reordered_single_qubit_regions": sum(
-                isinstance(step, _StatevectorFusedGateStep)
-                and step.dependency_reordered
-                for step in program
-            ),
-            "statevector_apply_count": len(program),
-        }
         rx_ry_rz_steps = tuple(
             step
             for step in program
