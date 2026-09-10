@@ -38,10 +38,17 @@
     "resultTransfer": "device_to_host",
     "countsAggregation": "host"
   },
+  "restoration": {
+    "input": "jobId only",
+    "newClientProcess": true,
+    "resubmissionPerformed": false,
+    "resultIdentityMatched": true
+  },
   "claims": {
     "managedSourceStagingValidated": true,
     "managedRequestStagingValidated": true,
     "managedResultRetrievalValidated": true,
+    "managedReceiptRestorationValidated": true,
     "standardExecutionResultValidated": true,
     "singleGpuForwardValidated": true,
     "statisticalBellCorrelationValidated": true,

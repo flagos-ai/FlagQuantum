@@ -19,6 +19,7 @@ _MANAGED_ROOT = "/share/project/.flagquantum"
 _REMOTE_PYTHON = "/opt/conda/bin/python"
 _MAX_SOURCE_BYTES = 64 * 1024 * 1024
 _MAX_RESULT_BYTES = 64 * 1024 * 1024
+_MAX_RECEIPT_BYTES = 1024 * 1024
 _IGNORED_PARTS = {"__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
 
 
@@ -142,6 +143,15 @@ def submit_managed_program(
         _run_ssh(client, ["mkdir", "-p", f"{_MANAGED_ROOT}/jobs"])
         _upload_archive(client, job_directory, stream.getvalue())
 
+    managed = {
+        "submission_kind": "flagquantum_program",
+        "artifact_transport": "workspace_ssh",
+        "source_snapshot": source,
+        "program_request": f"{job_directory}/{request.name}",
+        "requested_target": target,
+        "selected_target": selected_target,
+        "operation": operation,
+    }
     payload = {
         "workspace": client.workspace()["name"],
         "endpoint": client.endpoint,
@@ -153,13 +163,17 @@ def submit_managed_program(
         "pythonpath": source,
         "cpus": cpus,
         "memory_gib": memory_gib,
+        "_managed": managed,
     }
     code = (
         "import json,sys; "
         "from flagquantum.remote.compute.jiuding import JiudingClient; "
+        "from flagquantum.remote.compute._managed_program import persist_managed_receipt; "
         "p=json.loads(sys.argv[1]); "
+        "m=p.pop('_managed'); "
         "c=JiudingClient(workspace=p.pop('workspace'),endpoint=p.pop('endpoint')); "
-        "print(json.dumps(c.submit(**p),separators=(',',':')))"
+        "r=c.submit(**p); r.update(m); persist_managed_receipt(r); "
+        "print(json.dumps(r,separators=(',',':')))"
     )
     command = [
         "env",
@@ -184,16 +198,79 @@ def submit_managed_program(
         ) from error
     if not isinstance(record, dict) or not record.get("jobId"):
         raise RuntimeError("Jiuding managed submission returned no Job ID")
-    return {
-        **record,
-        "submission_kind": "flagquantum_program",
-        "artifact_transport": "workspace_ssh",
-        "source_snapshot": source,
-        "program_request": f"{job_directory}/{request.name}",
-        "requested_target": target,
-        "selected_target": selected_target,
-        "operation": operation,
-    }
+    return record
+
+
+def persist_managed_receipt(receipt: dict[str, Any]) -> None:
+    """Persist recovery metadata after the underlying job is submitted."""
+
+    path = receipt.get("receipt")
+    if not isinstance(path, str) or not path.startswith(_MANAGED_ROOT + "/jobs/"):
+        raise RuntimeError("Jiuding managed receipt has an invalid path")
+    destination = Path(path)
+    temporary = destination.with_name(destination.name + ".tmp")
+    temporary.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(destination)
+
+
+def restore_managed_receipt(client: Any, job_id: str) -> dict[str, Any]:
+    """Restore one uniquely matching managed receipt by Jiuding Job ID."""
+
+    if not isinstance(job_id, str):
+        raise TypeError("job_id must be a string")
+    try:
+        canonical = str(uuid.UUID(job_id))
+    except ValueError:
+        raise ValueError("job_id must be a UUID") from None
+    if canonical != job_id.lower():
+        raise ValueError("job_id must be a canonical UUID")
+    code = "\n".join(
+        (
+            "import json, pathlib, sys",
+            "job_id, root = sys.argv[1], pathlib.Path(sys.argv[2])",
+            "matches = []",
+            "for index, path in enumerate(root.glob('*/receipt.json')):",
+            "    if index >= 10000:",
+            "        raise RuntimeError('managed receipt scan exceeds limit')",
+            f"    if path.stat().st_size > {_MAX_RECEIPT_BYTES}:",
+            "        continue",
+            "    try:",
+            "        receipt = json.loads(path.read_text())",
+            "    except (OSError, ValueError):",
+            "        continue",
+            "    if receipt.get('jobId') != job_id:",
+            "        continue",
+            "    request = path.with_name(path.stem + '.program.json')",
+            "    if not request.is_file():",
+            "        continue",
+            "    program = json.loads(request.read_text())",
+            "    resources = receipt.get('resources', {})",
+            "    receipt.update({",
+            "        'submission_kind': 'flagquantum_program',",
+            "        'artifact_transport': 'workspace_ssh',",
+            "        'program_request': str(request),",
+            "        'requested_target': resources.get('target'),",
+            "        'selected_target': program.get('target'),",
+            "        'operation': program.get('operation'),",
+            "    })",
+            "    matches.append(receipt)",
+            "if len(matches) != 1:",
+            "    raise RuntimeError(f'expected one managed receipt, found {len(matches)}')",
+            "print(json.dumps(matches[0], separators=(',', ':')))",
+        )
+    )
+    result = _run_ssh(
+        client,
+        [_REMOTE_PYTHON, "-c", code, canonical, f"{_MANAGED_ROOT}/jobs"],
+        timeout=60,
+    )
+    try:
+        receipt = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("Jiuding managed receipt is not valid JSON") from error
+    if not isinstance(receipt, dict) or receipt.get("jobId") != canonical:
+        raise RuntimeError("Jiuding managed receipt does not match the requested Job")
+    return receipt
 
 
 def read_managed_result(client: Any, receipt: dict[str, Any]) -> object:
@@ -229,4 +306,9 @@ def read_managed_result(client: Any, receipt: dict[str, Any]) -> object:
     return value["value"]
 
 
-__all__ = ("read_managed_result", "submit_managed_program")
+__all__ = (
+    "persist_managed_receipt",
+    "read_managed_result",
+    "restore_managed_receipt",
+    "submit_managed_program",
+)

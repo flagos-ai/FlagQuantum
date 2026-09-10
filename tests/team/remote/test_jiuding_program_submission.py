@@ -266,6 +266,44 @@ def test_client_result_fetches_managed_artifact(monkeypatch) -> None:
     read.assert_called_once_with(client, receipt)
 
 
+def test_restore_receipt_recovers_one_managed_job(monkeypatch) -> None:
+    client = _client()
+    job_id = "1b64c2b7-3a7c-4feb-8687-9b18a892a0b8"
+    expected = {
+        "jobId": job_id,
+        "run_id": "run-1",
+        "artifact_transport": "workspace_ssh",
+        "result_path": "/share/project/.flagquantum/jobs/1/result.json",
+    }
+    run = Mock(return_value=Mock(stdout=json.dumps(expected).encode("utf-8")))
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._managed_program._run_ssh",
+        run,
+    )
+
+    receipt = client.restore_receipt(job_id)
+
+    assert receipt == expected
+    assert job_id in run.call_args.args[1]
+
+
+def test_restore_receipt_rejects_non_uuid_before_remote_access(monkeypatch) -> None:
+    client = _client()
+    run = Mock()
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._managed_program._run_ssh",
+        run,
+    )
+
+    try:
+        client.restore_receipt("latest")
+    except ValueError as error:
+        assert "UUID" in str(error)
+    else:
+        raise AssertionError("non-UUID Job IDs must be rejected")
+    run.assert_not_called()
+
+
 def test_submit_program_rejects_shots_without_sampling_output(tmp_path: Path) -> None:
     client = _client()
 

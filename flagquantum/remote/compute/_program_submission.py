@@ -102,6 +102,13 @@ class _ProgramSubmissionMixin:
             "operation": operation,
         }
 
+    def restore_receipt(self, job_id: str) -> dict[str, Any]:
+        """Restore a workspace-managed program receipt without resubmitting."""
+
+        from ._managed_program import restore_managed_receipt
+
+        return restore_managed_receipt(self, job_id)
+
 
 def decode_job_result(value: Any, receipt: dict[str, Any]) -> Any:
     """Decode program responses while preserving arbitrary script results."""

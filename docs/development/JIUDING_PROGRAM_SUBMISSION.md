@@ -25,6 +25,14 @@ result = client.result(receipt, timeout=600)
 print(result.counts)
 ```
 
+After restarting the local process, recover the same task without submitting
+another Job:
+
+```python
+receipt = client.restore_receipt("<jiuding-job-id>")
+result = client.result(receipt)
+```
+
 By default, the adapter uses the selected workspace's SSH connection to stage a
 bounded request, a minimal runner and a content-addressed FlagQuantum source
 snapshot under `/share/project/.flagquantum`. It submits through the existing
