@@ -6,7 +6,11 @@ from collections.abc import Mapping
 from dataclasses import replace
 from typing import TYPE_CHECKING, Sequence
 
-from ..core._artifacts import ArtifactKind, ProgramArtifactV2
+from ..core._artifacts import (
+    ArtifactKind,
+    CircuitArtifactBindingResult,
+    ProgramArtifactV2,
+)
 from ..core.ir import CircuitIR, MeasurementNode
 from ..errors import ExecutionError
 from .execution import run
@@ -18,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def execute_circuit_artifact(
-    artifact: ProgramArtifactV2,
+    artifact: ProgramArtifactV2 | CircuitArtifactBindingResult,
     *,
     options: ExecutionOptions | None = None,
     measurements: Sequence[MeasurementNode] | None = None,
@@ -30,17 +34,24 @@ def execute_circuit_artifact(
     Runtime does not reinterpret them as simulator input.
     """
 
+    binding_result = (
+        artifact if isinstance(artifact, CircuitArtifactBindingResult) else None
+    )
+    if binding_result is not None:
+        artifact = binding_result.bound_artifact
     if not isinstance(artifact, ProgramArtifactV2):
-        raise TypeError("artifact must be a ProgramArtifactV2")
+        raise TypeError(
+            "artifact must be a ProgramArtifactV2 or CircuitArtifactBindingResult"
+        )
     profile = str(artifact.profile["name"])
     if artifact.kind is not ArtifactKind.CIRCUIT or profile != "circuit-ir-1.0":
         raise ExecutionError(
             "local artifact execution requires a circuit-ir-1.0 circuit artifact; "
             "target-text executable artifacts require a target adapter"
         )
-    binding = artifact.parameter_schema["binding"]
+    binding_mode = artifact.parameter_schema["binding"]
     parameters = artifact.parameter_schema["parameters"]
-    if binding != "fully_bound" or parameters:
+    if binding_mode != "fully_bound" or parameters:
         raise ExecutionError(
             "local artifact execution requires a fully bound circuit artifact"
         )
@@ -66,6 +77,18 @@ def execute_circuit_artifact(
             "program_artifact_payload_sha256": artifact.payload_sha256,
             "program_artifact_circuit_content_hash": artifact.circuit_content_hash,
             "program_artifact_profile": profile,
+            **(
+                {}
+                if binding_result is None
+                else {
+                    "source_program_artifact_identity": (
+                        binding_result.source_artifact_identity
+                    ),
+                    "circuit_artifact_binding_identity": (
+                        binding_result.binding_identity
+                    ),
+                }
+            ),
         },
         compatibility={
             **dict(result.compatibility),

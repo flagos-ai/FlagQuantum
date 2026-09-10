@@ -30,9 +30,7 @@ def _candidate() -> dict[str, object]:
 def test_candidate_records_approved_bounded_vertical_slice() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == (
-        "approved_artifact_vertical_slice_local_execution_complete"
-    )
+    assert candidate["status"] == ("approved_symbolic_circuit_binding_complete")
     assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2"
@@ -46,6 +44,8 @@ def test_candidate_records_approved_bounded_vertical_slice() -> None:
         "deployment_adapter_added": True,
         "local_circuit_execution_added": True,
         "local_target_text_execution_added": False,
+        "explicit_circuit_binding_added": True,
+        "trainable_tensor_artifact_binding_added": False,
         "public_export_added": False,
     }
 

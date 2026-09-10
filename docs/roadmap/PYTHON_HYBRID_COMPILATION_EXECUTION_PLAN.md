@@ -1172,6 +1172,25 @@ Exit gate:
 - no provider call, credentials, public export, default-path change, numerical
   kernel, or performance claim is added.
 
+### Phase 34 — Explicit symbolic circuit-artifact binding
+
+Bind symbolic circuit-profile artifacts through an exact finite-real scalar map
+and produce a new fully bound artifact. Retain source-to-bound lineage in an
+immutable in-process result without extending the approved v2 envelope.
+
+Exit gate:
+
+- parameter expressions bind deterministically independent of mapping order;
+- missing, extra, boolean, non-finite, tensor, and array values fail closed;
+- the source artifact remains unchanged and the bound payload receives a new
+  artifact identity;
+- a deterministic binding identity covers source, bound output, and values;
+- local execution records source, binding, and bound-artifact identities;
+- trainable tensors remain on the in-memory binding-table path so serialization
+  never claims to preserve autograd graphs;
+- no public export, provider call, default-path change, or performance claim is
+  added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1335,3 +1354,4 @@ Stop implementation and return to Integration review if:
 - [x] Proposal 022 approved with the exact token on 2026-09-10
 - [x] Phase 32 ProgramArtifact v2 Core implementation completed and verified
 - [x] Phase 33 Artifact-v2 vertical slice and local circuit execution completed
+- [x] Phase 34 Explicit symbolic circuit-artifact binding completed

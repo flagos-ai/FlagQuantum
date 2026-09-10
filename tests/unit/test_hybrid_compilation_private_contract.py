@@ -1005,9 +1005,7 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     contract = _contract()
     phase27 = contract["phase27"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
@@ -1057,9 +1055,7 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
     contract = _contract()
     phase28 = contract["phase28"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase28["output_artifact"] == (
         "immutable_instruction_index_schedule_evidence"
@@ -1102,9 +1098,7 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
     contract = _contract()
     phase29 = contract["phase29"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase29["input"] == (
         "flagquantum.compiler.target_legalization.TargetLegalizationResult"
     )
@@ -1139,9 +1133,7 @@ def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> No
     contract = _contract()
     phase30 = contract["phase30"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase30["inputs"] == [
         "flagquantum.compiler.target_emission.TargetEmissionResult",
         "flagquantum.compiler.target_legalization.TargetLegalizationResult",
@@ -1181,9 +1173,7 @@ def test_phase31_proposes_same_lineage_v2_without_implementing_it() -> None:
     contract = _contract()
     phase31 = contract["phase31"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase31["proposal"] == (
         "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md"
     )
@@ -1221,9 +1211,7 @@ def test_phase31_1_adds_circuit_profile_without_implementing_v2() -> None:
     contract = _contract()
     phase31_1 = contract["phase31_1"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase31_1["profiles"] == [
         "circuit-ir-1.0",
         "openqasm-2.0",
@@ -1257,9 +1245,7 @@ def test_phase32_implements_only_the_approved_core_artifact_scope() -> None:
     contract = _contract()
     phase32 = contract["phase32"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase32["approval_token_received"] == (
         "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2"
     )
@@ -1291,9 +1277,7 @@ def test_phase33_connects_artifacts_without_reinterpreting_target_text() -> None
     contract = _contract()
     phase33 = contract["phase33"]
 
-    assert contract["status"] == (
-        "phase33_artifact_vertical_slice_local_execution_complete"
-    )
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
     assert phase33["compiler_target_artifact_adapter"] == (
         "flagquantum.compiler.target_artifact.build_target_artifact"
     )
@@ -1319,3 +1303,31 @@ def test_phase33_connects_artifacts_without_reinterpreting_target_text() -> None
         "docs/development/HYBRID_COMPILATION_PHASE33_EVIDENCE.md"
     )
     assert contract["phase33_completed"] is True
+
+
+def test_phase34_binds_serializable_scalars_without_claiming_autograd() -> None:
+    contract = _contract()
+    phase34 = contract["phase34"]
+
+    assert contract["status"] == ("phase34_symbolic_circuit_artifact_binding_complete")
+    assert phase34["binding"] == ("flagquantum.core._artifacts.bind_circuit_artifact")
+    assert phase34["lineage_result"] == (
+        "flagquantum.core._artifacts.CircuitArtifactBindingResult"
+    )
+    assert phase34["accepted_source_profile"] == "circuit-ir-1.0_symbolic"
+    assert phase34["accepted_values"] == "finite_python_int_or_float"
+    assert phase34["missing_or_extra_values"] == "unsupported_fail_closed"
+    assert phase34["trainable_tensor_serialization"] is False
+    assert phase34["autograd_graph_serialization"] is False
+    assert phase34["source_artifact_mutated"] is False
+    assert phase34["bound_artifact_is_new_identity"] is True
+    assert phase34["binding_identity_is_deterministic"] is True
+    assert phase34["execution_result_records_binding_lineage"] is True
+    assert phase34["provider_submission_added"] is False
+    assert phase34["public_root_export"] is False
+    assert phase34["default_path_change"] is False
+    assert phase34["performance_claim"] is False
+    assert phase34["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE34_EVIDENCE.md"
+    )
+    assert contract["phase34_completed"] is True

@@ -7,6 +7,7 @@ from flagquantum.core._artifacts import (
     ArtifactKind,
     ProgramArtifact,
     ProgramArtifactV2,
+    bind_circuit_artifact,
     read_program_artifact_json,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
@@ -133,3 +134,35 @@ def test_local_artifact_execution_rejects_symbolic_circuits() -> None:
 
     with pytest.raises(ExecutionError, match="fully bound"):
         execute_circuit_artifact(artifact)
+
+
+def test_explicit_binding_lineage_reaches_execution_result() -> None:
+    source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(
+            1,
+            (Instruction("rx", (0,), {"theta": Parameter("theta")}),),
+            dtype="complex128",
+        ),
+        producer="flagquantum.integration-test",
+    )
+    binding = bind_circuit_artifact(
+        source,
+        {"theta": 0.4},
+        producer="flagquantum.binding",
+    )
+
+    result = execute_circuit_artifact(
+        binding,
+        options=ExecutionOptions(target="samples", shots=16, seed=19),
+    )
+
+    assert result.require_samples().shape == (1, 16, 1)
+    assert result.provenance["program_artifact_identity"] == (
+        binding.bound_artifact.artifact_identity
+    )
+    assert result.provenance["source_program_artifact_identity"] == (
+        source.artifact_identity
+    )
+    assert result.provenance["circuit_artifact_binding_identity"] == (
+        binding.binding_identity
+    )

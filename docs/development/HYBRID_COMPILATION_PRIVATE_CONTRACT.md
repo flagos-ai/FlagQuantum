@@ -1048,3 +1048,21 @@ local simulator input.
 
 This phase adds no provider submission, credential access, public export,
 default-path change, new numerical kernel, or performance claim.
+
+## Phase 34 Explicit symbolic circuit-artifact binding
+
+Core may bind a symbolic `circuit-ir-1.0` artifact only from an exact mapping of
+its declared parameter names to finite Python real scalars. Binding produces a
+new fully bound v2 artifact and immutable in-process lineage evidence containing
+the source identity, bound identity, sorted parameter names, and deterministic
+binding identity. It does not mutate the source or extend the v2 envelope.
+
+Missing or extra names, non-finite values, booleans, tensors, arrays, and
+already-bound or non-circuit artifacts fail closed. In particular, tensors with
+autograd state are never detached and serialized by this path. Differentiable
+training remains on the existing ephemeral binding-table route. Runtime may
+accept the binding result for local execution and records both source and
+binding identities in result provenance.
+
+This phase adds no executable-text parameter profile, provider submission,
+public export, default-path change, or performance claim.

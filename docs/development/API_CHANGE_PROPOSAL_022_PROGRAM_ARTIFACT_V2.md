@@ -168,6 +168,19 @@ expressions remain authoritative in CircuitIR; the schema is a validated index,
 not a duplicate binding store. Unbound runtime parameters remain outside the
 initial executable profiles.
 
+The internal circuit-profile binder accepts an exact mapping for every
+declared symbolic parameter and produces a new fully bound circuit artifact.
+Only finite Python integer and floating-point scalar values cross this
+serialization boundary. Missing or extra values, booleans, non-finite values,
+arrays, and tensors fail closed. The in-process binding result records the
+source artifact identity, bound artifact identity, sorted parameter names, and
+a deterministic binding identity; it does not add lineage fields to the v2
+envelope.
+
+Trainable tensors and autograd graphs are deliberately excluded. Differentiable
+training continues to use the existing in-memory binding-table path so original
+tensor objects and their graph connectivity are preserved.
+
 Executable profiles use:
 
 ```text
@@ -306,6 +319,10 @@ internal adapters have conformance evidence.
 7. **Complete:** Runtime executes fully bound circuit-profile artifacts through
    the canonical local planner and result contract. Symbolic artifacts and
    target-text executable profiles fail closed on this path.
+8. **Complete:** symbolic circuit artifacts bind through an explicit finite-real
+   scalar map into a new fully bound artifact. The source-to-bound lineage is
+   retained in an in-process binding result and propagated into local execution
+   provenance.
 
 ## Acceptance
 

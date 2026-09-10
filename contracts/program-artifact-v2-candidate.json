@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.program_artifact_v2_candidate_contract",
-  "status": "approved_artifact_vertical_slice_local_execution_complete",
+  "status": "approved_symbolic_circuit_binding_complete",
   "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md",
   "approval_token": "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2",
@@ -133,6 +133,8 @@
     "deployment_adapter_added": true,
     "local_circuit_execution_added": true,
     "local_target_text_execution_added": false,
+    "explicit_circuit_binding_added": true,
+    "trainable_tensor_artifact_binding_added": false,
     "public_export_added": false
   }
 }

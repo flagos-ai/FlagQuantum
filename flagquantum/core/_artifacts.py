@@ -11,7 +11,7 @@ import hashlib
 import json
 import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -223,7 +223,7 @@ def _strict_v2_value(
     counter: list[int] | None = None,
     limit_strings: bool = True,
 ) -> Any:
-    if depth > _V2_MAX_DEPTH:
+    if isinstance(value, (Mapping, tuple, list)) and depth > _V2_MAX_DEPTH:
         raise ValueError(f"{owner} exceeds maximum nesting depth {_V2_MAX_DEPTH}")
     if counter is None:
         counter = [0]
@@ -332,7 +332,7 @@ def _profile(value: Any) -> Mapping[str, Any]:
     expected = _V2_PROFILES.get(profile["name"])
     if expected is None or profile != expected:
         raise ValueError("unsupported or inconsistent artifact profile")
-    return _strict_v2_value(profile, owner="artifact profile")
+    return MappingProxyType(profile)
 
 
 def _parameter_names(circuit_ir: Any) -> tuple[str, ...]:
@@ -528,7 +528,7 @@ class ProgramArtifactV2:
             _strict_v2_value(
                 body["payload"],
                 owner="v2 artifact payload",
-                depth=1,
+                depth=0,
                 counter=entry_counter,
                 limit_strings=False,
             )
@@ -622,6 +622,170 @@ class ProgramArtifactV2:
         )
 
 
+@dataclass(frozen=True)
+class CircuitArtifactBindingResult:
+    """In-process lineage evidence for one explicit circuit-artifact binding."""
+
+    source_artifact_identity: str
+    bound_artifact: ProgramArtifactV2
+    parameter_names: tuple[str, ...]
+    parameter_values: Mapping[str, int | float]
+    binding_identity: str = ""
+
+    def __post_init__(self) -> None:
+        source_identity = _require_sha256(
+            self.source_artifact_identity,
+            owner="source_artifact_identity",
+        )
+        if not isinstance(self.bound_artifact, ProgramArtifactV2):
+            raise TypeError("bound_artifact must be a ProgramArtifactV2")
+        if (
+            self.bound_artifact.kind is not ArtifactKind.CIRCUIT
+            or self.bound_artifact.profile["name"] != "circuit-ir-1.0"
+            or self.bound_artifact.parameter_schema["binding"] != "fully_bound"
+            or self.bound_artifact.parameter_schema["parameters"]
+        ):
+            raise ValueError("bound_artifact must be a fully bound circuit-ir-1.0")
+        names = tuple(self.parameter_names)
+        if any(type(name) is not str or not name for name in names):
+            raise ValueError("binding parameter_names must be sorted and unique")
+        if names != tuple(sorted(set(names))):
+            raise ValueError("binding parameter_names must be sorted and unique")
+        if not isinstance(self.parameter_values, Mapping):
+            raise TypeError("binding parameter_values must be a mapping")
+        values = dict(self.parameter_values)
+        if tuple(sorted(values)) != names:
+            raise ValueError("binding parameter_values must match parameter_names")
+        for name, value in values.items():
+            if type(value) not in {int, float}:
+                raise TypeError(
+                    "binding parameter values must be Python int or float values"
+                )
+            if type(value) is float and not math.isfinite(value):
+                raise ValueError(f"binding parameter value {name!r} must be finite")
+        expected = _circuit_artifact_binding_identity(
+            source_identity,
+            self.bound_artifact.artifact_identity,
+            values,
+        )
+        if self.binding_identity and self.binding_identity != expected:
+            raise ValueError("binding_identity does not match binding lineage")
+        object.__setattr__(self, "source_artifact_identity", source_identity)
+        object.__setattr__(self, "parameter_names", names)
+        object.__setattr__(
+            self,
+            "parameter_values",
+            MappingProxyType({name: values[name] for name in names}),
+        )
+        object.__setattr__(self, "binding_identity", expected)
+
+
+def _circuit_artifact_binding_identity(
+    source_artifact_identity: str,
+    bound_artifact_identity: str,
+    parameter_values: Mapping[str, int | float],
+) -> str:
+    identity_payload = {
+        "schema": "flagquantum.circuit_artifact_binding",
+        "version": "1.0",
+        "source_artifact_identity": source_artifact_identity,
+        "bound_artifact_identity": bound_artifact_identity,
+        "parameter_values": dict(parameter_values),
+    }
+    return hashlib.sha256(_canonical_json_bytes(identity_payload)).hexdigest()
+
+
+def bind_circuit_artifact(
+    artifact: ProgramArtifactV2,
+    values: Mapping[str, int | float],
+    *,
+    producer: str,
+) -> CircuitArtifactBindingResult:
+    """Bind a symbolic circuit artifact using finite Python real scalars only."""
+
+    from .ir import CircuitIR
+    from .parameters import bind_parameter_value
+
+    if not isinstance(artifact, ProgramArtifactV2):
+        raise TypeError("circuit artifact binding requires a ProgramArtifactV2")
+    if (
+        artifact.kind is not ArtifactKind.CIRCUIT
+        or artifact.profile["name"] != "circuit-ir-1.0"
+    ):
+        raise ValueError("circuit artifact binding requires profile circuit-ir-1.0")
+    if artifact.parameter_schema["binding"] != "symbolic":
+        raise ValueError("circuit artifact binding requires a symbolic artifact")
+    if not isinstance(values, Mapping):
+        raise TypeError("circuit artifact binding values must be a mapping")
+
+    expected_names = tuple(artifact.parameter_schema["parameters"])
+    if any(type(name) is not str or not name for name in values):
+        raise TypeError("circuit artifact binding keys must be non-empty strings")
+    provided_names = tuple(sorted(values))
+    missing = tuple(name for name in expected_names if name not in values)
+    extra = tuple(name for name in provided_names if name not in expected_names)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append("missing=" + ",".join(missing))
+        if extra:
+            details.append("extra=" + ",".join(extra))
+        raise ValueError("circuit artifact binding mismatch: " + "; ".join(details))
+
+    normalized: dict[str, int | float] = {}
+    for name in expected_names:
+        value = values[name]
+        if type(value) not in {int, float}:
+            raise TypeError(
+                "serialized circuit artifact bindings require Python int or float "
+                f"values; {name!r} received {type(value).__name__}"
+            )
+        if type(value) is float and not math.isfinite(value):
+            raise ValueError(f"circuit artifact binding {name!r} must be finite")
+        normalized[name] = value
+
+    if not isinstance(artifact.payload, Mapping):
+        raise TypeError("circuit artifact payload must be a mapping")
+    circuit = CircuitIR.from_dict(artifact.payload)
+    bound_circuit = replace(
+        circuit,
+        instructions=tuple(
+            replace(
+                instruction,
+                params=bind_parameter_value(instruction.params, normalized),
+                matrix=bind_parameter_value(instruction.matrix, normalized),
+            )
+            for instruction in circuit.instructions
+        ),
+        observables=tuple(
+            replace(
+                observable,
+                coefficient=bind_parameter_value(
+                    observable.coefficient,
+                    normalized,
+                ),
+            )
+            for observable in circuit.observables
+        ),
+    )
+    remaining = _parameter_names(bound_circuit)
+    if remaining:
+        raise ValueError(
+            "circuit artifact binding left unbound parameter(s): "
+            + ", ".join(remaining)
+        )
+    bound_artifact = ProgramArtifactV2.from_circuit_ir(
+        bound_circuit,
+        producer=producer,
+    )
+    return CircuitArtifactBindingResult(
+        source_artifact_identity=artifact.artifact_identity,
+        bound_artifact=bound_artifact,
+        parameter_names=expected_names,
+        parameter_values=normalized,
+    )
+
+
 def read_program_artifact(
     payload: Mapping[str, Any],
 ) -> ProgramArtifact | ProgramArtifactV2:
@@ -683,8 +847,10 @@ __all__ = (
     "ARTIFACT_ENVELOPE_VERSION",
     "PROGRAM_ARTIFACT_V2_VERSION",
     "ArtifactKind",
+    "CircuitArtifactBindingResult",
     "ProgramArtifact",
     "ProgramArtifactV2",
+    "bind_circuit_artifact",
     "migrate_v1_circuit_artifact",
     "read_program_artifact",
     "read_program_artifact_json",

@@ -5,11 +5,14 @@ import json
 from pathlib import Path
 
 import pytest
+import torch
 
 from flagquantum.core._artifacts import (
     ArtifactKind,
+    CircuitArtifactBindingResult,
     ProgramArtifact,
     ProgramArtifactV2,
+    bind_circuit_artifact,
     migrate_v1_circuit_artifact,
     read_program_artifact,
     read_program_artifact_json,
@@ -256,3 +259,93 @@ def test_v2_payload_tamper_does_not_mutate_fixture() -> None:
     with pytest.raises(ValueError, match="payload_sha256"):
         ProgramArtifactV2.from_dict(tampered)
     assert payload == _fixture(V2_FIXTURE)
+
+
+def test_symbolic_circuit_artifact_binding_is_explicit_and_deterministic() -> None:
+    theta = Parameter("theta")
+    offset = Parameter("offset")
+    source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(
+            1,
+            (Instruction("rx", (0,), {"theta": theta + offset}),),
+        ),
+        producer="phase34-source",
+    )
+
+    first = bind_circuit_artifact(
+        source,
+        {"theta": 0.25, "offset": -0.05},
+        producer="phase34-binding",
+    )
+    reordered = bind_circuit_artifact(
+        source,
+        {"offset": -0.05, "theta": 0.25},
+        producer="phase34-binding",
+    )
+    changed = bind_circuit_artifact(
+        source,
+        {"theta": 0.5, "offset": -0.05},
+        producer="phase34-binding",
+    )
+
+    assert isinstance(first, CircuitArtifactBindingResult)
+    assert first == reordered
+    assert first.source_artifact_identity == source.artifact_identity
+    assert first.parameter_names == ("offset", "theta")
+    assert first.parameter_values == {"offset": -0.05, "theta": 0.25}
+    assert first.bound_artifact.parameter_schema == {
+        "binding": "fully_bound",
+        "parameters": (),
+    }
+    bound = CircuitIR.from_dict(first.bound_artifact.payload)
+    assert bound.instructions[0].params["theta"] == pytest.approx(0.2)
+    assert first.binding_identity != changed.binding_identity
+    assert first.bound_artifact.artifact_identity != (
+        changed.bound_artifact.artifact_identity
+    )
+    with pytest.raises(ValueError, match="binding_identity"):
+        CircuitArtifactBindingResult(
+            source_artifact_identity=first.source_artifact_identity,
+            bound_artifact=first.bound_artifact,
+            parameter_names=first.parameter_names,
+            parameter_values=first.parameter_values,
+            binding_identity="0" * 64,
+        )
+
+
+@pytest.mark.parametrize(
+    ("values", "error", "message"),
+    [
+        ({}, ValueError, "missing=theta"),
+        ({"theta": 0.2, "extra": 1.0}, ValueError, "extra=extra"),
+        ({"theta": float("nan")}, ValueError, "must be finite"),
+        ({"theta": True}, TypeError, "Python int or float"),
+        ({"theta": torch.tensor(0.2)}, TypeError, "Python int or float"),
+    ],
+)
+def test_symbolic_circuit_artifact_binding_rejects_ambiguous_values(
+    values: dict[str, object],
+    error: type[Exception],
+    message: str,
+) -> None:
+    source = ProgramArtifactV2.from_circuit_ir(
+        _circuit(symbolic=True),
+        producer="phase34-source",
+    )
+
+    with pytest.raises(error, match=message):
+        bind_circuit_artifact(  # type: ignore[arg-type]
+            source,
+            values,
+            producer="phase34-binding",
+        )
+
+
+def test_circuit_artifact_binding_rejects_fully_bound_source() -> None:
+    source = ProgramArtifactV2.from_circuit_ir(
+        _circuit(),
+        producer="phase34-source",
+    )
+
+    with pytest.raises(ValueError, match="requires a symbolic artifact"):
+        bind_circuit_artifact(source, {}, producer="phase34-binding")
