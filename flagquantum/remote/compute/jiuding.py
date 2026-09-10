@@ -30,6 +30,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from ._jiuding_credentials import load_jiuding_credentials
 from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
+from ._workspace_discovery import select_workspace, summarize_workspaces
 from ._workspace_results import decode_tensor, measurement_result
 
 if TYPE_CHECKING:
@@ -109,6 +110,13 @@ class JiudingClient(_ProgramSubmissionMixin):
         self._ssh_command: tuple[str, ...] | None = None
         self._executor_channels: dict[int, subprocess.Popen[bytes]] = {}
         self._executor_health: dict[int, dict[str, Any]] = {}
+
+    def list_workspaces(self) -> list[dict[str, Any]]:
+        """Return non-secret summaries of workspaces visible to this account."""
+
+        return summarize_workspaces(
+            self._pages("/api/v1/workspaces/select", {}, "items", self._auth())
+        )
 
     def _request(
         self,
@@ -205,20 +213,12 @@ class JiudingClient(_ProgramSubmissionMixin):
     def workspace(self) -> dict[str, Any]:
         """Return non-secret context for one unambiguous visible workspace."""
         if self._workspace is None:
-            matches = [
-                w
-                for w in self._pages(
-                    "/api/v1/workspaces/select", {}, "items", self._auth()
-                )
-                if (
-                    w.get("name") == self.workspace_name
-                    if self.workspace_name
-                    else w.get("podName") == socket.gethostname()
-                )
-            ]
-            if len(matches) != 1:
-                raise RuntimeError("Specify a unique Jiuding workspace name")
-            w = matches[0]
+            w = select_workspace(
+                self._pages("/api/v1/workspaces/select", {}, "items", self._auth()),
+                requested_name=self.workspace_name,
+                pod_name=socket.gethostname(),
+            )
+            self.workspace_name = w["name"]
             fields = (
                 "id",
                 "name",

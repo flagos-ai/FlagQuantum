@@ -172,6 +172,84 @@ def test_ambiguous_workspace_fails():
         client.workspace()
 
 
+def test_single_visible_workspace_is_selected_without_a_name():
+    client = JiudingClient()
+    client._auth = Mock(return_value={})
+    workspace = {
+        "id": "workspace-id",
+        "name": "first-workspace",
+        "projId": "project",
+        "projsetId": "project-set",
+        "queueId": "queue",
+        "queueName": "gpu-queue",
+        "clusterId": "cluster",
+        "zoneId": "zone",
+        "queueStatus": "QUEUE_STATUS_ACTIVE",
+        "resourceRegion": "GPU",
+        "creatorId": "user",
+        "creatorName": "User",
+    }
+    client._pages = Mock(return_value=[workspace])
+
+    assert client.workspace()["name"] == "first-workspace"
+    assert client.workspace_name == "first-workspace"
+
+
+def test_workspace_selection_reports_visible_names():
+    client = JiudingClient()
+    client._auth = Mock(return_value={})
+    client._pages = Mock(
+        return_value=[
+            {"name": "workspace-b", "podName": "pod-b"},
+            {"name": "workspace-a", "podName": "pod-a"},
+        ]
+    )
+
+    with pytest.raises(RuntimeError, match="workspace-a, workspace-b"):
+        client.workspace()
+
+
+def test_workspace_selection_explains_missing_platform_access():
+    client = JiudingClient()
+    client._auth = Mock(return_value={})
+    client._pages = Mock(return_value=[])
+
+    with pytest.raises(RuntimeError, match="project and queue access"):
+        client.workspace()
+
+
+def test_list_workspaces_returns_only_non_secret_summaries():
+    client = JiudingClient()
+    client._auth = Mock(return_value={})
+    client._pages = Mock(
+        return_value=[
+            {
+                "id": "workspace-id",
+                "name": "workspace",
+                "projName": "project",
+                "projsetName": "project-set",
+                "queueName": "gpu-queue",
+                "queueStatus": "QUEUE_STATUS_ACTIVE",
+                "jupyterServiceToken": "secret",
+                "SSHLogin": "ssh secret@example",
+                "quotaDetail": {"resourceDetail": {"acceleratorModel": "NVIDIA_A100"}},
+            }
+        ]
+    )
+
+    assert client.list_workspaces() == [
+        {
+            "id": "workspace-id",
+            "name": "workspace",
+            "projName": "project",
+            "projsetName": "project-set",
+            "queueName": "gpu-queue",
+            "queueStatus": "QUEUE_STATUS_ACTIVE",
+            "acceleratorModel": "NVIDIA_A100",
+        }
+    ]
+
+
 def test_workspace_discards_embedded_service_token():
     client = JiudingClient(workspace="test")
     client._auth = Mock(return_value={})

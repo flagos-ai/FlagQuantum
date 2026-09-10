@@ -8,6 +8,39 @@ and refresh according to the server expiry. Requests use HTTPS, reject redirects
 have a 20-second socket timeout, and are not retried blindly. No CLI installation
 or manual project and queue IDs are required.
 
+## First account check
+
+A new account must first be added to a Jiuding project and an active compute
+queue by a platform administrator. FlagQuantum cannot grant quota or project
+membership. Once at least one development workspace is visible, verify access
+without copying project or queue IDs:
+
+```bash
+python examples/remote/jiuding_workspace_bell.py --list-workspaces
+```
+
+The command reports only non-secret workspace, project, queue and accelerator
+names. If exactly one workspace is visible, it is selected automatically and a
+CPU Bell check needs no arguments:
+
+```bash
+python examples/remote/jiuding_workspace_bell.py
+```
+
+With multiple workspaces, select one explicitly. GPU use is always explicit:
+
+```bash
+python examples/remote/jiuding_workspace_bell.py \
+  --workspace my-workspace \
+  --target jiuding:gpu
+```
+
+The selected workspace must already be running and its image must contain a
+compatible FlagQuantum installation. An account with no visible workspace gets
+an actionable project-and-queue access error instead of a request for internal
+IDs. Creating the first project, assigning quota and publishing a generally
+available runtime image remain platform administration operations.
+
 ## Choose an execution path
 
 Jiuding has two primary execution paths. They return the same FlagQuantum
