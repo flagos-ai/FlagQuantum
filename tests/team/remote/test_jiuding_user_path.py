@@ -1,7 +1,11 @@
 """User-level Jiuding execution paths without external platform access."""
 
 import json
+import runpy
 import subprocess
+import sys
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -115,3 +119,46 @@ def test_submit_restore_and_read_managed_bell_job(monkeypatch) -> None:
         torch.tensor([[2**-0.5, 0.0, 0.0, 2**-0.5]], dtype=torch.complex64),
     )
     assert result.runtime["execution_path"] == "jiuding_batch_program"
+
+
+def test_command_line_example_restores_without_submitting(monkeypatch, capsys) -> None:
+    job_id = "1b64c2b7-3a7c-4feb-8687-9b18a892a0b8"
+    calls = []
+
+    class Client:
+        def __init__(self, *, workspace):
+            assert workspace == "golden-path"
+
+        def submit_program(self, *args, **kwargs):
+            raise AssertionError("restore mode must not submit")
+
+        def restore_receipt(self, restored_job_id):
+            calls.append(restored_job_id)
+            return {"jobId": restored_job_id}
+
+        def result(self, receipt, *, timeout):
+            assert receipt == {"jobId": job_id}
+            assert timeout == 600
+            return SimpleNamespace(counts=[{"00": 512, "11": 512}])
+
+    monkeypatch.setattr(jiuding, "JiudingClient", Client)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "jiuding_submit_program.py",
+            "--workspace",
+            "golden-path",
+            "--restore-job",
+            job_id,
+        ],
+    )
+    example = (
+        Path(__file__).resolve().parents[3]
+        / "examples/remote/jiuding_submit_program.py"
+    )
+
+    runpy.run_path(str(example), run_name="__main__")
+
+    assert calls == [job_id]
+    assert json.loads(capsys.readouterr().out.splitlines()[0]) == {"job_id": job_id}
