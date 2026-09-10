@@ -111,6 +111,14 @@ _transfer = transfer_mps_operator_environment
 _validate_svd_gaps = validate_mps_svd_gaps
 
 _LayerHaloPrefetch = ReverseLayerHaloPrefetch
+_PreparedTwoSite = tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    Mapping[str, Any],
+]
+_SavedFactorization = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
 
 @dataclass(frozen=True)
@@ -229,6 +237,96 @@ def _reserve_reverse_two_site_layer(
             ):
                 selected.add(index)
     return selected
+
+
+def _prepare_local_reverse_two_site_layer(
+    layer: Sequence[tuple[int, Instruction, int]],
+    *,
+    state: RankOwnedMPSState,
+    selected_factorizations: set[int],
+    bsz: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> tuple[dict[int, _PreparedTwoSite], dict[int, _SavedFactorization]]:
+    buckets: dict[
+        tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
+        list[tuple[int, Instruction, int]],
+    ] = {}
+    for item in layer:
+        _, instruction, left_wire = item
+        if (
+            state.owner(left_wire) != state.rank
+            or state.owner(left_wire + 1) != state.rank
+        ):
+            continue
+        matrix = instruction_matrix_for_mps(
+            instruction, bsz=bsz, device=device, dtype=dtype
+        )
+        if matrix.ndim == 2:
+            matrix = matrix.expand(bsz, -1, -1)
+        shapes = (
+            tuple(state.local_tensors[left_wire].shape),
+            tuple(state.local_tensors[left_wire + 1].shape),
+            tuple(matrix.shape),
+        )
+        buckets.setdefault(shapes, []).append(item)
+    prepared: dict[int, _PreparedTwoSite] = {}
+    saved: dict[int, _SavedFactorization] = {}
+    for bucket in buckets.values():
+        _, sample, sample_wire = bucket[0]
+        sample_matrix = instruction_matrix_for_mps(
+            sample, bsz=bsz, device=device, dtype=dtype
+        )
+        if sample_matrix.ndim == 2:
+            sample_matrix = sample_matrix.expand(bsz, -1, -1)
+        capacity = site_kernel_bucket_capacity(
+            state.local_tensors[sample_wire],
+            state.local_tensors[sample_wire + 1],
+            sample_matrix,
+        )
+        for start in range(0, len(bucket), capacity):
+            chunk = bucket[start : start + capacity]
+            left_inputs = tuple(
+                state.local_tensors[wire].detach().clone() for _, _, wire in chunk
+            )
+            right_inputs = tuple(
+                state.local_tensors[wire + 1].detach().clone() for _, _, wire in chunk
+            )
+            with torch.no_grad():
+                pair_matrices = contract_mps_two_site_bucket(
+                    tuple(instruction for _, instruction, _ in chunk),
+                    left_inputs,
+                    right_inputs,
+                    bsz=bsz,
+                    device=device,
+                    dtype=dtype,
+                    compiled=True,
+                )
+            full_rank = min(int(pair_matrices.shape[-2]), int(pair_matrices.shape[-1]))
+            batched_truncation = (
+                any(index in selected_factorizations for index, _, _ in chunk)
+                and state.config.max_bond is not None
+                and int(state.config.max_bond) < full_rank
+            )
+            factorizations = factor_mps_reverse_pair_bucket(
+                pair_matrices,
+                left_dim=int(left_inputs[0].shape[1]),
+                right_dim=int(right_inputs[0].shape[-1]),
+                config=state.config,
+                batched_truncated_split=batched_truncation,
+            )
+            for (index, _, wire), factorization, left, right in zip(
+                chunk, factorizations, left_inputs, right_inputs
+            ):
+                pair_leaf, after_left, after_right, info = factorization
+                detached_left = after_left.detach()
+                detached_right = after_right.detach()
+                state.local_tensors[wire] = detached_left
+                state.local_tensors[wire + 1] = detached_right
+                prepared[index] = left, right, detached_left, detached_right, info
+                if index in selected_factorizations:
+                    saved[index] = pair_leaf, after_left, after_right
+    return prepared, saved
 
 
 def _static_exact_qr_record(
@@ -463,100 +561,16 @@ def execute_torch_distributed_mps_reverse(
                 else (None, frozenset())
             )
             prefetched_rxx_indices.update(layer_prefetched_indices)
-            two_site_buckets: dict[
-                tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
-                list[tuple[int, Instruction, int]],
-            ] = {}
-            for item in layer:
-                candidate_index, candidate, left_wire = item
-                if state.owner(left_wire) != rank or state.owner(left_wire + 1) != rank:
-                    continue
-                matrix = instruction_matrix_for_mps(
-                    candidate, bsz=bsz, device=resolved_device, dtype=resolved_dtype
-                )
-                if matrix.ndim == 2:
-                    matrix = matrix.expand(bsz, -1, -1)
-                two_site_shapes = (
-                    tuple(state.local_tensors[left_wire].shape),
-                    tuple(state.local_tensors[left_wire + 1].shape),
-                    tuple(matrix.shape),
-                )
-                two_site_buckets.setdefault(two_site_shapes, []).append(item)
-            for bucket in two_site_buckets.values():
-                _, sample_candidate, sample_wire = bucket[0]
-                sample_matrix = instruction_matrix_for_mps(
-                    sample_candidate,
-                    bsz=bsz,
-                    device=resolved_device,
-                    dtype=resolved_dtype,
-                )
-                if sample_matrix.ndim == 2:
-                    sample_matrix = sample_matrix.expand(bsz, -1, -1)
-                capacity = site_kernel_bucket_capacity(
-                    state.local_tensors[sample_wire],
-                    state.local_tensors[sample_wire + 1],
-                    sample_matrix,
-                )
-                for start in range(0, len(bucket), capacity):
-                    chunk = bucket[start : start + capacity]
-                    left_inputs = tuple(
-                        state.local_tensors[wire].detach().clone()
-                        for _, _, wire in chunk
-                    )
-                    right_inputs = tuple(
-                        state.local_tensors[wire + 1].detach().clone()
-                        for _, _, wire in chunk
-                    )
-                    with torch.no_grad():
-                        pair_matrices = contract_mps_two_site_bucket(
-                            tuple(candidate for _, candidate, _ in chunk),
-                            left_inputs,
-                            right_inputs,
-                            bsz=bsz,
-                            device=resolved_device,
-                            dtype=resolved_dtype,
-                            compiled=True,
-                        )
-                    left_dim = int(left_inputs[0].shape[1])
-                    right_dim = int(right_inputs[0].shape[-1])
-                    full_rank = min(
-                        int(pair_matrices.shape[-2]),
-                        int(pair_matrices.shape[-1]),
-                    )
-                    use_batched_truncated_split = (
-                        any(index in selected_factorizations for index, _, _ in chunk)
-                        and state.config.max_bond is not None
-                        and int(state.config.max_bond) < full_rank
-                    )
-                    factorizations = factor_mps_reverse_pair_bucket(
-                        pair_matrices,
-                        left_dim=left_dim,
-                        right_dim=right_dim,
-                        config=state.config,
-                        batched_truncated_split=use_batched_truncated_split,
-                    )
-                    for (
-                        (candidate_index, _, left_wire),
-                        factorization,
-                        input_left,
-                        input_right,
-                    ) in zip(chunk, factorizations, left_inputs, right_inputs):
-                        pair_leaf, after_left, after_right, info = factorization
-                        state.local_tensors[left_wire] = after_left.detach()
-                        state.local_tensors[left_wire + 1] = after_right.detach()
-                        precomputed_rxx[candidate_index] = (
-                            input_left,
-                            input_right,
-                            after_left.detach(),
-                            after_right.detach(),
-                            info,
-                        )
-                        if candidate_index in selected_factorizations:
-                            precomputed_factorizations[candidate_index] = (
-                                pair_leaf,
-                                after_left,
-                                after_right,
-                            )
+            prepared, saved = _prepare_local_reverse_two_site_layer(
+                layer,
+                state=state,
+                selected_factorizations=selected_factorizations,
+                bsz=bsz,
+                device=resolved_device,
+                dtype=resolved_dtype,
+            )
+            precomputed_rxx.update(prepared)
+            precomputed_factorizations.update(saved)
             layer_halo_wait_seconds += _finish_layer_halo_prefetch(layer_prefetch)
             if layer_prefetch is not None:
                 # Every left owner can factor its disjoint boundary pair as
