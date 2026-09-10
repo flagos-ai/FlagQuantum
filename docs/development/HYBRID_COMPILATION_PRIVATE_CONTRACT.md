@@ -1332,17 +1332,3 @@ view and return Core canonical JSON without migration or identity change. The
 experimental package discovers the domain lazily. No stable export, constructor,
 binding, compilation, verification, Deployment, provider, or default-path change
 is included.
-
-## Phase 52 target capability lifecycle proposal
-
-Phase 52 records Proposal 027 and its exact candidate without adding an API. The
-proposed `flagquantum.experimental.targets` domain contains frozen role views for
-snapshots, requirement sets, and match results; bounded duplicate-safe load/dump
-functions; identity-validated fact inspection; and a pure matcher requiring an explicit
-timezone-aware evaluation instant.
-
-The proposal does not export Core dataclasses or expose construction, discovery,
-refresh, extension handlers, physical-slot/provider-qubit binding, artifact
-workflows, Runtime, Deployment, submission, or stable APIs. Implementation requires
-the exact approval token in
-`docs/development/API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE.md`.
