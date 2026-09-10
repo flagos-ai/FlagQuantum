@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field, replace
+from numbers import Integral
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 import torch
@@ -560,6 +561,15 @@ def _grouped_hamiltonian_statistics(
     ):
         if not counts:
             raise ValueError(f"measurement group {group_index} counts cannot be empty")
+        for count in counts.values():
+            if isinstance(count, bool) or not isinstance(count, Integral):
+                raise TypeError(
+                    f"measurement group {group_index} counts must be non-negative integers"
+                )
+            if count < 0:
+                raise ValueError(
+                    f"measurement group {group_index} counts must be non-negative integers"
+                )
         shots = sum(int(count) for count in counts.values())
         if shots != package.shots:
             raise ValueError(
@@ -571,6 +581,10 @@ def _grouped_hamiltonian_statistics(
                 raise ValueError(
                     f"measurement group {group_index} bitstring width does not "
                     "match its deployment package"
+                )
+            if any(bit not in "01" for bit in str(bitstring)):
+                raise ValueError(
+                    f"measurement group {group_index} bitstrings must be binary"
                 )
         coefficients: list[tuple[float, tuple[tuple[int, str], ...]]] = []
         for term_index in group.term_indices:
