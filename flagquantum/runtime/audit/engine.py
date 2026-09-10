@@ -193,6 +193,21 @@ def _ownership_sharded(
     ) == "sharded_across_ranks" and _ownership_nonempty(payload, ownership_key)
 
 
+def _distributed_contract_status(
+    evidence_type: str,
+    errors: list[str],
+) -> str:
+    if errors:
+        return "blocked"
+    if evidence_type == "plan_preflight":
+        return "preflight_only"
+    if evidence_type == "development_smoke":
+        return "local_simulation"
+    if evidence_type in RELEASE_CLAIM_EVIDENCE_TYPES:
+        return "claimable_production_training"
+    return "blocked"
+
+
 def evaluate_distributed_evidence_contract(
     payload: Mapping[str, Any],
 ) -> DistributedEvidenceContract:
@@ -281,17 +296,7 @@ def evaluate_distributed_evidence_contract(
                 "distributed evidence contract requires release evidence to report distribution_semantics='sharded_across_ranks'"
             )
 
-    if errors:
-        status = "blocked"
-    elif evidence_type == "plan_preflight":
-        status = "preflight_only"
-    elif evidence_type == "development_smoke":
-        status = "local_simulation"
-    elif evidence_type in RELEASE_CLAIM_EVIDENCE_TYPES:
-        status = "claimable_production_training"
-    else:
-        status = "blocked"
-
+    status = _distributed_contract_status(evidence_type, errors)
     claimable = status == "claimable_production_training"
     warnings: list[str] = []
     if evidence_type == "production_runtime" and not claimable:
