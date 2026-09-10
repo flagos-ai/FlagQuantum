@@ -398,6 +398,33 @@ def _prepare_prefetched_reverse_two_site_layer(
     return prepared, saved
 
 
+def _collect_reverse_layer_metadata(
+    layer: Sequence[tuple[int, Instruction, int]],
+    prepared: Mapping[int, _PreparedTwoSite],
+    *,
+    state: RankOwnedMPSState,
+    template: torch.Tensor,
+) -> tuple[dict[int, _ReverseRecordMetadata], int]:
+    entries = tuple(
+        (index, state.owner(left_wire))
+        for index, _, left_wire in layer
+        if state.owner(left_wire) != state.owner(left_wire + 1)
+    )
+    indices = {index for index, _ in entries}
+    local_metadata: dict[int, _ReverseRecordMetadata] = {
+        index: {
+            "input_shapes": (values[0].shape, values[1].shape),
+            "output_shapes": (values[2].shape, values[3].shape),
+            "split_info": dict(values[4]),
+        }
+        for index, values in prepared.items()
+        if index in indices
+    }
+    return _all_reduce_layer_records(local_metadata, entries, template), int(
+        bool(entries)
+    )
+
+
 def _static_exact_qr_record(
     left_shape: Sequence[int],
     right_shape: Sequence[int],
@@ -653,29 +680,14 @@ def execute_torch_distributed_mps_reverse(
                 )
                 precomputed_rxx.update(prepared)
                 precomputed_factorizations.update(saved)
-                layer_entries = tuple(
-                    (candidate_index, state.owner(left_wire))
-                    for candidate_index, _, left_wire in layer
-                    if state.owner(left_wire) != state.owner(left_wire + 1)
+                metadata, metadata_broadcasts = _collect_reverse_layer_metadata(
+                    layer,
+                    prepared,
+                    state=state,
+                    template=next(iter(local_tensors.values())),
                 )
-                local_layer_metadata: dict[int, _ReverseRecordMetadata] = {
-                    candidate_index: {
-                        "input_shapes": (values[0].shape, values[1].shape),
-                        "output_shapes": (values[2].shape, values[3].shape),
-                        "split_info": dict(values[4]),
-                    }
-                    for candidate_index, values in precomputed_rxx.items()
-                    if candidate_index in {item[0] for item in layer_entries}
-                }
-                precomputed_layer_metadata.update(
-                    _all_reduce_layer_records(
-                        local_layer_metadata,
-                        layer_entries,
-                        next(iter(local_tensors.values())),
-                    )
-                )
-                if layer_entries:
-                    dynamic_metadata_broadcasts += 1
+                precomputed_layer_metadata.update(metadata)
+                dynamic_metadata_broadcasts += metadata_broadcasts
                 layer_halo_message_count += layer_prefetch.message_count
                 layer_halo_payload_bytes += layer_prefetch.payload_bytes
                 layer_halo_intra_node_bytes += layer_prefetch.intra_node_payload_bytes
