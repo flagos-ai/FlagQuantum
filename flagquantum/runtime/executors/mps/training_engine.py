@@ -17,7 +17,7 @@ import torch.distributed as dist
 from torch.profiler import record_function
 
 from ....compute import get_platform_runtime
-from ....core.ir import ensure_circuit_ir
+from ....core.ir import CircuitIR, ensure_circuit_ir
 from . import checkpointing as _checkpointing
 from .device_resolution import resolve_distributed_mps_device
 from .errors import MPSTrainingError
@@ -556,6 +556,20 @@ def _create_owned_optimizer(
     return torch.optim.Adam(parameters, lr=lr)
 
 
+def _step_circuit_ir(
+    circuit_factory: Callable[[], Any] | None,
+    base_ir: CircuitIR,
+    parameters: Sequence[torch.Tensor],
+) -> CircuitIR:
+    if circuit_factory is None:
+        return base_ir
+    step_ir = ensure_circuit_ir(circuit_factory())
+    step_parameters, _ = _parameter_layout(step_ir)
+    if tuple(map(id, step_parameters)) != tuple(map(id, parameters)):
+        raise MPSTrainingError("circuit_factory must reuse trainable leaf tensors")
+    return step_ir
+
+
 def _owned_reverse_work(
     records: Sequence[Any], rank: int
 ) -> tuple[int, int, int, int, float, int, int]:
@@ -861,15 +875,7 @@ def train_distributed_mps(
             torch.cuda.reset_peak_memory_stats(resolved_device)
         step_started = time.perf_counter()
         forward_started = step_started
-        step_ir = (
-            ensure_circuit_ir(circuit_factory()) if circuit_factory is not None else ir
-        )
-        if circuit_factory is not None:
-            step_parameters, _ = _parameter_layout(step_ir)
-            if tuple(map(id, step_parameters)) != tuple(map(id, parameters)):
-                raise MPSTrainingError(
-                    "circuit_factory must reuse the same trainable leaf tensors"
-                )
+        step_ir = _step_circuit_ir(circuit_factory, ir, parameters)
         with (
             record_function("flagquantum::mps::forward"),
             _nvtx_phase("flagquantum::mps::forward", resolved_device),
