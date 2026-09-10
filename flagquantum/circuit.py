@@ -30,8 +30,9 @@ if TYPE_CHECKING:
     from .noise import NoiseModel
     from .observables import OutputRequest
     from .runtime.builder_compilation import BuilderBindings
-    from .runtime.execution_plan import ExecutionPlan
+    from .runtime.execution_plan import CircuitAnalysis, ExecutionPlan
     from .runtime.options import ExecutionOptions
+    from .runtime.planner.models import RuntimeSelectionPlan
     from .runtime.result import ExecutionResult
 
 
@@ -357,7 +358,9 @@ class Circuit:
 
         return density_matrix(self)
 
-    def noisy_density_matrix(self, noise_model=None) -> torch.Tensor:
+    def noisy_density_matrix(
+        self, noise_model: NoiseModel | None = None
+    ) -> torch.Tensor:
         from .runtime.noise_registry import noisy_density_matrix
 
         return noisy_density_matrix(self, noise_model)
@@ -490,7 +493,7 @@ class Circuit:
 
         return schedule_layers(self.to_ir())
 
-    def analysis(self):
+    def analysis(self) -> CircuitAnalysis:
         from .runtime.planner import analyze
 
         return analyze(self.to_ir())
@@ -513,7 +516,7 @@ class Circuit:
             noise_model=noise_model,
         )
 
-    def runtime_plan(self, **options: Any):
+    def runtime_plan(self, **options: Any) -> RuntimeSelectionPlan:
         """Explain the best local, JAX, or distributed runtime for this circuit."""
 
         from .runtime.planner import plan_runtime_selection

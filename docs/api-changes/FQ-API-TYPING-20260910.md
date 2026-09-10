@@ -1,6 +1,6 @@
 # Public typing corrections for Circuit, execution scope, and CPU probes
 
-Status: proposed; API-owner approval pending. Production code is unchanged.
+Status: implemented and verified on 2026-09-10 under the recorded approval.
 
 ## Problem and scope
 
@@ -10,7 +10,10 @@ execution, exception propagation from strict execution scopes, and support for
 immutable CPU probe metadata. This proposal changes three files and introduces
 no exported names, dependencies, result fields, numerical behavior, or schemas.
 
-Owners: Integration/API owner, Runtime, and Compute. No approval is recorded.
+Owners: Integration/API owner, Runtime, and Compute. The user approved this
+specific proposal with "do" after reviewing its scope and compatibility impact
+on 2026-09-10. This approval covers the five changes below, including read-only
+CPU probe metadata; it does not authorize unrelated API changes.
 
 ## Exact changes
 
@@ -129,3 +132,33 @@ These would hide the contract mismatch or weaken existing guarantees.
 
 Other parameter-binding, instruction, execution-plan, optimizer-constructor,
 and Triton typing issues are outside this approval request.
+
+## Verification outcome
+
+All five approved corrections are implemented. Full-package strict mypy with
+Python 3.12 now reports 39 errors in 17 files across 445 source files, down from
+44 errors in 20 files. The five targeted diagnostics are gone. This is not a
+claim that the package is strict-clean.
+
+The initial behavioral run passed 88 tests covering noise execution, strict
+execution scopes, CPU capability snapshots, and five new contract tests. A
+subsequent run passed the five new tests and two existing Circuit/planner tests
+(7 passed in 0.90s). New tests cover original-exception identity, exact density
+results with and without noise, delegate parity, and equal snapshots from
+mutable and frozen CPU probes. The frozen probe remains immutable.
+
+The new test file also passes strict mypy with imported-module diagnostics
+silenced for this test-only check; the separate full-package check above retains
+its original strict configuration. An initial test-only failure from dynamically
+generated gate aliases was resolved using the existing typed `Circuit.gate`
+method, without suppressing the diagnostic. Black formatting was corrected.
+
+Ruff, Black, architecture, and the public API migration baseline pass. The
+baseline required no update. The changed signatures are those listed above;
+no snapshot was regenerated. Release notes record the static compatibility
+impact. No GPU, QPU, or distributed capacity claims follow from this CPU work.
+
+Logs: `/private/tmp/fq-approved-types-mypy.txt`,
+`/private/tmp/fq-approved-types-focused.txt`,
+`/private/tmp/fq-approved-types-focused-final.txt`, and
+`/private/tmp/fq-approved-types-static-final.txt`.

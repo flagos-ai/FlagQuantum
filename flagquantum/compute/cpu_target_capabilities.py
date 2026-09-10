@@ -145,14 +145,25 @@ class CPUCapabilityObservation:
 
 
 class CPUCapabilityProbe(Protocol):
-    """Provider-owned probe metadata and one observation operation."""
+    """Read-only provider metadata and one observation operation."""
 
-    target_id: str
-    provider_version: str
-    target_revision: str
-    environment_id: str
-    source_ref: str
-    target_class_source_ref: str
+    @property
+    def target_id(self) -> str: ...
+
+    @property
+    def provider_version(self) -> str: ...
+
+    @property
+    def target_revision(self) -> str: ...
+
+    @property
+    def environment_id(self) -> str: ...
+
+    @property
+    def source_ref(self) -> str: ...
+
+    @property
+    def target_class_source_ref(self) -> str: ...
 
     def observe(self) -> CPUCapabilityObservation: ...
 

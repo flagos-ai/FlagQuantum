@@ -5502,3 +5502,31 @@ were not changed in this pass. The proposed five-error reduction is not a test
 result. The latest completed strict check remains 44 errors across 445 source
 files; no new full strict or test run was performed for this documentation-only
 pass. Broader remediation remains incomplete.
+
+
+## Approved public typing corrections implemented
+
+The user approved `docs/api-changes/FQ-API-TYPING-20260910.md` with "do" on
+2026-09-10 after the compatibility explanation. Implemented only its five
+corrections: Circuit noise/inspection annotations, Literal[False] for strict
+scope exit, and read-only CPU probe metadata properties. Existing bodies,
+defaults, frozen observation storage, and result schemas are retained.
+
+Full-package strict mypy with Python 3.12 reports **39 errors in 17 files,
+checking 445 source files**, down from **44 errors in 20 files**. All five
+removed diagnostics correspond to the approved proposal. No package checker
+configuration, ignore, cast, or API snapshot was added or relaxed.
+
+Behavioral verification passed **88 tests in 3.42s**. After replacing dynamic
+gate aliases in the new tests with the existing statically declared `gate`
+method, final verification passed **7 tests in 0.90s** (five contract tests and
+two additional existing planner tests). This covers 90 distinct test cases
+across the runs. The new test file passes a separate strict static check,
+including assignments of mutable and frozen probes to CPUCapabilityProbe.
+Full-package diagnostics remain measured independently without import silencing.
+
+Ruff, Black, architecture, and public API checks passed. The release notes and
+proposal record the approved compatibility impact and verified results. Logs
+use the prefix /private/tmp/fq-approved-types-. No full CPU suite or remote
+GPU/QPU jobs ran. Remaining package typing and accelerator validation are not
+claimed complete.

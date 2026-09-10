@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
 
 from .fallback import FallbackPolicy
 
@@ -88,7 +89,9 @@ class StrictExecutionScope:
     def __enter__(self) -> "StrictExecutionScope":
         return self
 
-    def __exit__(self, exc_type: object, exc: object, traceback: object) -> bool:
+    def __exit__(
+        self, exc_type: object, exc: object, traceback: object
+    ) -> Literal[False]:
         return False
 
     def accept_route(self, route: RouteExplanation) -> None:

@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Completed Circuit noise and inspection return annotations and specified that
+  `StrictExecutionScope` does not suppress exceptions. CPU probe metadata is
+  now read-only through `CPUCapabilityProbe`, supporting both frozen and mutable
+  provider implementations. Update mutable metadata through the concrete
+  provider type before passing it to the adapter; assignments through the
+  protocol are rejected by static type checkers. Runtime call syntax, results,
+  and serialized schemas are unchanged.
+
 - Extended `fq.run` with the explicit
   `compiler="qsteed", target="quafu:<backend>", shots=...` remote journey. It
   performs compilation, sealed packaging, submission, and result retrieval
