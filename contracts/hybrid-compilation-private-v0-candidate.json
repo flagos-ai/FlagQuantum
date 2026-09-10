@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase28_dependency_preserving_logical_scheduling_verified",
+  "status": "phase29_verified_deterministic_target_text_emission",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -950,6 +950,48 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE28_EVIDENCE.md"
   },
   "phase28_completed": true,
+  "phase29": {
+    "stage": "verified_deterministic_target_text_emission",
+    "input": "flagquantum.compiler.target_legalization.TargetLegalizationResult",
+    "output": "private_in_process_emission_result_and_audit",
+    "profiles": {
+      "openqasm-2.0": "qasm_backend",
+      "openqasm-3.0": "qasm_backend",
+      "qcis-1.0": "qcis_backend"
+    },
+    "existing_emitters_reused": true,
+    "accepted_result_profile": "one_terminal_full_register_samples_request",
+    "pre_emission_schedule_revalidation": true,
+    "identity_inputs": [
+      "profile_and_media_type",
+      "utf8_payload_sha256",
+      "final_circuit_content_hash",
+      "target_snapshot_id",
+      "target_legalization_identity",
+      "schedule_identity"
+    ],
+    "rejected_semantics": [
+      "observable_expectations",
+      "dynamic_measurement_or_reset",
+      "classical_conditions",
+      "channels",
+      "arbitrary_matrices",
+      "unbound_parameters",
+      "partial_or_non_samples_results"
+    ],
+    "shots_encoded_in_target_text": false,
+    "generic_artifact_envelope_added": false,
+    "program_artifact_v1_changed": false,
+    "historical_sealed_executable_restored": false,
+    "runtime_adapter_or_submission": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE29_EVIDENCE.md"
+  },
+  "phase29_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

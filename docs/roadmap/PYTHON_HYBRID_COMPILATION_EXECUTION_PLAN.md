@@ -1019,6 +1019,35 @@ Exit gate:
 - no gate duration, latency, crosstalk, fidelity, pulse, provider execution,
   TargetIR, public API, default-path, or performance claim is added.
 
+### Phase 29 — verified deterministic target-text emission
+
+Gate the existing OpenQASM 2, OpenQASM 3, and QCIS emitters behind a completed
+`TargetLegalizationResult`. Select from a closed Compiler-owned emission-profile
+table and require the legalized backend to match the selected format. Bind the
+UTF-8 payload hash to final circuit content, target snapshot, legalization, and
+logical schedule identities.
+
+Recompute scheduling evidence immediately before emission to detect mutation
+after legalization. Accept only the current lossless static result profile:
+exactly one terminal full-register samples request, no observables, dynamic
+instructions, classical conditions, channels, resets, or arbitrary matrices.
+Leave shots in the execution request rather than encoding them into target
+program text. Normalize all emitter errors into one Compiler failure boundary.
+
+The returned immutable record is local emission output and audit evidence. It
+is deliberately not a generic artifact envelope, serialized cross-layer
+contract, or replacement for Core `ProgramArtifact` v1.
+
+Exit gate:
+
+- OpenQASM 2, OpenQASM 3, and QCIS reuse their existing deterministic emitters;
+- unknown profiles and backend/profile mismatches fail closed;
+- emitted content and audit identities are deterministic and tamper-sensitive;
+- unbound or invalid parameters fail before an emission result is returned;
+- unsupported result, dynamic, channel, and matrix semantics fail without loss;
+- no new generic artifact, deployment package, Runtime adapter, submission,
+  TargetIR, public API, default-path, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1175,3 +1204,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 26 evidenced native-gate legalization implemented and verified
 - [x] Phase 27 bounded topology legalization implemented and verified
 - [x] Phase 28 dependency-preserving logical scheduling implemented and verified
+- [x] Phase 29 verified deterministic target-text emission implemented and verified

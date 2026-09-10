@@ -931,3 +931,27 @@ duration, measurement or feedback latency, concurrent hardware support,
 crosstalk, fidelity, calibration, pulse timing, or makespan. It does not emit a
 target program, execute the schedule, create TargetIR, add public exports,
 change the default path, or make a performance claim.
+
+## Phase 29 verified deterministic target-text-emission authorization
+
+Phase 29 may invoke the existing OpenQASM 2, OpenQASM 3, or QCIS text emitter
+only after receiving a successful `TargetLegalizationResult`. A closed profile
+table binds each exact format version and media type to its required backend.
+The immutable result records emitted text, its SHA-256 digest, final circuit
+content, selected target snapshot, target legalization, logical schedule, and a
+deterministic emission identity.
+
+The scheduler is rerun before emission and its identity must match the evidence
+stored during legalization. The current lossless profile requires exactly one
+terminal full-register samples request and rejects observable expectations,
+dynamic measurement or reset, classical conditions, channels, arbitrary
+matrices, unbound parameters, unknown profiles, and backend/profile mismatch.
+Finite shots remain execution-request information and are not encoded into the
+program text.
+
+`TargetEmissionResult` is an in-process Compiler result, not a serializable
+artifact envelope or trust boundary. This phase neither changes nor repurposes
+Core `ProgramArtifact` v1, and it does not restore the removed historical
+`SealedExecutableArtifact`. It adds no target submission, provider credentials,
+Runtime adapter, deployment package, TargetIR, public export, default-path
+change, or performance claim.

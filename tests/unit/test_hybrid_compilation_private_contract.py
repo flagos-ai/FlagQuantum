@@ -1005,9 +1005,7 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     contract = _contract()
     phase27 = contract["phase27"]
 
-    assert contract["status"] == (
-        "phase28_dependency_preserving_logical_scheduling_verified"
-    )
+    assert contract["status"] == "phase29_verified_deterministic_target_text_emission"
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
@@ -1057,9 +1055,7 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
     contract = _contract()
     phase28 = contract["phase28"]
 
-    assert contract["status"] == (
-        "phase28_dependency_preserving_logical_scheduling_verified"
-    )
+    assert contract["status"] == "phase29_verified_deterministic_target_text_emission"
     assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase28["output_artifact"] == (
         "immutable_instruction_index_schedule_evidence"
@@ -1096,3 +1092,38 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE28_EVIDENCE.md"
     )
     assert contract["phase28_completed"] is True
+
+
+def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
+    contract = _contract()
+    phase29 = contract["phase29"]
+
+    assert contract["status"] == "phase29_verified_deterministic_target_text_emission"
+    assert phase29["input"] == (
+        "flagquantum.compiler.target_legalization.TargetLegalizationResult"
+    )
+    assert phase29["output"] == "private_in_process_emission_result_and_audit"
+    assert phase29["profiles"] == {
+        "openqasm-2.0": "qasm_backend",
+        "openqasm-3.0": "qasm_backend",
+        "qcis-1.0": "qcis_backend",
+    }
+    assert phase29["existing_emitters_reused"] is True
+    assert phase29["accepted_result_profile"] == (
+        "one_terminal_full_register_samples_request"
+    )
+    assert phase29["pre_emission_schedule_revalidation"] is True
+    assert phase29["shots_encoded_in_target_text"] is False
+    assert phase29["generic_artifact_envelope_added"] is False
+    assert phase29["program_artifact_v1_changed"] is False
+    assert phase29["historical_sealed_executable_restored"] is False
+    assert phase29["runtime_adapter_or_submission"] is False
+    assert phase29["target_ir_added"] is False
+    assert phase29["public_root_export"] is False
+    assert phase29["stable_api_change"] is False
+    assert phase29["default_path_change"] is False
+    assert phase29["performance_claim"] is False
+    assert phase29["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE29_EVIDENCE.md"
+    )
+    assert contract["phase29_completed"] is True
