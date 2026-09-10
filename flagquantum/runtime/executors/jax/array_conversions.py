@@ -74,9 +74,9 @@ def _jax_parameter_array_from_input(parameters: Any, *, complex_bytes: int) -> A
     if torch.is_tensor(parameters):
         tensor = parameters.detach().contiguous()
         try:
-            import jax.dlpack
+            from jax import dlpack as jax_dlpack
 
-            return jnp.asarray(jax.dlpack.from_dlpack(tensor), dtype=real_dtype)
+            return jnp.asarray(jax_dlpack.from_dlpack(tensor), dtype=real_dtype)
         except Exception:
             return jnp.asarray(np.asarray(tensor.cpu()).copy(), dtype=real_dtype)
     return jnp.asarray(parameters, dtype=real_dtype)
