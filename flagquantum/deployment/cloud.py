@@ -479,16 +479,38 @@ def deploy_circuit(
     return provider.run(package)
 
 
+def _validate_count_histogram(counts: Mapping[str, int]) -> tuple[int, int]:
+    """Validate an ungrouped histogram and return its wire and shot counts."""
+
+    if not counts:
+        raise ValueError("Counts cannot be empty.")
+    n_wires = len(str(next(iter(counts))))
+    if n_wires == 0:
+        raise ValueError("Count bitstrings cannot be empty.")
+    shots = 0
+    for bitstring, count in counts.items():
+        bits = str(bitstring)
+        if len(bits) != n_wires:
+            raise ValueError("Count bitstrings must have the same width.")
+        if any(bit not in "01" for bit in bits):
+            raise ValueError("Count bitstrings must be binary.")
+        if isinstance(count, bool) or not isinstance(count, Integral):
+            raise TypeError("Counts must be non-negative integers.")
+        if count < 0:
+            raise ValueError("Counts must be non-negative integers.")
+        shots += int(count)
+    if shots == 0:
+        raise ValueError("Counts must contain at least one shot.")
+    return n_wires, shots
+
+
 def expectation_z_from_counts(
     counts: Mapping[str, int],
     wires: int | Sequence[int] | None = None,
 ) -> torch.Tensor:
     """Estimate Z expectations from cloud measurement counts."""
 
-    if not counts:
-        raise ValueError("Counts cannot be empty.")
-    first_key = next(iter(counts))
-    n_wires = len(str(first_key))
+    n_wires, shot_count = _validate_count_histogram(counts)
     if wires is None:
         wire_tuple = tuple(range(n_wires))
     elif isinstance(wires, int):
@@ -496,7 +518,9 @@ def expectation_z_from_counts(
     else:
         wire_tuple = tuple(int(wire) for wire in wires)
 
-    shots = float(sum(int(value) for value in counts.values()))
+    if any(wire < 0 or wire >= n_wires for wire in wire_tuple):
+        raise ValueError("Requested wires are outside the measured register.")
+    shots = float(shot_count)
     values = []
     for wire in wire_tuple:
         total = 0.0
@@ -513,9 +537,10 @@ def hamiltonian_expectation_from_counts(
 ) -> torch.Tensor:
     """Estimate an I/Z-only Hamiltonian from computational-basis counts."""
 
-    if not counts:
-        raise ValueError("Counts cannot be empty.")
-    shots = float(sum(int(value) for value in counts.values()))
+    n_wires, shot_count = _validate_count_histogram(counts)
+    if hamiltonian.n_wires > n_wires:
+        raise ValueError("Hamiltonian references wires outside the measured register.")
+    shots = float(shot_count)
     total = 0.0
     for term in hamiltonian.terms:
         coeff = float(torch.real(torch.as_tensor(term.coefficient)).detach())
