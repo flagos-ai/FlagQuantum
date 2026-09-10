@@ -91,7 +91,6 @@ _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
 _parse_z_zz_terms = parse_mps_z_zz_terms
-_qr_forward = mps_qr_forward
 _recv = receive_reverse_tensor
 _recv_static = receive_static_reverse_tensor
 _record = build_mps_reverse_tape_record
@@ -1000,7 +999,7 @@ def execute_torch_distributed_mps_reverse(
             before_left = state.local_tensors[left_wire].detach().clone()
             before_right = halo.detach().clone()
             with torch.no_grad():
-                after_left, after_right = _qr_forward(before_left, before_right)
+                after_left, after_right = mps_qr_forward(before_left, before_right)
             state.local_tensors[left_wire] = after_left
             if left_owner == right_owner:
                 state.local_tensors[left_wire + 1] = after_right
