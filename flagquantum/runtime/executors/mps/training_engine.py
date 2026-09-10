@@ -16,7 +16,7 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
-from ....compute import get_platform_runtime
+from ....compute import PlatformRuntime, get_platform_runtime
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from . import checkpointing as _checkpointing
 from .device_resolution import resolve_distributed_mps_device
@@ -44,6 +44,22 @@ _parameter_layout = build_mps_parameter_layout
 
 def _nvtx_phase(name: str, device: torch.device) -> AbstractContextManager[None]:
     return torch.cuda.nvtx.range(name) if device.type == "cuda" else nullcontext()
+
+
+def _finish_training_phase(
+    started: float,
+    device: torch.device,
+    platform: PlatformRuntime,
+    *,
+    reset_peak_memory: bool,
+) -> tuple[float, int]:
+    peak_memory = 0
+    if device.type == "cuda":
+        platform.synchronize(device)
+        peak_memory = int(torch.cuda.max_memory_allocated(device))
+        if reset_peak_memory:
+            torch.cuda.reset_peak_memory_stats(device)
+    return time.perf_counter() - started, peak_memory
 
 
 def _initial_state_contract(
@@ -826,13 +842,12 @@ def train_distributed_mps(
                 canonicalization_policy=canonicalization_policy,
                 svd_driver=svd_driver,
             )
-        if resolved_device.type == "cuda":
-            platform.synchronize(resolved_device)
-            forward_peak_memory = int(torch.cuda.max_memory_allocated(resolved_device))
-            torch.cuda.reset_peak_memory_stats(resolved_device)
-        else:
-            forward_peak_memory = 0
-        forward_seconds = time.perf_counter() - forward_started
+        forward_seconds, forward_peak_memory = _finish_training_phase(
+            forward_started,
+            resolved_device,
+            platform,
+            reset_peak_memory=True,
+        )
         for parameter in parameters:
             parameter.grad = None
         reverse_started = time.perf_counter()
@@ -841,12 +856,12 @@ def train_distributed_mps(
             _nvtx_phase("flagquantum::mps::reverse_vjp", resolved_device),
         ):
             reverse.backward()
-        if resolved_device.type == "cuda":
-            platform.synchronize(resolved_device)
-            reverse_peak_memory = int(torch.cuda.max_memory_allocated(resolved_device))
-        else:
-            reverse_peak_memory = 0
-        reverse_seconds = time.perf_counter() - reverse_started
+        reverse_seconds, reverse_peak_memory = _finish_training_phase(
+            reverse_started,
+            resolved_device,
+            platform,
+            reset_peak_memory=False,
+        )
         diagnostic_parameter_values = (
             tuple(
                 (index, float(parameters[index].detach().cpu()))
