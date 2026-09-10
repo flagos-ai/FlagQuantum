@@ -128,11 +128,13 @@ def build_mps_reverse_backward(
                             raise MPSReverseContractError(
                                 f"fused local MPS VJP failed at segment [{operation_ids}]: {error}"
                             ) from error
-                    for record, derivative in zip(segment, derivatives[: len(segment)]):
+                    for input_index, (record, derivative) in enumerate(
+                        zip(segment, derivatives[: len(segment)])
+                    ):
                         adjoints[record.wires[0]] = finite(
                             derivative,
                             operation=record.operation_id,
-                            like=segment_inputs[segment.index(record)],
+                            like=segment_inputs[input_index],
                         )
                     for parameter_index, derivative in zip(
                         active_indices, derivatives[len(segment) :]
