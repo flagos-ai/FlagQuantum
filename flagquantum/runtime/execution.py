@@ -184,6 +184,48 @@ def _distributed_local_world_size(
     return max(1, int(world_size))
 
 
+def _production_statevector_options(
+    device_options: dict[str, Any],
+    *,
+    world_size: int,
+    measure: bool,
+) -> dict[str, Any]:
+    if world_size > 1 and not torch.distributed.is_initialized():
+        raise ExecutionError(
+            "production distributed statevector execution requires an initialized "
+            "torch.distributed process group"
+        )
+    process_group = device_options.get("process_group")
+    actual_world_size = (
+        torch.distributed.get_world_size(process_group)
+        if torch.distributed.is_initialized()
+        else 1
+    )
+    if actual_world_size != world_size:
+        raise ExecutionError(
+            "planned distributed world size does not match the active process group: "
+            f"{world_size} != {actual_world_size}"
+        )
+    if measure:
+        raise ExecutionError(
+            "measure=True is not supported by the rank-local production result; "
+            "use a supported distributed observable execution path"
+        )
+    option_names = {
+        "exchange_buffer_bytes",
+        "compact_index_threshold",
+        "process_group",
+        "fuse_cross_shard_gates",
+        "pipeline_pair_exchange",
+        "wire_layout",
+        "preferred_local_wires",
+        "persistent_wire_layout",
+    }
+    return {
+        name: device_options[name] for name in option_names if name in device_options
+    }
+
+
 def run_distributed(
     ir: CircuitIR,
     *,
@@ -262,42 +304,11 @@ def run_distributed(
         backend_policy.profile == "production"
         and backend_policy.torch_backend == "torch_distributed"
     ):
-        if world_size > 1 and not torch.distributed.is_initialized():
-            raise ExecutionError(
-                "production distributed statevector execution requires an initialized "
-                "torch.distributed process group"
-            )
-        process_group = device_options.get("process_group")
-        actual_world_size = (
-            torch.distributed.get_world_size(process_group)
-            if torch.distributed.is_initialized()
-            else 1
+        executor_options = _production_statevector_options(
+            device_options,
+            world_size=world_size,
+            measure=measure,
         )
-        if actual_world_size != world_size:
-            raise ExecutionError(
-                "planned distributed world size does not match the active process group: "
-                f"{world_size} != {actual_world_size}"
-            )
-        if measure:
-            raise ExecutionError(
-                "measure=True is not supported by the rank-local production result; "
-                "use a supported distributed observable execution path"
-            )
-        executor_option_names = {
-            "exchange_buffer_bytes",
-            "compact_index_threshold",
-            "process_group",
-            "fuse_cross_shard_gates",
-            "pipeline_pair_exchange",
-            "wire_layout",
-            "preferred_local_wires",
-            "persistent_wire_layout",
-        }
-        executor_options = {
-            name: device_options[name]
-            for name in executor_option_names
-            if name in device_options
-        }
         result = execute_torch_distributed_statevector(
             execution_ir,
             device=device,
