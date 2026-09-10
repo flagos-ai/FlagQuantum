@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import torch
 
@@ -185,33 +185,14 @@ def validate_measurements(
         _validate_pauli_request(kind, wires, metadata, n_wires)
 
 
-def _sample(
-    target: Any,
+def _collect_postselected_samples(
+    sampler: Callable[..., torch.Tensor],
     *,
     shots: int,
-    wires: tuple[int, ...],
-    metadata: dict[str, Any],
-    n_wires: int,
-) -> tuple[torch.Tensor, dict[str, Any]]:
-    sampler = getattr(target, "sample", None)
-    if not callable(sampler):
-        raise CapabilityError(
-            f"{type(target).__name__} does not support computational-basis sampling"
-        )
-    generator = _generator(target, metadata)
-    conditions = _postselection(metadata, n_wires)
-    if not conditions:
-        samples = sampler(shots, generator=generator, format="bits")
-        selected = samples[..., list(wires)]
-        return selected, {
-            "draws": [int(shots)] * int(selected.shape[0]),
-            "acceptance_rate": [1.0] * int(selected.shape[0]),
-        }
-
-    multiplier = int(metadata.get("max_postselection_draw_multiplier", 1024))
-    if multiplier < 1:
-        raise ValueError("max_postselection_draw_multiplier must be positive")
-    max_draws = int(shots) * multiplier
+    conditions: dict[int, int],
+    max_draws: int,
+    generator: torch.Generator | None,
+) -> tuple[torch.Tensor, list[int], int]:
     retained: list[list[torch.Tensor]] | None = None
     accepted_counts: list[int] = []
     draws = 0
@@ -241,6 +222,43 @@ def _sample(
     conditioned = torch.stack(
         [torch.cat(parts, dim=0)[:shots] for parts in retained],
         dim=0,
+    )
+    return conditioned, accepted_counts, draws
+
+
+def _sample(
+    target: Any,
+    *,
+    shots: int,
+    wires: tuple[int, ...],
+    metadata: dict[str, Any],
+    n_wires: int,
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    sampler = getattr(target, "sample", None)
+    if not callable(sampler):
+        raise CapabilityError(
+            f"{type(target).__name__} does not support computational-basis sampling"
+        )
+    generator = _generator(target, metadata)
+    conditions = _postselection(metadata, n_wires)
+    if not conditions:
+        samples = sampler(shots, generator=generator, format="bits")
+        selected = samples[..., list(wires)]
+        return selected, {
+            "draws": [int(shots)] * int(selected.shape[0]),
+            "acceptance_rate": [1.0] * int(selected.shape[0]),
+        }
+
+    multiplier = int(metadata.get("max_postselection_draw_multiplier", 1024))
+    if multiplier < 1:
+        raise ValueError("max_postselection_draw_multiplier must be positive")
+    max_draws = int(shots) * multiplier
+    conditioned, accepted_counts, draws = _collect_postselected_samples(
+        sampler,
+        shots=shots,
+        conditions=conditions,
+        max_draws=max_draws,
+        generator=generator,
     )
     return conditioned[..., list(wires)], {
         "draws": [draws] * len(accepted_counts),
