@@ -68,6 +68,7 @@ def test_nonlocal_gate_routes_to_edges_and_preserves_state() -> None:
         strategy="restore_after_each_gate",
     )
 
+    assert result.source_program is source
     assert result.inserted_swap_count == 4
     assert result.final_logical_to_physical == (0, 1, 2, 3)
     assert all(

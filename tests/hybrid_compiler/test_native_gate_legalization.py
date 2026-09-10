@@ -130,6 +130,7 @@ def test_native_program_preserves_the_exact_circuit_instance() -> None:
     second = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
 
     assert first.program is source
+    assert first.source_program is source
     assert first.changed is False
     assert first.decompositions == ()
     assert first.legalization_identity == second.legalization_identity

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any, Mapping
 
@@ -42,12 +42,19 @@ class GateDecompositionRecord:
 class NativeGateLegalizationResult:
     """A CircuitIR plus immutable native-gate legalization evidence."""
 
+    source_program: CircuitIR = field(repr=False)
     program: CircuitIR
     source_content_hash: str
     target_snapshot_id: str
     native_opcodes: tuple[str, ...]
     decompositions: tuple[GateDecompositionRecord, ...]
     legalization_identity: str
+
+    def __post_init__(self) -> None:
+        if self.source_program.content_hash != self.source_content_hash:
+            raise ValueError(
+                "native-gate source program does not match source_content_hash"
+            )
 
     @property
     def changed(self) -> bool:
@@ -274,6 +281,7 @@ def legalize_native_gates(
     native_opcodes = tuple(sorted(descriptors))
     decompositions = tuple(records)
     return NativeGateLegalizationResult(
+        source_program=ir,
         program=result,
         source_content_hash=ir.content_hash,
         target_snapshot_id=snapshot.snapshot_id,

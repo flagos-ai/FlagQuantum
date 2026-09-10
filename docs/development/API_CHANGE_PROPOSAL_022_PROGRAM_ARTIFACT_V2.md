@@ -329,6 +329,11 @@ internal adapters have conformance evidence.
    scheduling, deterministic emission, strict conformance, and executable
    artifact construction in order. The returned evidence binds the input,
    optional parameter binding, target, and final artifact identities.
+10. **Complete without envelope change:** Compiler constructs a deterministic
+    physical mapping and dependency-schedule plan over the final Core
+    `CircuitIR`. The plan remains in-process compilation evidence and its
+    identity participates in the enclosing artifact-compilation identity; it is
+    not a new serialized ProgramArtifact v2 field.
 
 ## Acceptance
 

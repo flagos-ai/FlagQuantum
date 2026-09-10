@@ -129,6 +129,10 @@ def test_artifact_compilation_closes_verified_target_handoff() -> None:
     assert first.binding_identity is None
     assert first.legalization.topology_legalization is not None
     assert first.legalization.topology_legalization.inserted_swap_count > 0
+    assert first.physical_plan.legalization is first.legalization
+    assert first.physical_plan.program is first.legalization.program
+    assert first.physical_plan.plan_identity == second.physical_plan.plan_identity
+    assert first.physical_plan.mapping_transitions
     assert first.emission.text == executable.payload
     assert first.conformance.conformance_identity == (
         executable.compilation["conformance_identity"]

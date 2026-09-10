@@ -17,6 +17,7 @@ from ..core._artifacts import (
 from ..core.ir import CircuitIR
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import CompilationError
+from .physical_plan import PhysicalCircuitPlan, build_physical_circuit_plan
 from .routing import CouplingMap
 from .target_artifact import build_target_artifact
 from .target_conformance import TargetConformanceResult, verify_target_emission
@@ -36,6 +37,7 @@ def _compilation_identity(
     circuit_artifact_identity: str,
     binding_identity: str | None,
     target_snapshot_id: str,
+    physical_plan_identity: str,
     executable_artifact_identity: str,
 ) -> str:
     payload = {
@@ -45,6 +47,7 @@ def _compilation_identity(
         "circuit_artifact_identity": circuit_artifact_identity,
         "binding_identity": binding_identity,
         "target_snapshot_id": target_snapshot_id,
+        "physical_plan_identity": physical_plan_identity,
         "executable_artifact_identity": executable_artifact_identity,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -60,6 +63,7 @@ class ArtifactCompilationResult:
     circuit_artifact_identity: str
     binding_identity: str | None
     legalization: TargetLegalizationResult
+    physical_plan: PhysicalCircuitPlan
     emission: TargetEmissionResult
     conformance: TargetConformanceResult
     executable_artifact: ProgramArtifactV2
@@ -99,6 +103,15 @@ class ArtifactCompilationResult:
             raise ValueError("binding_identity must be a lowercase SHA-256 digest")
         if not isinstance(self.legalization, TargetLegalizationResult):
             raise TypeError("legalization must be a TargetLegalizationResult")
+        if not isinstance(self.physical_plan, PhysicalCircuitPlan):
+            raise TypeError("physical_plan must be a PhysicalCircuitPlan")
+        if (
+            self.physical_plan.legalization is not self.legalization
+            or self.physical_plan.program is not self.legalization.program
+        ):
+            raise ValueError(
+                "artifact compilation physical plan is not bound to legalization"
+            )
         if not isinstance(self.emission, TargetEmissionResult):
             raise TypeError("emission must be a TargetEmissionResult")
         if not isinstance(self.conformance, TargetConformanceResult):
@@ -151,6 +164,7 @@ class ArtifactCompilationResult:
             circuit_artifact_identity=self.circuit_artifact_identity,
             binding_identity=self.binding_identity,
             target_snapshot_id=self.legalization.target_snapshot_id,
+            physical_plan_identity=self.physical_plan.plan_identity,
             executable_artifact_identity=self.executable_artifact.artifact_identity,
         )
         if self.compilation_identity and self.compilation_identity != expected:
@@ -222,7 +236,14 @@ def compile_circuit_artifact_for_target(
             max_routing_added_operations=max_routing_added_operations,
             max_schedule_depth=max_schedule_depth,
         )
-        emission = emit_legalized_target(legalization, profile=profile)
+        physical_plan = build_physical_circuit_plan(
+            legalization,
+            coupling_map=coupling_map,
+        )
+        emission = emit_legalized_target(
+            physical_plan.legalization,
+            profile=profile,
+        )
         conformance = verify_target_emission(emission, legalization)
         executable = build_target_artifact(
             legalization,
@@ -240,6 +261,7 @@ def compile_circuit_artifact_for_target(
         circuit_artifact_identity=circuit_artifact.artifact_identity,
         binding_identity=binding_identity,
         legalization=legalization,
+        physical_plan=physical_plan,
         emission=emission,
         conformance=conformance,
         executable_artifact=executable,

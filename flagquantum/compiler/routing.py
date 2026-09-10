@@ -426,6 +426,7 @@ def _swap_instruction(
     *,
     strategy: str,
     phase: str,
+    source_instruction_index: int,
 ) -> Instruction:
     return Instruction(
         name="swap",
@@ -435,6 +436,7 @@ def _swap_instruction(
             "routing_strategy": strategy,
             "routing_phase": phase,
             "logical_wires": source.wires,
+            "source_instruction_index": source_instruction_index,
         },
     )
 
@@ -486,9 +488,8 @@ def _remap_instruction(
     wires: tuple[int, ...],
     *,
     strategy: str,
+    source_instruction_index: int,
 ) -> Instruction:
-    if wires == instruction.wires:
-        return instruction
     return Instruction(
         name=instruction.name,
         wires=wires,
@@ -496,9 +497,10 @@ def _remap_instruction(
         matrix=instruction.matrix,
         metadata=dict(instruction.metadata)
         | {
-            "layout_mapped": True,
+            "layout_mapped": wires != instruction.wires,
             "logical_wires": instruction.wires,
             "routing_strategy": strategy,
+            "source_instruction_index": source_instruction_index,
         },
     )
 
@@ -513,7 +515,7 @@ def _route_persistent_layout(
     logical_to_physical = list(range(ir.n_wires))
     physical_to_logical = list(range(ir.n_wires))
     routed: list[Instruction] = []
-    routing_swaps: list[tuple[int, int, Instruction]] = []
+    routing_swaps: list[tuple[int, int, Instruction, int]] = []
     topology_gate_count = 0
     routed_gate_count = 0
     skipped_channel_count = 0
@@ -524,6 +526,7 @@ def _route_persistent_layout(
         source: Instruction,
         *,
         phase: str,
+        source_instruction_index: int,
     ) -> None:
         routed.append(
             _swap_instruction(
@@ -532,6 +535,7 @@ def _route_persistent_layout(
                 source,
                 strategy=strategy,
                 phase=phase,
+                source_instruction_index=source_instruction_index,
             )
         )
         left_logical = physical_to_logical[left]
@@ -543,7 +547,7 @@ def _route_persistent_layout(
         logical_to_physical[left_logical] = right
         logical_to_physical[right_logical] = left
 
-    for instruction in ir:
+    for source_index, instruction in enumerate(ir):
         mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
         if len(instruction.wires) != 2:
             routed.append(
@@ -551,6 +555,7 @@ def _route_persistent_layout(
                     instruction,
                     mapped_wires,
                     strategy=strategy,
+                    source_instruction_index=source_index,
                 )
             )
             continue
@@ -561,6 +566,7 @@ def _route_persistent_layout(
                     instruction,
                     mapped_wires,
                     strategy=strategy,
+                    source_instruction_index=source_index,
                 )
             )
             continue
@@ -576,8 +582,19 @@ def _route_persistent_layout(
                 )
             routed_gate_count += 1
             for path_index in range(len(path) - 2):
-                swap = (path[path_index], path[path_index + 1], instruction)
-                apply_mapping_swap(*swap, phase="forward")
+                swap = (
+                    path[path_index],
+                    path[path_index + 1],
+                    instruction,
+                    source_index,
+                )
+                apply_mapping_swap(
+                    swap[0],
+                    swap[1],
+                    swap[2],
+                    phase="forward",
+                    source_instruction_index=source_index,
+                )
                 routing_swaps.append(swap)
             mapped_wires = tuple(
                 logical_to_physical[wire] for wire in instruction.wires
@@ -587,12 +604,19 @@ def _route_persistent_layout(
                 instruction,
                 mapped_wires,
                 strategy=strategy,
+                source_instruction_index=source_index,
             )
         )
 
     pre_restore_layout = tuple(logical_to_physical)
-    for left, right, source in reversed(routing_swaps):
-        apply_mapping_swap(left, right, source, phase="final_restore")
+    for left, right, source, source_index in reversed(routing_swaps):
+        apply_mapping_swap(
+            left,
+            right,
+            source,
+            phase="final_restore",
+            source_instruction_index=source_index,
+        )
     if logical_to_physical != list(range(ir.n_wires)):
         raise RuntimeError("persistent routing failed to restore the final layout")
 
@@ -645,19 +669,40 @@ def route_to_topology(
     inserted_swap_count = 0
     topology_gate_count = 0
     skipped_channel_count = 0
-    for instruction in ir:
+    for source_index, instruction in enumerate(ir):
         if len(instruction.wires) != 2:
-            routed.append(instruction)
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    instruction.wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
             continue
         if instruction.metadata.get("is_channel"):
             skipped_channel_count += 1
-            routed.append(instruction)
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    instruction.wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
             continue
 
         topology_gate_count += 1
         left, right = instruction.wires
         if coupling.has_edge(left, right):
-            routed.append(instruction)
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    instruction.wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
             continue
 
         path = coupling.shortest_path(left, right)
@@ -679,6 +724,7 @@ def route_to_topology(
                     instruction,
                     strategy=strategy,
                     phase="forward",
+                    source_instruction_index=source_index,
                 )
             )
         routed.append(
@@ -692,6 +738,7 @@ def route_to_topology(
                     "routed": True,
                     "logical_wires": instruction.wires,
                     "routing_strategy": strategy,
+                    "source_instruction_index": source_index,
                 },
             )
         )
@@ -703,6 +750,7 @@ def route_to_topology(
                     instruction,
                     strategy=strategy,
                     phase="gate_restore",
+                    source_instruction_index=source_index,
                 )
             )
     metadata = dict(ir.metadata)

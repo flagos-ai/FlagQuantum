@@ -1085,3 +1085,26 @@ with the final artifact.
 This phase performs no numerical execution, target selection, provider
 submission, credential access, public export, default-path change, or
 performance claim.
+
+## Phase 36 Physical mapping and dependency-schedule plan
+
+Compiler composes the existing topology routing, native-gate legalization, and
+dependency schedule into an immutable `PhysicalCircuitPlan`. The plan is a
+verified view over the final Core-owned `CircuitIR`, not a new TargetIR or a
+second instruction authority. Topology and native legalization results retain
+their actual source `CircuitIR` objects so every final physical instruction can
+be traced through its routed instruction to its logical source instruction.
+
+Routing SWAPs carry exact source indexes and produce replayable layout
+transitions. Every final two-wire instruction is checked against the supplied
+coupling map. Final instructions record their source and topology indexes,
+native replacement ordinal, physical wires, logical-source wires, dependency
+layer, predecessors, and dependency kinds. The plan also records deterministic
+depth, maximum parallel width, and one deterministic dependency critical path.
+
+These layers are unit-time causal layers only. They make no claim about gate
+duration, pulse timing, crosstalk, calibration quality, directed couplings,
+physical ancilla allocation, or hardware performance. Artifact-to-artifact
+compilation now requires the plan and includes its identity in the enclosing
+compilation identity, while the approved ProgramArtifact v2 envelope remains
+unchanged.

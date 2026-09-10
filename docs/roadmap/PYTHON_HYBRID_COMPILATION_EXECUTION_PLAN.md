@@ -1212,6 +1212,29 @@ Exit gate:
 - Compiler performs no numerical execution or provider submission;
 - no public export, default-path change, or performance claim is added.
 
+### Phase 36 — Physical mapping and dependency-schedule plan
+
+Compose target legalization evidence into a deterministic physical plan without
+introducing a second circuit representation. Retain actual source programs,
+replay logical-to-physical mapping transitions, and link each final native
+instruction to its logical source and dependency-schedule record.
+
+Exit gate:
+
+- topology and native-gate legalization retain their exact source `CircuitIR`
+  objects and verify the corresponding source hashes;
+- routing-generated and mapped instructions carry exact source indexes;
+- mapping transitions replay to the recorded final layout;
+- every final two-wire instruction is legal on the evidenced coupling map;
+- final native instructions retain source, routed-instruction, decomposition,
+  physical-wire, logical-wire, layer, predecessor, and dependency evidence;
+- a deterministic plan identity covers all mapping and schedule evidence;
+- artifact-to-artifact compilation requires and retains the physical plan;
+- dependency layers are not represented as duration, pulse, calibration, or
+  hardware-performance evidence;
+- no TargetIR, physical-ancilla allocation, public export, default-path change,
+  or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1377,3 +1400,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 33 Artifact-v2 vertical slice and local circuit execution completed
 - [x] Phase 34 Explicit symbolic circuit-artifact binding completed
 - [x] Phase 35 Verified artifact-to-artifact target compilation completed
+- [x] Phase 36 Physical mapping and dependency-schedule plan completed

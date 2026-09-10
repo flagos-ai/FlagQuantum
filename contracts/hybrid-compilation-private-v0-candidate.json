@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase35_artifact_to_artifact_compilation_complete",
+  "status": "phase36_physical_circuit_plan_complete",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -1167,6 +1167,28 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE35_EVIDENCE.md"
   },
   "phase35_completed": true,
+  "phase36": {
+    "stage": "physical_mapping_and_dependency_schedule_plan",
+    "builder": "flagquantum.compiler.physical_plan.build_physical_circuit_plan",
+    "result": "flagquantum.compiler.physical_plan.PhysicalCircuitPlan",
+    "authoritative_program": "flagquantum.core.ir.CircuitIR",
+    "source_program_objects_retained": true,
+    "mapping_transitions_replayable": true,
+    "physical_instructions_link_source_topology_native_and_schedule": true,
+    "coupling_edges_verified": true,
+    "critical_path_is_dependency_based": true,
+    "identity_is_deterministic": true,
+    "artifact_compilation_requires_plan": true,
+    "target_ir_added": false,
+    "timing_or_duration_claim": false,
+    "pulse_or_calibration_claim": false,
+    "physical_ancilla_allocation": false,
+    "public_root_export": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE36_EVIDENCE.md"
+  },
+  "phase36_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

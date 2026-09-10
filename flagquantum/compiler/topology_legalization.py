@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from ..core.target_capabilities import TargetCapabilitySnapshot
@@ -20,6 +20,7 @@ class TopologyLegalizationError(CompilationError):
 class TopologyLegalizationResult:
     """Routed CircuitIR and immutable evidence bound to one target snapshot."""
 
+    source_program: CircuitIR = field(repr=False)
     program: CircuitIR
     source_content_hash: str
     target_snapshot_id: str
@@ -30,6 +31,12 @@ class TopologyLegalizationResult:
     inserted_swap_count: int
     final_logical_to_physical: tuple[int, ...]
     legalization_identity: str
+
+    def __post_init__(self) -> None:
+        if self.source_program.content_hash != self.source_content_hash:
+            raise ValueError(
+                "topology source program does not match source_content_hash"
+            )
 
 
 def _topology_identity(coupling: CouplingMap) -> str:
@@ -137,6 +144,7 @@ def legalize_circuit_topology(
 
     topology_identity = _topology_identity(deterministic_coupling)
     return TopologyLegalizationResult(
+        source_program=source,
         program=routed,
         source_content_hash=source.content_hash,
         target_snapshot_id=snapshot.snapshot_id,
