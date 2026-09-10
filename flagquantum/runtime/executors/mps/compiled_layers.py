@@ -66,7 +66,7 @@ def device_memory_metadata(device: torch.device) -> dict[str, int | None]:
     }
 
 
-def _collect_compiled_layer(
+def collect_compiled_mps_layer(
     instructions: Sequence[Instruction], layer_start: int
 ) -> tuple[_MPSLayerItem, ...]:
     first = instructions[layer_start]
@@ -228,7 +228,7 @@ def prepare_compiled_mps_layer(
     tuple[dict[str, Any], ...],
 ]:
     """Prepare one disjoint rotation layer in a bounded tensor scope."""
-    layer = _collect_compiled_layer(instructions, layer_start)
+    layer = collect_compiled_mps_layer(instructions, layer_start)
     if layer[0][1].name == "ry":
         precomputed = _prepare_one_site_layer(
             layer, state=state, bsz=bsz, device=device, dtype=dtype
@@ -251,6 +251,7 @@ def prepare_compiled_mps_layer(
 
 
 __all__ = (
+    "collect_compiled_mps_layer",
     "device_memory_metadata",
     "prepare_compiled_mps_layer",
     "require_layer_cache_drained",
