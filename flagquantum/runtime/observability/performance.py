@@ -271,53 +271,69 @@ def calibrate_cost_model(record: PerformanceRecord) -> CostModelCalibration:
     )
 
 
+def _current_record_issues(
+    record: PerformanceRecord,
+    thresholds: PerformanceThresholds,
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    if not record.correctness_passed:
+        errors.append("correctness_check_failed")
+    if record.robust_coefficient_of_variation > thresholds.max_coefficient_of_variation:
+        errors.append("latency_variance_exceeds_threshold")
+    if record.useful_work_fraction < thresholds.min_useful_work_fraction:
+        if record.explanation:
+            warnings.append("persistently_low_useful_work_fraction_explained")
+        else:
+            errors.append("persistently_low_useful_work_fraction")
+    if (
+        max(
+            memory_slope(record.allocated_memory_by_step),
+            memory_slope(record.reserved_memory_by_step),
+        )
+        > thresholds.max_memory_slope_bytes_per_step
+    ):
+        errors.append("unbounded_memory_growth_suspected")
+    if (
+        max(record.heartbeat_gaps_seconds, default=0.0)
+        > thresholds.max_heartbeat_gap_seconds
+    ):
+        errors.append("no_progress_heartbeat_timeout")
+    if record.communication_fraction > 0.5:
+        warnings.append("communication_dominates_useful_work")
+    if not math.isfinite(record.mean_seconds):
+        errors.append("non_finite_latency")
+    return errors, warnings
+
+
+def _baseline_regressions(
+    current: PerformanceRecord,
+    baseline: PerformanceRecord,
+    thresholds: PerformanceThresholds,
+) -> list[str]:
+    errors: list[str] = []
+    latency_limit = baseline.median_seconds * (
+        1 + thresholds.max_latency_regression_fraction
+    )
+    if current.median_seconds > latency_limit:
+        errors.append("latency_regression")
+    memory_limit = baseline.peak_memory_reserved_bytes * (
+        1 + thresholds.max_memory_regression_fraction
+    )
+    if current.peak_memory_reserved_bytes > memory_limit:
+        errors.append("memory_regression")
+    return errors
+
+
 def evaluate_performance(
     current: PerformanceRecord,
     *,
     baseline: PerformanceRecord | None = None,
     thresholds: PerformanceThresholds = PerformanceThresholds(),
 ) -> PerformanceGateResult:
-    errors: list[str] = []
-    warnings: list[str] = []
-    if not current.correctness_passed:
-        errors.append("correctness_check_failed")
-    if (
-        current.robust_coefficient_of_variation
-        > thresholds.max_coefficient_of_variation
-    ):
-        errors.append("latency_variance_exceeds_threshold")
-    if current.useful_work_fraction < thresholds.min_useful_work_fraction:
-        if current.explanation:
-            warnings.append("persistently_low_useful_work_fraction_explained")
-        else:
-            errors.append("persistently_low_useful_work_fraction")
-    allocated_slope = memory_slope(current.allocated_memory_by_step)
-    reserved_slope = memory_slope(current.reserved_memory_by_step)
-    if (
-        max(allocated_slope, reserved_slope)
-        > thresholds.max_memory_slope_bytes_per_step
-    ):
-        errors.append("unbounded_memory_growth_suspected")
-    if (
-        max(current.heartbeat_gaps_seconds, default=0.0)
-        > thresholds.max_heartbeat_gap_seconds
-    ):
-        errors.append("no_progress_heartbeat_timeout")
+    errors, warnings = _current_record_issues(current, thresholds)
     if baseline is not None:
-        latency_limit = baseline.median_seconds * (
-            1 + thresholds.max_latency_regression_fraction
-        )
-        if current.median_seconds > latency_limit:
-            errors.append("latency_regression")
-        memory_limit = baseline.peak_memory_reserved_bytes * (
-            1 + thresholds.max_memory_regression_fraction
-        )
-        if current.peak_memory_reserved_bytes > memory_limit:
-            errors.append("memory_regression")
-    if current.communication_fraction > 0.5:
-        warnings.append("communication_dominates_useful_work")
-    if not math.isfinite(current.mean_seconds):
-        errors.append("non_finite_latency")
+        errors.extend(_baseline_regressions(current, baseline, thresholds))
     return PerformanceGateResult(not errors, tuple(errors), tuple(warnings))
 
 
