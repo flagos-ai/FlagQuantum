@@ -91,7 +91,7 @@ def execute_torch_distributed_mps_forward(
     rank = dist.get_rank()
     backend = str(dist.get_backend())
     resolved_device = torch.device(device or "cpu")
-    dtype = dtype or getattr(torch, ir.dtype)
+    resolved_dtype = dtype or getattr(torch, ir.dtype)
     bsz = int(ir.metadata.get("batch_size", 1))
     for index, instruction in enumerate(ir.instructions):
         wires = tuple(int(wire) for wire in instruction.wires)
@@ -115,7 +115,9 @@ def execute_torch_distributed_mps_forward(
     ownership = initial_mps_ownership(ir.n_wires, world_size)
     local_tensors = {}
     for wire in ownership[rank]:
-        tensor = torch.zeros((bsz, 1, 2, 1), dtype=dtype, device=resolved_device)
+        tensor = torch.zeros(
+            (bsz, 1, 2, 1), dtype=resolved_dtype, device=resolved_device
+        )
         tensor[:, :, 0, :] = 1
         local_tensors[wire] = tensor
     state = RankOwnedMPSState(
@@ -155,7 +157,7 @@ def execute_torch_distributed_mps_forward(
                     state=state,
                     bsz=bsz,
                     device=resolved_device,
-                    dtype=dtype,
+                    dtype=resolved_dtype,
                     factorization_workspace_policy=factorization_workspace_policy,
                     factorization_memory_provider=factorization_memory_provider,
                 )
@@ -193,7 +195,7 @@ def execute_torch_distributed_mps_forward(
                         state.config,
                         bsz=bsz,
                         device=resolved_device,
-                        dtype=dtype,
+                        dtype=resolved_dtype,
                     )
                 state.local_tensors[wires[0]] = outputs[0]
                 local_count += 1
@@ -219,7 +221,7 @@ def execute_torch_distributed_mps_forward(
                         state.config,
                         bsz=bsz,
                         device=resolved_device,
-                        dtype=dtype,
+                        dtype=resolved_dtype,
                     )
                     updated_left, updated_right = outputs
                     assert split_info is not None
@@ -231,7 +233,10 @@ def execute_torch_distributed_mps_forward(
                 local_count += 1
         else:
             matrix = instruction_matrix_for_mps(
-                instruction, bsz=bsz, device=resolved_device, dtype=dtype
+                instruction,
+                bsz=bsz,
+                device=resolved_device,
+                dtype=resolved_dtype,
             )
             event_messages, event_bytes, record = apply_rank_boundary_gate(
                 state, instruction, matrix
