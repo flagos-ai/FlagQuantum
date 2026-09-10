@@ -113,6 +113,8 @@ python examples/remote/jiuding_workspace_bell.py
 The Quafu path compiles and validates a circuit before submitting it to a QPU.
 The Jiuding path reuses a running workspace for low-latency remote compute.
 Both require provider credentials and configured remote resources.
+Use `--list-workspaces` first when the account can see more than one Jiuding
+workspace; a single visible workspace is selected automatically.
 
 ## Plan before execution
 

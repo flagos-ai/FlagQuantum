@@ -29,6 +29,15 @@ def _run_submit_example(monkeypatch, *arguments: str) -> None:
     runpy.run_path(str(example), run_name="__main__")
 
 
+def _run_workspace_example(monkeypatch, *arguments: str) -> None:
+    monkeypatch.setattr(sys, "argv", ["jiuding_workspace_bell.py", *arguments])
+    example = (
+        Path(__file__).resolve().parents[3]
+        / "examples/remote/jiuding_workspace_bell.py"
+    )
+    runpy.run_path(str(example), run_name="__main__")
+
+
 def test_fq_run_executes_bell_measurements_through_jiuding(monkeypatch) -> None:
     monkeypatch.setenv("JIUDING_WORKSPACE", "golden-path")
     monkeypatch.setattr(execution, "_CLIENTS", {})
@@ -59,6 +68,24 @@ def test_fq_run_executes_bell_measurements_through_jiuding(monkeypatch) -> None:
     assert result.provenance["requested_target"] == "jiuding:cpu"
     assert result.provenance["selected_target"] == "jiuding:cpu"
     assert result.provenance["cpu_fallback_used"] is False
+
+
+def test_workspace_example_lists_visible_context_without_execution(
+    monkeypatch, capsys
+) -> None:
+    class Client:
+        def __init__(self, *, workspace):
+            assert workspace is None
+
+        def list_workspaces(self):
+            return [{"name": "first-workspace", "queueName": "cpu-queue"}]
+
+    monkeypatch.setattr(remote_compute, "JiudingClient", Client)
+    _run_workspace_example(monkeypatch, "--list-workspaces")
+
+    assert json.loads(capsys.readouterr().out) == [
+        {"name": "first-workspace", "queueName": "cpu-queue"}
+    ]
 
 
 def test_submit_restore_and_read_managed_bell_job(monkeypatch) -> None:
