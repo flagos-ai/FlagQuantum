@@ -494,6 +494,45 @@ def _validate_training_runtime_options(
         raise ValueError("site_ownership_policy must be balanced or topology_aware")
 
 
+def _resolve_training_site_ownership(
+    ir: Any,
+    *,
+    world_size: int,
+    local_world_size: int,
+    site_ownership: Sequence[Sequence[int]] | None,
+    site_ownership_policy: str,
+    initial_bond_dimension: int,
+    inter_node_cut_multiplier: int,
+    ownership_maximum_load_ratio: float,
+) -> tuple[tuple[tuple[int, ...], ...], str]:
+    if site_ownership is not None:
+        return (
+            validate_mps_ownership(site_ownership, ir.n_wires, world_size),
+            "explicit",
+        )
+    if site_ownership_policy != "topology_aware" or world_size == 1:
+        return initial_mps_ownership(ir.n_wires, world_size), "balanced"
+    boundary_penalties = [1] * max(0, ir.n_wires - 1)
+    for instruction in ir.instructions:
+        wires = tuple(int(wire) for wire in instruction.wires)
+        if len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
+            boundary_penalties[min(wires)] += 1
+    bonds = (
+        1,
+        *([int(initial_bond_dimension)] * max(0, ir.n_wires - 1)),
+        1,
+    )
+    ownership = topology_aware_mps_ownership(
+        bonds,
+        world_size,
+        local_world_size=local_world_size,
+        boundary_penalties=boundary_penalties,
+        inter_node_multiplier=inter_node_cut_multiplier,
+        maximum_load_ratio=ownership_maximum_load_ratio,
+    )
+    return ownership, "topology_aware"
+
+
 def train_distributed_mps(
     circuit_or_ir: Any | Callable[[], Any],
     *,
@@ -592,34 +631,18 @@ def train_distributed_mps(
         )
     rank, world_size = dist.get_rank(), dist.get_world_size()
     local_world_size = int(os.environ.get("LOCAL_WORLD_SIZE", world_size))
-    if site_ownership is not None:
-        resolved_site_ownership = validate_mps_ownership(
-            site_ownership, ir.n_wires, world_size
-        )
-        resolved_site_ownership_policy = "explicit"
-    elif site_ownership_policy == "topology_aware" and world_size > 1:
-        boundary_penalties = [1] * max(0, ir.n_wires - 1)
-        for instruction in ir.instructions:
-            wires = tuple(int(wire) for wire in instruction.wires)
-            if len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
-                boundary_penalties[min(wires)] += 1
-        bonds = (
-            1,
-            *([int(initial_bond_dimension)] * max(0, ir.n_wires - 1)),
-            1,
-        )
-        resolved_site_ownership = topology_aware_mps_ownership(
-            bonds,
-            world_size,
+    resolved_site_ownership, resolved_site_ownership_policy = (
+        _resolve_training_site_ownership(
+            ir,
+            world_size=world_size,
             local_world_size=local_world_size,
-            boundary_penalties=boundary_penalties,
-            inter_node_multiplier=inter_node_cut_multiplier,
-            maximum_load_ratio=ownership_maximum_load_ratio,
+            site_ownership=site_ownership,
+            site_ownership_policy=site_ownership_policy,
+            initial_bond_dimension=initial_bond_dimension,
+            inter_node_cut_multiplier=inter_node_cut_multiplier,
+            ownership_maximum_load_ratio=ownership_maximum_load_ratio,
         )
-        resolved_site_ownership_policy = "topology_aware"
-    else:
-        resolved_site_ownership = initial_mps_ownership(ir.n_wires, world_size)
-        resolved_site_ownership_policy = "balanced"
+    )
     backend = str(dist.get_backend()).strip().lower()
     if device is None and backend == "nccl":
         device = torch.device("cuda", torch.cuda.current_device())
