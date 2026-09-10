@@ -421,6 +421,79 @@ def _sharded_lbfgs_direction(
     return -result
 
 
+def _validate_optimizer_options(
+    *,
+    steps: int,
+    optimizer: str,
+    lr: float,
+    lr_decay: float,
+    lbfgs_start_step: int | None,
+    lbfgs_lr: float,
+    lbfgs_history_size: int,
+) -> int:
+    if steps <= 0 or lr <= 0:
+        raise ValueError("steps and lr must be positive")
+    if not math.isfinite(lr_decay) or not 0.0 < lr_decay <= 1.0:
+        raise ValueError("lr_decay must be finite and in (0, 1]")
+    if optimizer not in {"sgd", "adam", "adam_lbfgs"}:
+        raise ValueError("optimizer must be 'sgd', 'adam', or 'adam_lbfgs'")
+    transition_step = steps
+    if optimizer == "adam_lbfgs":
+        if lbfgs_start_step is None or not 0 < lbfgs_start_step < steps:
+            raise ValueError("adam_lbfgs requires 0 < lbfgs_start_step < steps")
+        transition_step = int(lbfgs_start_step)
+    if lbfgs_lr <= 0 or lbfgs_history_size <= 0:
+        raise ValueError("lbfgs_lr and lbfgs_history_size must be positive")
+    return transition_step
+
+
+def _validate_checkpoint_training_options(
+    *,
+    optimizer: str,
+    checkpoint_dir: str | Path | None,
+    checkpoint_interval: int,
+    checkpoint_retention_generations: int | None,
+    checkpoint_free_space_reserve_bytes: int,
+    checkpoint_writer_lease_stale_seconds: float,
+    resume: bool,
+) -> None:
+    if checkpoint_interval <= 0:
+        raise ValueError("checkpoint_interval must be positive")
+    if (
+        checkpoint_retention_generations is not None
+        and checkpoint_retention_generations <= 0
+    ):
+        raise ValueError("checkpoint_retention_generations must be positive or None")
+    if checkpoint_free_space_reserve_bytes < 0:
+        raise ValueError("checkpoint_free_space_reserve_bytes must be non-negative")
+    if checkpoint_writer_lease_stale_seconds <= 0:
+        raise ValueError("checkpoint_writer_lease_stale_seconds must be positive")
+    if optimizer == "adam_lbfgs" and (checkpoint_dir is not None or resume):
+        raise MPSTrainingError(
+            "adam_lbfgs checkpoint/resume requires versioned L-BFGS history support"
+        )
+
+
+def _validate_training_runtime_options(
+    *,
+    memory_leak_tolerance_bytes: int,
+    memory_warmup_steps: int,
+    gradient_bucket_bytes: int,
+    canonicalization_policy: str,
+    site_ownership_policy: str,
+) -> None:
+    if memory_leak_tolerance_bytes < 0:
+        raise ValueError("memory_leak_tolerance_bytes must be non-negative")
+    if memory_warmup_steps < 0:
+        raise ValueError("memory_warmup_steps must be non-negative")
+    if gradient_bucket_bytes <= 0:
+        raise ValueError("gradient_bucket_bytes must be positive")
+    if canonicalization_policy not in {"none", "dirty", "full"}:
+        raise ValueError("canonicalization_policy must be none, dirty or full")
+    if site_ownership_policy not in {"balanced", "topology_aware"}:
+        raise ValueError("site_ownership_policy must be balanced or topology_aware")
+
+
 def train_distributed_mps(
     circuit_or_ir: Any | Callable[[], Any],
     *,
@@ -484,42 +557,31 @@ def train_distributed_mps(
 
     if not dist.is_initialized():
         raise MPSTrainingError("train_distributed_mps requires torch.distributed")
-    if steps <= 0 or lr <= 0 or checkpoint_interval <= 0:
-        raise ValueError("steps, lr and checkpoint_interval must be positive")
-    if (
-        checkpoint_retention_generations is not None
-        and checkpoint_retention_generations <= 0
-    ):
-        raise ValueError("checkpoint_retention_generations must be positive or None")
-    if checkpoint_free_space_reserve_bytes < 0:
-        raise ValueError("checkpoint_free_space_reserve_bytes must be non-negative")
-    if checkpoint_writer_lease_stale_seconds <= 0:
-        raise ValueError("checkpoint_writer_lease_stale_seconds must be positive")
-    if not math.isfinite(lr_decay) or not 0.0 < lr_decay <= 1.0:
-        raise ValueError("lr_decay must be finite and in (0, 1]")
-    if optimizer not in {"sgd", "adam", "adam_lbfgs"}:
-        raise ValueError("optimizer must be 'sgd', 'adam', or 'adam_lbfgs'")
-    lbfgs_transition_step = steps
-    if optimizer == "adam_lbfgs":
-        if lbfgs_start_step is None or not 0 < lbfgs_start_step < steps:
-            raise ValueError("adam_lbfgs requires 0 < lbfgs_start_step < steps")
-        lbfgs_transition_step = int(lbfgs_start_step)
-    if lbfgs_lr <= 0 or lbfgs_history_size <= 0:
-        raise ValueError("lbfgs_lr and lbfgs_history_size must be positive")
-    if optimizer == "adam_lbfgs" and (checkpoint_dir is not None or resume):
-        raise MPSTrainingError(
-            "adam_lbfgs checkpoint/resume requires versioned L-BFGS history support"
-        )
-    if memory_leak_tolerance_bytes < 0:
-        raise ValueError("memory_leak_tolerance_bytes must be non-negative")
-    if memory_warmup_steps < 0:
-        raise ValueError("memory_warmup_steps must be non-negative")
-    if gradient_bucket_bytes <= 0:
-        raise ValueError("gradient_bucket_bytes must be positive")
-    if canonicalization_policy not in {"none", "dirty", "full"}:
-        raise ValueError("canonicalization_policy must be none, dirty or full")
-    if site_ownership_policy not in {"balanced", "topology_aware"}:
-        raise ValueError("site_ownership_policy must be balanced or topology_aware")
+    lbfgs_transition_step = _validate_optimizer_options(
+        steps=steps,
+        optimizer=optimizer,
+        lr=lr,
+        lr_decay=lr_decay,
+        lbfgs_start_step=lbfgs_start_step,
+        lbfgs_lr=lbfgs_lr,
+        lbfgs_history_size=lbfgs_history_size,
+    )
+    _validate_checkpoint_training_options(
+        optimizer=optimizer,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_interval=checkpoint_interval,
+        checkpoint_retention_generations=checkpoint_retention_generations,
+        checkpoint_free_space_reserve_bytes=checkpoint_free_space_reserve_bytes,
+        checkpoint_writer_lease_stale_seconds=(checkpoint_writer_lease_stale_seconds),
+        resume=resume,
+    )
+    _validate_training_runtime_options(
+        memory_leak_tolerance_bytes=memory_leak_tolerance_bytes,
+        memory_warmup_steps=memory_warmup_steps,
+        gradient_bucket_bytes=gradient_bucket_bytes,
+        canonicalization_policy=canonicalization_policy,
+        site_ownership_policy=site_ownership_policy,
+    )
     circuit_factory = circuit_or_ir if callable(circuit_or_ir) else None
     ir = ensure_circuit_ir(
         circuit_factory() if circuit_factory is not None else circuit_or_ir
