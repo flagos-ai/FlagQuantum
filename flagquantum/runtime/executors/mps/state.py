@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import torch
 import torch.distributed as dist
@@ -258,6 +258,56 @@ def gate_aligned_cost_aware_mps_ownership(
     return validate_mps_ownership(ownership, n_wires, world_size)
 
 
+def _bounded_load_ownership(
+    bond_dimensions: Sequence[int],
+    world_size: int,
+    *,
+    maximum_load_ratio: float,
+    cut_penalty: Callable[[int, int], int],
+    failure_message: str,
+) -> tuple[tuple[int, ...], ...]:
+    weights = mps_factorization_site_costs(bond_dimensions)
+    prefix = [0]
+    for weight in weights:
+        prefix.append(prefix[-1] + int(weight))
+    average = prefix[-1] / world_size
+    maximum = average * maximum_load_ratio
+    states: dict[tuple[int, int], tuple[int, float, tuple[int, ...]]] = {
+        (0, 0): (0, 0.0, ())
+    }
+    n_wires = len(weights)
+    for rank_count in range(1, world_size + 1):
+        minimum_end = rank_count
+        maximum_end = n_wires - (world_size - rank_count)
+        for end in range(minimum_end, maximum_end + 1):
+            candidates = []
+            for start in range(rank_count - 1, end):
+                previous = states.get((rank_count - 1, start))
+                if previous is None:
+                    continue
+                load = prefix[end] - prefix[start]
+                if load > maximum:
+                    continue
+                candidates.append(
+                    (
+                        previous[0] + cut_penalty(rank_count, end),
+                        max(previous[1], abs(load - average)),
+                        (*previous[2], end),
+                    )
+                )
+            if candidates:
+                states[(rank_count, end)] = min(candidates)
+    result = states.get((world_size, n_wires))
+    if result is None:
+        raise ValueError(failure_message)
+    boundaries = (0, *result[2])
+    ownership = tuple(
+        tuple(range(boundaries[rank], boundaries[rank + 1]))
+        for rank in range(world_size)
+    )
+    return validate_mps_ownership(ownership, n_wires, world_size)
+
+
 def communication_aware_mps_ownership(
     bond_dimensions: Sequence[int],
     world_size: int,
@@ -281,47 +331,15 @@ def communication_aware_mps_ownership(
         raise ValueError("maximum_load_ratio must be at least one")
     if world_size == 1:
         return (tuple(range(n_wires)),)
-    weights = mps_factorization_site_costs(bonds)
-    prefix = [0]
-    for weight in weights:
-        prefix.append(prefix[-1] + int(weight))
-    average = prefix[-1] / world_size
-    maximum = average * maximum_load_ratio
-    # (rank_count, end) -> (cut penalty, peak absolute load deviation, cuts)
-    states: dict[tuple[int, int], tuple[int, float, tuple[int, ...]]] = {
-        (0, 0): (0, 0.0, ())
-    }
-    for rank_count in range(1, world_size + 1):
-        minimum_end = rank_count
-        maximum_end = n_wires - (world_size - rank_count)
-        for end in range(minimum_end, maximum_end + 1):
-            candidates = []
-            for start in range(rank_count - 1, end):
-                previous = states.get((rank_count - 1, start))
-                if previous is None:
-                    continue
-                load = prefix[end] - prefix[start]
-                if load > maximum:
-                    continue
-                cut_penalty = 0 if end == n_wires else penalties[end - 1]
-                candidates.append(
-                    (
-                        previous[0] + cut_penalty,
-                        max(previous[1], abs(load - average)),
-                        (*previous[2], end),
-                    )
-                )
-            if candidates:
-                states[(rank_count, end)] = min(candidates)
-    result = states.get((world_size, n_wires))
-    if result is None:
-        raise ValueError("no communication-aware ownership satisfies the load bound")
-    boundaries = (0, *result[2])
-    ownership = tuple(
-        tuple(range(boundaries[rank], boundaries[rank + 1]))
-        for rank in range(world_size)
+    return _bounded_load_ownership(
+        bonds,
+        world_size,
+        maximum_load_ratio=maximum_load_ratio,
+        cut_penalty=lambda _rank_count, end: (
+            0 if end == n_wires else penalties[end - 1]
+        ),
+        failure_message="no communication-aware ownership satisfies the load bound",
     )
-    return validate_mps_ownership(ownership, n_wires, world_size)
 
 
 def topology_aware_mps_ownership(
@@ -360,51 +378,19 @@ def topology_aware_mps_ownership(
     if world_size == 1:
         return (tuple(range(n_wires)),)
 
-    weights = mps_factorization_site_costs(bonds)
-    prefix = [0]
-    for weight in weights:
-        prefix.append(prefix[-1] + int(weight))
-    average = prefix[-1] / world_size
-    maximum = average * maximum_load_ratio
-    states: dict[tuple[int, int], tuple[int, float, tuple[int, ...]]] = {
-        (0, 0): (0, 0.0, ())
-    }
-    for rank_count in range(1, world_size + 1):
-        minimum_end = rank_count
-        maximum_end = n_wires - (world_size - rank_count)
-        for end in range(minimum_end, maximum_end + 1):
-            candidates = []
-            for start in range(rank_count - 1, end):
-                previous = states.get((rank_count - 1, start))
-                if previous is None:
-                    continue
-                load = prefix[end] - prefix[start]
-                if load > maximum:
-                    continue
-                multiplier = (
-                    inter_node_multiplier
-                    if end < n_wires and rank_count % local_world_size == 0
-                    else 1
-                )
-                cut_penalty = 0 if end == n_wires else penalties[end - 1] * multiplier
-                candidates.append(
-                    (
-                        previous[0] + cut_penalty,
-                        max(previous[1], abs(load - average)),
-                        (*previous[2], end),
-                    )
-                )
-            if candidates:
-                states[(rank_count, end)] = min(candidates)
-    result = states.get((world_size, n_wires))
-    if result is None:
-        raise ValueError("no topology-aware ownership satisfies the load bound")
-    boundaries = (0, *result[2])
-    ownership = tuple(
-        tuple(range(boundaries[rank], boundaries[rank + 1]))
-        for rank in range(world_size)
+    def topology_cut_penalty(rank_count: int, end: int) -> int:
+        if end == n_wires:
+            return 0
+        multiplier = inter_node_multiplier if rank_count % local_world_size == 0 else 1
+        return penalties[end - 1] * multiplier
+
+    return _bounded_load_ownership(
+        bonds,
+        world_size,
+        maximum_load_ratio=maximum_load_ratio,
+        cut_penalty=topology_cut_penalty,
+        failure_message="no topology-aware ownership satisfies the load bound",
     )
-    return validate_mps_ownership(ownership, n_wires, world_size)
 
 
 def _owner(ownership: Sequence[Sequence[int]], wire: int) -> int:
