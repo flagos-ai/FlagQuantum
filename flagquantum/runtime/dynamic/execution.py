@@ -358,8 +358,7 @@ def _run_dynamic_trajectory(
                 if not active:
                     conditional_skipped += 1
                     continue
-                if conditional:
-                    conditional_applied += 1
+                conditional_applied += int(conditional)
                 if instruction.name == "measure":
                     state, true_bit, bit, classical_bit, count = _measure_instruction(
                         state,
