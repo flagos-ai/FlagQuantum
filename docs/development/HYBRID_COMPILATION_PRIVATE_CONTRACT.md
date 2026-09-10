@@ -955,3 +955,26 @@ Core `ProgramArtifact` v1, and it does not restore the removed historical
 `SealedExecutableArtifact`. It adds no target submission, provider credentials,
 Runtime adapter, deployment package, TargetIR, public export, default-path
 change, or performance claim.
+
+## Phase 30 strict target-text-conformance authorization
+
+Phase 30 may verify a Phase 29 emission against its exact target-legalization
+input and independently parse the emitted static subset. Exact reproduction
+must match the complete immutable emission result before parsing. OpenQASM 2
+and 3 parsing validates canonical headers, declarations, operations,
+parameters, wire ranges, and terminal full-register measurement. QCIS parsing
+accepts only the native instruction forms produced by the existing emitter and
+maps them into equivalent Core operations.
+
+The reconstructed program is the existing Core-owned `CircuitIR`. Its terminal
+samples request has unspecified shots because target text does not encode shot
+count. The conformance identity binds the emission identity, exact format,
+parser version, and reconstructed circuit content. Payload or identity
+tampering, a different legalization input, unknown syntax, invalid parameters,
+or out-of-range wires fail closed.
+
+Compiler performs no numerical execution. Bounded statevector comparisons are
+test evidence executed through the Simulation-owned implementation and do not
+constitute target or hardware certification. This phase introduces no second
+IR, artifact envelope, Runtime adapter, deployment path, provider submission,
+TargetIR, public export, default-path change, or performance claim.

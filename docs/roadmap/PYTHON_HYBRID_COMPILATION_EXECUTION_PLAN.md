@@ -1048,6 +1048,34 @@ Exit gate:
 - no new generic artifact, deployment package, Runtime adapter, submission,
   TargetIR, public API, default-path, or performance claim is added.
 
+### Phase 30 — strict target-text conformance
+
+Reproduce the expected Phase 29 emission from its legalization input, require
+exact payload and audit equality, and independently parse the canonical emitted
+subset. OpenQASM 2 and 3 parsing validates exact headers, register widths,
+terminal full-register measurement, gate syntax, arity, scalar parameters, and
+wire ranges. QCIS parsing validates the exact native instructions produced by
+the current emitter and lowers them into equivalent Core operations.
+
+The reconstructed artifact is the existing Core `CircuitIR`, not another IR.
+It records terminal samples with unspecified shots because shots are absent
+from target text and remain execution-request information. The parser performs
+no numerical execution; bounded statevector equivalence belongs to tests under
+Simulation ownership. Bind deterministic conformance identity to the Phase 29
+emission identity, parser version, profile, and reconstructed circuit content.
+
+Exit gate:
+
+- both OpenQASM versions parse strictly and reproduce equivalent Core circuits;
+- QCIS native text reconstructs an equivalent Core circuit within its decimal
+  precision;
+- payload, digest, snapshot, emission identity, and legalization mismatch fail;
+- unsupported syntax, parameters, gates, registers, and wires fail closed;
+- deterministic reconstruction and conformance identities are verified;
+- no Compiler numerical execution, hardware certification, generic artifact,
+  Runtime adapter, submission, TargetIR, public API, or performance claim is
+  added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1205,3 +1233,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 27 bounded topology legalization implemented and verified
 - [x] Phase 28 dependency-preserving logical scheduling implemented and verified
 - [x] Phase 29 verified deterministic target-text emission implemented and verified
+- [x] Phase 30 strict target-text conformance implemented and verified

@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase29_verified_deterministic_target_text_emission",
+  "status": "phase30_strict_target_text_conformance_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -992,6 +992,42 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE29_EVIDENCE.md"
   },
   "phase29_completed": true,
+  "phase30": {
+    "stage": "strict_target_text_conformance",
+    "inputs": [
+      "flagquantum.compiler.target_emission.TargetEmissionResult",
+      "flagquantum.compiler.target_legalization.TargetLegalizationResult"
+    ],
+    "reproduction_policy": "exact_complete_emission_result_match",
+    "parsers": [
+      "canonical_openqasm_2_subset",
+      "canonical_openqasm_3_subset",
+      "canonical_qcis_1_subset"
+    ],
+    "reconstructed_ir": "flagquantum.core.ir.CircuitIR",
+    "terminal_measurement": "full_register_samples_with_unspecified_shots",
+    "shots_reconstructed_from_text": false,
+    "identity_inputs": [
+      "emission_identity",
+      "emission_profile",
+      "parser_version",
+      "reconstructed_circuit_hash"
+    ],
+    "tamper_and_mismatch_policy": "unsupported_fail_closed",
+    "compiler_numerical_execution": false,
+    "statevector_equivalence": "bounded_test_evidence_through_simulation_owner",
+    "hardware_certification": false,
+    "second_ir_added": false,
+    "generic_artifact_envelope_added": false,
+    "runtime_adapter_or_submission": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE30_EVIDENCE.md"
+  },
+  "phase30_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

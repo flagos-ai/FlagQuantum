@@ -18,6 +18,9 @@ remain conservative barriers; this is not target timing or pulse scheduling.
 `target_emission.py` gates the existing OpenQASM and QCIS text emitters behind
 completed target legalization and binds deterministic emission audit facts. Its
 result is not a new executable-artifact envelope.
+`target_conformance.py` independently parses that closed emitted subset back
+into Core `CircuitIR` for structural and test-time numerical conformance; it
+does not execute programs or certify hardware behavior.
 `target_legalization.py` derives mandatory circuit requirements, checks one
 explicit backend lowering, and matches one Core-owned target capability
 snapshot without introducing a target IR or selecting a target.
@@ -61,6 +64,8 @@ expert-facing entry points. Change or compose them through `optimize`.
   `schedule_legalization.py`.
 - Change verified static text emission and its identity binding in
   `target_emission.py`.
+- Change strict emitted-text parsing and conformance evidence in
+  `target_conformance.py`.
 - Change capability-driven legality checks in `target_legalization.py`.
 - Change private structured program semantics through `_hybrid/README.md` and
   its focused golden scenario; do not restore the historical `_compiler` tree.

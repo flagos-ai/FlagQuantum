@@ -1005,7 +1005,7 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     contract = _contract()
     phase27 = contract["phase27"]
 
-    assert contract["status"] == "phase29_verified_deterministic_target_text_emission"
+    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
@@ -1055,7 +1055,7 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
     contract = _contract()
     phase28 = contract["phase28"]
 
-    assert contract["status"] == "phase29_verified_deterministic_target_text_emission"
+    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
     assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase28["output_artifact"] == (
         "immutable_instruction_index_schedule_evidence"
@@ -1098,7 +1098,7 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
     contract = _contract()
     phase29 = contract["phase29"]
 
-    assert contract["status"] == "phase29_verified_deterministic_target_text_emission"
+    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
     assert phase29["input"] == (
         "flagquantum.compiler.target_legalization.TargetLegalizationResult"
     )
@@ -1127,3 +1127,43 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE29_EVIDENCE.md"
     )
     assert contract["phase29_completed"] is True
+
+
+def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> None:
+    contract = _contract()
+    phase30 = contract["phase30"]
+
+    assert contract["status"] == "phase30_strict_target_text_conformance_verified"
+    assert phase30["inputs"] == [
+        "flagquantum.compiler.target_emission.TargetEmissionResult",
+        "flagquantum.compiler.target_legalization.TargetLegalizationResult",
+    ]
+    assert phase30["reproduction_policy"] == ("exact_complete_emission_result_match")
+    assert phase30["parsers"] == [
+        "canonical_openqasm_2_subset",
+        "canonical_openqasm_3_subset",
+        "canonical_qcis_1_subset",
+    ]
+    assert phase30["reconstructed_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase30["terminal_measurement"] == (
+        "full_register_samples_with_unspecified_shots"
+    )
+    assert phase30["shots_reconstructed_from_text"] is False
+    assert phase30["tamper_and_mismatch_policy"] == "unsupported_fail_closed"
+    assert phase30["compiler_numerical_execution"] is False
+    assert phase30["statevector_equivalence"] == (
+        "bounded_test_evidence_through_simulation_owner"
+    )
+    assert phase30["hardware_certification"] is False
+    assert phase30["second_ir_added"] is False
+    assert phase30["generic_artifact_envelope_added"] is False
+    assert phase30["runtime_adapter_or_submission"] is False
+    assert phase30["target_ir_added"] is False
+    assert phase30["public_root_export"] is False
+    assert phase30["stable_api_change"] is False
+    assert phase30["default_path_change"] is False
+    assert phase30["performance_claim"] is False
+    assert phase30["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE30_EVIDENCE.md"
+    )
+    assert contract["phase30_completed"] is True
