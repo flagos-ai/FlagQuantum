@@ -210,38 +210,46 @@ def plan_mps_canonicalization_bonds(
     return () if not dirty else tuple(range(dirty[0], n_wires - 1))
 
 
+def _collect_autograd_leaves(
+    function: Any,
+    found: dict[int, torch.Tensor],
+    visited: set[int],
+) -> None:
+    if function is None or id(function) in visited:
+        return
+    visited.add(id(function))
+    variable = getattr(function, "variable", None)
+    if isinstance(variable, torch.Tensor) and variable.requires_grad:
+        found.setdefault(id(variable), variable)
+    for next_function, _ in getattr(function, "next_functions", ()):
+        _collect_autograd_leaves(next_function, found, visited)
+
+
+def _collect_trainable_tensors(
+    value: Any,
+    found: dict[int, torch.Tensor],
+    visited: set[int],
+) -> None:
+    if isinstance(value, Mapping):
+        for nested in value.values():
+            _collect_trainable_tensors(nested, found, visited)
+        return
+    if isinstance(value, (tuple, list)):
+        for nested in value:
+            _collect_trainable_tensors(nested, found, visited)
+        return
+    if not isinstance(value, torch.Tensor) or not value.requires_grad:
+        return
+    if value.is_leaf:
+        found.setdefault(id(value), value)
+        return
+    _collect_autograd_leaves(value.grad_fn, found, visited)
+
+
 def discover_trainable_tensors(value: Any) -> tuple[torch.Tensor, ...]:
     """Find unique trainable leaves reachable from a nested tensor value."""
     found: dict[int, torch.Tensor] = {}
-    visited: set[int] = set()
-
-    def visit_function(function: Any) -> None:
-        if function is None or id(function) in visited:
-            return
-        visited.add(id(function))
-        variable = getattr(function, "variable", None)
-        if isinstance(variable, torch.Tensor) and variable.requires_grad:
-            found.setdefault(id(variable), variable)
-        for next_function, _ in getattr(function, "next_functions", ()):
-            visit_function(next_function)
-
-    def visit(item: Any) -> None:
-        if isinstance(item, Mapping):
-            for nested in item.values():
-                visit(nested)
-            return
-        if isinstance(item, (tuple, list)):
-            for nested in item:
-                visit(nested)
-            return
-        if not isinstance(item, torch.Tensor) or not item.requires_grad:
-            return
-        if item.is_leaf:
-            found.setdefault(id(item), item)
-            return
-        visit_function(item.grad_fn)
-
-    visit(value)
+    _collect_trainable_tensors(value, found, set())
     return tuple(found.values())
 
 
