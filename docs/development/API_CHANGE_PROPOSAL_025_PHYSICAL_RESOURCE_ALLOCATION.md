@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; private version-3 profile complete.**
+**Approved on 2026-09-10; private version-3 profile complete and exit-audited.**
 
 Date: 2026-09-10
 
@@ -211,8 +211,9 @@ requirements and may only become stricter.
    pinned v1/v2 fixtures and explicit reader dispatch.
 6. **Complete:** add target emission, conformance, Runtime verification, and
    Deployment dry-run handoff in separate bounded slices.
-7. Keep all new entry points non-root until naming, lifecycle, and provider-binding
-   review.
+7. **Complete for this proposal:** keep all new entry points non-root. Public naming,
+   lifecycle, provider binding, and submission require a separate proposal and
+   approval.
 
 ## Acceptance
 

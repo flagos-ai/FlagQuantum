@@ -1294,3 +1294,12 @@ slots. Those slots are not provider qubit identifiers and are not translated or
 enriched. The handoff contains no credentials or provider task identifier, performs
 no network operation, and cannot claim target acceptance or execution. Public root
 exports and default execution remain unchanged.
+
+Phase 49 closes Proposal 025 with a machine-readable exit audit and completion
+review. The audit binds the six implementation commits, approved acceptance
+classes, stable-export result, unchanged default path, and explicitly excluded
+production, provider-binding, submission, general-ancilla, and QEC/FTOC claims.
+Automated checks inspect the actual stable `__all__` manifests rather than relying
+only on documentation. No runtime behavior or public surface is added in this
+phase; every expansion beyond the private technical profile requires a separate
+proposal and approval.
