@@ -266,6 +266,101 @@ def _mps_candidate(
     )
 
 
+def _tensor_network_candidate(
+    ir: CircuitIR,
+    *,
+    target: OutputTarget,
+    target_count: int,
+    require_gradients: bool,
+    width: int,
+    ranks: int,
+    complex_bytes: int,
+    memory_limit_bytes: int | None,
+    dense_fits: bool,
+    calibration: TNWorkingSetCalibration | None,
+    require_calibration: bool,
+    accelerator_name: str | None,
+) -> tuple[BackendCost, str | None, float]:
+    sparse_target = target in {
+        "expectation",
+        "local_observables",
+        "single_amplitude",
+        "few_amplitudes",
+    }
+    batch_limit = 1024 if target == "few_amplitudes" else 256
+    if target in {"few_amplitudes", "local_observables"} and target_count > batch_limit:
+        sparse_target = False
+
+    proxy_memory = max(
+        1,
+        (1 << min(width + (2 if require_gradients else 0), 62))
+        * int(complex_bytes)
+        * max(1, ir.n_wires)
+        * (target_count if target in {"few_amplitudes", "local_observables"} else 1),
+    )
+    matching_calibration = (
+        calibration
+        if calibration is not None
+        and calibration.applies_to(
+            accelerator_name=accelerator_name,
+            complex_bytes=complex_bytes,
+            world_size=ranks,
+        )
+        else None
+    )
+    calibration_matches = matching_calibration is not None
+    safety_factor = (
+        matching_calibration.recommended_safety_factor
+        if matching_calibration is not None
+        else 1.0
+    )
+    memory = (
+        matching_calibration.apply(proxy_memory)
+        if matching_calibration is not None
+        else ceil(proxy_memory * safety_factor)
+    )
+    fits = memory_limit_bytes is None or memory <= memory_limit_bytes
+    blockers: tuple[str, ...] = ()
+    if not sparse_target:
+        blockers += ("tensor_network_requires_sparse_output_target",)
+    if target == "few_amplitudes" and target_count > 1024:
+        blockers += ("amplitude_target_batch_too_large_for_sparse_tn_path",)
+    if target == "local_observables" and target_count > 256:
+        blockers += ("observable_batch_too_large_for_shared_tn_path",)
+    if width > 16:
+        blockers += ("interaction_width_proxy_too_large",)
+    if not fits:
+        blockers += ("tn_proxy_exceeds_per_rank_budget",)
+    if calibration is not None and not calibration_matches:
+        blockers += ("tn_memory_calibration_scope_mismatch",)
+    if require_calibration and calibration is None:
+        blockers += ("tn_memory_calibration_required",)
+    if dense_fits:
+        blockers += ("dense_statevector_is_lower_risk_for_this_capacity",)
+    score = 65 + (30 if sparse_target else -40) - 3 * width
+    score -= 15 if require_gradients else 0
+    candidate = BackendCost(
+        "tensor_network",
+        not blockers,
+        memory,
+        score,
+        reasons=(
+            "sparse_output_contraction",
+            "path_preflight_required",
+            (
+                "reserved_memory_calibration_applied"
+                if calibration_matches
+                else "uncalibrated_tn_memory_proxy"
+            ),
+        ),
+        blockers=blockers,
+    )
+    identity = (
+        matching_calibration.identity if matching_calibration is not None else None
+    )
+    return candidate, identity, safety_factor
+
+
 def select_backend_by_cost(
     circuit_or_ir: Any,
     *,
@@ -307,19 +402,6 @@ def select_backend_by_cost(
         complex_bytes=complex_bytes,
         memory_limit_bytes=limit,
     )
-    sparse_target = target in {
-        "expectation",
-        "local_observables",
-        "single_amplitude",
-        "few_amplitudes",
-    }
-    sparse_batch_limit = 1024 if target == "few_amplitudes" else 256
-    if (
-        target in {"few_amplitudes", "local_observables"}
-        and int(target_count) > sparse_batch_limit
-    ):
-        sparse_target = False
-
     mps, estimated_mps_bond = _mps_candidate(
         ir,
         target=target,
@@ -333,83 +415,21 @@ def select_backend_by_cost(
         allow_approximate=allow_approximate,
         dense_fits=dense_fits,
     )
-
-    # A width proxy is not a path guarantee. It is sufficient to reject obvious
-    # mismatches; execution must still run the TN path planner and memory preflight.
-    tn_proxy_memory = max(
-        1,
-        (1 << min(width + (2 if require_gradients else 0), 62))
-        * int(complex_bytes)
-        * max(1, ir.n_wires)
-        * (
-            int(target_count)
-            if target in {"few_amplitudes", "local_observables"}
-            else 1
-        ),
+    tensor_network, calibration_identity, tn_safety_factor = _tensor_network_candidate(
+        ir,
+        target=target,
+        target_count=int(target_count),
+        require_gradients=require_gradients,
+        width=width,
+        ranks=ranks,
+        complex_bytes=complex_bytes,
+        memory_limit_bytes=limit,
+        dense_fits=dense_fits,
+        calibration=tn_memory_calibration,
+        require_calibration=require_tn_memory_calibration,
+        accelerator_name=accelerator_name,
     )
-    matching_tn_calibration = (
-        tn_memory_calibration
-        if tn_memory_calibration is not None
-        and tn_memory_calibration.applies_to(
-            accelerator_name=accelerator_name,
-            complex_bytes=complex_bytes,
-            world_size=ranks,
-        )
-        else None
-    )
-    calibration_matches = matching_tn_calibration is not None
-    tn_safety_factor = (
-        matching_tn_calibration.recommended_safety_factor
-        if matching_tn_calibration is not None
-        else 1.0
-    )
-    tn_memory = (
-        matching_tn_calibration.apply(tn_proxy_memory)
-        if matching_tn_calibration is not None
-        else ceil(tn_proxy_memory * tn_safety_factor)
-    )
-    tn_fits = limit is None or tn_memory <= limit
-    tn_blockers: tuple[str, ...] = ()
-    if not sparse_target:
-        tn_blockers += ("tensor_network_requires_sparse_output_target",)
-    if target == "few_amplitudes" and int(target_count) > 1024:
-        tn_blockers += ("amplitude_target_batch_too_large_for_sparse_tn_path",)
-    if target == "local_observables" and int(target_count) > 256:
-        tn_blockers += ("observable_batch_too_large_for_shared_tn_path",)
-    if width > 16:
-        tn_blockers += ("interaction_width_proxy_too_large",)
-    if not tn_fits:
-        tn_blockers += ("tn_proxy_exceeds_per_rank_budget",)
-    if tn_memory_calibration is not None and not calibration_matches:
-        tn_blockers += ("tn_memory_calibration_scope_mismatch",)
-    if require_tn_memory_calibration and tn_memory_calibration is None:
-        tn_blockers += ("tn_memory_calibration_required",)
-    if dense_fits:
-        tn_blockers += ("dense_statevector_is_lower_risk_for_this_capacity",)
-    tn_score = 65 + (30 if sparse_target else -40) - 3 * width
-    if require_gradients:
-        tn_score -= 15
-
-    candidates = (
-        statevector,
-        mps,
-        BackendCost(
-            "tensor_network",
-            not tn_blockers,
-            tn_memory,
-            tn_score,
-            reasons=(
-                "sparse_output_contraction",
-                "path_preflight_required",
-                (
-                    "reserved_memory_calibration_applied"
-                    if calibration_matches
-                    else "uncalibrated_tn_memory_proxy"
-                ),
-            ),
-            blockers=tn_blockers,
-        ),
-    )
+    candidates = (statevector, mps, tensor_network)
     selected, warnings = _select_candidate(
         candidates,
         requested_backend=requested_backend,
@@ -424,11 +444,7 @@ def select_backend_by_cost(
         interaction_width_proxy=width,
         nearest_neighbour_fraction=locality,
         estimated_mps_bond=estimated_mps_bond,
-        tn_calibration_identity=(
-            matching_tn_calibration.identity
-            if matching_tn_calibration is not None
-            else None
-        ),
+        tn_calibration_identity=calibration_identity,
         tn_working_set_safety_factor=tn_safety_factor,
         candidates=candidates,
         warnings=warnings,
