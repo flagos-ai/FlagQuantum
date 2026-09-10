@@ -1066,3 +1066,22 @@ binding identities in result provenance.
 
 This phase adds no executable-text parameter profile, provider submission,
 public export, default-path change, or performance claim.
+
+## Phase 35 Verified artifact-to-artifact target compilation
+
+Compiler accepts either a fully bound `circuit-ir-1.0` artifact or the verified
+binding result from Phase 34. A single internal entrypoint verifies the input
+identity and then runs target capability legalization, optional topology
+routing, native-gate legalization, logical scheduling, deterministic target
+emission, strict conformance, and executable-artifact construction in that
+order. No caller-facing flag can skip a stage.
+
+The immutable result retains the actual input artifact object plus source,
+binding, circuit-artifact, target-stage, executable-artifact, and complete
+compilation identities. Its constructor verifies that the topology/native gate
+chain starts from the input circuit and that every downstream identity agrees
+with the final artifact.
+
+This phase performs no numerical execution, target selection, provider
+submission, credential access, public export, default-path change, or
+performance claim.

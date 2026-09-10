@@ -1191,6 +1191,27 @@ Exit gate:
 - no public export, provider call, default-path change, or performance claim is
   added.
 
+### Phase 35 — Verified artifact-to-artifact target compilation
+
+Add one internal Compiler entrypoint from a fully bound circuit artifact or
+verified binding result to a target-text executable artifact. Make the complete
+legalization, routing, scheduling, emission, conformance, and construction
+sequence mandatory and return immutable cross-stage evidence.
+
+Exit gate:
+
+- direct and explicitly bound circuit artifacts both preserve their source
+  lineage through the final executable artifact;
+- the actual input object is retained and checked against the first target
+  transformation rather than trusting detached identity strings;
+- topology and native-gate transformations remain bound to the target snapshot;
+- deterministic repeated compilation produces identical evidence;
+- the final artifact passes Runtime target preflight and Deployment dry-run;
+- symbolic, executable, request-bound, incompatible, or tampered inputs fail
+  closed;
+- Compiler performs no numerical execution or provider submission;
+- no public export, default-path change, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1355,3 +1376,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 32 ProgramArtifact v2 Core implementation completed and verified
 - [x] Phase 33 Artifact-v2 vertical slice and local circuit execution completed
 - [x] Phase 34 Explicit symbolic circuit-artifact binding completed
+- [x] Phase 35 Verified artifact-to-artifact target compilation completed

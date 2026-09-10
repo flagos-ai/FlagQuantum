@@ -323,6 +323,12 @@ internal adapters have conformance evidence.
    scalar map into a new fully bound artifact. The source-to-bound lineage is
    retained in an in-process binding result and propagated into local execution
    provenance.
+9. **Complete:** Compiler exposes one internal artifact-to-artifact entrypoint
+   that requires a fully bound circuit profile and executes target capability
+   legalization, optional topology routing, native-gate legalization, logical
+   scheduling, deterministic emission, strict conformance, and executable
+   artifact construction in order. The returned evidence binds the input,
+   optional parameter binding, target, and final artifact identities.
 
 ## Acceptance
 
