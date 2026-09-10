@@ -241,6 +241,36 @@ def test_ssh_command_discards_unapproved_platform_options():
     client._workspace_record.assert_called_once_with("workspace-id")
 
 
+def test_workspace_discovery_reuses_its_ssh_login():
+    from unittest.mock import Mock
+
+    client = JiudingClient(workspace="test")
+    record = {
+        "id": "workspace-id",
+        "name": "test",
+        "projId": "project",
+        "projsetId": "project-set",
+        "queueId": "queue",
+        "queueName": "queue-name",
+        "clusterId": "cluster",
+        "zoneId": "zone",
+        "queueStatus": "QUEUE_STATUS_ACTIVE",
+        "resourceRegion": "CUSTOMIZED_ACCELERATOR",
+        "creatorId": "user",
+        "creatorName": "user",
+        "SSHLogin": "ssh worker.user@ssh.platform-multi.baai.ac.cn -p 2222",
+    }
+    client._auth = Mock(return_value={})
+    client._pages = Mock(return_value=[record])
+    client._workspace_record = Mock()
+
+    client.workspace()
+    command = client._ssh_base()
+
+    assert command[-3:] == ["-p", "2222", "worker.user@ssh.platform-multi.baai.ac.cn"]
+    client._workspace_record.assert_not_called()
+
+
 def test_run_statevector_returns_normal_execution_result(monkeypatch):
     client = JiudingClient(workspace="test")
     client._workspace = {
@@ -530,6 +560,7 @@ def test_workspace_restart_discards_cached_transport(monkeypatch):
     client._reset_workspace_connection()
 
     assert client._workspace is None
+    assert client._workspace_ssh_login is None
     assert client._ssh_command is None
     assert client._executor_channels == {}
     assert client._executor_health == {}
