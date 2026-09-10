@@ -228,10 +228,13 @@ def split_real_imag_double_single_sgd_step(
 ) -> SplitRealImagDoubleSingleSGDStepResult:
     """Evaluate an explicit P4 gradient and apply one Double-Single SGD step."""
 
+    parameter_bindings: dict[str | Parameter, Any] = {
+        name: value for name, value in state.bindings().items()
+    }
     gradient_result = parameter_shift_split_real_imag_device_double_single_gradient(
         circuit_or_ir,
         observable,
-        parameter_bindings=state.bindings(),
+        parameter_bindings=parameter_bindings,
         device=state.device,
         precision_plan=precision_plan,
         accuracy_requirement=accuracy_requirement,
