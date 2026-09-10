@@ -136,23 +136,20 @@ def validate_measurements(
             and request.shots is None
         ):
             raise ValueError(f"{kind} measurement requires a positive shots value")
-        if kind == "probabilities":
+        if kind in {"probabilities", "sample_ps", "counts_ps"}:
             limit = int(metadata.get("max_marginal_wires", _DEFAULT_MAX_MARGINAL_WIRES))
-            if limit < 1:
+            if kind == "probabilities" and limit < 1:
                 raise ValueError("max_marginal_wires must be positive")
             if len(wires) > limit:
-                raise ValueError(
+                detail = (
                     f"marginal probabilities over {len(wires)} wires require "
                     f"2**{len(wires)} Pauli contractions; increase "
                     "max_marginal_wires explicitly to accept that cost"
-                )
-        if kind in {"sample_ps", "counts_ps"}:
-            limit = int(metadata.get("max_marginal_wires", _DEFAULT_MAX_MARGINAL_WIRES))
-            if len(wires) > limit:
-                raise ValueError(
-                    f"Pauli-basis sampling over {len(wires)} wires requires "
+                    if kind == "probabilities"
+                    else f"Pauli-basis sampling over {len(wires)} wires requires "
                     f"2**{len(wires)} contractions; the supported limit is {limit}"
                 )
+                raise ValueError(detail)
         if kind in {"expectation_ps", "sample_ps", "counts_ps"}:
             axes = {
                 axis: tuple(int(wire) for wire in metadata.get(axis, ()))
