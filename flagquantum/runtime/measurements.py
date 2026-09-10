@@ -283,7 +283,7 @@ def _sample_pauli_product(
             f"{type(target).__name__} does not support Pauli-basis sampling"
         )
     axes_by_wire = {
-        wire: axis for axis in ("x", "y", "z") for wire in metadata.get(axis, ())
+        wire: axis for axis, wires in _pauli_axes(metadata).items() for wire in wires
     }
     subset_expectations: list[torch.Tensor] = []
     for mask in range(1, 1 << len(wires)):
