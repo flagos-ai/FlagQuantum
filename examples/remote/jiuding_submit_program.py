@@ -14,7 +14,14 @@ def main() -> None:
     mode.add_argument("--image", help="runtime image for a new Job")
     mode.add_argument("--restore-job", metavar="JOB_ID", help="resume an existing Job")
     parser.add_argument("--target", default="jiuding:gpu", help="new Jobs only")
+    parser.add_argument(
+        "--detach",
+        action="store_true",
+        help="print the new Job ID without waiting for its result",
+    )
     args = parser.parse_args()
+    if args.detach and args.restore_job:
+        parser.error("--detach is only valid with --image")
 
     client = JiudingClient(workspace=args.workspace)
     if args.restore_job:
@@ -30,6 +37,8 @@ def main() -> None:
             memory_gib=8,
         )
     print(json.dumps({"job_id": receipt["jobId"]}))
+    if args.detach:
+        return
 
     result = client.result(receipt, timeout=600)
     print(result.counts)

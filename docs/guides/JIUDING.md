@@ -163,8 +163,17 @@ Job; it never interprets a timeout as permission to resubmit. Use
 `receipt="/shared/.../run.json"` only when you intentionally manage the shared
 artifacts yourself. See
 [`jiuding_submit_program.py`](../../examples/remote/jiuding_submit_program.py)
-for the runnable command-line example. The same command restores an existing
-Job without submitting another one:
+for the runnable command-line example. Add `--detach` to print the new Job ID
+and return immediately instead of waiting through queue and execution time:
+
+```bash
+python examples/remote/jiuding_submit_program.py \
+  --workspace my-workspace \
+  --image flagquantum-runtime:v1 \
+  --detach
+```
+
+The same command restores the existing Job without submitting another one:
 
 ```bash
 python examples/remote/jiuding_submit_program.py \
