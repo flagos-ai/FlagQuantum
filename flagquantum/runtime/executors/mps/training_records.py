@@ -2,8 +2,89 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Sequence
+
+from .records import MPSReverseTapeRecord
+
+
+def summarize_owned_reverse_work(
+    records: Sequence[MPSReverseTapeRecord], rank: int
+) -> tuple[int, int, int, int, float, int, int]:
+    owned_site = 0
+    owned_bond = 0
+    two_site_splits = 0
+    truncated_splits = 0
+    discarded_weight = 0.0
+    qr_activity = 0
+    largest_realized_bond = 1
+    for record in records:
+        if record.compute_owner != rank:
+            continue
+        if record.kind == "one_site":
+            owned_site += 1
+        else:
+            owned_bond += 1
+        if record.kind == "two_site":
+            two_site_splits += 1
+            discarded_weight += record.discarded_weight
+            if record.kept_rank is not None:
+                largest_realized_bond = max(largest_realized_bond, record.kept_rank)
+                if (
+                    record.original_rank is not None
+                    and record.kept_rank < record.original_rank
+                ):
+                    truncated_splits += 1
+        if record.kind.startswith("canonicalize"):
+            qr_activity += 1
+    return (
+        owned_site,
+        owned_bond,
+        two_site_splits,
+        truncated_splits,
+        discarded_weight,
+        qr_activity,
+        largest_realized_bond,
+    )
+
+
+def summarize_boundary_reverse_work(
+    records: Sequence[MPSReverseTapeRecord], rank: int, element_size: int
+) -> tuple[int, int, tuple[dict[str, Any], ...]]:
+    boundaries = 0
+    boundary_bytes = 0
+    bond_updates = []
+    for record in records:
+        if record.communication_peer is None or rank not in record.owner_ranks:
+            continue
+        boundaries += 1
+        record_bytes = sum(
+            math.prod(shape) * element_size
+            for shape in record.input_shapes + record.output_shapes
+        )
+        boundary_bytes += record_bytes
+        if record.kind != "two_site":
+            continue
+        bond_updates.append(
+            {
+                "operation_id": record.operation_id,
+                "bond": min(record.wires),
+                "owner_ranks": record.owner_ranks,
+                "compute_owner": record.compute_owner,
+                "original_rank": record.original_rank,
+                "kept_rank": record.kept_rank,
+                "discarded_weight": record.discarded_weight,
+                "communication_peer": record.communication_peer,
+                "communication_sequence": record.communication_sequence,
+                "input_shapes": record.input_shapes,
+                "output_shapes": record.output_shapes,
+                "payload_bytes": record_bytes,
+                "forward_transport": "batched_isend_irecv",
+                "reverse_transport": "batched_isend_irecv",
+            }
+        )
+    return boundaries, boundary_bytes, tuple(bond_updates)
 
 
 @dataclass(frozen=True)
