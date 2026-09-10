@@ -383,6 +383,26 @@ def _simulation_kernel_options(options: dict[str, Any]) -> dict[str, Any]:
     return simulation_options
 
 
+def _noisy_statevector_memory_bytes(
+    execution_plan: ExecutionPlan,
+    noise_model: NoiseModel,
+    options: dict[str, Any],
+) -> int:
+    active_trajectories = min(
+        int(options.get("trajectories", 32)),
+        int(options.get("trajectory_batch_size", 32)),
+    )
+    maximum_kraus_rank = max(
+        (len(rule.channel.kraus) for rule in noise_model.rules),
+        default=1,
+    )
+    workspace_factor = 2 + max(
+        4 if noise_model.device_profile else 1,
+        maximum_kraus_rank,
+    )
+    return int(execution_plan.state_bytes) * active_trajectories * workspace_factor
+
+
 def _resolve_simulation_plan(
     execution_ir: CircuitIR,
     *,
@@ -775,25 +795,10 @@ def _run_native(
                     min_trajectories=int(options.get("min_trajectories", 1)),
                     target_standard_error=options.get("target_standard_error"),
                     memory_limit_bytes=options.get("memory_limit_bytes"),
-                    estimated_memory_bytes=(
-                        execution_plan.state_bytes
-                        * min(
-                            int(options.get("trajectories", 32)),
-                            int(options.get("trajectory_batch_size", 32)),
-                        )
-                        * (
-                            2
-                            + max(
-                                4 if noise_model.device_profile else 1,
-                                max(
-                                    (
-                                        len(rule.channel.kraus)
-                                        for rule in noise_model.rules
-                                    ),
-                                    default=1,
-                                ),
-                            )
-                        )
+                    estimated_memory_bytes=_noisy_statevector_memory_bytes(
+                        execution_plan,
+                        noise_model,
+                        options,
                     ),
                     noise_model_identity=noise_model.identity,
                 ),
