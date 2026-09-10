@@ -420,6 +420,28 @@ def _apply_masked_instruction(
     return state.index_copy(0, indices, updated)
 
 
+def _active_shot_mask(
+    instruction: Instruction, classical: torch.Tensor
+) -> tuple[torch.Tensor, bool]:
+    clauses = instruction_condition_clauses(instruction)
+    for bit_index in {bit for clause in clauses for bit, _ in clause}:
+        if bool(torch.any(classical[:, bit_index] < 0)):
+            raise RuntimeError(f"classical bit {bit_index} was read before measurement")
+    if not clauses:
+        return (
+            torch.ones(classical.shape[0], dtype=torch.bool, device=classical.device),
+            False,
+        )
+
+    active = torch.zeros(classical.shape[0], dtype=torch.bool, device=classical.device)
+    for clause in clauses:
+        clause_active = torch.ones_like(active)
+        for bit_index, expected in clause:
+            clause_active &= classical[:, bit_index] == expected
+        active |= clause_active
+    return active, True
+
+
 def _run_dynamic_batched(
     circuit: DynamicCircuit,
     *,
@@ -450,24 +472,9 @@ def _run_dynamic_batched(
     readout_errors = 0
 
     for instruction_index, instruction in enumerate(circuit._instructions):
-        active = torch.ones(int(shots), dtype=torch.bool, device=circuit.device)
-        clauses = instruction_condition_clauses(instruction)
-        for bit_index in {bit for clause in clauses for bit, _ in clause}:
-            if bool(torch.any(classical[:, bit_index] < 0)):
-                raise RuntimeError(
-                    f"classical bit {bit_index} was read before measurement"
-                )
-        if clauses:
-            active = torch.zeros(int(shots), dtype=torch.bool, device=circuit.device)
-            for clause in clauses:
-                clause_active = torch.ones(
-                    int(shots), dtype=torch.bool, device=circuit.device
-                )
-                for bit_index, expected in clause:
-                    clause_active &= classical[:, bit_index] == expected
-                active |= clause_active
+        active, conditional = _active_shot_mask(instruction, classical)
         active_count = int(torch.count_nonzero(active).item())
-        if clauses:
+        if conditional:
             conditional_applied += active_count
             conditional_skipped += int(shots) - active_count
         if active_count == 0:
