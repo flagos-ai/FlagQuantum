@@ -439,6 +439,33 @@ def _sharded_lbfgs_direction(
     return -result
 
 
+def _run_sharded_lbfgs_step(
+    parameters: Sequence[torch.Tensor],
+    history: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    previous_state: tuple[torch.Tensor, torch.Tensor] | None,
+    *,
+    learning_rate: float,
+    history_size: int,
+) -> tuple[tuple[torch.Tensor, torch.Tensor], int]:
+    current_parameters = _owner_flatten(parameters, gradients=False)
+    current_gradient = _owner_flatten(parameters, gradients=True)
+    collective_count = 0
+    if previous_state is not None:
+        previous_parameters, previous_gradient = previous_state
+        step_delta = current_parameters - previous_parameters
+        gradient_delta = current_gradient - previous_gradient
+        curvature = _distributed_dot(step_delta, gradient_delta)
+        collective_count += 1
+        if float(curvature.detach().cpu()) > 1e-14:
+            history.append((step_delta, gradient_delta, curvature.reciprocal()))
+            del history[:-history_size]
+    direction = _sharded_lbfgs_direction(current_gradient, history)
+    collective_count += 2 * len(history) + (2 if history else 0)
+    current_state = current_parameters.clone(), current_gradient.clone()
+    _owner_add_(parameters, learning_rate * direction)
+    return current_state, collective_count
+
+
 def _validate_optimizer_options(
     *,
     steps: int,
@@ -892,30 +919,15 @@ def train_distributed_mps(
             optimizer_collective_count = 0
             optimizer_collective_bytes = 0
             if optimizer_stage == "lbfgs":
-                current_parameters = _owner_flatten(owned, gradients=False)
-                current_gradient = _owner_flatten(owned, gradients=True)
-                if previous_lbfgs_state is not None:
-                    previous_lbfgs_parameters, previous_lbfgs_gradient = (
-                        previous_lbfgs_state
+                previous_lbfgs_state, optimizer_collective_count = (
+                    _run_sharded_lbfgs_step(
+                        owned,
+                        lbfgs_history,
+                        previous_lbfgs_state,
+                        learning_rate=lbfgs_lr,
+                        history_size=lbfgs_history_size,
                     )
-                    step_delta = current_parameters - previous_lbfgs_parameters
-                    gradient_delta = current_gradient - previous_lbfgs_gradient
-                    curvature = _distributed_dot(step_delta, gradient_delta)
-                    optimizer_collective_count += 1
-                    if float(curvature.detach().cpu()) > 1e-14:
-                        lbfgs_history.append(
-                            (step_delta, gradient_delta, curvature.reciprocal())
-                        )
-                        del lbfgs_history[:-lbfgs_history_size]
-                direction = _sharded_lbfgs_direction(current_gradient, lbfgs_history)
-                optimizer_collective_count += 2 * len(lbfgs_history) + (
-                    2 if lbfgs_history else 0
                 )
-                previous_lbfgs_state = (
-                    current_parameters.clone(),
-                    current_gradient.clone(),
-                )
-                _owner_add_(owned, lbfgs_lr * direction)
             elif optimizer_obj is not None:
                 optimizer_obj.step()
                 for parameter_group in optimizer_obj.param_groups:
