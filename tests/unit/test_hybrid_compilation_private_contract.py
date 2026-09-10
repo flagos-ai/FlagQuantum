@@ -1005,7 +1005,7 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     contract = _contract()
     phase27 = contract["phase27"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
@@ -1055,7 +1055,7 @@ def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
     contract = _contract()
     phase28 = contract["phase28"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase28["output_artifact"] == (
         "immutable_instruction_index_schedule_evidence"
@@ -1098,7 +1098,7 @@ def test_phase29_gates_existing_text_emitters_without_a_new_envelope() -> None:
     contract = _contract()
     phase29 = contract["phase29"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase29["input"] == (
         "flagquantum.compiler.target_legalization.TargetLegalizationResult"
     )
@@ -1133,7 +1133,7 @@ def test_phase30_strictly_reconstructs_emitted_text_without_executing_it() -> No
     contract = _contract()
     phase30 = contract["phase30"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase30["inputs"] == [
         "flagquantum.compiler.target_emission.TargetEmissionResult",
         "flagquantum.compiler.target_legalization.TargetLegalizationResult",
@@ -1173,7 +1173,7 @@ def test_phase31_proposes_same_lineage_v2_without_implementing_it() -> None:
     contract = _contract()
     phase31 = contract["phase31"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase31["proposal"] == (
         "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md"
     )
@@ -1211,7 +1211,7 @@ def test_phase31_1_adds_circuit_profile_without_implementing_v2() -> None:
     contract = _contract()
     phase31_1 = contract["phase31_1"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase31_1["profiles"] == [
         "circuit-ir-1.0",
         "openqasm-2.0",
@@ -1245,7 +1245,7 @@ def test_phase32_implements_only_the_approved_core_artifact_scope() -> None:
     contract = _contract()
     phase32 = contract["phase32"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase32["approval_token_received"] == (
         "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2"
     )
@@ -1277,7 +1277,7 @@ def test_phase33_connects_artifacts_without_reinterpreting_target_text() -> None
     contract = _contract()
     phase33 = contract["phase33"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase33["compiler_target_artifact_adapter"] == (
         "flagquantum.compiler.target_artifact.build_target_artifact"
     )
@@ -1309,7 +1309,7 @@ def test_phase34_binds_serializable_scalars_without_claiming_autograd() -> None:
     contract = _contract()
     phase34 = contract["phase34"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase34["binding"] == ("flagquantum.core._artifacts.bind_circuit_artifact")
     assert phase34["lineage_result"] == (
         "flagquantum.core._artifacts.CircuitArtifactBindingResult"
@@ -1337,7 +1337,7 @@ def test_phase35_makes_the_complete_artifact_compilation_chain_mandatory() -> No
     contract = _contract()
     phase35 = contract["phase35"]
 
-    assert contract["status"] == ("phase39_directional_compiler_complete")
+    assert contract["status"] == ("phase40_directional_evidence_v2_complete")
     assert phase35["entrypoint"] == (
         "flagquantum.compiler.artifact_compilation."
         "compile_circuit_artifact_for_target"
@@ -1377,7 +1377,7 @@ def test_phase36_composes_physical_evidence_without_a_second_ir() -> None:
     contract = _contract()
     phase36 = contract["phase36"]
 
-    assert contract["status"] == "phase39_directional_compiler_complete"
+    assert contract["status"] == "phase40_directional_evidence_v2_complete"
     assert phase36["builder"] == (
         "flagquantum.compiler.physical_plan.build_physical_circuit_plan"
     )
@@ -1412,7 +1412,7 @@ def test_phase37_completes_approved_evidence_handoff() -> None:
     contract = _contract()
     phase37 = contract["phase37"]
 
-    assert contract["status"] == "phase39_directional_compiler_complete"
+    assert contract["status"] == "phase40_directional_evidence_v2_complete"
     assert phase37["proposal"] == (
         "docs/development/API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE.md"
     )
@@ -1446,7 +1446,7 @@ def test_phase38_records_approved_directional_topology_contract() -> None:
     contract = _contract()
     phase38 = contract["phase38"]
 
-    assert contract["status"] == "phase39_directional_compiler_complete"
+    assert contract["status"] == "phase40_directional_evidence_v2_complete"
     assert phase38["proposal"] == (
         "docs/development/API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT.md"
     )
@@ -1479,7 +1479,7 @@ def test_phase39_completes_directional_compiler_slice() -> None:
     contract = _contract()
     phase39 = contract["phase39"]
 
-    assert contract["status"] == "phase39_directional_compiler_complete"
+    assert contract["status"] == "phase40_directional_evidence_v2_complete"
     assert phase39["directed_topology"] == (
         "flagquantum.compiler.directed_topology.DirectedCouplingMap"
     )
@@ -1504,3 +1504,33 @@ def test_phase39_completes_directional_compiler_slice() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE39_EVIDENCE.md"
     )
     assert contract["phase39_compiler_completed"] is True
+
+
+def test_phase40_completes_directional_evidence_core_compiler_slice() -> None:
+    contract = _contract()
+    phase40 = contract["phase40"]
+
+    assert contract["status"] == "phase40_directional_evidence_v2_complete"
+    assert phase40["core_bundle"] == (
+        "flagquantum.core._compilation_evidence_v2.CompilationEvidenceBundleV2"
+    )
+    assert phase40["core_plan"] == (
+        "flagquantum.core._compilation_evidence_v2.PhysicalPlanEvidenceV2"
+    )
+    assert phase40["core_coupling"] == (
+        "flagquantum.core._compilation_evidence_v2.DirectedCouplingEvidence"
+    )
+    assert phase40["explicit_version_dispatch"] is True
+    assert phase40["v1_reader_and_identity_unchanged"] is True
+    assert phase40["closed_records_and_limits"] is True
+    assert phase40["direction_groups_structurally_verified"] is True
+    assert phase40["compiler_builds_from_actual_plan"] is True
+    assert phase40["compiler_verifies_against_actual_compilation"] is True
+    assert phase40["runtime_adapter_added"] is False
+    assert phase40["deployment_adapter_added"] is False
+    assert phase40["public_root_export"] is False
+    assert phase40["default_path_change"] is False
+    assert phase40["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE40_EVIDENCE.md"
+    )
+    assert contract["phase40_core_compiler_completed"] is True

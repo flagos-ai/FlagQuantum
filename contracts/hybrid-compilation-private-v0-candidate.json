@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase39_directional_compiler_complete",
+  "status": "phase40_directional_evidence_v2_complete",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -1251,6 +1251,24 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE39_EVIDENCE.md"
   },
   "phase39_compiler_completed": true,
+  "phase40": {
+    "stage": "directional_compilation_evidence_v2_core_compiler",
+    "core_bundle": "flagquantum.core._compilation_evidence_v2.CompilationEvidenceBundleV2",
+    "core_plan": "flagquantum.core._compilation_evidence_v2.PhysicalPlanEvidenceV2",
+    "core_coupling": "flagquantum.core._compilation_evidence_v2.DirectedCouplingEvidence",
+    "explicit_version_dispatch": true,
+    "v1_reader_and_identity_unchanged": true,
+    "closed_records_and_limits": true,
+    "direction_groups_structurally_verified": true,
+    "compiler_builds_from_actual_plan": true,
+    "compiler_verifies_against_actual_compilation": true,
+    "runtime_adapter_added": false,
+    "deployment_adapter_added": false,
+    "public_root_export": false,
+    "default_path_change": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE40_EVIDENCE.md"
+  },
+  "phase40_core_compiler_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

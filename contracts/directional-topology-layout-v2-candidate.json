@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.directional_topology_layout_candidate_contract",
-  "status": "approved_compiler_implementation_complete",
+  "status": "approved_core_compiler_implementation_complete",
   "proposed_on": "2026-09-10",
   "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT.md",
@@ -77,7 +77,7 @@
     "compiler_types_added": true,
     "compiler_pipeline_changed": true,
     "physical_plan_v2_added": true,
-    "core_evidence_v2_added": false,
+    "core_evidence_v2_added": true,
     "runtime_verifier_added": false,
     "deployment_adapter_added": false
   }

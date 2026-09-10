@@ -18,7 +18,7 @@ def _candidate() -> dict[str, object]:
 def test_candidate_records_approved_compiler_slice_and_exact_token() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "approved_compiler_implementation_complete"
+    assert candidate["status"] == "approved_core_compiler_implementation_complete"
     assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT"
@@ -28,7 +28,7 @@ def test_candidate_records_approved_compiler_slice_and_exact_token() -> None:
         "compiler_types_added": True,
         "compiler_pipeline_changed": True,
         "physical_plan_v2_added": True,
-        "core_evidence_v2_added": False,
+        "core_evidence_v2_added": True,
         "runtime_verifier_added": False,
         "deployment_adapter_added": False,
     }

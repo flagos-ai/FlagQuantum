@@ -11,8 +11,8 @@ from flagquantum.compiler.artifact_compilation import (
     compile_circuit_artifact_for_target,
 )
 from flagquantum.compiler.compilation_evidence import (
-    CompilationEvidenceError,
     build_compilation_evidence_bundle,
+    verify_compilation_evidence_bundle,
 )
 from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.physical_plan import build_physical_circuit_plan
@@ -21,6 +21,10 @@ from flagquantum.compiler.target_legalization import (
     legalize_circuit_for_target,
 )
 from flagquantum.core._artifacts import ProgramArtifactV2
+from flagquantum.core._compilation_evidence import (
+    read_compilation_evidence_bundle_json,
+)
+from flagquantum.core._compilation_evidence_v2 import CompilationEvidenceBundleV2
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -309,9 +313,13 @@ def test_directed_plan_reaches_executable_artifact_without_a_second_ir() -> None
     assert result.physical_plan.final_logical_to_physical == (0, 1, 2)
     assert result.executable_artifact.profile["name"] == "openqasm-3.0"
     assert "OPENQASM 3.0;" in result.emission.text
-    with pytest.raises(CompilationEvidenceError, match="evidence version 2.0"):
-        build_compilation_evidence_bundle(
-            result,
-            snapshot=_snapshot(),
-            producer="flagquantum.compiler",
-        )
+    bundle = build_compilation_evidence_bundle(
+        result,
+        snapshot=_snapshot(),
+        producer="flagquantum.compiler",
+    )
+    assert isinstance(bundle, CompilationEvidenceBundleV2)
+    restored = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert restored == bundle
+    assert restored.physical_plan.plan_identity == result.physical_plan.plan_identity
+    verify_compilation_evidence_bundle(restored, result, snapshot=_snapshot())

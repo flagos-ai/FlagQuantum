@@ -1160,3 +1160,9 @@ placement and restoration, reverse-CX legalization, final native/directional
 verification, physical-plan 2.0 lineage, and executable-artifact compilation.
 Compilation-evidence 1.0 explicitly rejects these directed plans until the
 separately tested Core 2.0 and Runtime/Deployment handoff is complete.
+
+Phase 40 now implements the Core-owned strict version 2.0 values, canonical
+encoding, explicit 1.0/2.0 reader dispatch, directed topology and rewrite-group
+validation, and Compiler construction/verification from actual retained
+objects. Version 1.0 remains unchanged. Runtime and Deployment version-2
+handoff support remains a separate final slice.

@@ -1,51 +1,36 @@
-"""Versioned, backend-neutral evidence for verified physical compilation."""
+"""Version 2 compilation evidence for directed topology and explicit layout."""
 
 from __future__ import annotations
 
 import hashlib
-import json
-import re
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import Mapping
 
-if TYPE_CHECKING:
-    from ._compilation_evidence_v2 import CompilationEvidenceBundleV2
+from ._compilation_evidence import (
+    _DEPENDENCY_KINDS,
+    _MAX_BUNDLE_BYTES,
+    _MAX_PREDECESSORS,
+    _MAX_RECORDS,
+    _OUTPUT_FIELDS,
+    _SCHEMA,
+    _SOURCE_FIELDS,
+    _TARGET_FIELDS,
+    _TOP_LEVEL_FIELDS,
+    MappingTransitionEvidence,
+    _bounded_string,
+    _canonical_bytes,
+    _closed,
+    _index,
+    _int_tuple,
+    _sha256,
+    _swap_layout,
+    _wire_pair,
+)
 
-COMPILATION_EVIDENCE_VERSION = "1.0"
-_SCHEMA = "flagquantum.compilation_evidence_bundle"
-_SHA256 = re.compile(r"[0-9a-f]{64}")
-_MAX_BUNDLE_BYTES = 16 * 1024 * 1024
-_MAX_RECORDS = 4096
-_MAX_PREDECESSORS = 4096
-_MAX_STRING_BYTES = 256
-_TOP_LEVEL_FIELDS = {
-    "schema",
-    "version",
-    "producer",
-    "source",
-    "target",
-    "physical_plan",
-    "output",
-    "bundle_identity",
-}
-_SOURCE_FIELDS = {
-    "source_artifact_identity",
-    "circuit_artifact_identity",
-    "binding_identity",
-    "source_circuit_hash",
-    "final_circuit_hash",
-}
-_TARGET_FIELDS = {"snapshot_id", "target_legalization_identity"}
-_OUTPUT_FIELDS = {
-    "profile",
-    "payload_sha256",
-    "emission_identity",
-    "conformance_identity",
-    "executable_artifact_identity",
-    "artifact_compilation_identity",
-}
-_PLAN_FIELDS = {
+COMPILATION_EVIDENCE_VERSION_V2 = "2.0"
+_COUPLING_FIELDS_V2 = {"n_wires", "directed_edges", "direction_semantics"}
+_PLAN_FIELDS_V2 = {
     "plan_identity",
     "source_circuit_hash",
     "physical_circuit_hash",
@@ -58,25 +43,21 @@ _PLAN_FIELDS = {
     "instructions",
     "topology_legalization_identity",
     "native_gate_legalization_identity",
+    "direction_legalization_identity",
+    "reversed_cx_count",
     "schedule_identity",
     "schedule_depth",
     "maximum_parallel_width",
     "critical_path",
 }
-_COUPLING_FIELDS = {"n_wires", "edges", "direction_semantics"}
-_TRANSITION_FIELDS = {
-    "routed_instruction_index",
-    "source_instruction_index",
-    "phase",
-    "physical_wires",
-    "layout_before",
-    "layout_after",
-}
-_INSTRUCTION_FIELDS = {
+_INSTRUCTION_FIELDS_V2 = {
     "instruction_index",
     "source_instruction_index",
     "topology_instruction_index",
     "native_replacement_ordinal",
+    "native_instruction_index",
+    "direction_replacement_ordinal",
+    "direction_rewrite",
     "origin",
     "opcode",
     "logical_wires",
@@ -85,174 +66,83 @@ _INSTRUCTION_FIELDS = {
     "predecessors",
     "dependency_kinds",
 }
-_ROUTING_PHASES = {"forward", "gate_restore", "final_restore"}
-_ORIGINS = {
+_ORIGINS_V2 = {
     "source",
     "topology_mapped",
     "native_decomposition",
     "routing_swap",
     "routing_swap_decomposition",
+    "direction_rewrite",
+    "routing_swap_direction_rewrite",
 }
-_DEPENDENCY_KINDS = {"wire", "barrier", "classical"}
-
-
-def _canonical_bytes(value: object) -> bytes:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=True,
-        allow_nan=False,
-    ).encode("utf-8")
-
-
-def _closed(value: object, fields: set[str], owner: str) -> dict[str, Any]:
-    if not isinstance(value, Mapping):
-        raise TypeError(f"{owner} must be a mapping")
-    unknown = set(value) - fields
-    missing = fields - set(value)
-    if unknown:
-        raise ValueError(f"unknown {owner} field(s): " + ", ".join(sorted(unknown)))
-    if missing:
-        raise ValueError(f"missing {owner} field(s): " + ", ".join(sorted(missing)))
-    return dict(value)
-
-
-def _sha256(value: object, owner: str, *, optional: bool = False) -> str | None:
-    if optional and value is None:
-        return None
-    if type(value) is not str or _SHA256.fullmatch(value) is None:
-        raise ValueError(f"{owner} must be a lowercase SHA-256 digest")
-    return value
-
-
-def _bounded_string(value: object, owner: str) -> str:
-    if type(value) is not str or not value:
-        raise ValueError(f"{owner} must be a non-empty string")
-    if len(value.encode("utf-8")) > _MAX_STRING_BYTES:
-        raise ValueError(f"{owner} exceeds maximum UTF-8 bytes {_MAX_STRING_BYTES}")
-    if value.startswith(("/", "~/", "file://", "http://", "https://")):
-        raise ValueError(f"{owner} contains a prohibited locator")
-    return value
-
-
-def _index(value: object, owner: str) -> int:
-    if type(value) is not int or value < 0:
-        raise ValueError(f"{owner} must be a non-negative integer")
-    return value
-
-
-def _int_tuple(value: object, owner: str) -> tuple[int, ...]:
-    if not isinstance(value, (tuple, list)):
-        raise TypeError(f"{owner} must be an array")
-    result = tuple(value)
-    if any(type(item) is not int or item < 0 for item in result):
-        raise ValueError(f"{owner} must contain non-negative integers")
-    return result
-
-
-def _wire_pair(value: object, owner: str, *, n_wires: int) -> tuple[int, int]:
-    wires = _int_tuple(value, owner)
-    if len(wires) != 2 or wires[0] == wires[1]:
-        raise ValueError(f"{owner} must contain two distinct wires")
-    if any(wire >= n_wires for wire in wires):
-        raise ValueError(f"{owner} contains a wire outside the coupling map")
-    return wires
+_DIRECTION_REWRITES = {"none", "reverse_cx_h_conjugation"}
 
 
 @dataclass(frozen=True)
-class CouplingEvidence:
-    """Closed undirected coupling-map evidence."""
+class DirectedCouplingEvidence:
+    """Closed directed-CX coupling evidence."""
 
     n_wires: int
-    edges: tuple[tuple[int, int], ...]
+    directed_edges: tuple[tuple[int, int], ...]
 
     def __post_init__(self) -> None:
         if type(self.n_wires) is not int or self.n_wires <= 0:
-            raise ValueError("coupling n_wires must be a positive integer")
+            raise ValueError("directed coupling n_wires must be positive")
         edges = tuple(
-            _wire_pair(edge, "coupling edge", n_wires=self.n_wires)
-            for edge in self.edges
+            _wire_pair(edge, "directed coupling edge", n_wires=self.n_wires)
+            for edge in self.directed_edges
         )
-        if any(left > right for left, right in edges):
-            raise ValueError("coupling edges must use normalized wire order")
-        if len(set(edges)) != len(edges):
-            raise ValueError("coupling edges must be unique")
-        object.__setattr__(self, "edges", edges)
+        if edges != tuple(sorted(edges)) or len(edges) != len(set(edges)):
+            raise ValueError("directed coupling edges must be sorted and unique")
+        object.__setattr__(self, "directed_edges", edges)
+
+    @property
+    def topology_identity(self) -> str:
+        return hashlib.sha256(
+            _canonical_bytes(
+                {
+                    "n_wires": self.n_wires,
+                    "directed_edges": self.directed_edges,
+                    "direction_semantics": "directed_cx",
+                }
+            )
+        ).hexdigest()
+
+    def has_edge(self, left: int, right: int) -> bool:
+        return (left, right) in self.directed_edges
+
+    def has_weak_edge(self, left: int, right: int) -> bool:
+        return self.has_edge(left, right) or self.has_edge(right, left)
 
     def to_dict(self) -> dict[str, object]:
         return {
             "n_wires": self.n_wires,
-            "edges": [list(edge) for edge in self.edges],
-            "direction_semantics": "undirected",
+            "directed_edges": [list(edge) for edge in self.directed_edges],
+            "direction_semantics": "directed_cx",
         }
 
     @classmethod
-    def from_dict(cls, payload: object) -> CouplingEvidence:
-        values = _closed(payload, _COUPLING_FIELDS, "coupling evidence")
-        if values["direction_semantics"] != "undirected":
-            raise ValueError("coupling direction_semantics must be undirected")
-        raw_edges = values["edges"]
+    def from_dict(cls, payload: object) -> DirectedCouplingEvidence:
+        values = _closed(payload, _COUPLING_FIELDS_V2, "directed coupling evidence")
+        if values["direction_semantics"] != "directed_cx":
+            raise ValueError("coupling direction_semantics must be directed_cx")
+        raw_edges = values["directed_edges"]
         if not isinstance(raw_edges, (tuple, list)):
-            raise TypeError("coupling edges must be an array")
-        return cls(n_wires=values["n_wires"], edges=tuple(raw_edges))
+            raise TypeError("directed coupling edges must be an array")
+        return cls(n_wires=values["n_wires"], directed_edges=tuple(raw_edges))
 
 
 @dataclass(frozen=True)
-class MappingTransitionEvidence:
-    """One serialized routing layout transition."""
-
-    routed_instruction_index: int
-    source_instruction_index: int
-    phase: str
-    physical_wires: tuple[int, int]
-    layout_before: tuple[int, ...]
-    layout_after: tuple[int, ...]
-
-    def __post_init__(self) -> None:
-        _index(self.routed_instruction_index, "routed_instruction_index")
-        _index(self.source_instruction_index, "source_instruction_index")
-        if self.phase not in _ROUTING_PHASES:
-            raise ValueError("mapping transition has unsupported routing phase")
-        before = _int_tuple(self.layout_before, "layout_before")
-        after = _int_tuple(self.layout_after, "layout_after")
-        if not before or sorted(before) != list(range(len(before))):
-            raise ValueError("layout_before must be a dense permutation")
-        if sorted(after) != list(range(len(before))):
-            raise ValueError("layout_after must be a matching dense permutation")
-        wires = _wire_pair(
-            self.physical_wires,
-            "mapping transition physical_wires",
-            n_wires=len(before),
-        )
-        object.__setattr__(self, "physical_wires", wires)
-        object.__setattr__(self, "layout_before", before)
-        object.__setattr__(self, "layout_after", after)
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "routed_instruction_index": self.routed_instruction_index,
-            "source_instruction_index": self.source_instruction_index,
-            "phase": self.phase,
-            "physical_wires": list(self.physical_wires),
-            "layout_before": list(self.layout_before),
-            "layout_after": list(self.layout_after),
-        }
-
-    @classmethod
-    def from_dict(cls, payload: object) -> MappingTransitionEvidence:
-        values = _closed(payload, _TRANSITION_FIELDS, "mapping transition")
-        return cls(**values)
-
-
-@dataclass(frozen=True)
-class PhysicalInstructionEvidence:
-    """One serialized final instruction provenance and dependency record."""
+class PhysicalInstructionEvidenceV2:
+    """One final instruction with native and direction-rewrite lineage."""
 
     instruction_index: int
     source_instruction_index: int
     topology_instruction_index: int
     native_replacement_ordinal: int
+    native_instruction_index: int
+    direction_replacement_ordinal: int
+    direction_rewrite: str
     origin: str
     opcode: str
     logical_wires: tuple[int, ...]
@@ -267,10 +157,14 @@ class PhysicalInstructionEvidence:
             "source_instruction_index",
             "topology_instruction_index",
             "native_replacement_ordinal",
+            "native_instruction_index",
+            "direction_replacement_ordinal",
             "layer",
         ):
             _index(getattr(self, owner), owner)
-        if self.origin not in _ORIGINS:
+        if self.direction_rewrite not in _DIRECTION_REWRITES:
+            raise ValueError("physical instruction has unsupported direction rewrite")
+        if self.origin not in _ORIGINS_V2:
             raise ValueError("physical instruction has unsupported origin")
         _bounded_string(self.opcode, "physical instruction opcode")
         logical = _int_tuple(self.logical_wires, "logical_wires")
@@ -298,6 +192,9 @@ class PhysicalInstructionEvidence:
             "source_instruction_index": self.source_instruction_index,
             "topology_instruction_index": self.topology_instruction_index,
             "native_replacement_ordinal": self.native_replacement_ordinal,
+            "native_instruction_index": self.native_instruction_index,
+            "direction_replacement_ordinal": self.direction_replacement_ordinal,
+            "direction_rewrite": self.direction_rewrite,
             "origin": self.origin,
             "opcode": self.opcode,
             "logical_wires": list(self.logical_wires),
@@ -308,31 +205,13 @@ class PhysicalInstructionEvidence:
         }
 
     @classmethod
-    def from_dict(cls, payload: object) -> PhysicalInstructionEvidence:
-        values = _closed(payload, _INSTRUCTION_FIELDS, "physical instruction")
+    def from_dict(cls, payload: object) -> PhysicalInstructionEvidenceV2:
+        values = _closed(payload, _INSTRUCTION_FIELDS_V2, "physical instruction")
         return cls(**values)
 
 
-def _swap_layout(layout: list[int], wires: tuple[int, int]) -> None:
-    inverse = {physical: logical for logical, physical in enumerate(layout)}
-    left, right = wires
-    layout[inverse[left]], layout[inverse[right]] = right, left
-
-
-def _coupling_identity(coupling: CouplingEvidence) -> str:
-    return hashlib.sha256(
-        _canonical_bytes(
-            {
-                "n_wires": coupling.n_wires,
-                "edges": coupling.edges,
-                "direction_semantics": "undirected",
-            }
-        )
-    ).hexdigest()
-
-
 def _critical_path(
-    instructions: tuple[PhysicalInstructionEvidence, ...], depth: int
+    instructions: tuple[PhysicalInstructionEvidenceV2, ...], depth: int
 ) -> tuple[int, ...]:
     if not instructions:
         return ()
@@ -340,7 +219,7 @@ def _critical_path(
         (item for item in instructions if item.layer == depth - 1),
         key=lambda item: item.instruction_index,
     )
-    reversed_path = [current.instruction_index]
+    path = [current.instruction_index]
     while current.predecessors:
         maximum_layer = max(instructions[index].layer for index in current.predecessors)
         predecessor = min(
@@ -348,27 +227,85 @@ def _critical_path(
             for index in current.predecessors
             if instructions[index].layer == maximum_layer
         )
-        reversed_path.append(predecessor)
+        path.append(predecessor)
         current = instructions[predecessor]
-    return tuple(reversed(reversed_path))
+    return tuple(reversed(path))
+
+
+def _validate_direction_groups(
+    instructions: tuple[PhysicalInstructionEvidenceV2, ...],
+) -> int:
+    native_sequence = tuple(item.native_instruction_index for item in instructions)
+    if native_sequence != tuple(sorted(native_sequence)):
+        raise ValueError("native instruction groups must be contiguous and ordered")
+    groups: dict[int, list[PhysicalInstructionEvidenceV2]] = {}
+    for instruction in instructions:
+        groups.setdefault(instruction.native_instruction_index, []).append(instruction)
+    expected_native_indexes = list(range(len(groups)))
+    if sorted(groups) != expected_native_indexes:
+        raise ValueError("native instruction indexes must be dense and ordered")
+    reversed_count = 0
+    for native_index in expected_native_indexes:
+        group = groups[native_index]
+        rewrites = {item.direction_rewrite for item in group}
+        if len(rewrites) != 1:
+            raise ValueError("direction rewrite group is inconsistent")
+        rewrite = group[0].direction_rewrite
+        if rewrite == "none":
+            if len(group) != 1 or group[0].direction_replacement_ordinal != 0:
+                raise ValueError("unchanged direction group must contain one record")
+            continue
+        if (
+            len(group) != 5
+            or tuple(item.direction_replacement_ordinal for item in group)
+            != tuple(range(5))
+            or tuple(item.opcode for item in group) != ("h", "h", "cx", "h", "h")
+        ):
+            raise ValueError("reverse-CX direction group has invalid expansion")
+        if (
+            len(
+                {
+                    (
+                        item.source_instruction_index,
+                        item.topology_instruction_index,
+                        item.native_replacement_ordinal,
+                    )
+                    for item in group
+                }
+            )
+            != 1
+        ):
+            raise ValueError("reverse-CX direction group has inconsistent lineage")
+        first, second, controlled, fourth, fifth = group
+        if (
+            first.physical_wires != fourth.physical_wires
+            or second.physical_wires != fifth.physical_wires
+            or controlled.physical_wires
+            != (second.physical_wires[0], first.physical_wires[0])
+        ):
+            raise ValueError("reverse-CX direction group has invalid wire semantics")
+        reversed_count += 1
+    return reversed_count
 
 
 @dataclass(frozen=True)
-class PhysicalPlanEvidence:
-    """Serializable projection of a verified Compiler physical plan."""
+class PhysicalPlanEvidenceV2:
+    """Strict directed-topology physical-plan evidence."""
 
     source_circuit_hash: str
     physical_circuit_hash: str
     target_snapshot_id: str
-    topology_identity: str | None
-    coupling: CouplingEvidence | None
+    topology_identity: str
+    coupling: DirectedCouplingEvidence
     initial_logical_to_physical: tuple[int, ...]
     pre_restore_logical_to_physical: tuple[int, ...]
     final_logical_to_physical: tuple[int, ...]
     mapping_transitions: tuple[MappingTransitionEvidence, ...]
-    instructions: tuple[PhysicalInstructionEvidence, ...]
-    topology_legalization_identity: str | None
+    instructions: tuple[PhysicalInstructionEvidenceV2, ...]
+    topology_legalization_identity: str
     native_gate_legalization_identity: str
+    direction_legalization_identity: str
+    reversed_cx_count: int
     schedule_identity: str
     schedule_depth: int
     maximum_parallel_width: int
@@ -380,26 +317,17 @@ class PhysicalPlanEvidence:
             "source_circuit_hash",
             "physical_circuit_hash",
             "target_snapshot_id",
+            "topology_identity",
+            "topology_legalization_identity",
             "native_gate_legalization_identity",
+            "direction_legalization_identity",
             "schedule_identity",
         ):
             _sha256(getattr(self, owner), owner)
-        topology_identity = _sha256(
-            self.topology_identity, "topology_identity", optional=True
-        )
-        topology_legalization_identity = _sha256(
-            self.topology_legalization_identity,
-            "topology_legalization_identity",
-            optional=True,
-        )
-        if (topology_identity is None) != (self.coupling is None):
-            raise ValueError("topology identity and coupling evidence must coexist")
-        if (topology_identity is None) != (topology_legalization_identity is None):
-            raise ValueError("topology legalization evidence is inconsistent")
-        if self.coupling is not None and topology_identity != _coupling_identity(
-            self.coupling
-        ):
-            raise ValueError("coupling evidence does not match topology identity")
+        if not isinstance(self.coupling, DirectedCouplingEvidence):
+            raise TypeError("coupling must be DirectedCouplingEvidence")
+        if self.topology_identity != self.coupling.topology_identity:
+            raise ValueError("directed coupling does not match topology identity")
 
         initial = _int_tuple(
             self.initial_logical_to_physical, "initial_logical_to_physical"
@@ -409,14 +337,15 @@ class PhysicalPlanEvidence:
             "pre_restore_logical_to_physical",
         )
         final = _int_tuple(self.final_logical_to_physical, "final_logical_to_physical")
-        if not initial or initial != tuple(range(len(initial))):
-            raise ValueError("initial logical-to-physical layout must be identity")
-        if sorted(before_restore) != list(range(len(initial))):
+        identity = tuple(range(len(initial)))
+        if not initial or sorted(initial) != list(identity):
+            raise ValueError("initial layout must be a dense permutation")
+        if self.coupling.n_wires != len(initial):
+            raise ValueError("directed physical and logical capacity must be equal")
+        if sorted(before_restore) != list(identity):
             raise ValueError("pre-restore layout must be a dense permutation")
-        if final != initial:
+        if final != identity:
             raise ValueError("final logical-to-physical layout must be identity")
-        if self.coupling is not None and self.coupling.n_wires < len(initial):
-            raise ValueError("coupling map has fewer wires than the logical layout")
 
         transitions = tuple(self.mapping_transitions)
         instructions = tuple(self.instructions)
@@ -427,75 +356,77 @@ class PhysicalPlanEvidence:
         if any(not isinstance(item, MappingTransitionEvidence) for item in transitions):
             raise TypeError("mapping transitions must be typed evidence records")
         if any(
-            not isinstance(item, PhysicalInstructionEvidence) for item in instructions
+            not isinstance(item, PhysicalInstructionEvidenceV2) for item in instructions
         ):
-            raise TypeError("instructions must be typed evidence records")
-        if self.coupling is None and transitions:
-            raise ValueError("mapping transitions require coupling evidence")
+            raise TypeError("instructions must be typed version 2 evidence records")
 
         layout = list(initial)
         replay_pre_restore = tuple(layout)
-        saw_final_restore = False
+        saw_restore = False
         for transition in transitions:
             if transition.layout_before != tuple(layout):
                 raise ValueError("mapping transitions are not continuous")
-            if transition.phase == "final_restore" and not saw_final_restore:
+            if transition.phase == "final_restore" and not saw_restore:
                 replay_pre_restore = tuple(layout)
-                saw_final_restore = True
+                saw_restore = True
             _swap_layout(layout, transition.physical_wires)
             if transition.layout_after != tuple(layout):
                 raise ValueError("mapping transition result is inconsistent")
         if tuple(layout) != final:
             raise ValueError("mapping transitions do not reach final layout")
-        if not saw_final_restore:
+        if not saw_restore:
             replay_pre_restore = tuple(layout)
         if replay_pre_restore != before_restore:
-            raise ValueError("pre-restore layout does not match mapping transitions")
+            raise ValueError("pre-restore layout does not match transitions")
 
         for index, instruction in enumerate(instructions):
             if instruction.instruction_index != index:
-                raise ValueError(
-                    "physical instruction indexes must be dense and ordered"
-                )
+                raise ValueError("physical instruction indexes must be dense")
             if any(
-                instructions[predecessor].layer >= instruction.layer
-                for predecessor in instruction.predecessors
+                instructions[item].layer >= instruction.layer
+                for item in instruction.predecessors
             ):
                 raise ValueError("physical dependencies must come from earlier layers")
             if bool(instruction.predecessors) != bool(instruction.dependency_kinds):
                 raise ValueError("physical dependency kinds are inconsistent")
             if any(wire >= len(initial) for wire in instruction.logical_wires):
                 raise ValueError("logical instruction wire is outside the layout")
-            physical_limit = (
-                len(initial) if self.coupling is None else self.coupling.n_wires
-            )
-            if any(wire >= physical_limit for wire in instruction.physical_wires):
+            if any(
+                wire >= self.coupling.n_wires for wire in instruction.physical_wires
+            ):
                 raise ValueError("physical instruction wire is outside the target")
-            if self.coupling is not None and len(instruction.physical_wires) == 2:
-                edge = tuple(sorted(instruction.physical_wires))
-                if edge not in self.coupling.edges:
-                    raise ValueError("physical instruction violates coupling evidence")
+            if len(instruction.physical_wires) == 2:
+                left, right = instruction.physical_wires
+                if instruction.opcode == "cx":
+                    legal = self.coupling.has_edge(left, right)
+                elif instruction.opcode == "swap":
+                    legal = self.coupling.has_weak_edge(left, right)
+                else:
+                    legal = False
+                if not legal:
+                    raise ValueError("physical instruction violates directed coupling")
 
+        reversed_count = _validate_direction_groups(instructions)
+        if _index(self.reversed_cx_count, "reversed_cx_count") != reversed_count:
+            raise ValueError("reversed_cx_count does not match direction lineage")
         depth = _index(self.schedule_depth, "schedule_depth")
         width = _index(self.maximum_parallel_width, "maximum_parallel_width")
         expected_depth = (
             0 if not instructions else 1 + max(i.layer for i in instructions)
         )
-        layer_widths = {
-            layer: sum(item.layer == layer for item in instructions)
-            for layer in range(expected_depth)
-        }
-        expected_width = max(layer_widths.values(), default=0)
+        expected_width = max(
+            (
+                sum(item.layer == layer for item in instructions)
+                for layer in range(expected_depth)
+            ),
+            default=0,
+        )
         if depth != expected_depth or width != expected_width:
             raise ValueError("physical plan schedule summary is inconsistent")
         critical_path = _int_tuple(self.critical_path, "critical_path")
         if critical_path != _critical_path(instructions, depth):
             raise ValueError("physical plan critical path is inconsistent")
 
-        object.__setattr__(self, "topology_identity", topology_identity)
-        object.__setattr__(
-            self, "topology_legalization_identity", topology_legalization_identity
-        )
         object.__setattr__(self, "initial_logical_to_physical", initial)
         object.__setattr__(self, "pre_restore_logical_to_physical", before_restore)
         object.__setattr__(self, "final_logical_to_physical", final)
@@ -512,15 +443,14 @@ class PhysicalPlanEvidence:
     def _plan_identity_payload(self) -> dict[str, object]:
         return {
             "schema": "flagquantum.physical_circuit_plan",
-            "version": "1.0",
+            "version": "2.0",
             "source_circuit_hash": self.source_circuit_hash,
             "physical_circuit_hash": self.physical_circuit_hash,
             "target_snapshot_id": self.target_snapshot_id,
             "topology_identity": self.topology_identity,
-            "coupling_n_wires": (
-                None if self.coupling is None else self.coupling.n_wires
-            ),
-            "coupling_edges": () if self.coupling is None else self.coupling.edges,
+            "coupling_n_wires": self.coupling.n_wires,
+            "coupling_edges": self.coupling.directed_edges,
+            "coupling_direction_semantics": "directed_cx",
             "initial_logical_to_physical": self.initial_logical_to_physical,
             "pre_restore_logical_to_physical": self.pre_restore_logical_to_physical,
             "final_logical_to_physical": self.final_logical_to_physical,
@@ -530,6 +460,8 @@ class PhysicalPlanEvidence:
             "instructions": [item.to_dict() for item in self.instructions],
             "topology_legalization_identity": self.topology_legalization_identity,
             "native_gate_legalization_identity": self.native_gate_legalization_identity,
+            "direction_legalization_identity": self.direction_legalization_identity,
+            "reversed_cx_count": self.reversed_cx_count,
             "schedule_identity": self.schedule_identity,
             "schedule_depth": self.schedule_depth,
             "maximum_parallel_width": self.maximum_parallel_width,
@@ -542,7 +474,7 @@ class PhysicalPlanEvidence:
             "source_circuit_hash": self.source_circuit_hash,
             "physical_circuit_hash": self.physical_circuit_hash,
             "topology_identity": self.topology_identity,
-            "coupling": None if self.coupling is None else self.coupling.to_dict(),
+            "coupling": self.coupling.to_dict(),
             "initial_logical_to_physical": list(self.initial_logical_to_physical),
             "pre_restore_logical_to_physical": list(
                 self.pre_restore_logical_to_physical
@@ -554,6 +486,8 @@ class PhysicalPlanEvidence:
             "instructions": [item.to_dict() for item in self.instructions],
             "topology_legalization_identity": self.topology_legalization_identity,
             "native_gate_legalization_identity": self.native_gate_legalization_identity,
+            "direction_legalization_identity": self.direction_legalization_identity,
+            "reversed_cx_count": self.reversed_cx_count,
             "schedule_identity": self.schedule_identity,
             "schedule_depth": self.schedule_depth,
             "maximum_parallel_width": self.maximum_parallel_width,
@@ -563,50 +497,44 @@ class PhysicalPlanEvidence:
     @classmethod
     def from_dict(
         cls, payload: object, *, target_snapshot_id: str
-    ) -> PhysicalPlanEvidence:
-        values = _closed(payload, _PLAN_FIELDS, "physical plan evidence")
-        coupling_value = values.pop("coupling")
+    ) -> PhysicalPlanEvidenceV2:
+        values = _closed(payload, _PLAN_FIELDS_V2, "physical plan evidence v2")
+        coupling = DirectedCouplingEvidence.from_dict(values.pop("coupling"))
         transitions = values.pop("mapping_transitions")
         instructions = values.pop("instructions")
         if not isinstance(transitions, (tuple, list)):
             raise TypeError("mapping_transitions must be an array")
         if not isinstance(instructions, (tuple, list)):
             raise TypeError("instructions must be an array")
-        if len(transitions) > _MAX_RECORDS:
-            raise ValueError("physical plan has too many mapping transitions")
-        if len(instructions) > _MAX_RECORDS:
-            raise ValueError("physical plan has too many instruction records")
+        if len(transitions) > _MAX_RECORDS or len(instructions) > _MAX_RECORDS:
+            raise ValueError("physical plan exceeds record limits")
         return cls(
             target_snapshot_id=target_snapshot_id,
-            coupling=(
-                None
-                if coupling_value is None
-                else CouplingEvidence.from_dict(coupling_value)
-            ),
+            coupling=coupling,
             mapping_transitions=tuple(
                 MappingTransitionEvidence.from_dict(item) for item in transitions
             ),
             instructions=tuple(
-                PhysicalInstructionEvidence.from_dict(item) for item in instructions
+                PhysicalInstructionEvidenceV2.from_dict(item) for item in instructions
             ),
             **values,
         )
 
 
 @dataclass(frozen=True)
-class CompilationEvidenceBundle:
-    """Strict serialized evidence joining compilation inputs, plan, and output."""
+class CompilationEvidenceBundleV2:
+    """Strict version 2 compilation-evidence envelope."""
 
     producer: str
     source: Mapping[str, str | None]
     target: Mapping[str, str]
-    physical_plan: PhysicalPlanEvidence
+    physical_plan: PhysicalPlanEvidenceV2
     output: Mapping[str, str]
     bundle_identity: str = ""
-    version: str = COMPILATION_EVIDENCE_VERSION
+    version: str = COMPILATION_EVIDENCE_VERSION_V2
 
     def __post_init__(self) -> None:
-        if self.version != COMPILATION_EVIDENCE_VERSION:
+        if self.version != COMPILATION_EVIDENCE_VERSION_V2:
             raise ValueError(
                 f"unsupported compilation evidence version {self.version!r}"
             )
@@ -623,8 +551,8 @@ class CompilationEvidenceBundle:
                 _bounded_string(value, "output.profile")
             else:
                 _sha256(value, f"output.{name}")
-        if not isinstance(self.physical_plan, PhysicalPlanEvidence):
-            raise TypeError("physical_plan must be PhysicalPlanEvidence")
+        if not isinstance(self.physical_plan, PhysicalPlanEvidenceV2):
+            raise TypeError("physical_plan must be PhysicalPlanEvidenceV2")
         if (
             source["source_circuit_hash"] != self.physical_plan.source_circuit_hash
             or source["final_circuit_hash"] != self.physical_plan.physical_circuit_hash
@@ -635,12 +563,12 @@ class CompilationEvidenceBundle:
         object.__setattr__(self, "source", MappingProxyType(dict(source)))
         object.__setattr__(self, "target", MappingProxyType(dict(target)))
         object.__setattr__(self, "output", MappingProxyType(dict(output)))
-        expected_identity = hashlib.sha256(
+        expected = hashlib.sha256(
             _canonical_bytes(self._identity_payload())
         ).hexdigest()
-        if self.bundle_identity and self.bundle_identity != expected_identity:
+        if self.bundle_identity and self.bundle_identity != expected:
             raise ValueError("bundle_identity does not match compilation evidence")
-        object.__setattr__(self, "bundle_identity", expected_identity)
+        object.__setattr__(self, "bundle_identity", expected)
         if len(_canonical_bytes(self.to_dict())) > _MAX_BUNDLE_BYTES:
             raise ValueError("compilation evidence exceeds maximum UTF-8 bytes")
 
@@ -662,7 +590,7 @@ class CompilationEvidenceBundle:
         return _canonical_bytes(self.to_dict()).decode("utf-8")
 
     @classmethod
-    def from_dict(cls, payload: object) -> CompilationEvidenceBundle:
+    def from_dict(cls, payload: object) -> CompilationEvidenceBundleV2:
         values = _closed(payload, _TOP_LEVEL_FIELDS, "compilation evidence bundle")
         if values.pop("schema") != _SCHEMA:
             raise ValueError("invalid compilation evidence schema")
@@ -672,7 +600,7 @@ class CompilationEvidenceBundle:
             version=values["version"],
             source=values["source"],
             target=target,
-            physical_plan=PhysicalPlanEvidence.from_dict(
+            physical_plan=PhysicalPlanEvidenceV2.from_dict(
                 values["physical_plan"],
                 target_snapshot_id=target["snapshot_id"],
             ),
@@ -681,46 +609,10 @@ class CompilationEvidenceBundle:
         )
 
 
-def read_compilation_evidence_bundle_json(
-    payload: str,
-) -> CompilationEvidenceBundle | CompilationEvidenceBundleV2:
-    """Decode a bundle while rejecting duplicate JSON keys at every depth."""
-
-    if type(payload) is not str:
-        raise TypeError("compilation evidence JSON must be a string")
-    if len(payload.encode("utf-8")) > _MAX_BUNDLE_BYTES:
-        raise ValueError("compilation evidence exceeds maximum UTF-8 bytes")
-
-    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for key, value in pairs:
-            if key in result:
-                raise ValueError(f"duplicate compilation evidence field {key!r}")
-            result[key] = value
-        return result
-
-    try:
-        decoded = json.loads(payload, object_pairs_hook=reject_duplicates)
-    except json.JSONDecodeError as error:
-        raise ValueError("compilation evidence must be valid JSON") from error
-    if not isinstance(decoded, Mapping):
-        raise TypeError("compilation evidence bundle must be a mapping")
-    version = decoded.get("version")
-    if version == COMPILATION_EVIDENCE_VERSION:
-        return CompilationEvidenceBundle.from_dict(decoded)
-    if version == "2.0":
-        from ._compilation_evidence_v2 import CompilationEvidenceBundleV2
-
-        return CompilationEvidenceBundleV2.from_dict(decoded)
-    raise ValueError(f"unsupported compilation evidence version {version!r}")
-
-
 __all__ = (
-    "COMPILATION_EVIDENCE_VERSION",
-    "CompilationEvidenceBundle",
-    "CouplingEvidence",
-    "MappingTransitionEvidence",
-    "PhysicalInstructionEvidence",
-    "PhysicalPlanEvidence",
-    "read_compilation_evidence_bundle_json",
+    "COMPILATION_EVIDENCE_VERSION_V2",
+    "CompilationEvidenceBundleV2",
+    "DirectedCouplingEvidence",
+    "PhysicalInstructionEvidenceV2",
+    "PhysicalPlanEvidenceV2",
 )
