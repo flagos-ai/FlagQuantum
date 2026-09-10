@@ -243,6 +243,27 @@ def _sample_trajectory(
     return sample, readout_errors
 
 
+def _reset_instruction(
+    state: torch.Tensor,
+    instruction: Instruction,
+    n_wires: int,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, int]:
+    """Measure and return one wire to the zero state."""
+
+    state, bit = _measure_wire(
+        state,
+        instruction.wires[0],
+        n_wires,
+        generator=generator,
+    )
+    if bit:
+        state = _apply_instruction(
+            state, Instruction("x", instruction.wires), n_wires=n_wires
+        )
+    return state, bit
+
+
 def _run_dynamic_trajectory(
     circuit: DynamicCircuit,
     *,
@@ -349,18 +370,12 @@ def _run_dynamic_trajectory(
                             )
                         )
                 elif instruction.name == "reset":
-                    state, bit = _measure_wire(
+                    state, bit = _reset_instruction(
                         state,
-                        instruction.wires[0],
+                        instruction,
                         circuit.n_wires,
-                        generator=generator,
+                        generator,
                     )
-                    if bit:
-                        state = _apply_instruction(
-                            state,
-                            Instruction("x", instruction.wires),
-                            n_wires=circuit.n_wires,
-                        )
                     reset_count += 1
                     branch_trace.append((instruction_index, bit))
                 else:
