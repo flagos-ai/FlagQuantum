@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import partial
 from time import perf_counter
-from typing import Callable, Iterable, Mapping, Sequence
+from typing import Callable, Iterable, Mapping, Protocol, Sequence
 
 import torch
 
@@ -533,6 +533,14 @@ def heisenberg_hva(
     return circuit
 
 
+class OptimizerFactory(Protocol):
+    """Construct an optimizer from trainable tensors and a learning rate."""
+
+    def __call__(
+        self, params: Iterable[torch.Tensor], *, lr: float
+    ) -> torch.optim.Optimizer: ...
+
+
 def run_vqe(
     circuit_builder: Callable[[torch.Tensor], Circuit],
     initial_parameters: torch.Tensor | Sequence[float],
@@ -540,13 +548,13 @@ def run_vqe(
     *,
     steps: int = 100,
     lr: float = 0.05,
-    optimizer_cls: type[torch.optim.Optimizer] = torch.optim.Adam,
+    optimizer_factory: OptimizerFactory = torch.optim.Adam,
 ) -> VQEResult:
     """Run a compact PyTorch-native VQE optimization loop."""
 
     parameters = torch.as_tensor(initial_parameters, dtype=torch.float32).clone()
     parameters = parameters.detach().requires_grad_(True)
-    optimizer = optimizer_cls([parameters], lr=lr)
+    optimizer = optimizer_factory([parameters], lr=lr)
     history: list[float] = []
 
     for _ in range(int(steps)):
@@ -580,7 +588,7 @@ def run_adapt_vqe(
     optimization_steps: int = 50,
     lr: float = 0.05,
     gradient_tolerance: float = 1e-6,
-    optimizer_cls: type[torch.optim.Optimizer] = torch.optim.Adam,
+    optimizer_factory: OptimizerFactory = torch.optim.Adam,
     dtype: torch.dtype = torch.float64,
     device: torch.device | str = "cpu",
 ) -> AdaptVQEResult:
@@ -678,7 +686,7 @@ def run_adapt_vqe(
         parameters = torch.cat(
             (parameters.detach(), parameters.new_zeros(1))
         ).requires_grad_(True)
-        optimizer = optimizer_cls([parameters], lr=lr)
+        optimizer = optimizer_factory([parameters], lr=lr)
         history: list[float] = []
         optimization_started = perf_counter()
         for _ in range(int(optimization_steps)):
@@ -844,6 +852,7 @@ __all__ = [
     "Hamiltonian",
     "HamiltonianTerm",
     "LayerwiseVQEResult",
+    "OptimizerFactory",
     "VQEResult",
     "hardware_efficient_ansatz",
     "hardware_efficient_parameter_count",

@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Renamed the VQE and ADAPT-VQE `optimizer_cls` keyword to
+  `optimizer_factory` and published the `flagquantum.algorithms.OptimizerFactory`
+  protocol. The old keyword is intentionally unsupported; Adam remains the
+  default, and compatible optimizer classes or factory functions are accepted.
+
 - Completed Circuit noise and inspection return annotations and specified that
   `StrictExecutionScope` does not suppress exceptions. CPU probe metadata is
   now read-only through `CPUCapabilityProbe`, supporting both frozen and mutable
