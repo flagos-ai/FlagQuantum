@@ -82,19 +82,14 @@ def validate_mps_ownership(
     return normalized
 
 
-def normalize_rank_owned_initial_tensors(
+def _clone_rank_owned_initial_tensors(
     initial_tensors: Mapping[int, torch.Tensor],
     *,
-    ownership: tuple[tuple[int, ...], ...],
+    expected: set[int],
     rank: int,
-    world: int,
-    n_wires: int,
     device: torch.device,
     dtype: torch.dtype,
-) -> tuple[dict[int, torch.Tensor], int, dict[int, tuple[int, int, int, int]]]:
-    """Validate, clone, and globally reconcile a rank-owned initial MPS."""
-    del world
-    expected = set(ownership[rank])
+) -> tuple[dict[int, torch.Tensor], dict[int, tuple[int, int, int, int]]]:
     actual = {int(wire) for wire in initial_tensors}
     if actual != expected:
         raise MPSReverseContractError(
@@ -122,16 +117,30 @@ def normalize_rank_owned_initial_tensors(
         batch, left, physical, right = tensor.shape
         shapes[wire] = (int(batch), int(left), int(physical), int(right))
         local[wire] = tensor.detach().clone()
+    return local, shapes
+
+
+def _reconcile_initial_mps_shapes(
+    shapes: Mapping[int, tuple[int, int, int, int]],
+    *,
+    n_wires: int,
+    device: torch.device,
+) -> dict[int, tuple[int, int, int, int]]:
     shape_table = torch.zeros((n_wires, 4), dtype=torch.int64, device=device)
     for wire, shape in shapes.items():
         shape_table[wire] = torch.tensor(shape, dtype=torch.int64, device=device)
     dist.all_reduce(shape_table, op=dist.ReduceOp.SUM)
-    global_shapes = {
+    return {
         wire: (int(batch), int(left), int(physical), int(right))
         for wire, (batch, left, physical, right) in enumerate(
             shape_table.cpu().tolist()
         )
     }
+
+
+def _validate_initial_mps_shapes(
+    global_shapes: Mapping[int, tuple[int, int, int, int]], n_wires: int
+) -> int:
     if set(global_shapes) != set(range(n_wires)):
         raise MPSReverseContractError(
             "initial MPS does not cover every wire exactly once"
@@ -151,7 +160,33 @@ def normalize_rank_owned_initial_tensors(
                 f"initial MPS bond {wire} differs: "
                 f"{global_shapes[wire][3]} != {global_shapes[wire + 1][1]}"
             )
-    return local, batches.pop(), global_shapes
+    return batches.pop()
+
+
+def normalize_rank_owned_initial_tensors(
+    initial_tensors: Mapping[int, torch.Tensor],
+    *,
+    ownership: tuple[tuple[int, ...], ...],
+    rank: int,
+    world: int,
+    n_wires: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> tuple[dict[int, torch.Tensor], int, dict[int, tuple[int, int, int, int]]]:
+    """Validate, clone, and globally reconcile a rank-owned initial MPS."""
+    del world
+    local, shapes = _clone_rank_owned_initial_tensors(
+        initial_tensors,
+        expected=set(ownership[rank]),
+        rank=rank,
+        device=device,
+        dtype=dtype,
+    )
+    global_shapes = _reconcile_initial_mps_shapes(
+        shapes, n_wires=n_wires, device=device
+    )
+    batch_size = _validate_initial_mps_shapes(global_shapes, n_wires)
+    return local, batch_size, global_shapes
 
 
 def mps_factorization_site_costs(
