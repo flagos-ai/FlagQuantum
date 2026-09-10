@@ -182,6 +182,31 @@ def _decide_feedback(
     return observation, action
 
 
+def _measure_instruction(
+    state: torch.Tensor,
+    instruction: Instruction,
+    n_wires: int,
+    noise_model: NoiseModel | None,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, int, int, int, int]:
+    """Measure one wire and apply its configured readout noise."""
+
+    state, true_bit = _measure_wire(
+        state,
+        instruction.wires[0],
+        n_wires,
+        generator=generator,
+    )
+    observed, readout_errors = _apply_readout_error(
+        torch.tensor([true_bit], dtype=torch.int64, device=state.device),
+        instruction.wires[0],
+        noise_model,
+        generator=generator,
+    )
+    classical_bit = int(instruction.metadata["classical_bit"])
+    return state, true_bit, int(observed.item()), classical_bit, readout_errors
+
+
 def _run_dynamic_trajectory(
     circuit: DynamicCircuit,
     *,
@@ -246,23 +271,14 @@ def _run_dynamic_trajectory(
                 if clauses:
                     conditional_applied += 1
                 if instruction.name == "measure":
-                    state, true_bit = _measure_wire(
+                    state, true_bit, bit, classical_bit, count = _measure_instruction(
                         state,
-                        instruction.wires[0],
+                        instruction,
                         circuit.n_wires,
-                        generator=generator,
-                    )
-                    observed, count = _apply_readout_error(
-                        torch.tensor(
-                            [true_bit], dtype=torch.int64, device=state.device
-                        ),
-                        instruction.wires[0],
                         noise_model,
-                        generator=generator,
+                        generator,
                     )
-                    bit = int(observed.item())
                     readout_errors += count
-                    classical_bit = int(instruction.metadata["classical_bit"])
                     classical[classical_bit] = bit
                     true_classical[classical_bit] = true_bit
                     measurement_count += 1
