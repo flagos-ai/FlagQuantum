@@ -115,6 +115,29 @@ def _apply_instruction(
     )
 
 
+def _apply_noisy_instruction(
+    state: torch.Tensor,
+    instruction: Instruction,
+    n_wires: int,
+    noise_model: NoiseModel | None,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, int, int]:
+    """Apply one instruction followed by its configured gate noise."""
+
+    state = _apply_instruction(state, instruction, n_wires=n_wires)
+    next_state: torch.Tensor
+    applications: int
+    events: int
+    next_state, applications, events = _apply_noise_after_instruction(
+        state,
+        instruction,
+        noise_model,
+        n_wires=n_wires,
+        generator=generator,
+    )
+    return next_state, applications, events
+
+
 def _apply_feedback_action(
     action: DynamicFeedbackAction,
     feedback_plan: DynamicFeedbackPlan,
@@ -135,19 +158,13 @@ def _apply_feedback_action(
     if action.wire >= circuit.n_wires:
         raise ValueError("feedback wire is outside the circuit")
     if action.mode == "physical_x":
-        instruction = Instruction("x", (action.wire,))
-        state = _apply_instruction(state, instruction, n_wires=circuit.n_wires)
-        next_state: torch.Tensor
-        applications: int
-        events: int
-        next_state, applications, events = _apply_noise_after_instruction(
+        return _apply_noisy_instruction(
             state,
-            instruction,
+            Instruction("x", (action.wire,)),
+            circuit.n_wires,
             noise_model,
-            n_wires=circuit.n_wires,
-            generator=generator,
+            generator,
         )
-        return next_state, applications, events
 
     if action.wire in frame_x_wires:
         frame_x_wires.remove(action.wire)
@@ -388,17 +405,12 @@ def _run_dynamic_trajectory(
                     reset_count += 1
                     branch_trace.append((instruction_index, bit))
                 else:
-                    state = _apply_instruction(
+                    state, applications, events = _apply_noisy_instruction(
                         state,
                         instruction,
-                        n_wires=circuit.n_wires,
-                    )
-                    state, applications, events = _apply_noise_after_instruction(
-                        state,
-                        instruction,
+                        circuit.n_wires,
                         noise_model,
-                        n_wires=circuit.n_wires,
-                        generator=generator,
+                        generator,
                     )
                     noise_channel_applications += applications
                     bit_flip_events += events
