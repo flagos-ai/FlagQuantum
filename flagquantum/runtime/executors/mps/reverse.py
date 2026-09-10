@@ -76,6 +76,7 @@ from .reverse_z_observables import (
     site_sharded_z_zz_observations,
 )
 from .state import (
+    RankOwnedMPSState,
     initialize_reverse_mps_state,
     normalize_rank_owned_initial_tensors,
 )
@@ -118,6 +119,67 @@ class _ReversePayload:
     instruction: Instruction | None
     factorization_pair: torch.Tensor | None = None
     factorization_outputs: tuple[torch.Tensor, torch.Tensor] | None = None
+
+
+def _prepare_reverse_one_site_layer(
+    layer: Sequence[tuple[int, Instruction, tuple[int, ...]]],
+    *,
+    state: RankOwnedMPSState,
+    checkpoint_budget: ReverseCheckpointBudget,
+    bsz: int,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> dict[int, tuple[torch.Tensor, torch.Tensor]]:
+    for _, _, wires in layer:
+        wire = wires[0]
+        owner = state.owner(wire)
+        checkpoint_budget.reserve(
+            tensor_nbytes(state.local_tensors[wire]) if state.rank == owner else 0
+        )
+    buckets: dict[
+        tuple[tuple[int, ...], tuple[int, ...]],
+        list[tuple[int, Instruction, int]],
+    ] = {}
+    for index, instruction, wires in layer:
+        wire = wires[0]
+        if state.owner(wire) != state.rank:
+            continue
+        matrix = instruction_matrix_for_mps(
+            instruction, bsz=bsz, device=device, dtype=dtype
+        )
+        if matrix.ndim == 2:
+            matrix = matrix.expand(bsz, -1, -1)
+        key = tuple(state.local_tensors[wire].shape), tuple(matrix.shape)
+        buckets.setdefault(key, []).append((index, instruction, wire))
+    prepared: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
+    for bucket in buckets.values():
+        _, sample, sample_wire = bucket[0]
+        sample_matrix = instruction_matrix_for_mps(
+            sample, bsz=bsz, device=device, dtype=dtype
+        )
+        if sample_matrix.ndim == 2:
+            sample_matrix = sample_matrix.expand(bsz, -1, -1)
+        capacity = site_kernel_bucket_capacity(
+            state.local_tensors[sample_wire], sample_matrix
+        )
+        for start in range(0, len(bucket), capacity):
+            chunk = bucket[start : start + capacity]
+            inputs = tuple(
+                state.local_tensors[wire].detach().clone() for _, _, wire in chunk
+            )
+            with torch.no_grad():
+                outputs = apply_compiled_mps_one_site_bucket(
+                    tuple(instruction for _, instruction, _ in chunk),
+                    inputs,
+                    bsz=bsz,
+                    device=device,
+                    dtype=dtype,
+                )
+            for position, (index, _, wire) in enumerate(chunk):
+                output = outputs[position].detach()
+                state.local_tensors[wire] = output
+                prepared[index] = inputs[position], output
+    return prepared
 
 
 def _static_exact_qr_record(
@@ -311,66 +373,18 @@ def execute_torch_distributed_mps_reverse(
             and instruction.name == "ry"
             and instruction_index not in reserved_ry
         ):
-            layer = tuple(
-                (index, candidate, wires[0])
-                for index, candidate, wires in collect_compiled_mps_layer(
-                    ir.instructions, instruction_index
-                )
-            )
-            for candidate_index, _, wire in layer:
-                owner = state.owner(wire)
-                checkpoint_budget.reserve(
-                    tensor_nbytes(state.local_tensors[wire]) if rank == owner else 0
-                )
-                reserved_ry.add(candidate_index)
-            buckets: dict[
-                tuple[tuple[int, ...], tuple[int, ...]],
-                list[tuple[int, Instruction, int]],
-            ] = {}
-            for item in layer:
-                candidate_index, candidate, wire = item
-                if state.owner(wire) != rank:
-                    continue
-                matrix = instruction_matrix_for_mps(
-                    candidate, bsz=bsz, device=resolved_device, dtype=resolved_dtype
-                )
-                if matrix.ndim == 2:
-                    matrix = matrix.expand(bsz, -1, -1)
-                key = (tuple(state.local_tensors[wire].shape), tuple(matrix.shape))
-                buckets.setdefault(key, []).append(item)
-            for bucket in buckets.values():
-                _, sample_candidate, sample_wire = bucket[0]
-                sample_matrix = instruction_matrix_for_mps(
-                    sample_candidate,
+            layer = collect_compiled_mps_layer(ir.instructions, instruction_index)
+            reserved_ry.update(index for index, _, _ in layer)
+            precomputed_ry.update(
+                _prepare_reverse_one_site_layer(
+                    layer,
+                    state=state,
+                    checkpoint_budget=checkpoint_budget,
                     bsz=bsz,
                     device=resolved_device,
                     dtype=resolved_dtype,
                 )
-                if sample_matrix.ndim == 2:
-                    sample_matrix = sample_matrix.expand(bsz, -1, -1)
-                capacity = site_kernel_bucket_capacity(
-                    state.local_tensors[sample_wire], sample_matrix
-                )
-                for start in range(0, len(bucket), capacity):
-                    chunk = bucket[start : start + capacity]
-                    site_inputs = tuple(
-                        state.local_tensors[wire].detach().clone()
-                        for _, _, wire in chunk
-                    )
-                    with torch.no_grad():
-                        site_outputs = apply_compiled_mps_one_site_bucket(
-                            tuple(candidate for _, candidate, _ in chunk),
-                            site_inputs,
-                            bsz=bsz,
-                            device=resolved_device,
-                            dtype=resolved_dtype,
-                        )
-                    for position, (candidate_index, _, wire) in enumerate(chunk):
-                        state.local_tensors[wire] = site_outputs[position].detach()
-                        precomputed_ry[candidate_index] = (
-                            site_inputs[position],
-                            site_outputs[position].detach(),
-                        )
+            )
         if (
             compile_site_kernels
             and instruction.name in {"rxx", "ryy", "rzz"}
