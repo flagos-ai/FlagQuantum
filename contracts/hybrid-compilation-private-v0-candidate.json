@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase26_evidenced_native_gate_legalization_verified",
+  "status": "phase27_bounded_topology_legalization_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -873,6 +873,46 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE26_EVIDENCE.md"
   },
   "phase26_completed": true,
+  "phase27": {
+    "stage": "bounded_topology_legalization",
+    "input_ir": "flagquantum.core.ir.CircuitIR",
+    "output_ir": "flagquantum.core.ir.CircuitIR",
+    "topology_source": "caller_supplied_compiler_coupling_map",
+    "target_snapshot_binding": true,
+    "snapshot_proves_topology_provenance": false,
+    "coupling_direction": "undirected",
+    "strategies": [
+      "restore_after_each_gate",
+      "persistent_layout",
+      "auto_deterministic_cost_selection"
+    ],
+    "path_cache_history_affects_identity": false,
+    "postconditions": [
+      "all_two_wire_instructions_are_coupling_edges",
+      "identity_output_layout_restored",
+      "non_negative_inserted_swap_count"
+    ],
+    "maximum_added_operations": 256,
+    "swap_decomposition": ["cx_forward", "cx_reverse", "cx_forward"],
+    "pipeline_order": [
+      "topology_routing",
+      "native_gate_legalization",
+      "backend_lowering_validation",
+      "target_resource_matching"
+    ],
+    "parameter_object_identity_preserved": true,
+    "physical_ancilla_allocation": false,
+    "directed_coupling": false,
+    "calibration_aware_routing": false,
+    "scheduling": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE27_EVIDENCE.md"
+  },
+  "phase27_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

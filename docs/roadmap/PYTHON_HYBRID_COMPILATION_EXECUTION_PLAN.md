@@ -965,6 +965,34 @@ Exit gate:
 - no arbitrary synthesis, approximation, topology, schedule, target format,
   TargetIR, public API, or performance claim is added.
 
+### Phase 27 — bounded topology legalization
+
+Apply the existing deterministic router to one caller-supplied `CouplingMap`.
+Support explicit restore-after-each-gate and persistent-layout strategies plus
+the existing deterministic `auto` selection. Clone the coupling map before
+planning so path-cache history does not alter routing evidence or identity.
+
+Require every routed two-wire instruction to occupy an undirected coupling
+edge, require identity output layout restoration, and bind the audit identity
+to source/routed circuits, topology, selected target snapshot, and strategy.
+Bound routing growth to 256 added instructions by default. Run topology routing
+before native-gate legalization so inserted SWAPs can be decomposed to three CX
+gates and the final Phase 25 operation limit sees the expanded artifact.
+
+Exit gate:
+
+- nonlocal two-wire gates route entirely onto coupling edges;
+- restore and persistent strategies return identity output layout;
+- source and routed statevectors and parameter gradients agree;
+- repeated auto routing is byte deterministic despite coupling cache state;
+- routing growth and physical-ancilla paths fail closed;
+- nonlocal channels fail the final topology postcondition;
+- inserted SWAPs pass through evidenced native decomposition;
+- post-routing and post-decomposition operation counts reach target checks;
+- topology provenance is not attributed to Target Capabilities v1;
+- no directed coupling, placement, calibration-aware routing, scheduling,
+  TargetIR, public API, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1119,3 +1147,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 24 pass audit and differential verification implemented and verified
 - [x] Phase 25 capability-driven target legality implemented and verified
 - [x] Phase 26 evidenced native-gate legalization implemented and verified
+- [x] Phase 27 bounded topology legalization implemented and verified

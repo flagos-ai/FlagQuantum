@@ -32,6 +32,12 @@ from .operator_lowering import (
     OperatorLoweringRegistry,
     UnsupportedLoweringError,
 )
+from .routing import CouplingMap
+from .topology_legalization import (
+    TopologyLegalizationError,
+    TopologyLegalizationResult,
+    legalize_circuit_topology,
+)
 
 
 class TargetLegalizationError(CompilationError):
@@ -46,6 +52,7 @@ class TargetLegalizationResult:
     backend: str
     requirements: RequirementSet
     target_snapshot_id: str
+    topology_legalization: TopologyLegalizationResult | None
     native_gate_legalization: NativeGateLegalizationResult
     lowering_capabilities: tuple[LoweringCapability, ...]
     capability_match: CapabilityMatchResult
@@ -137,6 +144,7 @@ def _legalization_identity(
     snapshot: TargetCapabilitySnapshot,
     lowerings: tuple[LoweringCapability, ...],
     native_gate_legalization: NativeGateLegalizationResult,
+    topology_legalization: TopologyLegalizationResult | None,
 ) -> str:
     payload = {
         "backend": backend,
@@ -145,6 +153,11 @@ def _legalization_identity(
         "target_snapshot_id": snapshot.snapshot_id,
         "native_gate_legalization_identity": (
             native_gate_legalization.legalization_identity
+        ),
+        "topology_legalization_identity": (
+            None
+            if topology_legalization is None
+            else topology_legalization.legalization_identity
         ),
         "lowerings": [
             {
@@ -167,6 +180,9 @@ def legalize_circuit_for_target(
     evaluated_at: datetime | None = None,
     registry: OperatorLoweringRegistry = DEFAULT_LOWERING_REGISTRY,
     max_added_operations: int = 256,
+    coupling_map: CouplingMap | None = None,
+    routing_strategy: str = "auto",
+    max_routing_added_operations: int = 256,
 ) -> TargetLegalizationResult:
     """Require an exact backend lowering and a matching target snapshot.
 
@@ -177,6 +193,19 @@ def legalize_circuit_for_target(
     """
 
     source_ir = ensure_circuit_ir(program)
+    topology_legalization = None
+    if coupling_map is not None:
+        try:
+            topology_legalization = legalize_circuit_topology(
+                source_ir,
+                coupling_map=coupling_map,
+                snapshot=snapshot,
+                strategy=routing_strategy,
+                max_added_operations=max_routing_added_operations,
+            )
+        except TopologyLegalizationError as error:
+            raise TargetLegalizationError(str(error)) from error
+        source_ir = topology_legalization.program
     try:
         native_gate_legalization = legalize_native_gates(
             source_ir,
@@ -214,6 +243,7 @@ def legalize_circuit_for_target(
         backend=normalized_backend,
         requirements=requirements,
         target_snapshot_id=snapshot.snapshot_id,
+        topology_legalization=topology_legalization,
         native_gate_legalization=native_gate_legalization,
         lowering_capabilities=lowerings,
         capability_match=match,
@@ -224,6 +254,7 @@ def legalize_circuit_for_target(
             snapshot,
             lowerings,
             native_gate_legalization,
+            topology_legalization,
         ),
     )
 

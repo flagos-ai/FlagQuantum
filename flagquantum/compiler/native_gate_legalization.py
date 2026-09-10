@@ -183,6 +183,13 @@ def _replacement(instruction: Instruction) -> tuple[Instruction, ...] | None:
             Instruction("h", wires, metadata=metadata),
             Instruction("s", wires, metadata=metadata),
         )
+    if instruction.name == "swap":
+        left, right = wires
+        return (
+            Instruction("cx", (left, right), metadata=metadata),
+            Instruction("cx", (right, left), metadata=metadata),
+            Instruction("cx", (left, right), metadata=metadata),
+        )
     return None
 
 

@@ -9,6 +9,9 @@ routing. `openqasm.py` and `qcis.py` own their target-format emission.
 internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
+`topology_legalization.py` applies the existing router to one explicit coupling
+map and verifies edge legality, restored output layout, bounded growth, and
+deterministic evidence.
 `target_legalization.py` derives mandatory circuit requirements, checks one
 explicit backend lowering, and matches one Core-owned target capability
 snapshot without introducing a target IR or selecting a target.
@@ -46,6 +49,8 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Change native gate matching and verified decompositions in
   `native_gate_legalization.py`.
+- Change topology postconditions and routing audit in
+  `topology_legalization.py`.
 - Change capability-driven legality checks in `target_legalization.py`.
 - Change private structured program semantics through `_hybrid/README.md` and
   its focused golden scenario; do not restore the historical `_compiler` tree.

@@ -10,6 +10,7 @@ from flagquantum.compiler._hybrid import (
     scalar_type,
     specialize_and_lower,
 )
+from flagquantum.compiler.routing import CouplingMap
 from flagquantum.compiler.target_legalization import (
     TargetLegalizationError,
     circuit_target_requirements,
@@ -230,3 +231,34 @@ def test_decomposition_operation_count_is_checked_against_target_limit() -> None
             ),
             evaluated_at=_NOW,
         )
+
+
+def test_topology_routing_precedes_native_gate_and_resource_legalization() -> None:
+    circuit = CircuitIR(
+        3,
+        (Instruction("cx", (0, 2)),),
+        dtype="complex128",
+    )
+    result = legalize_circuit_for_target(
+        circuit,
+        backend="pytorch",
+        snapshot=_snapshot(
+            **{
+                "gates.native": ({"name": "cx", "parameters": ()},),
+            }
+        ),
+        evaluated_at=_NOW,
+        coupling_map=CouplingMap.line(3),
+        routing_strategy="restore_after_each_gate",
+    )
+
+    assert result.topology_legalization is not None
+    assert result.topology_legalization.inserted_swap_count == 2
+    assert tuple(item.name for item in result.program.instructions) == ("cx",) * 7
+    assert tuple(
+        item.source_opcode for item in result.native_gate_legalization.decompositions
+    ) == ("swap", "swap")
+    assert all(
+        CouplingMap.line(3).has_edge(*item.wires)
+        for item in result.program.instructions
+    )

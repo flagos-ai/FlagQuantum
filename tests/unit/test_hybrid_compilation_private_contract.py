@@ -969,7 +969,6 @@ def test_phase26_adds_evidenced_bounded_native_gate_decomposition() -> None:
     contract = _contract()
     phase26 = contract["phase26"]
 
-    assert contract["status"] == ("phase26_evidenced_native_gate_legalization_verified")
     assert phase26["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase26["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase26["native_gate_source"] == (
@@ -1000,3 +999,53 @@ def test_phase26_adds_evidenced_bounded_native_gate_decomposition() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE26_EVIDENCE.md"
     )
     assert contract["phase26_completed"] is True
+
+
+def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
+    contract = _contract()
+    phase27 = contract["phase27"]
+
+    assert contract["status"] == "phase27_bounded_topology_legalization_verified"
+    assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
+    assert phase27["target_snapshot_binding"] is True
+    assert phase27["snapshot_proves_topology_provenance"] is False
+    assert phase27["coupling_direction"] == "undirected"
+    assert phase27["strategies"] == [
+        "restore_after_each_gate",
+        "persistent_layout",
+        "auto_deterministic_cost_selection",
+    ]
+    assert phase27["path_cache_history_affects_identity"] is False
+    assert phase27["postconditions"] == [
+        "all_two_wire_instructions_are_coupling_edges",
+        "identity_output_layout_restored",
+        "non_negative_inserted_swap_count",
+    ]
+    assert phase27["maximum_added_operations"] == 256
+    assert phase27["swap_decomposition"] == [
+        "cx_forward",
+        "cx_reverse",
+        "cx_forward",
+    ]
+    assert phase27["pipeline_order"] == [
+        "topology_routing",
+        "native_gate_legalization",
+        "backend_lowering_validation",
+        "target_resource_matching",
+    ]
+    assert phase27["parameter_object_identity_preserved"] is True
+    assert phase27["physical_ancilla_allocation"] is False
+    assert phase27["directed_coupling"] is False
+    assert phase27["calibration_aware_routing"] is False
+    assert phase27["scheduling"] is False
+    assert phase27["target_ir_added"] is False
+    assert phase27["public_root_export"] is False
+    assert phase27["stable_api_change"] is False
+    assert phase27["default_path_change"] is False
+    assert phase27["performance_claim"] is False
+    assert phase27["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE27_EVIDENCE.md"
+    )
+    assert contract["phase27_completed"] is True

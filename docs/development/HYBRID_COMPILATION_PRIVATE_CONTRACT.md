@@ -878,3 +878,33 @@ approximation, calibrated fidelity, coupling-map legality, routing, scheduling,
 timing, pulse generation, target-format emission, or provider execution. It
 adds no TargetIR, public export, stable API change, default-path change, or
 performance claim.
+
+## Phase 27 bounded topology-legalization authorization
+
+Phase 27 may route a Core-owned `CircuitIR` against one explicit Compiler
+`CouplingMap` using the existing restore-after-each-gate or persistent-layout
+strategies. `auto` may select between those two strategies using the existing
+deterministic cost estimate. The legality stage clones the coupling map before
+routing so mutable shortest-path cache history cannot affect the artifact or
+its audit identity.
+
+Every two-wire instruction in the routed result must occupy a coupling edge.
+Nonlocal channels fail closed because the existing router deliberately skips
+channel insertion. The final logical-to-physical layout must be identity and
+the routing metadata must report successful restoration and a non-negative
+inserted-SWAP count. Routing may add at most 256 instructions by default.
+Circuit parameters and their autograd references must survive remapping.
+
+Target legalization orders this stage before native-gate legalization. Routing
+SWAPs may then use the exact SWAP-to-three-CX decomposition, after which native
+gate and final resource checks observe the real expanded program size. The
+topology audit binds source and routed circuit identities, target snapshot,
+coupling topology, and selected strategy.
+
+Target Capabilities v1 currently has no coupling-map fact. The explicit map is
+therefore caller-supplied and merely bound to the selected snapshot identity;
+Phase 27 does not claim that the snapshot proves its provenance or freshness.
+Directed couplings, physical ancilla allocation, placement, calibration,
+fidelity-aware routing, crosstalk, duration, parallel schedule, and provider
+execution remain outside the contract. No TargetIR, public API, default-path
+change, or performance claim is authorized.
