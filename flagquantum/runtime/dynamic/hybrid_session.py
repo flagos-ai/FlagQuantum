@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from ...core.ir import CircuitIR, ensure_circuit_ir
+from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...core.parameters import is_parameterized_value
 from ...noise import NoiseModel
 from ._conditions import instruction_condition_clauses
@@ -53,22 +53,26 @@ def _validate_session_header(ir: CircuitIR) -> None:
         )
 
 
+def _validate_bound_instruction(instruction: Instruction) -> None:
+    if _contains_trainable(instruction.params) or _contains_trainable(
+        instruction.matrix
+    ):
+        raise RuntimeError(
+            "hybrid dynamic session stochastic gradients are unsupported"
+        )
+    if is_parameterized_value(instruction.params) or is_parameterized_value(
+        instruction.matrix
+    ):
+        raise ValueError("hybrid dynamic CircuitIR must be bound before execution")
+
+
 def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
     ir = ensure_circuit_ir(circuit_or_ir)
     _validate_session_header(ir)
     measured: set[int] = set()
     rotation_count = 0
     for index, instruction in enumerate(ir.instructions):
-        if _contains_trainable(instruction.params) or _contains_trainable(
-            instruction.matrix
-        ):
-            raise RuntimeError(
-                "hybrid dynamic session stochastic gradients are unsupported"
-            )
-        if is_parameterized_value(instruction.params) or is_parameterized_value(
-            instruction.matrix
-        ):
-            raise ValueError("hybrid dynamic CircuitIR must be bound before execution")
+        _validate_bound_instruction(instruction)
         clauses = instruction_condition_clauses(instruction)
         if any(
             bit < 0 or expected not in {0, 1}
