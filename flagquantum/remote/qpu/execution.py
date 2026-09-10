@@ -16,6 +16,7 @@ from .quafu import QuafuProvider
 if TYPE_CHECKING:
     from ...circuit import Circuit
     from ...core.ir import CircuitIR
+    from ...runtime.execution_plan import ExecutionPlan
 
 
 def execute_quafu(
@@ -52,10 +53,10 @@ def execute_quafu(
 
 
 def validate_quafu_output(
-    program: Circuit | CircuitIR,
+    program: Circuit | CircuitIR | ExecutionPlan,
     outputs: OutputRequest | Sequence[OutputRequest] | None,
 ) -> OutputRequest:
-    """Return the single output supported by the Quafu execution workflow."""
+    """Validate workflow input, rejecting local plans before remote execution."""
 
     requested_output = request_counts() if outputs is None else outputs
     requested = (
@@ -80,6 +81,14 @@ def validate_quafu_output(
             "remote Quafu execution supports one full-register fq.counts() "
             "or one fq.expectation(...) output"
         )
+
+    observable = requested[0].observable
+    if observable is not None and any(
+        wire >= source_ir.n_wires
+        for term in observable.terms
+        for wire, _axis in term.factors
+    ):
+        raise ValueError("Hamiltonian references wires outside the source circuit")
 
     return requested[0]
 
@@ -195,7 +204,9 @@ def _execute_counts(
         native = deploy_circuit(compiled, provider, shots=shots)
     else:
         native = deploy_circuit(compiled, provider, shots=shots, name=name.strip())
-    counts = {str(key): int(value) for key, value in native.counts.items()}
+    counts: dict[str | int, int] = {
+        str(key): int(value) for key, value in native.counts.items()
+    }
     execution_target = dict(compiled.metadata.get("execution_target", {}))
     result = ExecutionResult(
         measurements=(

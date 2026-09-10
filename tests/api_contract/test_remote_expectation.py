@@ -1,6 +1,7 @@
 """Remote Pauli expectations preserve the root result contract and evidence."""
 
 from dataclasses import replace
+from unittest.mock import Mock
 
 import pytest
 import torch
@@ -11,6 +12,45 @@ from flagquantum.testing import InMemoryRemoteTarget
 
 class _QuafuTestTarget(InMemoryRemoteTarget):
     provider = "quafu"
+
+
+def test_quafu_rejects_out_of_range_observable_before_compilation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum._api as api
+    import flagquantum.remote.qpu.execution as execution
+
+    compile_program = Mock(side_effect=AssertionError("unexpected compilation"))
+    provider = Mock(side_effect=AssertionError("unexpected provider creation"))
+    monkeypatch.setattr(api, "compile", compile_program)
+    monkeypatch.setattr(execution, "QuafuProvider", provider)
+    with pytest.raises(ValueError, match="Hamiltonian references wires outside"):
+        fq.run(
+            fq.Circuit(2),
+            outputs=fq.expectation(fq.Z(2)),
+            compiler="qsteed",
+            target="quafu:ScQ-P10",
+            shots=16,
+        )
+    compile_program.assert_not_called()
+    provider.assert_not_called()
+
+
+def test_quafu_rejects_local_plan_before_compilation_or_provider_creation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum._api as api
+    import flagquantum.remote.qpu.execution as execution
+
+    plan = fq.plan(fq.Circuit(1))
+    compile_program = Mock(side_effect=AssertionError("unexpected compilation"))
+    provider = Mock(side_effect=AssertionError("unexpected provider creation"))
+    monkeypatch.setattr(api, "compile", compile_program)
+    monkeypatch.setattr(execution, "QuafuProvider", provider)
+    with pytest.raises(TypeError, match="require CircuitIR"):
+        fq.run(plan, compiler="qsteed", target="quafu:ScQ-P10", shots=16)
+    compile_program.assert_not_called()
+    provider.assert_not_called()
 
 
 def test_fq_run_remote_expectation_compiles_once_and_groups_measurements(
