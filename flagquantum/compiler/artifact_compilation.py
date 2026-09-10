@@ -17,6 +17,7 @@ from ..core._artifacts import (
 from ..core.ir import CircuitIR
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import CompilationError
+from .directed_topology import DirectedCouplingMap
 from .physical_plan import PhysicalCircuitPlan, build_physical_circuit_plan
 from .routing import CouplingMap
 from .target_artifact import build_target_artifact
@@ -180,10 +181,12 @@ def compile_circuit_artifact_for_target(
     snapshot: TargetCapabilitySnapshot,
     producer: str,
     evaluated_at: datetime | None = None,
-    coupling_map: CouplingMap | None = None,
+    coupling_map: CouplingMap | DirectedCouplingMap | None = None,
     routing_strategy: str = "auto",
+    initial_layout: tuple[int, ...] | None = None,
     max_native_added_operations: int = 256,
     max_routing_added_operations: int = 256,
+    max_direction_added_operations: int = 256,
     max_schedule_depth: int | None = None,
 ) -> ArtifactCompilationResult:
     """Compile a fully bound circuit artifact through every verified stage."""
@@ -232,8 +235,10 @@ def compile_circuit_artifact_for_target(
             evaluated_at=evaluated_at,
             coupling_map=coupling_map,
             routing_strategy=routing_strategy,
+            initial_layout=initial_layout,
             max_added_operations=max_native_added_operations,
             max_routing_added_operations=max_routing_added_operations,
+            max_direction_added_operations=max_direction_added_operations,
             max_schedule_depth=max_schedule_depth,
         )
         physical_plan = build_physical_circuit_plan(

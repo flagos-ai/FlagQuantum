@@ -15,18 +15,19 @@ def _candidate() -> dict[str, object]:
     return json.loads(CANDIDATE.read_text(encoding="utf-8"))
 
 
-def test_candidate_is_unapproved_and_uses_exact_proposal_token() -> None:
+def test_candidate_records_approved_compiler_slice_and_exact_token() -> None:
     candidate = _candidate()
 
-    assert candidate["status"] == "proposed_unapproved"
+    assert candidate["status"] == "approved_compiler_implementation_complete"
+    assert candidate["approved_on"] == "2026-09-10"
     assert candidate["approval_token"] == (
         "approve API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT"
     )
     assert candidate["implementation"] == {
-        "authorized": False,
-        "compiler_types_added": False,
-        "compiler_pipeline_changed": False,
-        "physical_plan_v2_added": False,
+        "authorized": True,
+        "compiler_types_added": True,
+        "compiler_pipeline_changed": True,
+        "physical_plan_v2_added": True,
         "core_evidence_v2_added": False,
         "runtime_verifier_added": False,
         "deployment_adapter_added": False,

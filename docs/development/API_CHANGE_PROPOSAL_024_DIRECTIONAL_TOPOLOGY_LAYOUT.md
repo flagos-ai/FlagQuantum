@@ -2,12 +2,19 @@
 
 ## Status
 
-**Proposed; implementation is not authorized.**
+**Approved on 2026-09-10; Compiler implementation complete.**
 
 Date: 2026-09-10
 
 Approval token:
 `approve API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT`
+
+The API owner supplied the exact token on 2026-09-10. The first bounded
+implementation adds the private directed topology model, explicit placement,
+direction-correct CX legalization, final legality verification, physical-plan
+2.0 lineage, and artifact-to-artifact compilation. Core evidence 2.0 and its
+Runtime/Deployment handoff remain pending; attempts to serialize a directed
+plan through evidence 1.0 fail closed.
 
 ## Problem
 
@@ -159,11 +166,11 @@ limits. It does not claim:
 ## Implementation gates
 
 1. **Complete:** record this proposal and the exact machine-readable candidate.
-2. Receive the exact approval token from the API owner.
-3. Add `DirectedCouplingMap` without changing `CouplingMap` behavior.
-4. Port placement, routing, direction legalization, lineage, and final legality
+2. **Complete:** receive the exact approval token from the API owner.
+3. **Complete:** add `DirectedCouplingMap` without changing `CouplingMap` behavior.
+4. **Complete:** port placement, routing, direction legalization, lineage, and final legality
    into the current `CircuitIR` target pipeline.
-5. Extend physical-plan validation and deterministic identity without adding a
+5. **Complete:** extend physical-plan validation and deterministic identity without adding a
    second instruction authority.
 6. Implement strict Core evidence version 2.0 and retain pinned 1.0 fixtures.
 7. Add Runtime and Deployment verification in a separate bounded handoff.
@@ -187,6 +194,7 @@ limits. It does not claim:
 
 ## Approval
 
-This proposal is not approval. Until the exact token is supplied, no directed
-topology implementation, Core schema/version change, Runtime or Deployment
-adapter, public export, or default-path change is authorized.
+The API owner approved this proposal with the exact token on 2026-09-10. The
+approval authorizes the gated implementation above; it does not authorize a
+public root export, default-path change, physical-ancilla support, or any of the
+excluded hardware claims.

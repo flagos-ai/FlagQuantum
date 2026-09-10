@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import CompilationError
+from .directed_topology import DirectedCouplingMap, route_to_directed_topology
 from .routing import CouplingMap, route_to_topology, select_routing_strategy
 
 
@@ -31,6 +32,8 @@ class TopologyLegalizationResult:
     inserted_swap_count: int
     final_logical_to_physical: tuple[int, ...]
     legalization_identity: str
+    initial_logical_to_physical: tuple[int, ...] = ()
+    direction_semantics: str = "undirected"
 
     def __post_init__(self) -> None:
         if self.source_program.content_hash != self.source_content_hash:
@@ -39,7 +42,9 @@ class TopologyLegalizationResult:
             )
 
 
-def _topology_identity(coupling: CouplingMap) -> str:
+def _topology_identity(coupling: CouplingMap | DirectedCouplingMap) -> str:
+    if isinstance(coupling, DirectedCouplingMap):
+        return coupling.topology_identity
     payload = {
         "n_wires": coupling.n_wires,
         "edges": coupling.edges,
@@ -70,16 +75,17 @@ def _legalization_identity(
 def legalize_circuit_topology(
     program: object,
     *,
-    coupling_map: CouplingMap,
+    coupling_map: CouplingMap | DirectedCouplingMap,
     snapshot: TargetCapabilitySnapshot,
     strategy: str = "auto",
     max_added_operations: int = 256,
+    initial_layout: tuple[int, ...] | None = None,
 ) -> TopologyLegalizationResult:
     """Route two-wire instructions and prove the resulting edge legality."""
 
     source = ensure_circuit_ir(program)
-    if not isinstance(coupling_map, CouplingMap):
-        raise TypeError("coupling_map must be a Compiler CouplingMap")
+    if not isinstance(coupling_map, (CouplingMap, DirectedCouplingMap)):
+        raise TypeError("coupling_map must be a Compiler coupling map")
     if not isinstance(snapshot, TargetCapabilitySnapshot):
         raise TypeError("snapshot must be a Core TargetCapabilitySnapshot")
     if not isinstance(max_added_operations, int) or isinstance(
@@ -93,28 +99,48 @@ def legalize_circuit_topology(
             "coupling map has fewer wires than the CircuitIR"
         )
 
-    deterministic_coupling = CouplingMap(coupling_map.n_wires, coupling_map.edges)
-    try:
-        if strategy == "auto":
-            selected_strategy = select_routing_strategy(
-                source, deterministic_coupling
-            ).selected_strategy
-            deterministic_coupling = CouplingMap(
-                coupling_map.n_wires, coupling_map.edges
+    if isinstance(coupling_map, DirectedCouplingMap):
+        if strategy not in {"auto", "persistent_layout"}:
+            raise TopologyLegalizationError(
+                "directed topology supports only 'auto' or 'persistent_layout'"
             )
-        elif strategy in {"restore_after_each_gate", "persistent_layout"}:
-            selected_strategy = strategy
-        else:
-            raise ValueError(
-                "strategy must be 'auto', 'restore_after_each_gate', or 'persistent_layout'"
+        try:
+            routed = route_to_directed_topology(
+                source,
+                coupling_map,
+                initial_layout=initial_layout,
             )
-        routed = route_to_topology(
-            source,
-            deterministic_coupling,
-            strategy=selected_strategy,
-        )
-    except (RuntimeError, ValueError) as error:
-        raise TopologyLegalizationError(str(error)) from error
+        except (RuntimeError, TypeError, ValueError) as error:
+            raise TopologyLegalizationError(str(error)) from error
+        selected_strategy = "persistent_layout"
+        deterministic_coupling: CouplingMap | DirectedCouplingMap = coupling_map
+    else:
+        if initial_layout is not None:
+            raise TopologyLegalizationError(
+                "initial_layout requires a DirectedCouplingMap"
+            )
+        deterministic_coupling = CouplingMap(coupling_map.n_wires, coupling_map.edges)
+        try:
+            if strategy == "auto":
+                selected_strategy = select_routing_strategy(
+                    source, deterministic_coupling
+                ).selected_strategy
+                deterministic_coupling = CouplingMap(
+                    coupling_map.n_wires, coupling_map.edges
+                )
+            elif strategy in {"restore_after_each_gate", "persistent_layout"}:
+                selected_strategy = strategy
+            else:
+                raise ValueError(
+                    "strategy must be 'auto', 'restore_after_each_gate', or 'persistent_layout'"
+                )
+            routed = route_to_topology(
+                source,
+                deterministic_coupling,
+                strategy=selected_strategy,
+            )
+        except (RuntimeError, ValueError) as error:
+            raise TopologyLegalizationError(str(error)) from error
 
     added_operations = len(routed.instructions) - len(source.instructions)
     if added_operations > max_added_operations:
@@ -122,7 +148,12 @@ def legalize_circuit_topology(
     illegal = tuple(
         (index, item.name, item.wires)
         for index, item in enumerate(routed.instructions)
-        if len(item.wires) == 2 and not deterministic_coupling.has_edge(*item.wires)
+        if len(item.wires) == 2
+        and not (
+            deterministic_coupling.has_weak_edge(*item.wires)
+            if isinstance(deterministic_coupling, DirectedCouplingMap)
+            else deterministic_coupling.has_edge(*item.wires)
+        )
     )
     if illegal:
         raise TopologyLegalizationError(
@@ -141,6 +172,17 @@ def legalize_circuit_topology(
     inserted_swap_count = routing.get("inserted_swap_count")
     if not isinstance(inserted_swap_count, int) or inserted_swap_count < 0:
         raise TopologyLegalizationError("router emitted an invalid SWAP count")
+    initial = tuple(routing.get("initial_logical_to_physical", ()))
+    if len(initial) != source.n_wires or set(initial) != set(identity_layout):
+        raise TopologyLegalizationError("router emitted an invalid initial layout")
+    direction_semantics = str(routing.get("direction_semantics", ""))
+    expected_direction = (
+        "directed_cx"
+        if isinstance(deterministic_coupling, DirectedCouplingMap)
+        else "logical_wire_order_preserved"
+    )
+    if direction_semantics != expected_direction:
+        raise TopologyLegalizationError("router emitted invalid direction semantics")
 
     topology_identity = _topology_identity(deterministic_coupling)
     return TopologyLegalizationResult(
@@ -160,6 +202,12 @@ def legalize_circuit_topology(
             snapshot,
             topology_identity,
             selected_strategy,
+        ),
+        initial_logical_to_physical=initial,
+        direction_semantics=(
+            "directed_cx"
+            if isinstance(deterministic_coupling, DirectedCouplingMap)
+            else "undirected"
         ),
     )
 

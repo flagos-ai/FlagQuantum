@@ -21,6 +21,12 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
+from .directed_topology import DirectedCouplingMap
+from .direction_legalization import (
+    DirectionLegalizationError,
+    DirectionLegalizationResult,
+    legalize_directed_cx,
+)
 from .native_gate_legalization import (
     NativeGateLegalizationError,
     NativeGateLegalizationResult,
@@ -59,6 +65,7 @@ class TargetLegalizationResult:
     target_snapshot_id: str
     topology_legalization: TopologyLegalizationResult | None
     native_gate_legalization: NativeGateLegalizationResult
+    direction_legalization: DirectionLegalizationResult | None
     lowering_capabilities: tuple[LoweringCapability, ...]
     capability_match: CapabilityMatchResult
     schedule: CircuitSchedule
@@ -151,6 +158,7 @@ def _legalization_identity(
     lowerings: tuple[LoweringCapability, ...],
     native_gate_legalization: NativeGateLegalizationResult,
     topology_legalization: TopologyLegalizationResult | None,
+    direction_legalization: DirectionLegalizationResult | None,
     schedule: CircuitSchedule,
 ) -> str:
     payload = {
@@ -165,6 +173,11 @@ def _legalization_identity(
             None
             if topology_legalization is None
             else topology_legalization.legalization_identity
+        ),
+        "direction_legalization_identity": (
+            None
+            if direction_legalization is None
+            else direction_legalization.legalization_identity
         ),
         "schedule_identity": schedule.schedule_identity,
         "lowerings": [
@@ -188,9 +201,11 @@ def legalize_circuit_for_target(
     evaluated_at: datetime | None = None,
     registry: OperatorLoweringRegistry = DEFAULT_LOWERING_REGISTRY,
     max_added_operations: int = 256,
-    coupling_map: CouplingMap | None = None,
+    coupling_map: CouplingMap | DirectedCouplingMap | None = None,
     routing_strategy: str = "auto",
     max_routing_added_operations: int = 256,
+    initial_layout: tuple[int, ...] | None = None,
+    max_direction_added_operations: int = 256,
     max_schedule_depth: int | None = None,
 ) -> TargetLegalizationResult:
     """Require an exact backend lowering and a matching target snapshot.
@@ -211,6 +226,7 @@ def legalize_circuit_for_target(
                 snapshot=snapshot,
                 strategy=routing_strategy,
                 max_added_operations=max_routing_added_operations,
+                initial_layout=initial_layout,
             )
         except TopologyLegalizationError as error:
             raise TargetLegalizationError(str(error)) from error
@@ -225,6 +241,19 @@ def legalize_circuit_for_target(
     except NativeGateLegalizationError as error:
         raise TargetLegalizationError(str(error)) from error
     ir = native_gate_legalization.program
+    direction_legalization = None
+    if isinstance(coupling_map, DirectedCouplingMap):
+        try:
+            direction_legalization = legalize_directed_cx(
+                ir,
+                coupling_map=coupling_map,
+                snapshot=snapshot,
+                native_opcodes=native_gate_legalization.native_opcodes,
+                max_added_operations=max_direction_added_operations,
+            )
+        except DirectionLegalizationError as error:
+            raise TargetLegalizationError(str(error)) from error
+        ir = direction_legalization.program
     normalized_backend = str(backend).strip().lower()
     opcodes = tuple(sorted({item.name for item in ir.instructions}))
     try:
@@ -263,6 +292,7 @@ def legalize_circuit_for_target(
         target_snapshot_id=snapshot.snapshot_id,
         topology_legalization=topology_legalization,
         native_gate_legalization=native_gate_legalization,
+        direction_legalization=direction_legalization,
         lowering_capabilities=lowerings,
         capability_match=match,
         schedule=schedule,
@@ -274,6 +304,7 @@ def legalize_circuit_for_target(
             lowerings,
             native_gate_legalization,
             topology_legalization,
+            direction_legalization,
             schedule,
         ),
     )

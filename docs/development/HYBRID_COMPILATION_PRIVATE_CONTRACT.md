@@ -1154,5 +1154,9 @@ The exact candidate is recorded in
 `contracts/directional-topology-layout-v2-candidate.json` and the decision is
 specified by
 `docs/development/API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT.md`.
-Implementation remains unauthorized until the API owner supplies the exact
-Proposal 024 token.
+The API owner supplied the exact Proposal 024 token on 2026-09-10. The first
+implementation slice now provides the private directed topology, explicit
+placement and restoration, reverse-CX legalization, final native/directional
+verification, physical-plan 2.0 lineage, and executable-artifact compilation.
+Compilation-evidence 1.0 explicitly rejects these directed plans until the
+separately tested Core 2.0 and Runtime/Deployment handoff is complete.

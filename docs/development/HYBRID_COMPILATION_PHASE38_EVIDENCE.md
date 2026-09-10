@@ -5,9 +5,10 @@ Date: 2026-09-10
 ## Result
 
 API Change Proposal 024 and a machine-readable candidate define how the proven
-historical directed-routing semantics can migrate into the current
-single-`CircuitIR` target pipeline. The proposal is explicitly unapproved and
-no implementation path is enabled.
+historical directed-routing semantics migrate into the current
+single-`CircuitIR` target pipeline. This document records the proposal gate;
+the API owner subsequently approved it on 2026-09-10 and Phase 39 records the
+first Compiler implementation slice.
 
 The design preserves the existing undirected `CouplingMap`, compilation
 evidence 1.0, and ProgramArtifact v1/v2 contracts. It proposes a distinct
@@ -41,8 +42,8 @@ parallel `_compiler` tree.
 
 ## Claim boundary
 
-This phase produces only a proposal, candidate contract, migration analysis,
-and governance tests. It does not add directed topology code, change Core
-serialization, alter compilation behavior, add Runtime or Deployment adapters,
-export a public API, change the default path, or make a hardware/performance
-claim.
+At the Phase 38 gate, this phase produced only a proposal, candidate contract,
+migration analysis, and governance tests. The subsequently approved Compiler
+implementation is recorded separately in Phase 39. Phase 38 itself did not
+change Core serialization, add Runtime or Deployment adapters, export a public
+API, change the default path, or make a hardware/performance claim.

@@ -20,6 +20,10 @@ class CompilationEvidenceError(CompilationError):
 
 def _physical_evidence(result: ArtifactCompilationResult) -> PhysicalPlanEvidence:
     plan = result.physical_plan
+    if plan.coupling_direction_semantics == "directed_cx":
+        raise CompilationEvidenceError(
+            "directed physical plans require compilation evidence version 2.0"
+        )
     coupling = (
         None
         if plan.coupling_n_wires is None

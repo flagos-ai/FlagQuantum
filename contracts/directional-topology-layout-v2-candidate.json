@@ -1,7 +1,8 @@
 {
   "schema": "flagquantum.directional_topology_layout_candidate_contract",
-  "status": "proposed_unapproved",
+  "status": "approved_compiler_implementation_complete",
   "proposed_on": "2026-09-10",
+  "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT.md",
   "approval_token": "approve API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT",
   "evidence_schema": "flagquantum.compilation_evidence_bundle",
@@ -72,10 +73,10 @@
     "reuse_layout_and_gradient_differential_cases": true
   },
   "implementation": {
-    "authorized": false,
-    "compiler_types_added": false,
-    "compiler_pipeline_changed": false,
-    "physical_plan_v2_added": false,
+    "authorized": true,
+    "compiler_types_added": true,
+    "compiler_pipeline_changed": true,
+    "physical_plan_v2_added": true,
     "core_evidence_v2_added": false,
     "runtime_verifier_added": false,
     "deployment_adapter_added": false
