@@ -3,6 +3,7 @@
 Operational guidance, performance engineering practices, and reproducible case
 studies.
 
+- [Local simulation, measurement, and training](LOCAL_WORKFLOWS.md)
 - [Service and protocol integration](SERVICE_INTEGRATION.md)
 - [Multi-node A100 runbook](MULTINODE_A100_RUNBOOK.md)
 - [Performance and memory engineering](PERFORMANCE_ENGINEERING.md)

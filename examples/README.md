@@ -13,6 +13,21 @@ All curated examples use:
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
 
+## Three local basics
+
+Start with three small programs that use only the stable `fq.*` API:
+
+```bash
+python -m examples.local.simulate
+python -m examples.local.measure
+python -m examples.local.train
+```
+
+They cover local statevector simulation, exact and sampled measurements, and
+PyTorch-native training without credentials, remote resources, or optional
+backends. See the [annotated local guide](../docs/guides/LOCAL_WORKFLOWS.md)
+before moving to configurable research examples.
+
 ## First CPU execution
 
 Start with the complete local execution path:
