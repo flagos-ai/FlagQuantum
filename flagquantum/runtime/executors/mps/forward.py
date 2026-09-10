@@ -77,15 +77,6 @@ def execute_torch_distributed_mps_forward(
     if not dist.is_initialized():
         raise RuntimeError("rank-owned MPS execution requires torch.distributed")
     ir = ensure_circuit_ir(circuit_or_ir)
-    if compile_site_kernels and any(
-        instruction.name in {"rxx", "ryy", "rzz"}
-        and tuple(map(int, instruction.wires))
-        != tuple(sorted(map(int, instruction.wires)))
-        for instruction in ir.instructions
-    ):
-        raise NonlocalMPSCompilationError(
-            "compiled site-sharded two-site rotations require ascending adjacent wire order"
-        )
     if global_error_budget is not None and global_error_budget < 0:
         raise ValueError("global_error_budget must be non-negative")
     if error_budget_policy not in {"enforce", "report_only"}:
@@ -104,6 +95,14 @@ def execute_torch_distributed_mps_forward(
     bsz = int(ir.metadata.get("batch_size", 1))
     for index, instruction in enumerate(ir.instructions):
         wires = tuple(int(wire) for wire in instruction.wires)
+        if (
+            compile_site_kernels
+            and instruction.name in {"rxx", "ryy", "rzz"}
+            and wires != tuple(sorted(wires))
+        ):
+            raise NonlocalMPSCompilationError(
+                "compiled site-sharded two-site rotations require ascending adjacent wire order"
+            )
         if (
             instruction.metadata.get("is_channel")
             or len(wires) not in {1, 2}
