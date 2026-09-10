@@ -73,12 +73,7 @@ from .reverse_z_observables import (
 from .state import (
     RankOwnedMPSState,
     initialize_reverse_mps_state,
-    normalize_rank_owned_initial_tensors,
 )
-
-_rank_owned_initial_tensors = normalize_rank_owned_initial_tensors
-_record = build_mps_reverse_tape_record
-_validate_svd_gaps = validate_mps_svd_gaps
 
 _LayerHaloPrefetch = ReverseLayerHaloPrefetch
 _PreparedTwoSite = tuple[
@@ -743,7 +738,7 @@ def execute_torch_distributed_mps_reverse(
                     "one_site", (before,), instruction
                 )
             records.append(
-                _record(
+                build_mps_reverse_tape_record(
                     index=len(records),
                     kind="one_site",
                     wires=wires,
@@ -932,7 +927,7 @@ def execute_torch_distributed_mps_reverse(
         if left_wire + 1 < ir.n_wires - 1:
             dirty_bonds.add(left_wire + 1)
         records.append(
-            _record(
+            build_mps_reverse_tape_record(
                 index=len(records),
                 kind="two_site",
                 wires=wires,
@@ -1015,7 +1010,7 @@ def execute_torch_distributed_mps_reverse(
             batch, left_bond, physical, right_bond = output_shape
             global_shapes[wire] = (batch, left_bond, physical, right_bond)
         records.append(
-            _record(
+            build_mps_reverse_tape_record(
                 index=len(records),
                 kind="canonicalize_left",
                 wires=(left_wire, left_wire + 1),
@@ -1041,7 +1036,7 @@ def execute_torch_distributed_mps_reverse(
             f"discarded weight {discarded:.9g} exceeds gradient tolerance "
             f"{gradient_tolerance:.9g}"
         )
-    _validate_svd_gaps(
+    validate_mps_svd_gaps(
         tape,
         degeneracy_tolerance,
         allow_degenerate=gradient_policy == "approximate",
