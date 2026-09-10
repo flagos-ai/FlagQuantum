@@ -291,8 +291,10 @@ internal adapters have conformance evidence.
    tamper, identity tamper, and hash-seed tests pass.
 5. **Complete:** Runtime adds read-only compatibility preflight without
    submission.
-6. Deployment dry-run adaptation is proposed separately before any provider
-   call.
+6. **Complete:** the separately documented Deployment dry-run adapter binds a
+   verified artifact to a resolved target and execution request without any
+   provider call or legacy-package conversion. See
+   `ARTIFACT_DEPLOYMENT_DRY_RUN.md`.
 
 ## Acceptance
 
