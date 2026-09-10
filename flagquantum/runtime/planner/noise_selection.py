@@ -16,6 +16,40 @@ from .noise_calibration import (
 
 
 @dataclass(frozen=True)
+class _TrajectoryEstimate:
+    variance: float
+    required: int | None
+    feasible_within_cap: bool | None
+    cost_count: int | None
+    basis: str | None
+
+    def metadata(
+        self,
+        *,
+        trajectory_cap: int | None,
+        pilot_variance: float | None,
+        pilot_trajectories: int | None,
+        pilot_confidence_level: float | None,
+        pilot_observable_count: int,
+    ) -> dict[str, Any]:
+        return {
+            "trajectory_cap": trajectory_cap,
+            "estimated_trajectories_to_target": self.required,
+            "trajectory_estimate_basis": self.basis,
+            "trajectory_variance_estimate": (
+                self.variance if self.required is not None else None
+            ),
+            "pilot_trajectories": pilot_trajectories,
+            "pilot_sample_variance": pilot_variance,
+            "pilot_confidence_level": pilot_confidence_level,
+            "pilot_observable_count": (
+                pilot_observable_count if pilot_variance is not None else None
+            ),
+            "target_feasible_within_cap": self.feasible_within_cap,
+        }
+
+
+@dataclass(frozen=True)
 class NoiseBackendCandidate:
     """One noisy backend option with explicit acceptance or rejection evidence."""
 
@@ -92,6 +126,303 @@ class NoiseExecutionSelection:
         }
 
 
+def _validate_selection_inputs(
+    *,
+    trajectories: int | None,
+    min_trajectories: int,
+    target_standard_error: float | None,
+    pilot_variance: float | None,
+    pilot_trajectories: int | None,
+    pilot_confidence_level: float | None,
+    pilot_observable_count: int,
+) -> None:
+    if min_trajectories <= 0:
+        raise ValueError("min_trajectories must be positive")
+    if target_standard_error is not None and target_standard_error <= 0:
+        raise ValueError("target_standard_error must be positive")
+    if target_standard_error is not None and trajectories is None:
+        raise ValueError(
+            "target_standard_error requires an explicit trajectory ceiling"
+        )
+    if pilot_variance is not None and (
+        not isfinite(pilot_variance) or pilot_variance < 0.0
+    ):
+        raise ValueError("pilot_variance must be finite and non-negative")
+    if pilot_variance is not None and (
+        pilot_trajectories is None or pilot_trajectories < 2
+    ):
+        raise ValueError("pilot_variance requires at least two pilot trajectories")
+    if pilot_variance is None and pilot_trajectories is not None:
+        raise ValueError("pilot_trajectories requires pilot_variance")
+    if pilot_confidence_level is not None and pilot_variance is None:
+        raise ValueError("pilot_confidence_level requires pilot_variance")
+    if pilot_confidence_level is not None and not 0.0 < pilot_confidence_level < 1.0:
+        raise ValueError("pilot_confidence_level must be between zero and one")
+    if pilot_observable_count <= 0:
+        raise ValueError("pilot_observable_count must be positive")
+
+
+def _estimate_trajectory_requirement(
+    *,
+    trajectories: int | None,
+    min_trajectories: int,
+    target_standard_error: float | None,
+    pilot_variance: float | None,
+    pilot_trajectories: int | None,
+    pilot_confidence_level: float | None,
+    pilot_observable_count: int,
+) -> _TrajectoryEstimate:
+    variance = 1.0 if pilot_variance is None else pilot_variance
+    if pilot_confidence_level is not None:
+        assert pilot_variance is not None
+        assert pilot_trajectories is not None
+        delta = (1.0 - pilot_confidence_level) / pilot_observable_count
+        standard_deviation_radius = 2.0 * sqrt(
+            2.0 * log(1.0 / delta) / (pilot_trajectories - 1)
+        )
+        variance = min(
+            1.0,
+            (sqrt(max(pilot_variance, 0.0)) + standard_deviation_radius) ** 2,
+        )
+    required = (
+        None
+        if target_standard_error is None
+        else max(min_trajectories, ceil(variance / target_standard_error**2))
+    )
+    feasible = (
+        None if required is None or trajectories is None else trajectories >= required
+    )
+    cost_count = (
+        trajectories
+        if required is None or trajectories is None
+        else min(trajectories, required)
+    )
+    basis = None
+    if required is not None:
+        if pilot_confidence_level is not None:
+            basis = "pilot_variance_upper_confidence_bound"
+        elif pilot_variance is not None:
+            basis = "pilot_variance"
+        else:
+            basis = "bounded_pauli_variance_le_one"
+    return _TrajectoryEstimate(variance, required, feasible, cost_count, basis)
+
+
+def _calibration_metadata(
+    calibration: NoiseSelectorCalibration | None,
+    *,
+    mode: str,
+    n_wires: int,
+    channel_count: int,
+    circuit_digest: str,
+    noise_model_identity: str,
+    trajectory_count: int | None,
+    trajectory_batch_size: int,
+    world_size: int,
+) -> dict[str, Any]:
+    if calibration is None:
+        return {}
+    match = calibration.estimate_seconds(
+        mode=mode,
+        n_wires=n_wires,
+        channel_count=channel_count,
+        circuit_digest=circuit_digest,
+        noise_model_identity=noise_model_identity,
+        trajectories=trajectory_count,
+        trajectory_batch_size=trajectory_batch_size,
+        world_size=world_size,
+    )
+    if match is None:
+        return {"calibration_match": False}
+    seconds, record = match
+    return {
+        "calibration_match": True,
+        "calibrated_estimated_seconds": seconds,
+        "calibration_record": {
+            "device_name": calibration.device_name,
+            "torch_version": calibration.torch_version,
+            "world_size": calibration.world_size,
+            "depth": record.depth,
+            "median_seconds": record.median_seconds,
+            "executed_trajectories": record.executed_trajectories,
+        },
+    }
+
+
+def _density_candidate(
+    *,
+    estimated_memory_bytes: int,
+    fits_memory: bool,
+    trajectories: int | None,
+    target_standard_error: float | None,
+    calibration_metadata: Mapping[str, Any],
+) -> NoiseBackendCandidate:
+    rejections = []
+    if not fits_memory:
+        rejections.append("memory_limit_exceeded")
+    if trajectories is not None and target_standard_error is None:
+        rejections.append("trajectory_execution_explicitly_requested")
+    return NoiseBackendCandidate(
+        mode="density_matrix",
+        representation="density_matrix",
+        evolution="exact_channel",
+        estimated_memory_bytes=estimated_memory_bytes,
+        fits_memory=fits_memory,
+        eligible=not rejections,
+        exact_quantum_channel=True,
+        sampling_error=False,
+        truncation_error=False,
+        reasons=("small_system_correctness_oracle",),
+        rejection_reasons=tuple(rejections),
+        metadata=calibration_metadata,
+    )
+
+
+def _statevector_candidate(
+    *,
+    estimated_memory_bytes: int,
+    fits_memory: bool,
+    trajectories: int | None,
+    exact_noise: bool,
+    trajectory_batch_size: int,
+    workspace_factor: int,
+    world_size: int,
+    trajectory_metadata: Mapping[str, Any],
+    calibration_metadata: Mapping[str, Any],
+) -> NoiseBackendCandidate:
+    rejections = []
+    if trajectories is None:
+        rejections.append("trajectory_count_not_requested")
+    if exact_noise:
+        rejections.append("exact_noise_required")
+    if not fits_memory:
+        rejections.append("memory_limit_exceeded")
+    return NoiseBackendCandidate(
+        mode="noisy_statevector",
+        representation="statevector",
+        evolution="quantum_trajectory",
+        estimated_memory_bytes=estimated_memory_bytes,
+        fits_memory=fits_memory,
+        eligible=not rejections,
+        exact_quantum_channel=False,
+        sampling_error=True,
+        truncation_error=False,
+        reasons=("general_dense_circuit_trajectory_path",),
+        rejection_reasons=tuple(rejections),
+        metadata={
+            "trajectory_batch_size": trajectory_batch_size,
+            "workspace_factor": workspace_factor,
+            "world_size": world_size,
+            **trajectory_metadata,
+            **calibration_metadata,
+        },
+    )
+
+
+def _mps_candidate(
+    *,
+    estimated_memory_bytes: int,
+    fits_memory: bool,
+    exact_noise: bool,
+    allow_approximate: bool,
+    world_size: int,
+    max_bond: int | None,
+    cutoff: float,
+    trajectory_metadata: Mapping[str, Any],
+    calibration_metadata: Mapping[str, Any],
+) -> NoiseBackendCandidate:
+    rejections = []
+    if exact_noise:
+        rejections.append("exact_noise_required")
+    if not allow_approximate:
+        rejections.append("approximate_execution_disabled")
+    if not fits_memory:
+        rejections.append("memory_limit_exceeded")
+    if world_size > 1:
+        rejections.append("distributed_collective_not_implemented")
+    return NoiseBackendCandidate(
+        mode="noisy_mps",
+        representation="mps",
+        evolution="quantum_trajectory",
+        estimated_memory_bytes=estimated_memory_bytes,
+        fits_memory=fits_memory,
+        eligible=not rejections,
+        exact_quantum_channel=False,
+        sampling_error=True,
+        truncation_error=True,
+        reasons=(
+            (
+                "explicit_mps_controls"
+                if max_bond is not None or cutoff > 0
+                else "compressed_state_fallback"
+            ),
+        ),
+        rejection_reasons=tuple(rejections),
+        metadata={
+            "max_bond": max_bond,
+            "cutoff": cutoff,
+            "world_size": world_size,
+            "distributed_public_execution_supported": world_size == 1,
+            **trajectory_metadata,
+            **calibration_metadata,
+        },
+    )
+
+
+def _select_candidate(
+    candidates: tuple[NoiseBackendCandidate, ...],
+    *,
+    exact_noise: bool,
+    max_bond: int | None,
+    cutoff: float,
+    trajectories: int | None,
+    target_standard_error: float | None,
+) -> tuple[NoiseBackendCandidate, str]:
+    density, statevector, mps = candidates
+    selection_basis = "analytic_policy"
+    if exact_noise:
+        selected = density
+    elif max_bond is not None or cutoff > 0:
+        selected = mps
+    elif trajectories is not None and statevector.eligible:
+        pool = candidates if target_standard_error is not None else (statevector, mps)
+        eligible = tuple(candidate for candidate in pool if candidate.eligible)
+        calibrated = tuple(
+            candidate
+            for candidate in eligible
+            if "calibrated_estimated_seconds" in (candidate.metadata or {})
+        )
+        if calibrated and len(calibrated) == len(eligible):
+            selected = min(
+                calibrated,
+                key=lambda candidate: float(
+                    (candidate.metadata or {})["calibrated_estimated_seconds"]
+                ),
+            )
+            selection_basis = "exact_device_calibration"
+        else:
+            selected = statevector
+    elif trajectories is None and density.eligible:
+        selected = density
+    else:
+        selected = mps
+
+    if selected.eligible:
+        return selected, selection_basis
+    if exact_noise or max_bond is not None or cutoff > 0:
+        raise ValueError(
+            f"requested noisy execution candidate {selected.mode!r} is not "
+            f"eligible: {selected.rejection_reasons}"
+        )
+    available = tuple(candidate for candidate in candidates if candidate.eligible)
+    if not available:
+        evidence = {
+            candidate.mode: candidate.rejection_reasons for candidate in candidates
+        }
+        raise ValueError(f"no noisy execution candidate is eligible: {evidence}")
+    return available[0], selection_basis
+
+
 def plan_noise_execution_selection(
     circuit_or_ir: Any,
     noise_model: Any,
@@ -117,59 +448,23 @@ def plan_noise_execution_selection(
     """Evaluate density, statevector-trajectory, and MPS-trajectory candidates."""
 
     ir = ensure_circuit_ir(circuit_or_ir)
-    if min_trajectories <= 0:
-        raise ValueError("min_trajectories must be positive")
-    if target_standard_error is not None and target_standard_error <= 0:
-        raise ValueError("target_standard_error must be positive")
-    if target_standard_error is not None and trajectories is None:
-        raise ValueError(
-            "target_standard_error requires an explicit trajectory ceiling"
-        )
-    if pilot_variance is not None and (
-        not isfinite(pilot_variance) or pilot_variance < 0.0
-    ):
-        raise ValueError("pilot_variance must be finite and non-negative")
-    if pilot_variance is not None and (
-        pilot_trajectories is None or pilot_trajectories < 2
-    ):
-        raise ValueError("pilot_variance requires at least two pilot trajectories")
-    if pilot_variance is None and pilot_trajectories is not None:
-        raise ValueError("pilot_trajectories requires pilot_variance")
-    if pilot_confidence_level is not None and pilot_variance is None:
-        raise ValueError("pilot_confidence_level requires pilot_variance")
-    if pilot_confidence_level is not None and not 0.0 < pilot_confidence_level < 1.0:
-        raise ValueError("pilot_confidence_level must be between zero and one")
-    if pilot_observable_count <= 0:
-        raise ValueError("pilot_observable_count must be positive")
-    variance_estimate = 1.0 if pilot_variance is None else pilot_variance
-    if pilot_confidence_level is not None:
-        assert pilot_variance is not None
-        assert pilot_trajectories is not None
-        delta = (1.0 - pilot_confidence_level) / pilot_observable_count
-        standard_deviation_radius = 2.0 * sqrt(
-            2.0 * log(1.0 / delta) / (pilot_trajectories - 1)
-        )
-        variance_estimate = min(
-            1.0,
-            (sqrt(max(pilot_variance, 0.0)) + standard_deviation_radius) ** 2,
-        )
-    estimated_to_target = (
-        None
-        if target_standard_error is None
-        else max(
-            min_trajectories,
-            ceil(variance_estimate / target_standard_error**2),
-        )
+    _validate_selection_inputs(
+        trajectories=trajectories,
+        min_trajectories=min_trajectories,
+        target_standard_error=target_standard_error,
+        pilot_variance=pilot_variance,
+        pilot_trajectories=pilot_trajectories,
+        pilot_confidence_level=pilot_confidence_level,
+        pilot_observable_count=pilot_observable_count,
     )
-    target_feasible = (
-        None
-        if estimated_to_target is None or trajectories is None
-        else trajectories >= estimated_to_target
-    )
-    cost_trajectories = (
-        trajectories
-        if estimated_to_target is None or trajectories is None
-        else min(trajectories, estimated_to_target)
+    trajectory_estimate = _estimate_trajectory_requirement(
+        trajectories=trajectories,
+        min_trajectories=min_trajectories,
+        target_standard_error=target_standard_error,
+        pilot_variance=pilot_variance,
+        pilot_trajectories=pilot_trajectories,
+        pilot_confidence_level=pilot_confidence_level,
+        pilot_observable_count=pilot_observable_count,
     )
     lowered = lower_noise_model(ir, noise_model)
     channels = tuple(
@@ -191,33 +486,17 @@ def plan_noise_execution_selection(
     )
 
     def calibration_metadata(mode: str) -> dict[str, Any]:
-        if selected_calibration is None:
-            return {}
-        match = selected_calibration.estimate_seconds(
+        return _calibration_metadata(
+            selected_calibration,
             mode=mode,
             n_wires=ir.n_wires,
             channel_count=len(channels),
             circuit_digest=ir.content_hash,
             noise_model_identity=noise_model.identity,
-            trajectories=cost_trajectories,
+            trajectory_count=trajectory_estimate.cost_count,
             trajectory_batch_size=trajectory_batch_size,
             world_size=world_size,
         )
-        if match is None:
-            return {"calibration_match": False}
-        seconds, record = match
-        return {
-            "calibration_match": True,
-            "calibrated_estimated_seconds": seconds,
-            "calibration_record": {
-                "device_name": selected_calibration.device_name,
-                "torch_version": selected_calibration.torch_version,
-                "world_size": selected_calibration.world_size,
-                "depth": record.depth,
-                "median_seconds": record.median_seconds,
-                "executed_trajectories": record.executed_trajectories,
-            },
-        }
 
     density_bytes = estimate_density_bytes(
         ir.n_wires, bsz=bsz, complex_bytes=complex_bytes
@@ -235,186 +514,56 @@ def plan_noise_execution_selection(
         complex_bytes=complex_bytes,
     )
 
-    def fits(value: int) -> bool:
-        return memory_limit_bytes is None or value <= memory_limit_bytes
-
-    density_rejections = []
-    if not fits(density_bytes):
-        density_rejections.append("memory_limit_exceeded")
-    if trajectories is not None and target_standard_error is None:
-        density_rejections.append("trajectory_execution_explicitly_requested")
-    density = NoiseBackendCandidate(
-        mode="density_matrix",
-        representation="density_matrix",
-        evolution="exact_channel",
+    trajectory_metadata = trajectory_estimate.metadata(
+        trajectory_cap=trajectories,
+        pilot_variance=pilot_variance,
+        pilot_trajectories=pilot_trajectories,
+        pilot_confidence_level=pilot_confidence_level,
+        pilot_observable_count=pilot_observable_count,
+    )
+    fits_density = memory_limit_bytes is None or density_bytes <= memory_limit_bytes
+    fits_statevector = (
+        memory_limit_bytes is None or statevector_bytes <= memory_limit_bytes
+    )
+    fits_mps = memory_limit_bytes is None or mps_bytes <= memory_limit_bytes
+    density = _density_candidate(
         estimated_memory_bytes=density_bytes,
-        fits_memory=fits(density_bytes),
-        eligible=not density_rejections,
-        exact_quantum_channel=True,
-        sampling_error=False,
-        truncation_error=False,
-        reasons=("small_system_correctness_oracle",),
-        rejection_reasons=tuple(density_rejections),
-        metadata=calibration_metadata("density_matrix"),
+        fits_memory=fits_density,
+        trajectories=trajectories,
+        target_standard_error=target_standard_error,
+        calibration_metadata=calibration_metadata("density_matrix"),
     )
-
-    statevector_rejections = []
-    if trajectories is None:
-        statevector_rejections.append("trajectory_count_not_requested")
-    if exact_noise:
-        statevector_rejections.append("exact_noise_required")
-    if not fits(statevector_bytes):
-        statevector_rejections.append("memory_limit_exceeded")
-    statevector = NoiseBackendCandidate(
-        mode="noisy_statevector",
-        representation="statevector",
-        evolution="quantum_trajectory",
+    statevector = _statevector_candidate(
         estimated_memory_bytes=statevector_bytes,
-        fits_memory=fits(statevector_bytes),
-        eligible=not statevector_rejections,
-        exact_quantum_channel=False,
-        sampling_error=True,
-        truncation_error=False,
-        reasons=("general_dense_circuit_trajectory_path",),
-        rejection_reasons=tuple(statevector_rejections),
-        metadata={
-            "trajectory_batch_size": block_count,
-            "workspace_factor": workspace_factor,
-            "world_size": world_size,
-            "trajectory_cap": trajectories,
-            "estimated_trajectories_to_target": estimated_to_target,
-            "trajectory_estimate_basis": (
-                "pilot_variance_upper_confidence_bound"
-                if estimated_to_target is not None
-                and pilot_confidence_level is not None
-                else (
-                    "pilot_variance"
-                    if estimated_to_target is not None and pilot_variance is not None
-                    else (
-                        "bounded_pauli_variance_le_one"
-                        if estimated_to_target is not None
-                        else None
-                    )
-                )
-            ),
-            "trajectory_variance_estimate": (
-                variance_estimate if estimated_to_target is not None else None
-            ),
-            "pilot_trajectories": pilot_trajectories,
-            "pilot_sample_variance": pilot_variance,
-            "pilot_confidence_level": pilot_confidence_level,
-            "pilot_observable_count": (
-                pilot_observable_count if pilot_variance is not None else None
-            ),
-            "target_feasible_within_cap": target_feasible,
-            **calibration_metadata("noisy_statevector"),
-        },
+        fits_memory=fits_statevector,
+        trajectories=trajectories,
+        exact_noise=exact_noise,
+        trajectory_batch_size=block_count,
+        workspace_factor=workspace_factor,
+        world_size=world_size,
+        trajectory_metadata=trajectory_metadata,
+        calibration_metadata=calibration_metadata("noisy_statevector"),
     )
-
-    mps_rejections = []
-    if exact_noise:
-        mps_rejections.append("exact_noise_required")
-    if not allow_approximate:
-        mps_rejections.append("approximate_execution_disabled")
-    if not fits(mps_bytes):
-        mps_rejections.append("memory_limit_exceeded")
-    if world_size > 1:
-        mps_rejections.append("distributed_collective_not_implemented")
-    mps = NoiseBackendCandidate(
-        mode="noisy_mps",
-        representation="mps",
-        evolution="quantum_trajectory",
+    mps = _mps_candidate(
         estimated_memory_bytes=mps_bytes,
-        fits_memory=fits(mps_bytes),
-        eligible=not mps_rejections,
-        exact_quantum_channel=False,
-        sampling_error=True,
-        truncation_error=True,
-        reasons=(
-            (
-                "explicit_mps_controls"
-                if max_bond is not None or cutoff > 0
-                else "compressed_state_fallback"
-            ),
-        ),
-        rejection_reasons=tuple(mps_rejections),
-        metadata={
-            "max_bond": max_bond,
-            "cutoff": cutoff,
-            "world_size": world_size,
-            "distributed_public_execution_supported": world_size == 1,
-            "trajectory_cap": trajectories,
-            "estimated_trajectories_to_target": estimated_to_target,
-            "trajectory_estimate_basis": (
-                "pilot_variance_upper_confidence_bound"
-                if estimated_to_target is not None
-                and pilot_confidence_level is not None
-                else (
-                    "pilot_variance"
-                    if estimated_to_target is not None and pilot_variance is not None
-                    else (
-                        "bounded_pauli_variance_le_one"
-                        if estimated_to_target is not None
-                        else None
-                    )
-                )
-            ),
-            "trajectory_variance_estimate": (
-                variance_estimate if estimated_to_target is not None else None
-            ),
-            "pilot_trajectories": pilot_trajectories,
-            "pilot_sample_variance": pilot_variance,
-            "pilot_confidence_level": pilot_confidence_level,
-            "pilot_observable_count": (
-                pilot_observable_count if pilot_variance is not None else None
-            ),
-            "target_feasible_within_cap": target_feasible,
-            **calibration_metadata("noisy_mps"),
-        },
+        fits_memory=fits_mps,
+        exact_noise=exact_noise,
+        allow_approximate=allow_approximate,
+        world_size=world_size,
+        max_bond=max_bond,
+        cutoff=cutoff,
+        trajectory_metadata=trajectory_metadata,
+        calibration_metadata=calibration_metadata("noisy_mps"),
     )
     candidates = (density, statevector, mps)
-    selection_basis = "analytic_policy"
-    if exact_noise:
-        selected = density
-    elif max_bond is not None or cutoff > 0:
-        selected = mps
-    elif trajectories is not None and statevector.eligible:
-        calibrated_pool = (
-            (density, statevector, mps)
-            if target_standard_error is not None
-            else (statevector, mps)
-        )
-        eligible_pool = tuple(item for item in calibrated_pool if item.eligible)
-        calibrated = tuple(
-            item
-            for item in eligible_pool
-            if "calibrated_estimated_seconds" in (item.metadata or {})
-        )
-        if calibrated and len(calibrated) == len(eligible_pool):
-            selected = min(
-                calibrated,
-                key=lambda item: float(
-                    (item.metadata or {})["calibrated_estimated_seconds"]
-                ),
-            )
-            selection_basis = "exact_device_calibration"
-        else:
-            selected = statevector
-    elif trajectories is None and density.eligible:
-        selected = density
-    else:
-        selected = mps
-    if not selected.eligible:
-        if exact_noise or max_bond is not None or cutoff > 0:
-            raise ValueError(
-                f"requested noisy execution candidate {selected.mode!r} is not "
-                f"eligible: {selected.rejection_reasons}"
-            )
-        available = tuple(item for item in candidates if item.eligible)
-        if not available:
-            evidence = {item.mode: item.rejection_reasons for item in candidates}
-            raise ValueError(f"no noisy execution candidate is eligible: {evidence}")
-        selected = available[0]
+    selected, selection_basis = _select_candidate(
+        candidates,
+        exact_noise=exact_noise,
+        max_bond=max_bond,
+        cutoff=cutoff,
+        trajectories=trajectories,
+        target_standard_error=target_standard_error,
+    )
     return NoiseExecutionSelection(
         selected_mode=selected.mode,
         selected_candidate=selected,
@@ -429,10 +578,12 @@ def plan_noise_execution_selection(
             else None
         ),
         target_standard_error=target_standard_error,
-        estimated_trajectories_to_target=estimated_to_target,
-        target_feasible_within_cap=target_feasible,
+        estimated_trajectories_to_target=trajectory_estimate.required,
+        target_feasible_within_cap=trajectory_estimate.feasible_within_cap,
         trajectory_variance_estimate=(
-            variance_estimate if estimated_to_target is not None else None
+            trajectory_estimate.variance
+            if trajectory_estimate.required is not None
+            else None
         ),
         pilot_trajectories=pilot_trajectories,
         pilot_sample_variance=pilot_variance,
