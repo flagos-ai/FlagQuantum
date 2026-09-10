@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
@@ -180,6 +181,54 @@ def _prepare_reverse_one_site_layer(
                 state.local_tensors[wire] = output
                 prepared[index] = inputs[position], output
     return prepared
+
+
+def _reserve_reverse_two_site_layer(
+    layer: Sequence[tuple[int, Instruction, int]],
+    *,
+    state: RankOwnedMPSState,
+    checkpoint_budget: ReverseCheckpointBudget,
+    global_shapes: Mapping[int, Sequence[int]],
+    bsz: int,
+    dtype: torch.dtype,
+    save_exact_factorizations: bool,
+) -> set[int]:
+    reservations = []
+    for index, _, left_wire in layer:
+        left_owner = state.owner(left_wire)
+        required = 0
+        optional = 0
+        if state.rank == left_owner:
+            element_size = torch.empty((), dtype=dtype).element_size()
+            required = element_size * sum(
+                math.prod(global_shapes[wire]) for wire in (left_wire, left_wire + 1)
+            )
+            left_shape = global_shapes[left_wire]
+            right_shape = global_shapes[left_wire + 1]
+            pair_bytes = (
+                bsz * int(left_shape[1]) * 4 * int(right_shape[3]) * element_size
+            )
+            optional = 4 * pair_bytes
+        reservations.append((index, required, optional))
+    selected: set[int] = set()
+    if state.config.svd_driver == "gesvda":
+        checkpoint_budget.reserve(sum(item[1] for item in reservations))
+        if save_exact_factorizations:
+            optional_counts = [item[2] for item in reservations]
+            if checkpoint_budget.reserve_factorization_batch(optional_counts):
+                selected.update(item[0] for item in reservations)
+            else:
+                for index, _, optional in reservations:
+                    if checkpoint_budget.reserve_factorization(optional):
+                        selected.add(index)
+    else:
+        for index, required, optional in reservations:
+            checkpoint_budget.reserve(required)
+            if save_exact_factorizations and checkpoint_budget.reserve_factorization(
+                optional
+            ):
+                selected.add(index)
+    return selected
 
 
 def _static_exact_qr_record(
@@ -396,55 +445,18 @@ def execute_torch_distributed_mps_reverse(
                     ir.instructions, instruction_index
                 )
             )
-            layer_reservations = []
-            for candidate_index, _, left_wire in layer:
-                left_owner, right_owner = (
-                    state.owner(left_wire),
-                    state.owner(left_wire + 1),
+            reserved_rxx.update(index for index, _, _ in layer)
+            selected_factorizations.update(
+                _reserve_reverse_two_site_layer(
+                    layer,
+                    state=state,
+                    checkpoint_budget=checkpoint_budget,
+                    global_shapes=global_shapes,
+                    bsz=bsz,
+                    dtype=resolved_dtype,
+                    save_exact_factorizations=save_exact_factorizations,
                 )
-                required = 0
-                optional = 0
-                if rank == left_owner:
-                    element_size = torch.empty((), dtype=resolved_dtype).element_size()
-                    required = element_size * sum(
-                        int(torch.tensor(global_shapes[wire]).prod().item())
-                        for wire in (left_wire, left_wire + 1)
-                    )
-                    if save_exact_factorizations:
-                        left_shape = global_shapes[left_wire]
-                        right_shape = global_shapes[left_wire + 1]
-                        pair_bytes = (
-                            bsz
-                            * int(left_shape[1])
-                            * 2
-                            * 2
-                            * int(right_shape[3])
-                            * element_size
-                        )
-                        optional = 4 * pair_bytes
-                layer_reservations.append((candidate_index, required, optional))
-            if state.config.svd_driver == "gesvda":
-                checkpoint_budget.reserve(sum(item[1] for item in layer_reservations))
-                if save_exact_factorizations:
-                    optional_counts = [item[2] for item in layer_reservations]
-                    if checkpoint_budget.reserve_factorization_batch(optional_counts):
-                        selected_factorizations.update(
-                            item[0] for item in layer_reservations
-                        )
-                    else:
-                        for candidate_index, _, optional in layer_reservations:
-                            if checkpoint_budget.reserve_factorization(optional):
-                                selected_factorizations.add(candidate_index)
-                reserved_rxx.update(item[0] for item in layer_reservations)
-            else:
-                for candidate_index, required, optional in layer_reservations:
-                    checkpoint_budget.reserve(required)
-                    if (
-                        save_exact_factorizations
-                        and checkpoint_budget.reserve_factorization(optional)
-                    ):
-                        selected_factorizations.add(candidate_index)
-                    reserved_rxx.add(candidate_index)
+            )
             layer_prefetch, layer_prefetched_indices = (
                 _begin_layer_halo_prefetch(layer, state, global_shapes)
                 if prefetch_layer_halos
