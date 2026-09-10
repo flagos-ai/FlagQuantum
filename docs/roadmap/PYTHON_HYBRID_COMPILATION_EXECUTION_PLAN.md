@@ -1235,6 +1235,25 @@ Exit gate:
 - no TargetIR, physical-ancilla allocation, public export, default-path change,
   or performance claim is added.
 
+### Phase 37 — Versioned compilation-evidence handoff
+
+Define a separate serialized compilation-evidence bundle so mapping,
+native-gate, and dependency evidence survives process and deployment
+boundaries. Keep ProgramArtifact v2 unchanged and require actual artifacts and
+the target snapshot for verification.
+
+Contract gate:
+
+- [x] Proposal 023 defines the closed envelope, identities, limits, ownership,
+  compatibility, and security exclusions;
+- [x] a machine-readable candidate contract and contract tests pin the design;
+- [x] ProgramArtifact v1/v2 remain unchanged;
+- [ ] API owner supplies the exact Proposal 023 approval token;
+- [ ] Core implements canonical serialization and strict reading;
+- [ ] Compiler constructs the bundle from actual Phase 36 evidence;
+- [ ] Runtime and Deployment add read-only verification adapters;
+- [ ] cross-process round-trip, tamper, limit, and hash-seed tests pass.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1401,3 +1420,5 @@ Stop implementation and return to Integration review if:
 - [x] Phase 34 Explicit symbolic circuit-artifact binding completed
 - [x] Phase 35 Verified artifact-to-artifact target compilation completed
 - [x] Phase 36 Physical mapping and dependency-schedule plan completed
+- [x] Phase 37 Compilation-evidence bundle contract proposed
+- [ ] Phase 37 Compilation-evidence bundle implementation awaiting approval

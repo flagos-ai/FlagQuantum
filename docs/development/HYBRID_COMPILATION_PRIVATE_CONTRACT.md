@@ -1108,3 +1108,22 @@ physical ancilla allocation, or hardware performance. Artifact-to-artifact
 compilation now requires the plan and includes its identity in the enclosing
 compilation identity, while the approved ProgramArtifact v2 envelope remains
 unchanged.
+
+## Phase 37 Compilation evidence bundle proposal
+
+Phase 37 proposes a separate Core-owned, versioned compilation-evidence bundle
+instead of modifying ProgramArtifact v2 or embedding compiler provenance in
+free-form metadata. The bundle would serialize Phase 36 mapping, native-gate,
+and dependency evidence and bind it to the actual source artifact, target
+snapshot, executable artifact, and artifact-compilation identity.
+
+The exact candidate schema is recorded in
+`contracts/compilation-evidence-bundle-v1-candidate.json` and the decision is
+specified by `API_CHANGE_PROPOSAL_023_COMPILATION_EVIDENCE_BUNDLE.md`. The
+proposal deliberately excludes circuit payload duplication, TargetIR,
+execution requests, provider state, timing and pulse claims, calibration-aware
+optimization, and fault-tolerant expansion.
+
+This phase authorizes documentation and candidate-contract tests only. Core,
+Compiler, Runtime, and Deployment implementation remains blocked until the API
+owner supplies the exact approval token recorded by Proposal 023.
