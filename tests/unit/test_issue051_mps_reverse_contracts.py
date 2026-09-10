@@ -14,7 +14,6 @@ from flagquantum.runtime.executors.mps.records import (
 )
 from flagquantum.runtime.executors.mps.reverse import (
     _static_exact_qr_record,
-    _validate_svd_gaps,
 )
 from flagquantum.runtime.executors.mps.reverse_planning import (
     cached_mps_reverse_segments,
@@ -22,6 +21,7 @@ from flagquantum.runtime.executors.mps.reverse_planning import (
     mps_reverse_segment_cache_stats,
     plan_mps_canonicalization_bonds,
     plan_mps_reverse_segments,
+    validate_mps_svd_gaps,
 )
 from flagquantum.runtime.executors.mps.reverse_transport import (
     all_reduce_reverse_layer_records,
@@ -261,8 +261,8 @@ def test_near_degenerate_truncation_boundary_fails_closed():
         checkpoint_policy=MPSReverseCheckpointPolicy(),
     )
     with pytest.raises(MPSReverseContractError, match="degenerate.*operation-0"):
-        _validate_svd_gaps(tape, 1e-7)
-    _validate_svd_gaps(tape, 1e-12)
+        validate_mps_svd_gaps(tape, 1e-7)
+    validate_mps_svd_gaps(tape, 1e-12)
 
 
 def test_degenerate_zero_weight_tail_is_not_a_physical_truncation():
@@ -271,7 +271,7 @@ def test_degenerate_zero_weight_tail_is_not_a_physical_truncation():
         saved_tensor_bytes=64,
         checkpoint_policy=MPSReverseCheckpointPolicy(),
     )
-    _validate_svd_gaps(tape, 1e-7)
+    validate_mps_svd_gaps(tape, 1e-7)
 
 
 def test_owner_local_reverse_segments_stop_at_dependencies_and_boundaries():
