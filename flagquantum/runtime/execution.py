@@ -672,6 +672,81 @@ def _run_density_matrix_mode(
     return result, execution_plan
 
 
+def _run_noisy_mps_mode(
+    mode: str,
+    source: Any,
+    execution_ir: CircuitIR,
+    noise_model: NoiseModel | None,
+    *,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    from .executors.mps.noisy import (
+        run_lowered_noisy_mps,
+        run_lowered_noisy_mps_trajectory,
+    )
+
+    mps_options = _simulation_kernel_options(options)
+    lowered = (
+        execution_ir
+        if provided_execution_plan is not None
+        else lower_noise_model(execution_ir, noise_model)
+    )
+    if mode == "mps_trajectory":
+        trajectories = 1
+        min_trajectories = 1
+        target_standard_error = None
+        result = run_lowered_noisy_mps_trajectory(
+            lowered,
+            source=source,
+            **mps_options,
+        )
+    elif mode == "noisy_mps":
+        world_size = int(options.get("world_sz", options.get("world_size", 1)))
+        if world_size > 1 and "rank" not in options:
+            raise NotImplementedError(
+                "public noisy_mps execution does not perform distributed statistics "
+                "reduction; pass an explicit rank for rank-local execution and "
+                "merge_noisy_mps_results, or use noisy_statevector"
+            )
+        trajectories = int(options.get("trajectories", 32))
+        min_trajectories = int(options.get("min_trajectories", 1))
+        target_standard_error = options.get("target_standard_error")
+        result = run_lowered_noisy_mps(
+            lowered,
+            source=source,
+            noise_model=noise_model,
+            world_size=world_size,
+            **mps_options,
+        )
+    else:
+        raise ValueError(f"unsupported noisy MPS execution mode: {mode}")
+
+    execution_plan = provided_execution_plan or build_plan(
+        execution_ir,
+        noise_model=noise_model,
+        state_mode="mps",
+        **plan_options,
+    )
+    if provided_execution_plan is not None:
+        return result, execution_plan
+
+    noisy_plan = build_noisy_execution_plan(
+        execution_plan,
+        representation="mps",
+        evolution="quantum_trajectory",
+        trajectories=trajectories,
+        seed=options.get("seed"),
+        min_trajectories=min_trajectories,
+        target_standard_error=target_standard_error,
+        cutoff=float(options.get("cutoff", 0.0)),
+        memory_limit_bytes=options.get("memory_limit_bytes"),
+        noise_model_identity=getattr(noise_model, "identity", None),
+    )
+    return result, replace(execution_plan, noisy_execution_plan=noisy_plan)
+
+
 def _run_native(
     circuit_or_ir: Any,
     *,
@@ -849,68 +924,16 @@ def _run_native(
             provided_execution_plan=provided_execution_plan,
         )
     elif mode in {"mps_trajectory", "noisy_mps"}:
-        from .executors.mps.noisy import (
-            run_lowered_noisy_mps,
-            run_lowered_noisy_mps_trajectory,
-        )
-
-        mps_options = _simulation_kernel_options(options)
         source = execution_ir if coupling_map is not None else circuit_or_ir
-        lowered = (
-            execution_ir
-            if provided_execution_plan is not None
-            else lower_noise_model(execution_ir, noise_model)
-        )
-        if mode == "mps_trajectory":
-            trajectories = 1
-            min_trajectories = 1
-            target_standard_error = None
-            result = run_lowered_noisy_mps_trajectory(
-                lowered,
-                source=source,
-                **mps_options,
-            )
-        else:
-            world_size = int(options.get("world_sz", options.get("world_size", 1)))
-            if world_size > 1 and "rank" not in options:
-                raise NotImplementedError(
-                    "public noisy_mps execution does not perform distributed statistics "
-                    "reduction; pass an explicit rank for rank-local execution and "
-                    "merge_noisy_mps_results, or use noisy_statevector"
-                )
-            trajectories = int(options.get("trajectories", 32))
-            min_trajectories = int(options.get("min_trajectories", 1))
-            target_standard_error = options.get("target_standard_error")
-            result = run_lowered_noisy_mps(
-                lowered,
-                source=source,
-                noise_model=noise_model,
-                world_size=world_size,
-                **mps_options,
-            )
-
-        execution_plan = provided_execution_plan or build_plan(
+        result, execution_plan = _run_noisy_mps_mode(
+            mode,
+            source,
             execution_ir,
-            noise_model=noise_model,
-            state_mode="mps",
-            **plan_options,
+            noise_model,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
         )
-        if provided_execution_plan is None:
-            execution_plan = replace(
-                execution_plan,
-                noisy_execution_plan=build_noisy_execution_plan(
-                    execution_plan,
-                    representation="mps",
-                    evolution="quantum_trajectory",
-                    trajectories=trajectories,
-                    seed=options.get("seed"),
-                    min_trajectories=min_trajectories,
-                    target_standard_error=target_standard_error,
-                    cutoff=float(options.get("cutoff", 0.0)),
-                    memory_limit_bytes=options.get("memory_limit_bytes"),
-                    noise_model_identity=getattr(noise_model, "identity", None),
-                ),
-            )
     else:
         raise ValueError(
             "mode must be 'auto', 'statevector', 'distributed_statevector', 'density_matrix', 'mps', 'adaptive_mps', 'distributed_mps', 'jax_sharded_mps', 'tensor_network', 'distributed_tensor_network', 'jax_sharded_tensor_network', 'jax_sharded_tn', 'distributed_tn', 'tn', 'noisy_statevector', 'mps_trajectory', or 'noisy_mps'."
