@@ -56,7 +56,11 @@ def _cuda_svd(
         if all(bool(torch.isfinite(value).all()) for value in result):
             return result
         _SVD_FALLBACK_STATS["nonfinite_svd_outputs"] += 1
-        raise torch.linalg.LinAlgError("MPS SVD returned non-finite factors")
+        # PyTorch exposes this class at runtime but omits its typed export.
+        error_type: object = getattr(torch.linalg, "LinAlgError")
+        if not isinstance(error_type, type) or not issubclass(error_type, RuntimeError):
+            raise TypeError("torch.linalg.LinAlgError must be a RuntimeError subclass")
+        raise error_type("MPS SVD returned non-finite factors")
 
     try:
         return checked(torch.linalg.svd(matrix, full_matrices=False, driver=requested))

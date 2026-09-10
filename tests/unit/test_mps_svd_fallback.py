@@ -6,6 +6,31 @@ from flagquantum.simulation.mps import factorization as mps_factorization
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("nonfinite", [float("nan"), float("inf")])
+@pytest.mark.parametrize("factor_index", [0, 1, 2])
+def test_nonfinite_cpu_factors_preserve_torch_exception_and_counters(
+    monkeypatch: pytest.MonkeyPatch, nonfinite: float, factor_index: int
+) -> None:
+    def nonfinite_svd(
+        matrix: torch.Tensor, *, full_matrices: bool, driver: str | None
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        factors = (torch.eye(2), torch.ones(2), torch.eye(2))
+        factors[factor_index].reshape(-1)[0] = nonfinite
+        return factors
+
+    monkeypatch.setattr(torch.linalg, "svd", nonfinite_svd)
+    mps_factorization.reset_mps_svd_fallback_stats()
+    with pytest.raises(
+        RuntimeError, match="MPS SVD returned non-finite factors"
+    ) as error:
+        mps_factorization._cuda_svd(torch.eye(2), driver=None)
+    assert type(error.value) is getattr(torch.linalg, "LinAlgError")
+    stats = mps_factorization.mps_svd_fallback_stats()
+    assert stats["nonfinite_svd_outputs"] == 1
+    assert stats["requested_driver_failures"] == 1
+    assert stats["cpu_lapack_fallbacks"] == 0
+
+
 def test_batched_gesvd_failure_retries_isolated_matrices(monkeypatch):
     calls = []
 
