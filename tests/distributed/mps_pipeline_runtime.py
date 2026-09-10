@@ -7,9 +7,9 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-from flagquantum.runtime.executors.mps.reverse import (
-    _fused_z_zz_mse_and_adjoints,
-    _parse_z_zz_terms,
+from flagquantum.runtime.executors.mps.reverse_observables import parse_mps_z_zz_terms
+from flagquantum.runtime.executors.mps.reverse_z_observables import (
+    mps_fused_z_zz_mse_and_adjoints,
     site_sharded_z_zz_objective_pipeline,
 )
 from flagquantum.runtime.executors.mps.state import (
@@ -56,7 +56,7 @@ def main() -> None:
     states = _states(5, device=device)
     terms = tuple(_terms(state, slot) for slot, state in enumerate(states))
     sequential = tuple(
-        _fused_z_zz_mse_and_adjoints(state, _parse_z_zz_terms(state, item))
+        mps_fused_z_zz_mse_and_adjoints(state, parse_mps_z_zz_terms(state, item))
         for state, item in zip(states, terms)
     )
     drained = []
