@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any, TypeAlias
 
 import torch
 
@@ -18,13 +19,110 @@ from ..core._compilation_evidence_v3 import CompilationEvidenceBundleV3
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import ExecutionError
 
+_CompilationEvidenceBundle: TypeAlias = (
+    CompilationEvidenceBundle
+    | CompilationEvidenceBundleV2
+    | CompilationEvidenceBundleV3
+)
+
+
+def _resolve_source_artifact(
+    source: ProgramArtifactV2 | CircuitArtifactBindingResult,
+) -> tuple[ProgramArtifactV2, str, str | None]:
+    if isinstance(source, CircuitArtifactBindingResult):
+        return (
+            source.bound_artifact,
+            source.source_artifact_identity,
+            source.binding_identity,
+        )
+    if isinstance(source, ProgramArtifactV2):
+        return source, source.artifact_identity, None
+    raise TypeError(
+        "source must be a ProgramArtifactV2 or CircuitArtifactBindingResult"
+    )
+
+
+def _verify_allocated_result_projection(
+    bundle: CompilationEvidenceBundleV3,
+    artifact: ProgramArtifactV3,
+    compilation: Mapping[str, Any],
+) -> None:
+    allocated_plan = bundle.physical_plan
+    result_schema = artifact.result_schema
+    if (
+        compilation["physical_plan_identity"] != allocated_plan.plan_identity
+        or compilation["allocation_identity"] != allocated_plan.allocation_identity
+        or tuple(result_schema["logical_wires"])
+        != tuple(range(allocated_plan.logical_wire_count))
+        or tuple(result_schema["physical_result_slots"])
+        != allocated_plan.logical_result_physical_slots
+        or result_schema["ordering"] != "logical_wire_order"
+        or result_schema["kind"] != "samples"
+        or result_schema["shots_source"] != "execution_request"
+    ):
+        raise ExecutionError(
+            "allocated executable result projection does not match its evidence"
+        )
+
+
+def _verify_target_lineage(
+    bundle: _CompilationEvidenceBundle,
+    target: Mapping[str, Any],
+    snapshot: TargetCapabilitySnapshot,
+    compilation: Mapping[str, Any],
+) -> None:
+    expected_target = {
+        "snapshot_id": snapshot.snapshot_id,
+        "target_legalization_identity": compilation["target_legalization_identity"],
+    }
+    if dict(bundle.target) != expected_target or target["snapshot_id"] != (
+        snapshot.snapshot_id
+    ):
+        raise ExecutionError(
+            "compilation evidence does not match the supplied target snapshot"
+        )
+
+
+def _verify_output_lineage(
+    bundle: _CompilationEvidenceBundle,
+    artifact: ProgramArtifactV2 | ProgramArtifactV3,
+    compilation: Mapping[str, Any],
+) -> None:
+    expected_output = {
+        "profile": str(artifact.profile["name"]),
+        "payload_sha256": artifact.payload_sha256,
+        "emission_identity": compilation["emission_identity"],
+        "conformance_identity": compilation["conformance_identity"],
+        "executable_artifact_identity": artifact.artifact_identity,
+    }
+    for name, value in expected_output.items():
+        if bundle.output[name] != value:
+            raise ExecutionError(
+                f"compilation evidence output {name} does not match the artifact"
+            )
+
+
+def _verify_physical_plan_lineage(
+    bundle: _CompilationEvidenceBundle,
+    circuit_artifact: ProgramArtifactV2,
+    artifact: ProgramArtifactV2 | ProgramArtifactV3,
+    snapshot: TargetCapabilitySnapshot,
+    compilation: Mapping[str, Any],
+) -> None:
+    plan = bundle.physical_plan
+    if (
+        plan.source_circuit_hash != circuit_artifact.circuit_content_hash
+        or plan.physical_circuit_hash != artifact.circuit_content_hash
+        or plan.target_snapshot_id != snapshot.snapshot_id
+        or plan.schedule_identity != compilation["schedule_identity"]
+    ):
+        raise ExecutionError(
+            "compilation evidence physical plan does not match the handoff"
+        )
+
 
 def verify_compilation_evidence_handoff(
-    bundle: (
-        CompilationEvidenceBundle
-        | CompilationEvidenceBundleV2
-        | CompilationEvidenceBundleV3
-    ),
+    bundle: _CompilationEvidenceBundle,
     source: ProgramArtifactV2 | CircuitArtifactBindingResult,
     artifact: ProgramArtifactV2 | ProgramArtifactV3,
     *,
@@ -41,18 +139,9 @@ def verify_compilation_evidence_handoff(
         ),
     ):
         raise TypeError("bundle must be a compilation evidence bundle")
-    if isinstance(source, CircuitArtifactBindingResult):
-        circuit_artifact = source.bound_artifact
-        source_identity = source.source_artifact_identity
-        binding_identity = source.binding_identity
-    elif isinstance(source, ProgramArtifactV2):
-        circuit_artifact = source
-        source_identity = source.artifact_identity
-        binding_identity = None
-    else:
-        raise TypeError(
-            "source must be a ProgramArtifactV2 or CircuitArtifactBindingResult"
-        )
+    circuit_artifact, source_identity, binding_identity = _resolve_source_artifact(
+        source
+    )
     if (
         circuit_artifact.kind is not ArtifactKind.CIRCUIT
         or circuit_artifact.profile["name"] != "circuit-ir-1.0"
@@ -90,57 +179,14 @@ def verify_compilation_evidence_handoff(
     compilation = artifact.compilation
     if target is None or not isinstance(compilation, Mapping):
         raise ExecutionError("executable artifact lacks target compilation evidence")
-    expected_target = {
-        "snapshot_id": snapshot.snapshot_id,
-        "target_legalization_identity": compilation["target_legalization_identity"],
-    }
-    if dict(bundle.target) != expected_target or target["snapshot_id"] != (
-        snapshot.snapshot_id
-    ):
-        raise ExecutionError(
-            "compilation evidence does not match the supplied target snapshot"
-        )
-
-    expected_output = {
-        "profile": str(artifact.profile["name"]),
-        "payload_sha256": artifact.payload_sha256,
-        "emission_identity": compilation["emission_identity"],
-        "conformance_identity": compilation["conformance_identity"],
-        "executable_artifact_identity": artifact.artifact_identity,
-    }
-    for name, value in expected_output.items():
-        if bundle.output[name] != value:
-            raise ExecutionError(
-                f"compilation evidence output {name} does not match the artifact"
-            )
-    plan = bundle.physical_plan
-    if (
-        plan.source_circuit_hash != circuit_artifact.circuit_content_hash
-        or plan.physical_circuit_hash != artifact.circuit_content_hash
-        or plan.target_snapshot_id != snapshot.snapshot_id
-        or plan.schedule_identity != compilation["schedule_identity"]
-    ):
-        raise ExecutionError(
-            "compilation evidence physical plan does not match the handoff"
-        )
+    _verify_target_lineage(bundle, target, snapshot, compilation)
+    _verify_output_lineage(bundle, artifact, compilation)
+    _verify_physical_plan_lineage(
+        bundle, circuit_artifact, artifact, snapshot, compilation
+    )
     if isinstance(bundle, CompilationEvidenceBundleV3):
         assert isinstance(artifact, ProgramArtifactV3)
-        allocated_plan = bundle.physical_plan
-        result_schema = artifact.result_schema
-        if (
-            compilation["physical_plan_identity"] != allocated_plan.plan_identity
-            or compilation["allocation_identity"] != allocated_plan.allocation_identity
-            or tuple(result_schema["logical_wires"])
-            != tuple(range(allocated_plan.logical_wire_count))
-            or tuple(result_schema["physical_result_slots"])
-            != allocated_plan.logical_result_physical_slots
-            or result_schema["ordering"] != "logical_wire_order"
-            or result_schema["kind"] != "samples"
-            or result_schema["shots_source"] != "execution_request"
-        ):
-            raise ExecutionError(
-                "allocated executable result projection does not match its evidence"
-            )
+        _verify_allocated_result_projection(bundle, artifact, compilation)
 
 
 def validate_executable_result_samples(
