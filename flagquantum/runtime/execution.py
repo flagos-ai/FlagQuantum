@@ -487,6 +487,7 @@ def _run_mps_mode(
     source = execution_ir if coupling_map is not None else circuit_or_ir
     mps_options = _simulation_kernel_options(options)
     world_size: int | None = None
+    result: Any
 
     if mode == "mps":
         from ..simulation.mps.entrypoints import run_mps
@@ -540,6 +541,7 @@ def _run_tensor_network_mode(
     source = execution_ir if coupling_map is not None else circuit_or_ir
     tensor_network_options = _simulation_kernel_options(options)
     world_size: int | None = None
+    result: Any
 
     if mode == "tensor_network":
         from ..simulation.tensor_network.entrypoints import run_tensor_network
