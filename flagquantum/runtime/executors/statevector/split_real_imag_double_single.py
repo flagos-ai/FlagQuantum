@@ -286,12 +286,15 @@ def _bind_p3_ir(
     *,
     shifted_occurrence: tuple[int, str, float] | None = None,
 ) -> CircuitIR:
+    parameter_bindings: dict[str | Parameter, torch.Tensor] = {
+        name: value for name, value in bindings.items()
+    }
     instructions = []
     for index, instruction in enumerate(ir.instructions):
         params: dict[str, Any] = {}
         for parameter_name, value in instruction.params.items():
             bound = (
-                bind_parameter_value(value, bindings)
+                bind_parameter_value(value, parameter_bindings)
                 if isinstance(value, (Parameter, ParameterExpression))
                 else value
             )
