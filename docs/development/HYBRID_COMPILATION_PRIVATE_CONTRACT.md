@@ -1133,3 +1133,26 @@ binding result, executable artifact, and target snapshot. Deployment dry-run
 may carry the verified bundle beside the executable artifact, but it performs
 no provider call and stores no credentials or task state. No public export or
 default-path changes are included.
+
+## Phase 38 Directional topology and explicit layout proposal
+
+Phase 38 proposes migration of the proven historical Batch C directed-routing
+semantics into the current single-`CircuitIR` compilation chain. The existing
+Compiler `CouplingMap` remains undirected. A distinct, initially private
+directed topology type would support complete-permutation initial placement,
+weak-connectivity routing, direction-correct reverse-CX synthesis, and mandatory
+identity final-layout restoration.
+
+Because compilation-evidence 1.0 explicitly means undirected topology and
+identity initial layout, the new semantics require explicit evidence version
+2.0 rather than reinterpretation of existing fields. ProgramArtifact v1/v2,
+public exports, and default execution remain unchanged. The candidate excludes
+physical ancillas, partial layouts, observable remapping, calibration-aware
+routing, timing/pulse claims, and fault-tolerant expansion.
+
+The exact candidate is recorded in
+`contracts/directional-topology-layout-v2-candidate.json` and the decision is
+specified by
+`docs/development/API_CHANGE_PROPOSAL_024_DIRECTIONAL_TOPOLOGY_LAYOUT.md`.
+Implementation remains unauthorized until the API owner supplies the exact
+Proposal 024 token.
