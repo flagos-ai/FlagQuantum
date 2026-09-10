@@ -102,6 +102,56 @@ def _validated_condition_clauses(
     return clauses
 
 
+def _validate_instruction_profile(
+    instruction: Instruction,
+    clauses: tuple[tuple[tuple[int, int], ...], ...],
+    measured: set[int],
+) -> int:
+    if instruction.name == "measure":
+        if clauses:
+            raise ValueError("conditional measurement is outside the Phase 7 profile")
+        if set(instruction.metadata) != {"is_dynamic", "classical_bit"} or (
+            instruction.metadata.get("is_dynamic") is not True
+        ):
+            raise ValueError("measurement metadata is outside the Phase 7 profile")
+        bit = instruction.metadata.get("classical_bit")
+        if type(bit) is not int or bit < 0 or bit in measured:
+            raise ValueError("measurement classical bits must be unique integers")
+        measured.add(bit)
+        return 0
+    if instruction.name == "reset":
+        if (
+            clauses
+            or set(instruction.metadata) != {"is_dynamic"}
+            or (instruction.metadata.get("is_dynamic") is not True)
+        ):
+            raise ValueError("reset metadata is outside the fixed-round profile")
+        return 0
+    return _validate_gate_profile(instruction)
+
+
+def _validate_gate_profile(instruction: Instruction) -> int:
+    if instruction.name not in _ALLOWED_FIXED_GATES | _ALLOWED_ROTATIONS:
+        raise ValueError(
+            f"instruction {instruction.name!r} is outside the dynamic profile"
+        )
+    if instruction.name in _ALLOWED_FIXED_GATES and (
+        instruction.params or instruction.matrix is not None
+    ):
+        raise ValueError("Phase 7 fixed gates cannot carry parameters or matrices")
+    if instruction.name in _ALLOWED_ROTATIONS and (
+        set(instruction.params) != {"theta"}
+        or instruction.matrix is not None
+        or not _is_real_scalar(instruction.params["theta"])
+    ):
+        raise ValueError(
+            "Phase 8 rotations require one bound real scalar theta parameter"
+        )
+    if set(instruction.metadata) - {"conditions", "condition_clauses"}:
+        raise ValueError("gate metadata is outside the dynamic profile")
+    return int(instruction.name in _ALLOWED_ROTATIONS)
+
+
 def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
     ir = ensure_circuit_ir(circuit_or_ir)
     _validate_session_header(ir)
@@ -110,46 +160,7 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
     for index, instruction in enumerate(ir.instructions):
         _validate_bound_instruction(instruction)
         clauses = _validated_condition_clauses(instruction, index, measured)
-        if instruction.name == "measure":
-            if clauses:
-                raise ValueError(
-                    "conditional measurement is outside the Phase 7 profile"
-                )
-            if set(instruction.metadata) != {"is_dynamic", "classical_bit"} or (
-                instruction.metadata.get("is_dynamic") is not True
-            ):
-                raise ValueError("measurement metadata is outside the Phase 7 profile")
-            bit = instruction.metadata.get("classical_bit")
-            if type(bit) is not int or bit < 0 or bit in measured:
-                raise ValueError("measurement classical bits must be unique integers")
-            measured.add(bit)
-        elif instruction.name == "reset":
-            if (
-                clauses
-                or set(instruction.metadata) != {"is_dynamic"}
-                or (instruction.metadata.get("is_dynamic") is not True)
-            ):
-                raise ValueError("reset metadata is outside the fixed-round profile")
-        elif instruction.name not in _ALLOWED_FIXED_GATES | _ALLOWED_ROTATIONS:
-            raise ValueError(
-                f"instruction {instruction.name!r} is outside the dynamic profile"
-            )
-        elif instruction.name in _ALLOWED_FIXED_GATES and (
-            instruction.params or instruction.matrix is not None
-        ):
-            raise ValueError("Phase 7 fixed gates cannot carry parameters or matrices")
-        elif instruction.name in _ALLOWED_ROTATIONS and (
-            set(instruction.params) != {"theta"}
-            or instruction.matrix is not None
-            or not _is_real_scalar(instruction.params["theta"])
-        ):
-            raise ValueError(
-                "Phase 8 rotations require one bound real scalar theta parameter"
-            )
-        elif set(instruction.metadata) - {"conditions", "condition_clauses"}:
-            raise ValueError("gate metadata is outside the dynamic profile")
-        if instruction.name in _ALLOWED_ROTATIONS:
-            rotation_count += 1
+        rotation_count += _validate_instruction_profile(instruction, clauses, measured)
     return_bit = ir.metadata.get("hybrid_dynamic_return_bit")
     if type(return_bit) is not int or return_bit not in measured:
         raise ValueError("hybrid dynamic return bit must name a measured classical bit")
