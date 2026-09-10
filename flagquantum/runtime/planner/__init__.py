@@ -572,6 +572,42 @@ def plan_advanced(
     )
 
 
+def _validated_plan_program(
+    program: Circuit | CircuitIR,
+    *,
+    measurements: Sequence[MeasurementNode] | None,
+    noise_model: NoiseModel | None,
+) -> CircuitIR:
+    source_ir = program.to_ir() if hasattr(program, "to_ir") else program
+    if not isinstance(source_ir, CircuitIR):
+        raise TypeError("program must be a Circuit or CircuitIR")
+    if measurements is not None:
+        if source_ir.measurements:
+            raise ValidationError(
+                "measurements cannot be supplied when the program already contains "
+                "measurement requests"
+            )
+        if any(not isinstance(request, MeasurementNode) for request in measurements):
+            raise TypeError("measurements must contain MeasurementNode instances")
+        source_ir = replace(source_ir, measurements=tuple(measurements))
+    if noise_model is not None:
+        from ...noise import NoiseModel
+
+        if not isinstance(noise_model, NoiseModel):
+            raise TypeError(
+                "noise_model must be a flagquantum.noise.NoiseModel or None"
+            )
+    if any(
+        instruction.metadata.get("is_dynamic") or instruction.metadata.get("conditions")
+        for instruction in source_ir.instructions
+    ):
+        raise CapabilityError(
+            "fq.run does not execute dynamic trajectories; use "
+            "fq.experimental.dynamic.run_dynamic(..., shots=...)"
+        )
+    return source_ir
+
+
 def plan(
     program: Circuit | CircuitIR,
     *,
@@ -601,33 +637,11 @@ def plan(
 
     if options is not None and not isinstance(options, ExecutionOptions):
         raise TypeError("options must be an ExecutionOptions or None")
-    source_ir = program.to_ir() if hasattr(program, "to_ir") else program
-    if not isinstance(source_ir, CircuitIR):
-        raise TypeError("program must be a Circuit or CircuitIR")
-    if measurements is not None:
-        if source_ir.measurements:
-            raise ValidationError(
-                "measurements cannot be supplied when the program already contains "
-                "measurement requests"
-            )
-        if any(not isinstance(request, MeasurementNode) for request in measurements):
-            raise TypeError("measurements must contain MeasurementNode instances")
-        source_ir = replace(source_ir, measurements=tuple(measurements))
-    if noise_model is not None:
-        from ...noise import NoiseModel
-
-        if not isinstance(noise_model, NoiseModel):
-            raise TypeError(
-                "noise_model must be a flagquantum.noise.NoiseModel or None"
-            )
-    if any(
-        instruction.metadata.get("is_dynamic") or instruction.metadata.get("conditions")
-        for instruction in source_ir.instructions
-    ):
-        raise CapabilityError(
-            "fq.run does not execute dynamic trajectories; use "
-            "fq.experimental.dynamic.run_dynamic(..., shots=...)"
-        )
+    source_ir = _validated_plan_program(
+        program,
+        measurements=measurements,
+        noise_model=noise_model,
+    )
     runtime_config = getattr(program, "runtime_config", None)
     resolved = resolve_execution_options(
         options,
