@@ -590,20 +590,12 @@ def _save_checkpoint(
     return path
 
 
-def _load_checkpoint(
-    root: Path,
+def _load_verified_checkpoint(
+    path: Path,
     *,
     rank: int,
-    world_size: int,
-    owned_indices: tuple[int, ...],
-    parameters: tuple[torch.Tensor, ...],
-    optimizer: torch.optim.Optimizer | None,
-    contract: Mapping[str, Any],
-    bond_layout: Mapping[int, tuple[int, ...]],
-    checkpoint_path: Path | None = None,
-    expected_completed_steps: int | None = None,
-) -> int:
-    path = checkpoint_path or _checkpoint_path(root, rank)
+    device: torch.device,
+) -> Mapping[str, Any]:
     if not path.exists():
         raise MPSTrainingError(f"checkpoint missing for rank {rank}: {path}")
     checksum_path = _checkpoint_checksum_path(path)
@@ -620,7 +612,7 @@ def _load_checkpoint(
     if len(expected_checksum) != 64 or _file_sha256(path) != expected_checksum:
         raise MPSTrainingError(f"checkpoint integrity mismatch for rank {rank}: {path}")
     try:
-        payload = torch.load(path, map_location=parameters[0].device, weights_only=True)
+        payload = torch.load(path, map_location=device, weights_only=True)
     except (
         OSError,
         RuntimeError,
@@ -631,9 +623,22 @@ def _load_checkpoint(
         raise MPSTrainingError(
             f"checkpoint deserialization failed for rank {rank}: {path}"
         ) from error
+    if not isinstance(payload, Mapping):
+        raise MPSTrainingError("checkpoint schema or rank identity mismatch")
+    return payload
+
+
+def _validate_checkpoint_identity(
+    payload: Mapping[str, Any],
+    *,
+    rank: int,
+    world_size: int,
+    owned_indices: tuple[int, ...],
+    contract: Mapping[str, Any],
+    bond_layout: Mapping[int, tuple[int, ...]],
+) -> None:
     if (
-        not isinstance(payload, dict)
-        or payload.get("schema_version") != "sharded_mps_training_checkpoint_v2"
+        payload.get("schema_version") != "sharded_mps_training_checkpoint_v2"
         or payload.get("rank") != rank
     ):
         raise MPSTrainingError("checkpoint schema or rank identity mismatch")
@@ -646,6 +651,14 @@ def _load_checkpoint(
         raise MPSTrainingError("checkpoint optimizer ownership mismatch")
     if payload.get("bond_layout") != dict(bond_layout):
         raise MPSTrainingError("checkpoint MPS bond layout mismatch")
+
+
+def _validated_checkpoint_parameters(
+    payload: Mapping[str, Any],
+    *,
+    owned_indices: tuple[int, ...],
+    parameters: tuple[torch.Tensor, ...],
+) -> list[tuple[int, torch.Tensor]]:
     saved_parameters = payload.get("parameters")
     if not isinstance(saved_parameters, Mapping):
         raise MPSTrainingError("checkpoint parameter payload must be a mapping")
@@ -671,6 +684,15 @@ def _load_checkpoint(
                 f"target_dtype={target.dtype}"
             )
         validated_parameters.append((index, value))
+    return validated_parameters
+
+
+def _validated_checkpoint_state(
+    payload: Mapping[str, Any],
+    *,
+    optimizer: torch.optim.Optimizer | None,
+    expected_completed_steps: int | None,
+) -> tuple[Mapping[str, Any] | None, torch.Tensor, torch.Tensor | None, int]:
     optimizer_state = payload.get("optimizer_state")
     if optimizer is None and optimizer_state is not None:
         raise MPSTrainingError("checkpoint contains unexpected optimizer state")
@@ -696,9 +718,21 @@ def _load_checkpoint(
         and completed_steps != expected_completed_steps
     ):
         raise MPSTrainingError("checkpoint payload and manifest generation mismatch")
+    return optimizer_state, torch_rng_state, cuda_rng_state, completed_steps
+
+
+def _restore_checkpoint_state(
+    *,
+    parameters: tuple[torch.Tensor, ...],
+    validated_parameters: list[tuple[int, torch.Tensor]],
+    optimizer: torch.optim.Optimizer | None,
+    optimizer_state: Mapping[str, Any] | None,
+    torch_rng_state: torch.Tensor,
+    cuda_rng_state: torch.Tensor | None,
+) -> None:
 
     try:
-        if optimizer is not None and isinstance(optimizer_state, Mapping):
+        if optimizer is not None and optimizer_state is not None:
             optimizer.load_state_dict(dict(optimizer_state))
         for index, value in validated_parameters:
             parameters[index].data.copy_(value.to(parameters[index].device))
@@ -709,4 +743,49 @@ def _load_checkpoint(
         get_platform_runtime("cuda").restore_rng_state(
             parameters[0].device, cuda_rng_state.cpu()
         )
+
+
+def _load_checkpoint(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    owned_indices: tuple[int, ...],
+    parameters: tuple[torch.Tensor, ...],
+    optimizer: torch.optim.Optimizer | None,
+    contract: Mapping[str, Any],
+    bond_layout: Mapping[int, tuple[int, ...]],
+    checkpoint_path: Path | None = None,
+    expected_completed_steps: int | None = None,
+) -> int:
+    path = checkpoint_path or _checkpoint_path(root, rank)
+    payload = _load_verified_checkpoint(path, rank=rank, device=parameters[0].device)
+    _validate_checkpoint_identity(
+        payload,
+        rank=rank,
+        world_size=world_size,
+        owned_indices=owned_indices,
+        contract=contract,
+        bond_layout=bond_layout,
+    )
+    validated_parameters = _validated_checkpoint_parameters(
+        payload,
+        owned_indices=owned_indices,
+        parameters=parameters,
+    )
+    optimizer_state, torch_rng_state, cuda_rng_state, completed_steps = (
+        _validated_checkpoint_state(
+            payload,
+            optimizer=optimizer,
+            expected_completed_steps=expected_completed_steps,
+        )
+    )
+    _restore_checkpoint_state(
+        parameters=parameters,
+        validated_parameters=validated_parameters,
+        optimizer=optimizer,
+        optimizer_state=optimizer_state,
+        torch_rng_state=torch_rng_state,
+        cuda_rng_state=cuda_rng_state,
+    )
     return completed_steps
