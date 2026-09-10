@@ -1,0 +1,55 @@
+{
+  "schema": "flagquantum.target_public_lifecycle_candidate",
+  "version": "1.0",
+  "status": "proposed_awaiting_owner_approval",
+  "proposed_on": "2026-09-10",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE.md",
+  "approval_token": "approve API_CHANGE_PROPOSAL_027_TARGET_PUBLIC_LIFECYCLE",
+  "initial_namespace": "flagquantum.experimental.targets",
+  "initial_lifecycle": "experimental_read_only_match",
+  "approved_symbols": [
+    "TargetSnapshot",
+    "RequirementSet",
+    "CapabilityMatch",
+    "load_target_snapshot",
+    "dump_target_snapshot",
+    "load_requirement_set",
+    "dump_requirement_set",
+    "match_capabilities"
+  ],
+  "returns_frozen_role_views": true,
+  "core_values_public": false,
+  "core_serialization_authoritative": true,
+  "explicit_evaluation_time_required": true,
+  "maximum_json_utf8_bytes": 16777216,
+  "duplicate_keys_rejected": true,
+  "fact_query_preserves_status_and_exposure": true,
+  "match_binds_input_identities_and_time": true,
+  "stable_root_exports_changed": false,
+  "default_path_changed": false,
+  "authorized_operations": [
+    "load_target_snapshot_json",
+    "dump_target_snapshot_json",
+    "inspect_identity_validated_facts",
+    "load_requirement_set_json",
+    "dump_requirement_set_json",
+    "pure_explicit_time_capability_match"
+  ],
+  "later_approval_required": [
+    "snapshot_or_requirement_construction",
+    "provider_discovery_or_refresh",
+    "physical_slot_to_provider_qubit_binding",
+    "artifact_compilation_or_verification_workflow",
+    "deployment_or_submission",
+    "stable_namespace_promotion",
+    "qec_or_fault_tolerant_semantics"
+  ],
+  "implementation": {
+    "authorized": false,
+    "experimental_domain_added": false,
+    "role_views_added": false,
+    "loaders_and_dumpers_added": false,
+    "pure_matcher_added": false,
+    "stable_exports_added": false
+  }
+}
