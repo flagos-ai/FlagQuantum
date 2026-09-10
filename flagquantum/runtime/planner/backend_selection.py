@@ -176,6 +176,96 @@ def _select_candidate(
     return selected.backend, ()
 
 
+def _statevector_candidate(
+    ir: CircuitIR,
+    *,
+    target: OutputTarget,
+    require_gradients: bool,
+    ranks: int,
+    bsz: int,
+    complex_bytes: int,
+    memory_limit_bytes: int | None,
+) -> tuple[BackendCost, bool]:
+    dense_state = estimate_state_bytes(ir.n_wires, bsz=bsz, complex_bytes=complex_bytes)
+    memory = (dense_state + ranks - 1) // ranks
+    if require_gradients:
+        # Reverse mode normally needs the primal state plus adjoint/work buffers.
+        memory *= 3
+    fits = memory_limit_bytes is None or memory <= memory_limit_bytes
+    blockers = () if fits else ("dense_state_exceeds_per_rank_budget",)
+    score = 100 if fits else 15
+    score += 30 if target == "full_state" else 0
+    score += 15 if require_gradients else 0
+    return (
+        BackendCost(
+            "statevector",
+            not blockers,
+            memory,
+            score,
+            reasons=("exact_dense_fast_path",),
+            blockers=blockers,
+        ),
+        fits,
+    )
+
+
+def _mps_candidate(
+    ir: CircuitIR,
+    *,
+    target: OutputTarget,
+    require_gradients: bool,
+    locality: float,
+    max_cut_gates: int,
+    bsz: int,
+    complex_bytes: int,
+    memory_limit_bytes: int | None,
+    max_bond: int | None,
+    allow_approximate: bool,
+    dense_fits: bool,
+) -> tuple[BackendCost, int]:
+    estimated_bond = (
+        int(max_bond)
+        if max_bond is not None
+        else 1 << min(max_cut_gates, max(0, ir.n_wires // 2))
+    )
+    memory = estimate_mps_bytes(
+        ir.n_wires,
+        bsz=bsz,
+        max_bond=estimated_bond,
+        complex_bytes=complex_bytes,
+    )
+    if require_gradients:
+        # Includes primal MPS, environments, and factorization work buffers.
+        memory *= 3
+    fits = memory_limit_bytes is None or memory <= memory_limit_bytes
+    structured = locality >= 0.85
+    blockers: tuple[str, ...] = ()
+    if not fits:
+        blockers += ("mps_estimate_exceeds_per_rank_budget",)
+    if target == "full_state" and not dense_fits:
+        blockers += ("mps_cannot_satisfy_full_state_without_dense_materialization",)
+    if max_bond is None and not structured:
+        blockers += ("unbounded_bond_growth_on_nonlocal_topology",)
+    if max_bond is not None and not allow_approximate:
+        blockers += ("bounded_mps_requires_approximation_permission",)
+    score = 75 + (20 if structured else -25)
+    if max_bond is not None:
+        score += 100
+    return (
+        BackendCost(
+            "mps",
+            not blockers,
+            memory,
+            score,
+            reasons=(
+                "one_dimensional_locality" if structured else "bounded_bond_path",
+            ),
+            blockers=blockers,
+        ),
+        estimated_bond,
+    )
+
+
 def select_backend_by_cost(
     circuit_or_ir: Any,
     *,
@@ -207,13 +297,16 @@ def select_backend_by_cost(
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     width, locality, max_cut_gates = _interaction_metrics(ir)
     ranks = max(1, int(world_size))
-    dense_state = estimate_state_bytes(ir.n_wires, bsz=bsz, complex_bytes=complex_bytes)
-    dense_memory = (dense_state + ranks - 1) // ranks
-    # Reverse mode normally needs the primal state plus adjoint/work buffers.
-    if require_gradients:
-        dense_memory *= 3
     limit = int(memory_limit_bytes) if memory_limit_bytes is not None else None
-    dense_fits = limit is None or dense_memory <= limit
+    statevector, dense_fits = _statevector_candidate(
+        ir,
+        target=target,
+        require_gradients=require_gradients,
+        ranks=ranks,
+        bsz=bsz,
+        complex_bytes=complex_bytes,
+        memory_limit_bytes=limit,
+    )
     sparse_target = target in {
         "expectation",
         "local_observables",
@@ -227,44 +320,19 @@ def select_backend_by_cost(
     ):
         sparse_target = False
 
-    sv_blockers = () if dense_fits else ("dense_state_exceeds_per_rank_budget",)
-    sv_score = 100 if dense_fits else 15
-    if target == "full_state":
-        sv_score += 30
-    if require_gradients:
-        sv_score += 15
-
-    estimated_mps_bond = (
-        int(max_bond)
-        if max_bond is not None
-        else 1 << min(max_cut_gates, max(0, ir.n_wires // 2))
-    )
-    mps_memory = estimate_mps_bytes(
-        ir.n_wires,
+    mps, estimated_mps_bond = _mps_candidate(
+        ir,
+        target=target,
+        require_gradients=require_gradients,
+        locality=locality,
+        max_cut_gates=max_cut_gates,
         bsz=bsz,
-        max_bond=estimated_mps_bond,
         complex_bytes=complex_bytes,
+        memory_limit_bytes=limit,
+        max_bond=max_bond,
+        allow_approximate=allow_approximate,
+        dense_fits=dense_fits,
     )
-    # Reverse execution retains the primal MPS plus left/right environments
-    # and factorization work buffers. This is a capacity estimate, not a tape
-    # guarantee; the runtime checkpoint preflight remains authoritative.
-    if require_gradients:
-        mps_memory *= 3
-    mps_fits = limit is None or mps_memory <= limit
-    mps_structured = locality >= 0.85
-    mps_blockers: tuple[str, ...] = ()
-    if not mps_fits:
-        mps_blockers += ("mps_estimate_exceeds_per_rank_budget",)
-    if target == "full_state" and not dense_fits:
-        mps_blockers += ("mps_cannot_satisfy_full_state_without_dense_materialization",)
-    if max_bond is None and not mps_structured:
-        mps_blockers += ("unbounded_bond_growth_on_nonlocal_topology",)
-    if max_bond is not None and not allow_approximate:
-        mps_blockers += ("bounded_mps_requires_approximation_permission",)
-    mps_score = 75 + (20 if mps_structured else -25)
-    if max_bond is not None:
-        # A bond cap is an explicit representation control, not merely a hint.
-        mps_score += 100
 
     # A width proxy is not a path guarantee. It is sufficient to reject obvious
     # mismatches; execution must still run the TN path planner and memory preflight.
@@ -323,24 +391,8 @@ def select_backend_by_cost(
         tn_score -= 15
 
     candidates = (
-        BackendCost(
-            "statevector",
-            not sv_blockers,
-            dense_memory,
-            sv_score,
-            reasons=("exact_dense_fast_path",),
-            blockers=sv_blockers,
-        ),
-        BackendCost(
-            "mps",
-            not mps_blockers,
-            mps_memory,
-            mps_score,
-            reasons=(
-                "one_dimensional_locality" if mps_structured else "bounded_bond_path",
-            ),
-            blockers=mps_blockers,
-        ),
+        statevector,
+        mps,
         BackendCost(
             "tensor_network",
             not tn_blockers,
