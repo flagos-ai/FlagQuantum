@@ -718,65 +718,33 @@ def train_distributed_mps(
         json.dumps(contract, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
     communication_setup_seconds = warmup_mps_neighbor_communicators(resolved_device)
-    root = Path(checkpoint_dir) if checkpoint_dir is not None else None
-    checkpoint_storage_probe_seconds = 0.0
-    if root is not None:
-        root.mkdir(parents=True, exist_ok=True)
-        storage_probe_started = time.perf_counter()
-        _checkpointing._validate_shared_checkpoint_root(
-            root,
-            rank=rank,
-            world_size=world_size,
-            contract_fingerprint=contract_fingerprint,
-        )
-        checkpoint_storage_probe_seconds = time.perf_counter() - storage_probe_started
-        _checkpointing._validate_checkpoint_start_policy_collective(
-            root,
-            rank=rank,
-            resume=resume,
-            allow_overwrite=allow_checkpoint_overwrite,
-        )
-        _checkpointing._acquire_checkpoint_writer_lease(
-            root,
-            rank=rank,
-            world_size=world_size,
-            contract_fingerprint=contract_fingerprint,
-            allow_break=allow_checkpoint_writer_lease_break,
-            stale_seconds=checkpoint_writer_lease_stale_seconds,
-        )
+    root, checkpoint_storage_probe_seconds = _checkpointing._start_checkpoint_session(
+        checkpoint_dir,
+        rank=rank,
+        world_size=world_size,
+        contract_fingerprint=contract_fingerprint,
+        resume=resume,
+        allow_overwrite=allow_checkpoint_overwrite,
+        allow_lease_break=allow_checkpoint_writer_lease_break,
+        lease_stale_seconds=checkpoint_writer_lease_stale_seconds,
+    )
     start_step = 0
     if resume:
         if root is None:
             raise ValueError("resume requires checkpoint_dir")
-        committed_step, committed_path = (
-            _checkpointing._preflight_checkpoint_generation(
-                root,
-                rank=rank,
-                world_size=world_size,
-                contract_fingerprint=contract_fingerprint,
-            )
-        )
-        start_step = _checkpointing._load_checkpoint(
+        start_step = _checkpointing._restore_training_checkpoint(
             root,
             rank=rank,
             world_size=world_size,
+            steps=steps,
+            device=resolved_device,
+            contract_fingerprint=contract_fingerprint,
+            contract=contract,
+            bond_layout=local_bond_layout,
             owned_indices=owned_indices,
             parameters=parameters,
             optimizer=optimizer_obj,
-            contract=contract,
-            bond_layout=local_bond_layout,
-            checkpoint_path=committed_path,
-            expected_completed_steps=committed_step,
         )
-        if start_step > steps:
-            raise MPSTrainingError(
-                f"checkpoint completed step {start_step} exceeds target {steps}"
-            )
-        completed = torch.tensor(start_step, device=resolved_device)
-        gathered = [torch.zeros_like(completed) for _ in range(world_size)]
-        dist.all_gather(gathered, completed)
-        if len({int(value.item()) for value in gathered}) != 1:
-            raise MPSTrainingError("checkpoint generations differ across ranks")
         _broadcast_parameters(parameters, parameter_broadcast_buckets)
 
     if resolved_device.type == "cuda":
