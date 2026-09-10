@@ -363,6 +363,46 @@ def _release_checkpoint_writer_lease(root: Path, *, rank: int) -> None:
     dist.barrier()
 
 
+def _start_checkpoint_session(
+    checkpoint_dir: str | Path | None,
+    *,
+    rank: int,
+    world_size: int,
+    contract_fingerprint: str,
+    resume: bool,
+    allow_overwrite: bool,
+    allow_lease_break: bool,
+    lease_stale_seconds: float,
+) -> tuple[Path | None, float]:
+    if checkpoint_dir is None:
+        return None, 0.0
+    root = Path(checkpoint_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    storage_probe_started = time.perf_counter()
+    _validate_shared_checkpoint_root(
+        root,
+        rank=rank,
+        world_size=world_size,
+        contract_fingerprint=contract_fingerprint,
+    )
+    storage_probe_seconds = time.perf_counter() - storage_probe_started
+    _validate_checkpoint_start_policy_collective(
+        root,
+        rank=rank,
+        resume=resume,
+        allow_overwrite=allow_overwrite,
+    )
+    _acquire_checkpoint_writer_lease(
+        root,
+        rank=rank,
+        world_size=world_size,
+        contract_fingerprint=contract_fingerprint,
+        allow_break=allow_lease_break,
+        stale_seconds=lease_stale_seconds,
+    )
+    return root, storage_probe_seconds
+
+
 def _prune_checkpoint_generations(
     root: Path,
     *,
@@ -789,3 +829,47 @@ def _load_checkpoint(
         cuda_rng_state=cuda_rng_state,
     )
     return completed_steps
+
+
+def _restore_training_checkpoint(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    steps: int,
+    device: torch.device,
+    contract_fingerprint: str,
+    contract: Mapping[str, Any],
+    bond_layout: Mapping[int, tuple[int, ...]],
+    owned_indices: tuple[int, ...],
+    parameters: tuple[torch.Tensor, ...],
+    optimizer: torch.optim.Optimizer | None,
+) -> int:
+    committed_step, committed_path = _preflight_checkpoint_generation(
+        root,
+        rank=rank,
+        world_size=world_size,
+        contract_fingerprint=contract_fingerprint,
+    )
+    start_step = _load_checkpoint(
+        root,
+        rank=rank,
+        world_size=world_size,
+        owned_indices=owned_indices,
+        parameters=parameters,
+        optimizer=optimizer,
+        contract=contract,
+        bond_layout=bond_layout,
+        checkpoint_path=committed_path,
+        expected_completed_steps=committed_step,
+    )
+    if start_step > steps:
+        raise MPSTrainingError(
+            f"checkpoint completed step {start_step} exceeds target {steps}"
+        )
+    completed = torch.tensor(start_step, device=device)
+    gathered = [torch.zeros_like(completed) for _ in range(world_size)]
+    dist.all_gather(gathered, completed)
+    if len({int(value.item()) for value in gathered}) != 1:
+        raise MPSTrainingError("checkpoint generations differ across ranks")
+    return int(start_step)
