@@ -27,6 +27,10 @@ from .models import (
 from .planning import MPSPlanningMixin
 
 
+def _opt_in_environment_flag(name: str) -> bool:
+    return os.getenv(name, "0").strip().lower() not in {"0", "false", "off", "no"}
+
+
 class MPSState(MPSPlanningMixin):
     """Batched MPS state with tensors shaped [batch, left, physical, right]."""
 
@@ -974,9 +978,7 @@ class MPSState(MPSPlanningMixin):
         right = self.tensors[int(left_wire) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
         fixed_rank = self.config.max_bond
-        fixed_rank_enabled = os.getenv(
-            "FQ_MPS_FIXED_RANK_QR", "0"
-        ).strip().lower() not in {"0", "false", "off", "no"}
+        fixed_rank_enabled = _opt_in_environment_flag("FQ_MPS_FIXED_RANK_QR")
         if (
             fixed_rank_enabled
             and fixed_rank is not None
@@ -1091,8 +1093,7 @@ class MPSState(MPSPlanningMixin):
             flat_gates = gates.reshape(bond_count * batch, 4, 4)
             volume = bond_count * batch * left_dim * middle_dim * right_dim
             use_triton = (
-                os.getenv("FQ_TRITON_MPS_TWO_SITE", "0").strip().lower()
-                not in {"0", "false", "off", "no"}
+                _opt_in_environment_flag("FQ_TRITON_MPS_TWO_SITE")
                 and flat_left.is_cuda
                 and flat_left.dtype == torch.complex64
                 and volume >= 2**18
