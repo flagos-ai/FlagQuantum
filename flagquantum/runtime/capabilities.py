@@ -31,6 +31,29 @@ class OperatorRequirement:
             raise ValueError(f"operator {self.operator!r} contains duplicate dtypes")
 
 
+def _operator_requirement_from_dict(payload: Mapping[str, Any]) -> OperatorRequirement:
+    allowed = {"operator", "dtypes", "forward", "backward", "deterministic"}
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        raise ValueError(f"unknown operator requirement fields: {unknown}")
+    missing = sorted({"operator", "dtypes"} - set(payload))
+    if missing:
+        raise ValueError(f"missing operator requirement fields: {missing}")
+    for key in ("forward", "backward", "deterministic"):
+        if key in payload and not isinstance(payload[key], bool):
+            raise ValueError(f"operator requirement {key} must be boolean")
+    raw_dtypes = payload.get("dtypes")
+    if not isinstance(raw_dtypes, list):
+        raise ValueError("operator requirement dtypes must be a JSON list")
+    return OperatorRequirement(
+        operator=str(payload["operator"]),
+        dtypes=tuple(str(dtype) for dtype in raw_dtypes),
+        forward=payload.get("forward", True),
+        backward=payload.get("backward", False),
+        deterministic=payload.get("deterministic", False),
+    )
+
+
 @dataclass(frozen=True)
 class OperatorProfile:
     """Machine-readable requirements for one representation/workload."""
@@ -71,47 +94,14 @@ class OperatorProfile:
         missing = sorted(required - set(payload))
         if missing:
             raise ValueError(f"missing operator profile fields: {missing}")
-        requirements: list[OperatorRequirement] = []
-        requirement_fields = {
-            "operator",
-            "dtypes",
-            "forward",
-            "backward",
-            "deterministic",
-        }
         raw_requirements = payload.get("requirements")
         if not isinstance(raw_requirements, list):
             raise ValueError("operator profile requirements must be a JSON list")
+        requirements: list[OperatorRequirement] = []
         for item in raw_requirements:
             if not isinstance(item, Mapping):
                 raise ValueError("each operator requirement must be a JSON object")
-            unknown_requirement_fields = sorted(set(item) - requirement_fields)
-            if unknown_requirement_fields:
-                raise ValueError(
-                    "unknown operator requirement fields: "
-                    f"{unknown_requirement_fields}"
-                )
-            missing_requirement_fields = sorted({"operator", "dtypes"} - set(item))
-            if missing_requirement_fields:
-                raise ValueError(
-                    "missing operator requirement fields: "
-                    f"{missing_requirement_fields}"
-                )
-            for key in ("forward", "backward", "deterministic"):
-                if key in item and not isinstance(item[key], bool):
-                    raise ValueError(f"operator requirement {key} must be boolean")
-            raw_dtypes = item.get("dtypes")
-            if not isinstance(raw_dtypes, list):
-                raise ValueError("operator requirement dtypes must be a JSON list")
-            requirements.append(
-                OperatorRequirement(
-                    operator=str(item["operator"]),
-                    dtypes=tuple(str(dtype) for dtype in raw_dtypes),
-                    forward=item.get("forward", True),
-                    backward=item.get("backward", False),
-                    deterministic=item.get("deterministic", False),
-                )
-            )
+            requirements.append(_operator_requirement_from_dict(item))
         return cls(
             schema=str(payload.get("schema", "flagquantum_operator_profile_v1")),
             profile_version=str(payload.get("profile_version", "1.0")),
