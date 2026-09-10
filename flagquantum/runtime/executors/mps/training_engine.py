@@ -202,6 +202,86 @@ class _ParameterAllGatherBucket:
     payload_bytes: int
 
 
+def _allocate_parameter_all_gather_bucket(
+    parameters: tuple[torch.Tensor, ...],
+    indices_by_owner: tuple[tuple[int, ...], ...],
+    *,
+    rank: int,
+    dtype: torch.dtype,
+    device: torch.device,
+    element_size: int,
+) -> _ParameterAllGatherBucket:
+    owner_elements = [
+        sum(parameters[index].numel() for index in indices)
+        for indices in indices_by_owner
+    ]
+    stride = max(owner_elements)
+    input_buffer = torch.empty(stride, dtype=dtype, device=device)
+    output_buffer = torch.empty(
+        len(indices_by_owner) * stride, dtype=dtype, device=device
+    )
+    pack_targets = []
+    pack_sources = []
+    offset = 0
+    for index in indices_by_owner[rank]:
+        parameter = parameters[index]
+        count = parameter.numel()
+        pack_targets.append(input_buffer[offset : offset + count].reshape_as(parameter))
+        pack_sources.append(parameter)
+        offset += count
+    unpack_targets = []
+    unpack_sources = []
+    for owner, owner_indices in enumerate(indices_by_owner):
+        if rank == owner:
+            continue
+        offset = 0
+        for index in owner_indices:
+            parameter = parameters[index]
+            count = parameter.numel()
+            start = owner * stride + offset
+            unpack_targets.append(parameter)
+            unpack_sources.append(
+                output_buffer[start : start + count].reshape_as(parameter)
+            )
+            offset += count
+    return _ParameterAllGatherBucket(
+        indices_by_owner=indices_by_owner,
+        input_buffer=input_buffer,
+        output_buffer=output_buffer,
+        pack_targets=tuple(pack_targets),
+        pack_sources=tuple(pack_sources),
+        unpack_targets=tuple(unpack_targets),
+        unpack_sources=tuple(unpack_sources),
+        payload_bytes=sum(owner_elements) * element_size,
+    )
+
+
+def _chunk_parameter_indices_by_owner(
+    indices_by_owner: list[list[int]],
+    parameters: tuple[torch.Tensor, ...],
+    *,
+    element_size: int,
+    max_bucket_bytes: int,
+) -> list[list[tuple[int, ...]]]:
+    owner_chunks: list[list[tuple[int, ...]]] = []
+    for indices in indices_by_owner:
+        chunks: list[tuple[int, ...]] = []
+        current: list[int] = []
+        current_bytes = 0
+        for index in indices:
+            parameter_bytes = parameters[index].numel() * element_size
+            if current and current_bytes + parameter_bytes > max_bucket_bytes:
+                chunks.append(tuple(current))
+                current = []
+                current_bytes = 0
+            current.append(index)
+            current_bytes += parameter_bytes
+        if current:
+            chunks.append(tuple(current))
+        owner_chunks.append(chunks)
+    return owner_chunks
+
+
 def _parameter_broadcast_buckets(
     parameters: tuple[torch.Tensor, ...],
     owners: tuple[int, ...],
@@ -228,70 +308,25 @@ def _parameter_broadcast_buckets(
     buckets: list[_ParameterAllGatherBucket] = []
     for (dtype, device), indices_by_owner in grouped.items():
         element_size = torch.empty((), dtype=dtype).element_size()
-        owner_chunks: list[list[tuple[int, ...]]] = []
-        for indices in indices_by_owner:
-            chunks: list[tuple[int, ...]] = []
-            current: list[int] = []
-            current_bytes = 0
-            for index in indices:
-                parameter_bytes = parameters[index].numel() * element_size
-                if current and current_bytes + parameter_bytes > max_bucket_bytes:
-                    chunks.append(tuple(current))
-                    current = []
-                    current_bytes = 0
-                current.append(index)
-                current_bytes += parameter_bytes
-            if current:
-                chunks.append(tuple(current))
-            owner_chunks.append(chunks)
+        owner_chunks = _chunk_parameter_indices_by_owner(
+            indices_by_owner,
+            parameters,
+            element_size=element_size,
+            max_bucket_bytes=max_bucket_bytes,
+        )
         for round_index in range(max(map(len, owner_chunks), default=0)):
             round_indices = tuple(
                 chunks[round_index] if round_index < len(chunks) else ()
                 for chunks in owner_chunks
             )
-            owner_elements = [
-                sum(parameters[index].numel() for index in indices)
-                for indices in round_indices
-            ]
-            stride = max(owner_elements)
-            input_buffer = torch.empty(stride, dtype=dtype, device=device)
-            output_buffer = torch.empty(world_size * stride, dtype=dtype, device=device)
-            pack_targets = []
-            pack_sources = []
-            offset = 0
-            for index in round_indices[rank]:
-                parameter = parameters[index]
-                count = parameter.numel()
-                pack_targets.append(
-                    input_buffer[offset : offset + count].reshape_as(parameter)
-                )
-                pack_sources.append(parameter)
-                offset += count
-            unpack_targets = []
-            unpack_sources = []
-            for owner, owner_round_indices in enumerate(round_indices):
-                if rank == owner:
-                    continue
-                offset = 0
-                for index in owner_round_indices:
-                    parameter = parameters[index]
-                    count = parameter.numel()
-                    start = owner * stride + offset
-                    unpack_targets.append(parameter)
-                    unpack_sources.append(
-                        output_buffer[start : start + count].reshape_as(parameter)
-                    )
-                    offset += count
             buckets.append(
-                _ParameterAllGatherBucket(
-                    indices_by_owner=round_indices,
-                    input_buffer=input_buffer,
-                    output_buffer=output_buffer,
-                    pack_targets=tuple(pack_targets),
-                    pack_sources=tuple(pack_sources),
-                    unpack_targets=tuple(unpack_targets),
-                    unpack_sources=tuple(unpack_sources),
-                    payload_bytes=sum(owner_elements) * element_size,
+                _allocate_parameter_all_gather_bucket(
+                    parameters,
+                    round_indices,
+                    rank=rank,
+                    dtype=dtype,
+                    device=device,
+                    element_size=element_size,
                 )
             )
     return tuple(buckets)
