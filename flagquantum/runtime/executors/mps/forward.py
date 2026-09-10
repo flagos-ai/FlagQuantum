@@ -13,10 +13,8 @@ from ....simulation.mps.rank_local import (
     apply_rank_local_mps_instruction as _apply_rank_local_instruction,
 )
 from ....simulation.mps.rank_local import (
-    instruction_matrix_for_mps as _instruction_matrix_for_mps,
-)
-from ....simulation.mps.rank_local import (
-    tensor_nbytes as _tensor_nbytes,
+    instruction_matrix_for_mps,
+    tensor_nbytes,
 )
 from ....simulation.mps.state import MPSState
 from .canonicalization import canonicalize_rank_owned_mps
@@ -53,11 +51,6 @@ from .transport import (
     _recv_tensor_p2p,
     _send_tensor_p2p,
 )
-
-_apply_boundary_gate = apply_rank_boundary_gate
-
-_require_layer_cache_drained = require_layer_cache_drained
-_cuda_memory_fields = device_memory_metadata
 
 _prepare_compiled_layer = prepare_compiled_mps_layer
 
@@ -238,10 +231,10 @@ def execute_torch_distributed_mps_forward(
                 )
                 local_count += 1
         else:
-            matrix = _instruction_matrix_for_mps(
+            matrix = instruction_matrix_for_mps(
                 instruction, bsz=bsz, device=resolved_device, dtype=dtype
             )
-            event_messages, event_bytes, record = _apply_boundary_gate(
+            event_messages, event_bytes, record = apply_rank_boundary_gate(
                 state, instruction, matrix
             )
             del matrix
@@ -263,7 +256,7 @@ def execute_torch_distributed_mps_forward(
             sequence, layer_start, kind, prepared_entries = layer_ends.pop(
                 instruction_index
             )
-            _require_layer_cache_drained(
+            require_layer_cache_drained(
                 precomputed,
                 layer_sequence=sequence,
                 layer_start=layer_start,
@@ -278,15 +271,15 @@ def execute_torch_distributed_mps_forward(
                 "prepared_entry_count": prepared_entries,
                 "remaining_precomputed_entries": 0,
                 "local_tensor_bytes": sum(
-                    _tensor_nbytes(tensor) for tensor in state.local_tensors.values()
+                    tensor_nbytes(tensor) for tensor in state.local_tensors.values()
                 ),
                 "last_operation": f"{instruction_index}:{instruction.name}",
-                **_cuda_memory_fields(resolved_device),
+                **device_memory_metadata(resolved_device),
             }
             layer_lifecycle_records.append(lifecycle_record)
             if layer_lifecycle_callback is not None:
                 layer_lifecycle_callback(dict(lifecycle_record))
-    _require_layer_cache_drained(
+    require_layer_cache_drained(
         precomputed,
         layer_sequence=layer_sequence,
         layer_start=len(ir.instructions),
@@ -317,7 +310,7 @@ def execute_torch_distributed_mps_forward(
             "exact truncation-gradient policy cannot describe a truncated forward"
         )
     local_bytes = torch.tensor(
-        [sum(_tensor_nbytes(tensor) for tensor in state.local_tensors.values())],
+        [sum(tensor_nbytes(tensor) for tensor in state.local_tensors.values())],
         dtype=torch.int64,
         device=resolved_device,
     )

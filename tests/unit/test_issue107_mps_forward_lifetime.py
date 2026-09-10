@@ -44,14 +44,14 @@ def test_forward_rejects_cache_entry_for_wrong_gate_width(
 
 
 def test_layer_cache_drain_invariant_rejects_retained_tensor() -> None:
-    forward._require_layer_cache_drained(
+    compiled_layers.require_layer_cache_drained(
         {}, layer_sequence=0, layer_start=2, layer_end=5
     )
     with pytest.raises(
         forward.MPSForwardLifetimeError,
         match=r"layer=3.*instructions=10:12.*retained=\(11,\)",
     ):
-        forward._require_layer_cache_drained(
+        compiled_layers.require_layer_cache_drained(
             {11: (torch.ones(1),)},
             layer_sequence=3,
             layer_start=10,
@@ -67,7 +67,7 @@ def test_forward_does_not_eagerly_materialize_all_gate_matrices() -> None:
 
 
 def test_cuda_memory_fields_are_json_metadata_on_cpu() -> None:
-    fields = forward._cuda_memory_fields(torch.device("cpu"))
+    fields = compiled_layers.device_memory_metadata(torch.device("cpu"))
     assert fields == {
         "allocated_memory_bytes": None,
         "reserved_memory_bytes": None,
