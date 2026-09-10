@@ -5,6 +5,7 @@ from typing import Any, Iterable
 
 import torch
 
+from ....core.ir import Instruction
 from .._conditions import instruction_conditions as _instruction_conditions
 from ..circuit import DynamicCircuit
 
@@ -23,6 +24,25 @@ def iqm_qubit_groups(backend: Any) -> tuple[frozenset[int], ...]:
     if raw_groups is None:
         return ()
     return tuple(frozenset(int(wire) for wire in group) for group in raw_groups)
+
+
+def _native_gate_qasm(instruction: Instruction) -> str:
+    wires = ", ".join(f"${wire}" for wire in instruction.wires)
+    if instruction.name == "x":
+        return f"prx({math.pi!r}, 0.0) {wires};"
+    if instruction.name == "rx":
+        angle = _qasm_angle(next(iter(instruction.params.values())))
+        return f"prx({angle}, 0.0) {wires};"
+    if instruction.name in {"rz", "cz"}:
+        params = (
+            "("
+            + ", ".join(_qasm_angle(value) for value in instruction.params.values())
+            + ")"
+            if instruction.params
+            else ""
+        )
+        return f"{instruction.name}{params} {wires};"
+    raise ValueError(f"braket_iqm_unsupported_native_gate:{instruction.name}")
 
 
 def export_braket_iqm_dynamic_qasm3(
@@ -101,25 +121,7 @@ def export_braket_iqm_dynamic_qasm3(
             body.append(f"cc_prx({_qasm_angle(angle)}, 0.0, {key}) ${target};")
             feed_forward_keys.add(key)
             continue
-        wires = ", ".join(f"${wire}" for wire in instruction.wires)
-        if instruction.name == "x":
-            body.append(f"prx({math.pi!r}, 0.0) {wires};")
-        elif instruction.name == "rx":
-            body.append(
-                f"prx({_qasm_angle(next(iter(instruction.params.values())))}, "
-                f"0.0) {wires};"
-            )
-        elif instruction.name in {"rz", "cz"}:
-            params = (
-                "("
-                + ", ".join(_qasm_angle(value) for value in instruction.params.values())
-                + ")"
-                if instruction.params
-                else ""
-            )
-            body.append(f"{instruction.name}{params} {wires};")
-        else:
-            raise ValueError(f"braket_iqm_unsupported_native_gate:{instruction.name}")
+        body.append(_native_gate_qasm(instruction))
     if set(measured_wire) - feed_forward_keys:
         raise ValueError("braket_iqm_mid_circuit_measurement_requires_feed_forward")
     return (
