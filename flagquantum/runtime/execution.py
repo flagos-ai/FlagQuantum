@@ -798,98 +798,64 @@ def _run_native(
                     noise_model_identity=noise_model.identity,
                 ),
             )
-    elif mode == "mps_trajectory":
-        from .executors.mps.noisy import run_lowered_noisy_mps_trajectory
+    elif mode in {"mps_trajectory", "noisy_mps"}:
+        from .executors.mps.noisy import (
+            run_lowered_noisy_mps,
+            run_lowered_noisy_mps_trajectory,
+        )
 
-        mps_options = dict(options)
-        mps_options.pop("memory_limit_bytes", None)
-        mps_options.pop("world_size", None)
-        mps_options.pop("world_sz", None)
-        mps_options.pop("coupling_map", None)
-        mps_options.pop("optimize", None)
+        mps_options = _simulation_kernel_options(options)
         source = execution_ir if coupling_map is not None else circuit_or_ir
         lowered = (
             execution_ir
             if provided_execution_plan is not None
             else lower_noise_model(execution_ir, noise_model)
         )
-        result = run_lowered_noisy_mps_trajectory(
-            lowered,
-            source=source,
-            **mps_options,
-        )
-        if provided_execution_plan is not None:
-            execution_plan = provided_execution_plan
+        if mode == "mps_trajectory":
+            trajectories = 1
+            min_trajectories = 1
+            target_standard_error = None
+            result = run_lowered_noisy_mps_trajectory(
+                lowered,
+                source=source,
+                **mps_options,
+            )
         else:
-            execution_plan = build_plan(
-                execution_ir,
+            world_size = int(options.get("world_sz", options.get("world_size", 1)))
+            if world_size > 1 and "rank" not in options:
+                raise NotImplementedError(
+                    "public noisy_mps execution does not perform distributed statistics "
+                    "reduction; pass an explicit rank for rank-local execution and "
+                    "merge_noisy_mps_results, or use noisy_statevector"
+                )
+            trajectories = int(options.get("trajectories", 32))
+            min_trajectories = int(options.get("min_trajectories", 1))
+            target_standard_error = options.get("target_standard_error")
+            result = run_lowered_noisy_mps(
+                lowered,
+                source=source,
                 noise_model=noise_model,
-                state_mode="mps",
-                **plan_options,
+                world_size=world_size,
+                **mps_options,
             )
-            execution_plan = replace(
-                execution_plan,
-                noisy_execution_plan=build_noisy_execution_plan(
-                    execution_plan,
-                    representation="mps",
-                    evolution="quantum_trajectory",
-                    trajectories=1,
-                    seed=options.get("seed"),
-                    cutoff=float(options.get("cutoff", 0.0)),
-                    memory_limit_bytes=options.get("memory_limit_bytes"),
-                    noise_model_identity=getattr(noise_model, "identity", None),
-                ),
-            )
-    elif mode == "noisy_mps":
-        from .executors.mps.noisy import run_lowered_noisy_mps
 
-        mps_options = dict(options)
-        mps_options.pop("memory_limit_bytes", None)
-        mps_options["world_size"] = int(
-            mps_options.pop(
-                "world_sz",
-                mps_options.get("world_size", 1),
-            )
-        )
-        if mps_options["world_size"] > 1 and "rank" not in mps_options:
-            raise NotImplementedError(
-                "public noisy_mps execution does not perform distributed statistics "
-                "reduction; pass an explicit rank for rank-local execution and "
-                "merge_noisy_mps_results, or use noisy_statevector"
-            )
-        mps_options.pop("coupling_map", None)
-        mps_options.pop("optimize", None)
-        source = execution_ir if coupling_map is not None else circuit_or_ir
-        lowered = (
-            execution_ir
-            if provided_execution_plan is not None
-            else lower_noise_model(execution_ir, noise_model)
-        )
-        result = run_lowered_noisy_mps(
-            lowered,
-            source=source,
+        execution_plan = provided_execution_plan or build_plan(
+            execution_ir,
             noise_model=noise_model,
-            **mps_options,
+            state_mode="mps",
+            **plan_options,
         )
-        if provided_execution_plan is not None:
-            execution_plan = provided_execution_plan
-        else:
-            execution_plan = build_plan(
-                execution_ir,
-                noise_model=noise_model,
-                state_mode="mps",
-                **plan_options,
-            )
+        if provided_execution_plan is None:
             execution_plan = replace(
                 execution_plan,
                 noisy_execution_plan=build_noisy_execution_plan(
                     execution_plan,
                     representation="mps",
                     evolution="quantum_trajectory",
-                    trajectories=int(options.get("trajectories", 32)),
+                    trajectories=trajectories,
                     seed=options.get("seed"),
-                    min_trajectories=int(options.get("min_trajectories", 1)),
-                    target_standard_error=options.get("target_standard_error"),
+                    min_trajectories=min_trajectories,
+                    target_standard_error=target_standard_error,
                     cutoff=float(options.get("cutoff", 0.0)),
                     memory_limit_bytes=options.get("memory_limit_bytes"),
                     noise_model_identity=getattr(noise_model, "identity", None),
