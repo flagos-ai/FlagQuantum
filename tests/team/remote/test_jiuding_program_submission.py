@@ -142,6 +142,37 @@ def test_program_result_is_a_normal_execution_result() -> None:
     assert result.provenance["cpu_fallback_used"] is False
 
 
+def test_program_measurements_report_the_batch_execution_path() -> None:
+    response = {
+        "schema": SCHEMA,
+        "version": VERSION,
+        "ok": True,
+        "request_id": "batch-program",
+        "measurements": [
+            {
+                "kind": "counts",
+                "wires": [0],
+                "shots": 2,
+                "value": {
+                    "counts": [[{"outcome": "0", "count": 2}]],
+                },
+                "metadata": {},
+                "statistics": {},
+            }
+        ],
+        "evidence": {"device": "cuda:0"},
+    }
+
+    result = decode_program_result(
+        response,
+        requested_target="jiuding:gpu",
+        selected_target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    )
+
+    assert result.counts == [{"0": 2}]
+    assert result.runtime["execution_path"] == "jiuding_batch_program"
+
+
 def test_client_result_decodes_program_receipt(tmp_path: Path, monkeypatch) -> None:
     client = _client()
     result_path = tmp_path / "result.json"

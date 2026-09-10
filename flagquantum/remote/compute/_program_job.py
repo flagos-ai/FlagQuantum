@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -126,10 +127,14 @@ def decode_program_result(
     if "measurements" in value:
         from ._workspace_results import measurement_result
 
-        return measurement_result(
+        result = measurement_result(
             value,
             requested_target=requested_target,
             effective_target=selected_target,
+        )
+        return replace(
+            result,
+            runtime={**result.runtime, "execution_path": "jiuding_batch_program"},
         )
     if "state" not in value:
         raise RuntimeError("Jiuding program job returned no state or measurements")
