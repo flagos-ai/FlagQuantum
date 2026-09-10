@@ -74,27 +74,9 @@ class BackendSelection:
         }
 
 
-def _interaction_metrics(ir: CircuitIR) -> tuple[int, float, int]:
-    graph: dict[int, set[int]] = {wire: set() for wire in range(ir.n_wires)}
-    local_edges = 0
-    edges = 0
-    crossing_counts = [0] * max(0, ir.n_wires - 1)
-    for instruction in ir:
-        wires = tuple(dict.fromkeys(instruction.wires))
-        if len(wires) >= 2:
-            left, right = min(wires), max(wires)
-            for cut in range(left, right):
-                crossing_counts[cut] += 1
-        for index, left in enumerate(wires):
-            for right in wires[index + 1 :]:
-                if right not in graph[left]:
-                    graph[left].add(right)
-                    graph[right].add(left)
-                    edges += 1
-                    local_edges += int(abs(left - right) == 1)
+def _min_fill_width(graph: dict[int, set[int]]) -> int:
+    """Estimate contraction width with deterministic min-fill elimination."""
 
-    # Deterministic min-fill elimination. This is deliberately a cheap structural
-    # proxy; a production TN path planner remains the authority for hard budgets.
     width = 0
     remaining = {node: set(neighbours) for node, neighbours in graph.items()}
     while remaining:
@@ -115,8 +97,30 @@ def _interaction_metrics(ir: CircuitIR) -> tuple[int, float, int]:
             remaining[left].discard(node)
         for left in neighbours:
             remaining[left].update(neighbours - {left})
+    return width
+
+
+def _interaction_metrics(ir: CircuitIR) -> tuple[int, float, int]:
+    graph: dict[int, set[int]] = {wire: set() for wire in range(ir.n_wires)}
+    local_edges = 0
+    edges = 0
+    crossing_counts = [0] * max(0, ir.n_wires - 1)
+    for instruction in ir:
+        wires = tuple(dict.fromkeys(instruction.wires))
+        if len(wires) >= 2:
+            left, right = min(wires), max(wires)
+            for cut in range(left, right):
+                crossing_counts[cut] += 1
+        for index, left in enumerate(wires):
+            for right in wires[index + 1 :]:
+                if right not in graph[left]:
+                    graph[left].add(right)
+                    graph[right].add(left)
+                    edges += 1
+                    local_edges += int(abs(left - right) == 1)
+
     return (
-        width,
+        _min_fill_width(graph),
         (local_edges / edges if edges else 1.0),
         max(crossing_counts, default=0),
     )
