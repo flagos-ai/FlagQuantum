@@ -59,20 +59,16 @@ class TNWorkingSetCalibration:
         )
 
 
-def build_tn_working_set_calibration(
-    measurements: Sequence[Mapping[str, Any]],
+def _validate_calibration_configuration(
     *,
     accelerator_name: str,
     complex_bytes: int,
     world_size: int,
     topology_class: str,
-    minimum_samples: int = 3,
-    minimum_distinct_predictions: int = 3,
-    safety_margin: float = 1.1,
-    evidence_level: str = "development_hardware_calibration",
-) -> TNWorkingSetCalibration:
-    """Build a deterministic fail-closed calibration from CUDA peak records."""
-
+    minimum_samples: int,
+    minimum_distinct_predictions: int,
+    safety_margin: float,
+) -> None:
     if not accelerator_name.strip():
         raise ValueError("TN calibration accelerator name must be non-empty")
     if complex_bytes not in {8, 16}:
@@ -88,6 +84,10 @@ def build_tn_working_set_calibration(
     if safety_margin < 1.0:
         raise ValueError("TN calibration safety margin must be at least one")
 
+
+def _normalized_calibration_measurements(
+    measurements: Sequence[Mapping[str, Any]],
+) -> tuple[dict[str, int], ...]:
     normalized = tuple(
         sorted(
             (
@@ -116,6 +116,33 @@ def build_tn_working_set_calibration(
             raise ValueError(
                 "TN calibration reserved peaks cannot be below allocated peaks"
             )
+    return normalized
+
+
+def build_tn_working_set_calibration(
+    measurements: Sequence[Mapping[str, Any]],
+    *,
+    accelerator_name: str,
+    complex_bytes: int,
+    world_size: int,
+    topology_class: str,
+    minimum_samples: int = 3,
+    minimum_distinct_predictions: int = 3,
+    safety_margin: float = 1.1,
+    evidence_level: str = "development_hardware_calibration",
+) -> TNWorkingSetCalibration:
+    """Build a deterministic fail-closed calibration from CUDA peak records."""
+
+    _validate_calibration_configuration(
+        accelerator_name=accelerator_name,
+        complex_bytes=complex_bytes,
+        world_size=world_size,
+        topology_class=topology_class,
+        minimum_samples=minimum_samples,
+        minimum_distinct_predictions=minimum_distinct_predictions,
+        safety_margin=safety_margin,
+    )
+    normalized = _normalized_calibration_measurements(measurements)
 
     allocated_ratios = tuple(
         item["cuda_peak_allocated_bytes"] / item["predicted_working_set_bytes"]
