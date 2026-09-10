@@ -531,6 +531,19 @@ def expectation_z_from_counts(
     return torch.tensor([values], dtype=torch.float32)
 
 
+def _measured_coefficient(value: float | complex | torch.Tensor) -> float:
+    """Return one finite real coefficient for count-based measurement statistics."""
+
+    tensor = torch.as_tensor(value).detach()
+    if tensor.numel() != 1:
+        raise ValueError("measured Hamiltonian coefficients must be scalars")
+    if not bool(torch.isfinite(tensor).all()):
+        raise ValueError("measured Hamiltonian coefficients must be finite")
+    if tensor.is_complex() and bool(torch.abs(tensor.imag) > 1e-12):
+        raise ValueError("measured Hamiltonian coefficients must be real")
+    return float(tensor.real)
+
+
 def hamiltonian_expectation_from_counts(
     counts: Mapping[str, int],
     hamiltonian: Hamiltonian,
@@ -543,7 +556,7 @@ def hamiltonian_expectation_from_counts(
     shots = float(shot_count)
     total = 0.0
     for term in hamiltonian.terms:
-        coeff = float(torch.real(torch.as_tensor(term.coefficient)).detach())
+        coeff = _measured_coefficient(term.coefficient)
         term_total = 0.0
         for bitstring, count in counts.items():
             parity = 1.0
@@ -614,13 +627,7 @@ def _grouped_hamiltonian_statistics(
         coefficients: list[tuple[float, tuple[tuple[int, str], ...]]] = []
         for term_index in group.term_indices:
             term = plan.hamiltonian.terms[term_index]
-            coefficient_tensor = torch.as_tensor(term.coefficient)
-            if (
-                coefficient_tensor.is_complex()
-                and torch.abs(coefficient_tensor.imag) > 1e-12
-            ):
-                raise ValueError("measured Hamiltonian coefficients must be real")
-            coefficients.append((float(coefficient_tensor.real), term.ops))
+            coefficients.append((_measured_coefficient(term.coefficient), term.ops))
 
         mean = 0.0
         second_moment = 0.0
