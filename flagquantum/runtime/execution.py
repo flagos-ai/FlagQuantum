@@ -403,6 +403,61 @@ def _noisy_statevector_memory_bytes(
     return int(execution_plan.state_bytes) * active_trajectories * workspace_factor
 
 
+def _run_noisy_statevector_mode(
+    circuit_or_ir: Any,
+    execution_ir: CircuitIR,
+    noise_model: NoiseModel,
+    *,
+    coupling_map: Any,
+    options: dict[str, Any],
+    plan_options: dict[str, Any],
+    provided_execution_plan: ExecutionPlan | None,
+) -> tuple[Any, ExecutionPlan]:
+    from .executors.statevector import run_noisy_statevector
+    from .executors.statevector.noisy import _run_lowered_noisy_statevector
+
+    statevector_options = dict(options)
+    statevector_options.pop("memory_limit_bytes", None)
+    if "world_sz" in statevector_options:
+        statevector_options["world_size"] = int(statevector_options.pop("world_sz"))
+    statevector_options.pop("coupling_map", None)
+    statevector_options.pop("optimize", None)
+
+    if provided_execution_plan is not None:
+        result = _run_lowered_noisy_statevector(
+            execution_ir,
+            noise_model,
+            **statevector_options,
+        )
+        return result, provided_execution_plan
+
+    source = execution_ir if coupling_map is not None else circuit_or_ir
+    result = run_noisy_statevector(source, noise_model, **statevector_options)
+    execution_plan = build_plan(
+        execution_ir,
+        noise_model=noise_model,
+        state_mode="statevector",
+        **plan_options,
+    )
+    noisy_plan = build_noisy_execution_plan(
+        execution_plan,
+        representation="statevector",
+        evolution="quantum_trajectory",
+        trajectories=int(options.get("trajectories", 32)),
+        seed=options.get("seed", 0),
+        min_trajectories=int(options.get("min_trajectories", 1)),
+        target_standard_error=options.get("target_standard_error"),
+        memory_limit_bytes=options.get("memory_limit_bytes"),
+        estimated_memory_bytes=_noisy_statevector_memory_bytes(
+            execution_plan,
+            noise_model,
+            options,
+        ),
+        noise_model_identity=noise_model.identity,
+    )
+    return result, replace(execution_plan, noisy_execution_plan=noisy_plan)
+
+
 def _resolve_simulation_plan(
     execution_ir: CircuitIR,
     *,
@@ -753,56 +808,15 @@ def _run_native(
     elif mode == "noisy_statevector":
         if noise_model is None:
             raise ValueError("noisy_statevector mode requires a noise_model")
-        from .executors.statevector import run_noisy_statevector
-        from .executors.statevector.noisy import _run_lowered_noisy_statevector
-
-        statevector_options = dict(options)
-        statevector_options.pop("memory_limit_bytes", None)
-        if "world_sz" in statevector_options:
-            statevector_options["world_size"] = int(statevector_options.pop("world_sz"))
-        statevector_options.pop("coupling_map", None)
-        statevector_options.pop("optimize", None)
-        result = (
-            _run_lowered_noisy_statevector(
-                execution_ir,
-                noise_model,
-                **statevector_options,
-            )
-            if provided_execution_plan is not None
-            else run_noisy_statevector(
-                execution_ir if coupling_map is not None else circuit_or_ir,
-                noise_model,
-                **statevector_options,
-            )
+        result, execution_plan = _run_noisy_statevector_mode(
+            circuit_or_ir,
+            execution_ir,
+            noise_model,
+            coupling_map=coupling_map,
+            options=options,
+            plan_options=plan_options,
+            provided_execution_plan=provided_execution_plan,
         )
-        if provided_execution_plan is not None:
-            execution_plan = provided_execution_plan
-        else:
-            execution_plan = build_plan(
-                execution_ir,
-                noise_model=noise_model,
-                state_mode="statevector",
-                **plan_options,
-            )
-            execution_plan = replace(
-                execution_plan,
-                noisy_execution_plan=build_noisy_execution_plan(
-                    execution_plan,
-                    representation="statevector",
-                    evolution="quantum_trajectory",
-                    trajectories=int(options.get("trajectories", 32)),
-                    seed=options.get("seed", 0),
-                    min_trajectories=int(options.get("min_trajectories", 1)),
-                    target_standard_error=options.get("target_standard_error"),
-                    memory_limit_bytes=options.get("memory_limit_bytes"),
-                    estimated_memory_bytes=_noisy_statevector_memory_bytes(
-                        execution_plan,
-                        noise_model,
-                        options,
-                    ),
-                    noise_model_identity=noise_model.identity,
-                ),
-            )
     elif mode in {"mps_trajectory", "noisy_mps"}:
         from .executors.mps.noisy import (
             run_lowered_noisy_mps,
