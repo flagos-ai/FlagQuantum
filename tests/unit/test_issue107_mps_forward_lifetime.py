@@ -13,6 +13,21 @@ from flagquantum.runtime.executors.mps import compiled_layers
 pytestmark = pytest.mark.unit
 
 
+def test_forward_validates_policy_before_tensor_allocation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject_allocation(*args, **kwargs):
+        raise AssertionError("validation must precede tensor allocation")
+
+    monkeypatch.setattr(forward.dist, "is_initialized", lambda: True)
+    monkeypatch.setattr(forward.torch, "zeros", reject_allocation)
+
+    with pytest.raises(ValueError, match="global_error_budget"):
+        forward.execute_torch_distributed_mps_forward(
+            fq.Circuit(1), global_error_budget=-1.0
+        )
+
+
 @pytest.mark.parametrize("two_site", [False, True])
 def test_forward_rejects_cache_entry_for_wrong_gate_width(
     monkeypatch: pytest.MonkeyPatch, two_site: bool

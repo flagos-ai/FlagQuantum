@@ -86,6 +86,16 @@ def execute_torch_distributed_mps_forward(
         raise NonlocalMPSCompilationError(
             "compiled site-sharded two-site rotations require ascending adjacent wire order"
         )
+    if global_error_budget is not None and global_error_budget < 0:
+        raise ValueError("global_error_budget must be non-negative")
+    if error_budget_policy not in {"enforce", "report_only"}:
+        raise ValueError("error_budget_policy must be enforce or report_only")
+    if truncation_gradient_policy not in {"exact", "approximate", "unsupported"}:
+        raise ValueError(
+            "truncation_gradient_policy must be exact, approximate, or unsupported"
+        )
+    if compile_site_kernels and rebalance_threshold != float("inf"):
+        raise ValueError("compiled site buckets require rebalance_threshold=inf")
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     backend = str(dist.get_backend())
@@ -118,16 +128,6 @@ def execute_torch_distributed_mps_forward(
         local_tensors=local_tensors,
         ownership=ownership,
     )
-    if global_error_budget is not None and global_error_budget < 0:
-        raise ValueError("global_error_budget must be non-negative")
-    if error_budget_policy not in {"enforce", "report_only"}:
-        raise ValueError("error_budget_policy must be enforce or report_only")
-    if truncation_gradient_policy not in {"exact", "approximate", "unsupported"}:
-        raise ValueError(
-            "truncation_gradient_policy must be exact, approximate, or unsupported"
-        )
-    if compile_site_kernels and rebalance_threshold != float("inf"):
-        raise ValueError("compiled site buckets require rebalance_threshold=inf")
     factorization_workspace_policy = (
         factorization_workspace_policy or FactorizationWorkspacePolicy()
     )
