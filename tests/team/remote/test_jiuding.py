@@ -1,13 +1,77 @@
 """CPU-only scenarios for the experimental Jiuding task adapter."""
 
+import base64
 import json
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute.jiuding import JiudingClient, _load_credentials
 
 pytestmark = pytest.mark.unit
+
+
+def test_complete_environment_credentials_take_priority(monkeypatch):
+    monkeypatch.setenv("JIUDING_AK", " env-ak ")
+    monkeypatch.setenv("JIUDING_SK", " env-sk ")
+    monkeypatch.setattr(
+        Path,
+        "read_bytes",
+        lambda path: pytest.fail(f"unexpected credential file read: {path}"),
+    )
+
+    assert _load_credentials() == ("env-ak", "env-sk")
+
+
+@pytest.mark.parametrize("present", ["JIUDING_AK", "JIUDING_SK"])
+def test_partial_environment_credentials_are_rejected(monkeypatch, present):
+    monkeypatch.delenv("JIUDING_AK", raising=False)
+    monkeypatch.delenv("JIUDING_SK", raising=False)
+    monkeypatch.setenv(present, "secret-value")
+    monkeypatch.setattr(
+        Path,
+        "read_bytes",
+        lambda path: pytest.fail(f"unexpected credential file read: {path}"),
+    )
+
+    with pytest.raises(RuntimeError, match="partial environment credentials") as error:
+        _load_credentials()
+    assert "secret-value" not in str(error.value)
+
+
+def test_injected_workspace_credentials_are_decoded_as_one_pair(monkeypatch):
+    monkeypatch.delenv("JIUDING_AK", raising=False)
+    monkeypatch.delenv("JIUDING_SK", raising=False)
+    encoded = {
+        "user-ak": base64.b64encode(b"workspace-ak") + b"\n",
+        "user-sk": base64.b64encode(b"workspace-sk") + b"\n",
+    }
+    monkeypatch.setattr(Path, "read_bytes", lambda path: encoded[path.name])
+
+    assert _load_credentials() == ("workspace-ak", "workspace-sk")
+
+
+@pytest.mark.parametrize("failure", ["missing", "malformed"])
+def test_invalid_injected_credentials_fail_without_leaking_secrets(
+    monkeypatch, failure
+):
+    monkeypatch.delenv("JIUDING_AK", raising=False)
+    monkeypatch.delenv("JIUDING_SK", raising=False)
+    visible_secret = "workspace-secret"
+
+    def read_bytes(path):
+        if path.name == "user-ak":
+            return base64.b64encode(visible_secret.encode())
+        if failure == "missing":
+            raise FileNotFoundError(path)
+        return b"not-base64"
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+
+    with pytest.raises(RuntimeError, match="both injected credential files") as error:
+        _load_credentials()
+    assert visible_secret not in str(error.value)
 
 
 def test_token_is_cached_and_refreshed_from_server_expiry(monkeypatch):
