@@ -23,6 +23,7 @@ from ._feedback import (
     DynamicFeedbackDecision,
     DynamicFeedbackObservation,
     DynamicFeedbackPlan,
+    DynamicFeedbackPoint,
     DynamicFeedbackTrace,
 )
 from ._noise import (
@@ -155,6 +156,32 @@ def _apply_feedback_action(
     return state, 0, 0
 
 
+def _decide_feedback(
+    point: DynamicFeedbackPoint,
+    feedback_plan: DynamicFeedbackPlan,
+    classical: list[int],
+    true_classical: list[int],
+    prior_observations: list[DynamicFeedbackObservation],
+    frame_x_wires: set[int],
+) -> tuple[DynamicFeedbackObservation, DynamicFeedbackAction]:
+    """Build one feedback observation and obtain its controller action."""
+
+    if any(classical[item] < 0 for item in point.classical_bits):
+        raise RuntimeError(f"feedback point {point.name!r} reads an unmeasured bit")
+    observation = DynamicFeedbackObservation(
+        point_name=point.name,
+        decision_index=len(prior_observations),
+        classical_bits=point.classical_bits,
+        true_bits=tuple(true_classical[item] for item in point.classical_bits),
+        observed_bits=tuple(classical[item] for item in point.classical_bits),
+        frame_x_wires_before=tuple(sorted(frame_x_wires)),
+    )
+    action = feedback_plan.controller.decide((*prior_observations, observation))
+    if not isinstance(action, DynamicFeedbackAction):
+        raise TypeError("feedback controller must return DynamicFeedbackAction")
+    return observation, action
+
+
 def _run_dynamic_trajectory(
     circuit: DynamicCircuit,
     *,
@@ -242,30 +269,15 @@ def _run_dynamic_trajectory(
                     branch_trace.append((instruction_index, bit))
                     point = points_by_trigger.get(classical_bit)
                     if feedback_plan is not None and point is not None:
-                        if any(classical[item] < 0 for item in point.classical_bits):
-                            raise RuntimeError(
-                                f"feedback point {point.name!r} reads an unmeasured bit"
-                            )
-                        observation = DynamicFeedbackObservation(
-                            point_name=point.name,
-                            decision_index=len(feedback_observations),
-                            classical_bits=point.classical_bits,
-                            true_bits=tuple(
-                                true_classical[item] for item in point.classical_bits
-                            ),
-                            observed_bits=tuple(
-                                classical[item] for item in point.classical_bits
-                            ),
-                            frame_x_wires_before=tuple(sorted(frame_x_wires)),
+                        observation, action = _decide_feedback(
+                            point,
+                            feedback_plan,
+                            classical,
+                            true_classical,
+                            feedback_observations,
+                            frame_x_wires,
                         )
                         feedback_observations.append(observation)
-                        action = feedback_plan.controller.decide(
-                            tuple(feedback_observations)
-                        )
-                        if not isinstance(action, DynamicFeedbackAction):
-                            raise TypeError(
-                                "feedback controller must return DynamicFeedbackAction"
-                            )
                         state, applications, events = _apply_feedback_action(
                             action,
                             feedback_plan,
