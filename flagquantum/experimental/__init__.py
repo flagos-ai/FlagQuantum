@@ -19,7 +19,6 @@ __all__ = (
     "numerics",
     "planning",
     "simulation",
-    "targets",
 )
 
 
