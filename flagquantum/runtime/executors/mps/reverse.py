@@ -51,8 +51,6 @@ from .reverse_planning import (
     cached_mps_gradient_buckets,
     cached_mps_reverse_segments,
     plan_mps_canonicalization_bonds,
-    plan_mps_gradient_buckets,
-    plan_mps_reverse_segments,
     validate_mps_svd_gaps,
 )
 from .reverse_replay import build_mps_reverse_backward
@@ -88,12 +86,8 @@ _all_reduce_layer_records = all_reduce_reverse_layer_records
 _begin_layer_halo_prefetch = begin_reverse_layer_halo_prefetch
 _finish_layer_halo_prefetch = finish_reverse_layer_halo_prefetch
 _fused_z_zz_mse_and_adjoints = mps_fused_z_zz_mse_and_adjoints
-_gradient_bucket_layout = plan_mps_gradient_buckets
-_cached_gradient_bucket_layout = cached_mps_gradient_buckets
 _heisenberg_mpo_energy_and_adjoints = mps_heisenberg_energy_and_adjoints
 _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
-_parameter_layout = build_mps_parameter_layout
-_gradient_ownership = build_mps_gradient_ownership
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
 _parse_z_zz_terms = parse_mps_z_zz_terms
@@ -102,8 +96,6 @@ _qr_forward = mps_qr_forward
 _recv = receive_reverse_tensor
 _recv_static = receive_static_reverse_tensor
 _record = build_mps_reverse_tape_record
-_reverse_execution_segments = plan_mps_reverse_segments
-_cached_reverse_execution_segments = cached_mps_reverse_segments
 _send = send_reverse_tensor
 _send_static = send_static_reverse_tensor
 _shape_generation = static_shape_generation
@@ -584,7 +576,7 @@ def execute_torch_distributed_mps_reverse(
         raise MPSReverseContractError(
             "compiled site-sharded two-site rotations require ascending adjacent wire order"
         )
-    parameters, instruction_parameter_indices = _parameter_layout(ir)
+    parameters, instruction_parameter_indices = build_mps_parameter_layout(ir)
     rank, world = dist.get_rank(), dist.get_world_size()
     if gradient_owner_ranks is not None and any(
         int(owner) < 0 or int(owner) >= world for owner in gradient_owner_ranks
@@ -1068,20 +1060,20 @@ def execute_torch_distributed_mps_reverse(
         hamiltonian_terms=hamiltonian_terms,
         compile_observables=compile_observables,
     )
-    ownership_records = _gradient_ownership(
+    ownership_records = build_mps_gradient_ownership(
         tape,
         len(parameters),
         world_size=world,
         optimizer_owner_ranks=gradient_owner_ranks,
     )
-    reverse_segments, reverse_segment_cache_hit = _cached_reverse_execution_segments(
+    reverse_segments, reverse_segment_cache_hit = cached_mps_reverse_segments(
         tape, fuse_owner_local=fuse_local_reverse
     )
     fused_segment_count = sum(len(segment) > 1 for segment in reverse_segments)
     reverse_autograd_calls = sum(
         segment[0].compute_owner == rank for segment in reverse_segments
     )
-    gradient_buckets, gradient_bucket_cache_hit = _cached_gradient_bucket_layout(
+    gradient_buckets, gradient_bucket_cache_hit = cached_mps_gradient_buckets(
         parameters, gradient_owner_ranks, max_bucket_bytes=gradient_bucket_bytes
     )
     gradient_bucket_payload_bytes = sum(
