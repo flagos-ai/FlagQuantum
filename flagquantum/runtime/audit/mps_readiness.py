@@ -162,6 +162,34 @@ def _mps_communication_plan_reported(value: Any) -> bool:
     )
 
 
+def _mps_record_identifiers(record: Mapping[str, Any]) -> tuple[str, ...] | None:
+    if "parameter_id" in record:
+        return (str(record["parameter_id"]),)
+    if "parameter_flat_index" in record:
+        return (f"flat:{int(record['parameter_flat_index'])}",)
+    if isinstance(record.get("parameter_indices"), (tuple, list)):
+        return tuple(f"flat:{int(index)}" for index in record["parameter_indices"])
+    if "parameter_start" not in record or "parameter_end" not in record:
+        return None
+    try:
+        start = int(record["parameter_start"])
+        end = int(record["parameter_end"])
+    except (TypeError, ValueError):
+        return None
+    if start < 0 or end <= start:
+        return None
+    return tuple(f"flat:{index}" for index in range(start, end))
+
+
+def _mps_update_route_valid(record: Mapping[str, Any]) -> bool:
+    route = str(record.get("writeback_route", "")).lower()
+    return not (
+        route in {"", "unknown", "not_measured", "replicated"}
+        or "replicated" in route
+        or "all_rank" in route
+    )
+
+
 def _mps_optimizer_ownership_map(
     value: Any,
     *,
@@ -189,36 +217,12 @@ def _mps_optimizer_ownership_map(
             return None
         if owner_rank < 0 or owner_rank >= world_size:
             return None
-        if role == "update":
-            route = str(record.get("writeback_route", "")).lower()
-            if (
-                route in {"", "unknown", "not_measured", "replicated"}
-                or "replicated" in route
-                or "all_rank" in route
-            ):
-                return None
-
-        identifiers: list[str] = []
-        if "parameter_id" in record:
-            identifiers.append(str(record["parameter_id"]))
-        elif "parameter_flat_index" in record:
-            identifiers.append(f"flat:{int(record['parameter_flat_index'])}")
-        elif isinstance(record.get("parameter_indices"), (tuple, list)):
-            identifiers.extend(
-                f"flat:{int(index)}" for index in record["parameter_indices"]
-            )
-        elif "parameter_start" in record and "parameter_end" in record:
-            try:
-                start = int(record["parameter_start"])
-                end = int(record["parameter_end"])
-            except (TypeError, ValueError):
-                return None
-            if start < 0 or end <= start:
-                return None
-            identifiers.extend(f"flat:{index}" for index in range(start, end))
-        else:
+        if role == "update" and not _mps_update_route_valid(record):
             return None
 
+        identifiers = _mps_record_identifiers(record)
+        if identifiers is None:
+            return None
         for identifier in identifiers:
             if identifier in ownership:
                 return None
