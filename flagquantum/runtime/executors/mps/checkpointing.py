@@ -95,6 +95,41 @@ def _commit_checkpoint_generation(
     return manifest
 
 
+def _validate_checkpoint_manifest(
+    root: Path,
+    *,
+    rank: int,
+    world_size: int,
+    contract_fingerprint: str,
+) -> tuple[int, Path]:
+    manifest = json.loads(_checkpoint_manifest_path(root).read_text("utf-8"))
+    if manifest.get("schema") != "sharded_mps_checkpoint_manifest_v1":
+        raise ValueError("checkpoint manifest schema mismatch")
+    if int(manifest.get("world_size", -1)) != world_size:
+        raise ValueError("checkpoint manifest topology mismatch")
+    if manifest.get("contract_fingerprint") != contract_fingerprint:
+        raise ValueError("checkpoint manifest contract fingerprint mismatch")
+    shards = manifest.get("shards")
+    if not isinstance(shards, list) or len(shards) != world_size:
+        raise ValueError("checkpoint manifest rank membership incomplete")
+    shard = next(
+        (record for record in shards if int(record.get("rank", -1)) == rank),
+        None,
+    )
+    if shard is None:
+        raise ValueError(f"checkpoint manifest missing rank {rank}")
+    step = int(manifest.get("completed_steps", -1))
+    if int(shard.get("completed_steps", -2)) != step or step < 0:
+        raise ValueError("checkpoint manifest generation mismatch")
+    path = root / str(shard.get("file", ""))
+    if path.parent != root or not path.is_file():
+        raise ValueError(f"checkpoint shard missing for rank {rank}")
+    expected = str(shard.get("sha256", ""))
+    if len(expected) != 64 or _file_sha256(path) != expected:
+        raise ValueError(f"checkpoint shard integrity mismatch for rank {rank}")
+    return step, path
+
+
 def _preflight_checkpoint_generation(
     root: Path,
     *,
@@ -107,31 +142,12 @@ def _preflight_checkpoint_generation(
     step = -1
     path = _checkpoint_path(root, rank)
     try:
-        manifest = json.loads(_checkpoint_manifest_path(root).read_text("utf-8"))
-        if manifest.get("schema") != "sharded_mps_checkpoint_manifest_v1":
-            raise ValueError("checkpoint manifest schema mismatch")
-        if int(manifest.get("world_size", -1)) != world_size:
-            raise ValueError("checkpoint manifest topology mismatch")
-        if manifest.get("contract_fingerprint") != contract_fingerprint:
-            raise ValueError("checkpoint manifest contract fingerprint mismatch")
-        shards = manifest.get("shards")
-        if not isinstance(shards, list) or len(shards) != world_size:
-            raise ValueError("checkpoint manifest rank membership incomplete")
-        shard = next(
-            (record for record in shards if int(record.get("rank", -1)) == rank),
-            None,
+        step, path = _validate_checkpoint_manifest(
+            root,
+            rank=rank,
+            world_size=world_size,
+            contract_fingerprint=contract_fingerprint,
         )
-        if shard is None:
-            raise ValueError(f"checkpoint manifest missing rank {rank}")
-        step = int(manifest.get("completed_steps", -1))
-        if int(shard.get("completed_steps", -2)) != step or step < 0:
-            raise ValueError("checkpoint manifest generation mismatch")
-        path = root / str(shard.get("file", ""))
-        if path.parent != root or not path.is_file():
-            raise ValueError(f"checkpoint shard missing for rank {rank}")
-        expected = str(shard.get("sha256", ""))
-        if len(expected) != 64 or _file_sha256(path) != expected:
-            raise ValueError(f"checkpoint shard integrity mismatch for rank {rank}")
     except (
         OSError,
         UnicodeError,
