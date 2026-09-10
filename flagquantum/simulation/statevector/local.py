@@ -278,6 +278,109 @@ def _prepare_batched_rotation_matrices(
     return rx_ry_rz_matrices, rotation_matrices
 
 
+def _apply_fused_gate_step(
+    circuit: Circuit,
+    step: _StatevectorFusedGateStep,
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+    rx_ry_rz_matrices: dict[int, torch.Tensor],
+    rotation_matrices: dict[int, torch.Tensor],
+) -> torch.Tensor:
+    if (
+        state.is_cuda
+        and state.dtype == torch.complex64
+        and _triton_ry_rz_pair_enabled()
+        and tuple(item.name for item in step.instructions) == ("ry", "rz")
+    ):
+        ry_angles = _gate_parameters(
+            circuit,
+            step.instructions[0],
+            state,
+            parameter_bindings,
+        )
+        rz_angles = _gate_parameters(
+            circuit,
+            step.instructions[1],
+            state,
+            parameter_bindings,
+        )
+        if (
+            ry_angles is not None
+            and rz_angles is not None
+            and not state.requires_grad
+            and not ry_angles.requires_grad
+            and not rz_angles.requires_grad
+        ):
+            from ..triton_kernels import ry_rz_pair
+
+            circuit._last_statevector_runtime["triton_ry_rz_pair_executed"] += 1
+            result: torch.Tensor = ry_rz_pair(
+                state,
+                ry_angles,
+                rz_angles,
+                wire=step.wires[0],
+                n_wires=circuit.n_wires,
+            )
+            return result
+
+    constant_matrix = _fused_constant_matrix(circuit, step, state, parameter_bindings)
+    if (
+        constant_matrix is not None
+        and state.is_cuda
+        and state.dtype == torch.complex64
+        and _triton_single_qubit_matrix_enabled()
+    ):
+        from ..triton_kernels import single_qubit_matrix
+
+        circuit._last_statevector_runtime["triton_single_qubit_matrix_regions"] += 1
+        result = single_qubit_matrix(
+            state,
+            constant_matrix,
+            wire=step.wires[0],
+            n_wires=circuit.n_wires,
+        )
+        return result
+
+    matrix = rotation_matrices.get(id(step))
+    if matrix is None:
+        matrix = rx_ry_rz_matrices.get(id(step))
+    if matrix is None:
+        matrix = _fused_gate_matrix(
+            step,
+            bsz=state.shape[0],
+            device=state.device,
+            dtype=state.dtype,
+            parameter_bindings=parameter_bindings,
+        )
+    if (
+        state.is_cuda
+        and state.dtype == torch.complex64
+        and len(step.wires) == 1
+        and _triton_single_qubit_matrix_enabled()
+        and (
+            not matrix.requires_grad
+            or _triton_parameterized_single_qubit_matrix_enabled()
+        )
+    ):
+        from ..triton_kernels import single_qubit_matrix
+
+        circuit._last_statevector_runtime["triton_single_qubit_matrix_regions"] += 1
+        result = single_qubit_matrix(
+            state,
+            matrix,
+            wire=step.wires[0],
+            n_wires=circuit.n_wires,
+        )
+        return result
+    return _apply_matrix(
+        state,
+        matrix,
+        step.wires,
+        circuit.n_wires,
+        layout=step.layout,
+    )
+
+
 def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
     """Execute one Circuit through the Simulation-owned statevector loop."""
 
@@ -354,104 +457,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 )
                 continue
             if isinstance(step, _StatevectorFusedGateStep):
-                if (
-                    output.is_cuda
-                    and output.dtype == torch.complex64
-                    and _triton_ry_rz_pair_enabled()
-                    and tuple(item.name for item in step.instructions) == ("ry", "rz")
-                ):
-                    ry_angles = _gate_parameters(
-                        circuit,
-                        step.instructions[0],
-                        output,
-                        parameter_bindings,
-                    )
-                    rz_angles = _gate_parameters(
-                        circuit,
-                        step.instructions[1],
-                        output,
-                        parameter_bindings,
-                    )
-                    if (
-                        ry_angles is not None
-                        and rz_angles is not None
-                        and not output.requires_grad
-                        and not ry_angles.requires_grad
-                        and not rz_angles.requires_grad
-                    ):
-                        from ..triton_kernels import ry_rz_pair
-
-                        output = ry_rz_pair(
-                            output,
-                            ry_angles,
-                            rz_angles,
-                            wire=step.wires[0],
-                            n_wires=circuit.n_wires,
-                        )
-                        circuit._last_statevector_runtime[
-                            "triton_ry_rz_pair_executed"
-                        ] += 1
-                        continue
-                constant_matrix = _fused_constant_matrix(
-                    circuit, step, output, parameter_bindings
-                )
-                if (
-                    constant_matrix is not None
-                    and output.is_cuda
-                    and output.dtype == torch.complex64
-                    and _triton_single_qubit_matrix_enabled()
-                ):
-                    from ..triton_kernels import single_qubit_matrix
-
-                    output = single_qubit_matrix(
-                        output,
-                        constant_matrix,
-                        wire=step.wires[0],
-                        n_wires=circuit.n_wires,
-                    )
-                    circuit._last_statevector_runtime[
-                        "triton_single_qubit_matrix_regions"
-                    ] += 1
-                    continue
-                matrix = batched_rotation_matrices.get(id(step))
-                if matrix is None:
-                    matrix = batched_rx_ry_rz_matrices.get(id(step))
-                if matrix is None:
-                    matrix = _fused_gate_matrix(
-                        step,
-                        bsz=output.shape[0],
-                        device=output.device,
-                        dtype=output.dtype,
-                        parameter_bindings=parameter_bindings,
-                    )
-                if (
-                    output.is_cuda
-                    and output.dtype == torch.complex64
-                    and len(step.wires) == 1
-                    and _triton_single_qubit_matrix_enabled()
-                    and (
-                        not matrix.requires_grad
-                        or _triton_parameterized_single_qubit_matrix_enabled()
-                    )
-                ):
-                    from ..triton_kernels import single_qubit_matrix
-
-                    output = single_qubit_matrix(
-                        output,
-                        matrix,
-                        wire=step.wires[0],
-                        n_wires=circuit.n_wires,
-                    )
-                    circuit._last_statevector_runtime[
-                        "triton_single_qubit_matrix_regions"
-                    ] += 1
-                    continue
-                output = _apply_matrix(
+                output = _apply_fused_gate_step(
+                    circuit,
+                    step,
                     output,
-                    matrix,
-                    step.wires,
-                    circuit.n_wires,
-                    layout=step.layout,
+                    parameter_bindings,
+                    batched_rx_ry_rz_matrices,
+                    batched_rotation_matrices,
                 )
                 continue
             instruction = step.instruction
