@@ -18,9 +18,6 @@ from .reverse_observables import (
 from .reverse_transport import receive_reverse_tensor, send_reverse_tensor
 from .state import RankOwnedMPSState
 
-_recv = receive_reverse_tensor
-_send = send_reverse_tensor
-
 
 def mps_multi_observable_mse_and_adjoints(
     state: RankOwnedMPSState,
@@ -131,13 +128,15 @@ def mps_site_sharded_z_zz_scan(
             if owner < state.world_size - 1:
                 sequence = 2_500_000 + owner
                 if state.rank == owner:
-                    _send(
+                    send_reverse_tensor(
                         torch.stack([item.detach() for item in outputs]),
                         destination=owner + 1,
                         sequence=sequence,
                     )
                 elif state.rank == owner + 1:
-                    carry = _recv(reference, source=owner, sequence=sequence)
+                    carry = receive_reverse_tensor(
+                        reference, source=owner, sequence=sequence
+                    )
 
     assert (
         local_inputs is not None
@@ -199,13 +198,15 @@ def mps_site_sharded_z_zz_scan(
             if owner > 0:
                 sequence = 2_600_000 + owner
                 if state.rank == owner:
-                    _send(
+                    send_reverse_tensor(
                         torch.stack(input_grads),
                         destination=owner - 1,
                         sequence=sequence,
                     )
                 elif state.rank == owner - 1:
-                    received = _recv(reference, source=owner, sequence=sequence)
+                    received = receive_reverse_tensor(
+                        reference, source=owner, sequence=sequence
+                    )
                     output_grads = tuple(received.unbind(0))
 
     if state.rank != state.world_size - 1:
@@ -299,7 +300,7 @@ def site_sharded_z_zz_objective_pipeline(
                     torch.zeros_like(base) for _ in parsed
                 )
             else:
-                carry = _recv(
+                carry = receive_reverse_tensor(
                     reference, source=state.rank - 1, sequence=4_000_000 + slot
                 )
                 inputs = tuple(item.detach() for item in carry.unbind(0))
@@ -319,7 +320,7 @@ def site_sharded_z_zz_objective_pipeline(
                 )
             local_graphs.append((state, targets, inputs, outputs, variables))
             if state.rank < state.world_size - 1:
-                _send(
+                send_reverse_tensor(
                     torch.stack([item.detach() for item in outputs]),
                     destination=state.rank + 1,
                     sequence=4_000_000 + slot,
@@ -345,7 +346,7 @@ def site_sharded_z_zz_objective_pipeline(
                 )
                 loss = objective.detach()
             else:
-                received = _recv(
+                received = receive_reverse_tensor(
                     reference, source=state.rank + 1, sequence=4_500_000 + slot
                 )
                 with record_function(f"flagquantum::mps::pipeline_reverse_slot_{slot}"):
@@ -363,7 +364,7 @@ def site_sharded_z_zz_objective_pipeline(
                 for value, grad in zip(inputs, derivatives[: len(inputs)])
             )
             if state.rank > 0:
-                _send(
+                send_reverse_tensor(
                     torch.stack(input_grads),
                     destination=state.rank - 1,
                     sequence=4_500_000 + slot,

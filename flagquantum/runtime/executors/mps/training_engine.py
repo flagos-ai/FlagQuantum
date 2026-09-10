@@ -39,8 +39,6 @@ from .training_records import (
 )
 from .transport import warmup_mps_neighbor_communicators
 
-_parameter_layout = build_mps_parameter_layout
-
 
 def _nvtx_phase(name: str, device: torch.device) -> AbstractContextManager[None]:
     return torch.cuda.nvtx.range(name) if device.type == "cuda" else nullcontext()
@@ -609,7 +607,7 @@ def _step_circuit_ir(
     if circuit_factory is None:
         return base_ir
     step_ir = ensure_circuit_ir(circuit_factory())
-    step_parameters, _ = _parameter_layout(step_ir)
+    step_parameters, _ = build_mps_parameter_layout(step_ir)
     if tuple(map(id, step_parameters)) != tuple(map(id, parameters)):
         raise MPSTrainingError("circuit_factory must reuse trainable leaf tensors")
     return step_ir
@@ -736,7 +734,7 @@ def train_distributed_mps(
         )
     )
 
-    parameters, _ = _parameter_layout(ir)
+    parameters, _ = build_mps_parameter_layout(ir)
     owners = tuple(index % world_size for index in range(len(parameters)))
     owned_indices = tuple(index for index, owner in enumerate(owners) if owner == rank)
     owned = [parameters[index] for index in owned_indices]
