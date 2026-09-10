@@ -7,7 +7,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from flagquantum.remote.compute.jiuding import JiudingClient, _load_credentials
+from flagquantum.remote.compute._jiuding_credentials import load_jiuding_credentials
+from flagquantum.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
 
@@ -21,7 +22,7 @@ def test_complete_environment_credentials_take_priority(monkeypatch):
         lambda path: pytest.fail(f"unexpected credential file read: {path}"),
     )
 
-    assert _load_credentials() == ("env-ak", "env-sk")
+    assert load_jiuding_credentials() == ("env-ak", "env-sk")
 
 
 @pytest.mark.parametrize("present", ["JIUDING_AK", "JIUDING_SK"])
@@ -36,7 +37,7 @@ def test_partial_environment_credentials_are_rejected(monkeypatch, present):
     )
 
     with pytest.raises(RuntimeError, match="partial environment credentials") as error:
-        _load_credentials()
+        load_jiuding_credentials()
     assert "secret-value" not in str(error.value)
 
 
@@ -49,7 +50,7 @@ def test_injected_workspace_credentials_are_decoded_as_one_pair(monkeypatch):
     }
     monkeypatch.setattr(Path, "read_bytes", lambda path: encoded[path.name])
 
-    assert _load_credentials() == ("workspace-ak", "workspace-sk")
+    assert load_jiuding_credentials() == ("workspace-ak", "workspace-sk")
 
 
 @pytest.mark.parametrize("failure", ["missing", "malformed"])
@@ -70,7 +71,7 @@ def test_invalid_injected_credentials_fail_without_leaking_secrets(
     monkeypatch.setattr(Path, "read_bytes", read_bytes)
 
     with pytest.raises(RuntimeError, match="both injected credential files") as error:
-        _load_credentials()
+        load_jiuding_credentials()
     assert visible_secret not in str(error.value)
 
 
@@ -291,6 +292,16 @@ def test_platform_success_requires_matching_scientific_result(client, tmp_path):
         client.result(receipt)
     path.write_text(json.dumps({"run_id": "run", "value": {"energy": -1}}))
     assert client.result(receipt) == {"energy": -1}
+
+
+@pytest.mark.parametrize("payload", (None, [], {"run_id": "run"}))
+def test_successful_job_rejects_malformed_result_file(client, tmp_path, payload):
+    path = tmp_path / "result.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    client.status = Mock(return_value=[{"status": "Succeed"}])
+
+    with pytest.raises(RuntimeError, match="JSON object|missing its value"):
+        client.result({"run_id": "run", "result_path": str(path)})
 
 
 def test_empty_jobs_timeout_does_not_cancel_or_submit(client):
