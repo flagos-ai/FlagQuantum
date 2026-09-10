@@ -30,7 +30,6 @@ from .compiled_layers import collect_compiled_mps_layer
 from .errors import NonlocalMPSCompilationError
 from .factorization import mps_qr_forward
 from .records import (
-    MPSParameterGradientOwnership,
     MPSReverseCheckpointPolicy,
     MPSReverseContractError,
     MPSReverseTape,
@@ -47,6 +46,7 @@ from .reverse_observables import (
     parse_mps_z_zz_terms,
 )
 from .reverse_planning import (
+    build_mps_gradient_ownership,
     build_mps_parameter_layout,
     cached_mps_gradient_buckets,
     cached_mps_reverse_segments,
@@ -93,6 +93,7 @@ _cached_gradient_bucket_layout = cached_mps_gradient_buckets
 _heisenberg_mpo_energy_and_adjoints = mps_heisenberg_energy_and_adjoints
 _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
 _parameter_layout = build_mps_parameter_layout
+_gradient_ownership = build_mps_gradient_ownership
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
 _parse_z_zz_terms = parse_mps_z_zz_terms
@@ -1067,24 +1068,11 @@ def execute_torch_distributed_mps_reverse(
         hamiltonian_terms=hamiltonian_terms,
         compile_observables=compile_observables,
     )
-    occurrences = [0] * len(parameters)
-    owners: list[set[int]] = [set() for _ in parameters]
-    for record in tape.records:
-        for parameter_index in record.parameter_indices:
-            occurrences[parameter_index] += 1
-            owners[parameter_index].add(record.compute_owner)
-    ownership_records = tuple(
-        MPSParameterGradientOwnership(
-            index,
-            tuple(sorted(owners[index])),
-            occurrences[index],
-            (
-                "reduce_sum_to_optimizer_owner"
-                if gradient_owner_ranks is not None and world > 1
-                else "all_reduce_sum" if world > 1 else "local"
-            ),
-        )
-        for index in range(len(parameters))
+    ownership_records = _gradient_ownership(
+        tape,
+        len(parameters),
+        world_size=world,
+        optimizer_owner_ranks=gradient_owner_ranks,
     )
     reverse_segments, reverse_segment_cache_hit = _cached_reverse_execution_segments(
         tape, fuse_owner_local=fuse_local_reverse

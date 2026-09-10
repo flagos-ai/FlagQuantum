@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from .records import (
+    MPSParameterGradientOwnership,
     MPSReverseContractError,
     MPSReverseTape,
     MPSReverseTapeRecord,
@@ -279,9 +280,42 @@ def build_mps_parameter_layout(
     return tuple(parameters), tuple(instruction_indices)
 
 
+def build_mps_gradient_ownership(
+    tape: MPSReverseTape,
+    parameter_count: int,
+    *,
+    world_size: int,
+    optimizer_owner_ranks: Sequence[int] | None,
+) -> tuple[MPSParameterGradientOwnership, ...]:
+    """Describe where each parameter gradient is produced and reduced."""
+    occurrences = [0] * parameter_count
+    owners: list[set[int]] = [set() for _ in range(parameter_count)]
+    for record in tape.records:
+        for parameter_index in record.parameter_indices:
+            occurrences[parameter_index] += 1
+            owners[parameter_index].add(record.compute_owner)
+
+    if optimizer_owner_ranks is not None and world_size > 1:
+        reduction = "reduce_sum_to_optimizer_owner"
+    elif world_size > 1:
+        reduction = "all_reduce_sum"
+    else:
+        reduction = "local"
+    return tuple(
+        MPSParameterGradientOwnership(
+            index,
+            tuple(sorted(owners[index])),
+            occurrences[index],
+            reduction,
+        )
+        for index in range(parameter_count)
+    )
+
+
 __all__ = (
     "cached_mps_gradient_buckets",
     "cached_mps_reverse_segments",
+    "build_mps_gradient_ownership",
     "clear_mps_reverse_segment_cache",
     "plan_mps_canonicalization_bonds",
     "build_mps_parameter_layout",
