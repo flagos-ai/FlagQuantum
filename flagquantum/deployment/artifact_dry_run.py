@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any, Mapping
 
-from ..core._artifacts import CircuitArtifactBindingResult, ProgramArtifactV2
+from ..core._artifacts import (
+    CircuitArtifactBindingResult,
+    ProgramArtifactV2,
+    ProgramArtifactV3,
+)
 from ..core._compilation_evidence import CompilationEvidenceBundle
 from ..core._compilation_evidence_v2 import CompilationEvidenceBundleV2
+from ..core._compilation_evidence_v3 import CompilationEvidenceBundleV3
 from ..core.target_capabilities import CapabilityMatchResult, TargetCapabilitySnapshot
 from ..errors import ExecutionError
 from ..runtime.artifact_preflight import preflight_executable_artifact
@@ -18,13 +24,16 @@ from ..runtime.compilation_evidence import verify_compilation_evidence_handoff
 class ArtifactDeploymentDryRun:
     """Immutable handoff prepared without credentials or provider side effects."""
 
-    artifact: ProgramArtifactV2 = field(repr=False)
+    artifact: ProgramArtifactV2 | ProgramArtifactV3 = field(repr=False)
     provider: str
     target_id: str
     shots: int
     capability_match: CapabilityMatchResult = field(repr=False)
     compilation_evidence: (
-        CompilationEvidenceBundle | CompilationEvidenceBundleV2 | None
+        CompilationEvidenceBundle
+        | CompilationEvidenceBundleV2
+        | CompilationEvidenceBundleV3
+        | None
     ) = field(
         default=None,
         repr=False,
@@ -57,14 +66,43 @@ class ArtifactDeploymentDryRun:
         evidence = self.compilation_evidence
         return None if evidence is None else evidence.bundle_identity
 
+    @property
+    def result_schema(self) -> Mapping[str, Any]:
+        """Return the immutable, already-verified executable result contract."""
+
+        schema = self.artifact.result_schema
+        if not isinstance(schema, Mapping):
+            raise ExecutionError("executable artifact result schema is missing")
+        return schema
+
+    @property
+    def logical_result_width(self) -> int:
+        """Return the result width exposed to the caller."""
+
+        key = (
+            "logical_wires" if isinstance(self.artifact, ProgramArtifactV3) else "wires"
+        )
+        return len(tuple(self.result_schema[key]))
+
+    @property
+    def physical_result_slots(self) -> tuple[int, ...] | None:
+        """Return compilation-local slots for v3, never provider qubit IDs."""
+
+        if not isinstance(self.artifact, ProgramArtifactV3):
+            return None
+        return tuple(self.result_schema["physical_result_slots"])
+
 
 def prepare_artifact_deployment(
-    artifact: ProgramArtifactV2,
+    artifact: ProgramArtifactV2 | ProgramArtifactV3,
     *,
     snapshot: TargetCapabilitySnapshot,
     source: ProgramArtifactV2 | CircuitArtifactBindingResult | None = None,
     compilation_evidence: (
-        CompilationEvidenceBundle | CompilationEvidenceBundleV2 | None
+        CompilationEvidenceBundle
+        | CompilationEvidenceBundleV2
+        | CompilationEvidenceBundleV3
+        | None
     ) = None,
     provider: str,
     target_id: str,
@@ -73,8 +111,8 @@ def prepare_artifact_deployment(
 ) -> ArtifactDeploymentDryRun:
     """Build a side-effect-free handoff after target and capability checks."""
 
-    if not isinstance(artifact, ProgramArtifactV2):
-        raise TypeError("Deployment dry run currently requires ProgramArtifactV2")
+    if not isinstance(artifact, (ProgramArtifactV2, ProgramArtifactV3)):
+        raise TypeError("artifact must be a ProgramArtifactV2 or ProgramArtifactV3")
     if not isinstance(provider, str) or not provider:
         raise ValueError("provider must be a non-empty string")
     if not isinstance(target_id, str) or not target_id:
@@ -97,6 +135,12 @@ def prepare_artifact_deployment(
     )
     if (source is None) != (compilation_evidence is None):
         raise ValueError("source and compilation_evidence must be supplied together")
+    if isinstance(artifact, ProgramArtifactV3) and not isinstance(
+        compilation_evidence, CompilationEvidenceBundleV3
+    ):
+        raise ValueError(
+            "ProgramArtifactV3 deployment requires matching version 3 evidence"
+        )
     if compilation_evidence is not None:
         assert source is not None
         verify_compilation_evidence_handoff(

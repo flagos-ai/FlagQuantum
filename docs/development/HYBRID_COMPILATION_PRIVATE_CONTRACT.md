@@ -1282,3 +1282,15 @@ output: ordered OpenQASM emission owns physical-to-classical placement, and the
 adapter must return those classical positions in logical-wire order. Scalar and
 physical-width results fail closed. Deployment v3 handoff and provider execution
 remain outside this phase.
+
+Phase 48 completes the approved private version-3 profile at the Deployment dry-run
+boundary. A ProgramArtifact v3 cannot enter that handoff without its source and a
+matching compilation-evidence 3.0 bundle. Deployment delegates target, capability,
+shot, lineage, plan, allocation, and result-projection validation to the Runtime
+checks, then retains the exact immutable artifact and evidence objects.
+
+The dry-run view exposes logical result width and compilation-local physical result
+slots. Those slots are not provider qubit identifiers and are not translated or
+enriched. The handoff contains no credentials or provider task identifier, performs
+no network operation, and cannot claim target acceptance or execution. Public root
+exports and default execution remain unchanged.

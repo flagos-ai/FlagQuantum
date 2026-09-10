@@ -358,12 +358,27 @@ def test_allocated_plan_emits_program_artifact_v3_with_logical_projection(
         shots=8,
         evaluated_at=_NOW,
     ).executable
-    with pytest.raises(TypeError, match="currently requires ProgramArtifactV2"):
+    prepared = prepare_artifact_deployment(
+        artifact,
+        snapshot=_snapshot(),
+        source=source_artifact,
+        compilation_evidence=evidence,
+        provider="flagquantum.test",
+        target_id="phase43-target",
+        shots=8,
+        evaluated_at=_NOW,
+    )
+    assert prepared.artifact is artifact
+    assert prepared.compilation_evidence is evidence
+    assert prepared.logical_result_width == 2
+    assert prepared.physical_result_slots == (0, 2)
+    assert prepared.result_schema is artifact.result_schema
+    assert not hasattr(prepared, "credentials")
+    assert not hasattr(prepared, "task_id")
+    with pytest.raises(ValueError, match="requires matching version 3 evidence"):
         prepare_artifact_deployment(
-            artifact,  # type: ignore[arg-type]
+            artifact,
             snapshot=_snapshot(),
-            source=source_artifact,
-            compilation_evidence=evidence,  # type: ignore[arg-type]
             provider="flagquantum.test",
             target_id="phase43-target",
             shots=8,

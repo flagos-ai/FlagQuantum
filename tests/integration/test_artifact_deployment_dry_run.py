@@ -155,6 +155,9 @@ def test_dry_run_prepares_exact_verified_program_without_submission() -> None:
     assert prepared.artifact_identity == artifact.artifact_identity
     assert prepared.snapshot_id == snapshot.snapshot_id
     assert prepared.shots == 1024
+    assert prepared.logical_result_width == 2
+    assert prepared.physical_result_slots is None
+    assert prepared.result_schema is artifact.result_schema
 
 
 @pytest.mark.parametrize(
