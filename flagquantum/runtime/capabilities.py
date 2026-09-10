@@ -241,6 +241,70 @@ class CapabilityPreflightReport:
             raise RuntimeError(f"operator capability preflight failed: {summary}")
 
 
+def _index_capability_evidence(
+    evidence: Iterable[CapabilityEvidence],
+    *,
+    device_type: str,
+    profile_hash: str,
+) -> tuple[
+    dict[tuple[str, str], list[CapabilityEvidence]],
+    dict[tuple[str, str], list[CapabilityEvidence]],
+]:
+    verified: dict[tuple[str, str], list[CapabilityEvidence]] = {}
+    failed: dict[tuple[str, str], list[CapabilityEvidence]] = {}
+    for item in evidence:
+        if item.device_type != device_type or item.profile_hash != profile_hash:
+            continue
+        key = (item.operator, item.dtype)
+        if item.is_verified:
+            verified.setdefault(key, []).append(item)
+        elif item.probe_source in _PASSED_PROBE_SOURCES:
+            failed.setdefault(key, []).append(item)
+    return verified, failed
+
+
+def _match_requirement(
+    requirement: OperatorRequirement,
+    dtype: str,
+    verified: Mapping[tuple[str, str], list[CapabilityEvidence]],
+    failed: Mapping[tuple[str, str], list[CapabilityEvidence]],
+) -> tuple[str | None, PreflightBlocker | None]:
+    candidates = verified.get((requirement.operator, dtype), [])
+    if not candidates:
+        failures = failed.get((requirement.operator, dtype), [])
+        reason = "no verified probe"
+        if failures:
+            details = sorted(item.details or "probe did not pass" for item in failures)
+            reason = "probe failed: " + " | ".join(details)
+        return None, PreflightBlocker(requirement.operator, dtype, reason)
+
+    matching = [
+        item
+        for item in candidates
+        if (not requirement.forward or item.forward)
+        and (not requirement.backward or item.backward)
+        and (not requirement.deterministic or item.deterministic is True)
+    ]
+    if matching:
+        return min(item.evidence_id for item in matching), None
+
+    missing: list[str] = []
+    if requirement.forward and not any(item.forward for item in candidates):
+        missing.append("forward")
+    if requirement.backward and not any(item.backward for item in candidates):
+        missing.append("backward")
+    if requirement.deterministic and not any(
+        item.deterministic is True for item in candidates
+    ):
+        missing.append("determinism")
+    reason = (
+        "missing " + ", ".join(missing)
+        if missing
+        else "no single probe satisfies the complete requirement"
+    )
+    return None, PreflightBlocker(requirement.operator, dtype, reason)
+
+
 def preflight_operator_profile(
     profile: OperatorProfile,
     evidence: Iterable[CapabilityEvidence],
@@ -263,63 +327,24 @@ def preflight_operator_profile(
         raise ValueError(
             f"profile {profile.name!r} does not define dtypes: {unknown_dtypes}"
         )
-    relevant: dict[tuple[str, str], list[CapabilityEvidence]] = {}
-    failed: dict[tuple[str, str], list[CapabilityEvidence]] = {}
-    for item in evidence:
-        if item.device_type != device_type or item.profile_hash != profile.profile_hash:
-            continue
-        if item.is_verified:
-            relevant.setdefault((item.operator, item.dtype), []).append(item)
-        elif item.probe_source in _PASSED_PROBE_SOURCES:
-            failed.setdefault((item.operator, item.dtype), []).append(item)
+    verified, failed = _index_capability_evidence(
+        evidence,
+        device_type=device_type,
+        profile_hash=profile.profile_hash,
+    )
     blockers: list[PreflightBlocker] = []
     accepted: list[str] = []
     for requirement in profile.requirements:
         for dtype in requirement.dtypes:
             if selected_dtypes is not None and dtype not in selected_dtypes:
                 continue
-            candidates = relevant.get((requirement.operator, dtype), [])
-            if not candidates:
-                failures = failed.get((requirement.operator, dtype), [])
-                reason = "no verified probe"
-                if failures:
-                    details = sorted(
-                        item.details or "probe did not pass" for item in failures
-                    )
-                    reason = "probe failed: " + " | ".join(details)
-                blockers.append(PreflightBlocker(requirement.operator, dtype, reason))
-                continue
-            matching = [
-                item
-                for item in candidates
-                if (not requirement.forward or item.forward)
-                and (not requirement.backward or item.backward)
-                and (not requirement.deterministic or item.deterministic is True)
-            ]
-            if matching:
-                accepted.append(min(item.evidence_id for item in matching))
-                continue
-            missing: list[str] = []
-            if requirement.forward and not any(item.forward for item in candidates):
-                missing.append("forward")
-            if requirement.backward and not any(item.backward for item in candidates):
-                missing.append("backward")
-            if requirement.deterministic and not any(
-                item.deterministic is True for item in candidates
-            ):
-                missing.append("determinism")
-            reason = (
-                "missing " + ", ".join(missing)
-                if missing
-                else "no single probe satisfies the complete requirement"
+            evidence_id, blocker = _match_requirement(
+                requirement, dtype, verified, failed
             )
-            blockers.append(
-                PreflightBlocker(
-                    requirement.operator,
-                    dtype,
-                    reason,
-                )
-            )
+            if evidence_id is not None:
+                accepted.append(evidence_id)
+            if blocker is not None:
+                blockers.append(blocker)
     return CapabilityPreflightReport(
         profile=profile.name,
         profile_hash=profile.profile_hash,
