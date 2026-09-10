@@ -83,6 +83,82 @@ def _statevector_target(
     raise ValueError(f"unsupported execution target: {target!r}")
 
 
+def _target_request(
+    target: str,
+    *,
+    bitstring: int | str | Sequence[int] | None,
+    bitstrings: Sequence[int | str | Sequence[int]] | None,
+    observables: Sequence[Mapping[str, Sequence[int]]] | None,
+) -> tuple[
+    tuple[int | str | Sequence[int], ...],
+    tuple[Mapping[str, Sequence[int]], ...],
+    int,
+]:
+    targets: tuple[int | str | Sequence[int], ...]
+    if target == "single_amplitude":
+        if bitstring is None:
+            raise ValueError("single_amplitude requires bitstring")
+        targets = (bitstring,)
+    else:
+        targets = tuple(bitstrings or ())
+    observable_batch = tuple(observables or ())
+    if target == "few_amplitudes" and not targets:
+        raise ValueError("few_amplitudes requires at least one bitstring")
+    if target == "local_observables" and not observable_batch:
+        raise ValueError("local_observables requires at least one observable")
+    target_count = (
+        len(targets)
+        if target in {"single_amplitude", "few_amplitudes"}
+        else len(observable_batch) if target == "local_observables" else 1
+    )
+    return targets, observable_batch, target_count
+
+
+def _tensor_network_target(
+    circuit: Any,
+    *,
+    target: str,
+    bitstrings: tuple[int | str | Sequence[int], ...],
+    observables: tuple[Mapping[str, Sequence[int]], ...],
+    world_size: int,
+    options: Mapping[str, Any],
+) -> tuple[torch.Tensor, Mapping[str, Any] | None]:
+    if target == "single_amplitude":
+        from ..simulation.tensor_network.entrypoints import tensor_network_amplitude
+
+        return tensor_network_amplitude(circuit, bitstrings[0], **dict(options)), None
+    if target == "few_amplitudes" and world_size == 1:
+        from ..simulation.tensor_network.entrypoints import tensor_network_amplitudes
+
+        return tensor_network_amplitudes(circuit, bitstrings, **dict(options)), None
+    if target == "few_amplitudes":
+        from .executors.tensor_network.execution import (
+            distributed_tensor_network_amplitudes,
+        )
+
+        result = distributed_tensor_network_amplitudes(
+            circuit, bitstrings, world_size=world_size, **dict(options)
+        )
+        return result.values, result.summary()
+    if target == "local_observables" and world_size == 1:
+        from ..simulation.tensor_network.entrypoints import tensor_network_expectations
+
+        return tensor_network_expectations(circuit, observables, **dict(options)), None
+    if target == "local_observables":
+        from .executors.tensor_network.execution import (
+            distributed_tensor_network_expectations,
+        )
+
+        result = distributed_tensor_network_expectations(
+            circuit,
+            observables,
+            world_size=world_size,
+            **dict(options),
+        )
+        return result.values, result.summary()
+    raise ValueError("tensor_network target execution requires sparse output")
+
+
 def run_target(
     circuit_or_ir: Any,
     *,
@@ -100,22 +176,11 @@ def run_target(
 ) -> TargetExecutionResult:
     """Select and execute a backend without turning sparse output into full state."""
 
-    targets: tuple[int | str | Sequence[int], ...]
-    if target == "single_amplitude":
-        if bitstring is None:
-            raise ValueError("single_amplitude requires bitstring")
-        targets = (bitstring,)
-    else:
-        targets = tuple(bitstrings or ())
-    observable_batch = tuple(observables or ())
-    if target == "few_amplitudes" and not targets:
-        raise ValueError("few_amplitudes requires at least one bitstring")
-    if target == "local_observables" and not observable_batch:
-        raise ValueError("local_observables requires at least one observable")
-    target_count = (
-        len(targets)
-        if target in {"single_amplitude", "few_amplitudes"}
-        else len(observable_batch) if target == "local_observables" else 1
+    targets, observable_batch, target_count = _target_request(
+        target,
+        bitstring=bitstring,
+        bitstrings=bitstrings,
+        observables=observables,
     )
     selection = select_backend_by_cost(
         circuit_or_ir,
@@ -143,48 +208,14 @@ def run_target(
             options=options,
         )
     elif backend == "tensor_network":
-        if target == "single_amplitude":
-            from ..simulation.tensor_network.entrypoints import tensor_network_amplitude
-
-            values = tensor_network_amplitude(circuit_or_ir, targets[0], **options)
-        elif target == "few_amplitudes" and world_size == 1:
-            from ..simulation.tensor_network.entrypoints import (
-                tensor_network_amplitudes,
-            )
-
-            values = tensor_network_amplitudes(circuit_or_ir, targets, **options)
-        elif target == "few_amplitudes":
-            from .executors.tensor_network.execution import (
-                distributed_tensor_network_amplitudes,
-            )
-
-            result = distributed_tensor_network_amplitudes(
-                circuit_or_ir, targets, world_size=world_size, **options
-            )
-            values, execution_summary = result.values, result.summary()
-        elif target == "local_observables" and world_size == 1:
-            from ..simulation.tensor_network.entrypoints import (
-                tensor_network_expectations,
-            )
-
-            values = tensor_network_expectations(
-                circuit_or_ir, observable_batch, **options
-            )
-        elif target == "local_observables":
-            from .executors.tensor_network.execution import (
-                distributed_tensor_network_expectations,
-            )
-
-            expectation_result = distributed_tensor_network_expectations(
-                circuit_or_ir,
-                observable_batch,
-                world_size=world_size,
-                **options,
-            )
-            values = expectation_result.values
-            execution_summary = expectation_result.summary()
-        else:
-            raise ValueError("tensor_network target execution requires sparse output")
+        values, execution_summary = _tensor_network_target(
+            circuit_or_ir,
+            target=target,
+            bitstrings=targets,
+            observables=observable_batch,
+            world_size=world_size,
+            options=options,
+        )
     elif backend == "mps":
         if world_size > 1:
             raise NotImplementedError(
