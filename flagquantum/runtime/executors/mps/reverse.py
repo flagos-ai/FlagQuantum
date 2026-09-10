@@ -14,7 +14,6 @@ from ....simulation.mps.compiled_layers import (
     apply_compiled_mps_one_site_bucket,
     contract_mps_two_site_bucket,
 )
-from ....simulation.mps.observables import transfer_mps_operator_environment
 from ....simulation.mps.rank_local import (
     apply_one_mps_tensor,
     apply_rank_local_mps_instruction,
@@ -67,9 +66,7 @@ from .reverse_transport import (
     send_static_reverse_tensor,
 )
 from .reverse_z_observables import (
-    mps_fused_z_zz_mse_and_adjoints,
     mps_multi_observable_mse_and_adjoints,
-    mps_site_sharded_z_zz_scan,
     site_sharded_z_zz_objective_pipeline,
     site_sharded_z_zz_observations,
 )
@@ -80,15 +77,7 @@ from .state import (
 )
 
 _rank_owned_initial_tensors = normalize_rank_owned_initial_tensors
-_fused_z_zz_mse_and_adjoints = mps_fused_z_zz_mse_and_adjoints
-_heisenberg_mpo_energy_and_adjoints = mps_heisenberg_energy_and_adjoints
-_multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
-_expectation_and_adjoints = mps_expectation_and_adjoints
-_parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
-_parse_z_zz_terms = parse_mps_z_zz_terms
 _record = build_mps_reverse_tape_record
-_site_sharded_z_zz_scan = mps_site_sharded_z_zz_scan
-_transfer = transfer_mps_operator_environment
 _validate_svd_gaps = validate_mps_svd_gaps
 
 _LayerHaloPrefetch = ReverseLayerHaloPrefetch
@@ -503,24 +492,24 @@ def _evaluate_reverse_objective(
     compile_observables: bool,
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor], str]:
     if hamiltonian_terms is not None:
-        coefficients = _parse_heisenberg_hamiltonian_terms(state, hamiltonian_terms)
+        coefficients = parse_mps_heisenberg_terms(state, hamiltonian_terms)
         if coefficients is None:
             raise MPSReverseContractError(
                 "hamiltonian_terms currently supports Z fields and adjacent "
                 "XX, YY, or ZZ couplings"
             )
-        value, adjoints = _heisenberg_mpo_energy_and_adjoints(state, coefficients)
+        value, adjoints = mps_heisenberg_energy_and_adjoints(state, coefficients)
         return value, adjoints, "heisenberg_mpo_five_channel_scan"
     if observable_terms is None:
         adjoint_wires = {wire for record in tape.records for wire in record.wires}
-        value, adjoints = _expectation_and_adjoints(
+        value, adjoints = mps_expectation_and_adjoints(
             state,
             observable or {0: "z"},
             adjoint_wires=tuple(adjoint_wires),
         )
         return value, adjoints, "single_observable_scan"
-    fused = _parse_z_zz_terms(state, observable_terms) is not None
-    value, adjoints = _multi_observable_mse_and_adjoints(
+    fused = parse_mps_z_zz_terms(state, observable_terms) is not None
+    value, adjoints = mps_multi_observable_mse_and_adjoints(
         state, observable_terms, compiled_observables=compile_observables
     )
     execution = "fused_z_zz_channel_scan" if fused else "single_observable_scan"
