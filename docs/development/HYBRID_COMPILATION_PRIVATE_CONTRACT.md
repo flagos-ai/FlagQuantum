@@ -822,3 +822,30 @@ unoptimized paths must agree, and a second optimization run must be a fixed
 point. Negative runtime loop steps remain unsupported and must fail identically
 with optimization enabled or disabled. No new optimization semantics, target
 IR, public API, or performance claim is authorized.
+
+## Phase 25 capability-driven target-legality authorization
+
+Phase 25 may add a private Compiler-owned legality stage after hybrid lowering
+has produced the existing Core-owned `CircuitIR`. The stage derives mandatory
+logical-qubit capacity, maximum program-operation count, effective precision,
+measurement-result profile, and finite-shot capacity requirements solely from
+that circuit. It validates every distinct circuit opcode through the existing
+operator-lowering registry and matches the derived `RequirementSet` against one
+explicit Core-owned `TargetCapabilitySnapshot`.
+
+Success retains the exact input `CircuitIR` and records the backend, requirement
+identity, snapshot identity, resolved lowering strategies, pure match result,
+and a deterministic legalization identity. Failure in operator lowering or any
+mandatory target capability fails before emission. All fallback authorization
+axes remain false. The stage does not select a backend or target, probe a
+device, mutate a circuit, execute numerical work, or move Runtime planning into
+Compiler.
+
+The current Core `gates.native` vocabulary admits richer provider descriptors
+whose parameter-domain compatibility is not expressible by its conservative
+collection matcher. Phase 25 therefore uses the existing Compiler-owned
+operator-lowering registry for opcode legality and does not claim native-gate
+legalization. Native gate-set normalization, decomposition, topology routing,
+scheduling, artifact-profile negotiation, and target emission remain later,
+separately verified stages. No `TargetIR`, public export, stable API change,
+automatic default-path integration, or performance claim is authorized.

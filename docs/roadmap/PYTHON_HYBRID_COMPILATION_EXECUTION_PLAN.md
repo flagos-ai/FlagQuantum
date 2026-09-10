@@ -913,6 +913,32 @@ Exit gate:
 - negative-step behavior agrees with optimization enabled and disabled;
 - no new optimization, target IR, public API, or performance claim is added.
 
+### Phase 25 — capability-driven target legality
+
+Insert a private legality gate after hybrid lowering has produced the existing
+Core-owned `CircuitIR`. Derive only requirements already authoritative in the
+circuit: logical width, operation count, effective precision, result kinds, and
+finite shots. Validate distinct opcodes through the existing operator-lowering
+registry and match the requirements against one caller-supplied Core Target
+Capabilities v1 snapshot.
+
+Return the same `CircuitIR` with immutable evidence containing the requirement,
+snapshot, lowering, and legalization identities. Reject missing opcode lowering,
+insufficient capacity, result mismatch, precision mismatch, and shot overflow
+before target emission. Do not infer or authorize fallback.
+
+Exit gate:
+
+- one lowered hybrid circuit passes through legality without another IR;
+- circuit content and live parameter/autograd references are unchanged;
+- all derived requirements are mandatory and fallback axes remain false;
+- insufficient logical width, operation limit, precision, result support, and
+  shot capacity fail closed;
+- absent backend opcode lowering fails before capability acceptance;
+- repeated legality checks produce the same audit identity;
+- native gate descriptors, decomposition, topology, scheduling, target
+  emission, TargetIR, public APIs, and performance claims remain excluded.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1065,3 +1091,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 22 structured-control-flow simplification implemented and verified
 - [x] Phase 23 bounded constant-loop unrolling implemented and verified
 - [x] Phase 24 pass audit and differential verification implemented and verified
+- [x] Phase 25 capability-driven target legality implemented and verified

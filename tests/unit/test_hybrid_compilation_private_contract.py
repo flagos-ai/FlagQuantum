@@ -924,3 +924,43 @@ def test_phase24_adds_pass_audit_and_seeded_differential_verification() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE24_EVIDENCE.md"
     )
     assert contract["phase24_completed"] is True
+
+
+def test_phase25_adds_capability_driven_target_legality_without_target_ir() -> None:
+    contract = _contract()
+    phase25 = contract["phase25"]
+
+    assert contract["status"] == ("phase25_capability_driven_target_legality_verified")
+    assert phase25["input_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase25["output_ir"] == "same_flagquantum.core.ir.CircuitIR"
+    assert phase25["derived_mandatory_requirements"] == [
+        "qubits.logical_capacity",
+        "limits.maximum_program_operations",
+        "precision.effective_dtype",
+        "measurements.results_when_present",
+        "limits.maximum_shots_when_finite",
+    ]
+    assert phase25["operator_legality"] == (
+        "existing_compiler_operator_lowering_registry"
+    )
+    assert phase25["target_evidence"] == (
+        "caller_supplied_core_target_capabilities_v1_snapshot"
+    )
+    assert phase25["fallback_authorizations"] == "all_false"
+    assert phase25["circuit_mutation"] is False
+    assert phase25["live_parameter_reference_preserved"] is True
+    assert phase25["native_gate_descriptor_matching"] is False
+    assert phase25["decomposition"] is False
+    assert phase25["topology_routing"] is False
+    assert phase25["scheduling"] is False
+    assert phase25["target_emission"] is False
+    assert phase25["target_selection"] is False
+    assert phase25["target_ir_added"] is False
+    assert phase25["public_root_export"] is False
+    assert phase25["stable_api_change"] is False
+    assert phase25["default_path_change"] is False
+    assert phase25["performance_claim"] is False
+    assert phase25["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE25_EVIDENCE.md"
+    )
+    assert contract["phase25_completed"] is True

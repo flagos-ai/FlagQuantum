@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase24_pass_audit_and_differential_verification_verified",
+  "status": "phase25_capability_driven_target_legality_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -805,6 +805,44 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE24_EVIDENCE.md"
   },
   "phase24_completed": true,
+  "phase25": {
+    "stage": "capability_driven_target_legality",
+    "input_ir": "flagquantum.core.ir.CircuitIR",
+    "output_ir": "same_flagquantum.core.ir.CircuitIR",
+    "derived_mandatory_requirements": [
+      "qubits.logical_capacity",
+      "limits.maximum_program_operations",
+      "precision.effective_dtype",
+      "measurements.results_when_present",
+      "limits.maximum_shots_when_finite"
+    ],
+    "operator_legality": "existing_compiler_operator_lowering_registry",
+    "target_evidence": "caller_supplied_core_target_capabilities_v1_snapshot",
+    "failure_boundary": "before_target_emission",
+    "fallback_authorizations": "all_false",
+    "audit_identity_inputs": [
+      "circuit_content_hash",
+      "backend",
+      "requirement_set_id",
+      "target_snapshot_id",
+      "resolved_lowering_strategies"
+    ],
+    "circuit_mutation": false,
+    "live_parameter_reference_preserved": true,
+    "native_gate_descriptor_matching": false,
+    "decomposition": false,
+    "topology_routing": false,
+    "scheduling": false,
+    "target_emission": false,
+    "target_selection": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE25_EVIDENCE.md"
+  },
+  "phase25_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

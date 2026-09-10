@@ -7,7 +7,10 @@ routing. `openqasm.py` and `qcis.py` own their target-format emission.
 `noise.py` owns the deterministic `CircuitIR + NoiseModel` to channel-bearing
 `CircuitIR` transformation. `operator_lowering.py` owns the
 internal backend/operator capability registry used before lowering or
-serialization. `__init__.py` is the stable
+serialization. `target_legalization.py` derives mandatory circuit requirements,
+checks one explicit backend lowering, and matches one Core-owned target
+capability snapshot without introducing a target IR or selecting a target.
+`__init__.py` is the stable
 expert-facing compiler interface.
 
 `_hybrid/` owns the private structured-program semantic slice used to migrate
@@ -39,6 +42,7 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change OpenQASM 2/3 target emission in `openqasm.py`.
 - Change QCIS target emission in `qcis.py`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
+- Change capability-driven legality checks in `target_legalization.py`.
 - Change private structured program semantics through `_hybrid/README.md` and
   its focused golden scenario; do not restore the historical `_compiler` tree.
 - Run the compiler fixed-point, trainable-parameter, scheduler, routing, public
