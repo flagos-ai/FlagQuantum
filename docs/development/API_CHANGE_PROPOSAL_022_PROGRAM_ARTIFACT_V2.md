@@ -285,11 +285,12 @@ internal adapters have conformance evidence.
 2. **Complete for the Core construction seam in Phase 32:** new Core circuit
    artifacts use the v2 constructor while the exact v1 reader remains available
    as a read-only compatibility path.
-3. Compiler adds a one-way adapter from successful Phase 30 conformance into
-   the v2 executable profile.
+3. **Complete:** Compiler adds a one-way adapter from successful target-text
+   conformance into the v2 executable profile.
 4. Round-trip, unknown-field, limits, non-finite, sensitive-content, payload
    tamper, identity tamper, and hash-seed tests pass.
-5. Runtime adds read-only compatibility preflight without submission.
+5. **Complete:** Runtime adds read-only compatibility preflight without
+   submission.
 6. Deployment dry-run adaptation is proposed separately before any provider
    call.
 
