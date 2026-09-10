@@ -45,6 +45,53 @@ def _native_gate_qasm(instruction: Instruction) -> str:
     raise ValueError(f"braket_iqm_unsupported_native_gate:{instruction.name}")
 
 
+def _conditional_gate_qasm(
+    instruction: Instruction,
+    conditions: tuple[tuple[int, int], ...],
+    groups: tuple[frozenset[int], ...],
+    latest_key: dict[int, int],
+    measured_wire: dict[int, int],
+    target_controller: dict[int, int],
+) -> tuple[str, int]:
+    if len(conditions) != 1 or conditions[0][1] != 1:
+        raise ValueError("braket_iqm_conditions_require_one_bit_equal_to_one")
+    bit = conditions[0][0]
+    if bit not in latest_key:
+        raise ValueError("braket_iqm_feedback_bit_was_read_before_measurement")
+    if len(instruction.wires) != 1 or instruction.name not in {"x", "rx"}:
+        raise ValueError("braket_iqm_conditional_gate_cannot_lower_to_cc_prx")
+
+    key = latest_key[bit]
+    control = measured_wire[key]
+    target = instruction.wires[0]
+    if not any(control in group and target in group for group in groups):
+        raise ValueError("braket_iqm_feedback_pair_outside_dynamic_qubit_group")
+    previous = target_controller.setdefault(target, control)
+    if previous != control:
+        raise ValueError("braket_iqm_target_has_multiple_feedback_controllers")
+    angle = (
+        math.pi if instruction.name == "x" else next(iter(instruction.params.values()))
+    )
+    return f"cc_prx({_qasm_angle(angle)}, 0.0, {key}) ${target};", key
+
+
+def _qasm_document(n_wires: int, body: list[str]) -> str:
+    return (
+        "\n".join(
+            [
+                "OPENQASM 3.0;",
+                f"bit[{n_wires}] b;",
+                "#pragma braket verbatim",
+                "box{",
+                *(f"    {line}" for line in body),
+                "}",
+                *(f"b[{wire}] = measure ${wire};" for wire in range(n_wires)),
+            ]
+        )
+        + "\n"
+    )
+
+
 def export_braket_iqm_dynamic_qasm3(
     circuit: DynamicCircuit,
     *,
@@ -65,10 +112,6 @@ def export_braket_iqm_dynamic_qasm3(
     target_controller: dict[int, int] = {}
     next_key = 0
     body: list[str] = []
-
-    def ensure_group(control: int, target: int) -> None:
-        if not any(control in group and target in group for group in groups):
-            raise ValueError("braket_iqm_feedback_pair_outside_dynamic_qubit_group")
 
     for instruction in circuit._instructions:
         conditions = _instruction_conditions(instruction)
@@ -99,45 +142,21 @@ def export_braket_iqm_dynamic_qasm3(
             target_controller[wire] = wire
             continue
         if conditions:
-            if len(conditions) != 1 or conditions[0][1] != 1:
-                raise ValueError("braket_iqm_conditions_require_one_bit_equal_to_one")
-            bit = conditions[0][0]
-            if bit not in latest_key:
-                raise ValueError("braket_iqm_feedback_bit_was_read_before_measurement")
-            if len(instruction.wires) != 1 or instruction.name not in {"x", "rx"}:
-                raise ValueError("braket_iqm_conditional_gate_cannot_lower_to_cc_prx")
-            key = latest_key[bit]
-            control = measured_wire[key]
-            target = instruction.wires[0]
-            ensure_group(control, target)
-            previous = target_controller.setdefault(target, control)
-            if previous != control:
-                raise ValueError("braket_iqm_target_has_multiple_feedback_controllers")
-            angle = (
-                math.pi
-                if instruction.name == "x"
-                else next(iter(instruction.params.values()))
+            line, key = _conditional_gate_qasm(
+                instruction,
+                conditions,
+                groups,
+                latest_key,
+                measured_wire,
+                target_controller,
             )
-            body.append(f"cc_prx({_qasm_angle(angle)}, 0.0, {key}) ${target};")
+            body.append(line)
             feed_forward_keys.add(key)
             continue
         body.append(_native_gate_qasm(instruction))
     if set(measured_wire) - feed_forward_keys:
         raise ValueError("braket_iqm_mid_circuit_measurement_requires_feed_forward")
-    return (
-        "\n".join(
-            [
-                "OPENQASM 3.0;",
-                f"bit[{circuit.n_wires}] b;",
-                "#pragma braket verbatim",
-                "box{",
-                *(f"    {line}" for line in body),
-                "}",
-                *(f"b[{wire}] = measure ${wire};" for wire in range(circuit.n_wires)),
-            ]
-        )
-        + "\n"
-    )
+    return _qasm_document(circuit.n_wires, body)
 
 
 __all__ = ("export_braket_iqm_dynamic_qasm3",)
