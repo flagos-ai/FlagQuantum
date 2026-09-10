@@ -42,10 +42,6 @@ class ExtensionLifecycleError(ExtensionError, ExecutionError):
     """Raised when activation, use, or cleanup fails safely."""
 
 
-def _frozen_map(value: Mapping[str, Any]) -> Mapping[str, Any]:
-    return MappingProxyType(dict(value))
-
-
 @dataclass(frozen=True)
 class ExtensionManifest:
     """Serializable identity, compatibility, and honest capability declaration."""
@@ -97,7 +93,7 @@ class ExtensionConfig:
                 + ", ".join(forbidden)
                 + "; use a host-owned credential resolver"
             )
-        object.__setattr__(self, "values", _frozen_map(values))
+        object.__setattr__(self, "values", MappingProxyType(values))
 
     def to_dict(self) -> dict[str, Any]:
         return dict(self.values)
@@ -240,7 +236,7 @@ class ExtensionRegistry:
     entries: Mapping[tuple[str, str], Extension] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "entries", _frozen_map(self.entries))
+        object.__setattr__(self, "entries", MappingProxyType(dict(self.entries)))
 
     def with_extension(self, extension: Extension) -> "ExtensionRegistry":
         if not isinstance(extension, Extension):

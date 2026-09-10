@@ -59,17 +59,17 @@ def _cases() -> tuple[tuple[str, Circuit], ...]:
         (
             "asymmetric_wire_order",
             Circuit(3, dtype=torch.complex128)
-            .x(0)
-            .ry(2, theta=0.371)
-            .cx(0, 1)
-            .rz(1, theta=-0.219),
+            .gate("x", 0)
+            .gate("ry", 2, theta=0.371)
+            .gate("cx", (0, 1))
+            .gate("rz", 1, theta=-0.219),
         ),
         (
             "controlled_and_ising",
             Circuit(3, dtype=torch.complex128)
-            .h(1)
-            .crx(1, 2, theta=0.417)
-            .rzz(2, 0, theta=-0.193),
+            .gate("h", 1)
+            .gate("crx", (1, 2), theta=0.417)
+            .gate("rzz", (2, 0), theta=-0.193),
         ),
     )
 

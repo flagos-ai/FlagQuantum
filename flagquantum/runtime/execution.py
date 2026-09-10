@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import ExitStack
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Sequence
 
@@ -343,66 +344,59 @@ def run_native(
 ) -> Any:
     """Run FlagQuantum IR through native local execution paths."""
 
-    config_active = bool(options.pop("_runtime_config_active", False))
+    ir = ensure_circuit_ir(circuit_or_ir)
     selected_config = options.pop("config", None)
-    if not config_active:
-        ir = ensure_circuit_ir(circuit_or_ir)
-        if selected_config is None:
-            metadata = ir.metadata
-            manifest = metadata.get("runtime_config")
-            selected_config = (
-                RuntimeConfig.from_manifest(manifest)
-                if manifest is not None
-                else get_runtime_config()
-            )
-        execution_dtype = _resolve_execution_precision(
-            ir.dtype,
-            requested_dtype=options.get("dtype"),
+    if selected_config is None:
+        manifest = ir.metadata.get("runtime_config")
+        selected_config = (
+            RuntimeConfig.from_manifest(manifest)
+            if manifest is not None
+            else get_runtime_config()
         )
-        selected_config = selected_config.with_overrides(
-            complex_dtype=str(execution_dtype).removeprefix("torch.")
-        )
-        options = {**options, "dtype": execution_dtype}
-        with runtime_config(selected_config):
-            return run_native(
-                circuit_or_ir,
-                noise_model=noise_model,
-                mode=mode,
-                return_plan=return_plan,
-                _runtime_config_active=True,
-                **options,
-            )
-
+    execution_dtype = _resolve_execution_precision(
+        ir.dtype, requested_dtype=options.get("dtype")
+    )
+    selected_config = selected_config.with_overrides(
+        complex_dtype=str(execution_dtype).removeprefix("torch.")
+    )
+    options["dtype"] = execution_dtype
     operator_backend_name = options.pop("operator_backend", None)
     operator_backend_include = options.pop("operator_backend_include", None)
     operator_backend_include_experimental = options.pop(
         "operator_backend_include_experimental", None
     )
     operator_backend_strict = options.pop("operator_backend_strict", None)
-    operator_backend_active = bool(options.pop("_operator_backend_active", False))
-    if not operator_backend_active and (
-        operator_backend_name is not None or os.environ.get("FQ_OPERATOR_BACKEND")
-    ):
-        from ..compute.flaggems import (
-            operator_backend as operator_backend_context,
+
+    with ExitStack() as contexts:
+        contexts.enter_context(runtime_config(selected_config))
+        if operator_backend_name is not None or os.environ.get("FQ_OPERATOR_BACKEND"):
+            from ..compute.flaggems import operator_backend as operator_backend_context
+
+            contexts.enter_context(
+                operator_backend_context(
+                    operator_backend_name,
+                    include=operator_backend_include,
+                    include_experimental=operator_backend_include_experimental,
+                    strict=operator_backend_strict,
+                )
+            )
+        return _run_native(
+            circuit_or_ir,
+            noise_model=noise_model,
+            mode=mode,
+            return_plan=return_plan,
+            **options,
         )
 
-        wrapped_options = dict(options)
-        wrapped_options["_operator_backend_active"] = True
-        with operator_backend_context(
-            operator_backend_name,
-            include=operator_backend_include,
-            include_experimental=operator_backend_include_experimental,
-            strict=operator_backend_strict,
-        ):
-            return run_native(
-                circuit_or_ir,
-                noise_model=noise_model,
-                mode=mode,
-                return_plan=return_plan,
-                **wrapped_options,
-            )
 
+def _run_native(
+    circuit_or_ir: Any,
+    *,
+    noise_model: NoiseModel | None,
+    mode: str,
+    return_plan: bool,
+    **options: Any,
+) -> Any:
     provided_execution_plan = options.pop("_execution_plan", None)
     if mode == "distributed":
         mode = "distributed_statevector"

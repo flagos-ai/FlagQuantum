@@ -259,7 +259,12 @@ def _output_tensors(output: Any) -> tuple[torch.Tensor, ...]:
 
 def _loss(output: Any) -> torch.Tensor:
     tensors = _output_tensors(output)
-    return sum(torch.abs(tensor).square().sum() for tensor in tensors)
+    if not tensors:
+        raise ValueError("Operator probe loss requires at least one output tensor.")
+    loss = torch.abs(tensors[0]).square().sum()
+    for tensor in tensors[1:]:
+        loss = loss + torch.abs(tensor).square().sum()
+    return loss
 
 
 def _max_error(actual: Any, expected: Any) -> float:

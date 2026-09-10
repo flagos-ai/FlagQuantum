@@ -109,11 +109,12 @@ def constant_loop_iterations(
 
     if operation.name != "scf.for":
         return None
-    bounds = tuple(
-        analysis.constant_values.get(operand.id) for operand in operation.operands[:3]
-    )
-    if any(not isinstance(value, int) or isinstance(value, bool) for value in bounds):
-        return None
+    bounds = []
+    for operand in operation.operands[:3]:
+        value = analysis.constant_values.get(operand.id)
+        if not isinstance(value, int) or isinstance(value, bool):
+            return None
+        bounds.append(value)
     lower, upper, step = bounds
     if step == 0:
         return None

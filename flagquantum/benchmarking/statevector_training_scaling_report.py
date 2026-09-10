@@ -7,11 +7,11 @@ import argparse
 import json
 import math
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING or __package__:
     from .statevector_scaling_report import bootstrap_median_speedup
-except ImportError:  # direct script execution
+else:  # Direct script execution resolves sibling modules.
     from statevector_scaling_report import bootstrap_median_speedup
 
 SCHEMA = "flagquantum.statevector.training_scaling_report.v1"

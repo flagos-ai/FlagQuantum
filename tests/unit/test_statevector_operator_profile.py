@@ -12,9 +12,28 @@ from flagquantum.runtime.capabilities import (
     load_operator_profile,
 )
 from flagquantum.runtime.operator_probes import (
+    _loss,
     preflight_statevector_local_p0,
     probe_operator_profile,
 )
+
+
+@pytest.mark.parametrize("empty", ((), []))
+def test_operator_probe_loss_rejects_empty_outputs(empty: object) -> None:
+    with pytest.raises(ValueError, match="at least one output tensor"):
+        _loss(empty)
+
+
+def test_operator_probe_loss_preserves_multiple_output_gradients() -> None:
+    real = torch.tensor([2.0, -3.0], dtype=torch.float64, requires_grad=True)
+    complex_value = torch.tensor([1 + 2j], dtype=torch.complex128, requires_grad=True)
+
+    loss = _loss((real, complex_value))
+    real_gradient, complex_gradient = torch.autograd.grad(loss, (real, complex_value))
+
+    torch.testing.assert_close(loss, torch.tensor(18.0, dtype=torch.float64))
+    torch.testing.assert_close(real_gradient, 2 * real)
+    torch.testing.assert_close(complex_gradient, 2 * complex_value)
 
 
 def test_statevector_local_p0_profile_is_packaged_and_stably_hashed() -> None:

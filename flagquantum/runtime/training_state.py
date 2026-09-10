@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import os
 import random
 import tempfile
@@ -57,12 +58,16 @@ class PrecisionPolicy:
             raise PrecisionPolicyError(
                 f"{self.complex_dtype} requires parameter_dtype={expected_real!r}"
             )
-        if self.atol <= 0 or self.rtol <= 0:
-            raise PrecisionPolicyError("precision tolerances must be positive")
+        if any(
+            not math.isfinite(value) or value <= 0 for value in (self.atol, self.rtol)
+        ):
+            raise PrecisionPolicyError(
+                "precision tolerances must be positive and finite"
+            )
 
     @property
     def torch_parameter_dtype(self) -> torch.dtype:
-        return getattr(torch, self.parameter_dtype)
+        return torch.float64 if self.parameter_dtype == "float64" else torch.float32
 
     def apply(self, module: torch.nn.Module) -> torch.nn.Module:
         target = self.torch_parameter_dtype

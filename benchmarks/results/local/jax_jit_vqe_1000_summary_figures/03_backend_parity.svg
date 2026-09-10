@@ -4,8 +4,8 @@
 <rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
 <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
 <text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
-<text x="58" y="91" class="title">PyTorch与JAX的1000步收敛一致性</text>
-<text x="58" y="119" class="sub">每个点对应一个Qubits×Depth配置 · 横轴PyTorch最终误差 · 纵轴JAX最终误差 · 双对数坐标</text>
+<text x="58" y="91" class="title">PyTorch/JAX convergence parity at 1000 steps</text>
+<text x="58" y="119" class="sub">Each point: one qubit-count × depth configuration · x: PyTorch final error · y: JAX final error · Log-log axes</text>
 <rect x="310" y="180" width="600" height="600" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
 <line x1="310" y1="780" x2="910" y2="180" stroke="#94A3B8" stroke-width="2" stroke-dasharray="7 6"/>
 <circle cx="588.224562723037" cy="501.8470924262262" r="7" fill="#3478C5" fill-opacity=".82" stroke="#FFFFFF" stroke-width="2"/>
@@ -44,13 +44,13 @@
 <text x="296" y="304.0" text-anchor="end" class="axis">1e-1</text>
 <text x="910.0" y="805" text-anchor="middle" class="axis">1e0</text>
 <text x="296" y="184.0" text-anchor="end" class="axis">1e0</text>
-<text x="610.0" y="838" text-anchor="middle" class="axis">PyTorch 最终误差</text>
+<text x="610.0" y="838" text-anchor="middle" class="axis">PyTorch final error</text>
 <circle cx="1080" cy="260" r="8" fill="#3478C5"/><text x="1103" y="265" class="panel">8 QUBITS</text>
 <circle cx="1080" cy="332" r="8" fill="#2E7D4F"/><text x="1103" y="337" class="panel">12 QUBITS</text>
 <circle cx="1080" cy="404" r="8" fill="#D07124"/><text x="1103" y="409" class="panel">16 QUBITS</text>
 <circle cx="1080" cy="476" r="8" fill="#54319B"/><text x="1103" y="481" class="panel">20 QUBITS</text>
-<text x="1030" y="610" class="panel">点越接近对角线</text><text x="1030" y="640" class="axis">表示两个后端的按步优化结果越一致</text>
+<text x="1030" y="610" class="panel">Closer to the diagonal means</text><text x="1030" y="640" class="axis">closer per-step agreement between backends</text>
 <line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
 <circle cx="74" cy="850" r="5" fill="#54319B"/>
-<text x="90" y="855" class="note">结论：所有配置紧贴y=x，JAX主要改变训练速度，不改变VQE按步收敛语义。</text>
+<text x="90" y="855" class="note">All configurations stay close to y=x. JAX mainly changes speed, preserving per-step VQE convergence.</text>
 </svg>

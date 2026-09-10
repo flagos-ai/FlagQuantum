@@ -1,24 +1,26 @@
-# FlagQuantum IR Phase 0 Characterization Corpus 设计
+# FlagQuantum IR Phase 0 Characterization Corpus Design
 
-状态：P0-003 技术实现完成，等待 compiler/runtime/training owner 最终复核
-日期：2026-09-01
-依赖：[`IR_PHASE_0_BASELINE.md`](IR_PHASE_0_BASELINE.md)、IR-001～003 Proposed ADR
+Status: P0-003 technical implementation complete; final compiler/runtime/training
+owner reviews pending.
+Date: 2026-09-01
+Dependencies: [`IR_PHASE_0_BASELINE.md`](IR_PHASE_0_BASELINE.md), IR-001–003 Proposed ADRs.
 
-## 1. 目标
+## 1. Goal
 
-Corpus 用于固定 legacy `CircuitIR` 的真实语义，并成为未来 importer、verifier、
-round-trip 和新旧执行差分的共同输入。它不是随机 demo 集合，也不用于扩大公开能力。
+The corpus establishes actual legacy `CircuitIR` semantics and supplies common
+inputs for future importers, verifiers, round trips, and differential execution.
+It is not a collection of arbitrary demos or an expansion of public capabilities.
 
-完成后的 corpus 必须回答：
+The completed corpus must answer:
 
-- 当前哪些 schema 1.0 输入被接受；
-- 每个 canonical opcode 如何编码；
-- 哪些输入必须失败以及失败类别；
-- parameter、dtype、shape、request、metadata 和 wire ordering 如何影响结果；
-- 哪些 fixture 可以精确 round-trip；
-- 哪些 fixture 只能导入或必须由 Phase 1 静态 importer 拒绝。
+- Which schema 1.0 inputs are accepted?
+- How is each canonical opcode encoded?
+- Which inputs must fail, and with which failure categories?
+- How do parameters, dtypes, shapes, requests, metadata, and wire ordering affect results?
+- Which fixtures support exact round trips?
+- Which fixtures are import-only or must be rejected by the Phase 1 static importer?
 
-## 2. 建议目录
+## 2. Proposed Layout
 
 ```text
 tests/fixtures/internal_ir/circuit_ir_v1/
@@ -39,132 +41,137 @@ tests/internal_ir/
   test_legacy_characterization.py
 ```
 
-Fixture 使用现有 canonical `CircuitIR.to_dict()` payload，不发明第二种源格式。
-`manifest.json` 记录 fixture identity、预期分类、oracle、dtype、seed 和支持状态。
+Fixtures use existing canonical `CircuitIR.to_dict()` payloads, not a second
+source format. `manifest.json` records fixture identity, expected classification,
+oracles, dtype, seed, and support status.
 
-## 3. 当前 canonical opcode 覆盖
+## 3. Current Canonical Opcode Coverage
 
-2026-09-01 从 `OPERATOR_SCHEMAS` 读取到 35 个 canonical opcode：
+On 2026-09-01, `OPERATOR_SCHEMAS` contained 35 canonical opcodes:
 
-| 类别 | Opcode |
+| Category | Opcodes |
 | --- | --- |
-| 单 qubit、无参数 | `h`, `i`, `s`, `sdg`, `sx`, `sxdg`, `t`, `tdg`, `x`, `y`, `z` |
-| 单 qubit、参数化 | `phase`, `rx`, `ry`, `rz`, `u1`, `u2`, `u3` |
-| 双 qubit、无参数 | `cx`, `cy`, `cz`, `swap` |
-| 双 qubit、参数化 | `cphase`, `crx`, `cry`, `crz`, `rxx`, `ryy`, `rzz` |
-| 三 qubit | `ccx`, `cswap` |
-| channel schema | `amplitude_damping`, `bit_flip`, `depolarizing`, `phase_flip` |
+| Single-qubit, unparameterized | `h`, `i`, `s`, `sdg`, `sx`, `sxdg`, `t`, `tdg`, `x`, `y`, `z` |
+| Single-qubit, parameterized | `phase`, `rx`, `ry`, `rz`, `u1`, `u2`, `u3` |
+| Two-qubit, unparameterized | `cx`, `cy`, `cz`, `swap` |
+| Two-qubit, parameterized | `cphase`, `crx`, `cry`, `crz`, `rxx`, `ryy`, `rzz` |
+| Three-qubit | `ccx`, `cswap` |
+| Channel schemas | `amplitude_damping`, `bit_flip`, `depolarizing`, `phase_flip` |
 
-Coverage test 必须从 registry 动态读取当前集合，并与 manifest 的 `covered_opcodes` 比较。
-Registry 增加 opcode 时测试必须失败并要求新增 fixture，不能自动把新符号标记为已覆盖。
+Coverage tests must read the registry dynamically and compare it with manifest
+`covered_opcodes`. Adding an opcode must fail the test until a fixture is added;
+new symbols cannot automatically count as covered.
 
-## 4. 固定 fixture 集
+## 4. Fixed Fixture Set
 
-### 4.1 每 opcode 最小 fixture
+### 4.1 Minimum Fixture for Each Opcode
 
-每个 opcode 至少一个最小合法 CircuitIR：
+Each opcode needs at least one minimal valid CircuitIR:
 
-- wire 数等于或略大于 arity；
-- 使用非排序 wire 的 opcode 增加 ordering fixture；
-- 参数化 gate 使用非零、非特殊角度，避免优化偶然消除；
-- `u2/u3` 覆盖参数名称和顺序；
-- channel 带当前实现所需的语义 metadata；
-- 每个 fixture 明确 `round_trip_expected` 和 `execution_oracle`。
+- Wire count equal to or slightly greater than arity.
+- Additional ordering fixtures for opcodes using unsorted wires.
+- Nonzero, nonspecial parameter angles to avoid accidental optimization removal.
+- Parameter names and order covered for `u2/u3`.
+- Current required semantic metadata for channels.
+- Explicit `round_trip_expected` and `execution_oracle` declarations.
 
-### 4.2 组合线路
+### 4.2 Composite Circuits
 
-固定组合至少包括：
+Include at least:
 
-- Bell、GHZ、非相邻双 qubit gate；
-- 多层同 wire 依赖与可并行 layer；
-- self-inverse cancellation 候选；
-- adjacent rotation merge 候选；
-- topology routing 和 wire/result ordering；
-- custom 2×2 与 4×4 unitary；
-- 1、2、3 qubit 混合线路；
-- 10、100、1K、10K gate 结构生成规则，用于性能而非 golden 数值文件。
+- Bell, GHZ, and nonadjacent two-qubit gates.
+- Multilayer dependencies on the same wire and parallelizable layers.
+- Self-inverse cancellation candidates.
+- Adjacent rotation merge candidates.
+- Topology routing and wire/result ordering.
+- Custom 2×2 and 4×4 unitaries.
+- Circuits combining one-, two-, and three-qubit operations.
+- Structural generation rules for 10, 100, 1K, and 10K gates, used for performance
+  rather than numerical golden files.
 
-### 4.3 参数化与梯度
+### 4.3 Parameters and Gradients
 
-必须区分：
+Distinguish:
 
-- 单个 `Parameter`；
-- 同一 Parameter 多次使用；
-- 多个独立 Parameter；
-- `ParameterExpression` 加、乘和组合；
-- scalar torch tensor 参数；
-- `requires_grad=True` 参数；
-- bind 前/后 content hash 与执行；
-- complex64 与 complex128 forward/gradient。
+- A single `Parameter`.
+- Repeated use of the same Parameter.
+- Multiple independent Parameters.
+- Addition, multiplication, and combinations of `ParameterExpression`.
+- Scalar Torch tensor parameters.
+- Parameters with `requires_grad=True`.
+- Content hashes and execution before/after binding.
+- Complex64 and complex128 forward/gradient behavior.
 
-Gradient fixture 至少包含 RX expectation、两参数纠缠线路和 Module/VQE 风格损失。
-Oracle 同时比较 forward 与 gradient。
+Gradient fixtures include at least RX expectations, two-parameter entangled
+circuits, and Module/VQE-style losses. Oracles compare both forward values and gradients.
 
-### 4.4 Observable 与 measurement request
+### 4.4 Observables and Measurement Requests
 
-固定覆盖：
+Fixed coverage includes:
 
-- 单 wire observable；
-- 多 term Hamiltonian/observable ordering；
-- sample 全 wires 与子集 wires；
-- shots、seed metadata；
-- 多 measurement request 顺序；
-- IR 内 request 与调用方 request 冲突；
-- target 要求 request 但缺失；
-- observable/measurement 无法进入第三方格式时的 fail-closed 诊断。
+- Single-wire observables.
+- Multiterm Hamiltonian/observable ordering.
+- Sampling all wires and subsets.
+- Shots and seed metadata.
+- Ordering of multiple measurement requests.
+- Conflicts between IR requests and caller requests.
+- Targets missing required requests.
+- Fail-closed diagnostics for observables/measurements unsupported by third-party formats.
 
-这些 fixture 按 IR-001 进入 `InternalExecutionRequest`，不得污染 Phase 1 program identity。
+Under IR-001, these fixtures enter `InternalExecutionRequest` and must not affect
+Phase 1 program identity.
 
-### 4.5 dtype、shape 与规模
+### 4.5 Dtypes, Shapes, and Scale
 
-覆盖：
+Cover:
 
-- `complex64`、`complex128`；
-- 默认 shape normalization；
-- batch size 1 与大于 1；
-- `Circuit.to_ir()` 生成的 dense shape；
-- 大 wire 数的 `logical_state_shape` metadata；
-- 非法空/负 shape；
-- dtype 空字符串；
-- importer 不得分配与 `2**n_wires` 成比例的状态内存。
+- `complex64` and `complex128`.
+- Default shape normalization.
+- Batch size 1 and greater than 1.
+- Dense shapes generated by `Circuit.to_ir()`.
+- `logical_state_shape` metadata for large wire counts.
+- Invalid empty/negative shapes.
+- Empty dtype strings.
+- Importers allocating no state memory proportional to `2**n_wires`.
 
-### 4.6 Metadata 分类 fixture
+### 4.6 Metadata Classification Fixtures
 
-| 分类 | Fixture | Phase 1 预期 |
+| Classification | Fixture | Phase 1 expectation |
 | --- | --- | --- |
-| instruction semantics | `is_channel` | typed channel operation 或明确拒绝 |
-| instruction semantics | `is_dynamic`, `condition` | static importer 结构化拒绝 |
-| execution constraint | `runtime_config`, `batch_size`, `logical_state_shape` | typed ImportConstraints |
-| compiler evidence | `routing`, `routing_strategy_selection` | provenance/evidence，不进入 program semantics |
-| debug/provenance | 无语义 source label | 保留或报告，但不改变 program identity |
-| unknown | 未分类 key | 不得静默声明无害；按 inventory policy 处理 |
+| Instruction semantics | `is_channel` | Typed channel operation or explicit rejection |
+| Instruction semantics | `is_dynamic`, `condition` | Structured static-importer rejection |
+| Execution constraint | `runtime_config`, `batch_size`, `logical_state_shape` | Typed ImportConstraints |
+| Compiler evidence | `routing`, `routing_strategy_selection` | Provenance/evidence, outside program semantics |
+| Debug/provenance | Nonsemantic source label | Preserve or report without changing program identity |
+| Unknown | Unclassified key | Do not silently declare harmless; follow inventory policy |
 
-## 5. 负向 corpus
+## 5. Negative Corpus
 
-至少固定以下错误输入及预期异常类别：
+Fix at least these invalid inputs and expected exception categories:
 
-- 非法/缺失 `kind`；
-- 不支持的 version；
-- 未知顶层字段；
-- `n_wires <= 0`；
-- 空、负数、重复或越界 wire；
-- opcode arity 不匹配；
-- 缺失参数；
-- 未知 opcode 且无 matrix/semantic marker；
-- matrix shape 或 dtype 不合法；
-- shots 非正数；
-- shape 含非正维度；
-- 无法确定性序列化的参数/metadata；
-- dynamic/channel metadata 与 opcode schema 冲突；
-- measurement/observable wire 越界；
-- request 来源冲突。
+- Invalid/missing `kind`.
+- Unsupported version.
+- Unknown top-level fields.
+- `n_wires <= 0`.
+- Empty, negative, duplicate, or out-of-range wires.
+- Opcode arity mismatch.
+- Missing parameters.
+- Unknown opcode without a matrix/semantic marker.
+- Invalid matrix shape or dtype.
+- Nonpositive shots.
+- Nonpositive shape dimensions.
+- Parameters/metadata without deterministic serialization.
+- Dynamic/channel metadata conflicting with the opcode schema.
+- Out-of-range measurement/observable wires.
+- Conflicting request sources.
 
-Legacy characterization 固定当前异常类型和可依赖的 error category；不把完整英文 message
-全部冻结，除非现有公共合同已经要求。
+Legacy characterization fixes current exception types and dependable error
+categories. Do not freeze complete English messages unless existing public
+contracts require them.
 
-## 6. Oracle 层级
+## 6. Oracle Levels
 
-每个 fixture 在 manifest 中选择一个或多个 oracle：
+Each manifest fixture selects one or more oracles:
 
 ```text
 serialization_exact
@@ -181,16 +188,19 @@ emitter_parse_or_golden
 unsupported_diagnostic
 ```
 
-规则：
+Rules:
 
-- serialization、wire ordering、request ordering 和 deterministic hash 精确比较；
-- state/expectation/gradient 使用已有 backend/dtype 容差；
-- sampling 优先固定 seed 合同，否则使用批准的统计检验；
-- global phase 处理必须由具体 state oracle 明确，不能自动忽略所有差异；
-- compile optimization 可比较语义，不要求优化后 instruction payload 与源完全相同；
-- QASM/QCIS golden 必须同时有 parse/semantic 或支持边界证据，不能只比字符串外观。
+- Compare serialization, wire/request ordering, and deterministic hashes exactly.
+- Use existing backend/dtype tolerances for states, expectations, and gradients.
+- Prefer a fixed-seed sampling contract; otherwise use approved statistical tests.
+- Each state oracle must explicitly define global-phase treatment. Do not
+  automatically disregard every difference.
+- Compilation optimization may compare semantics without requiring optimized
+  instruction payloads to match source payloads exactly.
+- QASM/QCIS goldens also require parsing/semantic or support-boundary evidence;
+  string appearance alone is insufficient.
 
-## 7. Manifest 最小字段
+## 7. Minimum Manifest Fields
 
 ```json
 {
@@ -214,23 +224,25 @@ unsupported_diagnostic
 }
 ```
 
-`covered_opcodes` 在 fixture 实现时填写并由测试验证；本设计文档不伪造已完成覆盖。
+Populate `covered_opcodes` when implementing fixtures and verify it through tests.
+This design document does not fabricate completed coverage.
 
-## 8. P0-003 实现验收
+## 8. P0-003 Implementation Acceptance
 
-- [x] 当前 35 个 canonical opcode 已分类；
-- [x] fixture 目录、manifest 和 oracle 设计完成；
-- [x] parameter、gradient、request、dtype/shape、metadata 和负向范围已定义；
-- [x] manifest 与固定基础 fixtures 已创建；
-- [x] registry drift test 已实现；
-- [x] legacy serialization characterization tests 已实现；
-- [x] corpus hash 已写入 Phase 0 evidence manifest；
-- [x] legacy analytic gradient oracle 已实现；
-- [x] seeded/statistical measurement oracle 已实现；
-- [x] manifest 声明的 semantic oracle 已由统一 dispatcher 逐 fixture 执行；
-- [x] 12 个正向 fixture 与 14 个机器可读负向 fixture 已覆盖最小语义范围；
-- [x] expectation、routing、QASM/QCIS、backend selection 与 dynamic rejection 已纳入 evidence；
-- [ ] compiler/runtime owner 复核 corpus 覆盖。
+- [x] Classify all 35 current canonical opcodes.
+- [x] Design fixture directories, the manifest, and oracles.
+- [x] Define parameter, gradient, request, dtype/shape, metadata, and negative coverage.
+- [x] Create the manifest and fixed baseline fixtures.
+- [x] Implement registry drift tests.
+- [x] Implement legacy serialization characterization tests.
+- [x] Record the corpus hash in the Phase 0 evidence manifest.
+- [x] Implement legacy analytic gradient oracles.
+- [x] Implement seeded/statistical measurement oracles.
+- [x] Execute declared semantic oracles per fixture through one dispatcher.
+- [x] Cover the minimum semantic scope with 12 positive and 14 machine-readable negative fixtures.
+- [x] Include expectations, routing, QASM/QCIS, backend selection, and dynamic rejection in evidence.
+- [ ] Compiler/runtime owners review corpus coverage.
 
-设计完成不等于 P0-003 工作包整体完成。只有机器 fixture、coverage test 和 oracle 全部
-落地后，Phase 0 退出门中的 corpus 项才可勾选。
+A completed design does not complete the P0-003 work package. The Phase 0 corpus
+exit item can be checked only after machine fixtures, coverage tests, and oracles
+are all implemented.

@@ -121,10 +121,16 @@ def assess_dynamic_features(
 
 
 def dynamic_conformance_cases() -> tuple[DynamicConformanceCase, ...]:
-    reset = DynamicCircuit(1).x(0).reset(0)
-    feedback = DynamicCircuit(2).x(0).measure(0, classical_bit=0)
+    reset = DynamicCircuit(1)
+    reset.gate("x", 0)
+    reset.reset(0)
+    feedback = DynamicCircuit(2)
+    feedback.gate("x", 0)
+    feedback.measure(0, classical_bit=0)
     feedback.conditional("x", 1, classical_bit=0)
-    repeated = DynamicCircuit(1).x(0).measure(0, classical_bit=0)
+    repeated = DynamicCircuit(1)
+    repeated.gate("x", 0)
+    repeated.measure(0, classical_bit=0)
     repeated.reset(0).measure(0, classical_bit=0)
     return (
         DynamicConformanceCase("active_reset", reset, (0,), ()),

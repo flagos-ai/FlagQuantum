@@ -15,7 +15,7 @@ import subprocess
 import sys
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
-from typing import Any, Iterable, Iterator, Mapping, Sequence
+from typing import Any, Iterable, Iterator, Mapping
 
 from .registry import get_platform_runtime
 
@@ -238,13 +238,14 @@ def _normalize_backend_name(name: str | None) -> str:
     return normalized
 
 
-def _split_ops(raw: str | Sequence[str] | None) -> tuple[str, ...]:
+def _split_ops(raw: str | Iterable[str] | None) -> tuple[str, ...]:
     if raw is None:
         return ()
+    parts: Iterable[str]
     if isinstance(raw, str):
         parts = raw.replace(";", ",").split(",")
     else:
-        parts = [str(item) for item in raw]
+        parts = (str(item) for item in raw)
     return tuple(
         dict.fromkeys(
             FLAGGEMS_OP_ALIASES.get(part.strip(), part.strip())

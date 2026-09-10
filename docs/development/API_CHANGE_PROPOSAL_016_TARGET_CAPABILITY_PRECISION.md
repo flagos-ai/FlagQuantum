@@ -1,34 +1,39 @@
-# API Change Proposal 016：统一 TargetCapabilities 精度语义
+# API Change Proposal 016: Consistent TargetCapabilities Precision Semantics
 
-## 状态
+## Status
 
-**Approved before the first public alpha.** API owner 于 2026-09-06 明确授权
-收口精度控制机制。仓库尚未公开发布，因此不保留旧值兼容或迁移层。
+**Approved before the first public alpha.** On 2026-09-06, the API owner explicitly
+authorized consolidating precision controls. The repository is unreleased, so no
+old-value compatibility or migration layer is retained.
 
-## 问题
+## Problem
 
-TargetCapabilities 的精度字段结构已经分离，但字符串值曾混用标量 dtype 和
-复数量子态 dtype。例如 `precision.effective_dtype` 同时出现过 `float64` 和
-`complex128`，导致 Runtime 无法判断两者是同义表达还是不同精度层级。
+TargetCapabilities already separated precision fields, but string values mixed
+scalar dtypes with complex quantum-state dtypes. For example,
+`precision.effective_dtype` used both `float64` and `complex128`, leaving Runtime
+unable to determine whether they were synonyms or distinct precision levels.
 
-## 决策
+## Decision
 
-- `native_dtype`、`storage_dtype`、`parameter_dtype`、`accumulator_dtype` 只接受
-  当前实际支持的标量类型 `float32`、`float64`；
-- `effective_dtype` 只接受逻辑复数量子态类型 `complex64`、`complex128`；
-- `software_mechanism` 保持独立机制字段，不作为 dtype 别名；
-- `software_mechanism=none` 时，native、storage 和 effective 必须构成一致的
-  `float32/complex64` 或 `float64/complex128` 路径；
-- 软件扩展路径仍须由 Runtime 校验证据等级和适用 scope。
+- `native_dtype`, `storage_dtype`, `parameter_dtype`, and `accumulator_dtype`
+  accept only currently supported scalar types `float32` and `float64`.
+- `effective_dtype` accepts only logical complex state types `complex64` and `complex128`.
+- `software_mechanism` remains an independent mechanism field, not a dtype alias.
+- With `software_mechanism=none`, native, storage, and effective precision must
+  form a consistent `float32/complex64` or `float64/complex128` path.
+- Runtime must still validate evidence levels and applicable scope for software
+  precision extensions.
 
-## 兼容性
+## Compatibility
 
-字段集合和 TargetCapabilities schema 版本不变。过去含混的精度值尚未形成公开
-兼容承诺，直接拒绝，不增加别名、自动转换或 fallback。
+The field set and TargetCapabilities schema version remain unchanged. Previously
+ambiguous values have no public compatibility promise and are rejected directly,
+without aliases, automatic conversion, or fallback.
 
-## 验收
+## Acceptance
 
-- Core 在构造 requirement 和 fact 时拒绝错误的 dtype 类别；
-- Core 在构造 snapshot 时拒绝无软件机制却自相矛盾的精度路径；
-- Double-Single 仍可表达为 native/storage `float32`、effective `complex128`；
-- Core、Platform、Runtime、序列化及 CPU 纵向链路测试通过。
+- Core rejects incorrect dtype categories when constructing requirements and facts.
+- Core rejects contradictory precision paths without a software mechanism when
+  constructing snapshots.
+- Double-Single remains expressible as native/storage `float32`, effective `complex128`.
+- Core, Platform, Runtime, serialization, and CPU vertical-path tests pass.

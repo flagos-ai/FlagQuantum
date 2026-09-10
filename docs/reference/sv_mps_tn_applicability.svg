@@ -21,47 +21,47 @@
   </defs>
 
   <rect width="1600" height="980" fill="#f8fafc"/>
-  <text x="70" y="65" class="title">SV / MPS / TN：不同量子模拟情景下的适用区域</text>
-  <text x="70" y="98" class="subtitle">核心判断维度：量子比特规模、纠缠/树宽、线路结构、精度要求与输出目标</text>
+  <text x="70" y="65" class="title">SV / MPS / TN: choosing a simulation method</text>
+  <text x="70" y="98" class="subtitle">Consider qubit count, entanglement/treewidth, circuit structure, precision, and required outputs</text>
 
   <!-- Main scenario map -->
   <rect x="72" y="142" width="910" height="570" rx="18" fill="#fff" stroke="#dbe2ec" filter="url(#shadow)"/>
   <line x1="145" y1="645" x2="915" y2="645" stroke="#4b586d" stroke-width="2.5" marker-end="url(#arrow)"/>
   <line x1="145" y1="645" x2="145" y2="192" stroke="#4b586d" stroke-width="2.5" marker-end="url(#arrow)"/>
-  <text x="510" y="689" class="axis">量子比特规模 →（小 → 大）</text>
-  <text x="105" y="470" class="axis" transform="rotate(-90 105 470)">纠缠 / 树宽 →（低 → 高）</text>
+  <text x="510" y="689" class="axis">Qubit count → (small to large)</text>
+  <text x="105" y="630" class="axis" transform="rotate(-90 105 630)">Entanglement / treewidth → (low to high)</text>
 
   <!-- Difficult region -->
   <path d="M560 205 C690 185 845 195 915 225 L915 355 C820 320 700 318 610 350
            C585 300 570 255 560 205Z"
         fill="#d95c5c" fill-opacity=".17" stroke="#b94c55" stroke-width="2.5" stroke-dasharray="10 8"/>
-  <text x="710" y="245" class="body" fill="#913b45">大规模 + 高树宽</text>
-  <text x="700" y="274" class="small">三者都困难</text>
+  <text x="710" y="245" class="body" style="fill:#913b45">Large scale + high treewidth</text>
+  <text x="700" y="274" class="small">Difficult for all three</text>
 
   <!-- SV region -->
   <path d="M165 220 C285 185 440 205 530 285 C585 335 570 445 500 500
            C405 575 250 552 175 470 C145 395 148 300 165 220Z"
         fill="#4e86df" fill-opacity=".27" stroke="#326bc5" stroke-width="3" stroke-dasharray="12 8"/>
-  <text x="260" y="330" class="region" fill="#245cae">SV</text>
-  <text x="220" y="360" class="region-sub">完整状态 · 通用精确</text>
-  <text x="215" y="390" class="small">内存约 O(2ⁿ)</text>
+  <text x="260" y="330" class="region" style="fill:#245cae">SV</text>
+  <text x="220" y="360" class="region-sub">Full state · General and exact</text>
+  <text x="215" y="390" class="small">Memory ≈ O(2ⁿ)</text>
 
   <!-- MPS region -->
   <path d="M175 500 C310 440 455 470 555 520 C680 585 805 565 915 520
            L915 625 L175 625 C150 590 150 545 175 500Z"
         fill="#4ead76" fill-opacity=".28" stroke="#298b55" stroke-width="3" stroke-dasharray="12 8"/>
-  <text x="610" y="575" class="region" fill="#1f7748">MPS</text>
-  <text x="565" y="606" class="region-sub">低纠缠 · 链式/近邻</text>
+  <text x="610" y="575" class="region" style="fill:#1f7748">MPS</text>
+  <text x="565" y="606" class="region-sub">Low entanglement · Chains / neighbors</text>
 
   <!-- TN region -->
   <path d="M405 350 C500 285 650 300 750 345 C830 380 875 430 915 500
            C805 555 680 570 565 520 C490 487 430 440 405 350Z"
         fill="#eea447" fill-opacity=".31" stroke="#d78322" stroke-width="3" stroke-dasharray="12 8"/>
-  <text x="660" y="410" class="region" fill="#b86612">TN</text>
-  <text x="560" y="442" class="region-sub">结构化收缩 · 稀疏输出</text>
-  <text x="575" y="470" class="small">取决于树宽与收缩路径</text>
+  <text x="660" y="410" class="region" style="fill:#b86612">TN</text>
+  <text x="560" y="442" class="region-sub">Structured contraction · Sparse outputs</text>
+  <text x="575" y="470" class="small">Depends on treewidth and path</text>
 
-  <text x="170" y="176" class="small">虚线边界表示经验交叉区，并非固定阈值</text>
+  <text x="170" y="176" class="small">Dashed boundaries: empirical crossover regions, not fixed thresholds</text>
 
   <!-- Method cards -->
   <g filter="url(#shadow)">
@@ -70,38 +70,39 @@
     <rect x="1025" y="518" width="505" height="194" rx="16" fill="#fff6e9" stroke="#efbd7c"/>
   </g>
 
-  <text x="1055" y="180" class="card-title" fill="#245cae">SV｜全振幅状态</text>
-  <text x="1055" y="214" class="body">优势：通用、精确、算子密集友好</text>
-  <text x="1055" y="244" class="body">代价：内存约 O(2ⁿ)</text>
-  <text x="1055" y="274" class="body">适合：小中规模、高纠缠、全状态/大量观测</text>
+  <text x="1055" y="180" class="card-title" style="fill:#245cae">SV | Full state amplitudes</text>
+  <text x="1055" y="214" class="body">Strength: general, exact, operator-dense workloads</text>
+  <text x="1055" y="244" class="body">Cost: approximately O(2ⁿ) memory</text>
+  <text x="1055" y="274" class="body">Use: small/medium scale, high entanglement, many outputs</text>
 
-  <text x="1055" y="368" class="card-title" fill="#1f7748">MPS｜低纠缠链结构</text>
-  <text x="1055" y="402" class="body">优势：可扩展到很多量子比特</text>
-  <text x="1055" y="432" class="body">代价：随键维 χ 增长</text>
-  <text x="1055" y="462" class="body">适合：1D/近邻、浅层、训练与时间演化</text>
+  <text x="1055" y="368" class="card-title" style="fill:#1f7748">MPS | Low-entanglement chains</text>
+  <text x="1055" y="402" class="body">Strength: can reach large qubit counts</text>
+  <text x="1055" y="432" class="body">Cost: grows with bond dimension χ</text>
+  <text x="1055" y="462" class="body">Use: 1D/local gates, shallow circuits, training, evolution</text>
 
-  <text x="1055" y="556" class="card-title" fill="#b86612">TN｜结构化收缩</text>
-  <text x="1055" y="590" class="body">优势：利用图结构、切片与稀疏输出</text>
-  <text x="1055" y="620" class="body">代价：取决于树宽与收缩路径</text>
-  <text x="1055" y="650" class="body">适合：少量振幅/期望值、结构化电路、</text>
-  <text x="1055" y="680" class="body">　　　中等树宽</text>
+  <text x="1055" y="556" class="card-title" style="fill:#b86612">TN | Structured contraction</text>
+  <text x="1055" y="590" class="body">Strength: graph structure, slicing, sparse outputs</text>
+  <text x="1055" y="620" class="body">Cost: treewidth and contraction path</text>
+  <text x="1055" y="650" class="body">Use: few amplitudes/expectations, structured circuits,</text>
+  <text x="1055" y="680" class="body">          moderate treewidth</text>
 
   <!-- Decision strip -->
   <rect x="72" y="752" width="1458" height="155" rx="18" fill="#172033"/>
-  <text x="105" y="793" font-size="21" font-weight="800" fill="#fff">快速决策</text>
+  <text x="105" y="793" font-size="21" font-weight="800" style="fill:#fff">Quick choice</text>
   <line x1="235" y1="772" x2="235" y2="883" stroke="#536078"/>
 
   <circle cx="285" cy="820" r="22" fill="#4e86df"/>
-  <text x="320" y="814" class="decision" fill="#fff">需要完整状态？</text>
-  <text x="320" y="843" class="body" fill="#bcd5fb">→ SV</text>
+  <text x="320" y="814" class="decision" style="fill:#fff">Need the full state?</text>
+  <text x="320" y="843" class="body" style="fill:#bcd5fb">→ SV</text>
 
   <circle cx="590" cy="820" r="22" fill="#4ead76"/>
-  <text x="625" y="814" class="decision" fill="#fff">低纠缠且近似可接受？</text>
-  <text x="625" y="843" class="body" fill="#bde8cc">→ MPS</text>
+  <text x="625" y="814" class="decision" style="fill:#fff">Low entanglement?</text>
+  <text x="625" y="835" class="decision" style="fill:#fff">Approximation acceptable?</text>
+  <text x="625" y="859" class="body" style="fill:#bde8cc">→ MPS</text>
 
   <circle cx="955" cy="820" r="22" fill="#eea447"/>
-  <text x="990" y="814" class="decision" fill="#fff">少量输出且结构可利用？</text>
-  <text x="990" y="843" class="body" fill="#ffdbad">→ TN</text>
+  <text x="990" y="814" class="decision" style="fill:#fff">Few outputs; exploitable structure?</text>
+  <text x="990" y="843" class="body" style="fill:#ffdbad">→ TN</text>
 
-  <text x="105" y="943" class="small">边界为经验区域，取决于硬件、精度、线路结构与输出目标；高树宽 + 大规模时三种方法都可能困难。</text>
+  <text x="105" y="943" class="small">Empirical regions depend on hardware, precision, circuit structure, and outputs. Large scale plus high treewidth can challenge all three methods.</text>
 </svg>

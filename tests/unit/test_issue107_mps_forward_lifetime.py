@@ -6,10 +6,41 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+import flagquantum as fq
 import flagquantum.runtime.executors.mps.forward as forward
 from flagquantum.runtime.executors.mps import compiled_layers
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("two_site", [False, True])
+def test_forward_rejects_cache_entry_for_wrong_gate_width(
+    monkeypatch: pytest.MonkeyPatch, two_site: bool
+) -> None:
+    circuit = fq.Circuit(2)
+    if two_site:
+        circuit.rxx(0, 1, theta=0.2)
+        malformed_output = (torch.ones(1),)
+    else:
+        circuit.ry(0, theta=0.2)
+        malformed_output = (torch.ones(1), torch.ones(1), {})
+    ir = circuit.to_ir()
+    layer = ((0, ir.instructions[0], ir.instructions[0].wires),)
+    monkeypatch.setattr(forward.dist, "is_initialized", lambda: True)
+    monkeypatch.setattr(forward.dist, "get_world_size", lambda: 1)
+    monkeypatch.setattr(forward.dist, "get_rank", lambda: 0)
+    monkeypatch.setattr(forward.dist, "get_backend", lambda: "gloo")
+    monkeypatch.setattr(
+        forward,
+        "_prepare_compiled_layer",
+        lambda *args, **kwargs: (layer, {0: malformed_output}, ()),
+    )
+    with pytest.raises(
+        forward.MPSForwardLifetimeError, match="compiled MPS instruction"
+    ):
+        forward.execute_torch_distributed_mps_forward(
+            ir, compile_site_kernels=True, rebalance_threshold=float("inf")
+        )
 
 
 def test_layer_cache_drain_invariant_rejects_retained_tensor() -> None:

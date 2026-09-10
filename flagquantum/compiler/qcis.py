@@ -45,7 +45,10 @@ def _as_ir(program: Any) -> CircuitIR:
     if isinstance(program, CircuitIR):
         return program
     if hasattr(program, "to_ir"):
-        return program.to_ir()
+        ir = program.to_ir()
+        if not isinstance(ir, CircuitIR):
+            raise TypeError("QCIS export requires to_ir() to return a CircuitIR.")
+        return ir
     raise TypeError("QCIS export expects a FlagQuantum Circuit or CircuitIR.")
 
 

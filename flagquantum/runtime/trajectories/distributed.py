@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from .checkpoint import TrajectoryCheckpoint
-from .result import TrajectoryStatistics
+from .result import TrajectoryFailure, TrajectoryStatistics
 from .statistics import TensorWelford
 
 
@@ -23,7 +23,7 @@ def merge_trajectory_checkpoints(
     circuit_digest = items[0].circuit_digest
     execution_metadata = items[0].execution_metadata
     completed: list[int] = []
-    failures = []
+    failures: list[TrajectoryFailure] = []
     accumulator = TensorWelford()
     for checkpoint in items:
         if checkpoint.requested_count != requested_count:
@@ -42,14 +42,14 @@ def merge_trajectory_checkpoints(
         failures.extend(checkpoint.failures)
         accumulator.merge(checkpoint.accumulator())
 
-    if len(completed) != len(set(completed)):
+    completed_set = set(completed)
+    if len(completed) != len(completed_set):
         raise ValueError("trajectory checkpoints contain duplicate completed IDs")
     failed_ids = [item.trajectory_id for item in failures]
     if len(failed_ids) != len(set(failed_ids)):
         raise ValueError("trajectory checkpoints contain duplicate failed IDs")
 
     completed_ids = tuple(sorted(completed))
-    completed_set = set(completed_ids)
     merged_failures = tuple(
         sorted(
             (item for item in failures if item.trajectory_id not in completed_set),

@@ -38,14 +38,11 @@ def _pauli_basis(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Build the one-qubit Pauli basis owned by the noise model."""
 
-    return tuple(
-        torch.tensor(values, dtype=dtype, device=device)
-        for values in (
-            ((1, 0), (0, 1)),
-            ((0, 1), (1, 0)),
-            ((0, -1j), (1j, 0)),
-            ((1, 0), (0, -1)),
-        )
+    return (
+        torch.tensor(((1, 0), (0, 1)), dtype=dtype, device=device),
+        torch.tensor(((0, 1), (1, 0)), dtype=dtype, device=device),
+        torch.tensor(((0, -1j), (1j, 0)), dtype=dtype, device=device),
+        torch.tensor(((1, 0), (0, -1)), dtype=dtype, device=device),
     )
 
 
@@ -76,13 +73,10 @@ class KrausChannel:
             if not bool(torch.isfinite(op).all()):
                 raise ValueError("Kraus operators must contain only finite values")
         check_dtype = torch.complex128
-        effect = sum(
-            (
-                op.detach().to(device="cpu", dtype=check_dtype).mH
-                @ op.detach().to(device="cpu", dtype=check_dtype)
-            )
-            for op in self.kraus
-        )
+        effect = torch.zeros((size, size), dtype=check_dtype)
+        for op in self.kraus:
+            checked = op.detach().to(device="cpu", dtype=check_dtype)
+            effect += checked.mH @ checked
         identity = torch.eye(size, dtype=check_dtype)
         if not torch.allclose(effect, identity, atol=1e-6, rtol=1e-6):
             error = float(torch.max(torch.abs(effect - identity)).item())

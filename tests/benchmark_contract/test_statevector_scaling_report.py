@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -10,7 +11,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def _artifact(world_size: int, samples: list[float]) -> dict:
+def _artifact(world_size: int, samples: list[float]) -> dict[str, Any]:
     return {
         "schema_version": MODULE.SOURCE_SCHEMA,
         "artifact_class": "measured_development_run",
@@ -33,7 +34,7 @@ def _artifact(world_size: int, samples: list[float]) -> dict:
     }
 
 
-def test_report_computes_deterministic_bootstrap_speedup():
+def test_report_computes_deterministic_bootstrap_speedup() -> None:
     report = MODULE.build_report(
         [_artifact(1, [10.0, 10.1, 9.9]), _artifact(2, [6.0, 6.1, 5.9])]
     )
@@ -45,7 +46,7 @@ def test_report_computes_deterministic_bootstrap_speedup():
     assert report["release_gate_allowed"] is False
 
 
-def test_report_rejects_mismatched_workloads_and_failed_correctness():
+def test_report_rejects_mismatched_workloads_and_failed_correctness() -> None:
     candidate = _artifact(2, [6.0, 6.1, 5.9])
     candidate["workload_sha256"] = "different"
     with pytest.raises(ValueError, match="same workload_sha256"):
@@ -57,7 +58,7 @@ def test_report_rejects_mismatched_workloads_and_failed_correctness():
         MODULE.build_report([_artifact(1, [10.0, 10.1, 9.9]), candidate])
 
 
-def test_report_rejects_claimable_or_cross_world_inconsistent_sources():
+def test_report_rejects_claimable_or_cross_world_inconsistent_sources() -> None:
     baseline = _artifact(1, [10.0, 10.1, 9.9])
     candidate = _artifact(2, [6.0, 6.1, 5.9])
     candidate["scalability_claim_allowed"] = True
@@ -70,7 +71,7 @@ def test_report_rejects_claimable_or_cross_world_inconsistent_sources():
         MODULE.build_report([baseline, candidate])
 
 
-def test_report_rejects_multinode_source_without_topology_evidence():
+def test_report_rejects_multinode_source_without_topology_evidence() -> None:
     baseline = _artifact(1, [10.0, 10.1, 9.9])
     candidate = _artifact(2, [6.0, 6.1, 5.9])
     candidate["node_count"] = 2
@@ -85,3 +86,71 @@ def test_report_rejects_multinode_source_without_topology_evidence():
     ]
     with pytest.raises(ValueError, match="traffic evidence"):
         MODULE.build_report([baseline, candidate])
+
+
+@pytest.mark.parametrize(
+    "invalid", [0.0, -1.0, float("nan"), float("inf"), -float("inf")]
+)
+@pytest.mark.parametrize("world_size", [1, 2])
+def test_report_rejects_invalid_timing_samples(invalid: float, world_size: int) -> None:
+    artifacts = [_artifact(1, [10.0, 10.1, 9.9])]
+    if world_size == 2:
+        artifacts.append(_artifact(2, [6.0, 6.1, 5.9]))
+    artifacts[-1]["timing"]["samples_seconds"][0] = invalid
+
+    with pytest.raises(ValueError, match="finite positive"):
+        MODULE.build_report(artifacts)
+
+
+@pytest.mark.parametrize(
+    "invalid", [0.0, -1.0, float("nan"), float("inf"), -float("inf")]
+)
+@pytest.mark.parametrize("source", ["baseline", "candidate"])
+def test_bootstrap_rejects_invalid_timing_samples(invalid: float, source: str) -> None:
+    samples = {"baseline": [10.0, 10.1, 9.9], "candidate": [6.0, 6.1, 5.9]}
+    samples[source][0] = invalid
+
+    with pytest.raises(ValueError, match="finite positive"):
+        MODULE.bootstrap_median_speedup(**samples, resamples=1000)
+
+
+@pytest.mark.parametrize("invalid", [float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize("source_index", [0, 1])
+@pytest.mark.parametrize("metric", ["norm", "z_expectations"])
+def test_report_rejects_nonfinite_correctness_metrics(
+    invalid: float, source_index: int, metric: str
+) -> None:
+    artifacts = [_artifact(1, [10.0, 10.1, 9.9]), _artifact(2, [6.0, 6.1, 5.9])]
+    invariants = artifacts[source_index]["correctness"]["global_invariants"]
+    if metric == "norm":
+        invariants[metric] = invalid
+    else:
+        invariants[metric]["0"] = invalid
+
+    with pytest.raises(ValueError, match="global (norm|observables)"):
+        MODULE.build_report(artifacts)
+
+
+@pytest.mark.parametrize("invalid", [-1.0, float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize("source_index", [0, 1])
+def test_report_rejects_invalid_correctness_tolerance(
+    invalid: float, source_index: int
+) -> None:
+    artifacts = [_artifact(1, [10.0, 10.1, 9.9]), _artifact(2, [6.0, 6.1, 5.9])]
+    artifacts[source_index]["correctness"]["absolute_tolerance"] = invalid
+
+    with pytest.raises(ValueError, match="finite nonnegative"):
+        MODULE.build_report(artifacts)
+
+
+@pytest.mark.parametrize("tolerance", [0.0, 0.125])
+def test_report_accepts_correctness_at_tolerance_boundary(tolerance: float) -> None:
+    baseline = _artifact(1, [10.0, 10.1, 9.9])
+    candidate = _artifact(2, [6.0, 6.1, 5.9])
+    for artifact in (baseline, candidate):
+        artifact["correctness"]["absolute_tolerance"] = tolerance
+    candidate["correctness"]["global_invariants"]["z_expectations"]["0"] += tolerance
+
+    report = MODULE.build_report([baseline, candidate])
+
+    assert report["points"][1]["speedup"]["speedup"] == pytest.approx(10.0 / 6.0)

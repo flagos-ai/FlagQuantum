@@ -36,6 +36,14 @@ class ReadoutError:
             raise ValueError("each readout confusion row must sum to 1")
 
 
+def _decode_readout_error(rows: Iterable[Iterable[float]]) -> ReadoutError:
+    probabilities = tuple(tuple(float(value) for value in row) for row in rows)
+    if len(probabilities) != 2 or any(len(row) != 2 for row in probabilities):
+        raise ValueError("readout confusion matrix must have shape (2, 2)")
+    first, second = probabilities
+    return ReadoutError(((first[0], first[1]), (second[0], second[1])))
+
+
 @dataclass(frozen=True)
 class CorrelatedReadoutError:
     """Multi-qubit true-to-observed classical confusion matrix."""
@@ -122,15 +130,19 @@ class NoiseModel:
                 wires=None if wires is None else tuple(int(wire) for wire in wires),
             )
         for encoded in payload.get("readout_rules", ()):
-            model.add_readout(
-                encoded.get("wires", ()),
-                (CorrelatedReadoutError if encoded.get("correlated") else ReadoutError)(
+            if encoded.get("correlated"):
+                error = CorrelatedReadoutError(
                     tuple(
                         tuple(float(value) for value in row)
                         for row in encoded["probabilities"]
                     )
-                ),
-            )
+                )
+                model.add_correlated_readout(encoded.get("wires", ()), error)
+            else:
+                model.add_readout(
+                    encoded.get("wires", ()),
+                    _decode_readout_error(encoded["probabilities"]),
+                )
         if payload.get("device_profile") is not None:
             from .device_profile import DeviceNoiseProfile
 
@@ -153,12 +165,14 @@ class NoiseModel:
         *,
         wires: Iterable[int] | int | None = None,
     ) -> "NoiseModel":
+        names: tuple[str, ...]
         if isinstance(gate_names, str):
             names = (gate_names.lower(),)
         else:
             names = tuple(name.lower() for name in gate_names)
         if not names or any(not name for name in names):
             raise ValueError("noise rules require at least one non-empty gate name")
+        target_wires: tuple[int, ...] | None
         if wires is None:
             target_wires = None
         elif isinstance(wires, int):

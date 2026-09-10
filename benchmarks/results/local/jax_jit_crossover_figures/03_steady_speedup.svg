@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="620" viewBox="0 0 1080 620">
 <rect width="100%" height="100%" fill="#FFFFFF"/>
 <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#243447}.title{font-size:25px;font-weight:700;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:12px;fill:#64748B}.label{font-size:13px}.value{font-size:12px;font-weight:700}</style>
-<text x="105" y="38" class="title">JAX JIT 稳态加速比</text>
-<text x="105" y="62" class="sub">NVIDIA A800-SXM4-80GB · single_device_fast_path · loss + gradient · median of fresh-process runs · 大于 1× 表示 JAX 更快</text>
+<text x="105" y="38" class="title">JAX JIT steady-state speedup</text>
+<text x="105" y="62" class="sub">NVIDIA A800-SXM4-80GB · single_device_fast_path · loss + gradient · fresh-process medians · &gt;1× means JAX is faster</text>
 <line x1="105" y1="528.0" x2="1035" y2="528.0" stroke="#D8E0EA" stroke-width="1"/>
 <text x="93" y="532.0" text-anchor="end" class="axis">0.0×</text>
 <line x1="105" y1="417.5" x2="1035" y2="417.5" stroke="#D8E0EA" stroke-width="1"/>

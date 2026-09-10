@@ -8,7 +8,8 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Mapping, Sequence
+from numbers import Real
+from typing import Any, Iterable, Mapping, Sequence, TypedDict
 
 import torch
 import torch.distributed as dist
@@ -176,11 +177,31 @@ def receive_reverse_tensor_batch(
         raise MPSReverseContractError(str(exc)) from exc
 
 
+class _ReverseRecordMetadata(TypedDict):
+    input_shapes: tuple[tuple[int, ...], ...]
+    output_shapes: tuple[tuple[int, ...], ...]
+    split_info: dict[str, Any]
+
+
+def _require_positive_dimensions(dimensions: Iterable[object]) -> None:
+    for value in dimensions:
+        if (
+            not isinstance(value, Real)
+            or isinstance(value, bool)
+            or not math.isfinite(value)
+            or value <= 0
+            or math.floor(value) != value
+        ):
+            raise MPSReverseContractError(
+                "MPS record shapes must contain positive integers"
+            )
+
+
 def encode_reverse_record(
-    payload: dict[str, Any], reference: torch.Tensor
+    payload: Mapping[str, Any], reference: torch.Tensor
 ) -> torch.Tensor:
-    inputs = tuple(tuple(int(v) for v in shape) for shape in payload["input_shapes"])
-    outputs = tuple(tuple(int(v) for v in shape) for shape in payload["output_shapes"])
+    inputs = tuple(tuple(shape) for shape in payload["input_shapes"])
+    outputs = tuple(tuple(shape) for shape in payload["output_shapes"])
     if (
         len(inputs) != 2
         or len(outputs) != 2
@@ -189,6 +210,7 @@ def encode_reverse_record(
         raise MPSReverseContractError(
             "MPS record tensor schema requires two rank-4 tensors"
         )
+    _require_positive_dimensions(value for shape in inputs + outputs for value in shape)
     info = dict(payload.get("split_info", {}))
     values = [
         1.0,
@@ -204,10 +226,15 @@ def encode_reverse_record(
     return torch.tensor(values, dtype=torch.float64, device=reference.device)
 
 
-def decode_reverse_record(schema: torch.Tensor) -> dict[str, Any]:
+def decode_reverse_record(schema: torch.Tensor) -> _ReverseRecordMetadata:
+    if schema.ndim != 1 or schema.numel() != 21:
+        raise MPSReverseContractError(
+            "MPS record tensor schema requires 21 scalar fields"
+        )
     values = schema.detach().cpu().tolist()
-    if int(values[0]) != 1:
+    if values[0] != 1:
         raise MPSReverseContractError("unsupported MPS record tensor schema version")
+    _require_positive_dimensions(values[1:17])
     info = {"discarded_weight": float(values[19])}
     if int(values[17]) >= 0:
         info["rank"] = int(values[17])
@@ -226,8 +253,8 @@ def decode_reverse_record(schema: torch.Tensor) -> dict[str, Any]:
 
 
 def broadcast_reverse_record(
-    payload: dict[str, Any] | None, owner: int, reference: torch.Tensor
-) -> dict[str, Any]:
+    payload: Mapping[str, Any] | None, owner: int, reference: torch.Tensor
+) -> _ReverseRecordMetadata:
     """Broadcast dynamic split metadata with one fixed tensor schema."""
     schema = torch.empty(21, dtype=torch.float64, device=reference.device)
     if dist.get_rank() == owner:
@@ -238,10 +265,10 @@ def broadcast_reverse_record(
 
 
 def all_reduce_reverse_layer_records(
-    payloads: Mapping[int, dict[str, Any]],
+    payloads: Mapping[int, Mapping[str, Any]],
     entries: Sequence[tuple[int, int]],
     reference: torch.Tensor,
-) -> dict[int, dict[str, Any]]:
+) -> dict[int, _ReverseRecordMetadata]:
     """Exchange one disjoint layer's dynamic metadata in one collective."""
     if not entries:
         return {}

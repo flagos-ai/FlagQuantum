@@ -8,11 +8,11 @@ import json
 import math
 import statistics
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING or __package__:
     from .statevector_scaling_report import bootstrap_median_speedup
-except ImportError:  # pragma: no cover - direct script compatibility
+else:  # Direct script execution resolves sibling modules.
     from statevector_scaling_report import bootstrap_median_speedup
 
 SCHEMA = "flagquantum.statevector.weak_scaling_report.v1"

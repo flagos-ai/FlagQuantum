@@ -136,12 +136,10 @@ def _compile_statevector_program(
         fused = False
         if enable_triton_loop and segment:
             by_wire: dict[int, list[Instruction]] = {}
-            wire_order: list[int] = []
             for instruction in segment:
                 wire = instruction.wires[0]
                 if wire not in by_wire:
                     by_wire[wire] = []
-                    wire_order.append(wire)
                 by_wire[wire].append(instruction)
             valid = all(
                 len(items) >= 4
@@ -153,8 +151,7 @@ def _compile_statevector_program(
                 for items in by_wire.values()
             )
             if valid:
-                for wire in wire_order:
-                    items = by_wire[wire]
+                for wire, items in by_wire.items():
                     program.append(
                         _StatevectorRXRZLoopStep(
                             wire,
@@ -194,8 +191,7 @@ def _compile_statevector_program(
             continue
         if len(step.instruction.wires) == 1:
             cursor = index
-            by_wire: dict[int, list[_StatevectorGateStep]] = {}
-            wire_order: list[int] = []
+            gate_steps_by_wire: dict[int, list[_StatevectorGateStep]] = {}
             while cursor < len(program):
                 candidate = program[cursor]
                 if not (
@@ -204,13 +200,11 @@ def _compile_statevector_program(
                 ):
                     break
                 wire = candidate.instruction.wires[0]
-                if wire not in by_wire:
-                    by_wire[wire] = []
-                    wire_order.append(wire)
-                by_wire[wire].append(candidate)
+                if wire not in gate_steps_by_wire:
+                    gate_steps_by_wire[wire] = []
+                gate_steps_by_wire[wire].append(candidate)
                 cursor += 1
-            for wire in wire_order:
-                wire_steps = by_wire[wire]
+            for wire, wire_steps in gate_steps_by_wire.items():
                 if len(wire_steps) == 1:
                     fused_program.append(wire_steps[0])
                 else:
@@ -263,24 +257,24 @@ def _compile_statevector_program(
     ] = []
     index = 0
     while index < len(fused_program):
-        step = fused_program[index]
+        fused_step = fused_program[index]
         if not (
-            isinstance(step, _StatevectorGateStep)
-            and canonical_opcode(step.instruction.name) == "cx"
+            isinstance(fused_step, _StatevectorGateStep)
+            and canonical_opcode(fused_step.instruction.name) == "cx"
         ):
-            optimized_program.append(step)
+            optimized_program.append(fused_step)
             index += 1
             continue
-        cx_steps = [step]
+        cx_steps = [fused_step]
         cursor = index + 1
         while cursor < len(fused_program):
-            candidate = fused_program[cursor]
+            fused_candidate = fused_program[cursor]
             if not (
-                isinstance(candidate, _StatevectorGateStep)
-                and canonical_opcode(candidate.instruction.name) == "cx"
+                isinstance(fused_candidate, _StatevectorGateStep)
+                and canonical_opcode(fused_candidate.instruction.name) == "cx"
             ):
                 break
-            cx_steps.append(candidate)
+            cx_steps.append(fused_candidate)
             cursor += 1
         if len(cx_steps) >= 2:
             optimized_program.append(
@@ -718,12 +712,14 @@ def _batched_rotation_sequence_matrices(
     """Compose equal-topology rotation regions with one operation graph."""
 
     region_count, bsz, gate_count = angles.shape
-    if gate_count != len(names) or not set(names) <= {"rx", "ry", "rz"}:
+    if not names or gate_count != len(names) or not set(names) <= {"rx", "ry", "rz"}:
         raise ValueError("batched rotation sequences require RX/RY/RZ topology")
-    flat_matrices = tuple(
-        GATE_MAT_DICT[name](angles[..., index].reshape(-1, 1)).to(dtype=dtype)
-        for index, name in enumerate(names)
-    )
+    flat_matrices = []
+    for index, name in enumerate(names):
+        builder = GATE_MAT_DICT[name]
+        if not callable(builder):
+            raise TypeError(f"Rotation {name!r} requires a matrix builder.")
+        flat_matrices.append(builder(angles[..., index].reshape(-1, 1)).to(dtype=dtype))
     combined = flat_matrices[0]
     for matrix in flat_matrices[1:]:
         combined = torch.bmm(matrix, combined)

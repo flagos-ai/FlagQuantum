@@ -8,7 +8,7 @@ AI accelerators that already support mainstream deep-learning frameworks.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence, TypedDict
 
 import torch
 
@@ -38,6 +38,17 @@ def _normalize_wires(wires: Iterable[int] | int) -> tuple[int, ...]:
     if isinstance(wires, int):
         return (wires,)
     return tuple(int(wire) for wire in wires)
+
+
+class _CircuitConstructionOptions(TypedDict):
+    """Configuration retained when binding or copying a circuit."""
+
+    n_wires: int
+    bsz: int
+    device: torch.device | str | None
+    dtype: torch.dtype
+    inputs: torch.Tensor | None
+    config: RuntimeConfig
 
 
 class Circuit:
@@ -115,7 +126,7 @@ class Circuit:
             tuple[tuple[int, ...], str, torch.dtype], torch.Tensor
         ] = {}
         self._inputs = inputs
-        self.circuit_param = {
+        self.circuit_param: _CircuitConstructionOptions = {
             "n_wires": self.n_wires,
             "bsz": self.bsz,
             "device": self.device,
@@ -262,7 +273,7 @@ class Circuit:
     def bind_parameters(self, values: Mapping[str | Any, Any]) -> "Circuit":
         """Return a copy with named symbolic parameters replaced by values."""
 
-        bound = type(self)(**dict(self.circuit_param))
+        bound = type(self)(**self.circuit_param)
         bound._instructions.extend(
             Instruction(
                 name=instruction.name,
@@ -552,12 +563,14 @@ def _install_gate_method(name: str) -> None:
         for index, wire in enumerate(wires):
             if wire is None and positional:
                 wires[index] = positional.pop(0)
-        missing = [index for index, wire in enumerate(wires) if wire is None]
-        if missing:
-            expected = ", ".join(
-                aliases[0] for aliases in _public_qubit_keywords(name, arity)
-            )
-            raise TypeError(f"{name} requires qubit arguments: {expected}")
+        resolved_wires = []
+        for wire in wires:
+            if wire is None:
+                expected = ", ".join(
+                    aliases[0] for aliases in _public_qubit_keywords(name, arity)
+                )
+                raise TypeError(f"{name} requires qubit arguments: {expected}")
+            resolved_wires.append(wire)
 
         values = positional
         parameter_names = schema.parameters if schema is not None else ()
@@ -569,7 +582,7 @@ def _install_gate_method(name: str) -> None:
             if parameter_name in kwargs:
                 raise TypeError(f"{name} got multiple values for {parameter_name!r}")
             kwargs[parameter_name] = value
-        return self.gate(name, wires, **kwargs)
+        return self.gate(name, resolved_wires, **kwargs)
 
     method.__name__ = name
     setattr(Circuit, name, method)

@@ -258,7 +258,7 @@ def load_dynamic_tn_reverse_checkpoint(
         manifest = {}
         committed_identity = ""
         manifest_invalid = True
-    if _collective_invalid(manifest_invalid, device):
+    if _collective_invalid(manifest_invalid or not isinstance(manifest, dict), device):
         raise RuntimeError("dynamic TN checkpoint is not durably committed")
     checkpoint_identity = str(manifest.get("checkpoint_identity", ""))
     manifest_body = {
@@ -285,7 +285,7 @@ def load_dynamic_tn_reverse_checkpoint(
     rank_path = root / (
         f"rank-{rank:05d}.pt" if entry is None else str(entry["filename"])
     )
-    if not invalid:
+    if entry is not None:
         try:
             invalid = rank_path.stat().st_size != int(entry["bytes"]) or _file_sha256(
                 rank_path

@@ -9,10 +9,31 @@ import math
 import random
 import statistics
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 SCHEMA = "flagquantum.statevector.scaling_report.v1"
 SOURCE_SCHEMA = "flagquantum.statevector.strong_scaling.v1"
+
+
+class _SpeedupEstimate(TypedDict):
+    """Fields shared by baseline and bootstrap speedup records."""
+
+    method: str
+    speedup: float
+    confidence_level: float
+    confidence_interval: list[float]
+
+
+class _BootstrapEstimate(_SpeedupEstimate):
+    """Speedup record with reproducible resampling parameters."""
+
+    seed: int
+    resamples: int
+
+
+def _validate_timing_samples(samples: list[float]) -> None:
+    if any(not math.isfinite(sample) or sample <= 0 for sample in samples):
+        raise ValueError("timing samples must be finite positive durations")
 
 
 def _percentile(values: list[float], probability: float) -> float:
@@ -32,9 +53,25 @@ def bootstrap_median_speedup(
     *,
     resamples: int = 10_000,
     seed: int = 440044,
-) -> dict[str, Any]:
+) -> _BootstrapEstimate:
+    """Estimate a median timing ratio with a seeded bootstrap interval.
+
+    Args:
+        baseline: At least three finite, positive baseline durations.
+        candidate: At least three finite, positive candidate durations.
+        resamples: Number of independent resamples, at least 1,000.
+        seed: Seed for the local random generator.
+
+    Returns:
+        The speedup, 95% percentile interval, and resampling parameters.
+
+    Raises:
+        ValueError: Samples or the resample count violate these requirements.
+    """
     if len(baseline) < 3 or len(candidate) < 3 or resamples < 1000:
         raise ValueError("at least three samples and 1000 resamples required")
+    _validate_timing_samples(baseline)
+    _validate_timing_samples(candidate)
     generator = random.Random(seed)
     ratios = []
     for _ in range(resamples):
@@ -88,6 +125,7 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
             raise ValueError("source artifact has incomplete hardware inventory")
         if len(item.get("timing", {}).get("samples_seconds", [])) < 3:
             raise ValueError("source artifact has insufficient timing samples")
+        _validate_timing_samples(item["timing"]["samples_seconds"])
         node_count = int(item.get("node_count", 1))
         if node_count > 1:
             placements = item.get("rank_placement", [])
@@ -104,17 +142,20 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
                 raise ValueError("multi-node source lacks inter-node traffic evidence")
     by_world = {int(item["world_size"]): item for item in artifacts}
     reference_invariants = by_world[1]["correctness"]["global_invariants"]
-    tolerance = max(
+    tolerances = tuple(
         float(item["correctness"].get("absolute_tolerance", 0.0)) for item in artifacts
     )
+    if any(not math.isfinite(value) or value < 0 for value in tolerances):
+        raise ValueError("correctness tolerances must be finite nonnegative values")
+    tolerance = max(tolerances)
+    reference_norm = float(reference_invariants["norm"])
     for item in artifacts:
         invariants = item["correctness"].get("global_invariants", {})
+        norm = float(invariants.get("norm", float("inf")))
         if (
-            abs(
-                float(invariants.get("norm", float("inf")))
-                - float(reference_invariants["norm"])
-            )
-            > tolerance
+            not math.isfinite(norm)
+            or not math.isfinite(reference_norm)
+            or abs(norm - reference_norm) > tolerance
         ):
             raise ValueError("global norm differs across world sizes")
         if set(invariants.get("z_expectations", {})) != set(
@@ -122,9 +163,12 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
         ):
             raise ValueError("observable keys differ across world sizes")
         for wire, expected in reference_invariants["z_expectations"].items():
+            observed_value = float(invariants["z_expectations"][wire])
+            expected_value = float(expected)
             if (
-                abs(float(invariants["z_expectations"][wire]) - float(expected))
-                > tolerance
+                not math.isfinite(observed_value)
+                or not math.isfinite(expected_value)
+                or abs(observed_value - expected_value) > tolerance
             ):
                 raise ValueError("global observables differ across world sizes")
     baseline = by_world[1]["timing"]["samples_seconds"]
@@ -132,7 +176,7 @@ def build_report(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
     for world_size in sorted(by_world):
         item = by_world[world_size]
         samples = item["timing"]["samples_seconds"]
-        estimate = (
+        estimate: _SpeedupEstimate = (
             {
                 "method": "baseline",
                 "speedup": 1.0,

@@ -524,9 +524,11 @@ def _all_to_all_transport(
     expected = tuple(
         _transport_payload(peer, segment_index) for peer in range(world_size)
     )
-    errors = ()
-    if received != expected:
-        errors = (f"rank {rank} gathered {received}, expected {expected}",)
+    errors = (
+        (f"rank {rank} gathered {received}, expected {expected}",)
+        if received != expected
+        else ()
+    )
     return (int(send.item()),), received, errors
 
 

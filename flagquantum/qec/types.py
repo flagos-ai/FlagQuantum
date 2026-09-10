@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from numbers import Integral
 from typing import Sequence
 
 
 def _binary_tuple(values: Sequence[int], *, owner: str) -> tuple[int, ...]:
-    normalized = tuple(int(value) for value in values)
-    if not normalized or any(value not in {0, 1} for value in normalized):
-        raise ValueError(f"{owner} must contain binary values")
-    return normalized
+    bits = tuple(values)
+    if not bits or any(
+        not isinstance(value, Integral) or value not in (0, 1) for value in bits
+    ):
+        raise ValueError(f"{owner} must contain binary integers or booleans")
+    return tuple(int(value) for value in bits)
 
 
 @dataclass(frozen=True, order=True)

@@ -15,8 +15,10 @@ Updated: 2026-09-06
 
 ## Phase 1 verification basis
 
-Phase 1 的实现依据是当前代码、语义差分测试、场景测试及活动性能预算。
-历史批次授权、复核、整改和退出记录已退役，不再作为代码契约或测试依赖。
+Phase 1 implementation is verified against the current code, semantic differential
+tests, scenario tests, and active performance budgets. Historical batch approvals,
+reviews, remediation records, and exit records have been retired and are no longer
+code contracts or test dependencies.
 
 ## Phase 2 accepted capability
 

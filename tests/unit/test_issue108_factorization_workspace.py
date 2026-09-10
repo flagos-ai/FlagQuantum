@@ -39,7 +39,13 @@ def _provider(available: int):
     )
 
 
-def test_cuda_memory_snapshot_uses_platform_provider(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "missing_field",
+    [None, "free_bytes", "total_bytes", "allocated_bytes", "reserved_bytes"],
+)
+def test_cuda_memory_snapshot_uses_platform_provider(
+    monkeypatch: pytest.MonkeyPatch, missing_field: str | None
+) -> None:
     memory = SimpleNamespace(
         free_bytes=100, total_bytes=200, allocated_bytes=30, reserved_bytes=40
     )
@@ -48,6 +54,14 @@ def test_cuda_memory_snapshot_uses_platform_provider(monkeypatch) -> None:
         "flagquantum.runtime.executors.mps.factorization.get_platform_runtime",
         lambda device_type: platform,
     )
+
+    if missing_field is not None:
+        setattr(memory, missing_field, None)
+        with pytest.raises(
+            MPSFactorizationMemoryError, match="snapshot is unavailable"
+        ):
+            cuda_factorization_memory_snapshot(torch.device("cuda:0"))
+        return
 
     assert cuda_factorization_memory_snapshot(torch.device("cuda:0")) == (
         FactorizationMemorySnapshot(100, 200, 30, 40)

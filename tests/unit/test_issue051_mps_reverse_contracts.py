@@ -26,10 +26,49 @@ from flagquantum.runtime.executors.mps.reverse_planning import (
 from flagquantum.runtime.executors.mps.reverse_transport import (
     all_reduce_reverse_layer_records,
     begin_reverse_layer_halo_prefetch,
+    decode_reverse_record,
+    encode_reverse_record,
     finish_reverse_layer_halo_prefetch,
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("shape", [(20,), (22,), (3, 7)])
+def test_reverse_metadata_rejects_wrong_schema_shape(shape: tuple[int, ...]) -> None:
+    with pytest.raises(MPSReverseContractError, match="21 scalar fields"):
+        decode_reverse_record(torch.ones(shape, dtype=torch.float64))
+
+
+@pytest.mark.parametrize("version", [1.5, float("nan")])
+def test_reverse_metadata_rejects_noninteger_schema_version(version: float) -> None:
+    schema = torch.ones(21, dtype=torch.float64)
+    schema[0] = version
+    with pytest.raises(MPSReverseContractError, match="schema version"):
+        decode_reverse_record(schema)
+
+
+@pytest.mark.parametrize("index", [1, 16])
+@pytest.mark.parametrize("dimension", [0.0, -1.0, 1.5, float("nan"), float("inf")])
+def test_reverse_metadata_rejects_invalid_dimensions(
+    index: int, dimension: float
+) -> None:
+    schema = torch.ones(21, dtype=torch.float64)
+    schema[index] = dimension
+    with pytest.raises(MPSReverseContractError, match="positive integers"):
+        decode_reverse_record(schema)
+
+
+@pytest.mark.parametrize(
+    "dimension", [0, -1, 1.5, float("nan"), float("inf"), True, "2"]
+)
+def test_reverse_metadata_encoder_rejects_invalid_dimensions(dimension: object) -> None:
+    payload = {
+        "input_shapes": ((1, 1, 2, dimension), (1, 1, 2, 1)),
+        "output_shapes": ((1, 1, 2, 1), (1, 1, 2, 1)),
+    }
+    with pytest.raises(MPSReverseContractError, match="positive integers"):
+        encode_reverse_record(payload, torch.zeros((), dtype=torch.complex128))
 
 
 def test_disjoint_layer_metadata_uses_one_fixed_tensor_collective(monkeypatch):
@@ -60,6 +99,7 @@ def test_disjoint_layer_metadata_uses_one_fixed_tensor_collective(monkeypatch):
     assert calls == 1
     assert set(decoded) == {7, 8}
     assert all(item["split_info"]["rank"] == 3 for item in decoded.values())
+    assert decoded == payloads
 
 
 def test_none_canonicalization_policy_skips_final_sweep():

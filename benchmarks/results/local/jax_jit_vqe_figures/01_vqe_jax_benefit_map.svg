@@ -4,10 +4,10 @@
 <rect x="24" y="24" width="7" height="98" rx="3.5" fill="#54319B"/>
 <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#243447}.title{font-size:27px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:14px;font-weight:650;fill:#334155}.cell{font-size:20px;font-weight:750}.detail{font-size:11px;font-weight:500;fill:#334155}.hint{font-size:12px;fill:#475569}.tag{font-size:11px;font-weight:700;fill:#54319B;letter-spacing:.7px}.takeaway{font-size:13px;font-weight:650;fill:#30245C}</style>
 <text x="54" y="52" class="tag">FLAGQUANTUM · PERFORMANCE STUDY</text>
-<text x="54" y="84" class="title">JAX JIT 收益区间：多深度横场 Ising VQE</text>
+<text x="54" y="84" class="title">JAX JIT benefit across depths: transverse-field Ising VQE</text>
 <text x="54" y="111" class="sub">NVIDIA A800-SXM4-80GB · TFIM energy + gradient · Statevector · single_device_fast_path</text>
 <rect x="54" y="136" width="1332" height="38" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
-<text x="74" y="160" class="hint">单元格为 PyTorch/JAX 稳态耗时比；&gt;1× 表示 JAX 更快，颜色越深收益越高。</text>
+<text x="74" y="160" class="hint">Cells: PyTorch/JAX steady-state time ratio; &gt;1× means JAX is faster. Darker cells indicate greater benefit.</text>
 <rect x="220" y="218" width="1150" height="372" rx="12" fill="#F8FAFC"/>
 <text x="335.0" y="203" text-anchor="middle" class="axis">4 QUBITS</text>
 <text x="565.0" y="203" text-anchor="middle" class="axis">8 QUBITS</text>
@@ -64,5 +64,5 @@
 <text x="1255.0" y="551.0" text-anchor="middle" class="detail">JAX 318.0 ms / step</text>
 <line x1="54" y1="621" x2="1386" y2="621" stroke="#E2E8F0"/>
 <circle cx="70" cy="648" r="5" fill="#54319B"/>
-<text x="85" y="653" class="takeaway">结论：4–16 qubit 是清晰收益区；20 qubit 的稳态优势显著收窄。</text>
+<text x="85" y="653" class="takeaway">Clear benefits at 4–16 qubits; steady-state gains narrow substantially at 20 qubits.</text>
 </svg>

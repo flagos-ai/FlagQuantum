@@ -1,89 +1,98 @@
-# FlagQuantum 多层 IR Phase 0–1 实施计划
+# FlagQuantum Multilevel IR Phase 0–1 Execution Plan
 
-状态：历史实施设计；当前实现状态以
-[`IR_IMPLEMENTATION_STATUS.md`](../development/IR_IMPLEMENTATION_STATUS.md) 为准
-上位设计：[`MULTI_LEVEL_IR_ARCHITECTURE.md`](MULTI_LEVEL_IR_ARCHITECTURE.md)
-适用范围：当前语义基线、内部 QuantumIR 骨架、差分验证与性能基线
-明确不改变：Stable Core、`CircuitIR` schema 1.0、`fq.plan`、`fq.run`、部署合同
+Status: historical implementation design; current implementation status is in
+[`IR_IMPLEMENTATION_STATUS.md`](../development/IR_IMPLEMENTATION_STATUS.md).
+Governing design: [`MULTI_LEVEL_IR_ARCHITECTURE.md`](MULTI_LEVEL_IR_ARCHITECTURE.md).
+Scope: current semantic baseline, internal QuantumIR skeleton, differential
+verification, performance baselines.
+Explicitly unchanged: Stable Core, `CircuitIR` schema 1.0, `fq.plan`, `fq.run`,
+deployment contracts.
 
-实施进度：P0-001/P0-002 事实盘点已完成；P0-003 已建立 35-opcode 基础 corpus、
-metadata inventory、漂移测试和 in-progress evidence manifest；API owner 已批准
-IR-001～006 的架构决策范围。Metadata typed destination、legacy gradient/statistical
-oracle、Phase 0 CPU 性能基线和 Phase 1 内部性能预算已经完成并获批；实现 owner 复核
-尚未完成，因此仍未授权 Phase 1 代码。Phase 0 技术整改已经完成 manifest oracle
-dispatcher、12 个正向 fixture、14 个负向 fixture，并修复 CircuitIR complex128 精度
-约束被默认值覆盖的问题；剩余退出项仅为 owner 签审和明确授权。详见
-[`IR_PHASE_0_BASELINE.md`](../development/IR_PHASE_0_BASELINE.md) 和
-[`IR_PHASE_0_CORPUS_DESIGN.md`](../development/IR_PHASE_0_CORPUS_DESIGN.md)，以及
-[`decisions/`](decisions/)。2026-09-01 退出审计确认机器基线可复现，但 manifest oracle、
-owner 复核和明确授权仍未闭合；当前结论与 blocker 见
-[`IR_PHASE_0_EXIT_AUDIT.md`](../development/IR_PHASE_0_EXIT_AUDIT.md)。历史阶段审批记录已退出代码契约体系。
+Progress: P0-001/P0-002 factual inventories are complete. P0-003 has a 35-opcode
+baseline corpus, metadata inventory, drift tests, and an in-progress evidence
+manifest. The API owner approved IR-001–006 architecture scope. Typed metadata
+destinations, legacy gradient/statistical oracles, the Phase 0 CPU performance
+baseline, and Phase 1 internal budgets are complete and approved. Implementation
+owner reviews remain incomplete, so Phase 1 code is not yet authorized. Technical
+remediation completed the manifest oracle dispatcher, 12 positive and 14 negative
+fixtures, and fixed default precision overriding CircuitIR complex128 constraints.
+Remaining exit items are owner sign-off and explicit authorization. See
+[`IR_PHASE_0_BASELINE.md`](../development/IR_PHASE_0_BASELINE.md),
+[`IR_PHASE_0_CORPUS_DESIGN.md`](../development/IR_PHASE_0_CORPUS_DESIGN.md), and
+[`decisions/`](decisions/). The original 2026-09-01 exit audit reproduced the
+machine baseline while manifest oracles, owner review, and authorization remained
+open; current conclusions/blockers are in
+[`IR_PHASE_0_EXIT_AUDIT.md`](../development/IR_PHASE_0_EXIT_AUDIT.md). Historical
+phase approvals no longer serve as code contracts.
 
-## 1. 实施目标
+## 1. Implementation Goal
 
-Phase 0–1 只证明一件事：当前静态 `CircuitIR` 能够无公共 API 变化、无科学语义变化、
-无不可接受快路径回归地进入一个可验证的内部 QuantumIR。
+Phase 0–1 proves that current static `CircuitIR` can enter a verifiable internal
+QuantumIR without public API changes, scientific semantic changes, or unacceptable
+fast-path regressions.
 
-本计划不以“创建了一批 IR 类”为完成标准。完成必须同时具备：
+Creating IR classes is not completion. Completion requires:
 
-- 当前行为和性能基线可复现；
-- importer 对支持范围 fail closed；
-- 内部 IR 具备确定的类型、value、operation、module 和诊断模型；
-- state、expectation、measurement 与 gradient 新旧路径差分通过；
-- 公共 API、序列化 schema 和默认执行路径保持不变；
-- Phase 1 性能预算由 Phase 0 实测数据产生并机器校验；
-- 新路径可整体关闭和删除，不影响 legacy path。
+- Reproducible behavior and performance baselines.
+- Fail-closed importer support boundaries.
+- Deterministic internal types, values, operations, modules, and diagnostics.
+- Passing old/new state, expectation, measurement, and gradient differentials.
+- Unchanged public APIs, serialization schemas, and default execution paths.
+- Machine-checked Phase 1 budgets derived from Phase 0 measurements.
+- A removable new path that does not affect legacy execution.
 
-## 2. 实施边界
+## 2. Scope
 
-### 2.1 本轮包含
+### 2.1 Included
 
-- 盘点当前 `CircuitIR`、compiler、planner、runtime 和 deployment 的真实消费关系；
-- 固定静态线路 characterization corpus；
-- 建立 legacy/new-path 差分测试基础设施；
-- 建立内部 Python QuantumIR core、schema registry、verifier 和 diagnostics；
-- 实现 `CircuitIR -> internal QuantumIR` importer；
-- 为可逆静态子集实现受限 `QuantumIR -> CircuitIR` 测试出口；
-- 建立最小 PassManager/AnalysisManager 合同；
-- 记录构建、验证、hash 和 round-trip 的时间与内存；
-- 形成进入 Phase 2 的证据包和架构决策记录。
+- Inventory actual CircuitIR consumption by compiler, planner, runtime, and deployment.
+- Fix a static-circuit characterization corpus.
+- Establish legacy/new-path differential infrastructure.
+- Build internal Python QuantumIR core, schema registry, verifier, diagnostics.
+- Implement `CircuitIR -> internal QuantumIR` import.
+- Provide a restricted `QuantumIR -> CircuitIR` test export for the reversible subset.
+- Establish minimum PassManager/AnalysisManager contracts.
+- Measure construction, verification, hashing, and round-trip time/memory.
+- Produce Phase 2 entry evidence and architecture decisions.
 
-### 2.2 本轮不包含
+### 2.2 Excluded
 
-- 不新增 `fq.compile` 或任何稳定根导出；
-- 不公开 ProgramIR、QuantumIR、TargetIR、PassManager 或 AnalysisManager；
-- 不修改 `CircuitIR` 字段、版本、JSON、hash 或异常行为；
-- 不让 `fq.run`、`fq.plan`、`compile_for_backend` 默认经过新管线；
-- 不实现通用函数、递归、完整 SSA、动态控制流、时序、脉冲或 QIR；
-- 不替换现有 routing、provider、deployment 或 distributed runtime；
-- 不引入 C++、MLIR 或新的运行时依赖；
-- 不把 debug textual IR 作为持久化或兼容合同；
-- 不基于 CPU 测试提出 GPU、分布式或 QPU 性能声明。
+- No new `fq.compile` or stable root exports.
+- No public ProgramIR, QuantumIR, TargetIR, PassManager, or AnalysisManager.
+- No CircuitIR field, version, JSON, hash, or exception changes.
+- No default routing of `fq.run`, `fq.plan`, or `compile_for_backend` through the new pipeline.
+- No generic functions, recursion, full SSA, dynamic control flow, timing, pulses, or QIR.
+- No replacement of routing, providers, deployment, or distributed runtime.
+- No C++, MLIR, or new runtime dependencies.
+- No debug textual IR as persistence/compatibility contract.
+- No GPU, distributed, or QPU performance claims from CPU tests.
 
-## 3. 必须先解决的架构决策
+## 3. Architecture Decisions Required First
 
-以下 ADR 未批准前，可以完成 Phase 0，但不得开始对应的 Phase 1 实现。
+Phase 0 may proceed before these ADRs are approved; corresponding Phase 1
+implementation may not.
 
-| ADR | 必须决定的问题 | 默认建议 | 阻塞范围 |
+| ADR | Required decision | Default recommendation | Blocks |
 | --- | --- | --- | --- |
-| IR-001 | CircuitIR 中 observables/measurements 如何拆分 | importer 返回内部 `ImportedProgram`，包含 `module` 与 typed execution request | importer、round-trip |
-| IR-002 | Phase 1 qubit 模型 | QuantumIR 使用线性 value；每次量子操作消费旧 value 并产生新 value | value、verifier、control-free lowering |
-| IR-003 | 内部 identity | program、compilation、execution identity 分层；Phase 1 只实现 program identity | hash、cache、evidence |
-| IR-004 | 自定义 matrix operation | 原样进入受限 typed custom-unitary op；无法验证时拒绝 | importer、round-trip |
-| IR-005 | 参数和 tensor 常量 | 保留 `Parameter`/`ParameterExpression` 语义，禁止隐式数值绑定或 dtype 降级 | importer、gradient parity |
-| IR-006 | Phase 1 可逆范围 | 只承诺当前静态 CircuitIR 子集；动态 metadata 不升级为支持能力 | round-trip、诊断 |
+| IR-001 | Split CircuitIR observables/measurements | Import returns internal `ImportedProgram` with `module` and typed execution requests | Importer, round trip |
+| IR-002 | Phase 1 qubit model | Linear values: each quantum operation consumes old values and produces new ones | Values, verifier, control-free lowering |
+| IR-003 | Internal identity | Separate program/compilation/execution identities; implement program identity only in Phase 1 | Hashing, cache, evidence |
+| IR-004 | Custom matrix operations | Preserve restricted typed custom-unitary operations; reject unverifiable cases | Importer, round trip |
+| IR-005 | Parameters/tensor constants | Preserve Parameter/ParameterExpression semantics; no implicit binding or dtype downgrade | Importer, gradient parity |
+| IR-006 | Phase 1 reversible scope | Current static CircuitIR subset only; dynamic metadata does not establish support | Round trip, diagnostics |
 
-每份 ADR 至少包含：上下文、候选方案、决策、否决方案、兼容影响、测试影响和回滚方式。
+Each ADR includes context, alternatives, decision, rejected options, compatibility,
+test impact, and rollback.
 
-## 4. 目标目录边界
+## 4. Target Directory Boundaries
 
-Phase 1 建议采用以下内部布局。目录名可在 IR-001 至 IR-006 评审时调整，但依赖方向
-不得反转：
+Proposed Phase 1 internal layout. Names may change during IR-001–006 review;
+dependency directions may not reverse.
 
 ```text
 flagquantum/
   _compiler/
-    __init__.py              # 不导出实现符号
+    __init__.py              # No implementation-symbol exports
     diagnostics.py
     identity.py
     ir/
@@ -94,11 +103,11 @@ flagquantum/
       modules.py
       schemas.py
       verifier.py
-      printer.py             # debug-only canonical printer
+      printer.py             # Debug-only canonical printer
     importers/
       circuit_ir.py
     exporters/
-      circuit_ir.py          # 仅受限 round-trip 与测试使用
+      circuit_ir.py          # Restricted round trips and tests only
     analyses/
       base.py
       def_use.py
@@ -108,7 +117,7 @@ flagquantum/
       manager.py
 ```
 
-对应测试：
+Tests:
 
 ```text
 tests/internal_ir/
@@ -124,80 +133,81 @@ tests/internal_ir/
   test_performance_budget.py
 ```
 
-规则：
+Rules:
 
-- `_compiler` 不得被 `flagquantum/__init__.py`、稳定 facade 或 `__all__` 导出；
-- runtime 可以在显式试验开关下消费内部 IR，内部 IR 不依赖 runtime；
-- importer 可以依赖公共 `core.ir`，公共 `core.ir` 不依赖 `_compiler`；
-- provider、credential、queue 和网络客户端不得进入 `_compiler/ir`；
-- 测试不得通过修改公共 API snapshot 来接受新符号。
+- No `_compiler` exports from the root, stable facades, or `__all__`.
+- Runtime may consume internal IR under explicit experimental controls; internal
+  IR does not depend on Runtime.
+- Importers may depend on public `core.ir`, never the reverse.
+- No providers, credentials, queues, or network clients in `_compiler/ir`.
+- Do not update public API snapshots to accept new symbols.
 
-## 5. Phase 0：事实基线
+## 5. Phase 0: Factual Baseline
 
-### P0-001 公共合同保护清单
+### P0-001 Public Contract Protection Inventory
 
-交付：`docs/development/IR_PHASE_0_BASELINE.md` 中记录：
+Record in `docs/development/IR_PHASE_0_BASELINE.md`:
 
-- 当前稳定根导出与受保护候选合同；
-- `IR_VERSION`、`CircuitIR.to_dict/to_json/from_dict/from_json` 行为；
-- content hash、未知字段、未知 opcode 和非法 wire 的失败行为；
-- `fq.plan`、`fq.run`、`compile_for_backend` 当前签名与关键语义；
-- 本计划禁止修改的合同文件及其基线 hash。
+- Stable root exports and protected candidate contracts.
+- `IR_VERSION` and CircuitIR serialization/deserialization behavior.
+- Content hashes and failure behavior for unknown fields/opcodes and invalid wires.
+- Current `fq.plan`, `fq.run`, `compile_for_backend` signatures and key semantics.
+- Protected contract files and baseline hashes.
 
-验收：现有 API contract、snapshot 和 IR tests 全部通过；基线文件只记录事实，不更新
-任何受保护快照。
+Acceptance: existing API contracts, snapshots, and IR tests pass. The baseline
+records facts without updating protected snapshots.
 
-### P0-002 现有消费关系矩阵
+### P0-002 Consumer Matrix
 
-交付：记录下列组件对 `CircuitIR` 各字段的读取、写入和假设：
+Record field reads, writes, and assumptions for:
 
-- `Circuit` 与参数系统；
-- compiler canonicalization；
-- planner、routing 与 execution-plan builder；
-- statevector、MPS、TN、noise 和 distributed runtime；
-- drawer、QASM/QCIS emitter；
-- dynamic importer/exporter；
-- deployment package 和 provider。
+- Circuit and parameters.
+- Compiler canonicalization.
+- Planner, routing, execution-plan builders.
+- Statevector, MPS, TN, noise, distributed runtime.
+- Drawer and QASM/QCIS emitters.
+- Dynamic import/export.
+- Deployment packages and providers.
 
-每项必须标记：`semantic`、`execution_request`、`planning_hint`、`provenance` 或
-`legacy_metadata_dependency`。无法分类的 metadata 依赖是 Phase 1 blocker。
+Classify each as `semantic`, `execution_request`, `planning_hint`, `provenance`, or
+`legacy_metadata_dependency`. Unclassified metadata dependencies block Phase 1.
 
-### P0-003 Characterization corpus
+### P0-003 Characterization Corpus
 
-建立固定、确定的静态线路 corpus，至少覆盖：
+Fixed deterministic static circuits cover at least:
 
-- 每个当前受支持 canonical opcode；
-- 参数化单/双 qubit gate 与 ParameterExpression；
-- custom matrix operation；
-- observable、terminal measurement、shots 和 wire ordering；
-- batched shape、complex64/complex128；
-- 空 metadata、合法 provenance metadata 和拒绝用例；
-- topology-sensitive circuit；
-- VQE/QML 梯度线路；
-- 序列化 round-trip fixture。
+- Every currently supported canonical opcode.
+- Parameterized one-/two-qubit gates and ParameterExpression.
+- Custom matrices.
+- Observables, terminal measurements, shots, wire order.
+- Batch shapes and complex64/complex128.
+- Empty metadata, valid provenance metadata, rejection cases.
+- Topology-sensitive circuits.
+- VQE/QML gradient circuits.
+- Serialization round trips.
 
-Corpus 必须来自机器可读 fixture，不从随机测试临时生成唯一真值。随机属性测试使用固定
-seed，并与固定 fixture 分开。
+Machine-readable fixtures are authoritative. Do not generate the sole truth
+transiently from random tests. Seed random property tests and keep them separate.
 
-### P0-004 差分 oracle
+### P0-004 Differential Oracles
 
-定义统一比较协议：
+Define a common comparison protocol:
 
-| 输出 | 比较方法 |
+| Output | Comparison |
 | --- | --- |
-| CircuitIR round-trip | canonical dict/JSON 与 content hash 精确相等 |
-| statevector | 按 dtype 合同比较，处理全局相位规则必须显式 |
-| expectation | 按现有 backend/dtype 容差比较 |
-| samples/counts | 固定 seed 时比较确定性合同；否则使用预先批准的统计检验 |
-| gradient | forward value 与参数梯度均比较，不接受仅 forward parity |
-| wire/result ordering | 精确相等 |
-| fallback/backend | requested、selected、actual 与 blocker 精确比较 |
+| CircuitIR round trip | Exact canonical dict/JSON and content hash |
+| Statevector | Dtype contracts with explicit global-phase treatment |
+| Expectation | Existing backend/dtype tolerances |
+| Samples/counts | Fixed-seed determinism contract or preapproved statistical test |
+| Gradient | Both forward values and parameter gradients; forward-only parity is insufficient |
+| Wire/result order | Exact equality |
+| Fallback/backend | Exact requested/selected/actual values and blockers |
 
-不得在新测试中发明一个覆盖全部 backend 的全局容差。
+Do not invent one global tolerance for every backend.
 
-### P0-005 性能与资源基线
+### P0-005 Performance and Resource Baseline
 
-新增内部 benchmark，分别记录 10、100、1K、10K gate 的：
+Internal benchmarks separately measure 10, 100, 1K, and 10K gates:
 
 ```text
 circuit_to_ir_ms
@@ -209,116 +219,119 @@ peak_host_memory_bytes
 serialized_ir_bytes
 ```
 
-每个结果携带环境、Python、Torch、FlagQuantum commit、CPU/device、dtype、warmup、
-iterations 和 seed。Phase 0 不宣称新 IR 更快，只形成预算依据。
+Each record includes environment, Python, Torch, FlagQuantum commit, CPU/device,
+dtype, warmup, iterations, and seed. Phase 0 establishes budget inputs, not claims
+that new IR is faster.
 
-### P0-006 Phase 1 性能预算
+### P0-006 Phase 1 Performance Budgets
 
-由 P0-005 的多次可复现实测结果生成并人工批准内部预算文件。预算必须分别约束：
+Derive internal budgets from repeated reproducible P0-005 measurements and obtain
+human approval. Constrain separately:
 
-- 小线路固定开销；
-- importer 随 gate 数的增长；
-- verifier 随 value/operation 数的增长；
-- canonical hash 的确定性与耗时；
-- round-trip 峰值内存；
-- opt-in 新路径对默认 `fq.run` 的零影响。
+- Small-circuit fixed overhead.
+- Importer growth with gate count.
+- Verifier growth with values/operations.
+- Canonical hash determinism/time.
+- Round-trip peak memory.
+- No impact of opt-in paths on default `fq.run`.
 
-没有批准的实测预算，Phase 1 性能 gate 保持未满足，不允许用任意百分比代替。
+Without approved measured budgets, the Phase 1 gate remains unsatisfied. Arbitrary
+percentages are not substitutes.
 
-### Phase 0 退出门
+### Phase 0 Exit Gate
 
-- [ ] P0-001 至 P0-006 全部完成；
-- [ ] IR-001 至 IR-006 已批准；
-- [ ] corpus 覆盖全部当前静态 canonical opcode；
-- [ ] legacy 语义与性能基线在干净 Docker 环境可复现；
-- [ ] 公共 API 和序列化合同没有变化；
-- [ ] blocker、owner、目标日期和回滚方式均已记录；
-- [ ] API owner 明确批准进入 Phase 1。
+- [ ] P0-001–P0-006 complete.
+- [ ] IR-001–IR-006 approved.
+- [ ] Corpus covers every current static canonical opcode.
+- [ ] Legacy semantics/performance reproduce in clean Docker.
+- [ ] Public APIs and serialization unchanged.
+- [ ] Blockers, owners, dates, and rollback recorded.
+- [ ] Explicit API-owner authorization for Phase 1.
 
-## 6. Phase 1：内部 QuantumIR 骨架
+## 6. Phase 1: Internal QuantumIR Skeleton
 
-### P1-001 类型、Value 与 Module
+### P1-001 Types, Values, and Modules
 
-实现最小不可变模型：
+Implement minimum immutable models:
 
-- `IRType` 与 Phase 1 所需具体类型；
-- 确定性 `ValueId` 和 `ValueRef`；
-- `Operation`、`Block`、`Region` 与 `QuantumModule`；
-- 冻结 attributes；
-- module revision/program identity；
-- source location 与 semantic hash 分离。
+- `IRType` and required concrete types.
+- Deterministic `ValueId` and `ValueRef`.
+- `Operation`, `Block`, `Region`, `QuantumModule`.
+- Frozen attributes.
+- Module revision/program identity.
+- Source locations separate from semantic hashes.
 
-禁止为 provider 创建特殊基础类，也禁止使用可变全局字典承载语义状态。
+No provider-specific base classes or mutable global dictionaries for semantic state.
 
-### P1-002 Operation schema registry
+### P1-002 Operation Schema Registry
 
-每个 operation schema 声明：
+Each schema declares:
 
-- operand/result 类型和数量；
-- attribute 名称、类型、必需性和默认值；
-- region 数量；
-- effect/linearity 约束；
-- parser/printer；
-- verifier；
-- 是否可降回 CircuitIR v1。
+- Operand/result types and counts.
+- Attribute names, types, requirements, defaults.
+- Region counts.
+- Effect/linearity constraints.
+- Parser/printer.
+- Verifier.
+- Whether it lowers back to CircuitIR v1.
 
-未知 operation、未知核心 attribute 和版本不兼容必须 fail closed。
+Unknown operations/core attributes and incompatible versions fail closed.
 
-### P1-003 Verifier 与诊断
+### P1-003 Verifier and Diagnostics
 
-首期 verifier 必须拒绝：
+Initially reject:
 
-- use-before-definition；
-- 同一线性 qubit value 被重复消费；
-- gate 后使用旧 value；
-- wire 越界、arity 或参数不匹配；
-- measurement/result 类型错误；
-- 非法 block terminator；
-- release 后使用；
-- 未注册 operation 或影响语义的未知 attribute；
-- importer 声称支持但无法无损表达的 CircuitIR。
+- Use before definition.
+- Repeated consumption of linear qubit values.
+- Use of old values after gates.
+- Out-of-range wires, arity/parameter mismatch.
+- Invalid measurement/result types.
+- Invalid block terminators.
+- Use after release.
+- Unregistered operations or unknown semantic attributes.
+- Claimed-supported CircuitIR that cannot be represented losslessly.
 
-所有失败返回结构化 code、message、location 和 notes，不使用 `print`。
+Failures produce structured code, message, location, and notes, not printed text.
 
-### P1-004 CircuitIR importer
+### P1-004 CircuitIR Importer
 
-Importer 必须：
+The importer must:
 
-- 接受 `CircuitIR`，不要求用户构建内部对象；
-- 保持 opcode、wire order、参数 identity、dtype 和 batch shape；
-- 按 IR-001 拆分 program semantics 与 execution request；
-- 为每个逻辑 wire 建立唯一线性 value 链；
-- 对 custom matrix、metadata 和动态标记执行明确的支持检查；
-- 返回 diagnostics 和 source mapping；
-- 不修改输入对象；
-- 相同输入产生相同 QuantumIR identity。
+- Accept CircuitIR without requiring user-built internal objects.
+- Preserve opcodes, wire order, parameter identity, dtype, batch shape.
+- Separate semantics from requests under IR-001.
+- Build one linear value chain per logical wire.
+- Explicitly check custom matrices, metadata, and dynamic markers.
+- Return diagnostics and source mappings.
+- Leave inputs unchanged.
+- Produce identical QuantumIR identities for identical inputs.
 
-### P1-005 受限 round-trip
+### P1-005 Restricted Round Trip
 
-为 Phase 1 可逆静态子集实现测试出口。要求：
+Provide a test export for the reversible static subset:
 
-- `CircuitIR -> QuantumIR -> CircuitIR` canonical payload 精确相等；
-- 无法回到 schema 1.0 的结构返回诊断，不做 lossy export；
-- exporter 不进入公共 namespace；
-- exporter 不成为 provider codegen 的提前替代品。
+- Exact canonical payload equality after CircuitIR -> QuantumIR -> CircuitIR.
+- Diagnose structures unrepresentable in schema 1.0; no lossy export.
+- Keep the exporter out of public namespaces.
+- Do not use it as a premature provider codegen replacement.
 
-### P1-006 Analysis 与 Pass 最小合同
+### P1-006 Minimum Analysis and Pass Contracts
 
-实现：
+Implement:
 
-- `DefUseAnalysis`；
-- `QubitLifetimeAnalysis`；
-- analysis cache 与 module revision 绑定；
-- transformation 默认失效未声明 preserved 的 analysis；
-- PassResult、diagnostics 与 statistics；
-- pipeline digest 包含 pass 名称、版本、顺序、options 和 seed。
+- `DefUseAnalysis`.
+- `QubitLifetimeAnalysis`.
+- Analysis caches bound to module revisions.
+- Transformations invalidate analyses unless explicitly preserved.
+- PassResult, diagnostics, statistics.
+- Pipeline digests containing pass names, versions, order, options, seed.
 
-Phase 1 只需一个无语义变化的 canonicalization 示例 Pass，用于证明基础设施，不迁移
-现有优化器。
+One semantics-preserving canonicalization example proves the infrastructure.
+Phase 1 does not migrate existing optimizers.
 
-### P1-007 新旧路径差分桥
+### P1-007 Old/New Differential Bridge
 
-新增仅测试/开发可启用的执行桥：
+Add a test/development-only execution bridge:
 
 ```text
 CircuitIR
@@ -326,53 +339,53 @@ CircuitIR
   +-- import QuantumIR -> verified test lowering -> existing executor
 ```
 
-约束：
+Constraints:
 
-- 默认 `fq.run` 不读取该开关；
-- 不使用未声明环境变量改变公共行为；
-- 桥接层不得把 QuantumIR 伪装成新 runtime；
-- failure、fallback、dtype、device 和 result ordering 必须进入差分报告。
+- Default `fq.run` does not read its control switch.
+- No undeclared environment variables changing public behavior.
+- The bridge must not present QuantumIR as a new runtime.
+- Differential reports include failure, fallback, dtype, device, result order.
 
-### P1-008 正确性与梯度门
+### P1-008 Correctness and Gradient Gates
 
-必须通过：
+Require:
 
-- Phase 0 corpus 全量 importer/verifier；
-- round-trip 精确相等；
-- state、expectation、measurement 与 wire ordering 差分；
-- Parameter/ParameterExpression identity；
-- complex64/complex128；
-- PyTorch forward 与 gradient parity；
-- 固定 seed 下的确定性；
-- property/fuzz negative tests；
-- 公共 API snapshot 无变化。
+- Full Phase 0 corpus import/verification.
+- Exact round trips.
+- State, expectation, measurement, wire-order differentials.
+- Parameter/ParameterExpression identity.
+- Complex64/complex128 coverage.
+- PyTorch forward/gradient parity.
+- Fixed-seed determinism.
+- Property/fuzz negative tests.
+- Unchanged public API snapshots.
 
-### P1-009 性能门
+### P1-009 Performance Gates
 
-对 P0-006 已批准预算执行机器检查：
+Machine-check approved P0-006 budgets:
 
-- importer 和 verifier 无超线性意外增长；
-- 小线路固定开销在预算内；
-- 10K gate 构建、验证和 hash 在时间/内存预算内；
-- 相同结构的重复导入可安全命中缓存时，记录 hit/miss；
-- 默认 legacy `fq.run` 不因仅安装内部 IR 而出现可测新增路径；
-- 任何超预算结果必须记录 blocker，不允许放宽预算使 CI 变绿。
+- No unexpected superlinear importer/verifier growth.
+- Small-circuit fixed overhead within budget.
+- 10K-gate construction, verification, hashing within time/memory budgets.
+- Record hit/miss when repeated structural imports safely use caches.
+- Merely installing internal IR adds no measurable path to default legacy `fq.run`.
+- Record budget violations as blockers; never loosen budgets to make CI pass.
 
-### Phase 1 退出门
+### Phase 1 Exit Gate
 
-- [ ] P1-001 至 P1-009 全部完成；
-- [ ] 当前支持的静态 CircuitIR corpus 全量通过；
-- [ ] verifier 负向 fixture 全量通过；
-- [ ] state、expectation、measurement、gradient 和 ordering 差分通过；
-- [ ] identity、printer、pipeline digest 在支持平台上确定；
-- [ ] 性能与内存满足 P0-006 的批准预算；
-- [ ] Stable Core、CircuitIR schema 1.0、默认 run/plan 路径无变化；
-- [ ] internal 模块没有进入 root、稳定 namespace 或用户自动补全；
-- [ ] 新路径具备单开关回滚和完整删除方案；
-- [ ] API owner 与 compiler owner 批准 Phase 1 evidence；
-- [ ] 未经新提案不得自动进入 Phase 2。
+- [ ] P1-001–P1-009 complete.
+- [ ] Entire supported static CircuitIR corpus passes.
+- [ ] Every verifier negative fixture passes.
+- [ ] State, expectation, measurement, gradient, ordering differentials pass.
+- [ ] Deterministic identity, printer, pipeline digests on supported platforms.
+- [ ] Approved P0-006 performance/memory budgets met.
+- [ ] Stable Core, CircuitIR 1.0, default run/plan paths unchanged.
+- [ ] Internal modules absent from root, stable namespaces, user completion.
+- [ ] Single-switch rollback and complete removal plan.
+- [ ] API/compiler owners approve Phase 1 evidence.
+- [ ] No automatic Phase 2 entry without a new proposal.
 
-## 7. 建议实施顺序
+## 7. Recommended Order
 
 ```text
 P0-001 ─┐
@@ -406,24 +419,25 @@ ADR 001–006 ┘                         |
                               Phase 1 evidence review
 ```
 
-Phase 0 可并行收集事实，但 ADR 决策必须在 importer/value 实现前完成。Phase 1 不采用
-多条长期并行产品路径；同一里程碑完成后再扩大语义范围。
+Phase 0 fact gathering may run in parallel; ADR decisions precede importer/value
+implementation. Phase 1 avoids multiple long-lived product paths. Complete each
+milestone before expanding semantic scope.
 
-## 8. 每个工作包的合入要求
+## 8. Merge Requirements per Work Package
 
-每个 PR/提交必须包含：
+Every PR/commit includes:
 
-- 工作包编号与明确范围；
-- 行为或架构变化说明；
-- public API impact：必须为 `none`，否则停止并走 API proposal；
-- focused tests；
-- 必要的负向测试；
-- 性能影响或“不在热路径”的证据；
-- rollback 方法；
-- 已知 blocker；
-- capability maturity 是否变化；Phase 0–1 默认不升级公开成熟度。
+- Work-package ID and explicit scope.
+- Behavior/architecture change description.
+- Public API impact of `none`; otherwise stop for an API proposal.
+- Focused tests.
+- Required negative tests.
+- Performance impact or evidence that the change is outside hot paths.
+- Rollback method.
+- Known blockers.
+- Capability maturity impact; Phase 0–1 does not promote public maturity by default.
 
-最小检查：
+Minimum checks:
 
 ```bash
 python tools/public_api_snapshot.py
@@ -434,12 +448,13 @@ python -m pytest tests/internal_ir -q
 python tools/ci_tier.py pr-default
 ```
 
-涉及现有 compiler/runtime 适配时，再运行 `pr-runtime`。涉及 distributed metadata 或
-执行语义时，再按 `AGENTS.md` 运行 `pr-distributed`；CPU 结果不能作为真实扩展性证据。
+Run `pr-runtime` for existing compiler/runtime adaptations. Run `pr-distributed`
+under AGENTS.md for distributed metadata or execution semantics. CPU results are
+not real scalability evidence.
 
-## 9. Evidence manifest
+## 9. Evidence Manifests
 
-Phase 0 和 Phase 1 各维护一份机器可读 evidence manifest，至少包含：
+Phase 0 and Phase 1 each maintain a machine-readable manifest containing at least:
 
 ```text
 schema_version
@@ -461,29 +476,32 @@ owners
 approval
 ```
 
-Manifest 只引用可重建 evidence，不提交凭据、账户、内部地址、机器身份或无界 benchmark
-原始数据。未获批准的 manifest 不得把状态写成 release-certified。
+Reference reconstructable evidence only. Do not commit credentials, accounts,
+internal addresses, machine identities, or unbounded raw benchmark data.
+Unapproved manifests cannot claim release certification.
 
-## 10. 回滚策略
+## 10. Rollback Strategy
 
-Phase 1 必须保持结构性可回滚：
+Phase 1 must remain structurally reversible:
 
-1. 默认生产路径不依赖 `_compiler`；
-2. importer、verifier、差分桥可整体删除；
-3. 不迁移或删除 legacy compiler/runtime；
-4. 不改变公共序列化数据；
-5. cache 使用独立 namespace 和版本；
-6. evidence 与 debug textual IR 不成为用户数据依赖；
-7. 发现语义、性能或维护成本不可接受时，保留 Phase 0 基线和 ADR，撤回 Phase 1 代码。
+1. Default production paths do not depend on `_compiler`.
+2. Importer, verifier, and differential bridge can be removed together.
+3. Legacy compiler/runtime is neither migrated nor deleted.
+4. Public serialized data remains unchanged.
+5. Caches use separate namespaces/versions.
+6. Evidence/debug textual IR does not become a user data dependency.
+7. If semantics, performance, or maintenance costs are unacceptable, retain
+   Phase 0 baselines/ADRs and withdraw Phase 1 code.
 
-## 11. 启动建议
+## 11. Suggested First Batch
 
-推荐第一个实施批次只做：
+Initially implement only:
 
-1. P0-001 公共合同保护清单；
-2. P0-002 消费关系矩阵；
-3. IR-001、IR-002、IR-003 三份核心 ADR；
-4. P0-003 characterization corpus 设计，不立即创建新 IR 类型。
+1. P0-001 public contract protection inventory.
+2. P0-002 consumer matrix.
+3. Core ADRs IR-001, IR-002, IR-003.
+4. P0-003 corpus design without immediately creating IR types.
 
-该批次评审通过后，再采集 P0-005 性能基线并批准 P0-006 预算。只有 Phase 0 退出门
-全部满足且 API owner 明确批准，才开始 `_compiler/ir` 的 Phase 1 实现。
+After review, collect P0-005 performance baselines and approve P0-006 budgets.
+Begin Phase 1 `_compiler/ir` implementation only after every Phase 0 exit condition
+passes and the API owner explicitly approves.

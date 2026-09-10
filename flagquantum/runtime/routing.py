@@ -92,17 +92,18 @@ class StrictExecutionScope:
         return False
 
     def accept_route(self, route: RouteExplanation) -> None:
+        policy = FallbackPolicy.normalize(self.policy)
         category = RouteCategory(route.category)
         if category is RouteCategory.HOST:
-            if self.policy is not FallbackPolicy.HOST_DEBUG_ONLY:
+            if policy is not FallbackPolicy.HOST_DEBUG_ONLY:
                 raise RuntimeError(
                     f"host route for {route.operator} is forbidden by "
-                    f"{self.policy.value}"
+                    f"{policy.value}"
                 )
             self._production_eligible = False
         elif (
             category is RouteCategory.DEVICE_PORTABLE
-            and self.policy is FallbackPolicy.FORBID
+            and policy is FallbackPolicy.FORBID
         ):
             raise RuntimeError(
                 f"portable route for {route.operator} is forbidden by forbid policy"
@@ -110,11 +111,12 @@ class StrictExecutionScope:
         self._routes.append(route)
 
     def record_fallback(self, event: FallbackEvent) -> None:
-        if self.policy is FallbackPolicy.FORBID:
+        policy = FallbackPolicy.normalize(self.policy)
+        if policy is FallbackPolicy.FORBID:
             raise RuntimeError(
                 f"fallback for {event.operator} is forbidden: {event.reason}"
             )
-        if event.host_transfer and self.policy is not FallbackPolicy.HOST_DEBUG_ONLY:
+        if event.host_transfer and policy is not FallbackPolicy.HOST_DEBUG_ONLY:
             raise RuntimeError(
                 f"host fallback for {event.operator} requires host_debug_only policy"
             )

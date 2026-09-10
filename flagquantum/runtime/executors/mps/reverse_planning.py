@@ -92,7 +92,7 @@ def cached_mps_reverse_segments(
     key = (tape.identity, bool(fuse_owner_local))
     indices = _REVERSE_SEGMENT_CACHE.get(key)
     hit = indices is not None
-    if hit:
+    if indices is not None:
         _REVERSE_SEGMENT_CACHE_HITS += 1
         _REVERSE_SEGMENT_CACHE.move_to_end(key)
     else:
@@ -143,13 +143,15 @@ def plan_mps_gradient_buckets(
     for index, parameter in enumerate(parameters):
         owner = None if owners is None else int(owners[index])
         elements_per_bucket = max(1, max_bucket_bytes // parameter.element_size())
-        for start in range(0, parameter.numel(), elements_per_bucket):
+        element_count = parameter.numel()
+        for start in range(0, element_count, elements_per_bucket):
             grouped.setdefault((parameter.dtype, owner), []).append(
-                (index, start, min(parameter.numel(), start + elements_per_bucket))
+                (index, start, min(element_count, start + elements_per_bucket))
             )
     buckets = []
     for (dtype, owner), pieces in grouped.items():
-        current, current_bytes = [], 0
+        current: list[tuple[int, int, int]] = []
+        current_bytes = 0
         element_size = torch.empty((), dtype=dtype).element_size()
         for piece in pieces:
             piece_bytes = (piece[2] - piece[1]) * element_size

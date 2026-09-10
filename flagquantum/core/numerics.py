@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass, fields
+from dataclasses import Field, asdict, dataclass, fields
 from enum import Enum
 from typing import Any, ClassVar, Mapping
 
@@ -36,6 +36,9 @@ class RefinementStrategy(str, Enum):
 
 
 class _NumericalContract:
+    # Subclasses are dataclasses; serialization uses their generated fields.
+    __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
+
     contract_version: str
     KIND: ClassVar[str]
 

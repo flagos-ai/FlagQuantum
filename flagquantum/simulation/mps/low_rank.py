@@ -8,6 +8,7 @@ full two-site matrix.
 from __future__ import annotations
 
 from functools import lru_cache
+from math import sqrt
 
 import torch
 
@@ -20,7 +21,7 @@ def _cpu_projection(rows: int, columns: int, rank: int) -> torch.Tensor:
     generator.manual_seed(0xF1A6 + 131 * rows + 17 * columns + rank)
     real = torch.randn(columns, rank, generator=generator)
     imag = torch.randn(columns, rank, generator=generator)
-    return torch.complex(real, imag) / float(max(columns, 1)) ** 0.5
+    return torch.complex(real, imag) / sqrt(max(columns, 1))
 
 
 def fixed_rank_range_qr(

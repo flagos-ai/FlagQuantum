@@ -1,16 +1,18 @@
-# FlagQuantum IR Phase 0 事实基线
+# FlagQuantum IR Phase 0 Factual Baseline
 
-状态：P0-001 与 P0-002 已完成盘点；IR-001～003 已获 API owner 批准
-基线日期：2026-09-01
-实施计划：[`MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md`](../architecture/MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md)
+Status: P0-001/P0-002 inventories complete; IR-001–003 approved by the API owner.
+Baseline date: 2026-09-01
+Execution plan: [`MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md`](../architecture/MULTI_LEVEL_IR_PHASE_0_1_EXECUTION_PLAN.md)
 
-本文只记录当前仓库事实和 Phase 1 兼容边界，不声明新 IR 能力，不修改任何公共合同。
+This document records repository facts and Phase 1 compatibility boundaries. It
+makes no new IR capability claims and changes no public contracts.
 
-## 1. P0-001：公共合同保护清单
+## 1. P0-001: Public Contract Protection Inventory
 
-### 1.1 当前公共入口
+### 1.1 Current Public Entry Points
 
-以下签名由当前 Docker 开发环境通过 `inspect.signature` 读取：
+These signatures were read with `inspect.signature` in the Docker development
+environment:
 
 ```text
 fq.Circuit(
@@ -37,13 +39,14 @@ flagquantum.compiler.compile_for_backend(
 ) -> CircuitIR
 ```
 
-当前稳定根 `__all__` 数量为 22。Phase 0–1 不增加、删除、重排或重命名其中任何符号。
+The stable root `__all__` currently has 22 symbols. Phase 0–1 must not add, delete,
+reorder, or rename any of them.
 
-### 1.2 CircuitIR schema 1.0
+### 1.2 CircuitIR Schema 1.0
 
-权威实现：`flagquantum/core/ir.py`。
+Authoritative implementation: `flagquantum/core/ir.py`.
 
-当前顶层 canonical payload 字段：
+Current top-level canonical payload fields:
 
 ```text
 kind = "flagquantum.circuit_ir"
@@ -57,27 +60,30 @@ measurements
 metadata
 ```
 
-当前保护行为：
+Protected behavior:
 
-- `IR_VERSION == "1.0"`；
-- 版本不等于 1.0 时构造失败；
-- `n_wires` 必须为正整数；
-- instruction、observable、measurement wire 必须存在、非负、不重复且不越界；
-- 已注册 opcode 必须满足 arity 和参数要求；
-- 未注册 opcode 只有携带显式 matrix、channel 标记或 dynamic 标记时才可构造；
-- measurement shots 如存在必须为正整数；
-- `to_json()` 使用 ASCII、稳定 key 排序和确定分隔符；
-- `content_hash` 是 canonical `to_json()` 的 SHA-256；
-- `from_dict()` 对未知顶层字段 fail closed；
-- 参数、参数表达式、复数和 tensor 使用当前版本化编码规则；
-- 无法确定性编码的对象抛出 `IRSerializationError`；
-- `ensure_circuit_ir()` 只接受 `CircuitIR` 或提供 `to_ir()` 的对象。
+- `IR_VERSION == "1.0"`.
+- Construction fails for versions other than 1.0.
+- `n_wires` must be a positive integer.
+- Instruction, observable, and measurement wires must exist, be nonnegative,
+  unique, and in range.
+- Registered opcodes must satisfy arity and parameter requirements.
+- Unregistered opcodes require an explicit matrix, channel marker, or dynamic marker.
+- Measurement shots, when present, must be positive integers.
+- `to_json()` uses ASCII, stable key ordering, and deterministic separators.
+- `content_hash` is the SHA-256 of canonical `to_json()`.
+- `from_dict()` rejects unknown top-level fields.
+- Parameters, parameter expressions, complex numbers, and tensors use current
+  versioned encoding rules.
+- Objects without deterministic encoding raise `IRSerializationError`.
+- `ensure_circuit_ir()` accepts only `CircuitIR` or objects providing `to_ir()`.
 
-Phase 0–1 不得改变以上行为，也不得创建公共 `CircuitIRV1/CircuitIRV2` 类。
+Phase 0–1 must not change these behaviors or create public `CircuitIRV1/CircuitIRV2`
+classes.
 
-### 1.3 plan/run 当前语义
+### 1.3 Current plan/run Semantics
 
-当前稳定执行链为：
+The stable execution chain is:
 
 ```text
 fq.run(program)
@@ -86,24 +92,28 @@ fq.run(program)
   -> execute_plan(plan)
 ```
 
-受保护边界：
+Protected boundaries:
 
-- `fq.plan` 只接受 `Circuit` 或 `CircuitIR`；
-- 调用方传入 measurements 时，源 IR 已含 measurements 会失败，而不是覆盖或合并；
-- samples target 可由稳定 options 构造明确的 sample measurement；
-- expectation/amplitudes target 没有对应 request 时 fail closed；
-- 当前动态 instruction 不进入稳定 `fq.run`；
-- 执行已有 `ExecutionPlan` 时不得同时再次传 options、measurements 或 noise model；
-- `fq.run(plan)` 执行已验证计划，不应静默重新规划；
-- requested、selected、actual backend 与 fallback 可见性继续遵守已批准合同。
+- `fq.plan` accepts only `Circuit` or `CircuitIR`.
+- Caller measurements conflict with existing source IR measurements; they do not
+  replace or merge them.
+- Stable options may create an explicit sample measurement for a samples target.
+- Expectation/amplitudes targets fail closed without corresponding requests.
+- Current dynamic instructions do not enter stable `fq.run`.
+- Executing an existing `ExecutionPlan` rejects additional options, measurements,
+  or noise models.
+- `fq.run(plan)` executes the validated plan without silent replanning.
+- Requested, selected, and actual backends and fallback visibility continue to
+  follow approved contracts.
 
-内部 QuantumIR 不能成为修改这些规则的理由。
+Internal QuantumIR does not justify changing these rules.
 
-### 1.4 当前合同 hash
+### 1.4 Current Contract Hashes
 
-以下 hash 用于发现 Phase 0–1 的非预期改动，不授权自动更新合同：
+These hashes detect unintended Phase 0–1 changes; they do not authorize automatic
+contract updates:
 
-| 文件 | SHA-256 |
+| File | SHA-256 |
 | --- | --- |
 | `docs/public_api_v1.json` | `d211967831ced3947445259acb7e5f6557c8fdc4bc560a0978ee2101123e28d4` |
 | `contracts/public-api-v0.2-baseline.json` | `ee8f0b7959cc0f758ae14e73f92f1dbbfd4f66d022beadce2cc37f5c4a843dea` |
@@ -111,74 +121,75 @@ fq.run(program)
 | `contracts/experimental-namespace-v1-candidate.json` | `852c74c6441b89764836615ad4aca93eff6b20919e897f1166a1c26635177ba4` |
 | `contracts/experimental-surface-v2-candidate.json` | `f400fb5d8de97f4cf51a15e4c8d2634398fbd158b5b0fda0dbfcf0d4afd63ef4` |
 
-注意：Experimental v2 当前状态为 `implemented_pending_review`；记录 hash 不等于批准
-或冻结 Proposal 011。
+Experimental v2 currently has status `implemented_pending_review`. Recording its
+hash does not approve or freeze Proposal 011.
 
-### 1.5 Phase 0–1 禁改文件/表面
+### 1.5 Protected Phase 0–1 Files and Surfaces
 
-没有独立 API change proposal 和 owner 批准时，不得修改：
+Without a separate API change proposal and owner approval, do not change:
 
-- `flagquantum/__init__.py` 稳定导出；
-- `flagquantum/core/ir.py` 的公共类型、schema 与序列化行为；
-- `fq.plan`、`fq.run`、`compile_for_backend` 的签名和稳定语义；
-- `docs/public_api_v1.json` 与已批准 contracts；
-- ExecutionPlan、ExecutionResult、DeploymentPackage 的受保护 schema；
-- 当前 measurement 冲突规则和 plan/run 等价关系。
+- Stable exports in `flagquantum/__init__.py`.
+- Public types, schemas, or serialization behavior in `flagquantum/core/ir.py`.
+- Signatures or stable semantics of `fq.plan`, `fq.run`, or `compile_for_backend`.
+- `docs/public_api_v1.json` or approved contracts.
+- Protected ExecutionPlan, ExecutionResult, or DeploymentPackage schemas.
+- Current measurement conflict rules or plan/run equivalence.
 
-## 2. P0-002：CircuitIR 消费关系矩阵
+## 2. P0-002: CircuitIR Consumer Matrix
 
-### 2.1 字段分类
+### 2.1 Field Classification
 
-| 字段 | 当前主要用途 | 内部分类建议 | Phase 1 要求 |
+| Field | Current primary use | Proposed internal classification | Phase 1 requirement |
 | --- | --- | --- | --- |
-| `n_wires` | 构建、校验、内存估算、backend capacity、emit | program semantics | 精确保留 |
-| `instructions` | 编译、规划、模拟、训练、绘图、emit、部署 | program semantics | 顺序、opcode、wire、参数和 matrix 精确保留 |
-| `version` | schema 读取和 plan serialization | source schema identity | 保持 1.0，不进入新公共版本 |
-| `dtype` | state representation、精度和计划 | numerical constraint | 不得隐式升降精度 |
-| `shape` | batch/dense state 描述 | execution/representation constraint | 与 program identity 的关系由 IR-003 决定 |
-| `observables` | expectation request、interop 边界、执行 | execution request | 按 IR-001 拆出 typed request |
-| `measurements` | samples/expectation request、shots、result ordering | execution request；显式 terminal operation 需另行区分 | 保留当前冲突和排序语义 |
-| `metadata` | runtime config、routing、dynamic/channel 标记、provenance | mixed；不能整体视为注释 | 分类 allowlist，未知语义项 fail closed |
+| `n_wires` | Construction, validation, memory estimates, backend capacity, emission | Program semantics | Preserve exactly |
+| `instructions` | Compilation, planning, simulation, training, drawing, emission, deployment | Program semantics | Preserve order, opcodes, wires, parameters, and matrices exactly |
+| `version` | Schema reading and plan serialization | Source schema identity | Retain 1.0; no new public version |
+| `dtype` | State representation, precision, planning | Numerical constraint | No implicit precision upgrade/downgrade |
+| `shape` | Batch/dense state description | Execution/representation constraint | IR-003 decides its relationship to program identity |
+| `observables` | Expectation requests, interop boundaries, execution | Execution request | Extract typed requests under IR-001 |
+| `measurements` | Samples/expectations, shots, result ordering | Execution request; explicit terminal operations need separate classification | Preserve conflict and ordering semantics |
+| `metadata` | Runtime config, routing, dynamic/channel markers, provenance | Mixed; not wholly commentary | Classified allowlist; unknown semantic entries fail closed |
 
-### 2.2 组件消费矩阵
+### 2.2 Component Consumer Matrix
 
-| 组件 | 读取/变换 | 当前关键假设 | Phase 1 兼容要求 |
+| Component | Reads/transforms | Current key assumptions | Phase 1 compatibility requirement |
 | --- | --- | --- | --- |
-| `Circuit.to_ir()` | 生成 instructions、dtype、shape、batch/runtime metadata；缓存结果 | 4096 wires 以上不物化指数 shape | importer 不迫使 `Circuit` 改变生成行为 |
-| `Circuit.from_ir()` | 当前主要恢复 instructions/n_wires | 不完整恢复 request 和 metadata | 不把它误当作完整 round-trip oracle |
-| native compiler | 删除/融合 instruction，以 `replace()` 保留其他字段 | 优化必须保持参数梯度和科学语义 | Phase 1 不迁移现有 Pass；先做差分 |
-| routing | 改写 wire/instruction，写 routing metadata | physical mapping 与证据当前位于 metadata | 先分类和验证，不静默丢弃 |
-| planner | 分析 instructions、noise、memory、measurements 和 runtime config | measurements 来源唯一；动态 fail closed | importer 不重写公共冲突规则 |
-| ExecutionPlan contract | canonicalize instruction layer order，保留 observable/measurement | program hash 与 executable plan identity 相连 | 新 program identity 不替代当前 plan identity |
-| stable runtime | 消费 validated plan，并执行 measurement requests | `run(plan)` 不再接收额外 options/request | Phase 1 默认路径零变化 |
-| local statevector/density | 消费 opcode、wire、params、dtype、request | backend/dtype 有各自数值合同 | 使用现有 oracle 分别比较 |
-| MPS/TN | 消费 interaction/order/observables，可能不需要 dense shape | 不允许静默 fallback 为 statevector | importer 不改变 representation semantics |
-| distributed/JAX | 消费 CircuitIR 并建立 ownership、communication、gradient plan | distribution semantics 必须如实记录 | Phase 1 不提出扩展性声明 |
-| noise lowering | 读取 instruction/channel metadata 并生成新 IR | `is_channel` 当前影响构造与执行语义 | channel metadata 必须列入语义 allowlist |
-| dynamic runtime | 使用 `is_dynamic`、`condition` 等 instruction metadata | 当前与 stable `fq.run` 分离 | Phase 1 静态 importer 应明确拒绝，不得忽略 |
-| Qiskit/PennyLane interop | 导入/导出 CircuitIR；将 observable/measurement 视为边界请求 | lossy conversion 必须显式 | 沿用诊断，不扩大支持范围 |
-| QASM exporter | 主要消费 n_wires 与 instructions | 不等于完整 OpenQASM 3 importer/compiler | Phase 1 不替换 exporter |
-| QCIS exporter | 消费静态 instructions，要求参数已绑定 | 不支持的 gate/参数 fail closed | 保留现有限制和异常 |
-| drawer | 将 n_wires/instructions 投影为 drawable history | 仅展示，不是语义 oracle | 新 IR printer 与 drawer 分离 |
-| deployment | compile IR、routing、QASM/QCIS、artifact hash | DeploymentPackage 当前绑定 compiled IR 与格式字段 | Phase 1 不替换 schema 或提交链路 |
-| Module/training | 使用 topology、parameter、IR hash 和 backend training | forward 与 gradient 都是合同 | Phase 1 必须覆盖 gradient parity |
-| correctness/fuzz tools | 生成并最小化 CircuitIR | 固定 seed 与 opcode schema | 复用为 corpus 工具，不作为唯一 golden truth |
+| `Circuit.to_ir()` | Generates instructions, dtype, shape, batch/runtime metadata; caches output | Does not materialize exponential shapes above 4096 wires | Importer must not force different Circuit generation behavior |
+| `Circuit.from_ir()` | Primarily restores instructions/n_wires | Does not fully restore requests/metadata | Do not treat as a complete round-trip oracle |
+| Native compiler | Removes/fuses instructions; preserves other fields with `replace()` | Optimization preserves parameter gradients and scientific semantics | No existing Pass migration in Phase 1; differential checks first |
+| Routing | Rewrites wires/instructions; writes routing metadata | Physical mappings and evidence currently live in metadata | Classify and validate first; no silent loss |
+| Planner | Analyzes instructions, noise, memory, measurements, runtime config | Single measurement source; dynamic paths fail closed | Importer must not rewrite public conflict rules |
+| ExecutionPlan contract | Canonicalizes instruction layer order; preserves observables/measurements | Program hash links to executable plan identity | New program identity does not replace current plan identity |
+| Stable runtime | Consumes validated plans and executes measurement requests | `run(plan)` accepts no additional options/requests | No default-path changes in Phase 1 |
+| Local statevector/density | Consumes opcodes, wires, parameters, dtype, requests | Each backend/dtype has numerical contracts | Compare independently with existing oracles |
+| MPS/TN | Consumes interactions, order, observables; may not need dense shape | No silent fallback to statevector | Importer preserves representation semantics |
+| Distributed/JAX | Consumes CircuitIR; creates ownership, communication, gradient plans | Distribution semantics must be reported honestly | No Phase 1 scalability claims |
+| Noise lowering | Reads instruction/channel metadata; generates IR | `is_channel` affects construction and execution | Include channel metadata in the semantic allowlist |
+| Dynamic runtime | Uses `is_dynamic`, `condition`, and other instruction metadata | Separate from stable `fq.run` | Static importer explicitly rejects, never ignores |
+| Qiskit/PennyLane interop | Imports/exports CircuitIR; treats observables/measurements as boundary requests | Lossy conversions must be explicit | Retain diagnostics; no broader support claims |
+| QASM exporter | Primarily consumes n_wires/instructions | Not a complete OpenQASM 3 importer/compiler | No exporter replacement in Phase 1 |
+| QCIS exporter | Consumes static instructions with bound parameters | Unsupported gates/parameters fail closed | Preserve current limits and exceptions |
+| Drawer | Projects n_wires/instructions into drawable history | Display only, not a semantic oracle | Keep new IR printers separate from Drawer |
+| Deployment | Compiles IR, routing, QASM/QCIS, artifact hashes | DeploymentPackage binds compiled IR and format fields | No schema or submission-chain replacement |
+| Module/training | Uses topology, parameters, IR hashes, backend training | Forward and gradients are both contracts | Gradient parity coverage required |
+| Correctness/fuzz tools | Generate and minimize CircuitIR | Fixed seeds and opcode schemas | Reuse for corpus tooling, not as the sole golden truth |
 
-### 2.3 Metadata 事实与 blocker
+### 2.3 Metadata Facts and Blockers
 
-当前 metadata 至少分为四类：
+Metadata falls into at least four categories:
 
-| 类别 | 已发现示例 | 处理原则 |
+| Category | Observed examples | Treatment |
 | --- | --- | --- |
-| instruction semantics | `is_channel`、`is_dynamic`、`condition` | Phase 1 静态 importer 支持或结构化拒绝，绝不忽略 |
-| execution/planning constraints | circuit `runtime_config`、`batch_size`、`logical_state_shape` | 进入 typed import constraints，不进入任意 attrs |
-| compiler evidence | `routing`、`routing_strategy_selection` | 不属于源 program semantics；作为 provenance/evidence 保留 |
-| provenance/debug | source、audit、非语义标签 | 不进入 program semantic hash，保留策略须明确 |
+| Instruction semantics | `is_channel`, `is_dynamic`, `condition` | Static importer supports or rejects structurally; never ignores |
+| Execution/planning constraints | Circuit `runtime_config`, `batch_size`, `logical_state_shape` | Typed import constraints, not arbitrary attrs |
+| Compiler evidence | `routing`, `routing_strategy_selection` | Outside source program semantics; retain as provenance/evidence |
+| Provenance/debug | Source, audit, nonsemantic labels | Exclude from program semantic hash; define retention policy |
 
-Phase 1 blocker：完成 repository-wide metadata key inventory，并为每个会影响执行、合法性、
-结果、梯度或 identity 的 key 建立 typed destination。未知 key 默认不能被宣称无害。
+Phase 1 blocker: complete a repository-wide metadata key inventory and assign a
+typed destination to every key affecting execution, legality, results, gradients,
+or identity. Unknown keys cannot be declared harmless by default.
 
-### 2.4 已确认的依赖方向
+### 2.4 Confirmed Dependency Direction
 
 ```text
 public CircuitIR
@@ -191,20 +202,21 @@ public CircuitIR
   -X-> must not depend on future internal IR
 ```
 
-Phase 1 `_compiler` 不得反向成为 `core.ir` 的依赖，也不得通过 import side effect 注册根
-API。
+Phase 1 `_compiler` must not become a dependency of `core.ir` or register root APIs
+through import side effects.
 
-## 3. P0-001/002 验收记录
+## 3. P0-001/002 Acceptance Record
 
-- [x] 当前公共签名通过 Docker 环境读取；
-- [x] CircuitIR schema、hash 和 fail-closed 行为已记录；
-- [x] plan/run measurement 与动态边界已记录；
-- [x] 关键合同 hash 已记录；
-- [x] 主要消费组件和字段用途已建立矩阵；
-- [x] metadata 非纯注释风险已明确；
-- [ ] API owner 复核事实基线；
-- [ ] compiler/runtime owner 补充遗漏消费者；
-- [x] repository-wide metadata consumed-key 静态 inventory 完成；
-- [x] metadata typed destination 与人工二次审计完成。
+- [x] Read current public signatures in Docker.
+- [x] Record CircuitIR schemas, hashes, and fail-closed behavior.
+- [x] Record plan/run measurement and dynamic boundaries.
+- [x] Record key contract hashes.
+- [x] Build the main component/field consumer matrix.
+- [x] Identify the risk of treating all metadata as commentary.
+- [ ] API owner reviews the factual baseline.
+- [ ] Compiler/runtime owners add any missing consumers.
+- [x] Complete repository-wide static inventory of consumed metadata keys.
+- [x] Complete typed metadata destinations and a second manual audit.
 
-未完成的复核项不阻止继续完成 Phase 0 corpus 设计，但阻止 Phase 1 importer 合入。
+Outstanding reviews do not block continued Phase 0 corpus design, but do block
+merging the Phase 1 importer.

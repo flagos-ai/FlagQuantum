@@ -342,6 +342,7 @@ def test_every_candidate_uses_the_same_immutable_requirement_set_and_core_matche
         item.snapshot.snapshot_id for item in candidates
     }
     assert decision.executable is True
+    assert isinstance(decision.evaluations, tuple)
 
 
 def test_cpu_is_an_explicit_candidate_and_is_fully_rematched() -> None:
@@ -413,6 +414,7 @@ def test_no_cpu_candidate_means_no_silent_cpu_fallback() -> None:
     assert decision.selected is None
     assert decision.fallback_record is None
     assert all(item.candidate.provenance is not None for item in decision.evaluations)
+    assert isinstance(decision.evaluations, tuple)
 
 
 def test_verified_cpu_snapshot_requires_declared_cpu_fallback_axis() -> None:

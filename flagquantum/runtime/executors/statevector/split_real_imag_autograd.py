@@ -96,12 +96,12 @@ def _canonical_parameters(
 
 class _P5ParameterShiftExpectation(torch.autograd.Function):
     @staticmethod
-    def forward(  # type: ignore[override]
+    def forward(
         ctx: Any,
         config: _P5BridgeConfig,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
-        bindings = {
+        bindings: dict[str | Parameter, torch.Tensor] = {
             name: parameter.detach()
             for name, parameter in zip(config.parameter_order, parameters)
         }
@@ -120,13 +120,11 @@ class _P5ParameterShiftExpectation(torch.autograd.Function):
         return result.value.to_float32().reshape(())
 
     @staticmethod
-    def backward(  # type: ignore[override]
-        ctx: Any, grad_output: torch.Tensor
-    ) -> tuple[Any, ...]:
+    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[Any, ...]:
         if torch.is_grad_enabled():
             raise RuntimeError("P5 CPU bridge does not support higher-order autograd")
         config: _P5BridgeConfig = ctx.config
-        bindings = {
+        bindings: dict[str | Parameter, torch.Tensor] = {
             name: parameter
             for name, parameter in zip(config.parameter_order, ctx.saved_tensors)
         }

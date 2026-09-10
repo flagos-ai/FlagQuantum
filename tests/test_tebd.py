@@ -75,6 +75,28 @@ def test_two_site_tebd_converges_to_exact_ground_energy() -> None:
     assert result.cumulative_discarded_weight == pytest.approx(0.0, abs=1e-14)
 
 
+def test_tebd_combines_terms_on_the_same_sites() -> None:
+    from flagquantum.simulation.mps.tebd import _local_layers
+
+    hamiltonian = Hamiltonian(
+        [
+            pauli_term(0.25, "X", (0,)),
+            pauli_term(0.75, "X", (0,)),
+            pauli_term(0.5, "Z", (0,)),
+            pauli_term(0.25, "ZZ", (0, 1)),
+            pauli_term(0.75, "ZZ", (0, 1)),
+        ]
+    )
+    layers = _local_layers(hamiltonian, n_wires=2, device="cpu", dtype=torch.complex128)
+    x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
+    z = torch.diag(torch.tensor([1, -1], dtype=torch.complex128))
+
+    assert len(layers) == 2
+    assert layers[0][0][0] == layers[1][0][0] == 0
+    torch.testing.assert_close(layers[0][0][1], x + 0.5 * z)
+    torch.testing.assert_close(layers[1][0][1], torch.kron(z, z))
+
+
 @pytest.mark.parametrize(
     ("hamiltonian", "kwargs", "match"),
     [

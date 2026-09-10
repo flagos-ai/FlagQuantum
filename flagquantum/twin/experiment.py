@@ -118,6 +118,8 @@ class TwinExperiment:
             shots=self.shots,
             target_qubits=self.target_qubits,
         )
+        if not isinstance(handle, ProviderTaskHandle):
+            raise TypeError("Quafu provider must return a ProviderTaskHandle.")
         if handle.provider != "quafu" or handle.backend_name != self.backend_name:
             raise RuntimeError("provider receipt identifies a different QPU target")
         if handle.payload.get("submitted_qasm_sha256") != self.submitted_qasm_identity:

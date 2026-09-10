@@ -5,10 +5,11 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-try:  # Supports both ``python -m`` and direct script execution.
+if TYPE_CHECKING or __package__:
     from .contract import runtime_metadata, validate_payload, write_json_atomic
-except ImportError:  # pragma: no cover - direct CLI path
+else:  # Direct script execution resolves sibling modules.
     from contract import runtime_metadata, validate_payload, write_json_atomic
 
 

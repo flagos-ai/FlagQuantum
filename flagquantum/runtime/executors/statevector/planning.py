@@ -306,7 +306,7 @@ def _rank_topology(
     execution_segments: Sequence[StatevectorExecutionSegment],
     distribution: str,
 ) -> StatevectorRankTopology:
-    edge_data: dict[tuple[int, int, str], list[int | tuple[int, int]]] = {}
+    edge_data: dict[tuple[int, int, str], tuple[int, list[int]]] = {}
     for segment in execution_segments:
         for src, dst in _segment_edge_pairs(
             segment,
@@ -315,18 +315,20 @@ def _rank_topology(
         ):
             key = (src, dst, segment.communication)
             if key not in edge_data:
-                edge_data[key] = [0, ()]
-            edge_data[key][0] = (
-                int(edge_data[key][0]) + segment.estimated_transfer_bytes
+                edge_data[key] = (0, [])
+            estimated_bytes, segment_indices = edge_data[key]
+            segment_indices.append(segment.index)
+            edge_data[key] = (
+                estimated_bytes + segment.estimated_transfer_bytes,
+                segment_indices,
             )
-            edge_data[key][1] = tuple(edge_data[key][1]) + (segment.index,)
     edges = tuple(
         StatevectorCommunicationEdge(
             src_rank=src,
             dst_rank=dst,
             communication=communication,
             segment_indices=tuple(segment_indices),
-            estimated_transfer_bytes=int(estimated_bytes),
+            estimated_transfer_bytes=estimated_bytes,
             tier=_communication_tier(src, dst, local_world_size=local_world_size),
         )
         for (src, dst, communication), (estimated_bytes, segment_indices) in sorted(

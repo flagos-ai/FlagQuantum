@@ -381,6 +381,12 @@ class MPSState(MPSPlanningMixin):
                 )
         return residual
 
+    def _fixed_gate_matrix(self, name: str) -> torch.Tensor:
+        matrix = GATE_MAT_DICT[name]
+        if not isinstance(matrix, torch.Tensor):
+            raise ValueError(f"MPS gate {name!r} requires a fixed matrix.")
+        return matrix.to(device=self.device, dtype=self.dtype)
+
     def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
         if wires is None:
             target_wires = tuple(range(self.n_wires))
@@ -390,7 +396,7 @@ class MPSState(MPSPlanningMixin):
             target_wires = tuple(int(wire) for wire in wires)
         if len(target_wires) > 1:
             return self._expectation_single_site_z(target_wires)
-        z_op = GATE_MAT_DICT["z"].to(device=self.device, dtype=self.dtype)
+        z_op = self._fixed_gate_matrix("z")
         values = []
         for wire in target_wires:
             values.append(self._expectation_product_ops({wire: z_op}))
@@ -597,7 +603,7 @@ class MPSState(MPSPlanningMixin):
                 tensor,
                 right_env,
             )
-        z_op = GATE_MAT_DICT["z"].to(device=self.device, dtype=self.dtype)
+        z_op = self._fixed_gate_matrix("z")
         z_values = []
         zz_values = []
         for wire in targets:
@@ -660,7 +666,7 @@ class MPSState(MPSPlanningMixin):
             dtype=self.dtype,
             device=self.device,
         )
-        identity = GATE_MAT_DICT["i"].to(device=self.device, dtype=self.dtype)
+        identity = self._fixed_gate_matrix("i")
         for wire, tensor in enumerate(self.tensors):
             op = ops.get(wire, identity)
             env = torch.einsum(
@@ -686,12 +692,15 @@ class MPSState(MPSPlanningMixin):
             raise ValueError("A wire can appear in only one of x, y, or z.")
 
         ops: dict[int, torch.Tensor] = {}
-        for wire in x or ():
-            ops[int(wire)] = GATE_MAT_DICT["x"].to(device=self.device, dtype=self.dtype)
-        for wire in y or ():
-            ops[int(wire)] = GATE_MAT_DICT["y"].to(device=self.device, dtype=self.dtype)
-        for wire in z or ():
-            ops[int(wire)] = GATE_MAT_DICT["z"].to(device=self.device, dtype=self.dtype)
+        for name, wires in (("x", x), ("y", y), ("z", z)):
+            if not wires:
+                continue
+            matrix = GATE_MAT_DICT[name]
+            if not isinstance(matrix, torch.Tensor):
+                raise ValueError("Pauli observables require fixed gate matrices.")
+            operator = matrix.to(device=self.device, dtype=self.dtype)
+            for wire in wires:
+                ops[int(wire)] = operator
         return self._expectation_product_ops(ops)
 
     def sample(
@@ -732,7 +741,7 @@ class MPSState(MPSPlanningMixin):
 
     def _wire_probabilities(self, wire: int) -> torch.Tensor:
         z_value = self._expectation_product_ops(
-            {int(wire): GATE_MAT_DICT["z"].to(device=self.device, dtype=self.dtype)}
+            {int(wire): self._fixed_gate_matrix("z")}
         )
         probs = torch.stack(((1 + z_value) / 2, (1 - z_value) / 2), dim=-1)
         probs = torch.clamp(probs, min=0)
@@ -778,6 +787,8 @@ class MPSState(MPSPlanningMixin):
         parameter_bindings: tuple[torch.Tensor, ...] | None = None,
     ) -> "MPSState":
         if instruction.metadata.get("is_channel"):
+            if instruction.matrix is None:
+                raise ValueError("MPS channel instructions require Kraus operators.")
             self.apply_channel_trajectory(instruction.matrix, instruction.wires)
             return self
         wires = tuple(instruction.wires)
@@ -1099,6 +1110,7 @@ class MPSState(MPSPlanningMixin):
                 self.tensors[wire] = left_out
                 self.tensors[wire + 1] = right_out
                 self.orthogonality_center = wire + 1
+                discarded_weight = float(split_info["discarded_weight"])
                 if split_info["method"] == "svd":
                     self.svd_gradient_method = str(
                         split_info.get("gradient_method", "exact")
@@ -1108,14 +1120,14 @@ class MPSState(MPSPlanningMixin):
                             bond=wire,
                             kept_rank=int(split_info["rank"]),
                             original_rank=int(split_info["original_rank"]),
-                            discarded_weight=float(split_info["discarded_weight"]),
+                            discarded_weight=discarded_weight,
                             max_bond=self.config.max_bond,
                             cutoff=self.config.cutoff,
                             source="two_site_bucket",
                         )
                     )
-                if split_info["discarded_weight"] > 0:
-                    self.truncation_errors.append(float(split_info["discarded_weight"]))
+                if discarded_weight > 0:
+                    self.truncation_errors.append(discarded_weight)
 
     def apply_two_remote(self, matrix: torch.Tensor, wires: Sequence[int]) -> None:
         first, second = int(wires[0]), int(wires[1])
@@ -1130,9 +1142,7 @@ class MPSState(MPSPlanningMixin):
             self.apply_swap(wire)
 
     def apply_swap(self, left_wire: int) -> None:
-        self.apply_two(
-            GATE_MAT_DICT["swap"].to(device=self.device, dtype=self.dtype), left_wire
-        )
+        self.apply_two(self._fixed_gate_matrix("swap"), left_wire)
         self.local_swap_count += 1
 
     def _split_pair(self, theta: torch.Tensor, left_wire: int) -> None:
@@ -1147,6 +1157,7 @@ class MPSState(MPSPlanningMixin):
         self.tensors[left_wire] = left_tensor
         self.tensors[left_wire + 1] = right_tensor
         self.orthogonality_center = int(left_wire) + 1
+        discarded_weight = float(split_info["discarded_weight"])
         if split_info["method"] == "svd":
             self.svd_gradient_method = str(split_info.get("gradient_method", "exact"))
             self.truncation_records.append(
@@ -1154,11 +1165,11 @@ class MPSState(MPSPlanningMixin):
                     bond=int(left_wire),
                     kept_rank=int(split_info["rank"]),
                     original_rank=int(split_info["original_rank"]),
-                    discarded_weight=float(split_info["discarded_weight"]),
+                    discarded_weight=discarded_weight,
                     max_bond=self.config.max_bond,
                     cutoff=self.config.cutoff,
                     source="two_site",
                 )
             )
-        if split_info["discarded_weight"] > 0:
-            self.truncation_errors.append(float(split_info["discarded_weight"]))
+        if discarded_weight > 0:
+            self.truncation_errors.append(discarded_weight)

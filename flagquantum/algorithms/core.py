@@ -9,6 +9,7 @@ optimization, or graph packages.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from time import perf_counter
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -88,10 +89,11 @@ class HamiltonianTerm:
         pauli: str | Mapping[int, str],
         wires: Iterable[int] | int | None = None,
     ) -> None:
+        self.ops: tuple[tuple[int, str], ...]
         object.__setattr__(self, "coefficient", coefficient)
         object.__setattr__(self, "pauli", pauli)
         object.__setattr__(self, "wires", _as_wire_tuple(wires))
-        object.__setattr__(self, "ops", _normalize_pauli(pauli, wires))
+        object.__setattr__(self, "ops", _normalize_pauli(pauli, self.wires))
 
     @property
     def max_wire(self) -> int:
@@ -241,7 +243,8 @@ class Hamiltonian:
     def ground_energy(self) -> torch.Tensor:
         """Return the exact small-system ground energy."""
 
-        return torch.linalg.eigvalsh(self.matrix()).min().real
+        eigenvalues: torch.Tensor = torch.linalg.eigvalsh(self.matrix())
+        return eigenvalues.min()
 
 
 @dataclass(frozen=True)
@@ -373,12 +376,12 @@ def hardware_efficient_ansatz(
                 cursor += 1
         if entanglement == "linear":
             for wire in range(n_wires - 1):
-                circuit.cx(wire, wire + 1)
+                circuit.gate("cx", (wire, wire + 1))
         elif entanglement == "circular":
             for wire in range(n_wires - 1):
-                circuit.cx(wire, wire + 1)
+                circuit.gate("cx", (wire, wire + 1))
             if n_wires > 2:
-                circuit.cx(n_wires - 1, 0)
+                circuit.gate("cx", (n_wires - 1, 0))
         elif entanglement != "none":
             raise ValueError("entanglement must be 'linear', 'circular', or 'none'.")
     return circuit
@@ -408,7 +411,7 @@ def qaoa_circuit(
         dtype=getattr(torch, get_runtime_config().complex_dtype),
     )
     for wire in range(n_wires):
-        circuit.h(wire)
+        circuit.gate("h", wire)
 
     for gamma, beta in zip(gamma_values, beta_values):
         for edge in edge_tuple:
@@ -417,9 +420,9 @@ def qaoa_circuit(
                 weight = 1.0
             else:
                 src, dst, weight = edge
-            circuit.rzz(int(src), int(dst), theta=2.0 * gamma * float(weight))
+            circuit.gate("rzz", (int(src), int(dst)), theta=2.0 * gamma * float(weight))
         for wire in range(n_wires):
-            circuit.rx(wire, theta=2.0 * beta)
+            circuit.gate("rx", wire, theta=2.0 * beta)
     return circuit
 
 
@@ -497,37 +500,40 @@ def heisenberg_hva(
     circuit = Circuit(n_wires, device=values.device)
     if initial_state == "neel":
         for wire in range(1, n_wires, 2):
-            circuit.x(wire)
+            circuit.gate("x", wire)
     elif initial_state == "dimer_singlet":
         for left in range(0, n_wires - 1, 2):
-            circuit.x(left + 1).h(left).cx(left, left + 1).z(left)
+            circuit.gate("x", left + 1)
+            circuit.gate("h", left)
+            circuit.gate("cx", (left, left + 1))
+            circuit.gate("z", left)
     else:
         raise ValueError("initial_state must be 'neel' or 'dimer_singlet'")
 
     for layer in range(depth):
         if parameterization == "shared_parity":
             offset = 6 * layer
-            for axis, gate in enumerate((circuit.rxx, circuit.ryy, circuit.rzz)):
+            for axis, gate_name in enumerate(("rxx", "ryy", "rzz")):
                 for parity in (0, 1):
                     theta = values[offset + 2 * axis + parity]
                     for left in range(parity, n_wires - 1, 2):
-                        gate(left, left + 1, theta=theta)
+                        circuit.gate(gate_name, (left, left + 1), theta=theta)
             continue
         per_layer = 3 * (n_wires - 1) + (
             n_wires if parameterization == "bond_resolved_phase" else 0
         )
         offset = per_layer * layer
-        for axis, gate in enumerate((circuit.rxx, circuit.ryy, circuit.rzz)):
+        for axis, gate_name in enumerate(("rxx", "ryy", "rzz")):
             for left in range(n_wires - 1):
-                gate(
-                    left,
-                    left + 1,
+                circuit.gate(
+                    gate_name,
+                    (left, left + 1),
                     theta=values[offset + axis * (n_wires - 1) + left],
                 )
         if parameterization == "bond_resolved_phase":
             phase_offset = offset + 3 * (n_wires - 1)
             for wire in range(n_wires):
-                circuit.rz(wire, theta=values[phase_offset + wire])
+                circuit.gate("rz", wire, theta=values[phase_offset + wire])
     return circuit
 
 
@@ -607,6 +613,11 @@ def run_adapt_vqe(
         raise ValueError("gradient_tolerance must be non-negative")
     if (hamiltonian is None) == (energy_function is None):
         raise ValueError("provide exactly one of hamiltonian or energy_function")
+    if energy_function is not None:
+        evaluate_energy = energy_function
+    else:
+        assert hamiltonian is not None
+        evaluate_energy = hamiltonian.expectation
 
     selected_indices: list[int] = []
     selected_operators: list[object] = []
@@ -614,12 +625,7 @@ def run_adapt_vqe(
 
     def energy(operators: tuple[object, ...], values: torch.Tensor) -> torch.Tensor:
         circuit = circuit_builder(operators, values)
-        evaluated = (
-            hamiltonian.expectation(circuit)
-            if hamiltonian is not None
-            else energy_function(circuit)
-        )
-        return evaluated.sum()
+        return evaluate_energy(circuit).sum()
 
     initial_energy = float(energy((), parameters).detach())
     records: list[AdaptVQEIteration] = []
@@ -803,9 +809,7 @@ def run_layerwise_vqe(
                 (parameters, parameters.new_zeros(required - parameters.numel()))
             )
         result = run_hybrid_vqe(
-            lambda values, selected_depth=depth: circuit_builder(
-                selected_depth, values
-            ),
+            partial(circuit_builder, depth),
             parameters,
             hamiltonian,
             stages=stages,

@@ -1,32 +1,35 @@
-# API Change Proposal 009：框架无关互操作协议
+# API Change Proposal 009: Framework-Neutral Interoperability Protocol
 
-## 状态
+## Status
 
-**Frozen by API owner — 候选稳定契约已批准并冻结。**
+**Frozen by API owner — candidate stable contract approved and frozen.**
 
-- 候选稳定命名空间：`flagquantum.ecosystem`；
-- 根级名称变化：无；
-- 机器可读契约：`contracts/interop-protocol-v1-candidate.json`；
-- 实施授权：API owner 于 2026-09-01 要求继续执行稳定化漏斗；
-- Qiskit、PennyLane 具体适配器仍为 experimental；
-- API owner 于 2026-09-01 通过 `approve 008-010` 明确批准本契约；
-- 本提案不代表整个首次公开 Alpha API 已冻结。
+- Candidate stable namespace: `flagquantum.ecosystem`.
+- Root name changes: none.
+- Machine contract: `contracts/interop-protocol-v1-candidate.json`.
+- Implementation authorization: the API owner requested continuation of
+  stabilization review on 2026-09-01.
+- Concrete Qiskit/PennyLane adapters remain experimental.
+- Approval: `approve 008-010`, explicitly issued by the API owner on 2026-09-01.
+- This does not freeze the entire first public alpha API.
 
-## 决策
+## Decision
 
-稳定“如何接入外部量子框架”的协议，不稳定“某个第三方版本的具体实现”。候选协议包含：
+Stabilize how external quantum frameworks connect, without freezing concrete
+implementations for particular third-party versions. The candidate includes:
 
-- `InteropAdapter` 与版本协商；
-- 不可变、懒加载的 adapter registry；
-- 统一 import/export result 与机器可读 conversion report；
-- 严格转换默认 fail closed，显式 `allow_lossy=True` 才允许有损转换；
-- 框架无关 round-trip、rejection 和 semantic fingerprint conformance；
-- 与 `flagquantum.errors.FlagQuantumError` 对齐的异常边界。
+- `InteropAdapter` and version negotiation.
+- An immutable, lazy adapter registry.
+- Consistent import/export results and machine-readable conversion reports.
+- Strict fail-closed conversion by default; loss requires explicit `allow_lossy=True`.
+- Framework-neutral round-trip, rejection, and semantic fingerprint conformance.
+- Exception boundaries aligned with `flagquantum.errors.FlagQuantumError`.
 
-以下不进入候选稳定清单：`DEFAULT_INTEROP_REGISTRY`、`qiskit`、`pennylane` 以及所有
-adapter-specific 类型和函数。新增或稳定某个 adapter 必须单独提案并声明版本窗口。
+`DEFAULT_INTEROP_REGISTRY`, `qiskit`, `pennylane`, and adapter-specific types/functions
+are not candidate stable exports. Adding or stabilizing an adapter requires a
+separate proposal with a version window.
 
-## 稳定边界
+## Stable Boundary
 
 ```text
 external framework object
@@ -41,24 +44,26 @@ candidate-stable flagquantum.ecosystem protocol
 versioned CircuitIR
 ```
 
-外部对象不能进入 compiler、runtime、kernel、distributed 或 accelerator 层。导入
-`flagquantum.ecosystem`、查看 registry 或加载 adapter 描述符不能隐式导入 Qiskit/PennyLane。
+External objects cannot enter compiler, runtime, kernel, distributed, or accelerator
+layers. Importing `flagquantum.ecosystem`, inspecting registries, or loading adapter
+descriptors must not implicitly import Qiskit/PennyLane.
 
-## 本轮修正
+## Changes in This Round
 
-1. `InteropError` 进入稳定 `FlagQuantumError` 体系，同时保留 ImportError、ValueError、
-   RuntimeError 的 Python 兼容分类；
-2. `run_adapter_conformance` 的 callable 默认值改为 `None`，消除签名中进程地址导致的
-   不可复现契约；
-3. `flagquantum.ecosystem.__all__` 排除具体 adapter 和默认 registry 实例；
-4. `fq.experimental.interop` 只路由 `qiskit`、`pennylane` 两个实验实现命名空间。
+1. `InteropError` joins the stable `FlagQuantumError` hierarchy while preserving
+   built-in ImportError, ValueError, and RuntimeError compatibility categories.
+2. `run_adapter_conformance` callable defaults become `None`, eliminating process
+   addresses from signatures and making contracts reproducible.
+3. `flagquantum.ecosystem.__all__` excludes concrete adapters and default registry instances.
+4. `fq.experimental.interop` routes only the experimental `qiskit` and `pennylane`
+   implementation namespaces.
 
-## 验收标准
+## Acceptance Criteria
 
-- [x] 候选稳定导出与机器契约完全一致；
-- [x] 稳定根 `fq.__all__` 不变；
-- [x] 错误类型统一且保留内建异常兼容；
-- [x] 无第三方依赖环境可以导入、发现并审查 adapter；
-- [x] Qiskit 2.0/2.5 与 PennyLane 0.44/0.45 的适配器证据继续独立运行；
-- [x] 具体适配器未被误标为稳定；
-- [x] API owner 批准冻结框架无关 interop protocol。
+- [x] Candidate stable exports exactly match the machine contract.
+- [x] Stable root `fq.__all__` is unchanged.
+- [x] Unified error types preserve built-in compatibility.
+- [x] Adapters can be imported, discovered, and inspected without third-party dependencies.
+- [x] Qiskit 2.0/2.5 and PennyLane 0.44/0.45 adapter evidence continues independently.
+- [x] Concrete adapters are not mislabeled stable.
+- [x] API owner approved the framework-neutral interop protocol freeze.

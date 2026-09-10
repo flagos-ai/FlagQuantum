@@ -1,48 +1,51 @@
-# FlagQuantum IR Phase 2 Batch A 完成复核
+# FlagQuantum IR Phase 2 Batch A Completion Review
 
-状态：**Technically complete — awaiting explicit Batch A exit approval**
+Status: **Technically complete — awaiting explicit Batch A exit approval**
 
-日期：2026-09-02
+Date: 2026-09-02
 
-## 1. 技术结论
+## 1. Technical Conclusion
 
-Phase 2 Batch A 的私有静态 canonicalization 已完成实现、语义差分、梯度差分、确定性验证、
-性能修复与批准后预算验证。当前技术证据支持进入 Batch A exit 评审，但本文件本身不批准退出，
-也不批准 Batch B。
+Phase 2 Batch A private static canonicalization has completed implementation,
+semantic and gradient differential tests, determinism verification, performance
+remediation, and validation against approved budgets. This evidence supports
+Batch A exit review. This document itself approves neither the exit nor Batch B.
 
-## 2. 已完成范围
+## 2. Completed Scope
 
-- identity 与数值零旋转清理；
-- 相邻 self-inverse gate cancellation；
-- 相邻 rotation merge，包括 trainable tensor 梯度保持；
-- linear qubit value 重连与 revision/identity contract；
-- fused private production pipeline 与独立 pass 精确等价；
-- entry/exit fail-closed verification；
-- immutable identity、pipeline digest 和 schema registry 缓存；
-- CircuitIR import → private passes → restricted lowering 全链路差分；
-- 10/100/1K/10K successor performance budget gate。
+- Identity and numerical zero-rotation cleanup.
+- Adjacent self-inverse gate cancellation.
+- Adjacent rotation merging, preserving trainable-tensor gradients.
+- Linear qubit value reconnection and revision/identity contracts.
+- Exact equivalence of the fused private production pipeline and separate passes.
+- Fail-closed entry/exit verification.
+- Caching of immutable identities, pipeline digests, and schema registries.
+- Differential checks across CircuitIR import, private passes, and restricted lowering.
+- Successor performance-budget gates for 10/100/1K/10K gates.
 
-## 3. 批准后的性能门
+## 3. Approved Performance Gates
 
-| Gates | p95 | 上限 | Peak bytes | 上限 | 结果 |
+| Gates | p95 | Limit | Peak bytes | Limit | Result |
 | ---: | ---: | ---: | ---: | ---: | --- |
-| 10 | 0.629 ms | 1.25 ms | 44,480 | 1,310,720 | 通过 |
-| 100 | 4.470 ms | 7 ms | 257,326 | 1,310,720 | 通过 |
-| 1,000 | 38.603 ms | 65 ms | 2,505,077 | 3,145,728 | 通过 |
-| 10,000 | 431.662 ms | 650 ms | 25,075,043 | 31,457,280 | 通过 |
+| 10 | 0.629 ms | 1.25 ms | 44,480 | 1,310,720 | Pass |
+| 100 | 4.470 ms | 7 ms | 257,326 | 1,310,720 | Pass |
+| 1,000 | 38.603 ms | 65 ms | 2,505,077 | 3,145,728 | Pass |
+| 10,000 | 431.662 ms | 650 ms | 25,075,043 | 31,457,280 | Pass |
 
-四档 identity determinism 与增长率检查全部通过。这是内部回归预算，不是公开 SLA。
+Identity determinism and growth-rate checks pass at all four sizes. These are
+internal regression budgets, not public SLAs.
 
-## 4. 保持不变的边界
+## 4. Preserved Boundaries
 
-- Stable Core、CircuitIR 1.0 和 public exports 未改变；
-- `fq.run`、`fq.plan`、默认 compiler/runtime 路径未接入新 IR；
-- legacy compiler 未删除；
-- routing、emitter、provider codegen、TargetIR 和 ProgramIR 未启动；
-- 原 Phase 2 budget 快照未修改；
-- Batch B 尚未授权。
+- Stable Core, CircuitIR 1.0, and public exports are unchanged.
+- `fq.run`, `fq.plan`, and default compiler/runtime paths do not use the new IR.
+- The legacy compiler has not been removed.
+- Routing, emitters, provider codegen, TargetIR, and ProgramIR have not started.
+- Original Phase 2 budget snapshots are unchanged.
+- Batch B is not yet authorized.
 
-## 5. 下一道决策门
+## 5. Next Decision Gate
 
-Batch A 是否退出以及是否只启动 Batch B，必须通过下一份绑定全部证据的 review candidate 单独
-批准。未经该批准，不得把“技术完成”表述为“阶段已正式退出”。
+Batch A exit and authorization to start only Batch B require separate approval
+through the next review candidate binding all evidence. Until then, technical
+completion must not be described as formal phase exit.

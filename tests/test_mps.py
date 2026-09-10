@@ -464,6 +464,30 @@ def test_mps_adaptive_bond_plan_uses_truncation_hotspots():
     assert not mps.truncation_error_within_budget(0.0)
 
 
+def test_adaptive_bond_growth_is_independent_of_default_tensor_dtype() -> None:
+    circuit = fq.Circuit(2, dtype=torch.complex128)
+    circuit.gate("h", 0).gate("cx", (0, 1))
+    mps = fqmps.run_mps(circuit, max_bond=1)
+    original_dtype = torch.get_default_dtype()
+    plans = []
+    try:
+        for dtype in (torch.float32, torch.float64):
+            torch.set_default_dtype(dtype)
+            plans.append(
+                mps.adaptive_bond_plan(
+                    global_error_budget=0.0,
+                    growth_factor=1.00000001,
+                    min_increment=0,
+                )
+            )
+    finally:
+        torch.set_default_dtype(original_dtype)
+
+    assert plans[0].hot_bonds
+    assert plans[0] == plans[1]
+    assert plans[0].suggested_max_bond == 2
+
+
 def test_mps_local_refinement_plan_maps_hot_bonds_to_windows():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 1).h(2).cx(2, 3).cx(1, 2)

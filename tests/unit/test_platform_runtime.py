@@ -21,6 +21,59 @@ from flagquantum.runtime import backend_registry
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("state", [None, b"state", [1, 2]])
+def test_flagos_rng_rejects_invalid_vendor_state(
+    monkeypatch: pytest.MonkeyPatch, state: object
+) -> None:
+    platform = FlagOSPlatformRuntime()
+    monkeypatch.setattr(platform, "device_type", "cpu")
+    monkeypatch.setattr(
+        platform, "_required_device_api", lambda name: lambda device: state
+    )
+    with pytest.raises(TypeError, match="get_rng_state must return a torch.Tensor"):
+        platform.rng_state(torch.device("cpu"))
+
+
+def test_flagos_activation_validates_registration_on_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    vendor = ModuleType("torch_fl")
+    monkeypatch.setitem(sys.modules, "torch_fl", vendor)
+    monkeypatch.delattr(torch, "flagos", raising=False)
+    platform = FlagOSPlatformRuntime()
+
+    for _ in range(2):
+        with pytest.raises(PlatformActivationError, match="without registering"):
+            platform.activate()
+        assert platform._module is None
+        assert not platform.activated()
+
+    monkeypatch.setattr(torch, "flagos", SimpleNamespace(), raising=False)
+    platform.activate()
+    assert platform._module is vendor
+    assert platform.activated()
+
+
+def test_flagos_without_dependency_reports_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    platform = FlagOSPlatformRuntime()
+    platform.optional_dependency = None
+    monkeypatch.setattr(
+        flagos_module, "find_spec", lambda name: pytest.fail("dependency is unset")
+    )
+    monkeypatch.setattr(
+        flagos_module, "import_module", lambda name: pytest.fail("dependency is unset")
+    )
+
+    assert not platform.installed()
+    assert not platform.activated()
+    with pytest.raises(
+        PlatformActivationError, match="compatible Torch-FL installation"
+    ):
+        platform.activate()
+
+
 def test_cpu_platform_is_always_available_without_optional_imports():
     platform = get_platform_runtime("cpu")
 

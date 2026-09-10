@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...distributed.backend_policy import (
     DistributedBackendPolicy,
 )
+
+if TYPE_CHECKING:
+    import torch
 
 
 @dataclass(frozen=True)
@@ -28,8 +31,8 @@ class StatevectorShardState:
 
     rank: int
     shard: StatevectorShard
-    amplitudes: Any
-    global_indices: Any
+    amplitudes: torch.Tensor
+    global_indices: torch.Tensor
 
     def summary(self) -> dict[str, Any]:
         compact = int(self.global_indices.numel()) == 0
@@ -50,9 +53,9 @@ class StatevectorShardState:
 class LocalDistributedStatevectorResult:
     """Single-process CPU simulation of a distributed statevector execution."""
 
-    state: Any
+    state: torch.Tensor
     shards: tuple[StatevectorShardState, ...]
-    plan: Any
+    plan: DistributedStatevectorPlan
     local_gate_count: int
     distributed_gate_count: int
     simulated_communication_count: int

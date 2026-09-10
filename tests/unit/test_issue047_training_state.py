@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -25,6 +27,34 @@ def step(module: fq.Module, optimizer: torch.optim.Optimizer) -> torch.Tensor:
     value.backward()
     optimizer.step()
     return value.detach()
+
+
+@pytest.mark.parametrize("field", ["atol", "rtol"])
+@pytest.mark.parametrize(
+    "value", [0.0, -1.0, float("nan"), float("inf"), -float("inf")]
+)
+def test_precision_policy_rejects_invalid_tolerance(field: str, value: float) -> None:
+    with pytest.raises(fqt.PrecisionPolicyError, match="positive and finite"):
+        if field == "atol":
+            fqt.PrecisionPolicy(atol=value)
+        else:
+            fqt.PrecisionPolicy(rtol=value)
+
+
+def test_checkpoint_accepts_custom_pathlike(tmp_path: Path) -> None:
+    class CheckpointPath:
+        def __fspath__(self) -> str:
+            return str(tmp_path / "custom.pt")
+
+    path = CheckpointPath()
+    source = fq.Module(build, 2, init=torch.tensor([0.2, -0.3]))
+    expected = source().detach()
+    saved = source.save_checkpoint(path, optimizer=None, seed=123, step=2)
+    assert saved == tmp_path / "custom.pt"
+    restored = fq.Module(build, 2)
+    metadata = restored.load_checkpoint(path, optimizer=None)
+    assert metadata["step"] == 2
+    torch.testing.assert_close(restored(), expected)
 
 
 def test_checkpoint_restores_module_optimizer_rng_and_next_step(tmp_path) -> None:

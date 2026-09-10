@@ -26,30 +26,33 @@ from .contracts import (
 class FlagOSPlatformRuntime:
     name = "torch_fl"
     device_type = "flagos"
-    optional_dependency = "torch_fl"
+    optional_dependency: str | None = "torch_fl"
 
     def __init__(self) -> None:
         self._module: ModuleType | None = None
 
     def installed(self) -> bool:
-        return (
-            self.optional_dependency in sys.modules
-            or find_spec(self.optional_dependency) is not None
+        dependency = self.optional_dependency
+        return dependency is not None and (
+            dependency in sys.modules or find_spec(dependency) is not None
         )
 
     def activated(self) -> bool:
-        return self._module is not None or self.optional_dependency in sys.modules
+        return self._module is not None or (
+            self.optional_dependency in sys.modules and hasattr(torch, "flagos")
+        )
 
     def activate(self) -> None:
         if self._module is not None:
             return
-        if not self.installed():
+        dependency = self.optional_dependency
+        if dependency is None or not self.installed():
             raise PlatformActivationError(
                 "FlagOS execution requires a compatible Torch-FL installation; "
                 "CPU and native PyTorch execution remain available."
             )
         try:
-            self._module = import_module(self.optional_dependency)
+            module = import_module(dependency)
         except Exception as exc:
             raise PlatformActivationError(
                 "Torch-FL is installed but could not activate the FlagOS device: "
@@ -60,6 +63,7 @@ class FlagOSPlatformRuntime:
                 "Torch-FL imported without registering torch.flagos; install a "
                 "Torch-FL build compatible with this PyTorch minor version."
             )
+        self._module = module
 
     def _device_module(self) -> Any:
         self.activate()
@@ -181,7 +185,10 @@ class FlagOSPlatformRuntime:
     def rng_state(self, device: torch.device) -> torch.Tensor:
         if device.type != self.device_type:
             raise ValueError(f"FlagOS platform cannot read RNG state for {device}")
-        return self._required_device_api("get_rng_state")(device)
+        state = self._required_device_api("get_rng_state")(device)
+        if not isinstance(state, torch.Tensor):
+            raise TypeError("FlagOS get_rng_state must return a torch.Tensor")
+        return state
 
     def restore_rng_state(self, device: torch.device, state: torch.Tensor) -> None:
         if device.type != self.device_type:

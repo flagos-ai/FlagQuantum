@@ -30,7 +30,7 @@ try:
         TRANSPORT_EVIDENCE_STATUSES,
     )
 except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.vocabulary import (  # type: ignore
+    from flagquantum.runtime.audit.vocabulary import (
         CLAIM_EVIDENCE_TYPES,
         INCOMPLETE_DISTRIBUTION_SEMANTICS,
         RELEASE_CLAIM_EVIDENCE_TYPES,
@@ -41,16 +41,9 @@ except ImportError:  # legacy benchmark file-loader path
 
 
 from .engine import (
-    _backend_family,
-    _communication_evidence_reported,
-    _has_nonempty,
-    _is_nonempty,
     _ownership_sharded,
     _payload_blockers,
-    _rank_memory_reported,
     _release_transport_evidence_errors,
-    _semantics,
-    _training_step_count,
 )
 from .errors import DistributedScalabilityError
 from .mps_readiness import (
@@ -60,6 +53,15 @@ from .mps_readiness import (
 )
 from .schema import (
     DistributedScalabilityAudit,
+)
+from .validation_helpers import (
+    _backend_family,
+    _communication_evidence_reported,
+    _has_nonempty,
+    _is_nonempty,
+    _rank_memory_reported,
+    _semantics,
+    _training_step_count,
 )
 
 
@@ -304,7 +306,8 @@ def _release_mps_training_evidence_errors(
         else ""
     )
     communication_executed = bool(
-        _mps_communication_plan_reported(communication_plan)
+        isinstance(communication_plan, Mapping)
+        and _mps_communication_plan_reported(communication_plan)
         and communication_status
         in {
             "executed",

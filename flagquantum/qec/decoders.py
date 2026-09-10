@@ -84,7 +84,7 @@ class RepetitionTemporalDecoder:
 
     def decode_round(self, syndrome_history: Sequence[SyndromeRound]) -> Correction:
         history = _validate_repetition_history(syndrome_history)
-        previous_bits = (0, 0)
+        previous_bits: tuple[int, ...] = (0, 0)
         for record in history:
             expected_events = tuple(
                 index

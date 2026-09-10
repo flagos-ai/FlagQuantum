@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, fields
+from dataclasses import dataclass, fields
 from typing import Any, Mapping
 
 from .options import ExecutionOptions
@@ -77,7 +77,9 @@ def resolve_execution_options(
     ):
         if overlay is None:
             continue
-        for name, value in asdict(overlay).items():
+        for field in fields(overlay):
+            name = field.name
+            value = getattr(overlay, name)
             if value is not None:
                 values[name] = value
                 sources[name] = source_name

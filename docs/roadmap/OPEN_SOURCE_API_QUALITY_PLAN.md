@@ -1,177 +1,122 @@
-# FlagQuantum 开源前 API 质量提升与冻结计划
+# Pre-Release API Quality and Freeze Plan
 
-## 1. 文档目的
+## 1. Purpose
 
-本文档用于指导 FlagQuantum 在首次公开发布前完成 API 收敛。目标不是永久冻结
-所有实现细节，而是建立一套规模小、语义一致、可扩展、可测试并能长期兼容的
-公开 API。
+This plan guides API convergence before FlagQuantum's first public release. It
+aims for a small, consistent, extensible, testable public API with sustainable
+compatibility, rather than freezing every implementation detail.
 
-本文档覆盖：
+It covers strengths, overlap and ambiguity, target namespaces, implementation
+order, phase acceptance, and first-release freeze conditions. Mandatory
+post-freeze protection, CODEOWNERS, required checks, and authorization are defined
+in [Public API Protection](../development/PUBLIC_API_PROTECTION.md).
 
-- 当前 API 的质量判断与主要优点；
-- 已确认的 API 重叠、断链和歧义；
-- 建议的目标 API 与命名空间；
-- 分阶段实施顺序；
-- 每个阶段的验收标准；
-- 首次公开版本的冻结条件。
+## 2. Assessment
 
-API 冻结后的强制保护、CODEOWNERS、required checks 和变更授权流程由
-[`PUBLIC_API_PROTECTION.md`](../development/PUBLIC_API_PROTECTION.md) 规定。
-
-## 2. 结论
-
-FlagQuantum 当前 API 主干方向正确：
+The main API direction is sound:
 
 ```text
 Circuit / Module
-       ↓
+       v
       IR
-       ↓
+       v
      plan
-       ↓
+       v
       run
-       ↓
+       v
 ExecutionResult
 ```
 
-其中 `fq.Circuit`、FlagQuantum IR、`fq.plan`、`fq.run`、`fq.Module`、
-`fq.train` 以及统一 Result 模型值得成为长期架构基础。
+`fq.Circuit`, FlagQuantum IR, `fq.plan`, `fq.run`, `fq.Module`, `fq.train`, and
+shared result models are suitable long-term foundations.
 
-当前整体 API 质量评估约为 **7.5/10**；核心主线约为 **8.5/10**。不建议把
-当前 `public_api_v1.json` 中的全部 60 个 stable exports 原样作为首次公开版本的
-永久承诺。首次开源前应完成一次集中式 API 收敛，目标质量为 **9/10**。
+The recorded design assessment is approximately **7.5/10** overall and **8.5/10**
+for the main path, with **9/10** as the convergence target. The 60 stable exports
+in the original `public_api_v1.json` should not all become permanent first-release
+commitments unchanged.
 
-冻结原则：
+Freeze principles:
 
-1. 冻结用户心智、核心语义和兼容规则，而不是冻结所有内部实现。
-2. 核心入口保持少而稳定；后端专属能力通过命名空间或 experimental 暴露。
-3. 简单路径必须短，专业路径必须可检查、可复现、可控制。
-4. 用户看到的执行计划必须与真正执行的计划一致。
-5. 公开接口原则上只增不破；删除必须经过正式弃用周期。
+1. Stabilize user concepts, core semantics, and compatibility rules, not internals.
+2. Keep few stable entries; expose backend-specific features through namespaces or experimental APIs.
+3. Keep simple paths short and expert paths inspectable, reproducible, and controllable.
+4. Execute the plan shown to the user.
+5. Prefer compatible additions; removals require formal deprecation.
 
-## 3. 当前设计中值得保留的部分
+## 3. Strengths to Retain
 
-### 3.1 统一程序模型
+### 3.1 Shared Program Model
 
-`fq.Circuit` 建立在版本化 FlagQuantum IR 之上，已经具备确定性序列化、内容哈希、
-参数表达式、测量节点和可验证错误语义。这是后端无关生态的正确基础。
+`fq.Circuit` uses versioned IR with deterministic serialization, content hashing,
+parameter expressions, measurements, and verifiable errors. This supports a
+backend-independent ecosystem.
 
-### 3.2 执行、规划和训练职责分离
+### 3.2 Separate Responsibilities
 
-- `fq.plan` 负责规划和解释；
-- `fq.run` 负责一次执行；
-- `fq.Module` 负责 PyTorch 参数所有权；
-- `fq.train` 负责优化器循环；
-- `ExecutionResult` 和 `TrainingResult` 负责稳定输出。
+`fq.plan` plans and explains; `fq.run` executes once; `fq.Module` owns PyTorch
+parameters; `fq.train` runs an optimizer loop; `ExecutionResult` and
+`TrainingResult` provide stable output. Preserve this division.
 
-这种职责划分应保留。
+### 3.3 Native PyTorch Experience
 
-### 3.3 PyTorch 原生体验
+`fq.Module` is a regular `torch.nn.Module` supporting parameter management,
+optimizers, device movement, and autograd. Keep PyTorch as the main interface
+rather than inventing another training-object system.
 
-`fq.Module` 是普通 `torch.nn.Module`，能够参与 PyTorch 参数管理、优化器、设备迁移
-和自动微分。FlagQuantum 应继续坚持 PyTorch Native 主线，不重新发明一套独立训练
-对象体系。
+### 3.4 Governance Foundations
 
-### 3.4 已存在的 API 治理基础
+The repository already has stable snapshots, executable contracts, documentation
+source-of-truth, experimental namespaces, DeprecationWarning paths, semantic
+versioning, and release policy. Consolidate these foundations.
 
-当前仓库已经具备：
+## 4. Required Pre-Release Issues
 
-- 稳定 API 快照；
-- executable contract tests；
-- documentation source-of-truth；
-- experimental 命名空间；
-- DeprecationWarning 路径；
-- 语义化版本和发布策略。
+### API-001: ExecutionPlan Must Be Executable — P0
 
-后续工作的重点是收缩和统一，而不是推翻重来。
-
-## 4. 必须在开源前解决的问题
-
-### API-001：`ExecutionPlan` 没有成为执行输入
-
-**优先级：P0**
-
-当前 `fq.plan(circuit)` 主要用于检查和展示，而 `fq.run(circuit)` 会再次规划。用户
-显式生成的 plan 不是执行时的唯一事实来源，因此无法保证“看到的计划就是执行的
-计划”。
-
-目标语义：
+The original `fq.plan(circuit)` path mainly inspected/displayed plans while
+`fq.run(circuit)` replanned. The target is:
 
 ```python
 result = fq.run(circuit, options=options)
 
-# 等价的专业路径
+# Equivalent inspectable path.
 plan = fq.plan(circuit, options=options)
 result = fq.run(plan)
 ```
 
-验收标准：
+`fq.run(ExecutionPlan)` must execute that plan, which carries program/config
+hashes and environment constraints. Stale plans fail explicitly without silent
+replanning. Automatic and explicit paths have equivalent plans/results, and
+`ExecutionResult.plan` identifies the actual plan.
 
-- `fq.run(ExecutionPlan)` 直接执行该计划；
-- plan 包含程序哈希、配置哈希和目标环境约束；
-- 计划失效时明确报错，不允许静默重新规划；
-- 自动路径与显式 plan 路径产生等价计划和结果；
-- `ExecutionResult.plan` 指向实际执行的计划。
+### API-002: Competing Planning Entries — P0
 
-### API-002：存在多套用户可见规划接口
+`fq.plan`, `Circuit.plan`, `Circuit.runtime_plan`, and `plan_runtime_selection`
+answer overlapping but different questions. Recommend only `fq.plan` in user
+documentation. `Circuit.plan()` may remain only as a strict equivalent shortcut.
+Runtime selection belongs inside `ExecutionPlan`; specialist analyzers belong
+in `fq.planning` or internal namespaces, not as permanent root planners.
 
-**优先级：P0**
+### API-003: Competing Execution Entries — P0
 
-当前存在 `fq.plan`、`Circuit.plan`、`Circuit.runtime_plan`、
-`plan_runtime_selection` 等相近入口。它们返回的对象和回答的问题并不完全相同，
-容易造成用户不知道应该使用哪一个。
-
-目标：
-
-- 用户文档只推荐 `fq.plan`；
-- `Circuit.plan()` 最多作为 `fq.plan(circuit)` 的严格等价便捷写法；
-- runtime selection 成为 `ExecutionPlan` 的一部分；
-- 专项分析器进入 `fq.planning` 或 internal namespace；
-- 不在根命名空间永久承诺多个相似 planner。
-
-### API-003：存在多套相互竞争的执行入口
-
-**优先级：P0**
-
-当前同时存在：
-
-- `fq.run`；
-- `Circuit.run`；
-- `fq.run_native`；
-- `fq.run_mps`；
-- `fq.run_tensor_network`；
-- `fq.run_target`；
-- 多个 distributed/noisy 专用 runner。
-
-目标：
+The original surface contains `fq.run`, `Circuit.run`, `fq.run_native`,
+`fq.run_mps`, `fq.run_tensor_network`, `fq.run_target`, and specialized distributed/
+noisy runners. Recommend one entry:
 
 ```python
 fq.run(program_or_plan, options=...)
 ```
 
-作为唯一推荐入口。其他入口按以下方式处理：
+`Circuit.run()` must be equivalent. Backend-native execution belongs in
+`flagquantum.runtime`; numerical expert entries belong in Simulation method
+packages. Unstable distributed/hardware/research paths belong in `fq.experimental`.
+Specialist root runners are not long-term Stable Core.
 
-- `Circuit.run()` 必须与 `fq.run(circuit)` 语义严格等价；
-- backend-native 执行进入 `flagquantum.runtime`，数值专家入口进入所属 Simulation 方法包；
-- 尚未稳定的分布式、硬件和研究能力迁入 `fq.experimental`；
-- 根级专用 runner 不进入长期 stable core。
+### API-004: Multiple Configuration Authorities — P0
 
-### API-004：执行配置存在多个事实来源
-
-**优先级：P0**
-
-执行行为目前可能由以下位置共同决定：
-
-- `Circuit` 构造参数；
-- `RuntimeConfig`；
-- `RuntimePolicy`；
-- `fq.run(**options)`；
-- 环境变量；
-- backend-specific 参数。
-
-这会产生覆盖顺序不清、计划难复现和文档组合爆炸。
-
-建议引入不可变的统一配置对象：
+Circuit construction, `RuntimeConfig`, `RuntimePolicy`, run keyword options,
+environment variables, and backend parameters can all influence execution. This
+obscures precedence and reproducibility. Use immutable shared options:
 
 ```python
 options = fq.ExecutionOptions(
@@ -183,82 +128,55 @@ options = fq.ExecutionOptions(
 )
 ```
 
-必须明确配置优先级，例如：
+Specify precedence explicitly; the proposal illustrates:
 
 ```text
-显式 ExecutionOptions
-    > Module RuntimePolicy
-    > Circuit 创建时捕获的默认配置
-    > 进程级默认配置
-    > 框架内置默认值
+Explicit ExecutionOptions
+ > Module RuntimePolicy
+ > Defaults captured at Circuit construction
+ > Process defaults
+ > Framework defaults
 ```
 
-未知选项必须立即报错，不能被无限制 `**options` 静默接收。
+Reject unknown options rather than silently accepting arbitrary `**options`.
 
-### API-005：`mode`、`backend`、`device` 和 `target` 概念重叠
+### API-005: mode/backend/device/target Overlap — P0
 
-**优先级：P0**
-
-建议固定以下定义：
-
-| 概念 | 含义 | 示例 |
+| Concept | Meaning | Examples |
 | --- | --- | --- |
-| `mode` | 数学状态或算法表示 | statevector、mps、tensor_network、density_matrix |
-| `backend` | 执行实现 | pytorch、jax、triton、vendor |
-| `device` | 执行设备 | cpu、cuda、npu、flagos |
-| `target` | 用户需要的输出 | state、expectation、samples、amplitudes |
+| `mode` | Mathematical representation | statevector, mps, tensor_network, density_matrix |
+| `backend` | Execution implementation | pytorch, jax, triton, vendor |
+| `device` | Execution device | cpu, cuda, npu, flagos |
+| `target` | Requested output | state, expectation, samples, amplitudes |
 
-相同概念必须在 `plan`、`run` 和 `RuntimePolicy` 中使用相同名称、相同枚举和相同
-默认值。模式别名只允许存在于有明确删除版本的兼容层。
+Use identical names, enums, and defaults in plan, run, and RuntimePolicy. Aliases
+belong only in compatibility layers with removal versions.
 
-### API-006：命名没有完全统一
+### API-006: Naming Inconsistency — P0
 
-**优先级：P0**
+Resolve `run(mode=...)` versus `plan(state_mode=...)`, `bsz` versus `batch_size`,
+and `n_qubits`/`n_wires`/`nqubits`. The proposal recommends public `mode`,
+`batch_size`, and Circuit `n_qubits`; reserve wire terminology for IR/mapping/
+internal indices. Migrate private callers before making historical spellings a
+public compatibility commitment.
 
-当前典型问题：
+### API-007: Two Measurement Sources — P0
 
-- `run(mode=...)` 与 `plan(state_mode=...)`；
-- `bsz` 与用户更容易理解的 `batch_size`；
-- `Circuit(n_qubits=...)`、`Circuit(n_wires=...)`、`Circuit(nqubits=...)`。
+Proposal 004 chose one canonical model: requests end in
+`ExecutionPlan`'s `CircuitIR.measurements`. `measurements=` is a planning shortcut
+only; reject it when IR already has measurements rather than override or append.
+Implemented rules use IR by default, insert explicit requests into empty IR before
+planning, and reject simultaneous sources.
 
-首次公开版本建议：
+### API-008: Result Boundaries — P0
 
-- 统一使用 `mode`；
-- 公开接口统一使用 `batch_size`；
-- Circuit 只公开 `n_qubits`；
-- `wire` 仅保留为 IR、映射和内部索引术语；
-- 私有阶段直接迁移内部调用，不把历史拼写带入公开兼容承诺。
+Proposal 004 narrowed program types in run/plan, removed `Any` from
+`ExecutionResult.plan` and `MeasurementResult.value`, added fail-closed required
+accessors while retaining optional composition fields, and removed native
+`__getattr__` forwarding. Proposal 005 added a versioned diagnostics envelope for
+`metrics/runtime/provenance/compatibility`; internal section keys may grow compatibly.
 
-### API-007：Measurement 存在两个输入来源
-
-**优先级：P0**
-
-Proposal 004 已选择单一规范模型：测量请求最终写入
-`ExecutionPlan` 携带的 `CircuitIR.measurements`。`measurements=` 仅是 planning
-便捷输入；若 IR 已含请求则明确报错，不允许隐式覆盖或追加。
-
-已落地规则：
-
-1. 默认使用 IR measurements；
-2. 显式 measurements 在 planning 前写入空的 IR measurement 列表；
-3. 两个来源同时存在时报错。
-
-不允许存在隐式覆盖。
-
-### API-008：`ExecutionResult` 的稳定边界不够严格
-
-**优先级：P0**
-
-Proposal 004 已解决：
-
-- `fq.run` 和 `fq.plan` 的 program 类型已收窄；
-- `ExecutionResult.plan` 和 `MeasurementResult.value` 已移除 `Any`；
-- optional 字段保留用于张量组合，但已提供失败闭合的 required accessors；
-- `ExecutionResult.__getattr__` 的 native 透传已移除；
-- Proposal 005 为 `metrics/runtime/provenance/compatibility` 增加了带版本的
-  diagnostics envelope；四个 section 内部 key 允许兼容性增加。
-
-目标：
+Target returns:
 
 ```python
 fq.run(...) -> fq.ExecutionResult
@@ -266,43 +184,27 @@ fq.plan(...) -> fq.ExecutionPlan
 fq.train(...) -> fq.TrainingResult
 ```
 
-建议增加明确访问器：
+Suggested explicit accessors:
 
 ```python
 result.expectation()
 result.statevector()
 result.require_samples()
 result.measurement("energy")
-result.native()  # 明确标记为非稳定后端对象
+result.native()  # Explicitly outside the stable backend-neutral contract.
 ```
 
-验收标准：
+Missing results raise clear errors, stable fields have checkable types, native
+objects do not expand the API implicitly, metadata is versioned, and serialization
+or nonserializable fields are explicit.
 
-- 缺少对应结果时给出明确异常；
-- stable 字段具有可检查类型；
-- native 结果不再通过隐式属性透传污染稳定 API；
-- metadata schema 带版本；
-- Result 可以稳定序列化或明确声明不可序列化字段。
+### API-009: Root Surface Too Large — P0
 
-### API-009：stable root surface 过大
+The original 60 exports mix MPS production/evidence types, native/distributed
+runners, deployment helpers, and information conveniences. Their maturity differs.
+Use three levels.
 
-**优先级：P0**
-
-当前 stable manifest 包含 60 个根级导出，其中混入：
-
-- MPS 生产验收与 evidence 类型；
-- backend-native runner；
-- distributed 专用入口；
-- 部署辅助函数；
-- 便利性信息函数。
-
-这些接口的成熟度和长期稳定性不同，不应获得同等级承诺。
-
-建议把公开能力分成三层：
-
-#### Stable Core
-
-候选范围控制在约 15–25 个：
+**Stable Core:** approximately 15–25 candidates:
 
 ```text
 Circuit, CircuitIR, Instruction
@@ -316,9 +218,7 @@ experimental
 __version__
 ```
 
-#### Stable Extensions
-
-通过命名空间提供：
+**Stable Extensions:** namespaced capabilities:
 
 ```text
 fq.noise
@@ -329,151 +229,87 @@ flagquantum.simulation
 fq.compiler
 ```
 
-#### Provisional / Experimental
+**Provisional/Experimental:** ranks/shards/transports, MPS production gates and
+benchmark evidence, hardware controls, incomplete dynamic circuits/backends, and
+research planners/policies.
 
-包括：
+### API-010: Loose Compatibility Root — P0
 
-- rank、shard、transport 等分布式结构；
-- MPS production gate 和 benchmark evidence；
-- 硬件特定控制；
-- 未完成的动态线路和新后端；
-- 研究阶段 planner 与优化策略。
+Lazy `__getattr__`/`__dir__` can expose historical entries outside stable
+`__all__`. Users reasonably interpret root accessibility as public API.
+Discover only Stable Core and explicit namespaces; migrate/remove old entries
+before release, put necessary compatibility in `flagquantum.compat`, and avoid
+native attribute forwarding.
 
-### API-010：compatibility root 边界过于宽松
+## 5. Additional Pre-Release Priorities
 
-**优先级：P0**
+### API-011: compile/plan/run Responsibilities — P1
 
-当前 lazy `__getattr__` 和 `__dir__` 仍可能让用户发现并调用不属于 stable `__all__`
-的历史接口。首次开源后，用户通常会把“能够从 `fq` 访问”理解为公开 API。
+Clarify `Circuit/IR -> compile -> plan -> run`, or make compilation a planning
+stage. Users should not manually combine redundant work. Recommend automatic
+normalization, compilation, routing, and resources in `fq.plan`; expert
+`fq.compiler.optimize` for target-independent optimization and
+`fq.compiler.compile` for targets. Plans retain compiled IR and transformation
+provenance with stable identity for identical inputs/options.
 
-目标：
+### API-012: Module.forward/execute/run Relationship — P1
 
-- 根命名空间只能发现 stable core 和明确标记的命名空间；
-- 历史接口在首次公开前完成迁移或删除；
-- 必须保留的兼容接口进入 `flagquantum.compat`；
-- 不使用隐式 native attribute forwarding 扩大稳定面。
+`Module.forward()` returns Tensor for PyTorch; `Module.execute()` returns
+`ExecutionResult`; `fq.run()` primarily accepts Circuit/IR. Fix gradient, batch,
+and observable defaults across entries.
 
-## 5. 应在开源前尽量解决的问题
+**Proposal 005: implemented, pending separate freeze approval.** `forward`
+returns an autograd Tensor, `execute` returns a result with plan/provenance,
+`fq.run` rejects Module, and Module has no additional `run`. Both Module paths
+share owned/override parameters, observables, and backend policy. No implicit
+input-batch × parameter-batch Cartesian broadcasting exists.
 
-### API-011：compile、plan 和 run 的职责边界不够清楚
+### API-013: Module Construction Variants — P1
 
-**优先级：P1**
+Validate builder, parameterized Circuit, flat/named parameters, and initialization
+through golden paths. Keep a simple builder and named Parameter path, specify
+batching, place complex bindings in configuration/classmethods, and test every
+public construction form.
 
-当前 `compiler.compile()` 可单独产生 IR，而 `plan()` 内部又会进行编译。应明确：
+Proposal 005 protects existing forms without adding top-level construction modes.
+Proposal 006 removed unvalidated deployment binding from Module; applications or
+Deployment own it. Old checkpoint extra-state still reads and ignores the field.
 
-```text
-Circuit/IR → compile → plan → run
-```
+### API-014: Training Lifecycle Scope — P1
 
-或者把 compile 定义为 plan 的内部阶段。普通用户不应被要求手动拼接两个可能重复
-工作的入口。
+The original `fq.train` covers optimizer, objective, steps, inputs, logging, and
+callbacks, not a unified checkpoint/resume/early-stop/validation/distributed
+lifecycle. Choose either a complete TrainingOptions/callback protocol or an
+explicit minimal optimizer loop.
 
-推荐：
+**Proposal 005 chose the minimal loop.** Checkpoint/resume belongs to
+`Module.save_checkpoint/load_checkpoint` or application loops. Early stopping,
+validation sets, and implicit recovery do not enter the stable top-level signature.
+Documentation and claims must match.
 
-- `fq.plan` 自动完成规范化、编译、路由和资源规划；
-- 编译专家使用 `fq.compiler.optimize` 做目标无关优化，使用
-  `fq.compiler.compile` 做面向目标的编译；
-- `ExecutionPlan` 记录编译后的 IR 和所有 transformation provenance；
-- 相同输入和配置产生稳定 plan identity。
+### API-015: Distributed Training Split — P1
 
-### API-012：`Module.forward`、`Module.execute` 和 `fq.run` 的关系需要固定
-
-**优先级：P1**
-
-当前：
-
-- `Module.forward()` 返回 Tensor，以符合 PyTorch；
-- `Module.execute()` 返回 `ExecutionResult`；
-- `fq.run()` 主要接受 Circuit/IR。
-
-这个设计可以成立，但必须明确：
-
-- `module(inputs)` 永远返回可参与 autograd 的 Tensor；
-- `module.execute(inputs)` 返回带计划和 provenance 的结果；
-- `fq.run(module, ...)` 是否支持必须在开源前做唯一决定；
-- 不允许不同入口对梯度、batch 或 observable 产生不同默认语义。
-
-**Proposal 005 决策：已实现，待单独冻结批准。** `forward` 返回 Tensor，`execute`
-返回 `ExecutionResult`；`fq.run` 不接受 Module，Module 也不增加 `run`。两条 Module
-路径使用相同 owned/override 参数、observable 与 backend policy。框架不定义隐式输入
-batch × 参数 batch 笛卡尔广播。
-
-### API-013：`fq.Module` 构造方式较多
-
-**优先级：P1**
-
-当前同时支持 builder、参数化 Circuit、扁平参数、命名参数和多种初始化方式。应通过
-黄金路径确认哪些组合是真正需要的公开能力。
-
-建议：
-
-- 保留一个最简单 builder 路径；
-- 保留一个命名 Parameter 路径；
-- 明确输入 batch 与参数 batch 的广播规则；
-- 把复杂 compilation/deployment binding 放入配置对象或 classmethod；
-- 为每个公开构造模式提供独立 contract test。
-
-Proposal 005 保护现有 builder、参数化 Circuit、扁平参数和命名参数构造形态，但不再
-增加新的顶层构造模式。Proposal 006 已从 Module 删除未校验的 deployment binding，
-由应用模型或 deployment 层持有；旧 checkpoint extra-state 仍可读取并忽略该字段。
-
-### API-014：训练入口没有完全覆盖已宣传的生命周期
-
-**优先级：P1**
-
-`Module` 已有 checkpoint 能力，但 `fq.train` 的公开签名主要覆盖 optimizer、objective、
-steps、inputs、logging 和 callback。Checkpoint、Resume、早停、验证集和分布式生命周期
-尚未通过一个统一顶层入口表达。
-
-应在以下两种方案中选择：
-
-1. 扩展 `TrainingOptions` 和 callback 协议，形成完整训练入口；或
-2. 将 `fq.train` 定义为最小训练循环，并明确高级生命周期由用户或 Trainer 扩展负责。
-
-文档和宣传必须与最终选择一致。
-
-**Proposal 005 已选择方案 2。** `fq.train` 永久定位为最小 PyTorch optimizer loop；
-checkpoint/resume 由 `Module.save_checkpoint/load_checkpoint` 或应用训练循环负责，
-不把早停、验证集或隐式恢复塞入稳定顶层签名。
-
-### API-015：普通训练与分布式训练入口分裂
-
-**优先级：P1**
-
-`train_distributed_statevector` 和 `train_distributed_mps` 暴露了实现模式。长期目标应是：
+`train_distributed_statevector` and `train_distributed_mps` expose implementations.
+The longer-term candidate is:
 
 ```python
 fq.train(module, options=fq.TrainingOptions(execution=...))
 ```
 
-如果分布式训练尚不能满足统一语义，应保留在 `fq.experimental.distributed`，而不是
-提前进入 stable root。
+**Proposal 005:** distributed training remains in
+`flagquantum.experimental.distributed` until result, checkpoint, gradient, and
+optimizer semantics match local Module. It does not enter stable root prematurely.
 
-**Proposal 005 决策：** 当前分布式训练继续位于
-`flagquantum.experimental.distributed`；达到与本地 Module 相同的结果、checkpoint、
-梯度和 optimizer 语义前，不进入稳定根 API。
+### API-016: Parallel Noise Entries — P1
 
-### API-016：Noise 存在多套平行入口
+Existing `noise_model=`, density, noisy MPS, and noisy statevector entries overlap.
+Recommend ordinary `fq.run(..., noise=...)`, mode selection through options/planning,
+expert simulators in their Simulation packages, shared results, and planning-time
+failure for unsupported noise capabilities.
 
-**优先级：P1**
+### API-017: Error Model — P1
 
-当前既可以使用 `fq.run(..., noise_model=...)`，又存在 density matrix、noisy MPS、
-noisy statevector 等专用入口。
-
-建议：
-
-- 普通用户只使用 `fq.run(..., noise=...)`；
-- mode 由 options 或 planner 决定；
-- 专用模拟器进入所属 `flagquantum.simulation` 方法包；
-- 所有路径返回相同稳定结果契约；
-- noise capability 不支持时在 planning 阶段失败。
-
-### API-017：错误模型尚未统一
-
-**优先级：P1**
-
-公开 API 当前会抛出 `ValueError`、`TypeError`、`RuntimeError`、
-`NotImplementedError` 以及多个领域特定异常。建议建立精简异常层级：
+Use a small hierarchy while retaining underlying exceptions as `__cause__`:
 
 ```text
 FlagQuantumError
@@ -485,53 +321,35 @@ FlagQuantumError
 └── SerializationError
 ```
 
-底层异常可以作为 `__cause__` 保留，但用户不应依赖 PyTorch、JAX、NCCL 或 provider
-的偶然异常文本。
+Users should not depend on incidental PyTorch/JAX/NCCL/provider error text.
 
-**Proposal 006 决策：已实现，待单独冻结批准。** 七个异常类别进入稳定
-`flagquantum.errors` 命名空间，并通过双重继承保留 Python 内置异常兼容性。错误类型
-继续使用 `TypeError`；语义取值、planning、serialization、capability、compilation 和
-execution/training 分别进入明确类别。现有 IR、Plan 和 TrainingState 领域异常保留名称。
+**Proposal 006: implemented, pending separate freeze approval.** Seven categories
+live in stable `flagquantum.errors`. Multiple inheritance preserves built-in
+compatibility. Wrong types retain `TypeError`; values, planning, serialization,
+capability, compilation, and execution/training use explicit categories. Existing
+IR, Plan, and TrainingState error names remain.
 
-### API-018：ExecutionPlan 的可移植和可序列化边界需要定义
+### API-018: Plan Portability and Serialization — P1
 
-**优先级：P1**
-
-需要明确 plan 是：
-
-- 仅当前进程可执行的对象；
-- 可跨进程序列化的描述；还是
-- 可部署、可签名的执行包。
-
-推荐分层：
+Separate local executable plans from deployable packages:
 
 ```text
-ExecutionPlan       本地可检查、可执行、带环境约束
-DeploymentPackage  可序列化、可签名、可提交给硬件/provider
+ExecutionPlan       Inspectable/executable locally, with environment constraints
+DeploymentPackage  Serializable/signable, submitted to hardware/providers
 ```
 
-二者不能使用含糊的同一对象承担所有职责。
+Do not overload one ambiguous object with both responsibilities.
 
-### API-019：扩展点需要稳定协议而不是稳定实现类
+### API-019: Stable Extension Protocols — P1
 
-**优先级：P1**
+Third parties should add backends/providers/passes/measurements without modifying
+Core. Stabilize protocols and registration rather than concrete implementations:
+capabilities, planner costs/contributions, runners, result normalization,
+submission, version negotiation, and conformance.
 
-生态建设需要允许第三方增加 backend、provider、compiler pass 和 measurement，而不
-修改 FlagQuantum core。应优先冻结 Protocol 和注册机制，而不是冻结每个具体后端
-类。
+## 6. Target API Sketch
 
-至少定义：
-
-- backend capability protocol；
-- planner cost/capability contribution；
-- executable runner protocol；
-- result normalization protocol；
-- provider submission protocol；
-- version negotiation 和 conformance tests。
-
-## 6. 建议的目标 API 草案
-
-以下只定义目标形态，不应在实现完成前直接宣布永久冻结：
+These sketches are targets, not permanent freeze declarations before implementation.
 
 ```python
 import flagquantum as fq
@@ -541,7 +359,6 @@ circuit = (
     .h(0)
     .cx(0, 1)
 )
-
 options = fq.ExecutionOptions(
     mode="auto",
     backend="auto",
@@ -549,20 +366,19 @@ options = fq.ExecutionOptions(
     batch_size=1,
 )
 
-# 最短路径
+# Short path.
 result = fq.run(circuit, options=options)
 
-# 可检查、可复现路径
+# Inspectable, reproducible path.
 plan = fq.plan(circuit, options=options)
 print(plan.summary())
 result = fq.run(plan)
 ```
 
-训练路径：
+Training:
 
 ```python
 module = fq.Module(build_circuit, parameters={"theta": ()})
-
 training = fq.train(
     module,
     optimizer=optimizer,
@@ -571,292 +387,221 @@ training = fq.train(
 )
 ```
 
-后端专家路径：
+Expert native execution:
 
 ```python
 from flagquantum.simulation.mps import run_mps
-
 native = run_mps(circuit, options=options)
 ```
 
-统一执行路径：
+Unified execution remains:
 
 ```python
 result = fq.run(circuit, options=options)
 ```
 
-## 7. 五条开源前黄金用户路径
+## 7. Five Golden User Paths
 
-API 冻结前必须用真实、可执行代码验证以下路径：
+Before freeze, execute real examples for:
 
-1. **第一个 Bell circuit**：构建、执行、读取 state/measurement。
-2. **参数化 VQE**：Parameter、Hamiltonian、梯度和优化。
-3. **PyTorch 模型集成**：`fq.Module` 进入普通 `nn.Module` 和 optimizer。
-4. **自动后端选择**：同一代码在 Statevector、MPS、TN 之间规划。
-5. **互操作与部署**：Qiskit 转换、deployment package 和硬件/provider 提交。
+1. Bell construction, execution, state/measurement reads.
+2. Parameterized VQE with Parameter, Hamiltonian, gradients, optimization.
+3. `fq.Module` inside ordinary `nn.Module` and optimizers.
+4. Planning the same code across statevector, MPS, TN.
+5. Qiskit conversion, deployment packages, hardware/provider submission.
 
-每条路径必须满足：
+Each imports only `flagquantum as fq` or stable namespaces, avoids runtime/
+internal/testing/evidence internals, runs in CI, supplies stable actionable errors,
+at least builds/plans on CPU, and links plan/execution/result provenance.
 
-- 只导入 `flagquantum as fq` 或稳定子命名空间；
-- 不访问 runtime/internal/testing/evidence；
-- 示例由 CI 直接执行；
-- 错误具有稳定类型和可行动信息；
-- CPU 环境至少能够完成构建和 planning；
-- plan、execution 和 result provenance 可以相互核对。
+## 8. Implementation Phases
 
-## 8. 实施阶段
+### Phase 0: Baseline and User Journeys
 
-### Phase 0：冻结现状和用户旅程
+Preserve `public_api_v1.json` as the internal baseline. Record exports, signatures,
+defaults, and dataclass fields in `contracts/public-api-v0.2-baseline.json`, enforced
+by `tools/public_api_snapshot.py`. Add golden paths, inventory signatures/docs,
+and stop root API expansion during convergence. Acceptance: automatically detect
+public signature/example changes.
 
-- 保存当前 `public_api_v1.json` 作为内部迁移基线；
-- 使用 `contracts/public-api-v0.2-baseline.json` 记录导出、签名、默认值和
-  dataclass 字段，并由 `tools/public_api_snapshot.py` fail closed；
-- 建立五条黄金路径测试；
-- 收集所有根级导出、函数签名和文档引用；
-- 禁止在收敛期间继续增加根级 API。
+Implementation record (2026-08-31):
 
-完成标准：可以自动检测任何公开签名和示例变化。
+- Baseline records 60 exports; snapshot checks run in pre-commit and `CI / quality`.
+- `tests/api_contract/test_open_source_golden_paths.py` covers Bell, parameterized
+  objective training, PyTorch composition, planning, local deployment, Qiskit round trips.
+- Core CI runs the first five paths; optional Qiskit 2.0/2.5 matrix runs Qiskit.
+- This is a migration baseline, not approval of all 60 final exports.
 
-实施记录（2026-08-31）：
+### Phase 1: Reduce Stable Surface
 
-- `contracts/public-api-v0.2-baseline.json` 已记录当前 60 个 stable exports；
-- `tools/public_api_snapshot.py` 已接入 pre-commit 和 `CI / quality`；
-- `tests/api_contract/test_open_source_golden_paths.py` 已覆盖 Bell circuit、
-  参数化目标训练、PyTorch 组合、自动规划、本地部署和 Qiskit round trip；
-- core CI 执行前五条路径，现有 Qiskit 2.0/2.5 可选依赖矩阵执行 Qiskit 路径；
-- 该记录是迁移起点，不代表当前 60 个 exports 已被批准为最终 Stable Core。
+Choose Stable Core, relocate backend/evidence/acceptance types, remove unnecessary
+root compatibility, update manifests/docs/import contracts. Target approximately
+15–25 exports, each with a user scenario.
 
-### Phase 1：收缩 stable surface
+Implementation record (2026-08-31):
 
-- 确定 Stable Core 最终名单；
-- 将后端、evidence 和验收类型迁入子命名空间；
-- 删除首次开源不需要承担的历史 compatibility root；
-- 更新 API manifest、文档和 import contract。
+- `contracts/public-api-v1-candidate.json` classifies each of 60 exports exactly once.
+- Candidate Core has 22 entries: 20 retained plus `ExecutionOptions`/`ExecutionPlan`.
+- Remaining entries map to stable extensions, experimental, or pre-release removal.
+- `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` records migration; API owner approved
+  classification/namespace migration on 2026-08-31. Final freeze remains separate.
+- Stable `backends`, `compiler`, `deployment`, `noise`, `operators` and experimental
+  `distributed`, `mps`, `planning` namespaces import successfully.
+- Golden deployment examples no longer depend on old root helpers.
+- README, architecture, maintained guides/reference, and examples migrated;
+  `tools/check_legacy_root_api_usage.py` prevents regression in pre-commit/CI.
+- Production, tools, and benchmarks migrated. `benchmarks/mps_stability.py` remains
+  an exact read-only historical exception because its source hash binds measured
+  A800 evidence; do not update the hash without remeasurement just for imports.
+  Remaining work at that checkpoint was tests and generated audit docs.
+- Test batches removed 21 calls in 16 files, then 58 in 13 files, 113 in 2 files,
+  and 152 in the last 6 files covering MPS/native/trajectory/JAX/planners.
+  `contracts/legacy-root-api-test-debt.json` is now a zero baseline enforced by CI.
+- `fq.__all__`, `dir(fq)`, and `docs/public_api_v1.json` shrank from 60 to 22.
+  Proposal 002 approved ExecutionOptions; Proposal 003 implemented/approved
+  ExecutionPlan root listing. Overall freeze still awaited semantic proposals.
+  Historical lazy access was temporarily uncommitted compatibility, outside the
+  manifest, with a separate removal inventory.
+- Proposal 001 migrated/removed entries are closed in root `__getattr__` with
+  replacement namespace messages. Historical `flagquantum.api` aggregation and
+  implicit root fallback were removed before public alpha; callers use domain authorities.
 
-完成标准：根级 stable exports 控制在约 15–25 个，且每一个都有明确用户场景。
+### Phase 2: Names and Options
 
-实施记录（2026-08-31）：
+Introduce ExecutionOptions, unify mode/backend/device/target, replace state_mode
+and bsz, expose Circuit n_qubits, fix precedence. Acceptance: no conflicting terms
+in plan/run/Circuit/RuntimePolicy.
 
-- `contracts/public-api-v1-candidate.json` 已将当前 60 个根级导出逐项且唯一分类；
-- 候选 Stable Core 为 22 项，其中保留 20 项、新增 `ExecutionOptions` 与
-  `ExecutionPlan`；
-- 其余接口按 stable extension、experimental 和开源前移除三类给出目标位置；
-- `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` 已形成可审查迁移提案；
-- Stable Core 分类与命名空间迁移已于 2026-08-31 获得 API owner 批准；最终 API
-  freeze 仍需单独批准。
-- stable extension 的 `backends`、`compiler`、`deployment`、`noise`、`operators`
-  路径与 experimental 的 `distributed`、`mps`、`planning` 路径已经可导入；
-- 公开黄金路径中的部署示例已停止依赖历史根级 deployment export。
-- README、架构说明、主动维护的 guides/reference 和 examples 已迁移到新命名空间；
-  `tools/check_legacy_root_api_usage.py` 已接入 pre-commit 与 CI，禁止回流旧根接口。
-- production package、tools 和 benchmarks 已完成同一批旧根入口迁移，并纳入上述
-  防回流门禁；`benchmarks/mps_stability.py` 因源码哈希绑定 A800 实测证据而保留为
-  精确的只读历史例外，不能在未重新测量时仅为改导入路径而更新证据哈希；剩余迁移面
-  仅为测试与由旧 manifest 生成的审计文档。
-- 首批测试迁移已清除 16 个文件、21 处旧根调用；第二批进一步清除 deployment、
-  distributed training、backend basic 与 algorithm 等 13 个文件、58 处旧根调用；
-  第三批清除 noise 与 tensor-network 2 个测试文件、113 处旧根调用；第四批完成
-  MPS、native runtime、trajectory、hybrid JAX 与专项 planner 等最后 6 个文件、
-  152 处旧根调用迁移。测试侧债务已归零，
-  `contracts/legacy-root-api-test-debt.json` 现为零基线，CI 禁止任何旧根接口回流。
-- 正式稳定且可发现的根 API（`fq.__all__`、`dir(fq)` 和
-  `docs/public_api_v1.json`）已从 60 项收缩为当前已实现的 22 项 Stable Core；
-  `ExecutionOptions` 已经 Proposal 002 批准并加入，`ExecutionPlan` 已完成 Proposal 003
-  实现与根级清单审批；整体 API freeze 仍需等待后续语义提案。历史惰性属性访问仅作为
-  未承诺的仓库兼容层暂留，
-  不属于 stable manifest，后续按独立清单继续移除。
-- Proposal 001 明确分类的迁移接口和开源前移除项已从根级 `__getattr__`
-  关闭；错误信息直接给出规范命名空间。历史 `flagquantum.api` 聚合器及其
-  隐式根级回退已在首个公开 alpha 前删除，内部代码和测试均从权威领域命名空间导入。
+Implementation record (2026-08-31):
 
-### Phase 2：统一命名和配置
+- `API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md` and
+  `contracts/execution-options-v1-candidate.json` registered.
+- Implementation, root authorization, default/runtime/distributed validation complete.
+- Shared stable input uses immutable field overlays, strict precedence, no `extras`
+  escape hatch, and approximation/backend fallback prohibited by default.
 
-- 引入 `ExecutionOptions`；
-- 统一 `mode/backend/device/target`；
-- `state_mode` 迁移为 `mode`；
-- `bsz` 迁移为 `batch_size`；
-- Circuit 公开构造只使用 `n_qubits`；
-- 明确配置覆盖顺序。
+### Phase 3: Executable Plans
 
-完成标准：`plan`、`run`、`Circuit` 和 `RuntimePolicy` 不再使用冲突术语。
+Design record (2026-08-31): Proposal 003 and
+`contracts/execution-plan-v1-candidate.json` registered. Identity, serialization,
+stale plans, environment constraints, and `fq.run(plan)` are implemented and
+validated on default/runtime/distributed selections. Root export approved; final
+freeze separate. ExecutionPlan is locally inspectable/cacheable/restorable/
+executable; DeploymentPackage owns signing, submission, remote lifecycle.
 
-实施记录（2026-08-31）：
+Return stable plans, execute them directly, fingerprint program/options/environment,
+report stale plans, eliminate duplicate compilation/silent replanning. Acceptance:
+automatic and explicit paths have equivalent output/provenance.
 
-- `API_CHANGE_PROPOSAL_002_EXECUTION_OPTIONS.md` 与
-  `contracts/execution-options-v1-candidate.json` 已登记；
-- Proposal 002 已完成实现、根级清单授权和 default/runtime/distributed 验证；
-  `ExecutionOptions` 已成为 `plan/run/Circuit/RuntimePolicy` 的统一稳定输入；
-- 候选采用不可变字段级 overlay、严格优先级、无 `extras` 逃生口，以及 approximation
-  和 backend fallback 默认关闭的 fail-closed 语义。
+### Phase 4: Results and Measurements
 
-### Phase 3：建立可执行计划
+- [x] Remove `Any` from stable program, plan, and measurement values.
+- [x] Define measurement sources/conflicts.
+- [x] Add stable result accessors.
+- [x] Isolate backend-native objects.
+- [x] Version result summaries.
+- [x] Add Proposal 005 Module diagnostics envelopes.
+- [ ] Unify public missing-data and training errors in a later proposal.
 
-设计记录（2026-08-31）：
+Acceptance: users read requested results without probing ambiguous optional fields.
 
-- `API_CHANGE_PROPOSAL_003_EXECUTION_PLAN.md` 与
-  `contracts/execution-plan-v1-candidate.json` 已登记；
-- Proposal 003 已完成 identity、序列化、stale-plan、环境约束和 `fq.run(plan)` 实现，
-  并通过 default/runtime/distributed 验证；根级类型导出已批准，freeze 仍待后续审批；
-- `ExecutionPlan` 定位为本地可检查、可缓存、可恢复和可执行的计划，
-  `DeploymentPackage` 继续承担签名、provider 提交和远程生命周期。
+### Phase 5: Module and Training
 
-- `fq.plan` 返回稳定 `ExecutionPlan`；
-- `fq.run(plan)` 成为正式路径；
-- 实现 program/options/environment fingerprint；
-- 明确 stale plan 错误；
-- 消除重复编译和静默重新规划。
+- [x] Fix forward/execute/run relationships.
+- [x] Fix owned/override parameters, inputs, observables; reject implicit Cartesian batching.
+- [x] Assign checkpoint/resume to Module or application loops.
+- [x] Keep distributed training experimental.
+- [x] Fix PyTorch primary/JAX optional compiled-backend boundaries.
+- [x] API owner separately approves Proposal 005 freeze.
 
-完成标准：自动路径与显式计划路径具有一致输出和 provenance。
+Proposal 006 removes provider/deployment state and fixes three construction paths.
+Module owns parameters, RuntimePolicy, precision, training state. Eager, train,
+and explicit execution must share defaults.
 
-### Phase 4：收紧 Result 和 Measurement
+### Phase 6: Extensions and Interoperability
 
-- [x] 去除 stable execution program、plan 和 measurement value 中的 `Any`；
-- [x] 定义 measurement 来源和冲突规则；
-- [x] 增加稳定结果访问器；
-- [x] 隔离 backend-native 对象；
-- [x] 版本化 result summary schema；
-- [x] 在 Proposal 005 中增加 Module diagnostics 的版本化 envelope；
-- [ ] 在后续提案中统一所有公开缺失数据与训练错误的异常层级。
+- [x] Define backend/provider Protocol candidates.
+- [x] Establish third-party conformance.
+- [x] Validate Qiskit/PennyLane support-window endpoints in real-dependency Docker and matching CI.
+- [x] Verify plugins need no Runtime internals.
+- [x] API owner separately approves Proposal 007 freeze.
 
-完成标准：用户无需检查多个不明确的 optional 字段即可读取所请求结果。
+Acceptance: add a minimal third-party backend without modifying Core.
 
-### Phase 5：统一 Module 和 Training
+### Phase 6A: Public Errors
 
-- [x] 固定 `forward`、`execute`、`run` 的关系；
-- [x] 固定 owned/override 参数、输入和 observable 默认语义，禁止隐式笛卡尔广播；
-- [x] 决定 checkpoint/resume 由 Module 或应用循环所有；
-- [x] 决定 distributed training 暂留 experimental；
-- [x] 固定 PyTorch 为主接口、JAX 为可选 compiled backend 的边界；
-- [x] API owner 单独批准 Proposal 005 contract freeze。
+- [x] Establish stable `flagquantum.errors`.
+- [x] Preserve ValueError/RuntimeError/NotImplementedError catch compatibility.
+- [x] Map IR/Plan/Result/Module/training-state errors to shared categories.
+- [x] Isolate stable boundaries from incidental native exceptions.
+- [x] API owner separately approves Proposal 006 freeze.
 
-Proposal 006 进一步删除了 Module 的 provider/deployment 状态，并固定三种公开构造
-路径；Module 只拥有参数、RuntimePolicy、precision 与训练状态。
+### Phase 7: Candidate and Freeze
 
-完成标准：同一 Module 在 eager、train 和显式 execute 路径中没有默认语义漂移。
+Release alpha; exercise real examples, internal applications, and at least one
+external integration. In beta stop arbitrary naming changes and fix contracts.
+Generate final manifests, typing snapshots, migration notes, and release audit.
 
-### Phase 6：扩展协议与互操作
+## 9. Quality Gates
 
-- [x] 固定 backend/provider Protocol 候选契约；
-- [x] 建立第三方 conformance suite；
-- [x] 在真实依赖 Docker 环境验证 Qiskit/PennyLane 支持窗口上下界，并配置同等 CI matrix；
-- [x] 验证外部插件不需要导入 runtime internal；
-- [x] API owner 单独批准 Proposal 007 extension contract freeze。
+**Surface:** root matches manifest; new exports reviewed; experimental excluded;
+examples avoid internals.
 
-完成标准：能够在不修改 core 的情况下增加一个最小第三方 backend。
+**Signatures:** positional additions reviewed; stable returns not `Any`; options
+checkable; defaults snapshotted.
 
-### Phase 6A：统一公开异常
+**Semantics:** automatic/explicit plans equivalent; stale plans and unsupported
+capabilities fail closed; no measurement override; fallback visible in results.
 
-- [x] 建立 `flagquantum.errors` 稳定命名空间；
-- [x] 保留 ValueError/RuntimeError/NotImplementedError 捕获兼容性；
-- [x] 将 IR、Plan、Result、Module 与 training-state 领域错误映射到统一类别；
-- [x] 隔离 stable boundary 与 backend-native 偶然异常类型；
-- [x] API owner 单独批准 Proposal 006 contract freeze。
+**Documentation:** first README example and five golden paths run in CI; API docs
+generated from manifest; each stable export has one main document and executable contract.
 
-### Phase 7：公开候选与冻结
+**Compatibility:** removals have deprecation/removal versions and replacement
+warnings; retain compatibility across at least one public minor release; IR,
+Plan, Result, DeploymentPackage each have schema versions.
 
-- 发布 alpha API candidate；
-- 用真实示例、内部应用和至少一个外部集成试用；
-- beta 阶段停止任意改名，只修复 contract 问题；
-- 生成最终 API manifest、typing snapshot 和迁移说明；
-- 完成开源发布审计。
+## 10. First-Release Freeze Conditions
 
-## 9. API 质量门禁
+All must hold:
 
-首次公开版本至少需要以下自动门禁：
+- [x] Stable Core reduced and individually reviewed.
+- [x] ExecutionOptions is the sole recommended execution configuration.
+- [x] `fq.run(plan)` implemented and equivalent.
+- [x] plan/run/RuntimePolicy terminology aligned.
+- [x] Measurement source/override rules unambiguous.
+- [x] run/plan/train return types are not `Any`.
+- [x] Native objects do not implicitly expand stable Result.
+- [x] Module forward/execute/train candidates implemented and contract-tested.
+- [x] Checkpoint/resume ownership fixed.
+- [x] Module construction/deployment-binding ownership fixed.
+- [x] Public error candidate hierarchy implemented and tested.
+- [x] Distributed/noise/backend specialist entries layered.
+- [x] No accidental compatibility root exports.
+- [x] Five golden paths pass.
+- [x] Qiskit/PennyLane conformance passes.
+- [x] Third-party backend example uses public extension protocols only.
+- [x] Documentation, typing, snapshots, release notes agree.
+- [ ] Alpha/beta use reveals no issue requiring an API break.
 
-### Surface gate
-
-- 根级导出必须与稳定 manifest 完全一致；
-- 新根级导出必须经过 API review；
-- experimental 内容不得出现在 stable snapshot；
-- internal 模块不得被用户示例导入。
-
-### Signature gate
-
-- stable 函数不得无审查增加位置参数；
-- stable 返回值不得为 `Any`；
-- 公共 options 必须可类型检查；
-- 所有默认值必须进入 snapshot。
-
-### Semantic gate
-
-- `run(circuit, options)` 与 `run(plan(circuit, options))` 等价；
-- stale plan fail closed；
-- measurement 不允许隐式覆盖；
-- unsupported capability 在 planning 阶段失败；
-- backend fallback 必须在 result 中可见。
-
-### Documentation gate
-
-- README 第一条路径可执行；
-- 五条黄金路径全部由 CI 执行；
-- API 文档由 manifest 生成；
-- 每个 stable export 都有一个主文档入口和 executable contract。
-
-### Compatibility gate
-
-- stable API 删除必须有弃用版本和删除版本；
-- warning 文本包含替代接口；
-- 至少跨一个公开 minor release 保留兼容；
-- 序列化 IR、Plan、Result 和 DeploymentPackage 各自带 schema version。
-
-## 10. 首次公开版本冻结条件
-
-只有同时满足以下条件，才能宣布 API freeze：
-
-- [x] Stable Core 已缩减并通过逐项审查；
-- [x] `ExecutionOptions` 成为唯一推荐执行配置；
-- [x] `fq.run(plan)` 已实现并通过等价性测试；
-- [x] `plan/run/RuntimePolicy` 使用统一术语；
-- [x] Measurement 来源和覆盖规则唯一明确；
-- [x] `fq.run`、`fq.plan`、`fq.train` 返回类型不再是 `Any`；
-- [x] native backend 对象不会隐式扩张稳定 Result；
-- [x] Module 的 forward/execute/train 候选语义已实现并受契约测试保护；
-- [x] checkpoint/resume 的责任边界已明确；
-- [x] Module 构造路径和 deployment binding 所有权已明确；
-- [x] 公开异常候选层级已实现并受契约测试保护；
-- [x] distributed/noise/backend 专属入口已完成分层；
-- [x] 根命名空间不存在无意暴露的 compatibility exports；
-- [x] 五条黄金路径全部通过；
-- [x] Qiskit 和 PennyLane conformance 通过；
-- [x] 一个第三方 backend 示例只使用公开扩展协议；
-- [x] 文档、typing、API snapshot 和 release notes 一致；
-- [ ] alpha/beta 试用没有发现必须破坏 API 才能解决的问题。
-
-## 11. 建议的版本策略
+## 11. Version Strategy
 
 ```text
-当前私有阶段
-  允许集中式破坏性 API 收敛
-
-公开 alpha
-  API candidate；允许有明确记录的调整
-
-公开 beta
-  停止任意命名变化；只修复契约缺陷
-
-首个稳定公开版本
-  Stable Core 进入兼容承诺
-  后续原则上只增不破
+Private phase: concentrated breaking convergence permitted
+Public alpha: documented API candidate adjustments permitted
+Public beta: stop arbitrary renaming; fix contract defects
+First stable release: compatibility commitment; prefer additive evolution
 ```
 
-项目仍低于 1.0 时可以按照语义化版本进行明确迁移，但不应把“版本号低”当作频繁
-破坏用户代码的理由。首次公开后，每个 breaking change 都必须有真实收益、迁移路径
-和弃用窗口。
+Versions below 1.0 may migrate explicitly under semantic versioning, but a low
+version is not justification for frequent user breakage. Every public breaking
+change needs concrete benefit, migration, and a deprecation window.
 
-## 12. 推荐执行顺序
+## 12. Recommended Order
 
-最优先的实施顺序是：
+Reduce root exports; unify options/terminology; implement executable plans;
+tighten results/measurements; converge Module/training; establish extensions;
+validate alpha/beta journeys; freeze last.
 
-1. 收缩根级 stable exports；
-2. 统一 `ExecutionOptions` 和术语；
-3. 实现 `ExecutionPlan → fq.run(plan)`；
-4. 收紧 `ExecutionResult` 和 measurement；
-5. 收敛 Module/Training 生命周期；
-6. 建立 backend/provider 扩展协议；
-7. 运行 alpha/beta 用户路径验证；
-8. 最后冻结，而不是先冻结再修正。
-
-完成这些工作后，FlagQuantum 的 API 将不只是“入口统一”，而会形成真正稳定的产品
-契约：普通用户只需学习少量核心对象，专业用户可以检查和固定执行计划，第三方生态
-可以通过协议扩展，同时内部 backend、编译器和硬件适配仍能持续演进。
+The resulting contract should let users learn few core objects, experts inspect
+and pin plans, and third parties extend protocols while internal backends,
+compilers, and hardware adapters continue to evolve.

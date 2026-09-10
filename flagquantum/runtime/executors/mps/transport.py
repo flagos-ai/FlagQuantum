@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import datetime
+import math
 import os
 import time
-from typing import Any, Sequence
+from typing import Callable, Sequence
 
 import torch
 import torch.distributed as dist
@@ -15,8 +16,10 @@ from ....compute import get_platform_runtime
 
 def _p2p_timeout() -> datetime.timedelta:
     seconds = float(os.environ.get("FLAGQUANTUM_MPS_P2P_TIMEOUT_SECONDS", "120"))
-    if seconds <= 0:
-        raise ValueError("FLAGQUANTUM_MPS_P2P_TIMEOUT_SECONDS must be positive")
+    if not math.isfinite(seconds) or seconds <= 0:
+        raise ValueError(
+            "FLAGQUANTUM_MPS_P2P_TIMEOUT_SECONDS must be positive and finite"
+        )
     return datetime.timedelta(seconds=seconds)
 
 
@@ -29,7 +32,7 @@ def _p2p_state() -> str:
     )
 
 
-def _wait_batched_p2p(operations: list[Any], *, diagnostic: str) -> None:
+def _wait_batched_p2p(operations: list[dist.P2POp], *, diagnostic: str) -> None:
     timeout = _p2p_timeout()
     started = time.perf_counter()
     _MPS_P2P_STATS["physical_message_count"] += len(operations)
@@ -105,7 +108,7 @@ def _pooled_p2p_buffer(
 
 
 def _run_batched_p2p(
-    operations: list[Any], device: torch.device, *, diagnostic: str
+    operations: list[dist.P2POp], device: torch.device, *, diagnostic: str
 ) -> None:
     if device.type != "cuda":
         _wait_batched_p2p(operations, diagnostic=diagnostic)
@@ -123,11 +126,11 @@ def _run_batched_p2p(
 
 
 def _run_batched_p2p_with_overlap(
-    operations: list[Any],
+    operations: list[dist.P2POp],
     device: torch.device,
     *,
     diagnostic: str,
-    overlap_work: Any,
+    overlap_work: Callable[[], object],
 ) -> None:
     """Launch CUDA P2P, execute independent local work, then join explicitly."""
     if device.type != "cuda":
@@ -136,6 +139,7 @@ def _run_batched_p2p_with_overlap(
         overlap_work()
         _MPS_P2P_STATS["overlap_work_seconds"] += time.perf_counter() - started
         return
+    timeout = _p2p_timeout()
     key = (device.type, device.index)
     stream = _MPS_P2P_STREAMS.get(key)
     if stream is None:
@@ -147,21 +151,24 @@ def _run_batched_p2p_with_overlap(
         _MPS_P2P_STATS["physical_message_count"] += len(operations)
         requests = dist.batch_isend_irecv(operations)
     work_started = time.perf_counter()
-    overlap_work()
-    _MPS_P2P_STATS["overlap_work_seconds"] += time.perf_counter() - work_started
-    wait_started = time.perf_counter()
-    timeout = _p2p_timeout()
-    for request in requests:
+    try:
+        overlap_work()
+    finally:
+        _MPS_P2P_STATS["overlap_work_seconds"] += time.perf_counter() - work_started
+        wait_started = time.perf_counter()
         try:
-            completed = request.wait(timeout=timeout)
-        except Exception as exc:
-            raise RuntimeError(
-                f"MPS P2P failed: {diagnostic}; {_p2p_state()}; cause={exc}"
-            ) from exc
-        if completed is False:
-            raise RuntimeError(f"MPS P2P timeout: {diagnostic}; {_p2p_state()}")
-    current.wait_stream(stream)
-    _MPS_P2P_STATS["host_wait_seconds"] += time.perf_counter() - wait_started
+            for request in requests:
+                try:
+                    completed = request.wait(timeout=timeout)
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"MPS P2P failed: {diagnostic}; {_p2p_state()}; cause={exc}"
+                    ) from exc
+                if completed is False:
+                    raise RuntimeError(f"MPS P2P timeout: {diagnostic}; {_p2p_state()}")
+        finally:
+            current.wait_stream(stream)
+            _MPS_P2P_STATS["host_wait_seconds"] += time.perf_counter() - wait_started
 
 
 def warmup_mps_neighbor_communicators(device: torch.device) -> float:
@@ -173,9 +180,9 @@ def warmup_mps_neighbor_communicators(device: torch.device) -> float:
     key = (id(group), world, rank, str(device))
     if key in _WARMED_MPS_NEIGHBORS:
         return 0.0
-    started = __import__("time").perf_counter()
-    operations = []
-    buffers = []
+    started = time.perf_counter()
+    operations: list[dist.P2POp] = []
+    buffers: list[torch.Tensor] = []
     for peer in (rank - 1, rank + 1):
         if not 0 <= peer < world:
             continue
@@ -197,7 +204,7 @@ def warmup_mps_neighbor_communicators(device: torch.device) -> float:
     if device.type == "cuda":
         get_platform_runtime(device.type).synchronize(device)
     _WARMED_MPS_NEIGHBORS.add(key)
-    return __import__("time").perf_counter() - started
+    return time.perf_counter() - started
 
 
 def _send_tensor_p2p(

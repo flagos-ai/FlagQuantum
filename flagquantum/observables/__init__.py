@@ -68,7 +68,7 @@ class Observable:
 
     def __mul__(self, scalar: object) -> "Observable":
         value = _real_scalar(scalar)
-        if value is NotImplemented:
+        if value is None:
             return NotImplemented
         return Observable(
             tuple(
@@ -106,9 +106,9 @@ class OutputRequest:
             _sampled_pauli_term(self.observable)
 
 
-def _real_scalar(value: object) -> float | object:
+def _real_scalar(value: object) -> float | None:
     if isinstance(value, bool) or not isinstance(value, Real):
-        return NotImplemented
+        return None
     result = float(value)
     if not math.isfinite(result):
         raise ValueError("observable coefficients must be finite")

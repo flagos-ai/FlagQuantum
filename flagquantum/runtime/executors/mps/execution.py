@@ -10,7 +10,7 @@ across rank-local shards instead of replicating the full circuit per rank.
 from __future__ import annotations
 
 import json
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, TypedDict
 
 import torch
 import torch.distributed as dist
@@ -85,6 +85,29 @@ _PARAM_ALIASES = {
 }
 
 
+class _MPSSynchronizationStats(TypedDict):
+    """Counters and boundary records shared by MPS execution paths."""
+
+    owned_instruction_count: int
+    sharded_kernel_count: int
+    tensor_sync_count: int
+    boundary_sync_count: int
+    full_sync_count: int
+    sync_bytes: int
+    boundary_transfer_bytes: int
+    boundary_syncs: tuple[DistributedBoundarySync, ...]
+    boundary_protocols: tuple[DistributedBoundaryProtocol, ...]
+
+
+class _MPSExecutionStats(_MPSSynchronizationStats, total=False):
+    """Execution statistics with optional local simulation evidence."""
+
+    local_simulation: bool
+    development_sharded_states: tuple[ShardedMPSState, ...]
+    full_mps_reconstruction_count: int
+    unsupported_instruction_count: int
+
+
 def run_distributed_mps(
     circuit_or_ir: Any,
     *,
@@ -128,7 +151,9 @@ def run_distributed_mps(
         world_size = context.world_size
         options["device"] = context.device
 
-    def _run_once(run_options: Mapping[str, Any]) -> tuple[MPSState, dict[str, Any]]:
+    def _run_once(
+        run_options: Mapping[str, Any],
+    ) -> tuple[MPSState, _MPSExecutionStats]:
         if context is not None and context.initialized:
             return _run_mps_site_sharded_sync(
                 circuit_or_ir,
@@ -288,7 +313,7 @@ def _mps_run_options(options: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in options.items() if key in allowed}
 
 
-def _replicated_mps_stats(circuit_or_ir: Any) -> dict[str, Any]:
+def _replicated_mps_stats(circuit_or_ir: Any) -> _MPSExecutionStats:
     return {
         "owned_instruction_count": len(tuple(_as_ir(circuit_or_ir))),
         "sharded_kernel_count": 0,
@@ -766,7 +791,7 @@ def _run_mps_site_sharded_local(
     boundary_transport: str = "auto",
     strict_sharded: bool = False,
     **_: Any,
-) -> tuple[MPSState, dict[str, Any]]:
+) -> tuple[MPSState, _MPSExecutionStats]:
     """Run a single-process MPS development simulator with rank-owned tensors."""
 
     ir = _as_ir(circuit_or_ir)
@@ -848,19 +873,23 @@ def _run_mps_site_sharded_local(
             continue
         if boundary_local:
             first, second = int(instruction.wires[0]), int(instruction.wires[1])
-            record = _boundary_sync_record(instruction, shards)
+            boundary_sync = _boundary_sync_record(instruction, shards)
             tensor_bytes = _tensor_nbytes(
-                rank_tensors[record.left_rank][record.left_wire]
-            ) + _tensor_nbytes(rank_tensors[record.right_rank][record.right_wire])
+                rank_tensors[boundary_sync.left_rank][boundary_sync.left_wire]
+            ) + _tensor_nbytes(
+                rank_tensors[boundary_sync.right_rank][boundary_sync.right_wire]
+            )
             protocol = DistributedBoundaryProtocol(
-                sync=record,
+                sync=boundary_sync,
                 stages=(
                     "local_sim_exchange_boundary_tensors",
                     "apply_two_site_update",
                     "local_sim_scatter_boundary_tensors",
                 ),
                 tensor_bytes=tensor_bytes,
-                recipient_ranks=tuple(sorted({record.left_rank, record.right_rank})),
+                recipient_ranks=tuple(
+                    sorted({boundary_sync.left_rank, boundary_sync.right_rank})
+                ),
                 transport=normalized_boundary_transport,
                 estimated_transfer_bytes=tensor_bytes * 2,
                 point_to_point_messages=2,
@@ -873,23 +902,23 @@ def _run_mps_site_sharded_local(
                 dtype=seed_mps.dtype,
             )
             left, right, split_info = _apply_two_mps_tensors_with_info(
-                rank_tensors[record.left_rank][record.left_wire],
-                rank_tensors[record.right_rank][record.right_wire],
+                rank_tensors[boundary_sync.left_rank][boundary_sync.left_wire],
+                rank_tensors[boundary_sync.right_rank][boundary_sync.right_wire],
                 matrix,
                 config,
                 reverse=first > second,
             )
-            rank_tensors[record.left_rank][record.left_wire] = left
-            rank_tensors[record.right_rank][record.right_wire] = right
+            rank_tensors[boundary_sync.left_rank][boundary_sync.left_wire] = left
+            rank_tensors[boundary_sync.right_rank][boundary_sync.right_wire] = right
             step_error = float(split_info["discarded_weight"])
             if step_error > 0:
                 truncation_errors.append(step_error)
             truncation_record = _truncation_record_from_split_info(
-                split_info, bond=record.left_wire, config=config
+                split_info, bond=boundary_sync.left_wire, config=config
             )
             if truncation_record is not None:
                 truncation_records.append(truncation_record)
-            boundary_syncs.append(record)
+            boundary_syncs.append(boundary_sync)
             boundary_protocols.append(protocol)
             boundary_sync_count += 1
             boundary_transfer_bytes += protocol.estimated_transfer_bytes
@@ -964,7 +993,7 @@ def _run_mps_site_sharded_sync(
     cutoff: float = 0.0,
     boundary_transport: str = "auto",
     **_: Any,
-) -> tuple[MPSState, dict[str, int]]:
+) -> tuple[MPSState, _MPSExecutionStats]:
     ir = _as_ir(circuit_or_ir)
     mps = _initial_mps(
         circuit_or_ir,

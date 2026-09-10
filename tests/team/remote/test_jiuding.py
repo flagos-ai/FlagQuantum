@@ -75,6 +75,30 @@ def test_invalid_injected_credentials_fail_without_leaking_secrets(
     assert visible_secret not in str(error.value)
 
 
+def test_workspace_return_value_does_not_expose_cached_nested_storage() -> None:
+    client = JiudingClient()
+    client._workspace = {"name": "workspace", "storageInfo": [{"path": "/shared"}]}
+
+    returned = client.workspace()
+    returned["name"] = "changed"
+    returned["storageInfo"][0]["path"] = "/changed"
+    returned["storageInfo"].append({"path": "/extra"})
+
+    assert client.workspace() == {
+        "name": "workspace",
+        "storageInfo": [{"path": "/shared"}],
+    }
+
+
+@pytest.mark.parametrize("row", (None, 1, "workspace", []))
+def test_discovery_rejects_non_object_rows(row: object) -> None:
+    client = JiudingClient()
+    client._request = Mock(return_value={"items": [row]})
+
+    with pytest.raises(RuntimeError, match="items must contain objects"):
+        list(client._pages("/workspaces", {}, "items", {}))
+
+
 def test_token_is_cached_and_refreshed_from_server_expiry(monkeypatch):
     monkeypatch.setenv("JIUDING_AK", "test-ak")
     monkeypatch.setenv("JIUDING_SK", "test-sk")
@@ -295,7 +319,9 @@ def test_platform_success_requires_matching_scientific_result(client, tmp_path):
 
 
 @pytest.mark.parametrize("payload", (None, [], {"run_id": "run"}))
-def test_successful_job_rejects_malformed_result_file(client, tmp_path, payload):
+def test_successful_job_rejects_malformed_result_file(
+    client: JiudingClient, tmp_path: Path, payload: object
+) -> None:
     path = tmp_path / "result.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
     client.status = Mock(return_value=[{"status": "Succeed"}])

@@ -358,6 +358,7 @@ def compile_quantum_kernel(
         mode = "tensor_network"
     if mode not in {"statevector", "mps", "tensor_network"}:
         raise ValueError("mode must be 'statevector', 'mps', or 'tensor_network'.")
+    wires: tuple[int, ...] | None
     if isinstance(observable_wires, int):
         wires = (int(observable_wires),)
     elif observable_wires is None:

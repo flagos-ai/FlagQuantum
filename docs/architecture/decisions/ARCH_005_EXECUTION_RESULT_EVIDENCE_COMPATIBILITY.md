@@ -1,68 +1,89 @@
-# ARCH-005：Execution Result 与 Evidence 兼容边界
+# ARCH-005: Execution Result and Evidence Compatibility Boundaries
 
-状态：Proposed
+Status: Proposed
 
-日期：2026-09-03
-依据：Phase 0 八团队盘点；不新增或替换结果实现
+Date: 2026-09-03
+Basis: Phase 0 inventories from eight teams; no new or replacement result implementation.
 
-## 上下文
+## Context
 
-稳定 `ExecutionResult`、Core `ExecutionRecordContract`、Deployment/Target/Dynamic/Compiler ABI
-结果及多种 backend result 并存。Runtime evidence、Core provenance、capability evidence、审计
-verdict 与自由 metrics 也未统一。数值结果、持久执行记录和发布声明是不同职责，直接合并会
-丢失位序、身份、失败、回退或真实执行路径。
+Stable `ExecutionResult`, Core `ExecutionRecordContract`, Deployment/Target/Dynamic/
+Compiler ABI results, and backend results coexist. Runtime evidence, Core
+provenance, capability evidence, audit verdicts, and free-form metrics are also
+not unified. Numerical results, durable execution records, and release claims
+have different responsibilities. Merging them directly can lose bit ordering,
+identity, failure, fallback, or the actual execution path.
 
-## 决策候选
+## Decision Candidates
 
-1. 稳定 `ExecutionResult` 继续是用户投影；本 ADR 不移动其实现、不承诺 tensor payload
-   序列化，也不改变现有 accessor。
-2. Core 另拥有版本化 Execution Record/Evidence envelope，记录 request/plan/artifact/attempt/
-   provider identities、实际 target/path/device/precision、ownership、memory、communication、
-   fallback/degradation、timestamps、failure 和 namespaced evidence references。
-3. 原始测量、签名材料与审计 verdict 分层保存并由 digest 关联；audit 决定 claim eligibility，
-   Provider 或接口存在不能自行声明能力。
-4. backend-native result/metrics 可保留在域内；跨 Provider 边界必须无损投影核心字段，扩展值
-   进入受控 namespace，不能覆盖核心字段。
+1. Stable `ExecutionResult` remains the user-facing projection. This ADR neither
+   moves its implementation nor promises tensor payload serialization or changes
+   existing accessors.
+2. Core separately owns a versioned Execution Record/Evidence envelope recording
+   request/plan/artifact/attempt/provider identities, actual target/path/device/
+   precision, ownership, memory, communication, fallback/degradation, timestamps,
+   failure, and namespaced evidence references.
+3. Raw measurements, signature material, and audit verdicts are stored separately
+   and linked by digests. Audit determines claim eligibility; a Provider or an
+   interface cannot establish capability merely by existing.
+4. Backend-native results and metrics may remain within their domain. Crossing a
+   Provider boundary requires a lossless projection of core fields. Extensions
+   use controlled namespaces and cannot overwrite core fields.
 
-Evidence envelope 采用 ARCH-003 的两条正交状态轴和 `basic < observable < certification`
-等级。每个关键事实都要携带值、字段暴露状态、来源和适用范围；support 状态只描述能力，
-不能充当字段来源。声明等级由最弱的必需证据决定，缺失字段形成 blocker 而不是推测值。
+The evidence envelope uses ARCH-003's two orthogonal status axes and the levels
+`basic < observable < certification`. Every critical fact carries its value,
+field exposure status, source, and scope. Support status describes capability;
+it does not identify the source of a field. The weakest required evidence limits
+the claim level. Missing fields become blockers, not inferred values.
 
-## 禁止事项
+## Prohibited Practices
 
-- 不创建第四个公共 result，不把 counts 直接包装为“统一结果”而遗漏 wire/bit order。
-- 不把自由 metadata 当作 Evidence，不让 native 字段覆盖 failure、fallback 或 identity。
-- 不以 CPU distributed、Mock、replicated execution 或接口测试形成 scalability/QPU 声明。
-- 不通过修改快照承诺新的 tensor 序列化或改变稳定异常。
-- 不将 `not_exposed`/`unknown` 解释为“未发生”，尤其不得借此宣称不存在 CPU、host 或
-  backend fallback；已知 fallback 必须进入结果和 evidence。
+- Do not create a fourth public result or wrap counts as a unified result while
+  omitting wire/bit order.
+- Do not treat free-form metadata as Evidence or let native fields overwrite
+  failure, fallback, or identity.
+- CPU distributed tests, mocks, replicated execution, and interface tests cannot
+  support scalability or QPU claims.
+- Do not change snapshots to promise new tensor serialization or alter stable
+  exceptions.
+- Do not interpret `not_exposed`/`unknown` as evidence that something did not occur,
+  particularly CPU, host, or backend fallback. Known fallback must appear in
+  results and evidence.
 
-## 兼容性
+## Compatibility
 
-现有 result 保持字节和行为兼容；adapter 只补充旁路 record/evidence。旧 provenance/metrics
-读取规则维持，冲突必须可见。若未来向稳定 result 增字段、改类型或改 summary/diagnostics，
-必须使用新 schema/version、迁移 fixture 和 API Change Proposal。
+Existing results retain byte and behavioral compatibility. Adapters only add
+separate records/evidence. Existing provenance/metrics reading rules remain;
+conflicts must be visible. Future stable result fields, type changes, or changes
+to summary/diagnostics require a new schema/version, migration fixtures, and an
+API Change Proposal.
 
-## 迁移顺序
+## Migration Sequence
 
-1. 冻结稳定 result、Deployment counts、bit-order 与旧 evidence fixture。
-2. 定义 evidence envelope/failure taxonomy 和 contract fake。
-3. 先接 Local Simulation adapter，再接 Remote/QPU fake adapter。
-4. Runtime attempt coordinator 统一成功与失败 record；Audit 消费同一 envelope。
-5. 调用者归零且兼容窗口结束后退出 Deployment/Target 跨层结果。
+1. Freeze stable results, Deployment counts, bit order, and legacy evidence fixtures.
+2. Define the evidence envelope, failure taxonomy, and contract fake.
+3. Connect a Local Simulation adapter, then a Remote/QPU fake adapter.
+4. The Runtime attempt coordinator produces consistent success and failure
+   records; Audit consumes the same envelope.
+5. Retire cross-layer Deployment/Target results only after callers reach zero and
+   the compatibility window ends.
 
-## 验收测试
+## Acceptance Tests
 
-- stable result 行为/序列化 fixture 不变；核心字段冲突不可覆盖；
-- 非对称 bit order、leading zero、shot accounting、失败与取消终态测试；
-- success/failure/fallback 均产生 identity 完整的 record；
-- local simulation 与 remote fake 通过同一 result/evidence conformance；
-- distributed claim 缺任一规定字段或真实 evidence 时 fail closed。
-- basic/observable/certification 升级及 observed/declared/not_exposed/unknown/not_applicable
-  字段组合通过 schema 与负向 fixture；claim level 不得高于 evidence level。
+- Stable result behavior and serialization fixtures remain unchanged; core field
+  conflicts cannot be overwritten.
+- Asymmetric bit order, leading zeros, shot accounting, and failure/cancellation
+  terminal states.
+- Success, failure, and fallback all produce records with complete identities.
+- Local simulation and remote fakes pass the same result/evidence conformance suite.
+- Distributed claims fail closed if any required field or real evidence is missing.
+- Schema and negative fixtures cover basic/observable/certification transitions
+  and observed/declared/not_exposed/unknown/not_applicable combinations. Claim
+  level must not exceed evidence level.
 
-## 未决问题
+## Open Questions
 
-- Execution Record 的公开程度、存储期限与隐私删减规则；
-- HMAC/signature key 管理和 artifact URI 归属；
-- 大 tensor/sample payload 的引用格式、metrics namespace 注册及 failure cause 链上限。
+- Execution Record visibility, retention, and privacy redaction rules.
+- HMAC/signature key management and artifact URI ownership.
+- References for large tensor/sample payloads, metrics namespace registration,
+  and the maximum failure-cause chain length.

@@ -6,7 +6,7 @@ import hashlib
 import json
 import math
 import time
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, Literal, Mapping, Sequence
@@ -39,7 +39,7 @@ from .transport import warmup_mps_neighbor_communicators
 _parameter_layout = build_mps_parameter_layout
 
 
-def _nvtx_phase(name: str, device: torch.device):
+def _nvtx_phase(name: str, device: torch.device) -> AbstractContextManager[None]:
     return torch.cuda.nvtx.range(name) if device.type == "cuda" else nullcontext()
 
 
@@ -74,23 +74,31 @@ def _initial_state_contract(
         return result
 
     if initial_mps_tensors is None:
-        local_descriptors = {
-            wire: {
-                "shape": (
-                    int(ir.metadata.get("batch_size", 1)),
-                    1 if wire == 0 else initial_bond_dimension,
-                    2,
-                    1 if wire == ir.n_wires - 1 else initial_bond_dimension,
-                ),
-                "initializer": "flagquantum_rank_owned_mps_v1",
-            }
+        local_shapes: dict[int, tuple[int, ...]] = {
+            wire: (
+                int(ir.metadata.get("batch_size", 1)),
+                1 if wire == 0 else initial_bond_dimension,
+                2,
+                1 if wire == ir.n_wires - 1 else initial_bond_dimension,
+            )
             for wire in range(ir.n_wires)
             if wire in site_ownership[dist.get_rank()]
         }
+        local_descriptors = {
+            wire: {
+                "shape": shape,
+                "initializer": "flagquantum_rank_owned_mps_v1",
+            }
+            for wire, shape in local_shapes.items()
+        }
     else:
+        local_shapes = {
+            int(wire): tuple(int(value) for value in tensor.shape)
+            for wire, tensor in initial_mps_tensors.items()
+        }
         local_descriptors = {
             int(wire): {
-                "shape": tuple(int(value) for value in tensor.shape),
+                "shape": local_shapes[int(wire)],
                 "dtype": str(tensor.dtype),
                 "sha256": tensor_digest(tensor),
             }
@@ -103,10 +111,6 @@ def _initial_state_contract(
         for wire, descriptor in payload.items()
     }
     content = json.dumps(global_descriptors, sort_keys=True, separators=(",", ":"))
-    local_shapes = {
-        wire: tuple(descriptor["shape"])
-        for wire, descriptor in local_descriptors.items()
-    }
     return hashlib.sha256(content.encode()).hexdigest(), local_shapes
 
 
@@ -217,7 +221,9 @@ def _parameter_broadcast_buckets(
     grouped: dict[tuple[torch.dtype, torch.device], list[list[int]]] = {}
     for index, (parameter, owner) in enumerate(zip(parameters, owners)):
         key = (parameter.dtype, parameter.device)
-        grouped.setdefault(key, [[] for _ in range(world_size)])[owner].append(index)
+        if key not in grouped:
+            grouped[key] = [[] for _ in range(world_size)]
+        grouped[key][owner].append(index)
     buckets: list[_ParameterAllGatherBucket] = []
     for (dtype, device), indices_by_owner in grouped.items():
         element_size = torch.empty((), dtype=dtype).element_size()
@@ -262,11 +268,11 @@ def _parameter_broadcast_buckets(
                 offset += count
             unpack_targets = []
             unpack_sources = []
-            for owner, indices in enumerate(round_indices):
+            for owner, owner_round_indices in enumerate(round_indices):
                 if rank == owner:
                     continue
                 offset = 0
-                for index in indices:
+                for index in owner_round_indices:
                     parameter = parameters[index]
                     count = parameter.numel()
                     start = owner * stride + offset
@@ -314,6 +320,21 @@ def _distributed_dot(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
     value = torch.dot(left, right)
     dist.all_reduce(value, op=dist.ReduceOp.SUM)
     return value
+
+
+def _parameter_gradient_values(
+    parameters: Sequence[torch.Tensor], owned_indices: Sequence[int]
+) -> tuple[tuple[int, float], ...]:
+    """Snapshot owner gradients for diagnostics, rejecting missing values."""
+    values = []
+    for index in owned_indices:
+        gradient = parameters[index].grad
+        if gradient is None:
+            raise MPSTrainingError(
+                f"cannot record gradient for owned parameter {index}: gradient is missing"
+            )
+        values.append((index, float(gradient.detach().cpu())))
+    return tuple(values)
 
 
 def _owner_flatten(tensors: Sequence[torch.Tensor], *, gradients: bool) -> torch.Tensor:
@@ -442,10 +463,11 @@ def train_distributed_mps(
         raise ValueError("lr_decay must be finite and in (0, 1]")
     if optimizer not in {"sgd", "adam", "adam_lbfgs"}:
         raise ValueError("optimizer must be 'sgd', 'adam', or 'adam_lbfgs'")
-    if optimizer == "adam_lbfgs" and (
-        lbfgs_start_step is None or not 0 < lbfgs_start_step < steps
-    ):
-        raise ValueError("adam_lbfgs requires 0 < lbfgs_start_step < steps")
+    lbfgs_transition_step = steps
+    if optimizer == "adam_lbfgs":
+        if lbfgs_start_step is None or not 0 < lbfgs_start_step < steps:
+            raise ValueError("adam_lbfgs requires 0 < lbfgs_start_step < steps")
+        lbfgs_transition_step = int(lbfgs_start_step)
     if lbfgs_lr <= 0 or lbfgs_history_size <= 0:
         raise ValueError("lbfgs_lr and lbfgs_history_size must be positive")
     if optimizer == "adam_lbfgs" and (checkpoint_dir is not None or resume):
@@ -639,8 +661,7 @@ def train_distributed_mps(
     checkpoint_writer_lease_heartbeat_seconds = 0.0
     memories: list[int] = []
     lbfgs_history: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
-    previous_lbfgs_parameters: torch.Tensor | None = None
-    previous_lbfgs_gradient: torch.Tensor | None = None
+    previous_lbfgs_state: tuple[torch.Tensor, torch.Tensor] | None = None
     for step in range(start_step, steps):
         if root is not None:
             heartbeat_started = time.perf_counter()
@@ -727,7 +748,7 @@ def train_distributed_mps(
         optimizer_started = time.perf_counter()
         optimizer_stage = (
             "lbfgs"
-            if optimizer == "adam_lbfgs" and step >= int(lbfgs_start_step)
+            if optimizer == "adam_lbfgs" and step >= lbfgs_transition_step
             else ("adam" if optimizer == "adam_lbfgs" else optimizer)
         )
         step_learning_rate = (
@@ -748,7 +769,10 @@ def train_distributed_mps(
             if optimizer_stage == "lbfgs":
                 current_parameters = _owner_flatten(owned, gradients=False)
                 current_gradient = _owner_flatten(owned, gradients=True)
-                if previous_lbfgs_parameters is not None:
+                if previous_lbfgs_state is not None:
+                    previous_lbfgs_parameters, previous_lbfgs_gradient = (
+                        previous_lbfgs_state
+                    )
                     step_delta = current_parameters - previous_lbfgs_parameters
                     gradient_delta = current_gradient - previous_lbfgs_gradient
                     curvature = _distributed_dot(step_delta, gradient_delta)
@@ -762,8 +786,10 @@ def train_distributed_mps(
                 optimizer_collective_count += 2 * len(lbfgs_history) + (
                     2 if lbfgs_history else 0
                 )
-                previous_lbfgs_parameters = current_parameters.clone()
-                previous_lbfgs_gradient = current_gradient.clone()
+                previous_lbfgs_state = (
+                    current_parameters.clone(),
+                    current_gradient.clone(),
+                )
                 _owner_add_(owned, lbfgs_lr * direction)
             elif optimizer_obj is not None:
                 optimizer_obj.step()
@@ -877,8 +903,7 @@ def train_distributed_mps(
         )
         optimizer_memory += sum(
             value.numel() * value.element_size()
-            for value in (previous_lbfgs_parameters, previous_lbfgs_gradient)
-            if value is not None
+            for value in (previous_lbfgs_state or ())
         )
         loss = float(reverse.value.detach().cpu())
         losses.append(loss)
@@ -944,10 +969,7 @@ def train_distributed_mps(
                 optimizer_stage=optimizer_stage,
                 objective_evaluations=1,
                 parameter_gradients=(
-                    tuple(
-                        (index, float(parameters[index].grad.detach().cpu()))
-                        for index in owned_indices
-                    )
+                    _parameter_gradient_values(parameters, owned_indices)
                     if record_parameter_gradients
                     else ()
                 ),

@@ -40,13 +40,13 @@ def _validate_topology(
 ) -> tuple[Mapping[str, Any], ...]:
     world_size = run.get("world_size")
     ranks = run.get("ranks")
-    _require(
-        isinstance(world_size, int) and world_size >= 1, f"{mode}: invalid world size"
-    )
-    _require(
-        isinstance(ranks, list) and len(ranks) == world_size,
-        f"{mode}: incomplete ranks",
-    )
+    if not isinstance(world_size, int) or world_size < 1:
+        raise FlagOSCapacityProfileError(f"{mode}: invalid world size")
+    if not isinstance(ranks, list) or len(ranks) != world_size:
+        raise FlagOSCapacityProfileError(f"{mode}: incomplete ranks")
+    for item in ranks:
+        if not isinstance(item, Mapping):
+            raise FlagOSCapacityProfileError(f"{mode}: rank record must be an object")
     _require(
         {item.get("rank") for item in ranks} == set(range(world_size)),
         f"{mode}: missing or duplicate ranks",

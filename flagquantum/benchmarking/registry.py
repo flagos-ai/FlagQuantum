@@ -133,7 +133,19 @@ def describe(name: str) -> RunnerSpec:
 
 def resolve(name: str) -> RunnerMain:
     runner = describe(name)
-    return getattr(import_module(runner.module), runner.attribute)
+    entrypoint = getattr(import_module(runner.module), runner.attribute)
+    if not callable(entrypoint):
+        raise TypeError(f"benchmark runner {name!r} entrypoint must be callable")
+
+    def run() -> int:
+        exit_code = entrypoint()
+        if not isinstance(exit_code, int):
+            raise TypeError(
+                f"benchmark runner {name!r} must return an integer exit code"
+            )
+        return exit_code
+
+    return run
 
 
 __all__ = ["RunnerSpec", "describe", "names", "register", "resolve", "specs"]

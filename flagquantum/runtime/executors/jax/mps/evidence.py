@@ -64,7 +64,8 @@ def _collect_jax_mps_accelerator_backward_evidence(
                 left_boundary + right_boundary
             )
 
-        return jax.value_and_grad(loss)(local_parameter)
+        value, gradient = jax.value_and_grad(loss)(local_parameter)
+        return value, gradient
 
     mapped_backward = jax.pmap(
         backward_step,
@@ -138,9 +139,7 @@ def _collect_jax_mps_accelerator_backward_evidence(
         }
         for bond in bond_ownership
     )
-    communication_bytes = sum(
-        int(edge["communication_bytes"]) for edge in boundary_edges
-    )
+    communication_bytes = len(boundary_edges) * communication_bytes_per_edge
     gradient_ownership = tuple(
         {
             "rank": rank,
@@ -422,7 +421,7 @@ def _build_mps_backward_resource_evidence(
         memory_blockers.append("mps_backward_parameter_gradient_memory_incomplete")
         parameter_bytes = tuple(0 for _ in range(world_size))
     boundary_buffers = [0 for _ in range(world_size)]
-    records_by_edge = {}
+    records_by_edge: dict[str, list[dict[str, Any]]] = {}
     for value in boundary_exchange_records:
         record = dict(value)
         edge_id = str(record.get("boundary_edge_id", ""))
@@ -524,7 +523,7 @@ def _build_mps_backward_resource_evidence(
 
     truncation_bonds = {int(item.get("bond", -1)) for item in truncation_records}
     rank_memory = []
-    vectors = {
+    vectors: dict[str, list[int]] = {
         name: []
         for name in ("forward", "backward", "canonicalization", "truncation", "peak")
     }
@@ -568,8 +567,6 @@ def _build_mps_backward_resource_evidence(
             }
         )
 
-    memory_blockers = tuple(dict.fromkeys(memory_blockers))
-    communication_blockers = tuple(dict.fromkeys(communication_blockers))
     memory_plan = {
         "status": "blocked" if memory_blockers else "complete_estimate",
         "rank_memory": tuple(rank_memory),
@@ -582,7 +579,7 @@ def _build_mps_backward_resource_evidence(
         "local_memory_bytes_by_rank": tuple(vectors["peak"]),
         "communication_buffer_bytes": sum(boundary_buffers),
         "execution_scope": execution_scope,
-        "blockers": memory_blockers,
+        "blockers": tuple(dict.fromkeys(memory_blockers)),
     }
     communication_plan = {
         "status": (
@@ -607,7 +604,7 @@ def _build_mps_backward_resource_evidence(
         "local_world_size": int(local_world_size),
         "node_count": int(node_count),
         "execution_scope": execution_scope,
-        "blockers": communication_blockers,
+        "blockers": tuple(dict.fromkeys(communication_blockers)),
     }
     blockers = tuple(dict.fromkeys((*memory_blockers, *communication_blockers)))
     return {

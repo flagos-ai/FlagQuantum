@@ -193,7 +193,8 @@ def _validate_rank_record(
     _require(record.get("device") == f"flagos:{rank}", "rank device mismatch")
     _require(record.get("device_type") == "flagos", "rank is not on FlagOS")
     observations = record.get("observations")
-    _require(isinstance(observations, list), "rank observations are missing")
+    if not isinstance(observations, list):
+        raise FlagOSTransportEvidenceError("rank observations are missing")
     required = {
         (primitive, dtype)
         for dtype in TRANSPORT_DTYPES
@@ -319,10 +320,8 @@ class FlagOSTransportObservabilityProfile:
                     "release claim overreach",
                 )
                 ranks = run.get("ranks")
-                _require(
-                    isinstance(ranks, list) and len(ranks) == world_size,
-                    "rank ladder incomplete",
-                )
+                if not isinstance(ranks, list) or len(ranks) != world_size:
+                    raise FlagOSTransportEvidenceError("rank ladder incomplete")
                 for rank, record in enumerate(ranks):
                     _validate_rank_record(record, world_size=world_size, rank=rank)
                 derived_transfers = [

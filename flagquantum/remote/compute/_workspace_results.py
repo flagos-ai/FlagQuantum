@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import base64
+from typing import TYPE_CHECKING, Any, Mapping
+
+if TYPE_CHECKING:
+    import torch
+
+    from ...runtime.result import ExecutionResult
 
 
-def decode_tensor(payload: dict):
+def decode_tensor(payload: dict[str, Any]) -> torch.Tensor:
     import torch
 
     dtype_name = payload.get("dtype")
@@ -16,7 +22,7 @@ def decode_tensor(payload: dict):
         "complex128": torch.complex128,
         "int64": torch.int64,
     }
-    if dtype_name not in dtypes:
+    if not isinstance(dtype_name, str) or dtype_name not in dtypes:
         raise RuntimeError("Jiuding workspace returned an unsupported result dtype")
     raw = base64.b64decode(payload["data"], validate=True)
     storage_dtype = {
@@ -29,7 +35,7 @@ def decode_tensor(payload: dict):
     return value.reshape(tuple(int(item) for item in payload["shape"])).clone()
 
 
-def _decode_value(value):
+def _decode_value(value: object) -> torch.Tensor | list[dict[str | int, int]]:
     if isinstance(value, dict) and {"dtype", "shape", "data"} <= value.keys():
         return decode_tensor(value)
     if not isinstance(value, dict) or set(value) != {"counts"}:
@@ -37,11 +43,11 @@ def _decode_value(value):
     rows = value["counts"]
     if not isinstance(rows, list):
         raise RuntimeError("Jiuding workspace returned invalid counts")
-    decoded = []
+    decoded: list[dict[str | int, int]] = []
     for row in rows:
         if not isinstance(row, list):
             raise RuntimeError("Jiuding workspace returned invalid counts")
-        counts = {}
+        counts: dict[str | int, int] = {}
         for entry in row:
             if not isinstance(entry, dict) or set(entry) != {"outcome", "count"}:
                 raise RuntimeError("Jiuding workspace returned invalid counts")
@@ -63,14 +69,14 @@ def _decode_value(value):
 
 
 def measurement_result(
-    response,
+    response: Mapping[str, Any],
     *,
     requested_target: str,
     effective_target: str,
     batch_index: int | None = None,
     batch_size: int | None = None,
     batch_elapsed_seconds: float | None = None,
-):
+) -> ExecutionResult:
     """Build one standard result from a validated workspace response."""
 
     import torch

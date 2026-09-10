@@ -127,3 +127,14 @@ def test_capacity_profile_rejects_duplicate_modes():
     runs[2]["mode"] = "replicated"
     with pytest.raises(FlagOSCapacityProfileError, match="modes are incomplete"):
         build_flagos_statevector_capacity_profile(runs)
+
+
+@pytest.mark.parametrize("invalid_rank", [None, 0, "rank-0", []])
+def test_capacity_profile_rejects_nonmapping_rank(invalid_rank: object) -> None:
+    runs = _runs()
+    runs[0]["ranks"] = [invalid_rank]
+
+    with pytest.raises(
+        FlagOSCapacityProfileError, match="rank record must be an object"
+    ):
+        build_flagos_statevector_capacity_profile(runs).require_accepted()

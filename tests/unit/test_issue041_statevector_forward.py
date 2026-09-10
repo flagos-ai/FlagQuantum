@@ -63,6 +63,8 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
 
     monkeypatch.delenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", raising=False)
     assert _triton_local_cx_segment_enabled(scheduled)
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
+    assert _triton_local_cx_segment_enabled(scheduled)
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "0")
     assert not _triton_local_cx_segment_enabled(scheduled)
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -236,8 +238,11 @@ def _run_lowered_noisy_statevector(
         raise ValueError("trajectory_batch_size must be positive")
     if min_trajectories <= 0 or min_trajectories > trajectories:
         raise ValueError("min_trajectories must be in [1, trajectories]")
-    if target_standard_error is not None and target_standard_error <= 0:
-        raise ValueError("target_standard_error must be positive")
+    if target_standard_error is not None:
+        if not math.isfinite(target_standard_error):
+            raise ValueError("target_standard_error must be finite and positive")
+        if target_standard_error <= 0:
+            raise ValueError("target_standard_error must be positive")
     if checkpoint_interval <= 0:
         raise ValueError("checkpoint_interval must be positive")
     if max_batches_per_run is not None and max_batches_per_run <= 0:
@@ -324,8 +329,8 @@ def _run_lowered_noisy_statevector(
         "trajectory_batch_size": trajectory_batch_size,
     }
     completed_ids: list[int] = []
-    if resume:
-        checkpoint = load_trajectory_checkpoint(checkpoint_path)
+    if resume and checkpoint_path is not None:
+        checkpoint = load_trajectory_checkpoint(Path(checkpoint_path))
         if checkpoint.requested_count != trajectories:
             raise ValueError("checkpoint trajectory count does not match")
         if checkpoint.base_seed != seed:
@@ -336,7 +341,8 @@ def _run_lowered_noisy_statevector(
             raise ValueError("checkpoint circuit digest does not match")
         if checkpoint.execution_metadata != execution_metadata:
             raise ValueError("checkpoint execution metadata does not match")
-        if any(item not in set(owned_ids) for item in checkpoint.completed_ids):
+        owned_id_set = set(owned_ids)
+        if any(item not in owned_id_set for item in checkpoint.completed_ids):
             raise ValueError("checkpoint contains trajectory owned by another rank")
         restored_state = checkpoint.accumulator().state_dict()
         if restored_state["count"]:
@@ -386,7 +392,7 @@ def _run_lowered_noisy_statevector(
                 circuit_digest=ir.content_hash,
                 execution_metadata=execution_metadata,
             ),
-            checkpoint_path,
+            Path(checkpoint_path),
         )
 
     for start in range(0, len(trajectory_ids), trajectory_batch_size):

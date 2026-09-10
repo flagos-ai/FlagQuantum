@@ -185,7 +185,7 @@ class DistributedTNMeshGroupCache:
             raise RuntimeError("partial mesh group cache is closed")
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
         self.close()
 
 
@@ -274,16 +274,14 @@ def plan_partial_mesh_tn_redistribution(
         rank: _partial_mesh_global_slices(source, rank)
         for rank in range(source.world_size)
     }
-    canonical = {}
+    canonical: dict[tuple[tuple[int, int], ...], int] = {}
     for rank, slices in source_slices.items():
         canonical.setdefault(slices, rank)
     element_size = source.logical_nbytes // prod(source.logical_shape)
     blocks = []
     for destination_rank in range(destination.world_size):
         destination_slices = _partial_mesh_global_slices(destination, destination_rank)
-        for source_slice, source_rank in sorted(
-            canonical.items(), key=lambda item: item[1]
-        ):
+        for source_slice, source_rank in canonical.items():
             intersection = tuple(
                 (max(a, c), min(b, d))
                 for (a, b), (c, d) in zip(source_slice, destination_slices)
@@ -306,6 +304,10 @@ def plan_partial_mesh_tn_redistribution(
         raise RuntimeError(
             "partial mesh redistribution does not cover destination replicas"
         )
+    network_bytes = sum(
+        block.nbytes for block in blocks if block.source_rank != block.destination_rank
+    )
+    self_bytes = delivered - network_bytes
     payload = {
         "version": TN_PARTIAL_MESH_VERSION,
         "value_id": source.value_id,
@@ -314,16 +316,8 @@ def plan_partial_mesh_tn_redistribution(
         "blocks": tuple(asdict(block) for block in blocks),
         "canonical_source_rank_count": len(canonical),
         "delivered_bytes": delivered,
-        "network_bytes": sum(
-            block.nbytes
-            for block in blocks
-            if block.source_rank != block.destination_rank
-        ),
-        "self_bytes": sum(
-            block.nbytes
-            for block in blocks
-            if block.source_rank == block.destination_rank
-        ),
+        "network_bytes": network_bytes,
+        "self_bytes": self_bytes,
     }
     return DistributedTNPartialMeshRedistributionPlan(
         version=TN_PARTIAL_MESH_VERSION,
@@ -336,8 +330,8 @@ def plan_partial_mesh_tn_redistribution(
         blocks=tuple(blocks),
         canonical_source_rank_count=len(canonical),
         delivered_bytes=delivered,
-        network_bytes=payload["network_bytes"],
-        self_bytes=payload["self_bytes"],
+        network_bytes=network_bytes,
+        self_bytes=self_bytes,
     )
 
 

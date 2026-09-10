@@ -1,53 +1,62 @@
-# IR-004：自定义 Matrix Operation 的 Phase 1 边界
+# IR-004: Phase 1 Custom Matrix Operations
 
-状态：Approved
-日期：2026-09-01
-适用阶段：Phase 1 CircuitIR importer、verifier 与受限 round-trip
+Status: Approved
+Date: 2026-09-01
+Applicable phase: Phase 1 CircuitIR importer, verifier, and restricted round-trip.
 
-批准记录：API owner 于 2026-09-01 通过明确指令批准 IR-004～006。批准范围仅限内部
-importer 对 concrete custom unitary 的验证与 round-trip 边界；不改变公共 CircuitIR
-构造行为，也不授权公开新的 custom-unitary API。
+Approval record: the API owner explicitly approved IR-004 through IR-006 on
+2026-09-01. Approval covers internal importer validation and round-trip boundaries
+for concrete custom unitaries only. It neither changes public CircuitIR
+construction behavior nor authorizes a new public custom-unitary API.
 
-## 背景
+## Background
 
-公共 `CircuitIR` 当前允许未注册 opcode 携带显式 `matrix`。Phase 1 不能删除这一既有
-输入能力，也不能因为 `Instruction` 当前只检查 matrix 是否存在，就把任意 shape、dtype
-或不可确定对象声明为合法 QuantumIR operation。
+Public `CircuitIR` currently allows an unregistered opcode with an explicit
+`matrix`. Phase 1 cannot remove that input capability. Nor can it declare arbitrary
+shapes, dtypes, or nondeterministic objects valid QuantumIR operations merely
+because `Instruction` currently checks only whether a matrix exists.
 
-## 决策
+## Decision
 
-Phase 1 使用内部 `quantum.custom_unitary` operation 表示可验证的具体矩阵：
+Phase 1 represents verifiable concrete matrices with internal
+`quantum.custom_unitary` operations:
 
-- wire arity 为 `k` 时，matrix 必须是 `2**k × 2**k`；
-- matrix 必须是数值、有限、二维方阵；
-- dtype 必须能无歧义映射到当前 complex64/complex128 数值合同；
-- importer 验证 unitary 性质，容差按 dtype 合同确定；
-- 原始 opcode 名作为 typed symbolic name 保留，不作为 provider-native gate；
-- wire ordering、matrix element ordering 和 dtype 精确保留；
-- concrete custom unitary 可进入 Phase 1 round-trip；
-- symbolic、callable、稀疏未知格式或动态生成 matrix 返回结构化 unsupported diagnostic；
-- importer 的更严格验证不改变公共 `CircuitIR` 构造行为。
+- For wire arity `k`, matrix shape must be `2**k × 2**k`.
+- Matrices must be numerical, finite, two-dimensional, and square.
+- Dtypes must map unambiguously to the existing complex64/complex128 contract.
+- The importer verifies unitarity using dtype-specific contract tolerances.
+- Preserve the original opcode as a typed symbolic name, not a provider-native gate.
+- Preserve wire order, matrix element order, and dtype exactly.
+- Concrete custom unitaries may participate in Phase 1 round-trip.
+- Symbolic, callable, unknown sparse-format, and dynamically generated matrices
+  produce structured unsupported diagnostics.
+- Stricter importer validation does not change public `CircuitIR` construction.
 
-含 `requires_grad=True` 的 matrix 不进入 Phase 1 静态 custom-unitary 范围；未来如需可训练
-matrix，必须独立定义 parameterization、gradient 和 identity 合同。
+Matrices with `requires_grad=True` are outside Phase 1's static custom-unitary
+scope. Trainable matrices require separate parameterization, gradient, and
+identity contracts in the future.
 
-## 否决方案
+## Rejected Alternatives
 
-- **原样接受任意 matrix**：无法保证 shape、unitarity、确定性和目标合法化；
-- **Phase 1 全部拒绝 custom matrix**：会缩小当前可表达静态 CircuitIR 的重要子集；
-- **自动分解为基础门**：改变 round-trip，并把 target-dependent 优化提前引入 Phase 1。
+- **Accept arbitrary matrices unchanged**: cannot ensure shape, unitarity,
+  determinism, or target legalization.
+- **Reject all custom matrices**: removes an important subset of expressible
+  static CircuitIR.
+- **Automatically decompose into basic gates**: changes round-trip behavior and
+  introduces target-dependent optimization prematurely.
 
-## 兼容与回滚
+## Compatibility and Rollback
 
-验证只发生在内部 importer。legacy compiler/runtime 继续遵守当前行为；删除 importer 即可
-回滚，不改变公共 schema 或用户数据。
+Validation occurs only in the internal importer. Legacy compiler/runtime behavior
+remains unchanged. Removing the importer rolls back the change without affecting
+public schemas or user data.
 
-## 验收
+## Acceptance
 
-- 1、2 qubit concrete unitary 精确 round-trip；
-- 非方阵、错误维度、非有限和非 unitary matrix fail closed；
-- wire/matrix ordering differential 通过；
-- trainable/symbolic matrix 返回明确 blocker；
-- public CircuitIR tests 保持不变；
-- [x] API owner 批准架构决策；
-- [ ] compiler owner 在实现评审中确认 matrix verifier 与 dtype 容差。
+- Exact round-trip for concrete one- and two-qubit unitaries.
+- Nonsquare, incorrectly dimensioned, nonfinite, and nonunitary matrices fail closed.
+- Wire/matrix ordering differential tests pass.
+- Trainable/symbolic matrices return explicit blockers.
+- Public CircuitIR tests remain unchanged.
+- [x] API owner approved the architecture decision.
+- [ ] Compiler owner confirms matrix verification and dtype tolerances during review.

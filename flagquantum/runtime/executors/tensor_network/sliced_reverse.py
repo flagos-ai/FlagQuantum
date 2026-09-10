@@ -30,7 +30,10 @@ from .compiled_execution import (
     execute_compiled_tn_forward_with_tape,
     execute_compiled_tn_reverse_dag,
 )
-from .distributed_dag import plan_distributed_tn_contraction_dag
+from .distributed_dag import (
+    DistributedTNContractionDAG,
+    plan_distributed_tn_contraction_dag,
+)
 from .joint_planning import (
     _predict_rematerialization_peak,
     _predict_reverse_cotangent_peak,
@@ -91,7 +94,7 @@ class SlicedTNCheckpointMemoryPlan:
     predicted_working_set_bytes: int
 
     def summary(self, *, include_value_ids: bool = True) -> dict[str, object]:
-        summary = {
+        summary: dict[str, object] = {
             "checkpoint_budget_bytes": self.checkpoint_budget_bytes,
             "checkpoint_count": len(self.checkpoint_value_ids),
             "saved_checkpoint_bytes": self.saved_checkpoint_bytes,
@@ -112,7 +115,7 @@ def _sliced_tn_dag(
     plan: TensorNetworkContractionPlan | TensorNetworkExpectationPlan,
     slicing: TensorNetworkSlicingPlan,
     assignments: Sequence[tuple[int, int]] | None,
-):
+) -> DistributedTNContractionDAG:
     if not slicing.budget_satisfied:
         raise ValueError("cannot plan tape for an unsatisfied slicing plan")
     source_nodes = plan.nodes
@@ -213,7 +216,7 @@ def plan_sliced_tn_checkpoint_memory(
 
 
 def _predict_checkpoint_forward_peak(
-    dag,
+    dag: DistributedTNContractionDAG,
     local_bytes: dict[str, int],
     checkpoint_value_ids: tuple[str, ...],
 ) -> int:
@@ -314,7 +317,9 @@ def execute_sliced_tn_explicit_reverse(
     )
     batch_label = max(dims, default=-1) + 1
 
-    def sliced_batch(records):
+    def sliced_batch(
+        records: Sequence[Sequence[tuple[int, int]]],
+    ) -> tuple[TensorNetworkNode, ...]:
         members = tuple(_slice_nodes(source_nodes, dict(record)) for record in records)
         if len(members) == 1:
             return members[0]

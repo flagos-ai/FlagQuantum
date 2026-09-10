@@ -19,8 +19,10 @@ import subprocess
 import sys
 import time
 import uuid
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Iterator, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -29,6 +31,11 @@ from ._jiuding_credentials import load_jiuding_credentials
 from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
 from ._workspace_results import decode_tensor, measurement_result
+
+if TYPE_CHECKING:
+    from ...core.ir import CircuitIR, MeasurementNode
+    from ...observables import OutputRequest
+    from ...runtime.result import ExecutionResult
 
 _DEFAULT_CLIENTS: dict[str, "JiudingClient"] = {}
 _MAX_BATCH_ITEMS = 256
@@ -43,7 +50,12 @@ _SUPPORTED_RESIDENT_MEASUREMENTS = {
 }
 
 
-def _measurement_program(program, *, outputs, shots):
+def _measurement_program(
+    program: Any,
+    *,
+    outputs: OutputRequest | Sequence[OutputRequest],
+    shots: int | None,
+) -> CircuitIR:
     from dataclasses import replace
 
     from ...core.ir import ensure_circuit_ir
@@ -60,7 +72,7 @@ def _measurement_program(program, *, outputs, shots):
 
 
 class _NoRedirect(HTTPRedirectHandler):
-    def redirect_request(self, *args, **kwargs):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
         return None
 
 
@@ -93,15 +105,20 @@ class JiudingClient(_ProgramSubmissionMixin):
         self.workspace_name = workspace
         self._token = ""
         self._expires = 0.0
-        self._workspace: dict | None = None
+        self._workspace: dict[str, Any] | None = None
         self._workspace_ssh_login: str | None = None
         self._ssh_command: tuple[str, ...] | None = None
-        self._executor_channels: dict[int, subprocess.Popen] = {}
-        self._executor_health: dict[int, dict] = {}
+        self._executor_channels: dict[int, subprocess.Popen[bytes]] = {}
+        self._executor_health: dict[int, dict[str, Any]] = {}
 
     def _request(
-        self, path: str, body: dict | None, headers: dict, *, method: str = "POST"
-    ) -> dict:
+        self,
+        path: str,
+        body: dict[str, Any] | None,
+        headers: dict[str, str],
+        *,
+        method: str = "POST",
+    ) -> dict[str, Any]:
         if method not in {"GET", "POST", "PUT"}:
             raise ValueError("Jiuding request method must be GET, POST or PUT")
         request = Request(
@@ -133,7 +150,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             raise RuntimeError(f"Jiuding {path}: expected JSON object")
         return result
 
-    def _auth(self) -> dict:
+    def _auth(self) -> dict[str, str]:
         if time.monotonic() >= self._expires:
             ak, sk = load_jiuding_credentials()
             path = "/api/v1/users/token/exchange"
@@ -162,7 +179,13 @@ class JiudingClient(_ProgramSubmissionMixin):
             self._expires = time.monotonic() + max(1, lifetime - min(60, lifetime / 2))
         return {"AIRS-Token": self._token}
 
-    def _pages(self, path: str, body: dict, field: str, headers: dict):
+    def _pages(
+        self,
+        path: str,
+        body: dict[str, Any],
+        field: str,
+        headers: dict[str, str],
+    ) -> Iterator[dict[str, Any]]:
         for page in range(1, 101):
             result = self._request(
                 path, {**body, "paging": {"page": page, "pageSize": 100}}, headers
@@ -170,14 +193,17 @@ class JiudingClient(_ProgramSubmissionMixin):
             rows = result.get(field)
             if not isinstance(rows, list):
                 raise RuntimeError(f"Jiuding response missing {field}")
-            yield from rows
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise RuntimeError(f"Jiuding response {field} must contain objects")
+                yield row
             if len(rows) < 100:
                 return
         raise RuntimeError(
             "Jiuding pagination limit reached; refusing incomplete discovery"
         )
 
-    def workspace(self) -> dict:
+    def workspace(self) -> dict[str, Any]:
         """Return non-secret context for one unambiguous visible workspace."""
         if self._workspace is None:
             matches = [
@@ -222,9 +248,9 @@ class JiudingClient(_ProgramSubmissionMixin):
             )
             login = w.get("SSHLogin")
             self._workspace_ssh_login = login if isinstance(login, str) else None
-        return json.loads(json.dumps(self._workspace))
+        return deepcopy(self._workspace)
 
-    def _headers(self) -> dict:
+    def _headers(self) -> dict[str, str]:
         w = self.workspace()
         return {
             **self._auth(),
@@ -267,7 +293,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             )
         return chip_type, available_model
 
-    def _workspace_record(self, reference: str) -> dict:
+    def _workspace_record(self, reference: str) -> dict[str, Any]:
         context = self.workspace()
         matches = [
             item
@@ -327,7 +353,9 @@ class JiudingClient(_ProgramSubmissionMixin):
         self._ssh_command = command
         return list(command)
 
-    def _executor_request(self, payload: dict, *, port: int, timeout: float) -> dict:
+    def _executor_request(
+        self, payload: dict[str, Any], *, port: int, timeout: float
+    ) -> dict[str, Any]:
         from ._workspace_executor import MAX_MESSAGE_BYTES
 
         if not 1024 <= port <= 65535:
@@ -349,11 +377,12 @@ class JiudingClient(_ProgramSubmissionMixin):
                 bufsize=0,
             )
             self._executor_channels[port] = process
-        assert process.stdin is not None and process.stdout is not None
+        input_stream, output_stream = process.stdin, process.stdout
+        assert input_stream is not None and output_stream is not None
         deadline = time.monotonic() + timeout
         try:
-            process.stdin.write(frame)
-            process.stdin.flush()
+            input_stream.write(frame)
+            input_stream.flush()
 
             def read_exact(size: int) -> bytes:
                 chunks = bytearray()
@@ -361,10 +390,10 @@ class JiudingClient(_ProgramSubmissionMixin):
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         raise TimeoutError
-                    ready, _, _ = select.select([process.stdout], [], [], remaining)
+                    ready, _, _ = select.select([output_stream], [], [], remaining)
                     if not ready:
                         raise TimeoutError
-                    chunk = os.read(process.stdout.fileno(), size - len(chunks))
+                    chunk = os.read(output_stream.fileno(), size - len(chunks))
                     if not chunk:
                         raise EOFError
                     chunks.extend(chunk)
@@ -419,10 +448,10 @@ class JiudingClient(_ProgramSubmissionMixin):
         for port in tuple(self._executor_channels):
             self._close_executor_channel(port)
 
-    def __enter__(self):
+    def __enter__(self) -> JiudingClient:
         return self
 
-    def __exit__(self, *_):
+    def __exit__(self, *_: object) -> None:
         self.close()
 
     def start_executor(
@@ -432,7 +461,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         port: int = 57621,
         timeout: float = 30,
         python: str = "/opt/conda/bin/python",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Ensure one loopback-only resident executor is ready in the workspace."""
 
         chip_type, model = self._resolve_compute_target(target)
@@ -515,12 +544,12 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def run_statevector(
         self,
-        program,
+        program: Any,
         *,
         target: str,
         port: int = 57621,
         timeout: float = 30,
-    ):
+    ) -> ExecutionResult:
         """Run a circuit on the warm workspace and return a normal ExecutionResult."""
 
         response, effective_target = self._execute(
@@ -550,14 +579,14 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def run(
         self,
-        program,
+        program: Any,
         *,
         target: str,
-        outputs=None,
+        outputs: OutputRequest | Sequence[OutputRequest] | None = None,
         shots: int | None = None,
         port: int = 57621,
         timeout: float = 30,
-    ):
+    ) -> ExecutionResult:
         """Run statevector or requested measurements in a resident workspace."""
 
         if outputs is None:
@@ -587,14 +616,14 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def run_batch(
         self,
-        programs,
+        programs: list[Any] | tuple[Any, ...],
         *,
         target: str,
-        outputs,
+        outputs: OutputRequest | Sequence[OutputRequest],
         shots: int | None = None,
         port: int = 57621,
         timeout: float = 30,
-    ):
+    ) -> tuple[ExecutionResult, ...]:
         """Execute a bounded measurement batch in one workspace request."""
 
         if not isinstance(programs, (list, tuple)):
@@ -644,22 +673,19 @@ class JiudingClient(_ProgramSubmissionMixin):
 
     def _execute(
         self,
-        program,
+        program: Any,
         *,
         target: str,
-        measurements=(),
+        measurements: Sequence[MeasurementNode] = (),
         port: int,
         timeout: float,
-    ) -> tuple[dict, str]:
+    ) -> tuple[dict[str, Any], str]:
         from dataclasses import replace
 
         from ...core.ir import ensure_circuit_ir
 
         ir = ensure_circuit_ir(program)
-        if measurements:
-            ir = replace(ir, measurements=tuple(measurements))
-        else:
-            ir = replace(ir, measurements=())
+        ir = replace(ir, measurements=tuple(measurements) if measurements else ())
         self.start_executor(target=target, port=port, timeout=timeout)
         chip_type, model = self._resolve_compute_target(target)
         effective_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
@@ -677,7 +703,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         )
         return response, effective_target
 
-    def workspace_state(self, reference: str) -> dict:
+    def workspace_state(self, reference: str) -> dict[str, Any]:
         """Return the current non-secret state of one project workspace."""
         item = self._workspace_record(reference)
         fields = (
@@ -706,7 +732,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         cpus: int = 4,
         memory_gib: int = 16,
         description: str = "",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Create and start one workspace in the current project and queue.
 
         This explicit infrastructure operation is separate from ``run()``.
@@ -781,7 +807,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             },
         }
 
-    def start_workspace(self, reference: str) -> dict:
+    def start_workspace(self, reference: str) -> dict[str, Any]:
         """Request startup of one stopped workspace in the current project."""
         item = self._workspace_record(reference)
         return self._request(
@@ -795,7 +821,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             method="PUT",
         )
 
-    def stop_workspace(self, reference: str) -> dict:
+    def stop_workspace(self, reference: str) -> dict[str, Any]:
         """Stop one workspace without creating a container snapshot."""
         item = self._workspace_record(reference)
         return self._request(
@@ -805,7 +831,7 @@ class JiudingClient(_ProgramSubmissionMixin):
             method="PUT",
         )
 
-    def _jobs(self):
+    def _jobs(self) -> Iterator[dict[str, Any]]:
         w = self.workspace()
         return self._pages(
             "/api/v1/job/select",
@@ -825,7 +851,9 @@ class JiudingClient(_ProgramSubmissionMixin):
             }
         )
 
-    def _catalog_image(self, image: str, image_region: str = "PUBLIC") -> dict:
+    def _catalog_image(
+        self, image: str, image_region: str = "PUBLIC"
+    ) -> dict[str, Any]:
         """Resolve one exact image through Jiuding's image catalog."""
         if image_region not in ("PUBLIC", "PRIVATE"):
             raise ValueError("image_region must be PUBLIC or PRIVATE")
@@ -876,7 +904,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         pythonpath: str | Path | None = None,
         cpus: int = 2,
         memory_gib: int = 2,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Run a shared Python file's main() and persist its JSON return value.
 
         ``target`` explicitly selects CPU or one GPU. Receipt path must be new
@@ -1131,7 +1159,7 @@ class JiudingClient(_ProgramSubmissionMixin):
         save_receipt(receipt, record)
         return record
 
-    def status(self, receipt: dict) -> list[dict]:
+    def status(self, receipt: dict[str, Any]) -> list[dict[str, Any]]:
         """Query this experiment only; an empty list is not success."""
         w = self.workspace()
         if (
@@ -1156,7 +1184,13 @@ class JiudingClient(_ProgramSubmissionMixin):
             and j.get("queueId") == w["queueId"]
         ]
 
-    def result(self, receipt: dict, *, timeout: float = 120, poll_interval: float = 3):
+    def result(
+        self,
+        receipt: dict[str, Any],
+        *,
+        timeout: float = 120,
+        poll_interval: float = 3,
+    ) -> object:
         """Wait for platform success and return the matching shared JSON result.
 
         Timeout leaves the job running; use cancel() explicitly if appropriate.
@@ -1189,7 +1223,7 @@ class JiudingClient(_ProgramSubmissionMixin):
                 )
             time.sleep(min(poll_interval, remaining))
 
-    def cancel(self, receipt: dict) -> None:
+    def cancel(self, receipt: dict[str, Any]) -> None:
         """Stop active jobs for this receipt; never archive/delete experiments."""
         for job in self.status(receipt):
             if job["status"] in ("Pending", "Scheduling", "Starting", "Running"):
@@ -1198,7 +1232,13 @@ class JiudingClient(_ProgramSubmissionMixin):
                 )
 
 
-def run(program, *, target: str, outputs=None, shots: int | None = None):
+def run(
+    program: Any,
+    *,
+    target: str,
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
+    shots: int | None = None,
+) -> ExecutionResult:
     """Execute through the process-local resident Jiuding workspace client."""
 
     workspace = os.environ.get("JIUDING_WORKSPACE", "").strip()

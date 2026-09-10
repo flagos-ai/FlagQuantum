@@ -78,8 +78,6 @@ def _triton_local_cx_enabled() -> bool:
 def _triton_local_cx_segment_enabled(ir: CircuitIR | None = None) -> bool:
     raw = os.getenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
     if not raw:
-        raw = None
-    if raw is None:
         requested = bool(
             ir is not None
             and ir.metadata.get("statevector_dependency_schedule_changed", False)
@@ -240,9 +238,10 @@ def communication_aware_wire_layout(
                 cost += 1 << (ir.n_wires + rank_bits + 4)
             return cost, candidate
 
-        sharded_logical = set(
-            min(combinations(range(ir.n_wires), rank_bits), key=candidate_cost)
+        selected_sharded_wires = min(
+            combinations(range(ir.n_wires), rank_bits), key=candidate_cost
         )
+        sharded_logical = set(selected_sharded_wires)
         wire_activity = [0] * ir.n_wires
         for instruction in ir.instructions:
             width_weight = 2 ** max(0, len(instruction.wires) - 1)
@@ -1019,7 +1018,7 @@ def _vectorized_subgroup_exchange_gate(
             )
             for slot, peer in enumerate(peers)
         }
-        operations = []
+        operations: list[dist.P2POp] = []
         for peer in peers:
             global_peer = (
                 dist.get_global_rank(process_group, peer)

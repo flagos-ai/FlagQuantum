@@ -1,40 +1,43 @@
-# FlagQuantum IR Phase 2 Batch A 性能阻塞记录
+# FlagQuantum IR Phase 2 Batch A Performance Blocker
 
-状态：**Blocked — 不允许 Batch A 退出或进入 Batch B**
-日期：2026-09-02
-Blocker：`IR2A-PERF-001`
+Status: **Blocked — Batch A exit and Batch B entry are not allowed**
+Date: 2026-09-02
+Blocker: `IR2A-PERF-001`
 
-## 1. 结论
+## 1. Conclusion
 
-Batch A 的授权、四类 canonicalization、线性 value 重连、结构差分、state/expectation
-差分和 trainable tensor 双参数梯度差分已经通过，但批准的 Phase 2 总管线预算不可达。
+Batch A authorization, four canonicalization categories, linear value reconnection,
+structural/state/expectation differentials, and two-parameter trainable-tensor
+gradient differentials pass. However, the approved Phase 2 full-pipeline budget
+cannot be met.
 
-预算没有修改，Batch A 不得宣布完成。
+The budget remains unchanged. Batch A must not be declared complete.
 
-## 2. 机器事实
+## 2. Machine Facts
 
-Docker CPU 环境中的 1K gate 最小有效采样：
+Minimum valid 1K-gate sampling in the Docker CPU environment:
 
-| 指标 | 实测 | 已批准上限 | 结果 |
+| Metric | Measured | Approved limit | Result |
 | --- | ---: | ---: | --- |
-| 完整管线 p95 | 67.629 ms | 15.0 ms | 失败 |
-| Peak host memory | 2,726,417 bytes | 2,097,152 bytes | 失败 |
-| identity determinism | true | true | 通过 |
+| Full-pipeline p95 | 67.629 ms | 15.0 ms | Fail |
+| Peak host memory | 2,726,417 bytes | 2,097,152 bytes | Fail |
+| identity determinism | true | true | Pass |
 
-分段冷启动诊断：
+Cold-start stage diagnostics:
 
-| 阶段 | 1K gate 单次耗时 |
+| Stage | Single 1K-gate duration |
 | --- | ---: |
 | seal/import/verify | 17.971 ms |
 | Batch A pass pipeline | 52.180 ms |
 | optimized lowering/verify | 16.778 ms |
 
-完整 gate 连续两次没有产生可接受的完整 10K evidence，因此未继续重复同一命令。1K gate
-已经同时超过时间和内存上限，足以触发 fail-closed blocker。
+Two consecutive full-gate runs failed to produce acceptable complete 10K evidence,
+so the same command was not repeated further. The 1K case already exceeds both
+time and memory limits, which is sufficient to trigger a fail-closed blocker.
 
-## 3. 根因
+## 3. Root Cause
 
-预算推导使用约 `2 × legacy_plan p95`，但比较范围定义为：
+Budget derivation used approximately `2 × legacy_plan p95`, but the comparison covers:
 
 ```text
 CircuitIR import + verify
@@ -43,54 +46,58 @@ CircuitIR import + verify
   + lowered-result verification
 ```
 
-1K gate 的 Phase 1 import/verify 批准上限本身就是 12.5ms，因此 Phase 2 的 15ms 总预算只给
-新增 pass、lowering 和再次验证留下 2.5ms。这不是通过微调实现可以可靠满足的边界。
+The approved Phase 1 1K import/verify limit is already 12.5 ms. A 15 ms Phase 2
+total therefore leaves only 2.5 ms for passes, lowering, and repeated verification.
+Minor implementation tuning cannot reliably meet that boundary.
 
-首轮实现还发现并修复了 cancellation/rotation 对输出列表的二次扫描，将 last-touch 查询改为
-按 wire 维护历史栈；优化后 1K gate 仍为 67.629ms，证明剩余问题主要是预算口径和多次
-identity/verification/serialization 成本，而不是继续删除一个局部循环即可闭合。
+The first implementation also revealed and fixed quadratic scans of the output
+list during cancellation/rotation handling, replacing last-touch queries with
+per-wire history stacks. The optimized 1K result remains 67.629 ms. The remaining
+problem primarily concerns budget scope and repeated identity/verification/
+serialization costs, rather than one more local loop.
 
-## 4. 已通过的非性能证据
+## 4. Passing Nonperformance Evidence
 
-- 精确授权记录绑定原 review candidate；
-- identity、零旋转、自逆门、相邻旋转与 disjoint-wire 行为匹配 legacy；
-- 每个独立 pass 幂等；
-- trainable rotation merge 保持 forward 和两个原参数梯度；
-- complex64/complex128 state 与 expectation parity；
-- malformed multi-block 和缺失 source provenance fail closed；
-- 默认路径没有接入 `_compiler`；
-- 原预算文件保持不可变。
+- Exact authorization records bind the original review candidate.
+- Identity, zero rotation, self-inverse, adjacent rotation, and disjoint-wire
+  behavior match legacy behavior.
+- Each independent pass is idempotent.
+- Trainable rotation merging preserves forward results and both original gradients.
+- complex64/complex128 state and expectation parity.
+- Malformed multi-block input and missing source provenance fail closed.
+- The default path does not use `_compiler`.
+- Original budget files remain immutable.
 
-这些证据不覆盖或替代性能退出门。
+This evidence does not cover or replace the performance exit gate.
 
-## 5. 建议 remediation
+## 5. Proposed Remediation
 
-下一步需要独立授权完成：
+The following work requires separate authorization:
 
-1. 分别测量 import、identity、各 pass、verification、lowering 和 serialization；
-2. 缓存 immutable module identity，避免同一 revision 重复 JSON/hash；
-3. 将完整验证从“每个 by-construction pass 重复执行”收敛为入口和出口各一次，同时保留每个
-   pass 的独立 verifier 测试；
-4. 评估 fused production pipeline 与独立 pass descriptor 的一致性；
-5. 采集 10/100/1K/10K 稳定结果；
-6. 基于组成成本提出 successor budget，并由 owner 单独批准；
-7. 不修改 Phase 0、Phase 1 或原 Phase 2 candidate 预算快照。
+1. Measure import, identity, each pass, verification, lowering, and serialization separately.
+2. Cache immutable module identities to avoid repeated JSON/hash work for one revision.
+3. Replace full verification after every by-construction pass with full entry/exit
+   verification, retaining independent verifier tests for each pass.
+4. Evaluate equivalence of a fused production pipeline and separate pass descriptors.
+5. Collect stable 10/100/1K/10K results.
+6. Propose a successor budget from component costs for separate owner approval.
+7. Preserve Phase 0, Phase 1, and original Phase 2 candidate budget snapshots.
 
-## 6. 暂停边界
+## 6. Pause Boundaries
 
-在 remediation 和 successor budget 获批并通过前：
+Until remediation and a successor budget are approved and pass:
 
-- 不进入 Batch B；
-- 不接入默认 compiler/runtime/deployment；
-- 不更新原预算制造绿灯；
-- 不宣称 Phase 2 性能或 Batch A 完成；
-- 不删除 legacy compiler。
+- Do not enter Batch B.
+- Do not connect default compiler/runtime/deployment paths.
+- Do not change the original budget to make gates pass.
+- Do not claim Phase 2 performance or Batch A completion.
+- Do not remove the legacy compiler.
 
-建议精确授权口令：
+Proposed exact authorization command:
 
 ```text
 approve IR-PHASE2-BATCH-A-PERFORMANCE-REMEDIATION
 ```
 
-该口令只授权性能诊断、内部优化和 successor budget 候选，不自动批准新预算，也不授权
-Batch A 退出或 Batch B。
+This authorizes only performance diagnosis, internal optimization, and a successor
+budget candidate. It does not approve the budget, Batch A exit, or Batch B.

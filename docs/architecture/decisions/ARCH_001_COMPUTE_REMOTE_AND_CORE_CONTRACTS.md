@@ -1,62 +1,72 @@
-# ARCH-001：Compute、Remote 与 Core 契约所有权
+# ARCH-001: Compute, Remote, and Core Contract Ownership
 
-状态：Approved
-日期：2026-09-03
-修订：2026-09-08
-适用范围：FlagQuantum vNext 目标架构与分阶段迁移
+Status: Approved
+Date: 2026-09-03
+Revised: 2026-09-08
+Scope: FlagQuantum vNext target architecture and staged migration.
 
-## 背景
+## Background
 
-以 Provider 为总称会把两类生命周期完全不同的对象混在一起：本进程直接控制的
-CPU/GPU/NPU，以及必须通过外部控制面提交任务的 QPU、GPU/HPC 服务和云平台。
-按硬件种类或厂商划分无法稳定表达这一区别，也容易产生重复注册、循环依赖和模糊
-的公共接口。
+Using Provider as an umbrella term mixes two fundamentally different lifecycles:
+CPU/GPU/NPU resources directly controlled by the current process, and QPUs,
+GPU/HPC services, or cloud platforms accessed through an external task control
+plane. Hardware or vendor categories cannot reliably express this distinction
+and can lead to duplicate registration, dependency cycles, and ambiguous APIs.
 
-## 决策
+## Decision
 
-### 1. 按控制边界划分
+### 1. Divide by Control Boundary
 
-- **Compute**：当前进程直接发现、激活和调用的算力，负责设备生命周期、精度、内存、
-  Kernel、通信和执行路径事实；
-- **Remote**：通过外部任务控制面调用的算力，负责目标发现、凭据、提交、状态、取消和
-  结果解码；
-- Simulation 实现数值算法且不导入 Compute；Runtime 组合 Simulation 与 Compute，或选择
-  Remote，并管理执行生命周期；
-- 同一型号 GPU 可以因部署方式不同而属于 Compute 或 Remote；真实 QPU 通常属于
-  Remote。
+- **Compute** covers resources the current process directly discovers, activates,
+  and invokes. It owns device lifecycle, precision, memory, kernels,
+  communication, and execution-path facts.
+- **Remote** covers resources invoked through an external task control plane. It
+  owns target discovery, credentials, submission, status, cancellation, and
+  result decoding.
+- Simulation implements numerical algorithms without importing Compute. Runtime
+  composes Simulation and Compute, or selects Remote, and manages execution
+  lifecycles.
+- The same GPU model can belong to Compute or Remote depending on deployment.
+  Real QPUs usually belong to Remote.
 
-### 2. 跨领域契约由 Core 唯一所有
+### 2. Core Alone Owns Cross-Domain Contracts
 
-ProgramArtifact、TargetCapabilities、ExecutionRequest、ExecutionResult 和 Evidence 由
-Core 定义。Compiler、Runtime、Simulation、Compute 与 Remote 只能消费或实现这些契约，
-不得复制定义。目标态 Runtime 不依赖 Compiler 内部类型。
+Core defines ProgramArtifact, TargetCapabilities, ExecutionRequest,
+ExecutionResult, and Evidence. Compiler, Runtime, Simulation, Compute, and Remote
+may consume or implement these contracts but cannot duplicate their definitions.
+In the target architecture, Runtime does not depend on Compiler-internal types.
 
-### 3. 所有迁移项必须可退出
+### 3. Every Migration Must Have an Exit
 
-迁移项必须登记责任团队、目标位置、完成证据和旧实现退出条件。不存在退出条件的新
-目录不得与旧权威长期并存。
+Each migration records its responsible team, target location, completion evidence,
+and conditions for retiring the old implementation. A new directory without exit
+conditions must not coexist indefinitely with the old authority.
 
-## 备选方案与否决原因
+## Alternatives and Reasons for Rejection
 
-- **统一 Provider 接口**：否决。直接设备生命周期与远程任务生命周期不同，统一接口
-  会产生大量可选方法和类型判断。
-- **按 CPU/GPU/QPU 分类**：否决。GPU 既可本地直控也可通过远程服务使用，硬件类型不
-  能表达控制关系。
-- **将远程 GPU 服务命名为 Cloud**：否决。远程不等于公有云，也可能是九鼎算力、内网
-  集群或本地机房控制面。
+- **One Provider interface**: rejected because direct device and remote task
+  lifecycles differ. A shared interface would accumulate optional methods and
+  type checks.
+- **CPU/GPU/QPU categories**: rejected because a GPU can be controlled locally or
+  accessed remotely; hardware type does not express the control relationship.
+- **Cloud as the name for remote GPU services**: rejected because remote resources
+  can be Jiuding compute, internal clusters, or an on-premises control plane,
+  rather than a public cloud.
 
-## 兼容性与迁移
+## Compatibility and Migration
 
-- 代码尚未正式发布，旧 `flagquantum.providers` 路径直接删除，不保留转发层；
-- 原设备平台实现迁入 `flagquantum.compute`；
-- 外部 Braket、Quafu 和通用 HTTP 任务适配迁入 `flagquantum.remote`；
-- 每次迁移处理完整调用路径，通过测试后关闭旧入口。
+- The code has not been formally released. Remove `flagquantum.providers`
+  directly, without a forwarding layer.
+- Move device platform implementations into `flagquantum.compute`.
+- Move external Braket, Quafu, and generic HTTP task adapters into
+  `flagquantum.remote`.
+- Migrate complete call paths and close old entry points after tests pass.
 
-## 验收
+## Acceptance
 
-- [x] 机器架构契约区分 direct compute 与 remote compute；
-- [x] Core 是跨领域契约唯一所有者；
-- [x] 代码目录不再保留 `flagquantum.providers`；
-- [x] 架构检查器禁止该旧目录返回；
-- [ ] Compute 的公共类型去除遗留 Provider 命名；
-- [ ] Remote 与 Deployment 的共享任务契约完全收敛到 Core。
+- [x] The machine-readable architecture contract distinguishes direct and remote compute.
+- [x] Core alone owns cross-domain contracts.
+- [x] The source tree no longer contains `flagquantum.providers`.
+- [x] The architecture checker prevents that directory from returning.
+- [ ] Remove legacy Provider naming from public Compute types.
+- [ ] Fully consolidate shared Remote/Deployment task contracts in Core.

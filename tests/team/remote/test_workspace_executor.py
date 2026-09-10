@@ -10,10 +10,17 @@ import torch
 import flagquantum as fq
 from flagquantum.errors import ExecutionError
 from flagquantum.remote.compute import _workspace_executor as executor
+from flagquantum.remote.compute._workspace_results import decode_tensor
 from flagquantum.remote.compute.jiuding import JiudingClient
 from flagquantum.runtime.result import ExecutionResult
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("dtype", (None, 64, [], {}, "float16"))
+def test_workspace_tensor_decoder_rejects_invalid_dtype(dtype: object) -> None:
+    with pytest.raises(RuntimeError, match="unsupported result dtype"):
+        decode_tensor({"dtype": dtype, "shape": [1], "data": ""})
 
 
 def test_cpu_executor_runs_bell_state_and_reports_actual_path():

@@ -2,7 +2,12 @@
 Matplotlib mode circuit drawer
 """
 
+from collections.abc import Sequence
+from typing import Any
+
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.patches import Circle, FancyBboxPatch
 
 from .ir_adapter import to_drawable_circuit
@@ -78,12 +83,18 @@ class MPLDrawer:
         "measure_allz": "MZ",
     }
 
-    def __init__(self, qdev, wire_order=None, fig=None, **kwargs):
+    def __init__(
+        self,
+        qdev: object,
+        wire_order: Sequence[int | str] | None = None,
+        fig: Figure | None = None,
+        **kwargs: Any,
+    ) -> None:
         qdev = to_drawable_circuit(qdev)
         self.qdev = qdev
-        self.op_history = getattr(qdev, "op_history", [])
-        self.n_wires = getattr(qdev, "n_wires", self._detect_n_wires())
-        self.decimals = kwargs.get("decimals", 2)
+        self.op_history: Sequence[dict[str, Any]] = getattr(qdev, "op_history", ())
+        self.n_wires: int = getattr(qdev, "n_wires", self._detect_n_wires())
+        self.decimals: int | None = kwargs.get("decimals", 2)
         self.active_notches = kwargs.get("active_wire_notches", True)
         self.wire_map = self._create_wire_map(wire_order)
         self.layers = self._create_layers()
@@ -97,7 +108,7 @@ class MPLDrawer:
         else:
             self._crop_labels()
 
-    def _detect_n_wires(self):
+    def _detect_n_wires(self) -> int:
         """Detect the number of qubits from operation history"""
         max_wire = -1
         for op in self.op_history:
@@ -109,23 +120,26 @@ class MPLDrawer:
                     max_wire = w
         return max_wire + 1 if max_wire >= 0 else 0
 
-    def _create_wire_map(self, wire_order):
+    def _create_wire_map(
+        self, wire_order: Sequence[int | str] | None
+    ) -> dict[int | str, int]:
         """Create a mapping from wire labels to display indices"""
-        if wire_order is None:
-            wire_order = list(range(self.n_wires))
+        wire_order = (
+            list(range(self.n_wires)) if wire_order is None else list(wire_order)
+        )
         for w in range(self.n_wires):
             if w not in wire_order:
                 wire_order.append(w)
         return {wire: idx for idx, wire in enumerate(wire_order)}
 
-    def _create_layers(self):
+    def _create_layers(self) -> list[list[dict[str, Any]]]:
         """
         Layer assignment algorithm
 
         Ensures that operations in the same layer share the same x-coordinate
         """
-        last_op_layer = {}
-        layers = []
+        last_op_layer: dict[int, int] = {}
+        layers: list[list[dict[str, Any]]] = []
         for op in self.op_history:
             wires = op.get("wires", [])
             if isinstance(wires, int):
@@ -156,7 +170,9 @@ class MPLDrawer:
                 last_op_layer[w] = new_layer
         return layers
 
-    def _setup_figure(self, fig, figsize):
+    def _setup_figure(
+        self, fig: Figure | None, figsize: tuple[float, float] | None
+    ) -> None:
         """Initialize the matplotlib figure and axes"""
         if figsize is None:
             figsize = (self.n_layers + 3, self.n_wires + 1)
@@ -172,7 +188,7 @@ class MPLDrawer:
         self._ax.set_facecolor("#F7F7F7")
         self._ax.invert_yaxis()
 
-    def _draw_wires(self, wire_options):
+    def _draw_wires(self, wire_options: dict[str, Any] | None) -> None:
         """Draw horizontal quantum wire lines"""
         opts = wire_options or {}
         for wire_label, idx in self.wire_map.items():
@@ -185,7 +201,7 @@ class MPLDrawer:
             )
             self._ax.add_line(line)
 
-    def _get_param_str(self, params):
+    def _get_param_str(self, params: object) -> str:
         """Format parameter string for display"""
         if params is None or self.decimals is None:
             return ""
@@ -218,7 +234,7 @@ class MPLDrawer:
             "rzz",
         ]
 
-    def _draw_operations(self):
+    def _draw_operations(self) -> None:
         """
         Draw all operations
 
@@ -229,7 +245,7 @@ class MPLDrawer:
             for op in layer:
                 self._draw_operation(op, x)
 
-    def _draw_operation(self, op, x):
+    def _draw_operation(self, op: dict[str, Any], x: float) -> None:
         """Draw a single operation at the specified x-coordinate"""
         name = op.get("name_or_mat", "").lower()
         wires = op.get("wires", [])
@@ -314,7 +330,9 @@ class MPLDrawer:
         elif len(wires) > 1:
             self._draw_multi_gate(x, wires, label)
 
-    def _draw_controlled_gate_with_param(self, x, control, target, params, gate_name):
+    def _draw_controlled_gate_with_param(
+        self, x: float, control: int, target: int, params: object, gate_name: str
+    ) -> None:
         """Draw parameterized controlled gates (CRX, CRY, CRZ)"""
         # Connecting wire
         line = plt.Line2D(
@@ -345,8 +363,8 @@ class MPLDrawer:
         self._draw_box(x, target, label, "cr")
 
     def _draw_controlled_phase_gate_with_param(
-        self, x, control, target, params, gate_name
-    ):
+        self, x: float, control: int, target: int, params: object, gate_name: str
+    ) -> None:
         """Draw parameterized controlled phase gate (CP)"""
         # Connecting wire
         line = plt.Line2D(
@@ -376,7 +394,9 @@ class MPLDrawer:
         # Draw target box with parameters
         self._draw_box(x, target, label, "cp")
 
-    def _draw_ising_gate(self, x, wires, gate_name, params):
+    def _draw_ising_gate(
+        self, x: float, wires: Sequence[int], gate_name: str, params: object
+    ) -> None:
         """Draw Ising gates (RXX, RYY, RZZ) - boxes spanning all involved wires"""
         min_w = min(wires)
         max_w = max(wires)
@@ -416,7 +436,9 @@ class MPLDrawer:
             fontweight="bold",
         )
 
-    def _draw_toffoli(self, x, control1, control2, target):
+    def _draw_toffoli(
+        self, x: float, control1: int, control2: int, target: int
+    ) -> None:
         """Draw Toffoli gate (CCX)"""
         min_wire = min(control1, control2, target)
         max_wire = max(control1, control2, target)
@@ -466,7 +488,7 @@ class MPLDrawer:
             )
         )
 
-    def _draw_cswap(self, x, control, target1, target2):
+    def _draw_cswap(self, x: float, control: int, target1: int, target2: int) -> None:
         """Draw Fredkin gate (CSWAP)"""
         min_wire = min(control, target1, target2)
         max_wire = max(control, target1, target2)
@@ -505,7 +527,9 @@ class MPLDrawer:
             self._ax.add_line(l1)
             self._ax.add_line(l2)
 
-    def _draw_controlled_gate(self, x, control, target, target_symbol="X"):
+    def _draw_controlled_gate(
+        self, x: float, control: int, target: int, target_symbol: str = "X"
+    ) -> None:
         """Draw controlled gates (CX, CY, CZ, CPhase)"""
         line = plt.Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
@@ -595,7 +619,7 @@ class MPLDrawer:
                 family="sans-serif",
             )
 
-    def _draw_swap_gate(self, x, wires):
+    def _draw_swap_gate(self, x: float, wires: Sequence[int]) -> None:
         """Draw SWAP gate - draw X at both ends, connect with a line in between"""
         if len(wires) < 2:
             return
@@ -650,7 +674,9 @@ class MPLDrawer:
         self._ax.add_line(l1)
         self._ax.add_line(l2)
 
-    def _draw_box(self, x, y, text, gate_type="single"):
+    def _draw_box(
+        self, x: float, y: float, text: str, gate_type: str = "single"
+    ) -> None:
         """Draw a single-qubit gate box"""
         half = self._box_length / 2
         box = FancyBboxPatch(
@@ -676,7 +702,7 @@ class MPLDrawer:
             fontweight="bold",
         )
 
-    def _draw_multi_gate(self, x, wires, text):
+    def _draw_multi_gate(self, x: float, wires: Sequence[int], text: str) -> None:
         """Draw multi-qubit gate box spanning multiple wires"""
         min_w, max_w = min(wires), max(wires)
         half = self._box_length / 2
@@ -705,7 +731,7 @@ class MPLDrawer:
             fontweight="bold",
         )
 
-    def _draw_measurements(self):
+    def _draw_measurements(self) -> None:
         """Draw measurement gates"""
         has_measure = any(
             op.get("name_or_mat", "").lower() in ["measure_allz"]
@@ -716,9 +742,9 @@ class MPLDrawer:
             for wire in range(self.n_wires):
                 self._draw_box(x, wire, "MZ", "measure")
 
-    def _draw_labels(self, label_options):
+    def _draw_labels(self, label_options: dict[str, Any] | None) -> None:
         """Draw wire labels (can optionally display initial state)"""
-        opts = label_options or {}
+        opts = dict(label_options) if isinstance(label_options, dict) else {}
         show_initial_state = (
             opts.pop("show_initial_state", False) if isinstance(opts, dict) else False
         )
@@ -740,23 +766,25 @@ class MPLDrawer:
                 **opts if isinstance(opts, dict) else {},
             )
 
-    def _crop_labels(self):
+    def _crop_labels(self) -> None:
         """Remove label area from view"""
         xlim = self._ax.get_xlim()
         self._ax.set_xlim((-1, xlim[1]))
 
     @property
-    def fig(self):
+    def fig(self) -> Figure:
         """Return the matplotlib figure"""
         return self._fig
 
     @property
-    def ax(self):
+    def ax(self) -> Axes:
         """Return the matplotlib axes"""
         return self._ax
 
 
-def draw_mpl(qdev, show_initial_state=False, **kwargs):
+def draw_mpl(
+    qdev: object, show_initial_state: bool = False, **kwargs: Any
+) -> tuple[Figure, Axes]:
     """
     Draw a circuit diagram in matplotlib format
 
@@ -772,7 +800,8 @@ def draw_mpl(qdev, show_initial_state=False, **kwargs):
             - label_options: Label style options
             - show_wire_labels: Whether to show wire labels
     """
-    label_options = kwargs.get("label_options", {})
+    supplied_labels = kwargs.get("label_options", {})
+    label_options = dict(supplied_labels) if isinstance(supplied_labels, dict) else {}
     if isinstance(label_options, dict):
         label_options["show_initial_state"] = show_initial_state
     else:

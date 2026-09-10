@@ -132,6 +132,18 @@ def test_experiment_binds_prediction_program_receipt_and_result():
     assert len(report.identity) == 64
 
 
+@pytest.mark.parametrize("receipt", [None, {}, "task-42"])
+def test_experiment_rejects_invalid_provider_receipt(receipt: object) -> None:
+    class Provider:
+        provider = "quafu"
+
+        def submit_qasm(self, qasm: str, **options: object) -> object:
+            return receipt
+
+    with pytest.raises(TypeError, match="must return a ProviderTaskHandle"):
+        _experiment().submit(Provider())
+
+
 def test_rewritten_or_missing_executed_program_fails_closed():
     experiment = _experiment()
 

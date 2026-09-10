@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 from torch.profiler import record_function
 
+from .models import MPSConfig
+
 _DENSE_Z_SUM_WEIGHT_CACHE: dict[
     tuple[int, tuple[int, ...], str, torch.dtype], torch.Tensor
 ] = {}
@@ -17,9 +19,6 @@ _SVD_FALLBACK_STATS = {
     "cpu_lapack_matrices": 0,
     "nonfinite_svd_outputs": 0,
 }
-from .models import (  # noqa: E402
-    MPSConfig,
-)
 
 
 def _z_sum_dense_weights(
@@ -57,11 +56,11 @@ def _cuda_svd(
         if all(bool(torch.isfinite(value).all()) for value in result):
             return result
         _SVD_FALLBACK_STATS["nonfinite_svd_outputs"] += 1
-        raise torch._C._LinAlgError("MPS SVD returned non-finite factors")
+        raise torch.linalg.LinAlgError("MPS SVD returned non-finite factors")
 
     try:
         return checked(torch.linalg.svd(matrix, full_matrices=False, driver=requested))
-    except (RuntimeError, torch._C._LinAlgError) as requested_error:
+    except RuntimeError as requested_error:
         _SVD_FALLBACK_STATS["requested_driver_failures"] += 1
         if not is_cuda:
             raise
@@ -76,7 +75,7 @@ def _cuda_svd(
                 )
                 _SVD_FALLBACK_STATS["gesvd_driver_fallbacks"] += 1
                 return result
-            except (RuntimeError, torch._C._LinAlgError):
+            except RuntimeError:
                 pass
         if matrix.ndim <= 2:
             raise requested_error
@@ -94,21 +93,25 @@ def _cuda_svd(
                         )
                     )
                 )
-        except (RuntimeError, torch._C._LinAlgError):
+        except RuntimeError:
             outputs = []
             used_cpu = True
             try:
                 for item in flattened:
-                    cpu_result = checked(
+                    cpu_u, cpu_singular, cpu_vh = checked(
                         torch.linalg.svd(
                             item.detach().to("cpu"),
                             full_matrices=False,
                         )
                     )
                     outputs.append(
-                        tuple(value.to(matrix.device) for value in cpu_result)
+                        (
+                            cpu_u.to(matrix.device),
+                            cpu_singular.to(matrix.device),
+                            cpu_vh.to(matrix.device),
+                        )
                     )
-            except (RuntimeError, torch._C._LinAlgError) as cpu_error:
+            except RuntimeError as cpu_error:
                 raise RuntimeError(
                     "MPS strict SVD failed for batched CUDA gesvd, isolated "
                     "CUDA gesvd, and CPU LAPACK fallback; "

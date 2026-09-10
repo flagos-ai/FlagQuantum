@@ -1,165 +1,135 @@
-# FlagQuantum–Torch-FL 顶层集成与联合发布规划
+# FlagQuantum–Torch-FL Integration and Joint Release Plan
 
-> **文档状态：** 架构决策建议与分阶段实施计划，不代表当前支持能力
-> **决策主题：** FlagQuantum 是否以及如何依赖 Torch-FL
-> **推荐结论：** 能力深度依赖，核心安装解耦，FlagOS 发行环境锁版本联合认证
-> **适用范围：** FlagQuantum、Torch-FL、FlagGems/FlagTree、FlagCX、厂商 SDK
-> 与国产加速器生产环境
+> **Status:** architecture recommendation and staged plan, not a statement of
+> current support.
+> **Decision:** whether and how FlagQuantum depends on Torch-FL.
+> **Recommendation:** integrate capabilities deeply, keep Core installation
+> independent, and certify pinned FlagOS release environments jointly.
+> **Scope:** FlagQuantum, Torch-FL, FlagGems/FlagTree, FlagCX, vendor SDKs,
+> and production domestic accelerators.
 
-> **实施状态（2026-08-25）：** 最小懒加载 FlagOS adapter 与严格 route/fallback
-> 契约已开始落地，边界见
-> [Accelerator Platform Runtime](../reference/ACCELERATOR_PLATFORM_RUNTIME.md)。
-> `statevector_local_p0` 已接入 CUDA-backed `flagos:0` 联合验证、执行前
-> operator preflight、数值契约与 CPU complex128 小型认证；尚未声明任何具体
-> 国产卡 profile 达到生产成熟度。2026-08-24 已在 NVIDIA A800 上按 v2 环境锁
-> 完成 Torch-FL CUDA reference 验证（21 项 P0 requirement、complex64/128、
-> depth 8/32/128）；机器可读证据见
-> [`artifacts/flagos_cuda_reference_a800_20260824.json`](../../artifacts/flagos_cuda_reference_a800_20260824.json)。
-> 2026-08-24 新增的 split real/imag FP32 statevector P0 是隔离的
-> forward-only 实验路径；它通过独立 profile 验证底层 FP32 算子，不改变
-> Torch-FL 的依赖边界，也不自动进入默认 runtime。后续 P2/P3/P4 精度实验
-> 仍保持 FlagQuantum 核心不依赖 Torch-FL；其中 P4 在有 Torch-FL 的验证环境
-> 中只通过 `flagos:0` 逻辑设备运行设备端 FP32 Double-Single 门生成与状态演化。
-> P5 显式 Double-Single SGD 已完成 A800 原生 CUDA 与 CUDA-backed `flagos:0`
-> 单设备可移植性验证。国产单卡 P0-P5 验收工具现要求 Torch-FL/机器
-> provisioner 提供物理设备与无 CPU fallback 证明；真实国产卡证据仍待执行和
-> 评审。单设备 `flagos:0` 验证与 FlagCX 分布式验证保持独立，不能用前者替代
-> 后者。
+> **Implementation record (2026-08-25):** a minimal lazy FlagOS adapter and strict
+> route/fallback contracts are being implemented; see
+> [Accelerator Platform Runtime](../reference/ACCELERATOR_PLATFORM_RUNTIME.md).
+> `statevector_local_p0` has CUDA-backed `flagos:0` validation, operator preflight,
+> numerical contracts, and small CPU complex128 certification. No particular
+> domestic-device profile is declared production-ready. On 2026-08-24, the v2
+> environment lock passed Torch-FL CUDA-reference validation on NVIDIA A800:
+> 21 P0 requirements, complex64/128, depths 8/32/128. Evidence:
+> [A800 reference artifact](../../artifacts/flagos_cuda_reference_a800_20260824.json).
+> Split real/imag FP32 statevector P0, added on 2026-08-24, is an isolated
+> forward-only experiment with independent FP32 operator profiles; it changes
+> neither dependency boundaries nor default Runtime. P2/P3/P4 also keep Core
+> independent. In Torch-FL validation environments, P4 uses only logical
+> `flagos:0` for device-side FP32 Double-Single gate generation and evolution.
+> P5 explicit Double-Single SGD passed single-device portability checks on native
+> A800 CUDA and CUDA-backed `flagos:0`. Domestic P0–P5 acceptance tools require
+> physical-device and no-CPU-fallback attestations from Torch-FL/provisioners;
+> real domestic-device evidence still awaits execution and review. Single-device
+> validation and FlagCX distributed validation remain separate.
 
-## 1. 执行决策
+## 1. Decision
 
-FlagQuantum 不应在核心包中强制依赖 Torch-FL，但应把 Torch-FL 作为 FlagOS
-设备执行的首选且规范化的基础设施。
+Torch-FL should be the preferred, standardized infrastructure for FlagOS device
+execution without becoming a mandatory FlagQuantum Core dependency.
 
 ```text
-业务与产品层：深度绑定
-Python 核心包：非强依赖
-FlagOS 执行插件：显式依赖
-正式发行环境：锁版本绑定
-能力声明：联合证据认证
+Product capabilities: deep integration
+Python Core package: independent installation
+FlagOS plugin: explicit dependency
+Production environment: pinned versions
+Capability claims: joint evidence certification
 ```
 
-对应的强制规则是：
+Mandatory rules:
 
-1. `pip install flagquantum` 继续只要求 PyTorch；
-2. CPU、原生 PyTorch/CUDA、JAX 和外部框架互操作不要求 Torch-FL；
-3. 用户选择 `device="flagos:0"` 时，必须存在兼容的 Torch-FL provider；
-4. FlagQuantum 不分别维护 Ascend、DCU、GCU、MUSA、MetaX 等厂商设备运行时；
-5. Torch-FL 负责 PyTorch device、ATen 路由、通用 kernel、stream/event/memory、
-   compile、profiler 和底层 collective 接入；
-6. FlagQuantum 负责量子 IR、SV/MPS/TN/Density 算法、梯度、精度、收敛、分片
-   语义和能力成熟度；
-7. Torch-FL 的通用模型或算子测试不能自动成为 FlagQuantum 的量子能力证据；
-8. 生产量子 profile 禁止静默 CPU fallback、静默降精度和静默改变分布语义；
-9. FlagOS 正式发行使用经过验证的 FlagQuantum、Torch-FL、PyTorch、FlagCX、
-   compiler 和厂商 SDK 固定组合；
+1. `pip install flagquantum` continues to require only PyTorch.
+2. CPU, native PyTorch/CUDA, JAX, and interoperability do not require Torch-FL.
+3. `device="flagos:0"` requires a compatible Torch-FL provider.
+4. FlagQuantum does not maintain separate Ascend, DCU, GCU, MUSA, or MetaX runtimes.
+5. Torch-FL owns PyTorch devices, ATen routing, general kernels, streams/events/
+   memory, compilation, profiling, and underlying collectives.
+6. FlagQuantum owns IR, SV/MPS/TN/density algorithms, gradients, precision,
+   convergence, sharding semantics, and its capability maturity.
+7. General Torch-FL model/operator tests do not automatically certify quantum capabilities.
+8. Production quantum profiles prohibit silent CPU fallback, precision reduction,
+   and distribution changes.
+9. Releases pin verified FlagQuantum, Torch-FL, PyTorch, FlagCX, compiler, and SDK combinations.
+10. Projects collaborate through versioned public contracts, not private C++/Python internals.
 
-海光即使在 Torch-FL 内部采用 CUDA-compatible route，FlagQuantum 看到的仍是
-`flagos` platform。FlagQuantum 不新增 Hygon/DCU adapter、不按设备名称分支，也
-不直接依赖 DTK；无卡阶段通过 Torch-FL mock/reference provider 完成契约适配，
-实卡阶段再补数值、驻留和性能证据。
-10. 两个项目通过版本化公共契约协作，不互相调用私有 C++/Python 实现。
+Even if Torch-FL uses a CUDA-compatible Hygon route, FlagQuantum sees the `flagos`
+platform. Do not add Hygon/DCU adapters, vendor-name branches, or direct DTK
+requirements. Use mock/reference providers for contracts without hardware and add
+numerical, residency, and performance evidence on real devices later.
 
-这是一项“软依赖源码边界、硬依赖产品能力”的架构决策。
+The source dependency remains optional while the FlagOS product capability
+depends on compatible infrastructure.
 
-## 2. 背景与当前事实
+## 2. Background and Recorded Facts
 
-### 2.1 FlagQuantum 当前约束
+### 2.1 FlagQuantum Constraints
 
-- 核心仅依赖 PyTorch；
-- 当前依赖政策覆盖 PyTorch `>=2.5,<2.14`；
-- PyTorch 是主要训练界面；
-- FlagQuantum IR 是唯一量子语义来源；
-- CPU 和单设备 fast path 必须保持一等体验；
-- 分布式声明必须证明一个逻辑任务被真实分片；
-- complex64/complex128、autograd、非连续 layout、QR/SVD 是量子核心需求；
-- 外部加速器、provider 和重依赖应保持可选。
+Core requires only PyTorch, with the recorded policy `>=2.5,<2.14`. PyTorch is the
+primary training interface; IR is the sole quantum authority. CPU/single-device
+fast paths remain first-class. Distributed claims require real partitioning of
+one workload. Complex64/128, autograd, noncontiguous layouts, and QR/SVD are core
+needs. Accelerator providers and heavy dependencies remain optional.
 
-### 2.2 Torch-FL 当前提供的基础设施
+### 2.2 Torch-FL Infrastructure
 
-基于当前公开设计，Torch-FL 提供：
+The design reviewed for this plan provides:
 
-- 基于 PyTorch PrivateUse1 的统一 `flagos` device；
-- 按精确 ATen operator/overload 选择执行路径；
-- 厂商原生 kernel、compatibility boxing、FlagGems/编译器 kernel 和 CPU fallback；
-- eager、autograd、AMP、`torch.compile` 与 profiler 的不同成熟度实现；
-- `ProcessGroupFlagOS` 和 FlagCX/厂商通信后端；
-- 多厂商构建选择、路由配置和兼容矩阵；
-- operator survey、route-set hash 和硬件验证方法。
+- a PrivateUse1-based `flagos` device;
+- exact ATen operator/overload routing;
+- vendor kernels, compatibility boxing, FlagGems/compiler kernels, CPU fallback;
+- eager, autograd, AMP, compile, and profiler support at differing maturity levels;
+- ProcessGroupFlagOS and FlagCX/vendor communication;
+- vendor build selection, route configuration, compatibility matrices;
+- operator surveys, route-set hashes, hardware verification.
 
-这些能力在不同平台上的成熟度不同。“代码路径存在”或“平台注册”不等于量子
-训练、复杂 dtype、分布式或生产能力已经验证。
+Maturity varies by platform. Registered devices and existing code paths do not
+prove quantum training, complex dtype, distributed, or production support.
 
-### 2.3 当前版本张力
+### 2.3 Version Tension
 
-规划制定时的已知版本边界为：
-
-| 项目 | 当前依赖边界 | 架构影响 |
+| Project | Recorded dependency boundary | Effect |
 | --- | --- | --- |
-| FlagQuantum | PyTorch `>=2.5,<2.14` | 面向较宽的普通用户和开发环境 |
-| Torch-FL | PyTorch `>=2.10,<2.11` | 生成的 ATen binding 与 minor line/ABI 紧密相关 |
+| FlagQuantum | PyTorch `>=2.5,<2.14` | Broad developer/user environments |
+| Torch-FL | PyTorch `>=2.10,<2.11` | Generated ATen bindings coupled to minor-line ABI |
 
-因此把 Torch-FL 写入 FlagQuantum 核心 dependencies，会把 FlagQuantum 的实际
-PyTorch 支持范围立即缩窄，并把 CMake、厂商 SDK、compiler 和 ABI 约束传播给
-所有用户。这不符合核心依赖政策。
+A mandatory Torch-FL dependency would narrow Core's PyTorch range and impose
+CMake, SDK, compiler, and ABI constraints on all users. This conflicts with Core
+policy. These versions are observations, not permanent contracts; releases read
+machine-readable compatibility matrices rather than hard-code them in Runtime.
 
-版本数据属于当前观察值，不是永久契约；联合发布必须读取两个项目的机器可读
-兼容矩阵，而不能把这些数字写死在运行时代码中。
+## 3. Principles
 
-## 3. 架构原则
+### 3.1 One Product, Separate Responsibilities
 
-### 3.1 一个用户产品，两个清晰责任域
+Users continue with `import flagquantum as fq`. FlagQuantum owns quantum semantics,
+scientific trust, training, and scale-out. Torch-FL owns cross-vendor PyTorch
+execution, routing, and devices. Users should not write Torch-FL routes, FlagCX
+communicators, or vendor SDK code to integrate them.
 
-用户继续面对一个 FlagQuantum 产品：
+### 3.2 Compose Existing Infrastructure
 
-```python
-import flagquantum as fq
-```
+Do not duplicate PrivateUse1 registration, vendor streams/events/guards, ATen
+bindings, vendor routes, FlagGems/FlagTree integration, general AMP, process-group
+selection, or profiler events. FlagQuantum supplies thin adaptation, quantum
+requirements, policy decisions, and evidence composition.
 
-内部责任分为：
+### 3.3 Device Names Are Not Evidence Identities
 
-```text
-FlagQuantum：量子语义、数值可信度、训练和规模扩展
-Torch-FL：PyTorch 跨厂商执行、算子路由和设备基础设施
-```
+`flagos:0` does not replace actual vendor/model/count, driver/SDK/compiler,
+PyTorch/Torch-FL/FlagGems/FlagTree/FlagCX versions, kernel routes, host staging,
+CPU fallback, precision plans, topology, or rank ownership in evidence.
 
-不得为了集成而让用户直接编写 Torch-FL 路由、FlagCX communicator 或厂商 SDK
-代码。
+### 3.4 Fail Closed
 
-### 3.2 组合而非重复建设
+An available fallback route does not make a quantum profile production-capable.
+Reject missing critical capabilities before large allocation or distributed initialization.
 
-FlagQuantum 不重新实现 Torch-FL 已经拥有的：
-
-- PrivateUse1 设备注册；
-- 每厂商的 stream/event/device guard；
-- ATen schema binding；
-- 厂商原生 operator 路由；
-- FlagGems/FlagTree 接入；
-- 通用 AMP；
-- ProcessGroup 和厂商 collective 选择；
-- 通用 profiler 设备事件。
-
-FlagQuantum 只提供薄适配、量子需求描述、策略决策与证据组合。
-
-### 3.3 不以统一设备名隐藏真实环境
-
-`flagos:0` 是用户接口，不是证据身份。每次执行仍需记录：
-
-- 实际厂商；
-- 设备型号和数量；
-- driver、SDK、compiler；
-- PyTorch/Torch-FL/FlagGems/FlagTree/FlagCX 版本；
-- 每个关键 kernel 的真实 route；
-- host staging 和 CPU fallback；
-- precision plan；
-- 分布式拓扑和 rank ownership。
-
-### 3.4 Fail closed 优先
-
-FlagQuantum 的 production profile 不能因为 Torch-FL 能找到某条 fallback 路径就
-推断任务可生产运行。缺少关键能力时，应在大内存分配和分布式初始化前失败。
-
-## 4. 目标架构
+## 4. Target Architecture
 
 ```mermaid
 flowchart TD
@@ -167,105 +137,79 @@ flowchart TD
     IR --> Planner["Quantum Semantic Planner"]
     Planner --> Accuracy["AccuracyContract / PrecisionPlan"]
     Planner --> Runtime["SV / MPS / TN / Density Runtime"]
-
     Runtime --> SemanticKernel["FlagQuantum Semantic Kernel Provider"]
     SemanticKernel --> ATen["PyTorch / ATen Operators"]
     ATen --> Adapter["FlagQuantum FlagOS Adapter"]
     Adapter --> TorchFL["Torch-FL flagos Device"]
-
     TorchFL --> Native["Vendor Native Kernels"]
     TorchFL --> Boxing["Compatibility Boxing"]
     TorchFL --> Gems["FlagGems / FlagTree"]
     TorchFL --> Host["Explicit Host Fallback"]
-
     Runtime --> Sharding["FlagQuantum Sharding Semantics"]
     Sharding --> CollectiveAdapter["FlagOS Collective Adapter"]
     CollectiveAdapter --> PG["ProcessGroupFlagOS"]
     PG --> FlagCX["FlagCX / Vendor Collective"]
-
     Runtime --> Evidence["Quantum Accuracy & Scalability Evidence"]
     TorchFL --> RouteEvidence["Route & Platform Evidence"]
     RouteEvidence --> Evidence
 ```
 
-关键点：Torch-FL 位于 PyTorch 执行基础设施层，不进入 FlagQuantum IR、planner
-或 representation 算法层。
+Torch-FL belongs to PyTorch infrastructure, outside IR, planning semantics, and
+representation algorithms.
 
-## 5. 双方责任边界
+## 5. Ownership
 
-| 能力 | FlagQuantum | Torch-FL | 联合责任 |
+| Capability | FlagQuantum | Torch-FL | Joint work |
 | --- | --- | --- | --- |
-| 公共量子 API | 拥有 | 不感知 | 兼容性验证 |
-| FlagQuantum IR | 拥有 | 不感知 | 无 |
-| SV/MPS/TN/Density 算法 | 拥有 | 不感知 | 端到端性能 |
-| 量子 gradient/optimizer 语义 | 拥有 | 提供 PyTorch autograd 基础 | 反向一致性 |
-| AccuracyContract | 拥有 | 提供底层能力事实 | 误差证据 |
-| PrecisionPlan | 决策与报告 | 执行可用 dtype/kernel | 精度认证 |
-| `flagos` device | 消费 | 拥有 | 用户体验 |
-| ATen operator route | 声明需求 | 拥有 | quantum operator profile |
-| 厂商 SDK/ABI | 不直接依赖 | 拥有 | 发布矩阵 |
-| FlagGems/FlagTree 路由 | 声明量子 kernel 需求 | 集成和路由 | kernel 优化 |
-| stream/event/memory/RNG | 薄适配与审计 | 实现 | conformance |
-| `torch.compile` | 定义可编译量子图 | 提供 backend | 图正确性/性能 |
-| profiler | 定义所需证据 | 采集设备事件 | provenance |
-| logical sharding | 拥有 | 不感知 | 无 |
-| rank ownership | 拥有 | 不感知 | 证据拼接 |
-| collective transport | 描述语义和流量 | 执行 | 通信正确性 |
-| scalability claim | 拥有并审计 | 提供事实 | 实机证据 |
-| capability maturity | 拥有 FlagQuantum 状态 | 拥有 Torch-FL 状态 | 不自动互相提升 |
+| Public quantum API | Owns | Unaware | Compatibility |
+| IR | Owns | Unaware | None |
+| SV/MPS/TN/density algorithms | Owns | Unaware | End-to-end performance |
+| Quantum gradients/optimizers | Semantics | Autograd foundation | Backward consistency |
+| AccuracyContract | Owns | Capability facts | Error evidence |
+| PrecisionPlan | Decisions/reporting | Available dtypes/kernels | Certification |
+| `flagos` device | Consumes | Owns | User experience |
+| ATen routes | Requirements | Owns | Quantum profiles |
+| SDK/ABI | No direct dependency | Owns | Release matrix |
+| FlagGems/FlagTree | Quantum kernel needs | Integration/routing | Optimization |
+| Streams/events/memory/RNG | Adapter/audit | Implementation | Conformance |
+| `torch.compile` | Quantum graph | Backend | Correctness/performance |
+| Profiler | Evidence requirements | Device events | Provenance |
+| Logical sharding | Owns | Unaware | None |
+| Rank ownership | Owns | Unaware | Evidence linkage |
+| Collectives | Semantics/traffic | Transport | Communication correctness |
+| Scalability claims | Owns/audits | Facts | Hardware evidence |
+| Maturity | FlagQuantum status | Torch-FL status | No automatic promotion |
 
-边界判定标准：如果一个概念包含 qubit、gate、state shard、MPS bond、TN slice、
-observable、quantum gradient 或 scientific error，它属于 FlagQuantum；如果概念
-只涉及 tensor、ATen operator、device、stream、event、compiler 或 collective
-transport，它优先属于 Torch-FL。
+Qubits, gates, state shards, MPS bonds, TN slices, observables, quantum gradients,
+and scientific error belong to FlagQuantum. Tensor/ATen/device/stream/event/
+compiler/transport infrastructure generally belongs to Torch-FL.
 
-## 6. 三层依赖与交付模型
+## 6. Three Delivery Layers
 
-### 6.1 第一层：FlagQuantum Core
-
-安装方式：
+### 6.1 Core
 
 ```bash
 pip install flagquantum
 ```
 
-约束：
+Core requires PyTorch only, does not import `torch_fl`, link its C++ ABI, or load
+vendor SDKs. CPU/native execution remains independent; importing FlagQuantum does
+not register PrivateUse1 devices.
 
-- 只强制依赖 PyTorch；
-- 不导入 `torch_fl`；
-- 不链接 Torch-FL C++ ABI；
-- 不加载厂商 SDK；
-- CPU/原生 PyTorch 路径独立可用；
-- `import flagquantum as fq` 不产生 PrivateUse1 注册副作用。
+### 6.2 FlagOS Provider
 
-### 6.2 第二层：FlagOS Integration Provider
-
-推荐发行名：
-
-```text
-flagquantum-flagos
-```
-
-首个实验阶段可以先位于 FlagQuantum 仓库的内部 integration namespace，但在
-稳定前必须形成独立依赖边界。该 provider：
-
-- 依赖一个明确兼容范围的 Torch-FL；
-- 注册 FlagQuantum platform/collective/evidence adapter；
-- 不实现量子 IR 或表示算法；
-- 不包含厂商特定分支；
-- 通过 entry point 被 FlagQuantum 延迟发现；
-- 只有用户选择 FlagOS profile/device 时才激活。
-
-建议 entry point：
+Recommended distribution: `flagquantum-flagos`. An initial internal prototype is
+acceptable, but establish a separate dependency boundary before stabilization.
+It depends on a defined compatible Torch-FL range, registers platform/collective/
+evidence adapters, contains no quantum algorithms or vendor branches, and is
+lazily discovered/activated only for FlagOS selections.
 
 ```toml
 [project.entry-points."flagquantum.platforms"]
 flagos = "flagquantum_flagos:provider"
 ```
 
-### 6.3 第三层：FlagOS Quantum Runtime Bundle
-
-正式生产交付不是“任意版本 pip 拼装”，而是认证 bundle：
+### 6.3 Certified Runtime Bundle
 
 ```text
 FlagOS Quantum Runtime <release>
@@ -279,65 +223,44 @@ FlagOS Quantum Runtime <release>
 └── capability/evidence manifest <signed hash>
 ```
 
-可采用容器、锁文件、conda environment 或厂商 wheel index 交付，但必须能够离线
-重建和验证完整环境指纹。
+Deliver through containers, locks, conda, or vendor wheel indexes with offline
+rebuild and complete environment-fingerprint verification.
 
-## 7. 激活与生命周期
+## 7. Activation and Lifecycle
 
-### 7.1 延迟激活
-
-禁止：
-
-```python
-# flagquantum/__init__.py
-import torch_fl
-```
-
-允许：
+Never import Torch-FL from `flagquantum/__init__.py`. Instead:
 
 ```text
-用户选择 flagos profile/device
-  → 查找 flagquantum platform entry point
-  → 验证版本兼容
-  → 激活 Torch-FL
-  → 运行 preflight
-  → 生成 ExecutionProfile
+Select FlagOS profile/device
+ -> Discover platform entry point
+ -> Check version compatibility
+ -> Activate Torch-FL
+ -> Preflight
+ -> ExecutionProfile
 ```
 
-如果 provider 未安装：
+Missing-provider diagnostic:
 
 ```text
 FlagOS execution requires a compatible FlagQuantum–Torch-FL provider.
 CPU and native PyTorch execution remain available.
 ```
 
-### 7.2 进程级副作用
+Registration, environment, libraries, and PrivateUse1 effects are process-wide.
+Activation is idempotent, not fully reversible. Detect conflicts before tensor
+creation; allow one PrivateUse1 owner; verify identical provider identities before
+rank initialization; diagnose repeated notebook activation without re-registering.
 
-Torch-FL 的设备注册、环境变量、动态库和 PrivateUse1 行为通常是进程级的，因此：
+## 8. Stable Collaboration Contracts
 
-- 激活必须幂等；
-- 激活后不能假装完全卸载；
-- 环境冲突必须在首次 tensor 创建前发现；
-- 不允许两个 provider 同时争用 PrivateUse1；
-- worker 必须在 rank 初始化前验证完全相同的 provider identity；
-- notebook 中的重复激活需要明确诊断，而非重复注册。
-
-## 8. 稳定协作契约
-
-两个项目应共同定义一个小而稳定的公共接口，不让 FlagQuantum 读取 Torch-FL
-私有模块、内部 vendor profile 或 C++ 对象。
+Define small public interfaces rather than reading private modules, vendor
+profiles, or C++ objects. The following are proposed shapes.
 
 ### 8.1 RuntimeIdentity
 
-建议 Torch-FL 提供：
-
 ```python
 torch_fl.runtime_identity() -> RuntimeIdentity
-```
 
-至少包含：
-
-```python
 RuntimeIdentity(
     schema_version="1.0",
     torch_fl_version="...",
@@ -369,16 +292,10 @@ torch_fl.explain_route(
 ) -> RouteExplanation
 ```
 
-返回：
-
-- `native_vendor`、`compatibility_boxing`、`flaggems_python`、
-  `flaggems_cpp`、`compiled`、`composite`、`host_fallback` 或 `unsupported`；
-- forward/backward route；
-- dtype/layout/shape 限制；
-- 是否 device-direct；
-- 是否经过 host；
-- route configuration hash；
-- 当前证据引用和成熟度。
+Return category (`native_vendor`, `compatibility_boxing`, `flaggems_python`,
+`flaggems_cpp`, `compiled`, `composite`, `host_fallback`, `unsupported`), forward/
+backward routes, dtype/layout/shape limits, device-direct/host behavior,
+configuration hash, evidence references, and maturity.
 
 ### 8.3 StrictExecutionScope
 
@@ -391,7 +308,7 @@ with torch_fl.strict_execution(
     ...
 ```
 
-该 scope 必须在 fallback 实际发生前失败，不能只在执行后打印日志。
+Reject before fallback occurs, not merely through post-execution logs.
 
 ### 8.4 FallbackEvent
 
@@ -399,33 +316,31 @@ with torch_fl.strict_execution(
 torch_fl.fallback_events(clear=True) -> tuple[FallbackEvent, ...]
 ```
 
-事件至少包含 operator、overload、input/output dtype、source/target device、原因、
-调用位置、传输字节数和时间戳。FlagQuantum 将其合并进 `ExecutionResult`。
+Include operator/overload, input/output dtypes, source/target devices, reason,
+call site, transfer bytes, timestamp. FlagQuantum incorporates events into results.
 
-### 8.5 分布式边界决策
+### 8.5 Distributed Boundary Decision
 
-FlagQuantum 当前不定义或要求 `torch_fl.distributed_identity(group)`。分布式验证
-只依赖 PyTorch/Torch-FL 已有的公开 ProcessGroup 边界，并将结果准确标记为
-`backend="flagos"` 的正确性证据。成功执行 collective 不用于推断 FlagCX、NCCL、
-HCCL、device-direct 或 host-staged 等内层实现。
+FlagQuantum does not currently define or require
+`torch_fl.distributed_identity(group)`. Validation uses existing public
+PyTorch/Torch-FL ProcessGroup boundaries and labels evidence `backend="flagos"`.
+A successful collective does not identify FlagCX/NCCL/HCCL or direct/staged
+transport.
 
-如果未来出现必须区分内层通信实现的真实发布或诊断需求，应由 Torch-FL 与
-FlagCX 维护者先共同确定可观测性契约；FlagQuantum 不预设接口名称、schema 或
-实现方式，也不读取私有 ProcessGroup 字段。
+If future release/diagnostic needs require inner-route distinctions, Torch-FL and
+FlagCX owners first agree on observability. FlagQuantum does not preselect names,
+schemas, implementations, or read private ProcessGroup fields.
 
-### 8.6 API 兼容规则
+### 8.6 Compatibility
 
-- 所有契约必须带 schema version；
-- 增加字段允许向后兼容，删除或改义必须升级 major schema；
-- FlagQuantum 只依赖上述稳定接口；
-- 私有 `_C`、内部 config 对象和 undocumented environment variable 不得成为集成
-  契约；
-- 契约缺失时 provider fail closed，不通过 `hasattr` 猜测生产能力；
-- 开发兼容 shim 必须有移除版本和测试。
+Version contracts. Additions may be compatible; removals/semantic changes require
+major schemas. No private `_C`, internal config, or undocumented environment
+contracts. Missing contracts fail closed rather than using `hasattr` to guess
+production support. Development shims need tests and removal versions.
 
-## 9. FlagQuantum Platform Adapter
+## 9. Platform Adapter
 
-FlagQuantum 仍保留 `PlatformRuntime`，但 FlagOS 实现是薄适配层：
+Retain `PlatformRuntime` with a thin FlagOS implementation:
 
 ```python
 class FlagOSPlatformRuntime(PlatformRuntime):
@@ -438,29 +353,16 @@ class FlagOSPlatformRuntime(PlatformRuntime):
     def profiler_metadata(self, device): ...
 ```
 
-它存在的理由：
+It aligns CPU/CUDA/FlagOS internal contracts, isolates Torch-FL changes, projects
+versioned metadata, applies quantum fallback/accuracy/evidence rules, and keeps
+representation code from importing Torch-FL. It does not inspect vendor device
+files, duplicate streams/events, maintain ATen routes, load ACLNN/mudnn/topsaten,
+or bypass Torch-FL through private FlagCX APIs.
 
-- 保持 CPU、CUDA、FlagOS 的 FlagQuantum 内部契约一致；
-- 隔离 Torch-FL API 演进；
-- 将 Torch-FL metadata 转换为 FlagQuantum versioned contracts；
-- 执行 FlagQuantum 特有的 fallback/accuracy/evidence 规则；
-- 防止 representation runtime 直接 import `torch_fl`。
+## 10. Quantum Operator Profiles
 
-它不应：
-
-- 自行检测每家厂商设备文件；
-- 复制 Torch-FL stream/event 实现；
-- 维护 ATen operator route table；
-- 直接加载 ACLNN、mudnn、topsaten 等厂商库；
-- 绕过 Torch-FL 调用 FlagCX 私有接口。
-
-## 10. 量子算子 Profile
-
-Torch-FL 的通用 operator survey 是必要证据，但不能替代 FlagQuantum workload
-profile。FlagQuantum 应维护机器可读需求，Torch-FL CI 和硬件环境消费同一份
-profile。
-
-### 10.1 Profile 结构
+General surveys are necessary but insufficient. FlagQuantum owns machine-readable
+workload requirements consumed by Torch-FL CI and hardware environments.
 
 ```yaml
 schema: flagquantum_operator_profile_v1
@@ -489,7 +391,7 @@ fallback:
   dtype_demotion: forbidden
 ```
 
-### 10.2 首批 profiles
+Initial profiles:
 
 ```text
 flagquantum_statevector_local_p0
@@ -507,196 +409,92 @@ flagquantum_split_real_imag_p3_double_single
 flagquantum_extended_precision_p0
 ```
 
-### 10.3 P0 共同需求
+P0 needs mm/bmm/matmul, einsum, complex arithmetic, abs/conj/real, real/complex
+reductions, exp/cos/sin/sqrt, reshape/permute/transpose/expand/stack,
+view_as_real/view_as_complex, QR/SVD and stable backward, noncontiguous/broadcast/
+batched tensors, factory device/dtype preservation, and no host fallback in either
+direction. Specify exact overloads and case schemas, not Python function names only.
 
-- `mm`、`bmm`、`matmul`；
-- `einsum`；
-- complex add/sub/mul/div；
-- `abs`、`conj`、`real`；
-- complex/real reduction；
-- `exp`、`cos`、`sin`、`sqrt`；
-- `reshape`、`permute`、`transpose`、`expand`、`stack`；
-- `view_as_real`、`view_as_complex`；
-- QR/SVD 及稳定 backward；
-- 非连续 tensor、broadcast、batch；
-- factory op 的 device/dtype 保持；
-- forward/backward 不发生 host fallback。
+## 11. Complex Values, FP64, and Precision
 
-每个 op 必须使用精确 overload 和 case schema，不能只记录 Python 函数名。
-
-## 11. 复数、FP64 与可信精度
-
-### 11.1 Torch-FL 的边界
-
-Torch-FL 可以提供 dtype、operator route、AMP 和底层 kernel，但不负责判断某个
-量子算法是否达到科学误差或训练收敛要求。通用 FP16/BF16 AMP 不构成量子模拟
-精度策略。
-
-### 11.2 FlagQuantum 继续拥有 PrecisionPlan
+Torch-FL supplies dtypes, routes, AMP, and kernels, not scientific error or
+convergence acceptance. Generic FP16/BF16 AMP is not a quantum precision policy.
+FlagQuantum retains PrecisionPlan:
 
 ```text
 native complex128
-  → split real/imag float64
-  → certified double-single FP32
-  → adaptive mixed precision
-  → CPU/其他认证设备高精度执行
-  → fail closed
+ -> split real/imag float64
+ -> certified double-single FP32
+ -> adaptive mixed precision
+ -> high precision on CPU/another certified device
+ -> fail closed
 ```
 
-Torch-FL 对各层提供可执行事实，FlagQuantum resolver 决定是否满足
-`AccuracyContract`。
+Torch-FL supplies executable facts; FlagQuantum decides AccuracyContract
+satisfaction. Real/imag kernels use underlying float32/64 ATen operations when
+complex support is incomplete. Validate dtype, FMA/rounding/subnormals, layouts,
+backward, reduction determinism, and pair consistency through collectives.
 
-### 11.3 Real/Imag 路径
+Double-Single is a FlagQuantum precision provider or jointly optimized quantum
+kernel, not a global Torch-FL dtype. FP32/FMA kernels and compilers must preserve
+error-free transforms and report actual routes.
 
-当厂商复数覆盖不足时，FlagQuantum 生成 real/imag 语义 kernel，Torch-FL 负责
-执行底层 float32/float64 ATen 算子。该路径必须单独验证：
+## 12. Fallback and Residency
 
-- dtype 保持；
-- FMA/舍入/subnormal；
-- noncontiguous layout；
-- backward；
-- reduction determinism；
-- collective 对 real/imag pair 的一致性。
-
-### 11.4 Double-Single
-
-Double-Single 是 FlagQuantum 的 precision provider 或双方共同优化的量子 kernel，
-不应被实现为 Torch-FL 的全局 dtype。Torch-FL 需要保证底层 float32/FMA kernel
-和编译器不破坏 error-free transform，并报告实际 route。
-
-## 12. Fallback 与设备驻留
-
-FlagQuantum 使用三级策略：
-
-```text
-FORBID
-SAME_DEVICE_PORTABLE
-HOST_DEBUG_ONLY
-```
-
-映射到 Torch-FL：
-
-| FlagQuantum 策略 | Torch-FL 允许 route |
+| FlagQuantum policy | Permitted Torch-FL routes |
 | --- | --- |
-| `FORBID` | 已认证 device-native/boxing/FlagGems/compiled；禁止 host |
-| `SAME_DEVICE_PORTABLE` | 允许同一 `flagos` device 的 portable/composite route |
-| `HOST_DEBUG_ONLY` | 显式允许 host fallback，但关闭性能与生产声明 |
+| `FORBID` | Certified device-native/boxing/FlagGems/compiled; no host |
+| `SAME_DEVICE_PORTABLE` | Portable/composite on the same `flagos` device |
+| `HOST_DEBUG_ONLY` | Explicit host fallback; no performance/production claim |
 
-以下事件一律进入 result metadata：
+Record host fallback, host/device transfer bytes, dtype changes, eager/compile
+fallback, FlagGems-to-vendor/boxing changes, FlagCX-to-vendor changes, direct-to-
+staged transport, and forward/backward route differences. Unauthorized production
+events fail, rather than only warn.
 
-- host fallback；
-- device-to-host/host-to-device bytes；
-- dtype promotion/demotion；
-- eager/compile fallback；
-- FlagGems → vendor/boxing route 变化；
-- FlagCX → 厂商 collective 变化；
-- direct transport → host staging；
-- forward/backward route 不一致。
+## 13. Distributed Responsibilities
 
-生产执行发现任何未授权事件时必须失败，不能只记录 warning。
+FlagQuantum owns amplitude/site/bond/slice/intermediate ownership; distinctions
+between observable/data parallelism and capacity sharding; collective intent,
+shape, dtype, estimated bytes; consistent forward/backward/optimizer sharding;
+`distribution_semantics` and `scalability_claim_allowed`.
 
-## 13. 分布式职责
+Torch-FL/ProcessGroupFlagOS owns inner FlagCX/HCCL/NCCL/RCCL routes, stream/event
+synchronization, device views/boxing, direct/staged transport, Work handles,
+timeouts, transport errors.
 
-### 13.1 FlagQuantum 拥有语义
+Joint evidence compares logical sharding/ownership/communication intent with
+actual groups, routes, residency, and topology. Passing DDP/all-reduce proves
+communication foundations only. Capacity evidence requires one oversized quantum
+workload to complete forward, backward, and optimizer while sharded across ranks.
 
-FlagQuantum 决定：
+## 14. Compilation and Profiling
 
-- statevector amplitude ownership；
-- MPS site/bond ownership；
-- TN slice/intermediate ownership；
-- observable/data parallel 与容量 sharding 的区别；
-- 每个 collective 的逻辑原因、tensor shape、dtype 和预计字节数；
-- forward、backward、optimizer 是否保持相同 sharding；
-- `distribution_semantics` 和 `scalability_claim_allowed`。
+Initially compile only stable, tensor-only local kernels without implicit host
+transfer through `torch.compile(backend="flagos")`. Exclude orchestration,
+dynamic fallback, probes, precision-escalation state machines, checkpoint I/O,
+and provider lifecycle. Validate eager/backward parity, FakeTensor/meta, dynamic
+shape limits, cache identity, routes. Eager fallback needs explicit policy.
 
-### 13.2 Torch-FL 拥有传输
+Torch-FL profiler evidence covers device kernels, host copies, stream/collective
+overlap, compilation/fusion, and route agreement. FlagQuantum adds gate/layer/block,
+representation phases, accuracy checkpoints, ownership, communication intent,
+precision escalation. Without profiling, correctness may run, but performance or
+no-host-fallback certification needs equivalent programmatic route/residency proof.
 
-Torch-FL/ProcessGroupFlagOS 决定：
-
-- FlagCX、HCCL、NCCL/RCCL 或其他 inner backend；
-- stream/event 同步；
-- device view/boxing；
-- device-direct 或 host staging；
-- collective Work、timeout 和 transport error。
-
-### 13.3 联合证据
-
-一次分布式结果同时包含：
+## 15. Evidence Composition
 
 ```text
-FlagQuantum:
-  logical sharding + rank ownership + communication intent
-
-Torch-FL:
-  actual process group + route + device transport + topology facts
-
-联合审计:
-  intent 与实际 transport 是否匹配
+L1 Torch-FL infrastructure:
+   devices/operators/autograd/compile/profiler/collectives
+L2 FlagQuantum semantics and accuracy:
+   SV/MPS/TN/density/gradients/precision/convergence
+L3 FlagQuantum scalability:
+   sharding/ownership/capacity/communication/recovery
 ```
 
-Torch-FL 的 DDP/all-reduce 通过，只能证明通信基础；只有一个过大逻辑量子任务
-确实以 `sharded_across_ranks` 完成 forward、backward 和 optimizer，才能形成
-FlagQuantum 容量扩展证据。
-
-## 14. Compile 与 Profiler
-
-### 14.1 `torch.compile`
-
-FlagQuantum 只把稳定、纯 tensor、无隐式 host transfer 的局部 quantum kernel
-交给 `torch.compile(backend="flagos")`。初始不编译：
-
-- 分布式 orchestration；
-- 动态 fallback；
-- capability probe；
-- accuracy escalation state machine；
-- checkpoint I/O；
-- provider lifecycle。
-
-编译结果必须验证 eager parity、backward、FakeTensor/meta、动态 shape 边界、缓存
-identity 和 route provenance。compile 失败回退 eager 必须由 policy 明确允许。
-
-### 14.2 Profiler
-
-Torch-FL profiler 数据用于证明：
-
-- kernel 在真实 device 执行；
-- 是否存在 host memcpy；
-- stream 与 collective overlap；
-- compile/fusion 是否生效；
-- route 与声明一致。
-
-FlagQuantum 补充：
-
-- gate/layer/block 语义；
-- SV/MPS/TN phase；
-- accuracy checkpoint；
-- rank ownership；
-- communication intent；
-- precision escalation。
-
-Profiler 不可用时可以运行 correctness，但不能形成完整性能或“无 host fallback”
-认证，除非存在等价的程序化 route/device-residency 证据。
-
-## 15. 能力与证据组合
-
-### 15.1 三层证据
-
-```text
-L1 Torch-FL Infrastructure Evidence
-   device / operator / autograd / compile / profiler / collective
-
-L2 FlagQuantum Semantic & Accuracy Evidence
-   SV/MPS/TN/Density / gradient / precision / convergence
-
-L3 FlagQuantum Scalability Evidence
-   logical sharding / rank ownership / capacity / communication / recovery
-```
-
-L1 通过是 L2/L3 的前置条件，但不会自动提升 L2/L3 成熟度。
-
-### 15.2 联合证据身份
-
-建议 evidence manifest 增加：
+L1 is prerequisite evidence, not automatic L2/L3 maturity promotion.
+Proposed joint manifest:
 
 ```json
 {
@@ -717,23 +515,20 @@ L1 通过是 L2/L3 的前置条件，但不会自动提升 L2/L3 成熟度。
 }
 ```
 
-任何 route config、compiler、SDK 或 PyTorch minor 变化都使旧证据失效，必须重新
-认证受影响能力。
+Route configuration, compiler, SDK, or PyTorch minor changes invalidate affected
+evidence and require recertification.
 
-## 16. 用户 API 与诊断体验
+## 16. User Experience
 
-### 16.1 普通使用
+Ordinary execution requires no explicit Torch-FL import:
 
 ```python
 import flagquantum as fq
-
 options = fq.ExecutionOptions(device="flagos:0")
 result = fq.run(circuit, options=options)
 ```
 
-用户不需要显式 import Torch-FL；provider 根据 profile 延迟激活。
-
-### 16.2 严格科学执行
+Strict scientific execution:
 
 ```python
 result = fq.run(
@@ -746,7 +541,7 @@ result = fq.run(
 )
 ```
 
-### 16.3 Preflight
+Proposed preflight:
 
 ```python
 report = fq.preflight(
@@ -758,20 +553,11 @@ report = fq.preflight(
 )
 ```
 
-报告至少包含：
+Report installation/compatibility, physical stack, required profile, missing/
+unverified operators, forward/backward routes, precision/blockers, collectives,
+fallback/staging risk, maturity, and permission to execute/benchmark/claim production.
 
-- provider 是否安装和兼容；
-- 真实厂商、设备和软件栈；
-- 所需 quantum operator profile；
-- 缺失/未验证 operator；
-- forward/backward route；
-- precision plan 与 accuracy blockers；
-- collective route；
-- CPU fallback/host staging 风险；
-- 当前 capability maturity；
-- 是否允许执行、benchmark 和 production claim。
-
-### 16.4 Result provenance
+Proposed result information:
 
 ```python
 result.runtime.platform
@@ -784,13 +570,11 @@ result.distributed.distribution_semantics
 result.evidence.ids
 ```
 
-公共字段最终名称应通过 runtime contract 版本化后确定，上述仅定义信息边界。
+These define information boundaries; final public names require versioned contracts.
 
-## 17. 版本与联合发布策略
+## 17. Compatibility and Releases
 
-### 17.1 兼容矩阵
-
-建立机器可读文件，例如：
+Example machine-readable matrix:
 
 ```toml
 schema = "flagquantum_torch_fl_compatibility_v1"
@@ -805,23 +589,13 @@ status = "development_evidence"
 evidence = "path-or-id"
 ```
 
-矩阵必须区分 Python import compatibility、operator compatibility、quantum
-correctness、distributed 和 release certification。
+Distinguish import, operator, quantum correctness, distributed, and release
+compatibility. FlagQuantum keeps independent semantic releases and broad Core
+PyTorch coverage. Torch-FL follows minor/vendor ABI lines; the provider follows
+both contracts; bundles pin complete certified combinations. Security fixes may
+trigger bundle patches. Commits need not synchronize, but release candidates do.
 
-### 17.2 发布节奏
-
-建议：
-
-- FlagQuantum 保持自身语义版本和较宽 PyTorch core 矩阵；
-- Torch-FL 按 PyTorch minor/vendor ABI 发布；
-- `flagquantum-flagos` 针对两者稳定 contract 发布；
-- FlagOS Quantum Runtime 按完整认证 bundle 发布；
-- 任一底层安全修复可以触发 bundle patch release；
-- 不要求两个仓库每次 commit 同步，但 release candidate 必须冻结组合。
-
-### 17.3 兼容失败
-
-版本不兼容时在 provider 激活阶段给出精确诊断：
+Reject incompatibility during activation, before kernels/collectives encounter ABI errors:
 
 ```text
 Installed Torch-FL targets PyTorch 2.10.x, but this process uses 2.11.x.
@@ -829,313 +603,198 @@ Install a certified FlagOS Quantum Runtime profile; native CPU/PyTorch paths
 remain available.
 ```
 
-不能等待到第一个量子 kernel 或 collective 才出现符号/ABI 崩溃。
+## 18. CI and Hardware Certification
 
-## 18. CI 与硬件认证
-
-### 18.1 CI 分层
-
-| Lane | 环境 | 证明内容 |
+| Lane | Environment | Evidence |
 | --- | --- | --- |
-| `flagquantum-core` | 无 Torch-FL | 核心独立安装与 CPU/native fast path |
-| `flagquantum-flagos-contract` | mock/reference provider | schema、激活、错误和 fallback policy |
-| `torch-fl-quantum-ops` | 真实厂商卡 | 精确 overload、dtype、layout、autograd、route |
-| `flagquantum-flagos-local` | 真实单卡 | SV/MPS/TN/Density forward/backward/accuracy |
-| `flagquantum-flagos-distributed` | 真实多卡 | collective、真实 sharding、optimizer |
-| `flagquantum-flagos-multinode` | 真实多节点 | topology、inter-node、recovery、soak |
-| `flagos-quantum-release` | 冻结 bundle | 全量 manifest、benchmark audit、可复现性 |
+| `flagquantum-core` | No Torch-FL | Independent install and CPU/native paths |
+| `flagquantum-flagos-contract` | Mock/reference | Schema, activation, errors, policy |
+| `torch-fl-quantum-ops` | Real vendor hardware | Exact overload/dtype/layout/autograd/routes |
+| `flagquantum-flagos-local` | Real single device | Representation forward/backward/accuracy |
+| `flagquantum-flagos-distributed` | Real multiple devices | Collectives, sharding, optimizer |
+| `flagquantum-flagos-multinode` | Real nodes | Topology, inter-node, recovery, soak |
+| `flagos-quantum-release` | Frozen bundle | Manifest, benchmark audit, reproducibility |
 
-### 18.2 测试所有权
+FlagQuantum owns profile schemas, workload references, end-to-end tests. Torch-FL
+owns route/operator hardware tests. FlagOS/vendor CI owns runners, drivers, SDKs,
+hardware. FlagQuantum and FlagOS release owners jointly sign evidence audits.
 
-- quantum operator profile schema 和 workload reference：FlagQuantum；
-- ATen route/operator hardware tests：Torch-FL；
-- end-to-end quantum tests：FlagQuantum；
-- runner、driver、SDK 和硬件资源：FlagOS/厂商 CI；
-- release evidence audit：FlagQuantum 与 FlagOS release owner 联合签署。
+Single-device production needs a complete statevector training workload, forward/
+backward/optimizer, complex64 or certified real/imag, strict residency, accuracy
+contract, route/profiler evidence, repeatability, peak memory. Distributed support
+also needs single-device failure/over-budget proof, one sharded workload, complete
+ownership, preserved training sharding, bytes/actual routes, checkpoint/restart,
+repeated stable runs, and release audit.
 
-### 18.3 最小硬件门槛
+## 19. Joint Governance
 
-单卡 production support 至少要求：
-
-- 一种完整 statevector training workload；
-- forward、backward、optimizer step；
-- complex64 或认证 real/imag path；
-- strict no-host-fallback；
-- accuracy contract；
-- route/profiler evidence；
-- 重复运行与峰值内存记录。
-
-分布式 production support 还要求：
-
-- 单卡容量失败或明确超预算；
-- 一个逻辑任务 `sharded_across_ranks`；
-- 全 rank ownership；
-- forward/backward/optimizer 保持 sharding；
-- 通信量和实际 collective route；
-- checkpoint/restart；
-- 多次稳定运行和 release payload audit。
-
-## 19. 联合开发治理
-
-### 19.1 接口工作组
-
-建议 FlagQuantum 与 Torch-FL 设立轻量接口 owner：
-
-| 领域 | 主 owner | Review owner |
+| Area | Owner | Reviewer |
 | --- | --- | --- |
 | RuntimeIdentity/RouteExplanation | Torch-FL | FlagQuantum |
-| Quantum operator profile | FlagQuantum | Torch-FL/FlagGems |
-| Strict fallback contract | Torch-FL | FlagQuantum |
-| Accuracy/Precision contracts | FlagQuantum | Torch-FL |
+| Quantum profiles | FlagQuantum | Torch-FL/FlagGems |
+| Strict fallback | Torch-FL | FlagQuantum |
+| Accuracy/precision | FlagQuantum | Torch-FL |
 | ProcessGroup evidence | Torch-FL/FlagCX | FlagQuantum |
 | Capability promotion | FlagQuantum | FlagOS release owner |
-| Version bundle | FlagOS release owner | 双方 |
+| Bundles | FlagOS release owner | Both projects |
 
-### 19.2 变更协议
+Public changes need compatibility tests in both repositories. Notify route/schema
+changes a compatibility window ahead. New P0 operators need reference cases.
+Vendor claims need specific environments/evidence. Chats/private scripts must not
+be the sole compatibility authority. Emergency workarounds need owners, expiry,
+and removal tests.
 
-- 公共 contract 变更必须在两个仓库都有兼容测试；
-- Torch-FL route/schema 变化提前一个兼容窗口通知；
-- FlagQuantum quantum profile 增加 P0 op 时必须提供 reference case；
-- 厂商支持声明必须附具体环境和证据；
-- 不在聊天、口头约定或私有脚本中维护唯一兼容事实；
-- 紧急 workaround 必须有 owner、到期版本和删除测试。
+Only integration adapters import `torch_fl`; Torch-FL does not import FlagQuantum.
+Exchange JSON/TOML/dataclass facts. Vendor branches remain below the boundary,
+quantum branches above. Benchmarks reuse discovery. Each fallback has one decision
+entry and each capability ID one authority.
 
-### 19.3 代码可理解性
+## 20. Implementation Phases
 
-- FlagQuantum 中只有 integration adapter 可以 import `torch_fl`；
-- Torch-FL 中不 import FlagQuantum；
-- 双方通过 JSON/TOML/dataclass schema 交换事实；
-- vendor 分支只存在 Torch-FL/厂商层；
-- quantum 分支只存在 FlagQuantum；
-- benchmark 不重新实现 provider 探测；
-- 每个 fallback 只有一个决策入口；
-- 每个 capability ID 只有一个定义来源。
+### Phase 0: Joint Decision
 
-## 20. 分阶段实施计划
+Convert this plan to an agreed ADR/FEP, assign owners, fix Core/plugin/bundle
+boundaries, inventory available/missing public interfaces, draft compatibility,
+choose the first domestic card and workload. Exit: no private-API integration or
+mandatory Core dependency.
 
-### Phase 0：联合决策冻结
+### Phase 1: Minimal Provider
 
-交付物：
+Deliver entry point, lazy activation, `flagos:0` resolution, identity adaptation,
+missing/incompatible errors, independent Core and no-top-level-import tests.
+Exit: basic tensor preflight with Torch-FL and unaffected Core tests without it.
 
-- 本文档转为双方认可的 ADR/FEP；
-- 明确两个仓库 owner；
-- 冻结 core/plugin/bundle 三层依赖；
-- 列出 Torch-FL 当前可公开使用和仍缺失的接口；
-- 建立版本兼容矩阵草案；
-- 确定首张目标国产卡和首个 statevector workload。
+### Phase 2: Routes and Strict Fallback
 
-退出条件：双方同意不通过私有 API 集成，不把 Torch-FL 加入 FlagQuantum core
-dependencies。
+Deliver RouteExplanation, StrictExecutionScope, FallbackEvent, route hash, policy
+mapping, profiler/residency cross-checks. Exit: unauthorized CPU/dtype/compile
+fallback fails before or at occurrence with structured diagnostics.
 
-### Phase 1：最小 FlagOS Provider
+### Phase 3: P0 Operators
 
-交付物：
+Deliver statevector/real-imag profiles, exact overload/case generators,
+complex64/128/float32/64, contiguous/noncontiguous, forward/backward, hardware
+result conversion. Exit: complete preflight before large workloads with precise
+routes/blockers.
 
-- provider entry point；
-- lazy activation；
-- `flagos:0` device resolution；
-- RuntimeIdentity adapter；
-- 清晰的 missing/incompatible dependency 错误；
-- CPU/native path independence tests；
-- no top-level import tests。
+### Phase 4: Single-Device Statevector
 
-退出条件：安装 Torch-FL 时能完成基础 tensor preflight；未安装时 FlagQuantum
-全部核心测试不受影响。
+Run the same Circuit/IR on CPU reference and `flagos:0`; cover values,
+expectations, gradients, optimizer, accuracy, residency, route/memory/profiler/
+precision evidence, reproducible artifacts. Exit: scoped operator/depth/shape
+profiles have real domestic development evidence; one success is not production.
 
-### Phase 2：Route 与严格 fallback
+### Phase 5: High Precision, MPS, and TN
 
-交付物：
+Deliver split float64, Double-Single/compensated reductions, QR/SVD forward/
+backward, TN contraction/reverse, representation monitors, eager/compile parity.
+Exit: distinguish floating-point/truncation/contraction/stochastic errors and
+make escalation/fallback auditable.
 
-- RouteExplanation；
-- StrictExecutionScope；
-- FallbackEvent；
-- route manifest hash；
-- FlagQuantum `FORBID/SAME_DEVICE_PORTABLE/HOST_DEBUG_ONLY` 映射；
-- profiler/device-residency 交叉验证。
+### Phase 6: Distributed Execution
 
-退出条件：未授权 CPU fallback、dtype demotion 或 compile fallback 在执行前或发生
-点失败，并进入结构化诊断。
+Deliver ProcessGroupFlagOS adaptation, the candidate DistributedIdentity evidence,
+sharded statevector training followed by MPS/TN, intent/route reconciliation,
+checkpoint/restart, fault diagnostics. Section 8.5 governs the actual observability
+interface; this candidate does not require a new Torch-FL API.
+Exit: a workload too large for one device completes a sharded training step with
+all release metadata.
 
-### Phase 3：量子 P0 Operator Profiles
+### Phase 7: Joint Certification
 
-交付物：
+Deliver bundles, SBOM/licenses/version/environment manifests, repeated hardware
+runs, install/upgrade/rollback runbooks, capability/limitations updates, release
+audits. Exit: rebuildable, reproducible, diagnosable, reversible delivery with
+claims matching evidence.
 
-- statevector local P0 profile；
-- real/imag P0 profile；
-- 精确 overload/case generator；
-- complex64/complex128/float32/float64；
-- contiguous/noncontiguous；
-- forward/backward；
-- Torch-FL 硬件结果转换为 FlagQuantum evidence。
+## 21. First Work Packages
 
-退出条件：目标卡的 operator 事实可在大 workload 前完整预检，失败项给出准确
-route 和 blocker。
+Review independently, in order:
 
-### Phase 4：单卡 Statevector 闭环
+1. Joint ADR and owners.
+2. `flagquantum_torch_fl_compatibility_v1`.
+3. RuntimeIdentity schema.
+4. RouteExplanation/categories.
+5. StrictExecutionScope/FallbackEvent.
+6. Extension SDK capabilities for stable platform/collective providers.
+7. Internal FlagOSPlatformRuntime prototype.
+8. Independent Core/no-import tests.
+9. Statevector P0 profile from current requirements.
+10. Profile integration into Torch-FL surveys.
+11. Complex64/128, noncontiguous, backward cases.
+12. Route/evidence conversion.
+13. FlagOS preflight.
+14. Single-device forward.
+15. Gradients/optimizer.
+16. Strict fallback/residency checks.
+17. First development hardware artifact.
+18. MPS QR/SVD and distributed ProcessGroup work afterward.
 
-交付物：
+## 22. Risks
 
-- 同一 Circuit/IR 在 CPU reference 与 `flagos:0` 执行；
-- value、expectation、gradient、optimizer；
-- AccuracyContract；
-- strict device residency；
-- route、memory、profiler、precision evidence；
-- 可复现 benchmark artifact。
-
-退出条件：限定 operator/depth/shape/profile 在真实国产卡上通过 development
-evidence；不因单次成功提升为 production support。
-
-### Phase 5：可信高精度与 MPS/TN
-
-交付物：
-
-- split float64；
-- Double-Single/compensated reduction；
-- MPS QR/SVD forward/backward；
-- TN contraction/reverse；
-- representation-specific accuracy monitor；
-- eager/compile parity。
-
-退出条件：浮点、截断、contraction 和 stochastic error 可以分离，精度升级和
-fallback 均可审计。
-
-### Phase 6：真正分布式执行
-
-交付物：
-
-- ProcessGroupFlagOS adapter；
-- DistributedIdentity；
-- statevector sharded forward/backward/optimizer；
-- 后续 MPS/TN sharding；
-- actual collective route 与 logical communication intent 对账；
-- checkpoint/restart 和故障诊断。
-
-退出条件：单卡放不下的一个逻辑量子任务完成真实 sharded training step，且所有
-release-gate metadata 完整。
-
-### Phase 7：联合发布认证
-
-交付物：
-
-- FlagOS Quantum Runtime bundle；
-- SBOM、license、版本和环境 manifest；
-- 多次实机运行；
-- 安装/升级/回滚 runbook；
-- capability matrix 和 Known Limitations 更新；
-- release artifact audit。
-
-退出条件：bundle 可重建、可复现、可诊断、可回滚，声明范围与证据完全一致。
-
-## 21. 首批工作包
-
-建议按顺序执行，每项独立 review：
-
-1. 将本文档转成双方正式 ADR，并指定 owner；
-2. 定义 `flagquantum_torch_fl_compatibility_v1`；
-3. 定义 RuntimeIdentity schema；
-4. 定义 RouteExplanation 与 route categories；
-5. 定义 StrictExecutionScope 和 FallbackEvent；
-6. 在 FlagQuantum extension SDK 增加稳定 platform/collective provider 所需能力；
-7. 建立内部 `FlagOSPlatformRuntime` prototype；
-8. 增加 no-top-level-import 和 no-Torch-FL core install 测试；
-9. 从现有算子需求生成 statevector P0 profile；
-10. 在 Torch-FL operator survey 中接入该 profile；
-11. 增加 complex64、complex128、noncontiguous 和 backward case；
-12. 建立 route manifest/evidence 转换器；
-13. 打通 `fq.preflight(..., device="flagos:0")`；
-14. 打通单卡 statevector forward；
-15. 打通 gradient 和 optimizer step；
-16. 增加 strict fallback 与 device-residency 检查；
-17. 形成首个开发级硬件 artifact；
-18. 再开始 MPS QR/SVD 与分布式 ProcessGroup 接入。
-
-## 22. 风险与控制
-
-| 风险 | 控制措施 |
+| Risk | Control |
 | --- | --- |
-| PyTorch minor/ATen ABI 锁定 | core 不强依赖；provider 早期兼容检查；bundle 锁版本 |
-| Torch-FL import 全局副作用 | lazy activation；单一 PrivateUse1 owner；进程级诊断 |
-| CPU fallback 隐藏性能与正确性 | strict scope；fallback events；device-residency 证据 |
-| 通用 operator survey 误当量子支持 | 独立 quantum profiles 和端到端 workload |
-| complex 覆盖不足 | real/imag path；quantum-specialized kernels |
-| 无原生 FP64 | PrecisionPlan、Double-Single、adaptive/CPU failover |
-| FlagGems/Triton 厂商版本冲突 | bundle 隔离；编译器 identity/hash；禁止运行时猜测 |
-| `flagos` 隐藏真实厂商 | RuntimeIdentity 强制 vendor/model/SDK |
-| ProcessGroup 可用但不是真实量子扩展 | FlagQuantum sharding evidence 和容量 gate |
-| 双方接口快速漂移 | versioned schema、双仓兼容测试、移除窗口 |
-| 两套 capability maturity 含义不同 | 不互相自动提升；联合 evidence 显式映射 |
-| 插件拆包增加维护成本 | 先内部 prototype，稳定后再独立分发 |
-| 上游私有 API 诱惑 | 公共 contract 缺失即 fail closed，不使用 `_C` workaround |
+| Minor/ATen ABI lock | Independent Core, early compatibility, pinned bundles |
+| Import side effects | Lazy activation, sole PrivateUse1 owner, process diagnostics |
+| Hidden CPU fallback | Strict scope/events/residency |
+| Surveys mistaken for quantum support | Quantum profiles and workloads |
+| Incomplete complex support | Real/imag and specialized kernels |
+| No native FP64 | PrecisionPlan, Double-Single, adaptive/CPU failover |
+| FlagGems/Triton vendor conflicts | Bundle isolation, compiler identity/hash, no guessing |
+| Hidden vendor identity | Required vendor/model/SDK |
+| Collectives mistaken for capacity | Sharding evidence and capacity gates |
+| Interface drift | Versioned schemas, dual-repository tests, removal windows |
+| Different maturity meanings | Explicit evidence mapping, no automatic promotion |
+| Plugin maintenance cost | Internal prototype before separate distribution |
+| Private API shortcuts | Missing public contracts fail closed; no `_C` workaround |
 
-## 23. 安全、供应链与许可
+## 23. Supply Chain, Security, and Licensing
 
-- Torch-FL、FlagGems、FlagTree、FlagCX 和厂商库记录来源、版本、hash 和 license；
-- 生产 bundle 生成 SBOM；
-- 不把厂商凭证或私有 registry token 写入 manifest/evidence；
-- 动态库搜索路径和 preload 必须进入环境审计；
-- 非官方本机 wheel 标记为 non-portable，不进入 release certification；
-- provider 以当前 Python 进程权限执行，只加载可信包；
-- release artifact 记录构建机、编译器和 source revision；
-- Apache-2.0 代码复用保留许可与 NOTICE；优先通过公开 API 使用 Torch-FL，避免
-  复制生成代码和 ABI 敏感实现。
+Record sources, versions, hashes, licenses for Torch-FL/FlagGems/FlagTree/FlagCX
+and vendor libraries. Generate production SBOMs. Exclude credentials/tokens from
+manifests/evidence. Audit dynamic-library paths/preloads. Mark unofficial local
+wheels nonportable and exclude release certification. Providers run with process
+permissions and load trusted packages. Record build hosts, compilers, revisions.
+Preserve Apache-2.0 licenses/NOTICE for reused code; prefer public APIs over copied
+generated/ABI-sensitive implementations.
 
 ## 24. Definition of Done
 
-FlagQuantum–Torch-FL 集成完成必须同时满足：
+- Core installs/runs without Torch-FL and top-level imports load no vendor libraries.
+- Stable provider activation handles FlagOS without private `_C`/vendor internals.
+- Physical vendor/device/version remains visible.
+- Profiles pass exact overload/dtype/layout/backward hardware checks.
+- Production fallback, demotion, staging, compile fallback are controlled/audited.
+- FlagQuantum AccuracyContract certifies numerical and convergence behavior.
+- No-FP64 devices have explicit real/imag, extended-precision, alternate-device,
+  or rejection paths.
+- Logical sharding is distinct from transport, and one oversized workload completes training.
+- Pinned bundles include SBOM, evidence, and runbooks.
+- A second vendor requires no representation-algorithm changes.
+- Matrices, limitations, benchmarks, release notes remain within evidence scope.
 
-- `flagquantum` 核心包在没有 Torch-FL 时完整安装和运行；
-- 顶层 `import flagquantum` 不加载 Torch-FL 或厂商动态库；
-- `device="flagos:0"` 通过稳定 provider 激活；
-- 不直接调用 Torch-FL 私有 `_C` 或 vendor internals；
-- 真实厂商/设备/版本不会被统一 `flagos` 名称隐藏；
-- quantum operator profile 在目标硬件上通过精确 overload、dtype、layout 和
-  backward 验证；
-- production profile 中 CPU fallback、dtype demotion、host staging 和 compile
-  fallback 均受策略控制并可审计；
-- SV/MPS/TN 的数值和收敛由 FlagQuantum AccuracyContract 认证；
-- 无原生 FP64 设备具有明确的 real/imag、软件扩展精度、其他设备兜底或拒绝路径；
-- 分布式执行区分逻辑 sharding 与底层 collective；
-- 一个单卡放不下的量子训练任务能以 `sharded_across_ranks` 完成；
-- FlagOS Quantum Runtime 以锁定版本、SBOM、evidence manifest 和 runbook 发布；
-- 第二个厂商接入时无需修改 FlagQuantum representation 算法；
-- 能力矩阵、Known Limitations、benchmark 和 release note 不超过证据范围。
-
-## 25. 最终推荐
-
-最终依赖关系应固定为：
+## 25. Recommendation
 
 ```text
-FlagQuantum Core
-  └── 只依赖 PyTorch，拥有量子产品和语义
-
-FlagQuantum FlagOS Provider
-  ├── 可选依赖 Torch-FL
-  ├── 负责稳定适配、preflight 和证据转换
-  └── 不包含厂商分支和量子算法复制
-
-Torch-FL
-  ├── 拥有 flagos device、ATen 路由和通用执行
-  ├── 拥有 ProcessGroupFlagOS 和底层设备事实
-  └── 不理解 FlagQuantum IR 或量子 sharding
-
-FlagOS Quantum Runtime
-  └── 将两者与 PyTorch、FlagCX、compiler、SDK 锁定并联合认证
+FlagQuantum Core: PyTorch-only dependency; quantum product/semantics
+FlagQuantum FlagOS Provider: optional Torch-FL dependency; adaptation/preflight/evidence
+Torch-FL: devices, ATen, general execution, ProcessGroupFlagOS, physical facts
+FlagOS Quantum Runtime: pinned, jointly certified PyTorch/FlagCX/compiler/SDK bundle
 ```
 
-这既避免重复建设，又保持 FlagQuantum 的通用性和长期稳定性。由于两个项目属于
-同一生态且开发团队可以直接协作，最高价值的行动不是增加临时 wrapper，而是共同
-建立 RuntimeIdentity、RouteExplanation、StrictExecutionScope、quantum operator
-profile 和联合 evidence manifest 五项稳定契约。
+Keep vendor branches and duplicate quantum algorithms out of the provider. The
+highest-value collaboration is agreement on RuntimeIdentity, RouteExplanation,
+StrictExecutionScope, quantum operator profiles, and joint evidence manifests.
 
-## 参考资料
+## References
 
-- [FlagQuantum 国产加速器与可信数值计算顶层规划](DOMESTIC_ACCELERATOR_AND_NUMERICAL_TRUST_PLAN.md)
-- [FlagQuantum FlagOS-aligned release train](FLAGOS_ALIGNED_RELEASE_TRAIN.md)
-- [FlagQuantum dependency policy](../development/DEPENDENCY_POLICY.md)
-- [FlagQuantum PyTorch 后端算子与精度需求](../guides/PYTORCH_OPERATOR_REQUIREMENTS_FOR_FLAGGEMS.md)
-- [FlagQuantum capability maturity](CAPABILITY_MATURITY.md)
+- [Domestic accelerators and numerical trust](DOMESTIC_ACCELERATOR_AND_NUMERICAL_TRUST_PLAN.md)
+- [FlagOS-aligned release train](FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+- [Dependency policy](../development/DEPENDENCY_POLICY.md)
+- [PyTorch operator and precision requirements](../guides/PYTORCH_OPERATOR_REQUIREMENTS_FOR_FLAGGEMS.md)
+- [Capability maturity](CAPABILITY_MATURITY.md)
 - [Torch-FL repository](https://github.com/flagos-ai/Torch-FL)
-- [Torch-FL compatibility matrix](https://github.com/flagos-ai/Torch-FL/blob/main/docs/reference/compatibility.md)
-- [Torch-FL operator support](https://github.com/flagos-ai/Torch-FL/blob/main/docs/reference/operator-support.md)
-- [Torch-FL distributed FlagCX integration](https://github.com/flagos-ai/Torch-FL/blob/main/docs/architecture/distributed-flagcx.md)
-- [Torch-FL torch.compile integration](https://github.com/flagos-ai/Torch-FL/blob/main/docs/architecture/torch-compile-integration.md)
+- [Compatibility matrix](https://github.com/flagos-ai/Torch-FL/blob/main/docs/reference/compatibility.md)
+- [Operator support](https://github.com/flagos-ai/Torch-FL/blob/main/docs/reference/operator-support.md)
+- [Distributed FlagCX](https://github.com/flagos-ai/Torch-FL/blob/main/docs/architecture/distributed-flagcx.md)
+- [torch.compile integration](https://github.com/flagos-ai/Torch-FL/blob/main/docs/architecture/torch-compile-integration.md)

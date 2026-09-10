@@ -7,8 +7,9 @@ that production distributed execution will use.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 import torch
 
@@ -18,6 +19,9 @@ from .executors.statevector.local_execution import (
     simulate_distributed_statevector_local,
 )
 from .executors.statevector.planning import plan_distributed_statevector
+
+if TYPE_CHECKING:
+    from ..circuit import Circuit
 
 
 @dataclass(frozen=True)
@@ -175,6 +179,9 @@ def validate_development_production_parity(
     numerical outputs can be compared without a cluster.
     """
 
+    atol = float(atol)
+    if not math.isfinite(atol) or atol < 0:
+        raise ValueError("atol must be finite and non-negative")
     mode = _normalize_mode(mode)
     world_size = int(world_size)
     errors: list[str] = []
@@ -203,7 +210,11 @@ def validate_development_production_parity(
             )
         reference = run_native(ir, mode="statevector", **options)
         numerical_error = _state_max_error(development.state, reference)
-        if numerical_error > float(atol):
+        if not math.isfinite(numerical_error):
+            errors.append(
+                "development statevector comparison produced a non-finite error"
+            )
+        elif numerical_error > float(atol):
             errors.append(
                 f"development statevector numerical error {numerical_error:.3e} exceeds atol {float(atol):.3e}"
             )
@@ -251,7 +262,11 @@ def validate_development_production_parity(
     if development_signature != production_signature:
         errors.append(f"development and production {mode} signatures differ")
     numerical_error = _state_max_error(development.state(), production.state())
-    if numerical_error > float(atol):
+    if not math.isfinite(numerical_error):
+        errors.append(
+            f"development/production {mode} comparison produced a non-finite error"
+        )
+    elif numerical_error > float(atol):
         errors.append(
             f"development/production {mode} numerical error {numerical_error:.3e} exceeds atol {float(atol):.3e}"
         )
@@ -289,11 +304,15 @@ def require_development_production_parity(
     return report
 
 
-def _default_preflight_circuit() -> Any:
+def _default_preflight_circuit() -> Circuit:
     from ..circuit import Circuit
 
     circuit = Circuit(4)
-    circuit.h(0).cx(0, 1).rx(2, theta=0.2).rz(3, theta=0.4).cx(2, 3)
+    circuit.gate("h", 0)
+    circuit.gate("cx", (0, 1))
+    circuit.gate("rx", 2, theta=0.2)
+    circuit.gate("rz", 3, theta=0.4)
+    circuit.gate("cx", (2, 3))
     return circuit
 
 

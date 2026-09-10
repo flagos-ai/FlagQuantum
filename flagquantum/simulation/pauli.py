@@ -34,7 +34,10 @@ def pauli_product_operator(
     by_wire = {int(wire): str(name).lower() for wire, name in operators}
     result = torch.ones(1, 1, dtype=dtype, device=device)
     for wire in range(int(n_wires)):
-        matrix = GATE_MAT_DICT[by_wire.get(wire, "i")].to(
+        matrix = GATE_MAT_DICT[by_wire.get(wire, "i")]
+        if not isinstance(matrix, torch.Tensor):
+            raise ValueError("Pauli products require fixed gate matrices.")
+        matrix = matrix.to(
             device=device,
             dtype=dtype,
         )
@@ -52,7 +55,10 @@ def pauli_product_statevector_expectation(
     batch = state.reshape(1, -1) if state.ndim == 1 else state
     transformed = batch
     for wire, name in operators:
-        matrix = GATE_MAT_DICT[str(name).lower()].to(
+        matrix = GATE_MAT_DICT[str(name).lower()]
+        if not isinstance(matrix, torch.Tensor):
+            raise ValueError("Pauli products require fixed gate matrices.")
+        matrix = matrix.to(
             device=batch.device,
             dtype=batch.dtype,
         )

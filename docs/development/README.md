@@ -2,6 +2,7 @@
 
 Policies and workflows for changing, testing, and releasing FlagQuantum.
 
+- [Python engineering standard](PYTHON_ENGINEERING_STANDARD.md)
 - [Testing manual](TESTING.md)
 - [Code organization](CODE_ORGANIZATION.md)
 - [Repository governance](REPOSITORY_GOVERNANCE.md)

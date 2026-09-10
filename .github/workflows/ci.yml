@@ -16,6 +16,8 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -e '.[dev]'
+      - name: English repository content
+        run: python tools/check_repository_language.py
       - name: Ruff production and test surface
         run: ruff check flagquantum tests tools
       - name: Black production and test surface
@@ -24,7 +26,8 @@ jobs:
         run: >-
           mypy --no-site-packages --ignore-missing-imports --follow-imports skip
           flagquantum/version.py flagquantum/core/ir.py
-          flagquantum/core/parameters.py flagquantum/compilation
+          flagquantum/core/parameters.py flagquantum/runtime/execution_plan.py
+          flagquantum/runtime/execution_plan_contract.py
           tools/ci_tier.py
       - name: Strict typed runtime contracts
         run: >-
@@ -42,7 +45,8 @@ jobs:
         run: >-
           mypy --strict --no-site-packages --ignore-missing-imports
           --follow-imports skip
-          flagquantum/compilation
+          flagquantum/runtime/execution_plan.py
+          flagquantum/runtime/execution_plan_contract.py
           flagquantum/runtime/execution.py
           flagquantum/runtime/distributed/protocols.py
           flagquantum/runtime/backend_registry.py
@@ -51,14 +55,14 @@ jobs:
         run: >-
           mypy --strict --no-site-packages --ignore-missing-imports
           --follow-imports skip
-          flagquantum/interop/contracts.py flagquantum/interop/conformance.py
-          flagquantum/interop/registry.py
-          flagquantum/interop/pennylane/adapter.py
-          flagquantum/interop/pennylane/conformance.py
-          flagquantum/interop/pennylane/models.py
-          flagquantum/interop/qiskit/adapter.py
-          flagquantum/interop/qiskit/conformance.py
-          flagquantum/interop/qiskit/models.py
+          flagquantum/ecosystem/contracts.py flagquantum/ecosystem/conformance.py
+          flagquantum/ecosystem/registry.py
+          flagquantum/ecosystem/pennylane/adapter.py
+          flagquantum/ecosystem/pennylane/conformance.py
+          flagquantum/ecosystem/pennylane/models.py
+          flagquantum/ecosystem/qiskit/adapter.py
+          flagquantum/ecosystem/qiskit/conformance.py
+          flagquantum/ecosystem/qiskit/models.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
       - name: Validate multi-team ownership policy
@@ -262,7 +266,7 @@ jobs:
           /tmp/fq-wheel/bin/python -m pip install dist/*.whl
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-wheel/bin/python -c "from flagquantum.runtime.capabilities import load_operator_profile; assert load_operator_profile('statevector_local_p0').name == 'statevector_local_p0'"
-          /tmp/fq-wheel/bin/python -c "from flagquantum.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
+          /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
           /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
           rm -rf /tmp/fq-wheel
       - name: Clean-install sdist and run quick start
@@ -271,7 +275,7 @@ jobs:
           /tmp/fq-sdist/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-sdist/bin/python -m pip install dist/*.tar.gz
           /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
-          /tmp/fq-sdist/bin/python -c "from flagquantum.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
+          /tmp/fq-sdist/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
       - name: Write checksummed artifact manifest
         run: python tools/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
       - uses: actions/upload-artifact@v4

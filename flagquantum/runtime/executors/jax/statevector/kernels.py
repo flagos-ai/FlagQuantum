@@ -13,10 +13,12 @@ from .....simulation.jax.statevector.kernels import (
     jax_sharded_statevector_loss,
 )
 from .....simulation.jax.statevector.kernels import (
+    jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
+)
+from .....simulation.jax.statevector.kernels import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
 )
 from ..array_conversions import (
-    _jax_basis_indices_for_wires,
     _parameterized_gate_matrix_as_jax,
 )
 from ..planning_core import _jax_global_indices_by_rank_for_plan
@@ -189,7 +191,8 @@ def _jax_pmap_statevector_parameter_loss(
     jax, jnp = _require_jax()
     import numpy as np
 
-    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy
 
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
     local_size = int(plan.shards[0].local_amplitudes)
@@ -312,7 +315,8 @@ def _jax_shard_map_statevector_parameter_loss(
     from jax.sharding import Mesh
     from jax.sharding import PartitionSpec as P
 
-    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy
 
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
     local_size = int(plan.shards[0].local_amplitudes)

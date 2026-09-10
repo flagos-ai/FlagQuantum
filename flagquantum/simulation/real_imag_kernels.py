@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from math import prod
-from typing import Any
+from typing import Any, TypeAlias
 
 import torch
 
@@ -12,17 +12,16 @@ _COMPILED_PAIR_CACHE: dict[tuple[Any, ...], Callable[..., torch.Tensor]] = {}
 _COMPILE_FAILURES: set[tuple[Any, ...]] = set()
 _FUSED_WORKING_SET_BYTES = 256 * 1024 * 1024
 _FUSED_INFERENCE_MIN_VOLUME = 2**25
+_CanonicalBMMLayout: TypeAlias = tuple[
+    tuple[int, ...],
+    tuple[int, ...],
+    tuple[int, int, int],
+    tuple[int, ...],
+    tuple[int, ...],
+    tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]],
+]
 _CANONICAL_LAYOUT_CACHE: dict[
-    tuple[str, tuple[int, ...], tuple[int, ...]],
-    tuple[
-        tuple[int, ...],
-        tuple[int, ...],
-        tuple[int, int, int],
-        tuple[int, ...],
-        tuple[int, ...],
-        tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]],
-    ]
-    | None,
+    tuple[str, tuple[int, ...], tuple[int, ...]], _CanonicalBMMLayout | None
 ] = {}
 
 
@@ -37,17 +36,9 @@ def _bmm_real_imag_eager(
     return torch.stack((real, imag), dim=-1)
 
 
-def _canonical_bmm_layout(equation: str, left: torch.Tensor, right: torch.Tensor) -> (
-    tuple[
-        tuple[int, ...],
-        tuple[int, ...],
-        tuple[int, int, int],
-        tuple[int, ...],
-        tuple[int, ...],
-        tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]],
-    ]
-    | None
-):
+def _canonical_bmm_layout(
+    equation: str, left: torch.Tensor, right: torch.Tensor
+) -> _CanonicalBMMLayout | None:
     cache_key = (equation, tuple(left.shape), tuple(right.shape))
     if cache_key in _CANONICAL_LAYOUT_CACHE:
         layout = _CANONICAL_LAYOUT_CACHE[cache_key]
@@ -140,7 +131,7 @@ def _canonical_bmm_inputs(
 def _canonical_layout_requires_materialization(
     left: torch.Tensor,
     right: torch.Tensor,
-    layout: tuple,
+    layout: _CanonicalBMMLayout,
 ) -> bool:
     left_permutation, right_permutation, (b, m, n), _, _, _ = layout
     k = left.numel() // (b * m)

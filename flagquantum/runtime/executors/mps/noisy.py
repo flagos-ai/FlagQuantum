@@ -158,7 +158,7 @@ def run_lowered_noisy_mps(
     dtype: torch.dtype | None = None,
     max_bond: int | None = None,
     cutoff: float = 0.0,
-) -> Any:
+) -> MPSMonteCarloResult:
     """Schedule trajectories for an already-lowered noisy MPS program."""
 
     from ....simulation.mps.entrypoints import execute_lowered_noisy_mps_trajectory

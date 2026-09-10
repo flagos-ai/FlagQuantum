@@ -106,7 +106,9 @@ class MPSTrainingStep:
             raise ValueError(
                 "MPSTrainingStep currently supports mode='mps' or 'local_mps'."
             )
-        self._compiled_value_and_grad = None
+        self._compiled_value_and_grad: (
+            Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]] | None
+        ) = None
         if self.compile:
             self._try_compile()
 
@@ -222,6 +224,7 @@ def compile_mps_training_step(
     """
 
     del example_parameters
+    wires: tuple[int, ...] | None
     if isinstance(observable_wires, int):
         wires = (int(observable_wires),)
     elif observable_wires is None:

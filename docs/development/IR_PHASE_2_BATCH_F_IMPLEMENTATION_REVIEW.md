@@ -1,8 +1,9 @@
-# IR Phase 2 Batch F 实现复核
+# IR Phase 2 Batch F Implementation Review
 
-## 结论
+## Conclusion
 
-Batch F 已在私有、离线、显式调用边界内形成端到端静态编译闭环：
+Batch F provides an end-to-end static compilation path within private, offline,
+explicit invocation boundaries:
 
 ```text
 CircuitIR import/seal
@@ -14,39 +15,44 @@ CircuitIR import/seal
   -> OpenQASM 2 / OpenQASM 3 / QCIS text emission
 ```
 
-该闭环不发现云资源、不接收真实 backend ID、不读取凭据、不调用 provider SDK、
-不提交任务，也没有进入公开 API 或默认执行路径。
+It does not discover cloud resources, accept real backend IDs, read credentials,
+call provider SDKs, submit jobs, or enter public APIs/default execution paths.
 
-## 已形成的证据
+## Established Evidence
 
-- 版本化离线 corpus 覆盖 legacy-native、合成 Quafu-static 线性路由和定向反转；
-- 输出门集结构、定向耦合合法性和输出哈希由测试锁定；
-- OpenQASM 2、OpenQASM 3、QCIS 均回解析并验证状态与 qubit order；
-- 与 legacy QASM/QCIS 发射结果进行解析后语义差分；
-- 无文本发射模式验证 expectation 与 autograd gradient；
-- 编译身份、校准快照变化、缓存 miss/hit 和字符输出确定性均有机器证据；
-- measurement、observable、dynamic circuit、unbound parameter、noise channel、
-  qubit-count mismatch 均 fail closed，避免静默丢失部署语义。
+- A versioned offline corpus covers legacy-native cases, synthetic Quafu-static
+  linear routing, and directed-edge reversal.
+- Tests fix output gate structure, directed coupling legality, and output hashes.
+- OpenQASM 2, OpenQASM 3, and QCIS outputs are parsed back to verify states and qubit order.
+- Parsed semantic differentials compare against legacy QASM/QCIS emission.
+- The mode without text emission verifies expectations and autograd gradients.
+- Machine evidence covers compilation identity, calibration snapshot changes,
+  cache misses/hits, and deterministic text output.
+- Measurements, observables, dynamic circuits, unbound parameters, noise channels,
+  and qubit-count mismatches fail closed to prevent silent loss of deployment semantics.
 
-## 性能基线
+## Performance Baseline
 
-在 `flagquantum-dev:pr-check`、单线程 CPU、5 次采样下，完整链路 10K gate 的
-cold/cached p95 分别为 574.794476 ms / 440.719608 ms，cold peak host memory
-为 26,196,356 bytes。该结果只是私有工程基线，不是公开 SLA。
+Under `flagquantum-dev:pr-check`, single-threaded CPU execution, and 5 samples,
+the complete 10K-gate path has cold/cached p95 of 574.794476 ms / 440.719608 ms
+and cold peak host memory of 26,196,356 bytes. This is a private engineering
+baseline, not a public SLA.
 
-性能预算已经形成候选，但仍未获 owner 批准，因此尚未成为回归门禁。
+A candidate performance budget exists but awaits owner approval and is not yet a
+regression gate.
 
-## 仍然关闭的边界
+## Boundaries That Remain Closed
 
-- adapter 源码、provider SDK 与远程提交；
-- token、凭据、真实 backend ID、队列、任务与价格；
-- 公开 API、默认路径切换和 legacy retirement；
-- Phase 2 自动退出。
+- Adapter source, provider SDKs, and remote submission.
+- Tokens, credentials, real backend IDs, queues, jobs, and pricing.
+- Public APIs, default-path switches, and legacy retirement.
+- Automatic Phase 2 exit.
 
-## 下一授权点
+## Next Authorization Point
 
-若认可当前基线与候选阈值，使用精确命令：
+If the baseline and candidate thresholds are accepted, the exact approval command is:
 
 `approve IR-PHASE2-BATCH-F-PERFORMANCE-BUDGET`
 
-批准后才可把候选预算固化为正式门禁，并继续准备 Phase 2 exit review candidate。
+Only after approval may the candidate become an active gate and preparation of
+the Phase 2 exit review candidate continue.

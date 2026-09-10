@@ -6,7 +6,12 @@ from dataclasses import replace
 from typing import Any, Mapping, Sequence
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ..noise import KrausChannel, NoiseModel, thermal_relaxation_channel
+from ..noise import (
+    DeviceNoiseProfile,
+    KrausChannel,
+    NoiseModel,
+    thermal_relaxation_channel,
+)
 
 
 def _encode_channel_instruction(
@@ -26,7 +31,7 @@ def _encode_channel_instruction(
 
 
 def _profile_channel(
-    noise_model: NoiseModel,
+    profile: DeviceNoiseProfile,
     *,
     wire: int,
     duration: float,
@@ -36,7 +41,6 @@ def _profile_channel(
 ) -> Instruction | None:
     if duration <= 0:
         return None
-    profile = noise_model.device_profile
     calibration = profile.calibration_for(wire)
     channel = thermal_relaxation_channel(
         calibration.t1,
@@ -80,7 +84,7 @@ def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> Cir
         if profile is not None:
             for wire in instruction.wires:
                 idle = _profile_channel(
-                    noise_model,
+                    profile,
                     wire=wire,
                     duration=start - wire_clock[wire],
                     placement="idle_before_gate",
@@ -93,7 +97,7 @@ def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> Cir
         if profile is not None:
             for wire in instruction.wires:
                 relaxation = _profile_channel(
-                    noise_model,
+                    profile,
                     wire=wire,
                     duration=duration,
                     placement="during_gate_approximation",
@@ -109,7 +113,7 @@ def lower_noise_model(circuit_or_ir: Any, noise_model: NoiseModel | None) -> Cir
         makespan = max(wire_clock, default=0.0)
         for wire in range(ir.n_wires):
             idle = _profile_channel(
-                noise_model,
+                profile,
                 wire=wire,
                 duration=makespan - wire_clock[wire],
                 placement="terminal_idle",

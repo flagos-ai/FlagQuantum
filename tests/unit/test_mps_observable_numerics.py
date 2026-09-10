@@ -51,3 +51,34 @@ def test_local_heisenberg_scan_matches_product_state_energy() -> None:
         outputs[-1].real,
         torch.full_like(base.real, 6.0),
     )
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_heisenberg_scan_preserves_bell_correlations_and_gradients(
+    dtype: torch.dtype,
+) -> None:
+    left = torch.zeros((1, 1, 2, 2), dtype=dtype)
+    right = torch.zeros((1, 2, 2, 1), dtype=dtype)
+    left[0, 0, 0, 0] = left[0, 0, 1, 1] = 2**-0.5
+    right[0, 0, 0, 0] = right[0, 1, 1, 0] = 1
+    base = torch.ones((1, 1, 1), dtype=dtype)
+    real_dtype = base.real.dtype
+    field = torch.tensor([0.3, -0.7], dtype=real_dtype, requires_grad=True)
+    x = torch.tensor([2.0], dtype=real_dtype, requires_grad=True)
+    y = torch.tensor([-3.0], dtype=real_dtype, requires_grad=True)
+    z = torch.tensor([4.0], dtype=real_dtype, requires_grad=True)
+
+    outputs = mps_heisenberg_local_scan(
+        (base, *(torch.zeros_like(base) for _ in range(4))),
+        (left, right),
+        (0, 1),
+        (field, x, y, z),
+    )
+    energy = outputs[-1].real.sum()
+    energy.backward()
+
+    torch.testing.assert_close(energy, torch.tensor(9.0, dtype=real_dtype))
+    torch.testing.assert_close(field.grad, torch.zeros_like(field))
+    torch.testing.assert_close(x.grad, torch.ones_like(x))
+    torch.testing.assert_close(y.grad, -torch.ones_like(y))
+    torch.testing.assert_close(z.grad, torch.ones_like(z))

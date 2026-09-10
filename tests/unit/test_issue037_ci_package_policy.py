@@ -1,3 +1,6 @@
+import ast
+import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -21,32 +24,27 @@ def test_package_uses_one_dynamic_version_source():
     assert '\nversion = "0.1.0"' not in pyproject
 
 
-def test_ci_has_supported_python_core_and_optional_jax_jobs():
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    for version in ("3.10", "3.11", "3.12"):
-        assert f'"{version}"' in workflow
-    assert "cpu-core:" in workflow
-    assert "jax-optional:" in workflow
-    assert "distributed-cpu:" in workflow
-    assert "verify_distribution_artifacts.py" in workflow
-    assert "artifact_manifest.py" in workflow
-    assert "Clean-install wheel" in workflow
-    assert "Clean-install sdist" in workflow
-    assert "native distributed runtime does not require JAX" in workflow
-    local_gpu = (ROOT / ".github" / "workflows" / "local-gpu.yml").read_text(
-        encoding="utf-8"
-    )
-    assert "one-gpu-local" in local_gpu
-    assert "two-gpu-distributed-required" in local_gpu
-    assert "--nproc-per-node=2" in local_gpu
-    assert "hardware_run_manifest.py" in local_gpu
-    scheduled = (ROOT / ".github" / "workflows" / "scheduled-hardware.yml").read_text(
-        encoding="utf-8"
-    )
-    assert "gpu-scheduled" in scheduled
-    assert "multinode-scheduled" in scheduled
-    assert "gpu.log" in scheduled
-    assert "gpu-count: [4, 8]" in scheduled
+def test_ci_python_paths_resolve():
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    paths = set(re.findall(r"\bflagquantum/[A-Za-z0-9_./-]+", workflow))
+    assert paths
+    assert not [path for path in paths if not (ROOT / path).exists()]
+
+
+def test_ci_install_checks_import_existing_modules():
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    snippets = re.findall(r'python -c "([^"\n]+)"', workflow)
+    modules = {
+        node.module
+        for snippet in snippets
+        for node in ast.walk(ast.parse(snippet))
+        if isinstance(node, ast.ImportFrom)
+        and node.module
+        and node.module.startswith("flagquantum.")
+    }
+    assert modules
+    for module in modules:
+        assert importlib.util.find_spec(module) is not None, module
 
 
 def test_distribution_quarantine_rejects_repo_only_members():

@@ -1,12 +1,42 @@
 import hashlib
 import json
+from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+import torch
 
+from flagquantum.runtime.executors.tensor_network import dynamic_checkpoint
 from flagquantum.runtime.executors.tensor_network.dynamic_checkpoint import (
     clear_dynamic_tn_checkpoint_writer_lock,
     inspect_dynamic_tn_checkpoint,
 )
+from flagquantum.runtime.executors.tensor_network.dynamic_reverse import (
+    DistributedTNDynamicReverseSegment,
+)
+
+
+@pytest.mark.parametrize("manifest", [None, [], "invalid"])
+def test_checkpoint_rejects_non_object_manifest_collectively(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, manifest: object
+) -> None:
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "COMMITTED").write_text("identity", encoding="utf-8")
+    monkeypatch.setattr(dynamic_checkpoint.dist, "is_initialized", lambda: True)
+    invalid_flags: list[bool] = []
+
+    def collective_invalid(invalid: bool, device: torch.device) -> bool:
+        invalid_flags.append(invalid)
+        return invalid
+
+    monkeypatch.setattr(dynamic_checkpoint, "_collective_invalid", collective_invalid)
+    with pytest.raises(RuntimeError, match="not durably committed"):
+        dynamic_checkpoint.load_dynamic_tn_reverse_checkpoint(
+            Mock(spec=DistributedTNDynamicReverseSegment),
+            tmp_path,
+            device=torch.device("cpu"),
+        )
+    assert invalid_flags == [True]
 
 
 def test_checkpoint_writer_lock_requires_audited_identity(tmp_path):

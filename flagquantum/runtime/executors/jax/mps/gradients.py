@@ -132,7 +132,8 @@ def jax_sharded_mps_parameter_value_and_grad(
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
 
     def _loss(parameter_array: Any) -> Any:
-        from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+        from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+        from ..kernel import _JAXParameterProxy
 
         previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
         try:
@@ -170,7 +171,8 @@ def jax_sharded_mps_parameter_value_and_grad(
         value_and_grad = jax.jit(value_and_grad)
     value, gradient = value_and_grad(jax_parameters)
 
-    from ..kernel import _JAXParameterProxy, _set_active_jax_compute_dtype
+    from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+    from ..kernel import _JAXParameterProxy
 
     previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
     try:

@@ -29,7 +29,7 @@ SUPPORTED_MEASUREMENTS = {
 def _error_response(error: Exception) -> dict[str, Any]:
     """Describe the bounded exception chain needed for remote diagnosis."""
 
-    chain = []
+    chain: list[str] = []
     current: BaseException | None = error
     while current is not None and len(chain) < 4:
         message = str(current).strip()
@@ -168,9 +168,9 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
                 )
             validated.append(ir.to_dict())
         started = time.perf_counter()
-        results = []
+        batch_responses = []
         for index, program in enumerate(validated):
-            result = execute(
+            batch_response = execute(
                 {
                     "schema": SCHEMA,
                     "version": VERSION,
@@ -182,17 +182,17 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
                 target=target,
                 device=device,
             )
-            results.append(result)
+            batch_responses.append(batch_response)
         return {
             "schema": SCHEMA,
             "version": VERSION,
             "ok": True,
             "request_id": request.get("request_id"),
-            "results": results,
+            "results": batch_responses,
             "evidence": {
                 "target": target,
                 "device": device,
-                "batch_size": len(results),
+                "batch_size": len(batch_responses),
                 "elapsed_seconds": time.perf_counter() - started,
             },
         }
@@ -254,7 +254,9 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
 
     from flagquantum.runtime.measurements import execute_measurements
 
-    results = execute_measurements(state, measurements, n_wires=program.n_wires)
+    measurement_results = execute_measurements(
+        state, measurements, n_wires=program.n_wires
+    )
     platform.synchronize(state.device)
     response["evidence"]["elapsed_seconds"] = time.perf_counter() - started
     response["evidence"].update(
@@ -263,7 +265,9 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
             "result_transfer": "device_to_host",
             "counts_aggregation": (
                 "host"
-                if any(item.kind in {"counts", "counts_ps"} for item in results)
+                if any(
+                    item.kind in {"counts", "counts_ps"} for item in measurement_results
+                )
                 else "not_requested"
             ),
         }
@@ -277,7 +281,7 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
             "metadata": dict(item.metadata),
             "statistics": dict(item.statistics),
         }
-        for item in results
+        for item in measurement_results
     ]
     return response
 

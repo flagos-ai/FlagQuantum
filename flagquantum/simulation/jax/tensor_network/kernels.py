@@ -72,13 +72,11 @@ def jax_tensor_network_expectation_product_ops(
         conjugate=True,
     )
     identity = _jax_pauli_matrix("i")
-    op_nodes = []
+    nodes = bra_nodes + ket_nodes
     for wire in range(int(n_wires)):
         op = ops.get(int(wire), identity)
-        op_nodes.append((op, (int(bra_labels[wire]), int(ket_labels[wire]))))
-    value = jax_contract_nodes_greedy(
-        bra_nodes + ket_nodes + op_nodes, tuple(), matmul_precision
-    )
+        nodes.append((op, (int(bra_labels[wire]), int(ket_labels[wire]))))
+    value = jax_contract_nodes_greedy(nodes, (), matmul_precision)
     return jnp.real(value.reshape(()))
 
 

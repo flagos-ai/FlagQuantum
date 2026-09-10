@@ -9,7 +9,7 @@ def test_batched_gesvd_failure_retries_isolated_matrices(monkeypatch):
     def fake_svd(matrix, *, full_matrices, driver):
         calls.append((tuple(matrix.shape), full_matrices, driver))
         if matrix.ndim > 2:
-            raise torch._C._LinAlgError("batched failure")
+            raise torch.linalg.LinAlgError("batched failure")
         size = matrix.shape[-1]
         return (
             torch.eye(size).to(matrix).reshape(size, size),
@@ -48,7 +48,7 @@ def test_batched_gesvd_failure_retries_isolated_matrices(monkeypatch):
 def test_isolated_cuda_failure_uses_strict_cpu_lapack(monkeypatch):
     def fake_svd(matrix, *, full_matrices, driver=None):
         if driver == "gesvd":
-            raise torch._C._LinAlgError("cuda failure")
+            raise torch.linalg.LinAlgError("cuda failure")
         size = matrix.shape[-1]
         return (
             torch.eye(size).to(matrix),
@@ -66,6 +66,10 @@ def test_isolated_cuda_failure_uses_strict_cpu_lapack(monkeypatch):
     )
 
     assert result[0].shape == (2, 1, 3, 3)
+    expected_vectors = torch.eye(3).expand(2, 1, 3, 3)
+    torch.testing.assert_close(result[0], expected_vectors)
+    torch.testing.assert_close(result[1], torch.ones(2, 1, 3))
+    torch.testing.assert_close(result[2], expected_vectors)
     assert mps_factorization.mps_svd_fallback_stats() == {
         "requested_driver_failures": 1,
         "gesvd_driver_fallbacks": 0,

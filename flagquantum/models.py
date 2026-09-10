@@ -11,21 +11,28 @@ from .circuit import Circuit
 from .runtime.contracts import Module, RuntimePolicy
 
 
+def _deployment_quantum_parameters(module: Module) -> torch.Tensor:
+    parameters = module.parameters_tensor
+    if parameters is None:
+        raise ValueError("hybrid model deployment requires a quantum parameter tensor")
+    return parameters.detach().clone()
+
+
 def _classifier_circuit(parameters: torch.Tensor) -> Circuit:
     return (
-        Circuit(2, device=getattr(parameters, "device", "cpu"))
-        .ry(0, parameters[0])
-        .cx(0, 1)
-        .ry(1, parameters[1])
+        Circuit(2, device=parameters.device)
+        .gate("ry", 0, theta=parameters[0])
+        .gate("cx", (0, 1))
+        .gate("ry", 1, theta=parameters[1])
     )
 
 
 def _energy_circuit(parameters: torch.Tensor) -> Circuit:
     return (
-        Circuit(2, device=getattr(parameters, "device", "cpu"))
-        .ry(0, parameters[0])
-        .cx(0, 1)
-        .ry(1, parameters[1])
+        Circuit(2, device=parameters.device)
+        .gate("ry", 0, theta=parameters[0])
+        .gate("cx", (0, 1))
+        .gate("ry", 1, theta=parameters[1])
     )
 
 
@@ -66,7 +73,7 @@ class HybridQuantumClassifier(torch.nn.Module):
 
         payload: dict[str, Any] = {
             "binding": dict(self.deployment_binding),
-            "quantum_parameters": self.quantum.parameters_tensor.detach().clone(),
+            "quantum_parameters": _deployment_quantum_parameters(self.quantum),
             "classical_state": {
                 name: value.detach().clone()
                 for name, value in self.encoder.state_dict().items()
@@ -128,12 +135,15 @@ class VariationalEnergyModel(torch.nn.Module):
         self.quantum.set_runtime_policy(policy)
 
     def forward(self) -> torch.Tensor:
-        return self.quantum().sum()
+        values = self.quantum()
+        if not isinstance(values, torch.Tensor):
+            raise TypeError("the quantum energy layer must return a torch.Tensor")
+        return values.sum()
 
     def deployment_parameters(self) -> dict[str, Any]:
         return {
             "binding": dict(self.deployment_binding),
-            "quantum_parameters": self.quantum.parameters_tensor.detach().clone(),
+            "quantum_parameters": _deployment_quantum_parameters(self.quantum),
         }
 
     def get_extra_state(self) -> dict[str, Any]:

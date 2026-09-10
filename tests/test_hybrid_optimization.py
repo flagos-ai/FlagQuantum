@@ -1,6 +1,7 @@
 """Focused tests for staged classical and quantum-aware optimization."""
 
 import math
+from dataclasses import replace
 
 import pytest
 import torch
@@ -10,6 +11,28 @@ import flagquantum.algorithms as fqa
 from flagquantum.algorithms import Hamiltonian, pauli_term, vqe_loss
 from flagquantum.algorithms.optimization import OptimizationStage, optimize_hybrid
 from flagquantum.core.runtime_config import runtime_config
+
+
+@pytest.mark.parametrize("field", ["lr", "damping"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_optimization_stage_rejects_nonfinite_configuration(
+    field: str, value: float
+) -> None:
+    with pytest.raises(ValueError, match="learning rate and damping must be finite"):
+        if field == "lr":
+            OptimizationStage("quantum", "qng", steps=1, lr=value)
+        else:
+            OptimizationStage("quantum", "qng", steps=1, damping=value)
+
+
+@pytest.mark.parametrize("field", ["steps", "max_iter", "history_size", "block_size"])
+@pytest.mark.parametrize("value", [True, 1.5, float("nan"), float("inf")])
+def test_optimization_stage_rejects_noninteger_counts(
+    field: str, value: object
+) -> None:
+    stage = OptimizationStage("quantum", "qng", steps=1)
+    with pytest.raises(ValueError, match="must be integers"):
+        replace(stage, **{field: value})
 
 
 def _one_qubit_problem():
@@ -67,6 +90,19 @@ def test_rotosolve_uses_pauli_rotation_structure():
         torch.tensor([math.pi]),
         atol=1e-5,
     )
+
+
+@pytest.mark.parametrize("scale", [0.0, float("nan"), float("inf")])
+def test_qng_rejects_zero_or_nonfinite_state(scale: float) -> None:
+    initial = torch.tensor([1.0])
+    with pytest.raises(ValueError, match="finite nonzero state"):
+        optimize_hybrid(
+            lambda groups: groups["quantum"].square().sum(),
+            {"quantum": initial},
+            stages=(OptimizationStage("quantum", "qng", steps=1),),
+            state_function=lambda groups: groups["quantum"].to(torch.complex64) * scale,
+        )
+    torch.testing.assert_close(initial, torch.tensor([1.0]))
 
 
 def test_qng_uses_state_geometry_and_reduces_energy():

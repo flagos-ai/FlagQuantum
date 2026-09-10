@@ -1,55 +1,62 @@
-# API Change Proposal 011：Experimental 可发现面二次瘦身
+# API Change Proposal 011: Further Reduction of the Discoverable Experimental API
 
-## 状态
+## Status
 
-**Implemented, pending API-owner review — 已实现，尚未冻结。**
+**Implemented, pending API-owner review — not frozen.**
 
-- 目标版本：首次公开 alpha；
-- 机器契约：`contracts/experimental-surface-v2-candidate.json`；
-- 实施授权：API owner 于 2026-09-01 明确要求继续瘦身 experimental；
-- Proposal 008 已冻结的八个顶层领域及生命周期规则保持不变；
-- 稳定 API、Proposal 009 Interop 协议和 Proposal 010 DynamicCircuit 契约均不变。
+- Target: first public alpha.
+- Machine contract: `contracts/experimental-surface-v2-candidate.json`.
+- Implementation authorization: the API owner explicitly requested further
+  experimental API reduction on 2026-09-01.
+- Proposal 008's frozen eight top-level domains and lifecycle rules remain unchanged.
+- Stable APIs, Proposal 009's Interop protocol, and Proposal 010's DynamicCircuit
+  contract remain unchanged.
 
-## 问题
+## Problem
 
-第一次整理消除了 `fq.experimental` 根下的 99 个平铺名称，但八个二级领域仍合计暴露
-114 个功能符号。大量名称是证据记录、rank/shard 状态、底层 executor、kernel 统计、
-conformance report 和 P0–P5 研发辅助对象。它们会让自动补全看起来像内部实现索引，而
-不是供用户试用的产品入口。
+The first cleanup removed 99 flat `fq.experimental` names, but eight second-level
+domains still exposed 114 feature symbols. Many were evidence records, rank/shard
+state, low-level executors, kernel statistics, conformance reports, and P0-P5
+research helpers. Autocompletion resembled an implementation index rather than
+workflows users could try.
 
-## 决策
+## Decision
 
-Experimental 的可发现 API 只保留任务级工作流和第三方 adapter 命名空间：
+Retain only task-level workflows and third-party adapter namespaces in the
+discoverable experimental API:
 
-| 领域 | 原数量 | 当前数量 | 保留边界 |
+| Domain | Previous count | Current count | Retained boundary |
 | --- | ---: | ---: | --- |
-| distributed | 25 | 2 | 分布式训练工作流 |
-| dynamic | 22 | 2 | 动态线路运行与后端评估 |
-| execution | 1 | 0 | 保留领域，统一使用 `fq.run` |
-| interop | 2 | 2 | Qiskit、PennyLane adapter 命名空间 |
-| mps | 9 | 0 | 保留领域，统一使用正式 MPS 后端 |
-| numerics | 50 | 3 | 基础 split real/imag 执行与梯度 |
-| planning | 3 | 0 | 保留领域，统一使用 `fq.plan` |
-| simulation | 2 | 1 | TEBD 工作流 |
+| distributed | 25 | 2 | Distributed training workflows. |
+| dynamic | 22 | 2 | Dynamic circuit execution and backend evaluation. |
+| execution | 1 | 0 | Domain retained; use `fq.run`. |
+| interop | 2 | 2 | Qiskit/PennyLane adapter namespaces. |
+| mps | 9 | 0 | Domain retained; use the standard MPS backend. |
+| numerics | 50 | 3 | Basic split real/imag execution and gradients. |
+| planning | 3 | 0 | Domain retained; use `fq.plan`. |
+| simulation | 2 | 1 | TEBD workflow. |
 
-可发现功能面由 114 个降至 10 个，减少 104 个，缩减 91.2%。返回记录仍会随工作流正常
-返回，但不要求用户从 experimental 命名空间单独导入其实现类型。
+The discoverable feature surface falls from 114 to 10, removing 104 names (91.2%).
+Workflows still return their records normally; users need not separately import
+implementation record types from experimental namespaces.
 
-## 迁移原则
+## Migration Principles
 
-被移出 `__all__` 和 `dir()` 的名称不是稳定 API。仓库内部测试、benchmark、证据工具和
-实现代码已经改为直接引用所属实现模块，不再反向依赖 experimental 门面。旧内部路径
-已经删除，访问任何未进入 v2 契约的名称都会抛出 `AttributeError`。
+Names removed from `__all__` and `dir()` are not stable APIs. Internal tests,
+benchmarks, evidence tools, and implementation code now import their owning
+modules directly rather than depending on experimental facades. Old internal
+paths are removed; accessing names outside the v2 contract raises `AttributeError`.
 
-能力矩阵同步区分“公开实验入口”和“内部开发证据”。P2–P5 数值研究实现与 conformance
-runner 继续保留代码、测试和证据，但不再以 Public API 名义出现在生成文档中。
+The capability matrix now distinguishes public experimental entries from internal
+development evidence. P2-P5 numerical research and conformance runners retain
+code, tests, and evidence but no longer appear as public APIs in generated docs.
 
-## 验收标准
+## Acceptance Criteria
 
-- [x] 八个顶层领域保持不变；
-- [x] 二级可发现面与 v2 机器契约逐项一致；
-- [x] 证据、底层状态、结果记录和 conformance 类型不再出现在自动补全；
-- [x] stable root 与已批准稳定扩展不变；
-- [x] 仓库内部调用全部迁出非公开兼容路径；
-- [x] 删除临时内部解析路径；
-- [ ] API owner 复核首次公开 alpha 的最终 experimental 可发现面。
+- [x] Eight top-level domains remain unchanged.
+- [x] Second-level discoverable exports exactly match the v2 machine contract.
+- [x] Evidence, low-level state, result records, and conformance types leave autocompletion.
+- [x] Stable root and approved stable extensions remain unchanged.
+- [x] Internal callers leave nonpublic compatibility paths.
+- [x] Temporary internal resolution paths are removed.
+- [ ] API owner reviews the final first public alpha discoverable experimental surface.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -15,17 +15,20 @@ TensorTuple = tuple[torch.Tensor, ...]
 RealImagTuple = tuple[torch.Tensor, ...]
 
 
-def _bucket_recompile_context():
+def _bucket_recompile_context() -> AbstractContextManager[object]:
     try:
         from torch._dynamo import config
 
         limit = 1024
-        return config.patch(
+        context = config.patch(
             recompile_limit=max(int(config.recompile_limit), limit),
             accumulated_recompile_limit=max(
                 int(config.accumulated_recompile_limit), limit
             ),
         )
+        if not isinstance(context, AbstractContextManager):
+            raise TypeError("Dynamo configuration patch must be a context manager.")
+        return context
     except (ImportError, AttributeError):
         return nullcontext()
 
@@ -497,7 +500,7 @@ def _compiled_site_bucket(
     left_capacity: int, right_capacity: int, backend: str
 ) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
     def site(tensor: torch.Tensor, angles: torch.Tensor) -> torch.Tensor:
-        tensors = (tensor,)
+        tensors: RealImagTuple = (tensor,)
         tensors = StaticMPSProgram.apply_ry_real_imag(tensors, angles[0], 0)
         return StaticMPSProgram.apply_rz_real_imag(tensors, angles[1], 0)[0]
 
@@ -584,8 +587,10 @@ def run_bucketed_static_brickwork_real_imag(
         for wire in range(layer % 2, program.n_wires - 1, 2):
             capacities = program.bond_dims[wire : wire + 3]
             active_dims = (active[wire], active[wire + 1], active[wire + 2])
-            bucket = _compiled_cx_bucket(capacities, active_dims, backend)
-            tensors[wire], tensors[wire + 1] = bucket(tensors[wire], tensors[wire + 1])
+            cx_bucket = _compiled_cx_bucket(capacities, active_dims, backend)
+            tensors[wire], tensors[wire + 1] = cx_bucket(
+                tensors[wire], tensors[wire + 1]
+            )
             active[wire + 1] = min(active[wire + 1] * 2, program.bond_dims[wire + 1])
     return tuple(tensors)
 

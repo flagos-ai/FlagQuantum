@@ -20,6 +20,7 @@ from .decoders import (
     RepetitionStreamingLookupDecoder,
     RepetitionTemporalDecoder,
     StreamingDecoder,
+    _repetition_wire,
 )
 from .types import (
     Correction,
@@ -167,12 +168,7 @@ def _syndrome_rounds(
 
 
 def _lookup_correction(record: SyndromeRound) -> Correction:
-    wire = {
-        (0, 0): None,
-        (1, 0): 0,
-        (1, 1): 1,
-        (0, 1): 2,
-    }[record.bits]
+    wire = _repetition_wire(record.bits)
     return Correction(round_index=record.round_index, wire=wire)
 
 
@@ -210,6 +206,7 @@ def run_repetition_memory_experiment(
     selected_decoder = RepetitionLookupDecoder() if decoder is None else decoder
     if not isinstance(selected_decoder, Decoder):
         raise TypeError("decoder must implement the Decoder protocol")
+    selected_feedback_decoder: StreamingDecoder
     if feedback_decoder is None:
         selected_feedback_decoder = (
             RepetitionTemporalDecoder()
@@ -282,7 +279,8 @@ def run_repetition_memory_experiment(
         decode_result = selected_decoder.decode(syndrome_rounds)
         if not isinstance(decode_result, DecodeResult):
             raise TypeError("decoder must return a DecodeResult")
-        final_data = tuple(int(value) for value in sample[:3])
+        first_bit, second_bit, third_bit = (int(value) for value in sample[:3])
+        final_data = (first_bit, second_bit, third_bit)
         if feedback_mode in {
             "runtime_pauli_frame",
             "runtime_temporal_pauli_frame",

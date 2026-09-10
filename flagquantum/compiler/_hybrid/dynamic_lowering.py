@@ -416,6 +416,7 @@ class _DynamicLowerer:
     ) -> None:
         if conditions == _FALSE_CLAUSES:
             return
+        metadata: dict[str, object]
         if conditions == _TRUE_CLAUSES:
             metadata = {}
         elif len(conditions) == 1:

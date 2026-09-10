@@ -63,6 +63,8 @@ def _execute_minimal_mps_sharded_backward(
     event_elapsed_times = (1e-12, 1e-12)
     event_timing_scope = "independent_event_wall_clock"
     if use_accelerator:
+        if jax is None or jnp is None:
+            raise RuntimeError("MPS accelerator backward requires JAX and jax.numpy")
         devices = accelerator_devices[:2]
         jax.config.update("jax_enable_x64", True)
         parameter_array = jnp.asarray(parameter_values, dtype=jnp.float64)
@@ -245,6 +247,9 @@ def _execute_minimal_mps_sharded_backward(
         }
         for rank in range(2)
     )
+    peak_bytes = tuple(
+        2 * site_bytes + scalar_bytes + int(gradients[rank].nbytes) for rank in range(2)
+    )
     rank_memory = tuple(
         {
             "rank": rank,
@@ -256,14 +261,9 @@ def _execute_minimal_mps_sharded_backward(
             "canonicalization_temporary_bytes": 0,
             "canonicalization_not_required": True,
             "truncation_temporary_bytes": 0,
-            "estimated_peak_backward_bytes": (
-                2 * site_bytes + scalar_bytes + int(gradients[rank].nbytes)
-            ),
+            "estimated_peak_backward_bytes": peak_bytes[rank],
         }
         for rank in range(2)
-    )
-    peak_bytes = tuple(
-        int(record["estimated_peak_backward_bytes"]) for record in rank_memory
     )
     memory_plan = {
         "status": memory_status,

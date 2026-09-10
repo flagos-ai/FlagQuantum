@@ -221,21 +221,33 @@ def render_readme_summary(data: dict[str, object]) -> str:
     capabilities = data["capabilities"]
     assert isinstance(capabilities, dict)
     rows = [
-        "Maturity applies to each capability—not to the package as a whole.",
+        "Selected core capabilities; maturity applies only within each documented scope.",
         "",
-        "| Capability | Maturity | Current boundary |",
-        "| --- | --- | --- |",
+        "| Capability | Maturity |",
+        "| --- | --- |",
     ]
-    for capability in capabilities.values():
+    for name in (
+        "ir",
+        "local_statevector",
+        "sharded_statevector_training",
+        "sharded_mps_training",
+        "tensor_network_training",
+        "cloud_deployment",
+    ):
+        capability = capabilities[name]
         assert isinstance(capability, dict)
-        boundary = str(capability["limitations"]).replace("|", "\\|")
-        rows.append(f"| {capability['title']} | `{capability['level']}` | {boundary} |")
+        rows.append(
+            f"| [{capability['title']}]({capability['documentation']}) "
+            f"| `{capability['level']}` |"
+        )
     rows.extend(
         [
             "",
-            "The machine-validated [capability matrix](capability-maturity.toml) is the authority.",
-            "The generated [capability catalog](docs/generated/CAPABILITIES.md) maps user goals",
-            "to APIs, runtime modes, evidence, examples, and known boundaries.",
+            "See the [full capability catalog](docs/generated/CAPABILITIES.md) for support",
+            "boundaries, hardware evidence, and experimental paths including FlagOS,",
+            "interoperability, noise, and precision research. Levels are generated from the",
+            "[capability matrix](capability-maturity.toml); they do not certify every device",
+            "or workload, and development evidence does not establish production support.",
         ]
     )
     return "\n".join(rows)

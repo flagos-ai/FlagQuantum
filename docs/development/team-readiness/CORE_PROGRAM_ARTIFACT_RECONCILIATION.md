@@ -1,329 +1,379 @@
-# ProgramArtifact Phase 1 契约对账
+# ProgramArtifact Phase 1 Contract Reconciliation
 
-> 历史说明：本文是 Phase 1 时点的特征盘点。其所述
-> `AgentApplicationService` 已在发布前删除，当前 `flagquantum.services` 不消费
-> 序列化 `ProgramArtifact`；协议适配器在边缘解码后调用稳定 API。以下内容仅用于
-> 追溯当时的契约判断，不描述现行服务入口。
+> Historical note: this document characterizes the Phase 1 implementation.
+> `AgentApplicationService` was removed before release. The current
+> `flagquantum.services` does not consume serialized `ProgramArtifact` objects;
+> protocol adapters decode at the boundary and call stable APIs. The analysis
+> below records the contract decisions at that time, not the current service API.
 
-状态：Core 团队正式对账，提交 Integration 决策；不构成 API、schema 或 ADR 批准
+Status: formal Core reconciliation submitted for Integration decisions; this is
+not API, schema, or ADR approval.
 
-对账基线：`99d5a92091bff35fdc573f4b401e3ebaaf5ffcbf`
+Baseline: `99d5a92091bff35fdc573f4b401e3ebaaf5ffcbf`
 
-团队分支：`codex/vnext-phase1-core-contracts`
+Team branch: `codex/vnext-phase1-core-contracts`
 
-日期：2026-09-03
+Date: 2026-09-03
 
-## 1. 决策结论
+## 1. Decision
 
-现有 `flagquantum.core._artifacts.ProgramArtifact` 应继续作为仓库中唯一的 Core-owned
-Program Artifact 信封权威。它已经具备严格顶层字段、封闭 `ArtifactKind`、版本拒绝、不可变
-JSON 投影和确定性 envelope hash；新建第二个 Artifact 类型会违反 ARCH-001。
+The existing `flagquantum.core._artifacts.ProgramArtifact` should remain the
+repository's sole Core-owned Program Artifact envelope authority. It already
+provides strict top-level fields, a closed `ArtifactKind`, version rejection,
+immutable JSON projection, and a deterministic envelope hash. A second Artifact
+type would violate ARCH-001.
 
-但该结论只覆盖当前 `flagquantum.program_artifact` 1.0 信封和已经运行的 circuit artifact
-路径，不等于它现在可以无损替代 Compiler 的 `SealedExecutableArtifact`、
-`SealedCircuitIRRoundTrip` 或 Deployment 的 `DeploymentPackage`：
+This conclusion covers only the current `flagquantum.program_artifact` 1.0
+envelope and working circuit artifact path. It does not mean that the envelope
+can replace Compiler's `SealedExecutableArtifact` or `SealedCircuitIRRoundTrip`,
+or Deployment's `DeploymentPackage`, without losing information:
 
-- 当前唯一生产消费者是 `AgentApplicationService`，且只接受 `kind=circuit`；
-- Compiler、Runtime、Simulation、Execution Provider 和 Ecosystem 均未直接消费
-  `ProgramArtifact`；
-- v1 没有一等 `provenance`、结构化 `requirements`、命名空间 `extensions`、payload profile 或
-  bytes 编码；
-- `required_capabilities` 是 Agent Services 使用的扁平字符串集合，不等同于编译需求；
-- `producer`、`parent_hashes` 和 `metadata` 无法无损表达 Compiler 已有的带角色身份链；
-- `content_hash` 是计算属性而非序列化字段，消费者不能从信封内部取得发送方声明的摘要。
+- The only production consumer is `AgentApplicationService`, which accepts only
+  `kind=circuit`.
+- Compiler, Runtime, Simulation, Execution Provider, and Ecosystem do not directly
+  consume `ProgramArtifact`.
+- v1 has no first-class `provenance`, structured `requirements`, namespaced
+  `extensions`, payload profile, or byte encoding.
+- `required_capabilities` is the flat string collection used by Agent Services,
+  not a representation of compilation requirements.
+- `producer`, `parent_hashes`, and `metadata` cannot fully express Compiler's
+  existing identity chain with named roles.
+- `content_hash` is computed rather than serialized. The envelope does not carry
+  a sender-declared digest for the consumer to compare.
 
-因此最小方案是：冻结 v1 现状作为兼容读取基线，先批准字段语义和身份分层，再由各团队提供
-显式 adapter。任何新增顶层字段、值域收紧、版本/哈希变化或稳定导出必须先走 Integration
-契约决策；不得为了接入某个消费者把私有字段塞入自由 `metadata` 并宣称收敛完成。
+The smallest viable approach is to freeze v1 as the compatibility reader baseline,
+approve field semantics and identity layers, and then have each owner provide an
+explicit adapter. New top-level fields, narrower accepted values, version or hash
+changes, and stable exports require an Integration contract decision first.
+Putting private required fields in free-form `metadata` does not establish a
+shared contract.
 
-## 2. 保护边界与事实来源
+## 2. Protected Boundaries and Sources
 
-`ProgramArtifact` 定义文件 `flagquantum/core/_artifacts.py` 被 `team-ownership.toml` 明确列为
-protected path。本轮只新增本文和 `tests/team/core/test_program_artifact_reconciliation.py`，
-没有修改该文件、公共导出、`contracts/`、ADR、Compiler、Runtime、Deployment 或 Agent
-实现。
+`team-ownership.toml` explicitly protects `flagquantum/core/_artifacts.py`.
+The original reconciliation added only this document and
+`tests/team/core/test_program_artifact_reconciliation.py`. It did not change that
+implementation, public exports, `contracts/`, ADRs, or Compiler, Runtime,
+Deployment, and Agent implementations.
 
-对账依据包括：
+Sources include:
 
-- `ProgramArtifact` 实现和现有 Core/Agent 特征测试；
-- `AgentApplicationService._decode_program()` 与 planning capability preflight；
-- Compiler 的 `ImportedCircuitProgram`、`SourceIdentity`、`SourceProvenance`、
-  `SealedCircuitIRRoundTrip`、`TargetIR` 和 `SealedExecutableArtifact`；
-- Deployment 的 `DeploymentPackage`、routing evidence、submission receipt 和 artifact digest；
-- `_compiler.deployment_compatibility` 对 legacy package 的 metadata/identity 限制；
-- Phase 0 集成看板与八份 team-readiness 清单。
+- `ProgramArtifact` and existing Core/Agent characterization tests;
+- `AgentApplicationService._decode_program()` and planning capability preflight;
+- Compiler's `ImportedCircuitProgram`, `SourceIdentity`, `SourceProvenance`,
+  `SealedCircuitIRRoundTrip`, `TargetIR`, and `SealedExecutableArtifact`;
+- Deployment's `DeploymentPackage`, routing evidence, submission receipt, and
+  artifact digest;
+- `_compiler.deployment_compatibility` restrictions on legacy package metadata
+  and identity;
+- the Phase 0 integration board and eight team-readiness inventories.
 
-路径分类为契约读取和 `single_device_fast_path` 的本地 planning 特征检查。本轮没有执行或改变
-分布式路径，也不产生硬件、QPU、性能或可扩展性证据。
+The work consists of contract inspection and local planning characterization on
+`single_device_fast_path`. It neither executes nor changes distributed paths and
+provides no hardware, QPU, performance, or scalability evidence.
 
-## 3. 所有直接消费者
+## 3. Direct Consumers
 
-仓库级搜索得到以下直接定义和消费者；文档提案不计作运行时消费者。
+Repository searches identified these definitions and consumers. Proposals in
+documentation are not runtime consumers.
 
-| 所有者 | 入口 | 实际读取/生成字段 | 当前行为 | 对账结论 |
+| Owner | Entry | Fields read or generated | Current behavior | Reconciliation |
 | --- | --- | --- | --- | --- |
-| Core | `ProgramArtifact` | 全部 v1 字段；计算 `content_hash` | 构造、冻结、dict 往返、严格顶层读取 | 唯一 envelope 权威，仍是未稳定导出的内部候选契约 |
-| Core | `from_circuit_ir()` | 生成 `kind`、`payload`、`producer`；其余默认 | 只要求对象有 `to_dict()`，不验证它确为 `CircuitIR` | 便捷 adapter，不是 per-kind payload validator |
-| Agent Services | `_decode_program()` | `schema`、`kind`、`payload`、`required_capabilities` | 仅接受 circuit；由 `CircuitIR.from_dict()` 验 payload | 当前唯一生产消费链 |
-| Agent Services | `validate_program()` | 间接读取 artifact，但忽略返回的 requirements | 只校验 circuit payload | 能力不足不会在 validate 阶段失败 |
-| Agent Services | `plan_execution()` | `required_capabilities` | 用当前 capability manifest 的临时词汇 fail closed | 属于兼容策略，不是 Core capability matching 权威 |
-| Tests | Core、Agent、long-horizon tests | round-trip、hash、未知 schema/kind、planning | 固化当前候选行为 | 本轮扩充字段级和差异级证据 |
-| Compiler | 无直接 import | 无 | 使用自己的 source/target/executable artifact | 需要 adapter；不得直接替换类型 |
-| Runtime / Simulation | 无直接 import | 无 | 消费 `CircuitIR`、Compiler plan 和各自内部结果 | 等 Artifact/Request 契约获批后再接入 |
-| Deployment / Execution Provider | 无直接 import | 无 | 使用 `DeploymentPackage` 及独立 digest/receipt | 不是 ProgramArtifact 的现有消费者 |
-| Ecosystem | 无直接 import | 无 | adapter 返回 `CircuitIR`；metadata 可能进入 IR | 应先通过 Core metadata 值域再封装 artifact |
+| Core | `ProgramArtifact` | All v1 fields; computes `content_hash` | Construction, freezing, dict round trips, strict top-level reading | Sole envelope authority; still an internal candidate contract without stable exports |
+| Core | `from_circuit_ir()` | Generates `kind`, `payload`, `producer`; defaults the rest | Requires only `to_dict()`, not an actual `CircuitIR` | Convenience adapter, not a per-kind payload validator |
+| Agent Services | `_decode_program()` | `schema`, `kind`, `payload`, `required_capabilities` | Accepts only circuit; validates payload through `CircuitIR.from_dict()` | Only production consumption chain |
+| Agent Services | `validate_program()` | Reads the artifact indirectly but ignores returned requirements | Validates only the circuit payload | Missing capabilities do not fail validation |
+| Agent Services | `plan_execution()` | `required_capabilities` | Fails closed using temporary vocabulary from the current capability manifest | Compatibility policy, not Core capability matching authority |
+| Tests | Core, Agent, long-horizon tests | Round trip, hash, unknown schema/kind, planning | Characterizes current candidate behavior | This reconciliation adds field-level and difference-focused evidence |
+| Compiler | No direct import | None | Uses its own source, target, and executable artifacts | Requires an adapter; no direct type replacement |
+| Runtime / Simulation | No direct import | None | Consumes `CircuitIR`, Compiler plans, and internal results | Integrate after Artifact/Request contract approval |
+| Deployment / Execution Provider | No direct import | None | Uses `DeploymentPackage` and separate digests/receipts | Not an existing ProgramArtifact consumer |
+| Ecosystem | No direct import | None | Adapters return `CircuitIR`; metadata may enter IR | Validate Core metadata values before wrapping an artifact |
 
-没有发现 `ProgramArtifact` 的根导出或 `flagquantum.core` 稳定导出。外部 Compute Service 的
-文档需求不能反向证明主仓库已经拥有稳定跨仓库 schema。
+No root export or stable `flagquantum.core` export of `ProgramArtifact` was found.
+External Compute Service requirements do not prove that the main repository
+already has a stable schema for use across repositories.
 
-## 4. v1 字段逐项决策表
+## 4. v1 Field Decisions
 
-| 字段/属性 | 当前可观察行为 | 当前消费者 | Phase 1 决策 | 变更门槛 |
+| Field or property | Observable behavior | Current consumer | Phase 1 decision | Change threshold |
 | --- | --- | --- | --- | --- |
-| 固定 `schema` | `to_dict()` 写 `flagquantum.program_artifact`；缺失、未知或其他值拒绝 | Agent 用它识别 envelope | 保持 v1 精确值；不得用 `.v2` 字符串偷换版本体系 | 改值或兼容规则需契约/序列化 API 提案 |
-| `version` | 唯一支持 `"1.0"`；构造器精确比较；`from_dict()` 先 `str()`，因此 JSON 数字 `1.0` 也会被接受 | Core reader、Agent 间接消费 | 冻结为兼容读取事实；未来 reader 是否停止 coercion 由 Integration 决定 | 收紧 coercion、改名 `schema_version` 或接受新版本均改变行为 |
-| `kind` | 封闭八值 Enum；不按 kind 校验 payload | Agent 只支持 `circuit` | 保持 kind 权威；每个消费者声明支持子集并 fail closed | 增删/改枚举或通用 payload dispatch 需提案 |
-| `payload` | 必须可投影为 mapping/list/JSON scalar；递归冻结；不接受 bytes；无 payload profile | Agent 将 circuit payload交给 `CircuitIR.from_dict()` | 保持 envelope 与 payload validator 分离；circuit adapter 可继续使用 | executable profile、bytes 表达和每-kind schema 需 ADR/版本决策 |
-| `producer` | 非空检查但不 trim；参与 envelope hash；`from_dict()` 会把数值转为字符串 | 没有消费者解释其词汇 | 定义为 opaque producer label，不把它当完整 provenance 或 compiler identity | 值域、规范化和语义升级会改 hash/接受域 |
-| `required_capabilities` | 排序、去重，空值拒绝；没有严格字符串类型检查；参与 hash | 仅 Agent planning | 保留为 v1 coarse compatibility hints；不改名为 `requirements`，不充当结构化编译需求 | 词汇、类型收紧、语义或 identity inclusion 变化需提案 |
-| `parent_hashes` | 要求小写 SHA-256；保留顺序和重复项；不验证存在性、关系或 hash 种类；参与 hash | 无 | 保留为 ordered opaque lineage references；不得假定位置角色 | 去重、排序、角色化或验证规则会改身份，需要 ADR/API 迁移 |
-| `metadata` | 参与 hash；key 被 `str()`；接受 JSON scalar/container 和任意 `to_dict()` 对象；无 namespace、深度、大小、敏感字段限制 | 当前生产消费者不读取 | v1 只作兼容数据，不承载新的必需语义、凭据、live SDK object 或权威 identity | 关闭值域、namespace/limit/unknown-key 规则均改变序列化行为 |
-| `content_hash` | 对完整 `to_dict()` 的 sorted-key compact JSON 做 SHA-256；所有字段均参与；mapping 顺序无关，sequence 顺序相关；禁止 NaN 仅在取 hash 时触发 | tests；生产链未传输/比对声明 hash | 明确命名为 envelope identity；不得与 IR/payload/artifact identity 混同 | 改算法、输入字段或把摘要加入 envelope 需要版本化迁移 |
+| Fixed `schema` | `to_dict()` writes `flagquantum.program_artifact`; missing, unknown, and other values are rejected | Agent identifies the envelope | Preserve the exact v1 value; do not replace the version system with a `.v2` suffix | Value or compatibility changes require a contract/serialization API proposal |
+| `version` | Only `"1.0"` is supported; constructor compares exactly; `from_dict()` calls `str()`, accepting JSON number `1.0` | Core reader, indirectly Agent | Preserve this compatibility fact; Integration decides whether a future reader stops coercion | Narrower coercion, renaming to `schema_version`, or new versions change behavior |
+| `kind` | Closed eight-value Enum; does not validate payload by kind | Agent supports only `circuit` | Preserve kind authority; each consumer declares its supported subset and fails closed | Enum changes or generic payload dispatch require a proposal |
+| `payload` | Must project to mappings/lists/JSON scalars; recursively frozen; bytes rejected; no payload profile | Agent passes circuit payload to `CircuitIR.from_dict()` | Keep envelope validation separate from payload validation; retain circuit adapter | Executable profiles, bytes, and per-kind schemas require ADR/version decisions |
+| `producer` | Checked for nonempty value without trimming; included in hash; reader converts numbers to strings | No consumer interprets vocabulary | Opaque producer label, not complete provenance or compiler identity | Value rules, normalization, or richer semantics alter hash/accepted inputs |
+| `required_capabilities` | Sorted and deduplicated; empty values rejected; no strict string type check; included in hash | Agent planning only | Coarse v1 compatibility hints; do not rename to `requirements` or treat as structured compilation requirements | Vocabulary, typing, semantics, or identity inclusion changes require a proposal |
+| `parent_hashes` | Lowercase SHA-256 required; preserves order and duplicates; does not validate existence, relationships, or hash kind; included in hash | None | Ordered opaque lineage references; no positional roles | Deduplication, sorting, roles, or validation changes require ADR/API identity migration |
+| `metadata` | Included in hash; keys converted with `str()`; accepts JSON scalars/containers and arbitrary `to_dict()` objects; no namespace, depth, size, or sensitive-field limits | Production consumers do not read it | v1 compatibility data only; no new required semantics, credentials, live SDK objects, or authoritative identity | Narrower values, namespaces, limits, or unknown-key rules change serialization behavior |
+| `content_hash` | SHA-256 of complete `to_dict()` as compact sorted-key JSON; includes all fields; mapping order irrelevant, sequence order relevant; NaN rejection occurs only when hashing | Tests; production chain does not transmit/compare a declared hash | Envelope identity, distinct from IR/payload/artifact identity | Algorithm, inputs, or adding the digest to the envelope requires versioned migration |
 
-`ProgramArtifact` dataclass 字段顺序为 `kind, payload, producer, version,
-required_capabilities, parent_hashes, metadata`；序列化字段顺序为 `schema, version, kind,
-producer, required_capabilities, parent_hashes, payload, metadata`。JSON hash 使用 key 排序，字段
-声明顺序本身不影响摘要，但 dataclass 字段、默认值和序列化 shape 仍属于受保护行为。
+Dataclass field order is `kind, payload, producer, version,
+required_capabilities, parent_hashes, metadata`. Serialization order is
+`schema, version, kind, producer, required_capabilities, parent_hashes, payload,
+metadata`. Sorted JSON keys make declaration order irrelevant to the digest,
+but dataclass fields, defaults, and serialized shape remain protected behavior.
 
-## 5. metadata 值域对账
+## 5. Metadata Values
 
-### 5.1 当前实际值域
+### 5.1 Accepted Values
 
-当前 `_json_value()` 接受：
+`_json_value()` currently accepts:
 
-- `None`、`str`、`int`、`float`、`bool`；
-- mapping，key 无条件转为字符串；
-- tuple/list，统一冻结为 tuple、序列化为 list；
-- 任何具有 callable `to_dict()` 的对象，并递归接收其结果。
+- `None`, `str`, `int`, `float`, and `bool`;
+- mappings, with unconditional conversion of keys to strings;
+- tuples/lists, frozen as tuples and serialized as lists;
+- any object with callable `to_dict()`, recursively projecting its result.
 
-其他对象（包括 raw `bytes`）在构造时抛 `TypeError`。非有限 float 会通过构造和
-`to_dict()`，但在读取 `content_hash` 时因 `allow_nan=False` 抛 `ValueError`。数字 key 与同名
-字符串 key 可能在字符串化时碰撞；调用任意对象的 `to_dict()` 也不是一个封闭、纯数据的
-跨信任边界。
+Other objects, including raw `bytes`, raise `TypeError` during construction.
+Non-finite floats pass construction and `to_dict()`, but `content_hash` raises
+`ValueError` because it uses `allow_nan=False`. Numeric and string keys can
+collide after conversion. Invoking arbitrary `to_dict()` methods is not a closed,
+pure-data operation across a trust boundary.
 
-这与 `CircuitIR` 的值域不同：IR 还拥有 Parameter、ParameterExpression、complex 和 Tensor
-编码。已经序列化后的 `CircuitIR.to_dict()` 可以作为 artifact payload，但把原始 Tensor、
-complex 或 Parameter 直接放进 artifact metadata 不具备同样语义。
+`CircuitIR` supports a different value set, including Parameter,
+ParameterExpression, complex, and Tensor encodings. Serialized
+`CircuitIR.to_dict()` output can be an artifact payload; putting raw Tensor,
+complex, or Parameter objects in artifact metadata does not have those semantics.
 
-### 5.2 与其他团队需求的差异
+### 5.2 Differences from Other Teams' Requirements
 
-- Ecosystem 要求外部 SDK 对象不能经 metadata 穿透；当前 `to_dict()` duck typing 只能保证
-  最终对象被投影，不能保证投影方法安全或语义受控。
-- Deployment compatibility 已实现 string-only key、finite float、深度、条目数、编码大小和
-  sensitive fragment 检查，但它只检查 legacy deployment package，不能反向成为 Core
-  metadata 的私有事实来源。
-- Platform metadata 需要 JSON-safe 身份值，但现有 `PlatformRuntime` 仍可能返回 vendor
-  handle；这些值不能直接塞入 artifact。
-- Agent Services 当前完全不读取 artifact metadata，因此 metadata 中存在某个 key 不能证明
-  capability、provenance 或 requirement 已被执行。
+- Ecosystem requires external SDK objects to stop at the boundary. Duck-typed
+  `to_dict()` ensures projection, not that the method is safe or semantically
+  controlled.
+- Deployment compatibility checks string-only keys, finite floats, depth, entry
+  count, encoded size, and sensitive fragments. These checks apply to legacy
+  deployment packages; they are not a private authority for Core metadata.
+- Platform metadata needs JSON-safe identity values. Existing `PlatformRuntime`
+  implementations may still return vendor handles, which cannot enter artifacts
+  directly.
+- Agent Services does not read artifact metadata. A key's presence does not prove
+  that capabilities, provenance, or requirements have been enforced.
 
-### 5.3 建议
+### 5.3 Recommendation
 
-Integration 应为下一版批准一个闭合的 canonical metadata algebra：字符串 key、有限 JSON
-scalar、递归 mapping/list，并明确 namespace、最大深度/条目/字节、敏感字段和碰撞拒绝。
-v1 reader 行为应通过兼容 adapter 保留；不能在 1.0 原地收紧后仍声称 hash 和读取兼容。
+Integration should approve a closed canonical metadata algebra for the next
+version: string keys, finite JSON scalars, recursive mappings/lists, explicit
+namespaces, depth/entry/byte limits, sensitive-field rules, and collision
+rejection. Preserve v1 reader behavior through compatibility adapters. Narrowing
+1.0 in place cannot be described as preserving hash and reader compatibility.
 
-## 6. 版本与身份分层
+## 6. Version and Identity Layers
 
-当前至少存在六种不同身份，不能合并成一个 `hash` 字段：
+At least six identities currently exist. They cannot share one undifferentiated
+`hash` field.
 
-| 身份 | 当前算法/来源 | 是否可映射到 ProgramArtifact v1 | 决策 |
+| Identity | Algorithm or source | Mapping to ProgramArtifact v1 | Decision |
 | --- | --- | --- | --- |
-| `CircuitIR.content_hash` | canonical IR JSON SHA-256 | 可从 circuit payload 重算 | payload identity，不能替代 envelope hash |
-| `ProgramArtifact.content_hash` | 完整 v1 envelope SHA-256 | 原生 | envelope identity；当前不自带声明值 |
-| `ImportedCircuitProgram.internal_program_identity` | module + constraints + instruction semantics | 不能从 ProgramArtifact v1 通用重算 | Compiler 私有派生身份，直到 Core internal-program schema 获批 |
-| `TargetIR.target_program_identity` | target layout/ops/result/shots 与 capability/source refs | v1 无标准 profile | 需要 executable/physical payload profile 决策 |
-| `SealedExecutableArtifact.artifact_identity` | profile、media type、payload hash、source/target/capability/compilation identities | 不能无损放入 role-less parents | 不能用 metadata 临时伪装为收敛；需 ADR |
-| Deployment artifact digest | name、target、shots、format、program、routing evidence | 同时混合程序、请求和目标字段 | adapter 应拆分 program artifact、execution request 和 provider receipt |
+| `CircuitIR.content_hash` | SHA-256 of canonical IR JSON | Recomputable from circuit payload | Payload identity, not envelope identity |
+| `ProgramArtifact.content_hash` | SHA-256 of complete v1 envelope | Native | Envelope identity; no embedded declared digest |
+| `ImportedCircuitProgram.internal_program_identity` | Module, constraints, and instruction semantics | Not generically recomputable from v1 | Compiler-private derived identity until Core approves an internal-program schema |
+| `TargetIR.target_program_identity` | Target layout/ops/results/shots and capability/source references | No standard v1 profile | Requires executable/physical payload profile decision |
+| `SealedExecutableArtifact.artifact_identity` | Profile, media type, payload hash, source/target/capability/compilation identities | Cannot be represented losslessly by parents without roles | Requires ADR; temporary metadata does not establish convergence |
+| Deployment artifact digest | Name, target, shots, format, program, routing evidence | Mixes program, request, and target fields | Adapter separates program artifact, execution request, and provider receipt |
 
-`from_circuit_ir()` 生成的 envelope hash会随 producer、requirements、parents 或 metadata
-变化，即使 IR payload 完全相同。这是正确的身份分层，不应要求 envelope hash 等于 IR hash。
+The envelope hash from `from_circuit_ir()` changes with producer, requirements,
+parents, or metadata even when the IR payload is identical. This is valid
+identity layering; envelope and IR hashes need not match.
 
-`parent_hashes` 目前只证明字符串形状，不证明父对象存在，也不标明 source、target、compile、
-calibration 或 payload 等角色。Compiler adapter 可以继续在私有对象中保留完整角色身份链；
-在 Core 决定 typed identity references 之前，不应把这些身份按约定位置压入 `parent_hashes`。
+`parent_hashes` validates string shape, not parent existence or source, target,
+compile, calibration, and payload roles. Compiler adapters may retain complete
+role-aware identity chains privately. They should not encode those roles through
+positions in `parent_hashes` before Core approves typed identity references.
 
-## 7. provenance 对账
+## 7. Provenance
 
-现有 v1 只有三个邻近来源字段：
+v1 has only three related fields:
 
-- `producer`：一个参与 hash 的非空 label；
-- `parent_hashes`：有序但无角色的摘要；
-- `metadata`：自由、参与 hash、无 provenance namespace 规则。
+- `producer`: nonempty label included in the hash;
+- `parent_hashes`: ordered digests without roles;
+- `metadata`: free-form data included in the hash, without provenance namespaces.
 
-它们不足以替代 Compiler 的：
+They cannot replace Compiler's:
 
-- `SourceIdentity(schema_version, circuit_ir_content_hash)`；
-- `SourceProvenance(values)`；
-- instruction-level provenance 与 semantics；
-- compilation、target capability、target program 和 artifact identities。
+- `SourceIdentity(schema_version, circuit_ir_content_hash)`;
+- `SourceProvenance(values)`;
+- instruction-level provenance and semantics;
+- compilation, target capability, target program, and artifact identities.
 
-Compiler 的 `internal_program_identity` 明确排除了 request、provenance 和 bindings，而
-ProgramArtifact v1 的 `content_hash` 包含全部 metadata、producer 和 requirements。两者的
-identity inclusion policy 不同，不能通过字段改名直接等同。
+Compiler's `internal_program_identity` explicitly excludes requests, provenance,
+and bindings. ProgramArtifact v1's `content_hash` includes all metadata,
+producer, and requirements. Renaming fields cannot reconcile these different
+identity inclusion policies.
 
-最小适配原则：Compiler 保留私有 provenance/identity 对象，adapter 只在已批准的 Core
-profile 中投影有明确角色的引用。新增一等 `provenance` 字段、决定其是否进入 envelope
-identity、或者把现有 metadata 迁入该字段，都需要 ADR 和版本化兼容方案。
+The minimum adapter keeps Compiler provenance/identity objects private and
+projects references with explicit roles only into approved Core profiles. A
+first-class `provenance` field, its inclusion in envelope identity, or migration
+from metadata requires an ADR and versioned compatibility plan.
 
-## 8. requirements 与 required_capabilities 对账
+## 8. Requirements and required_capabilities
 
-| 当前概念 | 表达内容 | 消费阶段 | 与 v1 的关系 |
+| Concept | Content | Consumer stage | Relationship to v1 |
 | --- | --- | --- | --- |
-| `ProgramArtifact.required_capabilities` | 排序去重的扁平字符串 | Agent planning 前 | v1 原生，但词汇来自当前 manifest 适配规则 |
-| `CircuitIR` dtype/shape/measurements/observables | 程序和请求混合的现有语义 | Compiler/Runtime | 由 circuit payload 自身携带，不应重复成字符串 |
-| Compiler `ImportConstraints` | dtype、shape、batch、logical state、runtime config | import | 结构化且进入 internal identity，不能无损降为字符串 |
-| `TargetIR.required_results/requested_shots` | 结果类型与 shots | target lowering | 更接近 ExecutionRequest，不应塞入 artifact capability names |
-| `TargetCapabilities` | 目标事实、limits、artifact profiles | compile/preflight | 描述“目标有什么”，不是“artifact 要什么” |
-| Long-horizon `requirements` | precision、dynamic、communication、QEC、pulse、network | 跨 Compiler/Runtime/Provider | v1 尚不存在 |
+| `ProgramArtifact.required_capabilities` | Sorted, unique flat strings | Before Agent planning | Native v1; vocabulary comes from current manifest adaptation |
+| `CircuitIR` dtype/shape/measurements/observables | Existing mix of program and request semantics | Compiler/Runtime | Carried by circuit payload; do not duplicate as strings |
+| Compiler `ImportConstraints` | dtype, shape, batch, logical state, runtime config | Import | Structured and included in internal identity; lossy as strings |
+| `TargetIR.required_results/requested_shots` | Result types and shots | Target lowering | Closer to ExecutionRequest than artifact capability names |
+| `TargetCapabilities` | Target facts, limits, artifact profiles | Compile/preflight | Describes what a target has, not what an artifact requires |
+| Long-horizon `requirements` | Precision, dynamic execution, communication, QEC, pulse, network | Compiler/Runtime/Provider | Not present in v1 |
 
-Agent 的临时 capability vocabulary 会收集 backend 名、`supports_*`、accelerator、device、dtype
-和 contract 名称；它不是封闭 Core vocabulary。`validate_program()` 当前忽略
-`required_capabilities`，`plan_execution()` 才检查并返回
-`REQUIRED_CAPABILITY_UNAVAILABLE`。本轮测试明确冻结该失败阶段。
+The temporary Agent vocabulary collects backend names, `supports_*`, accelerator,
+device, dtype, and contract names. It is not a closed Core vocabulary.
+`validate_program()` ignores `required_capabilities`; `plan_execution()` checks
+it and returns `REQUIRED_CAPABILITY_UNAVAILABLE`. Characterization tests preserve
+this failure stage.
 
-建议保留 `required_capabilities` 作为 v1 coarse hints，并只允许未来结构化 requirement
-adapter 向它做有文档的保守投影；不得从字符串集合反向恢复精度、拓扑、shots、校准或动态
-控制要求。正式 `requirements` 的 shape、identity inclusion、与 TargetCapabilities 的匹配和
-failure category 必须由 Integration/Core ADR 决定。
+Keep `required_capabilities` as coarse v1 hints. A future structured requirement
+adapter may make a documented conservative projection into them. Strings cannot
+recover precision, topology, shots, calibration, or dynamic-control requirements.
+Integration/Core ADRs must define the structured shape, identity inclusion,
+TargetCapabilities matching, and failure categories.
 
-## 9. 各消费者最小适配方案
+## 9. Minimum Consumer Adapters
 
-### 9.1 CircuitIR 与 Agent Services
+### 9.1 CircuitIR and Agent Services
 
-现有 circuit 路径可继续：ProgramArtifact payload 保存 `CircuitIR.to_dict()`，Agent 在消费点
-用 `CircuitIR.from_dict()` 严格校验。建议只补跨仓库 fixture 和 expected envelope hash，不改
-实现。能力检查阶段保持 planning-time，除非 API 提案明确改变失败阶段。
+The circuit path can continue using `CircuitIR.to_dict()` as payload and strict
+`CircuitIR.from_dict()` validation at consumption. Add shared repository fixtures
+and expected envelope hashes without changing implementation. Capability checks
+remain at planning time unless an API proposal explicitly changes that stage.
 
-### 9.2 Compiler source/import
+### 9.2 Compiler Source/Import
 
-Compiler 可通过 adapter 接受 `kind=circuit` 并取得严格 `CircuitIR`，随后继续生成私有
-`ImportedCircuitProgram` 与 `SealedCircuitIRRoundTrip`。后两者含不可通用序列化的内部
-module/bindings，不能反向塞进 v1 payload。adapter owner 为 Compiler；退出条件是 Compiler
-公开跨领域入口只接收 Core artifact，而内部类型不越界。
+A Compiler adapter can accept `kind=circuit`, obtain strict `CircuitIR`, and
+produce private `ImportedCircuitProgram` and `SealedCircuitIRRoundTrip` objects.
+Their internal modules/bindings are not generically serializable and cannot go
+back into v1 payloads. Compiler owns the adapter. The exit condition is that
+Compiler's public cross-domain entry accepts Core artifacts while internal types
+remain private.
 
-### 9.3 Compiler executable artifact
+### 9.3 Compiler Executable Artifact
 
-当前 v1 payload 不接受 bytes，也没有 artifact profile/media type 和六段带角色 identity。
-因此不存在无损、无需决策的 adapter。Integration 必须先决定 executable payload profile、
-byte encoding/外部 blob reference、identity roles 和验证算法；Compiler 的 seal/verify 仍是
-实现，不迁入 Core。
+v1 lacks bytes, artifact profiles/media types, and the six role-aware identities.
+No lossless adapter exists without contract decisions. Integration must first
+define executable payload profiles, byte encoding/external blob references,
+identity roles, and verification algorithms. Compiler keeps seal/verify
+implementation; it does not move into Core.
 
-### 9.4 Deployment 与 Execution Provider
+### 9.4 Deployment and Execution Provider
 
-`DeploymentPackage` 同时携带 compiled IR、QASM/QCIS、shots、backend profile、routing
-evidence 和 provider metadata。适配时必须拆分：程序及其 payload identity 属于
-ProgramArtifact，shots/measurement 属于 ExecutionRequest，target 属于 TargetCapabilities，
-receipt/job 属于 Provider。不能把整个 package 当成一个 executable ProgramArtifact。
+`DeploymentPackage` combines compiled IR, QASM/QCIS, shots, backend profile,
+routing evidence, and provider metadata. Split program and payload identity into
+ProgramArtifact, shots/measurement into ExecutionRequest, target into
+TargetCapabilities, and receipt/job into Provider. Do not treat the whole package
+as an executable ProgramArtifact.
 
-### 9.5 Runtime、Simulation 与 Ecosystem
+### 9.5 Runtime, Simulation, and Ecosystem
 
-Runtime/Simulation 在正式 ExecutionRequest/plan profile 之前无需直接消费 ProgramArtifact；
-它们不应添加私有复制。Ecosystem 继续先把外部对象转换为严格 `CircuitIR`，再由 Core helper
-封装；不能把外部对象或未经 canonical metadata 验证的值直接写入 artifact。
+Runtime/Simulation need not consume ProgramArtifact directly before formal
+ExecutionRequest/plan profiles exist. They should not create private copies.
+Ecosystem first converts external objects to strict `CircuitIR`, then uses a Core
+helper to wrap them. External objects and metadata values without canonical
+validation cannot enter artifacts directly.
 
-## 10. 兼容性风险
+## 10. Compatibility Risks
 
-| 风险 | 严重度 | 约束/验收 |
+| Risk | Severity | Constraint or acceptance condition |
 | --- | --- | --- |
-| 为加入 provenance/requirements/extensions 直接增加顶层字段 | 高 | v1 reader严格拒绝未知字段；必须新版本或兼容 envelope 方案 |
-| 把 `version` 改名为 `schema_version` | 高 | 所有现有 v1 payload 会缺字段；需要双读/迁移 fixture 与 API 提案 |
-| 修改 hash 输入或 canonical JSON | 高 | envelope identity 全部变化；需要 golden fixtures 和迁移 identity |
-| 将 metadata 原地收紧 | 高 | 现有可读 payload可能拒绝，且 stringified key/to_dict/NaN 失败阶段变化 |
-| 把 metadata 当非语义扩展 | 高 | 它当前参与 content hash；展示或 transport 字段会改变身份 |
-| 把 parent hash 位置解释为固定角色 | 高 | 当前允许重复且无角色；旧 payload无法证明解释正确 |
-| 把 required capabilities 当完整 requirements | 高 | 会丢 precision、limit、topology、shots、evidence 和 calibration 语义 |
-| 把 envelope hash 当 payload/executable identity | 高 | producer/metadata 等会改变 envelope hash，且 digest 未序列化 |
-| 直接封装 executable bytes | 中高 | 当前构造明确拒绝 bytes；私有 base64 约定会形成第二 schema |
-| 依赖当前 `str()` coercion | 中 | 数字 version/producer 可被 reader 接受；未来收紧需兼容测试 |
-| 非字符串 metadata key 碰撞 | 中 | 下一版应拒绝；v1 兼容 reader需保留或显式迁移 |
-| 在 validate 与 plan 间改变 capability failure stage | 中 | Agent 调用者可观察；需行为提案而非测试修补 |
+| Adding top-level provenance/requirements/extensions | High | v1 rejects unknown fields; requires a new version or compatible envelope strategy |
+| Renaming `version` to `schema_version` | High | Existing payloads lack the new field; requires dual reading, migration fixtures, and API proposal |
+| Changing hash inputs or canonical JSON | High | Changes envelope identities; requires golden fixtures and migration identities |
+| Narrowing metadata in place | High | Previously readable payloads may fail; changes string-key, `to_dict()`, and NaN failure stages |
+| Treating metadata as nonsemantic extensions | High | Metadata affects the hash; presentation or transport fields change identity |
+| Assigning fixed roles to parent positions | High | Existing duplicates and absent roles cannot prove the interpretation |
+| Treating required capabilities as complete requirements | High | Loses precision, limits, topology, shots, evidence, and calibration semantics |
+| Equating envelope hash with payload/executable identity | High | Producer/metadata change envelope identity; digest is not serialized |
+| Wrapping executable bytes directly | Medium-high | Constructor rejects bytes; private base64 conventions create a second schema |
+| Depending on current `str()` coercion | Medium | Reader accepts numeric version/producer; narrowing requires compatibility tests |
+| Colliding non-string metadata keys | Medium | Next version should reject collisions; v1 requires preservation or explicit migration |
+| Moving capability failures between validate and plan | Medium | Observable to Agent callers; requires a behavior proposal, not a test adjustment |
 
-## 11. Integration 最小决策请求
+## 11. Minimum Integration Decisions
 
-建议 Integration 按以下顺序只批准最小必要决定：
+Approve only the necessary decisions, in this order:
 
-1. **Authority ADR 补充记录**：确认现有 `ProgramArtifact` 是唯一 envelope authority；v1 先
-   维持 circuit 兼容读取，不新增平行 Artifact。
-2. **Identity ADR**：确认 payload identity、envelope identity、compile/target/executable
-   identity 分层；决定 typed parent references 和 transmitted expected digest。
-3. **Metadata ADR**：为下一兼容版本批准闭合值域、namespace、limits、敏感数据和
-   non-finite/key-collision 规则，同时明确 v1 reader 迁移期。
-4. **Requirements ADR**：定义结构化 requirements、Core capability vocabulary、与
-   TargetCapabilities 的 fail-closed matching；保留 v1 `required_capabilities` 的单向适配。
-5. **Provenance ADR**：定义 source/tool/input/parent roles、identity inclusion 和 compile
-   evidence 引用，不把 Runtime measured evidence 合并进 artifact。
-6. **Executable profile ADR**：仅在前五项确定后决定 bytes/blob、media type、profile version
-   和 `SealedExecutableArtifact` adapter。
+1. **Authority ADR addendum:** existing `ProgramArtifact` is the sole envelope
+   authority; preserve v1 circuit compatibility reading without a parallel type.
+2. **Identity ADR:** distinguish payload, envelope, compile, target, and executable
+   identities; define typed parent references and transmitted expected digests.
+3. **Metadata ADR:** approve closed values, namespaces, limits, sensitive-data
+   rules, non-finite/key-collision handling, and the v1 reader migration period.
+4. **Requirements ADR:** define structured requirements, Core capability
+   vocabulary, and fail-closed TargetCapabilities matching; retain one-way v1
+   `required_capabilities` adaptation.
+5. **Provenance ADR:** define source/tool/input/parent roles, identity inclusion,
+   and compilation evidence references; keep Runtime measured evidence separate.
+6. **Executable profile ADR:** after the first five decisions, define bytes/blob,
+   media type, profile version, and the `SealedExecutableArtifact` adapter.
 
-这些决定可以拆成多个小 ADR，但必须在 Compiler、Deployment、Runtime 或外部服务迁移前
-落地相同 fixture 和 contract fake。
+These may be separate small ADRs. Shared fixtures and contract fakes must be in
+place before Compiler, Deployment, Runtime, or external service migration.
 
-## 12. API Change Proposal 与内部适配边界
+## 12. API Proposals and Internal Adapters
 
-以下修改必须提交 API Change Proposal，并同时获得 Integration/Core 契约批准：
+The following require an API Change Proposal and Integration/Core approval:
 
-- 将 `ProgramArtifact`、`ArtifactKind` 或版本常量加入稳定 root/core namespace；
-- 改字段名、顺序、默认值、Enum 值、schema/version、未知/缺失字段或异常行为；
-- 改 metadata/producer/required capabilities 的已接受值域或 normalization；
-- 改 `content_hash` 算法、identity inputs 或 parent ordering；
-- 新增 provenance/requirements/extensions 顶层字段并要求现有消费者接受；
-- 改 Agent validate/plan 的 capability failure stage 或 artifact kind 支持范围。
+- stable root/core exports of `ProgramArtifact`, `ArtifactKind`, or version constants;
+- changes to field names/order/defaults, Enum values, schema/version,
+  unknown/missing fields, or exceptions;
+- changes to accepted metadata/producer/required-capability values or normalization;
+- changes to `content_hash`, identity inputs, or parent ordering;
+- new top-level provenance/requirements/extensions required of existing consumers;
+- changes to Agent validate/plan capability failure stages or supported kinds.
 
-如果 Integration 明确认定当前未稳定导出的 v1 仍处于 pre-public candidate 阶段，内部重构可
-不走公开弃用周期，但 protected path、已序列化 payload 和跨仓库消费者仍必须有 Contract
-Change Proposal、兼容 fixture 和明确迁移记录；不能把“未根导出”等同于可任意破坏。
+If Integration explicitly classifies the unexported v1 as a pre-public candidate,
+internal refactoring may avoid a public deprecation cycle. Protected paths,
+serialized payloads, and consumers in other repositories still need a Contract
+Change Proposal, compatibility fixtures, and migration records. Absence of a root
+export does not permit arbitrary breakage.
 
-以下工作在契约获批后可作为各责任团队的内部 adapter 重构完成：
+After approval, owners may implement these internal adapters:
 
-- circuit artifact 与 `CircuitIR` 的严格双向投影；
-- Compiler 在入口解包 circuit payload，同时保持私有 IR/provenance/identity 不越界；
-- Deployment 将 package 拆为 artifact、request、target 和 receipt，而不改变公共行为；
-- 用当前 v1 reader读取旧 payload，再投影到获批的新内部值对象；
-- 增加 golden hash、旧 fixture、fake consumer 和 replacement conformance tests。
+- strict bidirectional circuit artifact/`CircuitIR` projection;
+- Compiler circuit unpacking while keeping IR/provenance/identity private;
+- Deployment package separation into artifact, request, target, and receipt,
+  preserving public behavior;
+- reading old payloads with the v1 reader and projecting approved internal values;
+- golden hashes, legacy fixtures, fake consumers, and replacement conformance tests.
 
-跨团队实现仍由对应团队完成；Core 本轮只提出契约请求，不越权修改消费者。
+Each owner implements its consumer changes. This Core reconciliation requests
+contract decisions and does not modify other teams' consumers.
 
-## 13. 本轮特征测试
+## 13. Characterization Tests
 
-`tests/team/core/test_program_artifact_reconciliation.py` 固化：
+`tests/team/core/test_program_artifact_reconciliation.py` records:
 
-- dataclass 与序列化字段 shape、requirements normalization、round-trip 和全部 identity inputs；
-- schema、未知/缺失字段、版本拒绝，以及当前 numeric version/producer coercion；
-- metadata 的 JSON-like/`to_dict()` 值域、key stringification、opaque object 拒绝和 NaN 的
-  identity-time failure；
-- parent hashes 的格式、顺序、重复和非验证语义；
-- CircuitIR payload identity 与 envelope identity 分层；
-- executable raw bytes 当前不可表示；
-- per-kind payload 校验由消费者执行；
-- Agent validate 与 plan 对 required capabilities 的不同失败阶段；
-- `provenance`、`requirements`、`extensions` 不是 v1 顶层字段并会被严格拒绝。
+- dataclass/serialization shape, requirements normalization, round trips, and all
+  identity inputs;
+- schema, unknown/missing fields, version rejection, and numeric version/producer coercion;
+- JSON-like/`to_dict()` metadata, stringified keys, opaque object rejection, and
+  NaN failure at hashing time;
+- parent hash format, order, duplicates, and absence of relationship validation;
+- separate CircuitIR payload and envelope identities;
+- rejection of raw executable bytes;
+- consumer-owned per-kind payload validation;
+- different required-capability failure stages in Agent validate and plan;
+- strict rejection of `provenance`, `requirements`, and `extensions` as v1 fields.
 
-测试只记录现状和兼容性风险，不修改或重新解释受保护行为。
+These tests characterize behavior and compatibility risks without changing or
+reinterpreting protected contracts.
 
-## 14. 验证记录
+## 14. Historical Validation Record
 
-- Core 团队范围预检：通过；
-- 架构边界检查：通过；
-- Ruff check 与 format check：通过；
-- ProgramArtifact、Core contract、Agent、Compiler executable artifact、Deployment
-  compatibility 和 static pipeline 定向交叉集合：46 项通过；
-- macOS 主机 `pr-default`：1833 项通过、14 项跳过、6 项失败。失败分别为既有 Compiler
-  import/verify 性能预算、两个 Linux `/proc` watchdog 测试、两个宿主系统 Git 不可用导致的
-  repository 检查，以及当前主机 PyTorch 的 `torch.dot` 浮点抵消差异；
-- 使用 `flagquantum-dev:local` Linux 开发镜像、只读源码与完整 Git metadata 复跑
-  `pr-default`：1840 项通过、12 项跳过、1 项失败。唯一失败仍为 Phase 0 已记录的
-  `test_approved_import_verify_budget_is_machine_enforced`。
+- Core team scope precheck: passed.
+- Architecture boundary check: passed.
+- Ruff check and format check: passed.
+- Focused ProgramArtifact, Core contract, Agent, Compiler executable artifact,
+  Deployment compatibility, and static pipeline selection: 46 passed.
+- macOS `pr-default`: 1833 passed, 14 skipped, 6 failed. Failures covered the
+  existing Compiler import/verify performance budget, two Linux `/proc` watchdog
+  tests, two repository checks affected by unavailable host Git, and a host
+  PyTorch `torch.dot` floating-point cancellation difference.
+- `pr-default` in `flagquantum-dev:local` Linux with read-only source and complete
+  Git metadata: 1840 passed, 12 skipped, 1 failed. The remaining failure was the
+  previously recorded `test_approved_import_verify_budget_is_machine_enforced`.
 
-本轮没有修改性能阈值、快照、受保护实现或测试预期。Linux 开发容器结果只用于排除宿主
-环境差异，不构成性能、硬件或可扩展性声明。
+The original reconciliation did not change performance thresholds, snapshots,
+protected implementations, or test expectations. The Linux result distinguishes
+host environment differences; it is not performance, hardware, or scalability
+certification.

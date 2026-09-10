@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
@@ -22,7 +23,7 @@ _PERSISTENT_PLAN_SCHEMA = "flagquantum.distributed_tn_plan.v1"
 
 
 @contextmanager
-def _plan_file_lock(path: Path, *, exclusive: bool):
+def _plan_file_lock(path: Path, *, exclusive: bool) -> Iterator[None]:
     """Serialize cache writers while allowing concurrent readers."""
 
     import fcntl
@@ -98,7 +99,8 @@ def _load_persistent_plan(
     except (OSError, ValueError, TypeError, KeyError):
         return None
     if (
-        payload.get("schema_version") != _PERSISTENT_PLAN_SCHEMA
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != _PERSISTENT_PLAN_SCHEMA
         or payload.get("cache_key") != expected_key
         or payload.get("flagquantum_version") != __version__
         or payload.get("torch_version") != torch.__version__

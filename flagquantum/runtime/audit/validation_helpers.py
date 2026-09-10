@@ -71,7 +71,7 @@ def _rank_memory_reported(payload: Mapping[str, Any]) -> bool:
         return True
     for key in ("rank_shards", "shards"):
         ranks = payload.get(key)
-        if not _is_nonempty(ranks):
+        if ranks is None or not _is_nonempty(ranks):
             continue
         for rank in ranks:
             if not isinstance(rank, Mapping):
@@ -113,7 +113,7 @@ def _rank_ownership_evidence(payload: Mapping[str, Any]) -> Any:
         if _is_nonempty(value):
             return value
     local_memory = payload.get("local_memory_bytes_by_rank")
-    if _is_nonempty(local_memory):
+    if local_memory is not None and _is_nonempty(local_memory):
         return tuple(
             {"rank": rank, "local_memory_bytes": int(memory)}
             for rank, memory in enumerate(local_memory)
@@ -121,7 +121,7 @@ def _rank_ownership_evidence(payload: Mapping[str, Any]) -> Any:
     return ()
 
 
-def _normalized_memory_plan(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+def _normalized_memory_plan(payload: Mapping[str, Any]) -> dict[str, Any]:
     memory_plan = dict(_nested_mapping(payload, "memory_plan"))
     if "local_memory_bytes_by_rank" not in memory_plan and _is_nonempty(
         payload.get("local_memory_bytes_by_rank")
@@ -141,7 +141,7 @@ def _normalized_memory_plan(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     return memory_plan
 
 
-def _normalized_communication_plan(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+def _normalized_communication_plan(payload: Mapping[str, Any]) -> dict[str, Any]:
     communication_plan = dict(_nested_mapping(payload, "communication_plan"))
     communication_tiers = _nested_mapping(payload, "communication_tiers")
     if communication_tiers and "communication_tiers" not in communication_plan:

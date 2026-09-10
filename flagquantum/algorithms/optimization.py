@@ -43,6 +43,21 @@ class OptimizationStage:
         method = self.method.lower()
         if method not in {"adam", "adamw", "sgd", "lbfgs", "qng", "rotosolve"}:
             raise ValueError(f"unsupported optimization method {self.method!r}")
+        if not math.isfinite(self.lr) or not math.isfinite(self.damping):
+            raise ValueError("learning rate and damping must be finite")
+        if any(
+            not isinstance(value, int) or isinstance(value, bool)
+            for value in (self.steps, self.max_iter, self.history_size)
+        ) or (
+            self.block_size is not None
+            and (
+                not isinstance(self.block_size, int)
+                or isinstance(self.block_size, bool)
+            )
+        ):
+            raise ValueError(
+                "steps, max_iter, history_size, and block_size must be integers"
+            )
         if not self.group or self.steps <= 0 or self.lr <= 0:
             raise ValueError("group, steps, and lr must be positive/non-empty")
         if self.damping < 0 or self.max_iter <= 0 or self.history_size <= 0:
@@ -118,7 +133,9 @@ def _quantum_metric(
             raise ValueError("QNG state_function must return a complex state tensor")
         state = state.reshape(-1)
         norm = torch.linalg.vector_norm(state)
-        return state / norm
+        if not bool(torch.isfinite(norm)) or not bool(norm > 0):
+            raise ValueError("QNG state_function must return a finite nonzero state")
+        return state.div(norm)
 
     flat = parameter.reshape(-1)
     started = time.perf_counter()
@@ -166,7 +183,9 @@ def _quantum_metric(
     return metric
 
 
-def _torch_optimizer(method: str, parameter: torch.Tensor, stage: OptimizationStage):
+def _torch_optimizer(
+    method: str, parameter: torch.Tensor, stage: OptimizationStage
+) -> torch.optim.Optimizer:
     if method == "adam":
         return torch.optim.Adam([parameter], lr=stage.lr)
     if method == "adamw":
@@ -229,8 +248,7 @@ def optimize_hybrid(
             before = parameter.detach().clone()
             gradient_norm: float | None = None
             step_evaluations = 0
-            if stage.method == "lbfgs":
-                assert optimizer is not None
+            if isinstance(optimizer, torch.optim.LBFGS):
 
                 def closure() -> torch.Tensor:
                     nonlocal evaluations, step_evaluations

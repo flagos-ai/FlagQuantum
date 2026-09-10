@@ -4,10 +4,10 @@
 <rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
 <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.panel{font-size:17px;font-weight:700;fill:#172B4D}.axis{font-size:11px;fill:#64748B}.legend{font-size:12px;font-weight:600}.note{font-size:13px;font-weight:650;fill:#30245C}</style>
 <text x="58" y="55" class="tag">FLAGQUANTUM · END-TO-END VQE TRAINING</text>
-<text x="58" y="91" class="title">累计训练耗时与 JAX JIT 回本点</text>
-<text x="58" y="119" class="sub">A800 · Adam 500 steps · 墙钟时间包含 forward、backward、optimizer、同步以及 JAX 首次编译</text>
+<text x="58" y="91" class="title">Cumulative training time and JAX JIT break-even</text>
+<text x="58" y="119" class="sub">A800 · Adam, 500 steps · Wall time includes forward, backward, optimizer, synchronization, and initial JAX compilation</text>
 <rect x="58" y="168" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="80" y="199" class="panel">4Q · Depth 2 · 回本 136 步</text>
+<text x="80" y="199" class="panel">4Q · Depth 2 · Break-even: 136 steps</text>
 <line x1="120" y1="220.0" x2="572" y2="220.0" stroke="#E8EDF3"/>
 <line x1="120" y1="247.5" x2="572" y2="247.5" stroke="#E8EDF3"/>
 <line x1="120" y1="275.0" x2="572" y2="275.0" stroke="#E8EDF3"/>
@@ -22,7 +22,7 @@
 <text x="345.5" y="346.0" text-anchor="middle" class="axis">250</text>
 <text x="572.0" y="346.0" text-anchor="middle" class="axis">500</text>
 <rect x="633" y="168" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="655" y="199" class="panel">4Q · Depth 4 · 回本 157 步</text>
+<text x="655" y="199" class="panel">4Q · Depth 4 · Break-even: 157 steps</text>
 <line x1="695" y1="220.0" x2="1147" y2="220.0" stroke="#E8EDF3"/>
 <line x1="695" y1="247.5" x2="1147" y2="247.5" stroke="#E8EDF3"/>
 <line x1="695" y1="275.0" x2="1147" y2="275.0" stroke="#E8EDF3"/>
@@ -37,7 +37,7 @@
 <text x="920.5" y="346.0" text-anchor="middle" class="axis">250</text>
 <text x="1147.0" y="346.0" text-anchor="middle" class="axis">500</text>
 <rect x="1208" y="168" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="1230" y="199" class="panel">4Q · Depth 8 · 回本 141 步</text>
+<text x="1230" y="199" class="panel">4Q · Depth 8 · Break-even: 141 steps</text>
 <line x1="1270" y1="220.0" x2="1722" y2="220.0" stroke="#E8EDF3"/>
 <line x1="1270" y1="247.5" x2="1722" y2="247.5" stroke="#E8EDF3"/>
 <line x1="1270" y1="275.0" x2="1722" y2="275.0" stroke="#E8EDF3"/>
@@ -52,7 +52,7 @@
 <text x="1495.5" y="346.0" text-anchor="middle" class="axis">250</text>
 <text x="1722.0" y="346.0" text-anchor="middle" class="axis">500</text>
 <rect x="58" y="406" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="80" y="437" class="panel">8Q · Depth 2 · 回本 145 步</text>
+<text x="80" y="437" class="panel">8Q · Depth 2 · Break-even: 145 steps</text>
 <line x1="120" y1="458.0" x2="572" y2="458.0" stroke="#E8EDF3"/>
 <line x1="120" y1="485.5" x2="572" y2="485.5" stroke="#E8EDF3"/>
 <line x1="120" y1="513.0" x2="572" y2="513.0" stroke="#E8EDF3"/>
@@ -67,7 +67,7 @@
 <text x="345.5" y="584.0" text-anchor="middle" class="axis">250</text>
 <text x="572.0" y="584.0" text-anchor="middle" class="axis">500</text>
 <rect x="633" y="406" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="655" y="437" class="panel">8Q · Depth 4 · 回本 131 步</text>
+<text x="655" y="437" class="panel">8Q · Depth 4 · Break-even: 131 steps</text>
 <line x1="695" y1="458.0" x2="1147" y2="458.0" stroke="#E8EDF3"/>
 <line x1="695" y1="485.5" x2="1147" y2="485.5" stroke="#E8EDF3"/>
 <line x1="695" y1="513.0" x2="1147" y2="513.0" stroke="#E8EDF3"/>
@@ -82,7 +82,7 @@
 <text x="920.5" y="584.0" text-anchor="middle" class="axis">250</text>
 <text x="1147.0" y="584.0" text-anchor="middle" class="axis">500</text>
 <rect x="1208" y="406" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="1230" y="437" class="panel">8Q · Depth 8 · 回本 122 步</text>
+<text x="1230" y="437" class="panel">8Q · Depth 8 · Break-even: 122 steps</text>
 <line x1="1270" y1="458.0" x2="1722" y2="458.0" stroke="#E8EDF3"/>
 <line x1="1270" y1="485.5" x2="1722" y2="485.5" stroke="#E8EDF3"/>
 <line x1="1270" y1="513.0" x2="1722" y2="513.0" stroke="#E8EDF3"/>
@@ -97,7 +97,7 @@
 <text x="1495.5" y="584.0" text-anchor="middle" class="axis">250</text>
 <text x="1722.0" y="584.0" text-anchor="middle" class="axis">500</text>
 <rect x="58" y="644" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="80" y="675" class="panel">12Q · Depth 2 · 回本 147 步</text>
+<text x="80" y="675" class="panel">12Q · Depth 2 · Break-even: 147 steps</text>
 <line x1="120" y1="696.0" x2="572" y2="696.0" stroke="#E8EDF3"/>
 <line x1="120" y1="723.5" x2="572" y2="723.5" stroke="#E8EDF3"/>
 <line x1="120" y1="751.0" x2="572" y2="751.0" stroke="#E8EDF3"/>
@@ -112,7 +112,7 @@
 <text x="345.5" y="822.0" text-anchor="middle" class="axis">250</text>
 <text x="572.0" y="822.0" text-anchor="middle" class="axis">500</text>
 <rect x="633" y="644" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="655" y="675" class="panel">12Q · Depth 4 · 回本 108 步</text>
+<text x="655" y="675" class="panel">12Q · Depth 4 · Break-even: 108 steps</text>
 <line x1="695" y1="696.0" x2="1147" y2="696.0" stroke="#E8EDF3"/>
 <line x1="695" y1="723.5" x2="1147" y2="723.5" stroke="#E8EDF3"/>
 <line x1="695" y1="751.0" x2="1147" y2="751.0" stroke="#E8EDF3"/>
@@ -127,7 +127,7 @@
 <text x="920.5" y="822.0" text-anchor="middle" class="axis">250</text>
 <text x="1147.0" y="822.0" text-anchor="middle" class="axis">500</text>
 <rect x="1208" y="644" width="540" height="210" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
-<text x="1230" y="675" class="panel">12Q · Depth 8 · 回本 120 步</text>
+<text x="1230" y="675" class="panel">12Q · Depth 8 · Break-even: 120 steps</text>
 <line x1="1270" y1="696.0" x2="1722" y2="696.0" stroke="#E8EDF3"/>
 <line x1="1270" y1="723.5" x2="1722" y2="723.5" stroke="#E8EDF3"/>
 <line x1="1270" y1="751.0" x2="1722" y2="751.0" stroke="#E8EDF3"/>
@@ -141,8 +141,8 @@
 <text x="1270.0" y="822.0" text-anchor="middle" class="axis">1</text>
 <text x="1495.5" y="822.0" text-anchor="middle" class="axis">250</text>
 <text x="1722.0" y="822.0" text-anchor="middle" class="axis">500</text>
-<line x1="640" y1="906" x2="678" y2="906" stroke="#3478C5" stroke-width="4"/><text x="688" y="910" class="legend">PyTorch 累计耗时</text>
-<line x1="860" y1="906" x2="898" y2="906" stroke="#D07124" stroke-width="4"/><text x="908" y="910" class="legend">JAX 累计耗时</text>
+<line x1="640" y1="906" x2="678" y2="906" stroke="#3478C5" stroke-width="4"/><text x="688" y="910" class="legend">PyTorch cumulative time</text>
+<line x1="860" y1="906" x2="898" y2="906" stroke="#D07124" stroke-width="4"/><text x="908" y="910" class="legend">JAX cumulative time</text>
 <line x1="58" y1="928" x2="1742" y2="928" stroke="#E2E8F0"/>
-<circle cx="74" cy="946" r="5" fill="#54319B"/><text x="90" y="951" class="note">结论：全部配置在 108–157 步回本；回本只代表累计速度反超，不代表 VQE 已达到基态。</text>
+<circle cx="74" cy="946" r="5" fill="#54319B"/><text x="90" y="951" class="note">All configurations break even in 108–157 steps. This measures cumulative speed, not whether VQE has reached the ground state.</text>
 </svg>

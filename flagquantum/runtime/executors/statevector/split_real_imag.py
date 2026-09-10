@@ -708,14 +708,14 @@ def _conformance_ir(depth: int) -> CircuitIR:
     from ....circuit import Circuit
 
     circuit = Circuit(3, device="cpu", dtype=torch.complex64)
-    circuit.h(0)
+    circuit.gate("h", 0)
     for layer in range(depth):
         angle = (layer + 1) * 0.017
-        circuit.rx(layer % 3, theta=angle)
-        circuit.ry((layer + 2) % 3, theta=-0.31 * angle)
-        circuit.rz((layer + 1) % 3, theta=-0.7 * angle)
-        circuit.cx(layer % 3, (layer + 1) % 3)
-        circuit.rzz((layer + 1) % 3, (layer + 2) % 3, theta=0.23 * angle)
+        circuit.gate("rx", layer % 3, theta=angle)
+        circuit.gate("ry", (layer + 2) % 3, theta=-0.31 * angle)
+        circuit.gate("rz", (layer + 1) % 3, theta=-0.7 * angle)
+        circuit.gate("cx", (layer % 3, (layer + 1) % 3))
+        circuit.gate("rzz", ((layer + 1) % 3, (layer + 2) % 3), theta=0.23 * angle)
     return circuit.to_ir()
 
 
@@ -789,16 +789,17 @@ def run_split_real_imag_conformance(
 def _training_conformance_ir(depth: int, seed: int) -> CircuitIR:
     from ....circuit import Circuit
 
-    circuit = Circuit(3, device="cpu", dtype=torch.complex64).h(0)
+    circuit = Circuit(3, device="cpu", dtype=torch.complex64)
+    circuit.gate("h", 0)
     for layer in range(depth):
         angle = (layer + 1) * 0.013 + seed * 0.001
-        circuit.ry(layer % 3, theta=angle)
-        circuit.rz((layer + 1) % 3, theta=-0.47 * angle)
-        circuit.cx(layer % 3, (layer + 1) % 3)
-        circuit.rxx((layer + 1) % 3, (layer + 2) % 3, theta=0.19 * angle)
-    circuit.rx(0, theta=Parameter("alpha"))
-    circuit.ry(1, theta=Parameter("beta"))
-    circuit.rzz(1, 2, theta=Parameter("gamma"))
+        circuit.gate("ry", layer % 3, theta=angle)
+        circuit.gate("rz", (layer + 1) % 3, theta=-0.47 * angle)
+        circuit.gate("cx", (layer % 3, (layer + 1) % 3))
+        circuit.gate("rxx", ((layer + 1) % 3, (layer + 2) % 3), theta=0.19 * angle)
+    circuit.gate("rx", 0, theta=Parameter("alpha"))
+    circuit.gate("ry", 1, theta=Parameter("beta"))
+    circuit.gate("rzz", (1, 2), theta=Parameter("gamma"))
     return circuit.to_ir()
 
 

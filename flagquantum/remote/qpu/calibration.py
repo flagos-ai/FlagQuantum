@@ -11,10 +11,10 @@ from ...noise import (
     GateDuration,
     NoiseModel,
     QubitNoiseCalibration,
-    ReadoutError,
     depolarizing_channel,
     two_qubit_depolarizing_channel,
 )
+from ...noise.model import _decode_readout_error
 
 
 def _captured_at(value: Any) -> str:
@@ -84,12 +84,7 @@ def quafu_noise_model_from_chip_info(
             raise ValueError(f"Q{physical_wire} has invalid T1/T2 calibration")
         readout = None
         if matrices is not None:
-            readout = ReadoutError(
-                tuple(
-                    tuple(float(value) for value in row)
-                    for row in matrices[logical_wire]
-                )
-            )
+            readout = _decode_readout_error(matrices[logical_wire])
         calibrations.append(
             QubitNoiseCalibration(
                 logical_wire,

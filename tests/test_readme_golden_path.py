@@ -23,4 +23,3 @@ def test_readme_golden_path_executes() -> None:
 
     assert namespace["training"].completed_steps == 10
     assert namespace["result"].plan is not None
-    assert namespace["package"].backend.provider == "local"

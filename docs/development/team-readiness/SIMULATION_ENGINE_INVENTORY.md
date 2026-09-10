@@ -1,409 +1,466 @@
-# Simulation Engine 现状盘点与首个替换切片
+# Simulation Engine Inventory and First Replacement Slice
 
-状态：Simulation 团队交付候选（事实盘点与验证证据，不是公共契约）
+Status: Simulation delivery candidate; inventory and verification evidence, not
+a public contract.
 
-集成进展（2026-09-04）：本地状态向量、密度矩阵、无噪声 MPS 和张量网络计划构建已归入
-各自的 Simulation 实现。本地 TN 的计划构建与状态入口位于
-`flagquantum/simulation/tensor_network/local.py`，Pauli/Hamiltonian 观测量计划与 MPO 构造位于
-`tensor_network/observables.py`，`tensor_network/entrypoints.py` 保留稳定入口和振幅实现；
-初态与生命周期缓存仍暂由 `Circuit` 持有，迁移不得改变 `fq.Circuit`、Runtime 或结果契约。
+Integration update (2026-09-04): local statevector, density matrix, noiseless MPS,
+and tensor-network plan construction now belong to their Simulation implementations.
+Local TN planning and state entry live in
+`flagquantum/simulation/tensor_network/local.py`; Pauli/Hamiltonian plans and MPO
+construction live in `tensor_network/observables.py`.
+`tensor_network/entrypoints.py` retains stable entries and amplitude execution.
+`Circuit` temporarily retains initial states and lifecycle caches. Migration must
+preserve `fq.Circuit`, Runtime, and result contracts.
 
-复核进展（2026-09-05）：Statevector 的门矩阵作用、对角门数值作用、基态块合并和
-adjoint 局部数学已由 `simulation/statevector/operations.py` 与
-`simulation/statevector/adjoint.py` 统一持有；本地分片调试路径仅处理索引、所有权和
-结果组装。TN 的正反向局部收缩数学已归 `simulation/tensor_network/stages.py`；JAX 的 dtype、
-门矩阵、状态作用、分片局部 observable/loss、MPS 批量更新和 pullback 已归
-`simulation/jax/` 下的表示子目录。分布式 MPS/TN 的局部数值原语已归 Simulation，Runtime
-保留记录、调度、通信、检查点和证据；真实本地 Engine 与测试 fake 已通过同一套首切片
-conformance。退出条件经逐路径审计和完整门禁验证，`simulation_extraction` 已完成。
+Review update (2026-09-05): `simulation/statevector/operations.py` and
+`simulation/statevector/adjoint.py` own gate-matrix/diagonal actions, basis-block
+merging, and local adjoint mathematics. Local sharding debug paths retain indexing,
+ownership, and result assembly. TN local forward/reverse contraction belongs to
+`simulation/tensor_network/stages.py`. JAX dtype, gate matrices, state actions,
+sharded local observables/losses, batched MPS updates, and pullbacks belong to the
+representation subdirectories under `simulation/jax/`. Distributed MPS/TN local
+primitives belong to Simulation; Runtime retains records, scheduling,
+communication, checkpoints, and evidence. Real local engines and fakes pass the
+same first-slice conformance suite. Path audits and full gates establish the exit
+conditions; `simulation_extraction` is complete.
 
-首次盘点日期：2026-09-03；最近复核日期：2026-09-05
+First inventory: 2026-09-03. Latest review: 2026-09-05.
 
-共同基线：`d7c56603e363bba95d5e98b9a77a75adb3c52e0d`
+Shared baseline: `d7c56603e363bba95d5e98b9a77a75adb3c52e0d`
 
-原始团队分支：`codex/vnext-team-simulation`；当前集成分支：`codex/flagquantum-vnext-architecture`
+Original team branch: `codex/vnext-team-simulation`.
+Integration branch: `codex/flagquantum-vnext-architecture`.
 
-## 1. 结论
+## 1. Conclusion
 
-当前数值实现已按可替换 Simulation Engine 边界收敛：稳定的本地 PyTorch
-状态向量执行循环已位于 `flagquantum/simulation/statevector/local.py`，底层门作用与融合位于
-`flagquantum/simulation/statevector/operations.py`；本地 MPS/TN 主要位于
-`flagquantum/simulation/`；密度矩阵也由 Simulation 持有。`flagquantum/runtime/executors/`
-保留计划感知的执行适配、资源/通信编排和结果转换，并调用 Simulation 的数值原语。
+Numerical implementations now follow replaceable Simulation Engine boundaries.
+The stable local PyTorch statevector loop is in
+`flagquantum/simulation/statevector/local.py`; gate action and fusion are in
+`flagquantum/simulation/statevector/operations.py`. Local MPS/TN and density
+matrices also belong to Simulation. `flagquantum/runtime/executors/` retains
+plan-aware adaptation, resource/communication orchestration, and result conversion,
+calling Simulation primitives.
 
-首个候选应是现有本地 PyTorch 状态向量的 `single_device_fast_path`：执行已经校验的
-`CircuitIR`，从调用方提供或规范零态出发，返回保持 PyTorch autograd 图的完整批量状态。
-首轮测试没有修改 `fq.Circuit`/`run`、增加导出或在 Simulation 内私建契约。
-测试冻结数值行为，并通过既有 `run_local_statevector()` 调用点证明真实引擎与测试替身可由
-相同的 `fq.run(plan)` 消费者驱动。该调用点不是新增公共契约，只是边界替换的工程证据。
+The first candidate is the existing local PyTorch `single_device_fast_path`:
+execute validated `CircuitIR` from a supplied or canonical zero state and return
+a complete batched state retaining the PyTorch autograd graph. Initial tests did
+not change `fq.Circuit`/`run`, add exports, or create private Simulation contracts.
+They characterize numerical behavior and demonstrate real/fake replacement at
+`run_local_statevector()` through the same `fq.run(plan)` consumer. This existing
+call site provides engineering evidence, not a new public contract.
 
-## 2. 盘点方法与边界
+## 2. Method and Boundaries
 
-盘点覆盖 `flagquantum/simulation/**/*.py`、
-`flagquantum/runtime/executors/**/*.py`，并追踪到实际消费者和外置权威实现。分类定义如下：
+The inventory covers `flagquantum/simulation/**/*.py` and
+`flagquantum/runtime/executors/**/*.py`, following actual consumers and external
+authoritative implementations.
 
-| 分类 | 判定 |
+| Classification | Definition |
 | --- | --- |
-| 纯数值算法 | 状态表示、门作用、分解/截断、收缩、噪声演化、前后向/VJP、数值稳定算法 |
-| Kernel 调用 | Triton/JAX/编译 PyTorch kernel 的选择后调用、张量布局封装和 autograd kernel bridge |
-| 执行适配 | 把 IR/计划/参数转换为算法调用，循环执行指令，连接 Runtime 或兼容入口 |
-| 资源或通信编排 | 设备/进程组/拓扑/所有权/传输/内存/检查点/恢复/训练生命周期/后端策略 |
-| 结果转换 | 状态到测量、局部到汇总结果、框架数组转换、记录与证据投影、兼容门面 |
+| Numerical algorithm | State representation, gates, decomposition/truncation, contraction, noise evolution, forward/backward/VJP, numerical stability |
+| Kernel invocation | Selected Triton/JAX/compiled PyTorch kernels, tensor layouts, autograd bridges |
+| Execution adapter | IR/plan/parameter conversion, instruction loops, Runtime/compatibility connections |
+| Resource/communication orchestration | Devices, process groups, topology, ownership, transport, memory, checkpoints, recovery, training lifecycle, backend policy |
+| Result conversion | State-to-measurement, local-to-aggregate results, framework arrays, records/evidence, compatibility facades |
 
-一个文件可以有次要职责；表中“主分类”用于确定未来权威所有者，“混合点”用于决定拆分
-顺序。算法正确性所需的局部 workspace 或张量布局仍可由 Simulation 拥有；集群资源、
-通信生命周期和用户策略不可因与算法紧邻而留在 Simulation。
+Files may have secondary responsibilities. Primary classification determines
+ownership; mixed responsibilities determine extraction order. Algorithm-local
+workspace and tensor layout may remain in Simulation. Cluster resources,
+communication lifecycle, and user policy do not belong there merely because they
+are adjacent to mathematics.
 
-路径语义方面，首个切片是 `single_device_fast_path`。分布式状态向量/MPS 是
-`sharded_across_ranks`；本地 TN 切片属于 `manual_sliced_tensor_contraction`；轨迹跨 rank
-分配是 trajectory task parallel，不是单一状态容量扩展。不得把这些语义互相替代。
+The first slice is `single_device_fast_path`. Distributed statevector/MPS use
+`sharded_across_ranks`; local TN slicing uses `manual_sliced_tensor_contraction`.
+Cross-rank trajectory allocation is task parallelism, not single-state capacity
+scaling. These semantics are not interchangeable.
 
-## 3. 实际实现位置
+## 3. Implementation Locations
 
-| 能力 | 当前数值权威位置 | 编排/消费者位置 | 现状 |
+| Capability | Numerical authority | Orchestration/consumers | Status |
 | --- | --- | --- | --- |
-| 本地状态向量 | `simulation/statevector/local.py` 的执行循环；`simulation/statevector/operations.py` 的布局、门作用、门矩阵组合、压缩基态索引展开和融合；`simulation/triton_kernels/statevector_gates.py` 的本地门及跨分片 CX control-one pack/unpack CUDA kernel | `runtime/execution.py` 的 statevector 分支、`Circuit.state()`/`Circuit.run()` | 生产支持；数值实现已归 Simulation，初态与生命周期缓存仍暂由 `Circuit` 持有；分布式执行器复用门矩阵组合与索引数值函数，仍负责通信策略与传输 |
-| 小规模专用状态向量 | `simulation/statevector/small.py` | 特定模型/基准调用方 | 2--4 qubit 数据重上传专用核，不是通用 Engine |
-| 分布式状态向量 | `simulation/statevector/operations.py`、`simulation/statevector/adjoint.py` 和 `simulation/triton_kernels/statevector_*` 的 rank-local 数值原语 | `runtime/executors/statevector/` 的 planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime 保留 amplitude/qubit-address 所有权、通信、chunk 和生命周期；不再实现局部门矩阵数学 |
-| Split real/imag 与 Double-Single | `simulation/statevector/split_real_imag.py` 的 P0/P1/P2 门矩阵、门作用、零态执行循环和 Pauli-term 数值归约；`simulation/statevector/double_single_host_gates.py` 与 `simulation/statevector/double_single_device_gates.py` 的隔离门矩阵生成；`simulation/statevector/double_single.py` 的 P3/P4 零态初始化、门执行、归一化和 Pauli-term 归约 | Runtime 文件中的参数绑定、平台身份、精度计划与授权、编码策略、observables、参数移位调度、P5 autograd/SGD 边界、conformance/result | P0--P4 的基础数值实现已归 Simulation；Runtime 只组合既有数值原语；P3/P4 适配器因主机摄取与路径证据不同而保持分离；P5 单行 SGD 更新尚不构成独立数值核，不为搬移而新增 helper；实验路径不得成为首切片默认实现或被描述为等价 FP64 |
-| 本地 MPS | `simulation/mps/local.py` 的无噪声指令循环；`mps/noisy.py` 的已降低单轨迹数值循环；`mps/models.py`、`mps/state.py`、`mps/factorization.py`、`mps/static.py`、`mps/tebd.py`、`mps/dense_island.py`、`mps/brickwork.py` | `mps/entrypoints.py` 的本地调用适配；`runtime/trajectories/mps.py` 的随机流、多轨迹调度、恢复与合并 | 单设备数值路径已独立；Simulation 数值函数只接收 lowered IR、初始化状态和显式 RNG |
-| 分布式 MPS | `simulation/mps/rank_local.py`、`mps/site_kernels.py`、`mps/compiled_layers.py`、`mps/factorization.py`、`mps/canonicalization.py`、`mps/reverse.py`、`mps/observables.py` | `runtime/executors/mps/` 的 forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | 前向与反向批量门收缩、反向 pair 分解与截断投影、canonical-site 分解与残差、基础门作用、site kernel、QR、local VJP 与 observable/MPO 局部扫描已归位；Runtime 保留所有权、通信、显存准入与微批决策、canonicalization sweep、重平衡、tape/checkpoint 生命周期、梯度 collective、跨 rank observable pipeline 和结果证据 |
-| 本地张量网络 | `simulation/tensor_network/local.py` 的计划构建与数值状态入口；`tensor_network/observables.py` 的观测量计划与 MPO；`tensor_network/state.py`、`tensor_network/contraction.py`、`tensor_network/stages.py`、`real_imag_kernels.py` | `tensor_network/entrypoints.py` 的稳定入口与振幅实现、`tensor_network/path_search.py` | 本地执行和观测量职责已独立；路径搜索仍待进一步收口，能力仍为 experimental |
-| 分布式张量网络 | `simulation/tensor_network/stages.py` 的 pair contraction、pair pullback、高秩回退和补偿累加 | `runtime/executors/tensor_network/` 的 DAG/schedule、tape/checkpoint、task ownership、通信与结果证据 | 正反向局部收缩数学已归位；sliced/sharded reverse 的生命周期仍与 checkpoint 及通信计划交织；生产 transport 未认证 |
-| 密度矩阵 | `simulation/density_matrix.py` | Runtime noise registry | 本地精确演化、Kraus 作用和测量已归 Simulation；噪声 lowering 与计划分派仍归 Runtime；旧 `simulation.noise` 门面已退出 |
-| 噪声模型与 lowering | Markovian Kraus 数值在 density kernels、`simulation/statevector/noisy.py`、`simulation/mps/state.py`/`mps/entrypoints.py` | 语义由 `flagquantum/noise/` 拥有；lowering 由 `flagquantum/compiler/noise.py` 拥有；选择由 `runtime/planner/noise_selection.py` 拥有；轨迹公共设施在 `runtime/trajectories/` | Simulation 只拥有 channel/trajectory 数值演化，不复制 NoiseModel、lowering 或选择策略 |
-| 轨迹 | statevector 的已 lowering 单批次指令循环与数值核在 `simulation/statevector/noisy.py`，编排在 `runtime/executors/statevector/noisy.py`；MPS 数值分支在 `simulation/mps/noisy.py` | `runtime/trajectories/` 拥有 seed、ownership、统计、checkpoint 和多轨迹结果；执行文件还直接 all-reduce/保存 | 采样/归一化是数值算法；ID 分配、随机流构造、读出误差、跨 rank 汇总、检查点和自适应停止生命周期属于 Runtime |
-| 可微计算 | 本地状态向量依赖 PyTorch 图；MPS/TN 数值操作、Triton autograd 和已拆出的 JAX MPS pullback 在 `simulation/`；其余显式 sharded adjoint/reverse 仍在各 backend | gradient ownership/reduction、训练循环、优化器、检查点和 evidence 与其混合 | 必须保留参数梯度所有权、dtype、复数共轭约定和前向相同的分布语义 |
+| Local statevector | `simulation/statevector/local.py` loop; `simulation/statevector/operations.py` layout, gates, matrix composition, compressed basis expansion, fusion; `simulation/triton_kernels/statevector_gates.py` local gates and cross-shard CX control-one pack/unpack CUDA kernels | `runtime/execution.py`, `Circuit.state()`/`Circuit.run()` | Production supported; Simulation owns numerics, Circuit temporarily owns initial state/cache; distributed executors reuse matrix/index math while owning transport |
+| Small specialized statevector | `simulation/statevector/small.py` | Specific models/benchmarks | Specialized 2--4 qubit data-reuploading kernels, not a general engine |
+| Distributed statevector | `simulation/statevector/operations.py`, `simulation/statevector/adjoint.py`, `simulation/triton_kernels/statevector_*` rank-local primitives | `runtime/executors/statevector/` planning/models/forward/reverse/forward_executor/training/checkpointing/gradient_reduction | Runtime owns amplitude/qubit-address ownership, communication, chunks, lifecycle; no duplicate local gate math |
+| Split real/imag and Double-Single | `simulation/statevector/split_real_imag.py` P0/P1/P2 gates, zero-state loops, Pauli reductions; `simulation/statevector/double_single_host_gates.py` and `simulation/statevector/double_single_device_gates.py` matrix generation; `simulation/statevector/double_single.py` P3/P4 initialization, gates, normalization, Pauli reductions | Runtime bindings, platform identity, precision plans/authorization, encoding, observables, parameter-shift scheduling, P5 autograd/SGD, conformance/results | P0--P4 numerics extracted; P3/P4 adapters remain separate for ingestion/path evidence; P5 one-line SGD does not justify another kernel helper; experimental paths are not defaults or equivalent FP64 |
+| Local MPS | `simulation/mps/local.py` noiseless loop; `mps/noisy.py` lowered single-trajectory loop; `mps/models.py`, `mps/state.py`, `mps/factorization.py`, `mps/static.py`, `mps/tebd.py`, `mps/dense_island.py`, `mps/brickwork.py` | `mps/entrypoints.py`; `runtime/trajectories/mps.py` streams, scheduling, recovery, aggregation | Independent single-device numerics accept lowered IR, initialized state, explicit RNG |
+| Distributed MPS | `simulation/mps/rank_local.py`, `mps/site_kernels.py`, `mps/compiled_layers.py`, `mps/factorization.py`, `mps/canonicalization.py`, `mps/reverse.py`, `mps/observables.py` | `runtime/executors/mps/` forward/reverse/state/distribution/communication/*transport/planning/training_engine/checkpointing/production/profiling | Batched contractions, reverse factorization/truncation, canonical decomposition/residuals, gates, QR, VJP, observable/MPO scans extracted; Runtime owns transport, memory admission/microbatches, sweeps, rebalance, tapes/checkpoints, collectives, cross-rank observable pipelines, evidence |
+| Local TN | `simulation/tensor_network/local.py` plans/state; `tensor_network/observables.py` observable plans/MPO; `tensor_network/state.py`, `tensor_network/contraction.py`, `tensor_network/stages.py`, `real_imag_kernels.py` | `tensor_network/entrypoints.py`, `tensor_network/path_search.py` | Local execution/observables separated; path search needs further consolidation; experimental |
+| Distributed TN | `simulation/tensor_network/stages.py` pair contraction/pullback, high-rank fallback, compensated accumulation | `runtime/executors/tensor_network/` DAG/schedules, tapes/checkpoints, ownership, communication, evidence | Local forward/reverse math extracted; sliced/sharded reverse lifecycle remains coupled to checkpoint/communication plans; production transport uncertified |
+| Density matrix | `simulation/density_matrix.py` | Runtime noise registry | Exact local evolution, Kraus action, measurement in Simulation; Runtime handles lowering orchestration/dispatch; old `simulation.noise` facade removed |
+| Noise models/lowering | Markovian Kraus math in density kernels, `simulation/statevector/noisy.py`, `simulation/mps/state.py`/`mps/entrypoints.py` | `flagquantum/noise/` semantics; `flagquantum/compiler/noise.py` lowering; `runtime/planner/noise_selection.py` selection; `runtime/trajectories/` shared infrastructure | Simulation owns evolution, not NoiseModel, lowering, or selection policy |
+| Trajectories | Lowered batched statevector loop/kernels in `simulation/statevector/noisy.py`; MPS in `simulation/mps/noisy.py` | `runtime/executors/statevector/noisy.py`, `runtime/trajectories/` seeds, ownership, statistics, checkpointing, aggregation; execution files still reduce/save | Sampling/normalization are numerical; IDs, streams, readout errors, cross-rank aggregation, recovery, adaptive stopping are Runtime |
+| Differentiation | Local statevector PyTorch graph; MPS/TN operations, Triton autograd, extracted JAX MPS pullbacks in `simulation/`; other explicit sharded reverse/adjoint in backends | Gradient ownership/reduction, training, optimizers, checkpoints, evidence | Preserve gradient ownership, dtype, conjugation, and forward distribution semantics |
 
-## 4. `simulation` 代码归属矩阵
+## 4. Simulation Ownership Matrix
 
-| 路径 | 主分类 | Simulation 应拥有 | 应拆出的混合点 |
+| Path | Primary role | Simulation owns | Mixed boundary |
 | --- | --- | --- | --- |
-| `linalg.py` | 纯数值算法 | PyTorch 线性代数工具 | 无明显 Runtime 策略 |
-| `statevector/small.py` | 纯数值算法 | 小规模精确演化与 Z 期望 | 常量缓存键含 device 合理；它不是通用执行契约 |
-| `mps/state.py`、`mps/factorization.py`、`mps/low_rank.py` | 纯数值算法 | MPS 状态、门作用、分解、截断和误差 | 环境变量控制 kernel/分解策略应由请求/Runtime 决策后显式传入；dense correctness fallback 必须可见 |
-| `mps/static.py`、`mps/brickwork.py`、`mps/tebd.py`、`mps/dense_island.py` | 数值算法 + Kernel 调用 | 固定形状图、TEBD、dense island、局部编译核 | 编译/缓存策略和能力选择需与 Runtime/Compiler 的决定区分 |
-| `mps/local.py` | 纯数值执行 | 已初始化 MPS 上的 IR 门作用、融合与 bucket kernel 调用 | 无 Runtime 生命周期所有权 |
-| `mps/noisy.py` | 纯数值执行 | 已降低 IR 上的 unitary/Kraus MPS 单轨迹演化 | 不导入 Compiler 或 Runtime，不派生 seed，不拥有 checkpoint |
-| `mps/entrypoints.py` | 兼容入口与适配 | Circuit/IR 到本地 MPS 初态、lowered IR 内部入口、adaptive bond rerun | 正式 `run_native` 路径由 Runtime 先调用 Compiler lowering；受保护的 legacy 直接入口仍保留同签名 lowering |
-| `runtime/trajectories/mps.py` | Runtime 生命周期 | 多轨迹 ownership、随机流、统计收敛、失败重试、checkpoint/restart 和 rank 结果合并 | 通过调用方提供的单轨迹执行器调用 Simulation，不实现 MPS 门或 Kraus 数值算法 |
-| `mps/planning.py` | 资源/执行策略（混合） | 仅保留算法所需 shape/truncation 估计 | backend/kernel 环境开关与执行规划不应由状态对象决定 |
-| `mps/models.py` | MPS 配置、编译调度和数值结果 | 算法内部配置、不可变调度及诊断结果 | 多轨迹执行结果由 Runtime 拥有；模型不得承担执行或设备策略 |
-| `tensor_network/state.py`、`tensor_network/contraction.py`、`tensor_network/stages.py` | 纯数值算法 | 网络表示、局部/分片收缩、显式反向、Kahan 等数值方法 | 执行计划和持久记录需由 Runtime/Core 契约提供 |
-| `tensor_network/path_search.py` | 算法规划（混合） | contraction-order 搜索作为数值算法 | 设备/编译策略、全局资源预算决定属于 Runtime/Compiler 输入 |
-| `tensor_network/local.py` | 纯数值执行 | IR 到本地 contraction plan、状态入口和局部编译模板复用 | 无 Runtime/Provider 依赖；初态和程序缓存仍消费现有 Circuit 生命周期容器 |
-| `tensor_network/observables.py` | 纯数值算法 | Pauli/Hamiltonian 计划、MPO 压缩和批量观测量 contraction | 压缩设备由调用方显式给定，不读取 rank 或集群环境 |
-| `tensor_network/entrypoints.py` | 稳定入口与振幅执行 | 公开入口薄适配、振幅投影与 contraction 调用 | 不拥有 Runtime/Provider 策略；振幅代码可在收益明确时再独立 |
-| `tensor_network/models.py` | 算法内部模型 | 张量节点、收缩计划、切片计划与编译后局部调度 | 跨层结果与稳定类型应由 Core 提案定义 |
-| `real_imag_kernels.py`、`triton_kernels/**` | Kernel 调用/纯数值算法 | eager/Triton 数值实现与 backward | 平台是否可用、是否允许 fallback 由 Platform 能力与 Runtime policy 决定 |
-| `graph.py` | 受保护兼容工具 | 当前仅由根 API 兼容导出，无 Compiler 调用方 | 不复制到 Compiler，不形成第二权威；只有出现具体 Compiler 消费者并批准公共 API 迁移后才归位 |
+| `linalg.py` | Numerics | PyTorch linear algebra | No evident Runtime policy |
+| `statevector/small.py` | Numerics | Small exact evolution and Z expectation | Device-aware constant cache is valid; not general execution contract |
+| `mps/state.py`, `mps/factorization.py`, `mps/low_rank.py` | Numerics | States, gates, decomposition, truncation, errors | Environment-controlled kernel/decomposition policy should be resolved upstream and passed explicitly; dense correctness fallback stays visible |
+| `mps/static.py`, `mps/brickwork.py`, `mps/tebd.py`, `mps/dense_island.py` | Numerics/kernels | Fixed-shape graphs, TEBD, dense islands, local compiled kernels | Distinguish cache/compile policy from Runtime/Compiler decisions |
+| `mps/local.py` | Numerical execution | IR gates, fusion, bucket kernels on initialized states | No Runtime lifecycle |
+| `mps/noisy.py` | Numerical execution | Lowered unitary/Kraus single-trajectory evolution | No Compiler/Runtime import, seed derivation, or checkpoints |
+| `mps/entrypoints.py` | Compatibility/adaptation | Circuit/IR initialization, lowered internal entry, adaptive-bond reruns | `run_native` has Runtime orchestrate Compiler lowering; protected direct legacy entry preserves lowering signature |
+| `runtime/trajectories/mps.py` | Runtime lifecycle | No MPS/Kraus mathematics; invokes supplied trajectory executor | Ownership, streams, convergence, retries, checkpoint/restart, rank aggregation |
+| `mps/planning.py` | Mixed resource/execution policy | Algorithm shape/truncation estimates only | State objects must not select backends/kernels from environment |
+| `mps/models.py` | Configuration/schedules/results | Internal config, immutable schedules, diagnostics | Runtime owns multi-trajectory results; models do not execute policy |
+| `tensor_network/state.py`, `tensor_network/contraction.py`, `tensor_network/stages.py` | Numerics | Representation, local/sharded contraction, reverse, Kahan methods | Runtime/Core own execution plans and persistent records |
+| `tensor_network/path_search.py` | Mixed algorithm planning | Contraction-order search | Device/compile policy and global budgets are upstream inputs |
+| `tensor_network/local.py` | Numerical execution | IR-to-local-plan, state entry, template reuse | No Runtime/Provider dependency; consumes existing Circuit initial-state/cache lifecycle |
+| `tensor_network/observables.py` | Numerics | Pauli/Hamiltonian plans, MPO compression, batched contraction | Compression device explicitly supplied; no rank/cluster environment reads |
+| `tensor_network/entrypoints.py` | Stable entry/amplitudes | Thin public adaptation, amplitude projection/contraction | No Runtime/Provider policy; split amplitude code only for concrete benefit |
+| `tensor_network/models.py` | Internal models | Nodes, contraction/slicing plans, compiled local schedules | Core proposals define stable cross-layer results/types |
+| `real_imag_kernels.py`, `triton_kernels/**` | Kernels/numerics | Eager/Triton forward/backward | Platform capabilities and Runtime policy decide availability/fallback |
+| `graph.py` | Protected compatibility | Root API compatibility export; no Compiler caller | Do not duplicate in Compiler; migrate only for a concrete caller and approved API change |
 
-## 5. `runtime/executors` 代码归属矩阵
+## 5. Runtime Executor Ownership Matrix
 
-| 路径 | 主分类 | Simulation 应拥有 | Runtime/Provider 应拥有 |
+| Path | Primary role | Simulation owns | Runtime/Provider owns |
 | --- | --- | --- | --- |
-| `simulation/density_matrix.py` | 纯数值算法 | density 构造、算子展开、unitary/Kraus 演化、IR 数值循环和 density 测量 | 无；稳定结果投影仍由 Runtime/Core 负责 |
-| `runtime/noise_registry.py` 的 density adapter | 执行适配 | 无数值实现 | 计划执行仅验证并分派已 lowering IR；直接兼容入口按调用请求 Compiler lowering |
-| `statevector/split_real_imag*.py` | 数值算法 + Kernel 调用（混合） | 状态演化、精度扩展、expectation/VJP；状态向量 adjoint/VJP Triton kernel 已归 `simulation/triton_kernels/statevector_adjoint.py` | 设备身份、provider evidence、精度/回退授权、conformance 汇总由 Platform/Runtime；Double-Single 门矩阵生成已移至 `simulation/double_single_*_gates.py` |
-| `statevector/forward.py`、`reverse_adjoint.py` | 分布式执行适配 | 无 Runtime 类型依赖的 rank-local eager 普通门、对角门、rank-pair、gate-basis block 合并、旋转门导数与复内积已归 Simulation | process group、collective 生命周期、rank/topology、owner 与全局索引解析、chunk policy、Triton 路由、环境开关和通信 evidence；local expectation 分块遍历依赖这些 Runtime 语义，不强迁 |
-| `statevector/reverse.py`、`gradient_reduction.py` | Kernel/执行适配（混合） | autograd bridge 与局部梯度数学 | process group、bucket policy、all-reduce、ownership/evidence |
-| `statevector/local_execution.py` | 执行适配 | 门矩阵与对角门数值已委托 `simulation/statevector/operations.py` | backend policy、模拟 rank 编排、shard 索引/所有权、真实 transport 与结果报告；不得为搬文件而复制 plan 或 shard 类型 |
-| `statevector/planning.py`、`models.py`、`environment.py`、`layout.py`、`kernel_dispatch.py` | 资源或通信编排 | 仅算法约束/代价模型输入 | Runtime plan/topology/policy/环境；Platform kernel capability；Core-owned records |
-| `statevector/forward_executor.py`、`training.py`、`checkpointing.py` | 资源/生命周期编排 | 无训练生命周期所有权 | 执行循环、故障协调、优化器、检查点/恢复、进度与超时 |
-| `statevector/noisy.py` | 数值算法 + Runtime 编排 | batched gate/Kraus 采样、归一化、观测量 | trajectory ownership、collective 汇总、检查点、失败处理、自适应停止 |
-| `simulation/mps/rank_local.py`、`mps/site_kernels.py`、`mps/factorization.py` | 纯数值算法/Kernel 调用 | 门作用、环境 transfer、QR/SVD 分解 | Runtime 只保留显存预算、微批规划、workspace 池和 Runtime 错误翻译；原 Runtime 数值模块已删除 |
-| `mps/forward.py`、`reverse.py`、`reverse_replay.py`、`reverse_*observables.py` | 数值算法（高度混合） | rank-local MPS math、tape/VJP、observable contraction | rank ownership、transport sequencing、collective 与执行生命周期 |
-| `mps/state.py`、`records.py` | 结果/所有权模型（混合） | 算法内部张量状态可留 | topology ownership、跨层记录应由 Runtime/Core 契约 |
-| `mps/communication.py`、`distribution.py`、`metadata_transport.py`、`reverse_transport.py` | 资源或通信编排 | 仅通信算子要求 | Runtime/Platform 实现 transport 和 process group |
-| `mps/training*.py`、`checkpointing.py`、`production.py`、`profiling.py`、`device_resolution.py` | 资源/生命周期/结果 | 局部 loss/gradient kernel 可下沉 Engine | 设备选择、参数广播、优化器、持久化、生产门禁、观测 |
-| `tensor_network/sharded_kernels.py`、`sliced_reverse.py`、`reverse_dag.py` | 数值执行适配（混合） | pair contraction、单项/批量 pair pullback、高秩 fallback 和 Kahan 累加已委托 Simulation | DAG/bucket schedule、tape/cotangent 生命周期、checkpoint plan、切片调度、跨 rank reduce/transport |
-| `tensor_network/distributed_execution.py`、`distributed_sliced_reverse.py`、`redistribution.py`、`partial_mesh.py` | 通信/执行适配（混合） | 局部 contraction 调用 | process group、P2P/all-to-all、rank 生命周期与聚合 |
-| `tensor_network/distributed_dag.py`、`sliced_tasks.py`、`multi_axis_sharding.py`、`joint_planning.py` | 资源/通信规划 | 算法可行性和 shape cost | Runtime ownership/topology/memory/communication plan；跨层类型归 Core |
-| `tensor_network/dynamic_checkpoint.py`、`rematerialization.py`、`memory_evidence.py`、`distributed_optimizer.py` | 生命周期/资源/结果 | rematerialization 的数值代价模型、局部更新 math | durable checkpoint、预算/证据、optimizer ownership 与执行策略 |
-| `simulation/jax/primitives.py`、`simulation/jax/statevector/kernels.py`、`simulation/jax/tensor_network/{models,contraction,kernels}.py` | 纯数值算法 | JAX dtype、指令与 Pauli 矩阵、statevector 分片初态与本地执行、跨 rank 门数学、分片 observable/loss、张量网络节点、局部贪心/切片 contraction 与输出 loss 计算 | 无 Runtime/Platform 依赖；Runtime 保留 shard 组织、通信置换、pmap/shard-map、collective 和执行证据 |
-| `simulation/jax/mps/kernels.py`、`simulation/jax/mps/batched.py`、`simulation/jax/mps/pullbacks.py` | 纯数值算法 | JAX MPS 初态、单/双站点更新、批量 pair 分解、远程门 swap 路由、statevector 收缩、局部 observable、局部 VJP、边界及 QR/SVD pullback | 无 Runtime/Platform 依赖；Runtime 保留 circuit loop、shard 组织、参数所有权、通信、截断策略和执行证据 |
-| `jax/kernel.py`、`mps/lowering.py`、表示目录内 Runtime 执行模块 | 执行适配 | 仅调用 Simulation 数值实现 | backend/device 是否选择 JAX、rank 任务分配、pmap/shard-map 与 collective 由 Runtime/Platform |
-| `jax/array_conversions.py` | 执行适配 | DLPack/array 数值边界的无拷贝语义 | 框架选择与 fallback policy 由 Runtime；外部对象不得越过边界 |
-| `jax/*execution.py`、`backend_dispatch.py`、`statevector/training.py`、`mps/gradients.py`、`tensor_network/gradients.py` | 执行适配（混合） | 局部 kernel 调用 | profile/backend policy、device count、shard orchestration、训练生命周期 |
-| `jax/*planning.py`、`planning_core.py`、`runtime_environment.py`、`transport.py` | 资源或通信编排 | 算法约束/代价输入 | Runtime/Platform topology、environment、transport 和 device lifecycle |
-| `jax/*records.py`、`*result.py`、`evidence_collector.py`、`release_policy.py` | 结果转换/门面 | 算法内部 diagnostics | Core result/evidence、Runtime 汇总和 release policy |
+| `simulation/density_matrix.py` | Numerics | Construction, operator expansion, unitary/Kraus action, IR loop, measurement | Stable result projection remains Runtime/Core |
+| Density adapter in `runtime/noise_registry.py` | Execution adapter | No numerics | Validate/dispatch lowered IR; direct compatibility calls request Compiler lowering |
+| `statevector/split_real_imag*.py` | Mixed numerics/kernels | Evolution, precision extension, expectations/VJP; adjoint kernels in `simulation/triton_kernels/statevector_adjoint.py`; matrix generation moved to `simulation/double_single_*_gates.py` | Device identity, provider evidence, precision/fallback permissions, conformance |
+| `statevector/forward.py`, `reverse_adjoint.py` | Distributed adaptation | Runtime-independent local gates, diagonal action, rank-pair/basis merging, derivatives, complex inner products | Groups, collectives, ranks/topology/ownership, global indices, chunks, Triton routing, switches, evidence; chunked local expectations depend on these semantics |
+| `statevector/reverse.py`, `gradient_reduction.py` | Mixed kernel/adaptation | Autograd bridges, local gradient math | Groups, bucket policy, all-reduce, ownership/evidence |
+| `statevector/local_execution.py` | Adapter | Matrix/diagonal actions delegated to `simulation/statevector/operations.py` | Backend policy, simulated ranks, shard indexing/ownership, real transport, reporting; no duplicate plan/shard types |
+| `statevector/planning.py`, `models.py`, `environment.py`, `layout.py`, `kernel_dispatch.py` | Resource/communication | Algorithm constraints/cost inputs only | Plans, topology, policy, environment, Platform kernel capabilities, Core records |
+| `statevector/forward_executor.py`, `training.py`, `checkpointing.py` | Lifecycle | No training lifecycle | Loops, failure coordination, optimizers, checkpoint/recovery, progress/timeouts |
+| `statevector/noisy.py` | Mixed numerics/orchestration | Batched gates/Kraus sampling, normalization, observables | Trajectory ownership, collectives, checkpoints, failures, adaptive stopping |
+| `simulation/mps/rank_local.py`, `mps/site_kernels.py`, `mps/factorization.py` | Numerics/kernels | Gates, environment transfer, QR/SVD | Memory budgets, microbatches, workspace pools, Runtime error translation; old numerical modules removed |
+| `mps/forward.py`, `reverse.py`, `reverse_replay.py`, `reverse_*observables.py` | Mixed | Rank-local math, tape/VJP, observables | Ownership, transport sequence, collectives, lifecycle |
+| `mps/state.py`, `records.py` | Mixed state/ownership | Algorithm-internal tensors | Topology ownership and cross-layer Runtime/Core records |
+| `mps/communication.py`, `distribution.py`, `metadata_transport.py`, `reverse_transport.py` | Communication | Required communication operations only | Transport and process groups |
+| `mps/training*.py`, `checkpointing.py`, `production.py`, `profiling.py`, `device_resolution.py` | Resources/lifecycle/results | Local loss/gradient kernels may move | Device selection, parameter broadcast, optimizers, persistence, production gates, observation |
+| `tensor_network/sharded_kernels.py`, `sliced_reverse.py`, `reverse_dag.py` | Mixed adaptation | Pair contraction, individual/batched pullbacks, high-rank fallback, Kahan accumulation delegated | DAG/bucket schedule, tapes/cotangents, checkpoint plans, slice scheduling, reductions/transport |
+| `tensor_network/distributed_execution.py`, `distributed_sliced_reverse.py`, `redistribution.py`, `partial_mesh.py` | Communication/adaptation | Local contraction calls | Groups, P2P/all-to-all, rank lifecycle, aggregation |
+| `tensor_network/distributed_dag.py`, `sliced_tasks.py`, `multi_axis_sharding.py`, `joint_planning.py` | Planning | Algorithm feasibility/shape cost | Ownership/topology/memory/communication plans; Core cross-layer types |
+| `tensor_network/dynamic_checkpoint.py`, `rematerialization.py`, `memory_evidence.py`, `distributed_optimizer.py` | Lifecycle/resources/results | Rematerialization costs, local update math | Durable checkpoints, budgets/evidence, optimizer ownership, execution policy |
+| `simulation/jax/primitives.py`, `simulation/jax/statevector/kernels.py`, `simulation/jax/tensor_network/{models,contraction,kernels}.py` | Numerics | Dtypes, instruction/Pauli matrices, initial shards/local execution, cross-rank gate math, local observables/losses, TN nodes, greedy/sliced contractions/output losses | No Runtime/Platform dependencies; Runtime owns shards, communication permutations, pmap/shard-map, collectives, evidence |
+| `simulation/jax/mps/kernels.py`, `simulation/jax/mps/batched.py`, `simulation/jax/mps/pullbacks.py` | Numerics | Initial states, single/pair/batched updates, swap routing math, statevector contraction, local observables/VJP, boundary and QR/SVD pullbacks | No Runtime/Platform dependencies; Runtime owns circuit loops, shards, parameters, communication, truncation policy, evidence |
+| `jax/kernel.py`, `mps/lowering.py`, representation Runtime modules | Adapter | Calls Simulation implementations | JAX backend/device selection, rank tasks, pmap/shard-map, collectives |
+| `jax/array_conversions.py` | Adapter | DLPack/array zero-copy semantics | Framework/fallback policy; external objects stop at boundary |
+| `jax/*execution.py`, `backend_dispatch.py`, `statevector/training.py`, `mps/gradients.py`, `tensor_network/gradients.py` | Mixed adaptation | Local kernels | Profiles/backends, device counts, shards, training lifecycle |
+| `jax/*planning.py`, `planning_core.py`, `runtime_environment.py`, `transport.py` | Resource/communication | Algorithm constraints/costs | Topology, environment, transport, device lifecycle |
+| `jax/*records.py`, `*result.py`, `evidence_collector.py`, `release_policy.py` | Results/facades | Internal diagnostics | Core results/evidence, Runtime aggregation, release policy |
 
-`__init__.py` 仅维护明确的后端边界，不建立新的算法权威位置。
+`__init__.py` maintains explicit backend boundaries without creating another
+algorithm authority.
 
-### JAX Runtime 数值边界收口审计（2026-09-05）
+### JAX Runtime Boundary Review (2026-09-05)
 
-剩余 JAX Runtime 数值调用按职责处理，不以“清零 `jnp` 调用”为目标：collective、
-设备放置、结果整形和证据探针属于执行语义，继续留在 Runtime。单行零值分配或矩阵组合仅在
-形成重复算法权威时下沉，不拆成细碎公共函数。审计识别出的实质算法
-`mps/gradient_ownership.py` 跨 rank 张量重建后的 MPS 环境传递与 Z 观测量计算已迁入
-`simulation/jax/mps/kernels.py`，Runtime 仅保留 rank 张量记录到数值参数的适配。
+Classify remaining JAX calls by responsibility rather than eliminating every
+`jnp` call. Collectives, device placement, result shaping, and probes remain in
+Runtime. One-line zero allocation or matrix composition moves only if it
+constitutes duplicated algorithm authority, not to create tiny public helpers.
+The substantive MPS environment transfer and Z observable calculation after
+cross-rank tensor reconstruction in `mps/gradient_ownership.py` moved to
+`simulation/jax/mps/kernels.py`; Runtime adapts rank records to arguments.
 
-Statevector 复核确认 `statevector/kernels.py` 只剩指令/计划适配、collective 置换与
-`pmap`/`shard_map` 编排；初态、局部门、pair 合并、all-to-all delta 和 observable/loss
-数学均已委托 `simulation/jax/statevector/kernels.py`。该路径已到停止点，不为移动文件而复制
-Runtime shard/plan 类型。
+`statevector/kernels.py` retains instruction/plan adaptation, collective
+permutations, and `pmap`/`shard_map`. Initial states, local gates, pair merging,
+all-to-all deltas, observables, and losses delegate to Simulation. This path has
+reached its stopping point; do not duplicate Runtime shard/plan types to move files.
 
-参数化张量网络复核确认，`JAXTensorNetworkNode`、标签切片、局部贪心/切片收缩以及输出
-observable/loss 数学已由 `simulation/jax/tensor_network/` 统一负责；Runtime 的
-`tensor_network/contraction.py` 只保留 rank 任务分配、pmap/shard-map 选择和 collective
-归约，`gradients.py` 保留电路/参数适配、梯度生命周期与结果证据。该路径已到停止点：
-不得为消除 Runtime 中的 `jnp` 调用而复制 Simulation 记录或拆出细碎包装；只有不依赖
-Runtime 计划、任务、策略和 collective，且具有独立复用价值的数值操作才继续下沉。
+`simulation/jax/tensor_network/` owns `JAXTensorNetworkNode`, label slicing,
+greedy/sliced local contractions, and output observables/losses. Runtime
+`tensor_network/contraction.py` owns task assignment, pmap/shard-map selection,
+and collective reduction; `gradients.py` owns circuit/parameter adaptation,
+gradient lifecycle, and evidence. Do not copy records or add wrappers just to
+remove `jnp` calls. Extract further only for independently reusable numerics that
+do not depend on Runtime policy and records.
 
-JAX MPS 反向路径复核确认，参数局部 VJP、边界 RXX adjoint 以及 QR/SVD
-canonicalization/truncation pullback 已由 `simulation/jax/mps/pullbacks.py` 统一负责。
-`mps/backward.py`、`mps/pullbacks.py` 和 `mps/canonicalization.py` 剩余逻辑属于受限 rank
-协议：设备放置、参数所有权、collective 交换、截断策略、优化器生命周期和证据记录。
-其中少量解析解校验与张量 shape 用于验证协议证据，不是第二套通用 MPS 数值权威；在没有
-第二条脱离 Runtime 策略和记录的生产路径复用前，不继续拆成细碎 helper。该路径已到停止点。
+`simulation/jax/mps/pullbacks.py` owns local parameter VJP, boundary RXX adjoints,
+and QR/SVD canonicalization/truncation pullbacks. Remaining
+`mps/backward.py`, `mps/pullbacks.py`, and `mps/canonicalization.py` logic is a
+bounded rank protocol: placement, parameter ownership, exchanges, truncation
+policy, optimizer lifecycle, and evidence. Small analytic checks and tensor shapes
+verify protocol evidence; they are not another general MPS authority. No further
+fragmentation is warranted without a second independent production consumer.
 
-本轮同时删除 `mps/lowering.py` 中已无读取方的独立 JAX dtype `ContextVar`；JAX 数值精度
-上下文继续以 `simulation/jax/primitives.py` 中的实现为唯一权威。
+The unused JAX dtype `ContextVar` in `mps/lowering.py` was removed.
+`simulation/jax/primitives.py` remains the sole numerical precision context.
 
-## 6. Simulation 不应拥有的逻辑
+## 6. Logic Outside Simulation Ownership
 
-本次扫描未发现凭据、API token 或 secret 的实现进入两个目录；这是应保持的负面事实。
-但以下现有逻辑不应成为未来 Simulation Engine 的组成部分：
+No credential, API token, or secret implementation was found in the two scanned
+directories. Preserve that boundary. The following do not belong in engines:
 
-1. **Runtime 策略与自动选择**：distributed profile/backend policy、mode 选择、world/local
-   world 推断、kernel/fallback 授权、memory/precision policy、production/release claim gate。
-2. **设备与平台选择**：`resolve_device`、CUDA/JAX device count、provider identity、厂商 route、
-   platform capability 探测。Engine 只能消费已解析的 platform handle/capability。
-3. **集群和通信生命周期**：process-group 建立/销毁、rank placement、P2P/collective 调度、
-   timeout/watchdog、故障协调、跨节点拓扑和通信 evidence 汇总。Engine 可以定义某次数值步骤
-   需要的通信操作，但不拥有集群策略或传输生命周期。
-4. **持久化与训练生命周期**：checkpoint 路径/保留/恢复、 durable job、重试、自适应停止、
-   optimizer step 调度、进度记录。数值 rematerialization/checkpoint placement 算法可返回建议，
-   Runtime 决定何时及向何处保存。
-5. **凭据与外部服务**：当前无实现；将来也只能位于 QPU/Remote Service Provider 或外部
-   Compute Service，禁止进入 Simulation。
-6. **跨层结果和公共类型**：Simulation 可产生内部数值 diagnostics，但稳定请求、结果、
-   Evidence、Failure 和序列化 schema 均由 Core 唯一拥有。
+1. Runtime selection/policy: distributed profiles, backends/modes, world-size
+   inference, kernel/fallback authorization, memory/precision policy, release claims.
+2. Device/platform selection: `resolve_device`, CUDA/JAX counts, provider
+   identity, vendor routes, probes. Engines consume resolved handles/capabilities.
+3. Cluster/communication lifecycle: groups, placement, P2P/collectives, watchdogs,
+   coordination, topology, evidence aggregation. Engines may state operation needs,
+   not own cluster policy or transport lifecycle.
+4. Persistence/training lifecycle: paths, retention, recovery, durable jobs,
+   retries, adaptive stopping, optimizer scheduling, progress. Numerical
+   rematerialization/checkpoint-placement algorithms may advise; Runtime chooses
+   when and where to persist.
+5. Credentials/external services: absent now and restricted to QPU/Remote
+   providers or external Compute Service in the future.
+6. Stable cross-layer types: Core alone owns requests, results, evidence, failures,
+   and serialization. Simulation may return internal diagnostics.
 
-Simulation 已不再导入 Runtime；`MPSMonteCarloResult` 及多轨迹生命周期均由
-`runtime/trajectories/` 拥有。下一批迁移热点是三个分布式 executor 中的
-process-group/数值核交织。不能简单搬文件；必须先有明确边界和替换测试。
+Simulation no longer imports Runtime. `runtime/trajectories/` owns
+`MPSMonteCarloResult` and multi-trajectory lifecycle. Intertwined process-group and
+kernel logic in the three distributed executors needs explicit boundaries and
+replacement tests, not wholesale file movement.
 
-## 7. 第一个可替换切片
+## 7. First Replaceable Slice
 
-### 7.1 范围
+### 7.1 Scope
 
-候选名：**Local PyTorch Dense Statevector Engine**。
+Candidate: **Local PyTorch Dense Statevector Engine**.
 
-- 输入：已校验 `CircuitIR`、批量初态（缺省为 `|0...0>`）、已绑定参数、Runtime 已解析的
-  dtype/device/platform 执行上下文；
-- 输出：形状 `(batch, 2**n_wires)` 的完整复状态，以及仅描述实际数值路径的 diagnostics；
-- 语义：`single_device_fast_path`，不初始化 distributed、不读取 rank/cluster 环境；
-- 梯度：保留 PyTorch 一阶 autograd 图；参数梯度仍回到调用方拥有的 Tensor；
-- 支持基线：现有本地状态向量 gate/custom matrix、batch、complex64/complex128 行为；
-- 明确不含：规划、编译、测量结果包装、噪声、shots、分布式 sharding、checkpoint、设备选择、
-  fallback、provider identity 和性能声明。
+- Input: validated `CircuitIR`, batched initial state (default `|0...0>`), bound
+  parameters, and Runtime-resolved dtype/device/platform context.
+- Output: complete complex state `(batch, 2**n_wires)` and diagnostics of actual
+  numerical execution only.
+- Semantics: `single_device_fast_path`; no distributed initialization or rank/
+  cluster environment inspection.
+- Gradients: preserve first-order PyTorch autograd and caller tensor ownership.
+- Baseline: existing gates/custom matrices, batches, complex64/complex128 behavior.
+- Exclusions: planning, compilation, measurement wrappers, noise, shots, sharding,
+  checkpoints, device selection, fallback, provider identity, performance claims.
 
-它比 density/MPS/TN 更适合作为首切片，因为能力矩阵已将本地状态向量训练标为
-`production_supported`，数值基线成熟、输入输出最小、无需近似误差契约，并且可以直接用
-现有 PyTorch 路径做真实现。执行循环和 kernel dispatch 已归入 Simulation；程序、初态与
-生命周期缓存仍应逐步归入实现内部或由既有执行上下文承载，同时保持 Stable Core 行为完全不变。
+The capability matrix already marks local statevector training
+`production_supported`. Its mature exact baseline, small interface, and absence
+of approximation contracts make it a better first slice than density/MPS/TN.
+The existing PyTorch path supplies the real implementation. Loops and kernel
+dispatch are in Simulation; program, initial-state, and lifecycle caches can move
+incrementally into internals or existing execution context without changing
+Stable Core behavior.
 
-### 7.2 消费者替换证明
+### 7.2 Replacement Evidence
 
-`tests/team/simulation/test_statevector_engine_characterization.py` 固定：
+`tests/team/simulation/test_statevector_engine_characterization.py` checks:
 
-- IR 重建与直接 `Circuit.state()` 的批量、wire order、dtype 和归一化一致；
-- RY 期望梯度与解析值一致；
-- 自定义可微矩阵不丢失 autograd 图。
+- IR reconstruction versus `Circuit.state()` for batches, wire order, dtype, normalization;
+- RY expectation gradients against analytic values;
+- differentiable custom matrices retaining autograd.
 
-`tests/team/simulation/test_statevector_engine_replacement.py` 让真实
-`run_local_statevector()` 与测试局部 fake 通过同一个既有 Simulation 调用点执行。
-二者均由完全相同的 `fq.run(plan)` 消费者驱动，共同检查 batch、dtype、device、计划身份、
-结果语义和参数梯度所有权；替换实现不修改规划器、编译器或公共 API。该测试没有向产品代码新增
-Protocol、注册表或导出，因此首切片的实现替换证据已经成立，但还没有证明最终 Core 契约完成。
+`tests/team/simulation/test_statevector_engine_replacement.py` runs real
+`run_local_statevector()` and a test-local fake through the same existing call
+site and unchanged `fq.run(plan)` consumer. Both check batch, dtype, device, plan
+identity, result semantics, and gradient ownership. Replacement changes no
+planner, compiler, or public API. No product Protocol, registry, or export was
+added. This proves the first implementation boundary, not completion of the final
+Core contract.
 
-## 8. Core 契约提案（未实施）
+## 8. Core Contract Proposal (Not Implemented)
 
-需要由集成/Core 团队先批准一个最小版本化 Simulation Contract。Simulation 团队建议复用
-现有 `CircuitIR`、Core execution/accuracy/failure/evidence 词汇，不定义第二套字典。提案应
-至少回答：
+Integration/Core must first approve a minimal versioned Simulation Contract.
+Reuse `CircuitIR` and Core execution/accuracy/failure/evidence vocabulary rather
+than inventing another dictionary schema.
 
-| 项目 | 建议约束 |
+| Item | Proposed constraint |
 | --- | --- |
-| `SimulationRequest` | 引用规范 executable/`CircuitIR`；包含已绑定参数引用、初态引用、目标 `full_state`、明确 precision/approximation/fallback 决定；首版只允许 world size 1 |
-| `SimulationContext` | Runtime/Platform 已解析的 tensor/device/kernel 能力句柄；不得含凭据、cluster policy 或厂商 SDK 对象；是否允许 PyTorch Tensor 作为进程内非序列化字段需由 Core 明确 |
-| `SimulationResult` | 状态 payload、实际 dtype/device、algorithm id/version、approximation/truncation/fallback facts；由 Runtime 投影到稳定 `ExecutionResult` |
-| 失败 | unsupported instruction/dtype/device、invalid initial state、numerical failure 必须结构化且 fail closed，不得静默换 backend/CPU |
-| Engine 行为 | `execute(request, context) -> result`；同一消费者可注入真实现或 fake；契约不得包含 Runtime planner、credential、checkpoint path、process group lifecycle |
+| `SimulationRequest` | Canonical executable/`CircuitIR`, bound parameter and initial-state references, `full_state` target, explicit precision/approximation/fallback decisions; first version world size 1 only |
+| `SimulationContext` | Resolved tensor/device/kernel capabilities; no credentials, cluster policy, or vendor SDK objects; Core decides whether in-process nonserialized PyTorch tensors are permitted |
+| `SimulationResult` | State payload, actual dtype/device, algorithm ID/version, approximation/truncation/fallback facts; Runtime projects stable `ExecutionResult` |
+| Failures | Structured unsupported instruction/dtype/device, invalid initial state, numerical failure; no silent backend/CPU substitution |
+| Engine behavior | `execute(request, context) -> result`; same consumer accepts real/fake; no planner, credentials, checkpoint paths, or group lifecycle |
 
-由于 Core 必须基础设施中立，提案不能草率把 `torch.Tensor` 写入可序列化 Core schema。
-建议区分稳定、可序列化的请求/结果信封与进程内 tensor payload handle，并由 Core/API 所有者
-决定生命周期、设备驻留和 DLPack 表达。获批前不要在 `simulation` 下添加私有 Protocol 来
-绕过跨团队顺序。
+Do not casually put `torch.Tensor` in infrastructure-neutral serialized Core
+schemas. Separate stable serializable envelopes from in-process tensor handles;
+Core/API owners decide lifecycle, residency, and DLPack representation. Do not
+bypass approval through a Simulation-private Protocol.
 
-对 `statevector/local_execution.py` 的边界复核确认：门矩阵和对角门数值作用已委托
-`simulation/statevector/operations.py`；该文件剩余的 shard 初始化、索引分组、跨 shard 所有权、
-reference rank 编排和结果组装均以 `DistributedStatevectorPlan`、`StatevectorShardState`
-为直接输入或输出。继续整体下沉会让 Simulation 依赖 Runtime，或产生第二套
-plan/shard 类型；两者都不可接受。因此该文件作为执行适配保留，真实 transport、dry-run、
-backend policy 和结果报告继续归 Runtime。
+`statevector/local_execution.py` already delegates matrix/diagonal actions to
+`simulation/statevector/operations.py`. Remaining shard initialization, index
+groups, ownership, reference-rank orchestration, and result assembly directly
+consume/produce `DistributedStatevectorPlan` and `StatevectorShardState`.
+Moving them wholesale would introduce a reverse dependency or duplicate types.
+Keep this execution adapter, transport, dry runs, backend policy, and reporting
+in Runtime.
 
-## 9. 数值一致性风险与后续门禁
+## 9. Numerical Risks and Gates
 
-| 风险 | 首切片验收要求 |
+| Risk | Acceptance |
 | --- | --- |
-| wire/basis order 改变 | Bell、非对称输入、非相邻/反向 wires 与 IR round-trip 对比 |
-| batch/broadcast 语义漂移 | scalar、batch 参数、自定义 batched matrix 与多初态覆盖 |
-| complex dtype/设备转换 | complex64/128 分别设容差；禁止隐式 CPU 或精度降级 |
-| autograd 断图或共轭错误 | 解析梯度、有限差分、gradcheck；custom matrix 和复值 loss 约定覆盖 |
-| 融合/Triton 与 eager 不一致 | 前向、梯度分别与 eager reference 对比；记录实际 kernel/fallback |
-| 缓存复用旧参数/图 | 同一 Circuit 多轮参数、refresh、训练 step 后结果与梯度覆盖 |
-| 原位更新破坏叶张量 | 初态和参数无意 mutation 检查 |
-| 自定义初态在 IR 边界丢失 | 当前 `CircuitIR` 不携带 `Circuit.inputs`；Core 请求必须显式承载初态 payload/reference，不能假设 `run_native(IR)` 与任意自定义初态 Circuit 等价 |
-| Runtime 越权重新规划或换实现 | supplied plan identity、显式 mode、fallback evidence/fail-closed 测试 |
-| 将 local fake 误作 scalability 证据 | 测试仅标 `integration` 与 `single_device_fast_path`；不产生 distributed claim |
+| Wire/basis ordering | Bell, asymmetric input, nonadjacent/reversed wires, IR round trips |
+| Batch/broadcast drift | Scalar/batched parameters, custom batched matrices, multiple initial states |
+| Complex dtype/device conversion | Separate complex64/128 tolerances; no implicit CPU/precision reduction |
+| Broken graph/conjugation | Analytic gradients, finite differences, gradcheck, custom matrices, complex-loss conventions |
+| Fusion/Triton versus eager | Forward/gradient references and actual kernel/fallback records |
+| Stale parameters/graphs in caches | Repeated Circuit parameter updates, refresh, training steps, results/gradients |
+| In-place leaf mutation | Initial-state and parameter ownership checks |
+| Lost custom initial state | `CircuitIR` does not contain `Circuit.inputs`; request must carry initial-state payload/reference; arbitrary Circuit and `run_native(IR)` are not necessarily equivalent |
+| Runtime replanning/substitution | Supplied plan identity, explicit mode, fallback/fail-closed checks |
+| Fake mistaken for scalability proof | Mark integration and `single_device_fast_path` only; no distributed claim |
 
-下一阶段应让现有实现与 test fake 跑同一套 conformance，并继续把 Runtime 的 statevector
-分支限制为请求组织和结果投影。执行循环已完成物理归位；后续只迁移有明确收益的 helper 和
-生命周期状态。任何迁移都必须保持 `fq.Circuit`、`run`、`plan` 和 `ExecutionResult` 的
-受保护签名、默认值、失败阶段与序列化语义不变。
+Run real/fake implementations through the same conformance suite and keep Runtime's
+statevector branch limited to request organization and result projection. Loop
+extraction is complete; move helpers/lifecycle only for clear benefit. Preserve
+protected signatures, defaults, failure stages, and serialization of `fq.Circuit`,
+`run`, `plan`, and `ExecutionResult`.
 
-## 10. MPS 边界收口审计（2026-09-04）
+## 10. MPS Boundary Audit (2026-09-04)
 
-本轮已将编译层执行、反向分解、反向 bucket 数值核和 canonicalization 数值核归入
-`simulation/`。Runtime 仅保留 rank/site 所有权、扫描与通信顺序、梯度 collective、
-checkpoint 生命周期和证据汇总。规范化路径已用两进程真实通信测试证明迁移前后全局态一致。
+Compiled-layer execution, reverse factorization/bucket kernels, and
+canonicalization numerics moved into Simulation. Runtime retains rank/site
+ownership, scan/communication order, gradient collectives, checkpoints, and
+evidence. A real two-process communication test established unchanged global
+states across canonicalization migration.
 
-Runtime 中剩余的 tensor 拼接、reshape 和 stack 主要用于通信打包、梯度 bucket 与分布式
-结果组装，不因使用张量操作而自动属于数值算法；只有改变 MPS 数学语义的实现才应继续迁入
-Simulation。已删除本轮确认无消费者的私有兼容别名，不因文件较大而机械拆分模块。
+Remaining concatenation, reshape, and stack operations package communication,
+gradient buckets, and distributed results. Tensor usage alone does not make them
+numerical algorithms; only MPS mathematical semantics belong in Simulation.
+Unused private compatibility aliases were deleted. Large files alone do not
+justify mechanical splitting.
 
-MPS 多轨迹结果已归位 `runtime/trajectories/result.py`，对应的 `result_factory` 注入和
-Simulation→Runtime 类型引用均已删除；`mps/entrypoints.py` 也已无 Runtime 调用。
-`simulation/noise.py` 已在更早迁移中删除。Simulation→Runtime 白名单现为空，MPS 数值边界
-已达到停止继续横向抽象的条件；后续优先推进最小纵向链路和目录归位。
+Multi-trajectory results moved to `runtime/trajectories/result.py`; `result_factory`
+injection and Simulation-to-Runtime type references were removed.
+`mps/entrypoints.py` no longer calls Runtime. `simulation/noise.py` was removed
+earlier. The reverse-dependency allowlist is empty. Stop extending horizontal
+abstractions and prioritize the minimum vertical path and physical layout.
 
-## 11. 退出条件复核（2026-09-08）
+## 11. Exit Review (2026-09-08)
 
-`simulation_extraction` 的完成条件：
+`simulation_extraction` requires:
 
-1. 真实本地 Engine 与 contract fake 运行同一套 conformance，Runtime 消费者无需修改；
-2. `runtime/executors/jax/` 的量子数值核和 pullback 移至 Simulation，Runtime 只保留 backend/device、shard 和训练编排；
-3. 分布式 TN reverse 中不依赖 task ownership、checkpoint 或 process group 的数学移至 Simulation；
-4. Simulation→Runtime 反向依赖和对应架构白名单全部退出；
-5. 完整 CPU 数值、替换、架构和公共 API 门禁通过。
+1. Real engine/fake conformance with unchanged Runtime consumers.
+2. JAX numerics/pullbacks extracted from `runtime/executors/jax/`, leaving backend,
+   device, shard, and training orchestration.
+3. Distributed TN reverse mathematics independent of ownership/checkpoints/groups
+   moved into Simulation.
+4. No Simulation-to-Runtime imports or corresponding architecture exceptions.
+5. Passing full CPU numerical, replacement, architecture, and public API gates.
 
-五项条件均已满足：真实/替身替换测试、JAX 数值核归位、TN 反向数值原语归位、反向依赖
-清零以及完整门禁均已有证据。`runtime/executors/` 中剩余张量操作均直接服务所有权、通信、
-检查点、结果或证据语义，不构成第二套数值算法权威；机器可读状态更新为 `complete`。
+All five have evidence. Remaining executor tensor operations directly serve
+ownership, communication, checkpoints, results, or evidence and do not form a
+second numerical authority. Machine-readable status is `complete`.
 
-## 12. TN 编译前向边界复核（2026-09-05）
+## 12. Compiled TN Forward Review (2026-09-05)
 
-`execute_compiled_tn_forward_with_tape()` 与 Simulation 的本地
-`execute_contraction_stages()` 都会按 shape-compatible bucket 调用相同的
-`complex_einsum_pair()` 数值原语，但二者不构成重复执行权威：前者消费分布式 DAG 的稳定
-value id，并为显式反向保留完整 tape；后者消费本地 contraction plan，并在中间值用尽后释放。
+`execute_compiled_tn_forward_with_tape()` and local
+`execute_contraction_stages()` both call `complex_einsum_pair()` in
+shape-compatible buckets. They are not duplicate execution authorities: the
+former consumes distributed DAG value IDs and retains full reverse tapes; the
+latter consumes local plans and releases intermediates after their last use.
 
-因此不通过对象转换复用整个本地 executor，也不增加仅转发 equation 和 tensor 的薄包装。
-Runtime 保留 DAG、bucket 顺序和 tape 生命周期，Simulation 继续拥有实际 contraction 与
-pullback 数值原语。以后只有两条执行路径出现可独立复用的第二项数值行为时，才提取新的
-Simulation helper。
+Do not adapt objects merely to reuse the entire local executor or add wrappers
+that only forward equations/tensors. Runtime owns DAGs, bucket order, and tapes;
+Simulation owns contraction/pullback primitives. Extract another helper only
+when two paths share a second independently reusable numerical behavior.
 
-## 13. 分布式 TN 反向边界复核（2026-09-05）
+## 13. Distributed TN Reverse Review (2026-09-05)
 
-`reverse_dag.py`、`sliced_reverse.py` 和 `distributed_sliced_reverse.py` 中的前向 pair
-contraction、反向 pair pullback、高秩 fallback 与 Kahan 累加均已调用
-`simulation/tensor_network/stages.py` 或 `simulation/real_imag_kernels.py` 的唯一数值实现。
+`reverse_dag.py`, `sliced_reverse.py`, and `distributed_sliced_reverse.py` delegate
+pair contractions/pullbacks, high-rank fallback, and Kahan accumulation to
+`simulation/tensor_network/stages.py` or `simulation/real_imag_kernels.py`.
 
-剩余 tensor stack、切片合并、cotangent map 累加以及有限性统计均直接表达 Runtime 的
-DAG/bucket schedule、slice/shard ownership、tape/checkpoint 生命周期、collective 与证据结果，
-不构成可独立复用的数值算法。该路径已到停止点：不为减少 Runtime 中的 tensor 操作新增
-批处理包装、镜像记录或通用 executor；只有完全不依赖 Runtime DAG、任务、checkpoint、
-所有权、process group 和证据类型的第二个实际消费者出现时，才继续向 Simulation 下沉。
+Remaining stacks, slice merges, cotangent-map accumulation, and finiteness
+statistics express schedules, slice/shard ownership, tapes/checkpoints,
+collectives, and evidence. Stop extraction here. Do not introduce batch wrappers,
+mirrored records, or generic executors to reduce tensor calls. Further extraction
+requires a second consumer independent of Runtime DAGs, tasks, checkpoints,
+ownership, groups, and evidence types.
 
-## 14. 过渡代码删除复核（2026-09-06）
+## 14. Transitional Code Review (2026-09-06)
 
-本轮按“先找无调用项，再进入下一条迁移切片”的顺序复核了现存过渡目录。未发现可在不改变
-受保护 API、序列化产物或执行语义的前提下直接删除的已跟踪实现：
+The review first searched for unused items before selecting another slice. It
+found no tracked implementation removable without changing protected APIs,
+serialized artifacts, or execution semantics:
 
-- `runtime/executors` 中的私有定义均仍有代码或测试消费者；其余张量操作属于计划、所有权、
-  通信、checkpoint 或证据组装，不能仅因位于 Runtime 就认定为死代码；
-- OpenQASM 和 QCIS 导出已分别归位到 `compiler/openqasm.py` 和
-  `compiler/qcis.py`；内部调用已切换，旧 utils 实现及导出已删除；
-- `compilation` 剩余模块承载受保护的执行计划、序列化和校准语义，须先经过公共契约迁移；
-- `_gateways/mcp` 没有已跟踪的生产实现可删除。
+- Executor private definitions still have code/test consumers. Remaining tensor
+  operations serve plans, ownership, transport, checkpoints, or evidence.
+- OpenQASM/QCIS exports moved to `compiler/openqasm.py` and `compiler/qcis.py`;
+  internal callers switched and old utility implementations/exports were removed.
+- Remaining `compilation` modules carry protected plan, serialization, and
+  calibration semantics requiring public contract migration first.
+- `_gateways/mcp` contains no tracked production implementation to delete.
 
-结论是删除路径已到当前安全停止点。下一条代码切片应以真实调用链为单位迁移，而不是继续按
-文件名清理：优先选择 `runtime/executors/statevector` 中一段不依赖计划、设备选择、通信、
-checkpoint 或证据类型的独立数值行为，迁入 Simulation 并由原入口委托；若不存在这样的完整
-行为，则保留边界，不新增包装层。
+Deletion has reached its safe stopping point. Choose subsequent migrations by
+real call chains. Prefer a complete independent numerical behavior in
+`runtime/executors/statevector` with no plan/device/communication/checkpoint/
+evidence dependency; otherwise preserve the boundary without another wrapper.
 
-## 15. Double-Single 诊断转换收口（2026-09-06）
+## 15. Double-Single Diagnostic Conversion (2026-09-06)
 
-Statevector P2–P5 结果对象曾分别重写 high/low 到 CPU float64/complex128 的诊断转换。
-`DoubleSingleTensor.to_float64()`、`DoubleSingleComplexTensor.to_complex128()` 和现有 `to()`
-已经是该数值表示的权威实现，因此 Runtime 结果对象现只组合这些方法并在返回前切断梯度图。
-本轮删除三组重复 helper 和一处内联重复实现，不改变公开结果类型、执行计划、设备选择或数值
-Kernel；CPU conformance 覆盖状态、期望值、梯度和优化器诊断结果。后续不再为同类结果对象
-增加 high/low 手工重建代码。
+P2--P5 result objects duplicated high/low-to-CPU-float64/complex128 conversion.
+`DoubleSingleTensor.to_float64()`,
+`DoubleSingleComplexTensor.to_complex128()`, and existing `to()` already own that
+representation. Runtime results now compose those methods and detach before
+return. Three duplicate helper groups and one inline implementation were removed
+without changing result types, plans, devices, or kernels. CPU conformance covers
+state, expectation, gradient, and optimizer diagnostics. Do not add manual
+high/low reconstruction for similar results.
 
-P1–P5 conformance 的 complex128 参考路径也不再自行调用门矩阵和 statevector 底层作用函数，
-而是复用 `simulation.pauli.pauli_product_statevector_expectation()`。Runtime 仍负责构造测试线路、
-参数移位和判定阈值，Simulation 继续唯一拥有 Pauli 乘积期望值的稠密数值实现。
+P1--P5 complex128 reference conformance now reuses
+`simulation.pauli.pauli_product_statevector_expectation()` instead of direct
+gate-matrix/statevector actions. Runtime still constructs circuits, schedules
+parameter shifts, and sets thresholds; Simulation owns dense Pauli-product math.
 
-输入处理复核确认，观测量到内部 Pauli term 的适配、参数出现位置、逐 occurrence 参数移位以及
-各精度 profile 的标量与 dtype 限制都属于一次执行的验证和组织，继续由 Runtime 负责。P1、P3
-和 P4 曾各自实现参数键的字符串化与冲突检查，现收口为同一个 Runtime 内部函数；各路径仍独立
-执行自己的值域、设备和精度检查，未把执行策略下沉到 Simulation 或 Core。
+Observable-to-Pauli adaptation, parameter occurrence locations, per-occurrence
+shifts, and profile scalar/dtype limits are execution validation/orchestration.
+P1/P3/P4 parameter-key stringification and collision checks now share one private
+Runtime function, while each path retains its value/device/precision validation.
+No execution policy moved into Simulation or Core.
 
-P2、P3、P4 对“请求的精度计划必须等于可执行计划”和“请求误差界不得严于已认证误差界”的
-共同判断也已收口为两个既有 Runtime 模块内的私有函数。各 profile 继续定义自己的计划、认证
-阈值、不支持字段和错误文本；没有新增契约类型、注册表或跨领域依赖。
+P2/P3/P4 comparisons of requested versus executable precision plans and requested
+versus certified error bounds now share two private functions in existing Runtime
+modules. Profiles retain plans, thresholds, unsupported fields, and error text.
+No new types, registries, or cross-domain dependencies were added.
 
-P0–P4 的平台身份读取、operator profile 加载、预检执行和 evidence id 投影现统一经过一个
-Runtime 私有入口。各 profile 仍使用既有独立探针和已登记 profile 名称；本次只删除 P3/P4 的
-重复编排，不合并能力声明，也不把 Provider 身份或预检策略放入 Simulation 数值模块。
+P0--P4 platform identity, operator-profile loading, preflight, and evidence-ID
+projection share a private Runtime entry. Existing independent probes/profile
+names remain. Only duplicate P3/P4 orchestration was removed; capability claims
+remain separate and provider/preflight logic stays outside numerics.
 
-P5 Double-Single SGD 的参数更新直接依赖 P5 状态、规范参数顺序、设备一致性和结果证据，目前
-没有第二个脱离该执行路径的消费者，因此不为目录归位新增 Numerics 优化器原语或 Algorithms
-兼容门面。P5 参数键规范化已复用 P1–P4 的 Runtime 私有实现；标量 pair 构造、学习率验证、
-更新和有限性检查继续留在当前执行切片。只有出现第二个真实 Double-Single 优化消费者，或批准
-独立优化器契约后，才重新评估下沉。
+P5 Double-Single SGD depends on P5 state, canonical parameter order, device
+consistency, and evidence, with no second independent consumer. Do not add a
+Numerics optimizer primitive or Algorithms facade just to relocate it. Parameter
+keys reuse P1--P4 normalization; scalar pairs, learning-rate checks, updates, and
+finiteness remain in the slice. Revisit only for a second real consumer or approved
+optimizer contract.
 
-`runtime/operator_probes.py` 中五个受现有调用方依赖的 P0–P4 命名入口继续保留，但共同的
-FP32 profile 加载、可执行探测和 capability 判定已收口为一个私有实现。这样既维持入口稳定，
-也避免五份预检流程随时间产生不同的 dtype、设备或 evidence 语义。
+Five existing P0--P4 named entries in `runtime/operator_probes.py` remain for their
+callers. Shared FP32 profile loading, execution probing, and capability decisions
+now use one private implementation, avoiding divergent dtype/device/evidence
+semantics while preserving entries.
 
-## 16. Statevector 伴随反向边界复核（2026-09-06）
+## 16. Statevector Adjoint Review (2026-09-06)
 
-`runtime/executors/statevector/reverse_adjoint.py` 已将旋转门解析导数、实值复内积以及分块 Z
-期望值与伴随量计算委托给 `simulation/statevector/adjoint.py`。这些纯数值行为的测试也归入
-Simulation 团队目录，不再借助 Runtime 参数绑定或反向执行对象构造参考结果。
+`runtime/executors/statevector/reverse_adjoint.py` delegates analytic rotation
+derivatives, real-valued complex inner products, and chunked Z expectations/
+adjoints to `simulation/statevector/adjoint.py`. Pure numerical tests moved into
+Simulation tests and no longer build references through Runtime bindings or
+reverse objects.
 
-Runtime 文件剩余逻辑直接组织分片索引与 chunk 策略、前向重算、检查点、持久线序布局、P2P
-交换、梯度 collective、Triton 路由及执行证据。`_local_expectation_z*` 虽进行张量遍历，但遍历
-边界和全局索引来自 Runtime 计划；`_fused_sharded_1q_vjp_adjoint` 同时拥有通信流水线和证据
-计数。将其继续拆入 Simulation 会迫使数值层依赖 Runtime 计划或复制通信契约，因此本路径已到
-停止点。后续只有出现不依赖计划、所有权、通信、检查点和证据的完整数值行为时再下沉。
+Runtime retains shard indices/chunks, forward recomputation, checkpoints,
+persistent wire layouts, P2P, gradient collectives, Triton routes, and evidence.
+`_local_expectation_z*` traverses tensors using Runtime plan boundaries/global
+indices. `_fused_sharded_1q_vjp_adjoint` owns communication pipelines and evidence
+counters. Moving these would introduce plan dependencies or duplicate transport
+contracts. Stop until a complete independent numerical behavior appears.
 
-## 17. Statevector 前向边界复核（2026-09-06）
+## 17. Statevector Forward Review (2026-09-06)
 
-`runtime/executors/statevector/forward.py` 使用的局部门作用、对角门作用、basis 索引与偏移、rank
-pair 合并和 gate-basis block 合并均已由 `simulation/statevector/operations.py` 唯一实现。对应的纯张量
-行为测试已归入 Simulation 团队目录；Runtime 前向测试只保留布局策略、Kernel 路由、设备等待、
-通信 workspace、执行计划和结果证据等职责。
+`simulation/statevector/operations.py` owns local/diagonal gate actions, basis
+indices/offsets, rank-pair merging, and gate-basis merging used by Runtime
+`forward.py`. Pure tensor tests belong to Simulation; Runtime tests retain layout
+policy, routing, device waits, communication workspace, plans, and evidence.
 
-前向文件剩余的 `_vectorized_*` 入口需要把 Runtime 的 shard/plan 记录适配到数值 Kernel，并在
-跨分片路径中安排 P2P 或 collective、workspace 复用、流水线和通信计数。继续把这些入口整体迁入
-Simulation 会引入 Runtime 模型或第二套分片契约，因此当前前向路径也已到停止点。数值 Kernel
-可以独立修改和测试，Runtime 只决定何时、以何种执行计划及通信路径调用它们。
+Remaining `_vectorized_*` entries adapt shard/plan records and arrange cross-shard
+P2P/collectives, workspace reuse, pipelines, and counters. Wholesale migration
+would introduce Runtime models or another shard contract. Numerical kernels can
+change independently; Runtime decides when and through which plan/route to invoke them.
 
-## 18. 本地分布式测量数值收口（2026-09-06）
+## 18. Local Distributed Measurement (2026-09-06)
 
-Runtime 的本地分布式开发路径不再维护一份 reshape、边缘化和逐 wire 组装的 Z 期望值实现，
-而是直接复用 `simulation/statevector/noisy.py` 中支持批次维度的 `expectation_z()`。Simulation
-继续唯一拥有从完整 statevector 计算全 wire Z 期望值的纯数值语义；Runtime 只决定是否执行
-测量以及何时把本地分布式结果交给该数值入口。现有开发 profile 测试覆盖 Bell 态的批次形状、
-wire 顺序和结果一致性。
+The local distributed development path now reuses batched `expectation_z()` from
+`simulation/statevector/noisy.py` instead of duplicating reshape, marginalization,
+and per-wire assembly. Simulation owns full-statevector all-wire Z expectations.
+Runtime decides whether to measure and when to pass local distributed results.
+Existing development-profile tests cover Bell-state batch shape, wire order, and
+numerical agreement.
 
-## 19. v0.1 分布式设备退役（2026-09-07）
+## 19. v0.1 Distributed Device Retirement (2026-09-07)
 
-v0.1 DTensor 设备、设备定向门函数、编码与测量路径已在首个公开 alpha 前删除，
-不保留兼容层。现代执行唯一使用 `simulation.gate_matrix.parameter_tensor()` 和
-`gate_matrix()` 将 IR 指令转换为设备驻留、批次化、精度感知且保留梯度的门矩阵。
+v0.1 DTensor devices, device-oriented gates, encoding, and measurement paths were
+removed before the first public alpha without compatibility layers. Modern
+execution uses only `simulation.gate_matrix.parameter_tensor()` and
+`gate_matrix()` to convert IR instructions into resident, batched,
+precision-aware gate matrices that preserve gradients.

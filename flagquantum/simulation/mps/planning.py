@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from typing import Any
 
@@ -87,7 +88,7 @@ class MPSPlanningMixin:
             )
             grown = max(
                 current_rank + int(min_increment),
-                int(torch.ceil(torch.tensor(current_rank * growth_factor)).item()),
+                math.ceil(current_rank * growth_factor),
             )
             suggestions.append((bond, max(grown, current_limit)))
         suggested_max_bond = max(

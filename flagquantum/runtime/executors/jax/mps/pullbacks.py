@@ -61,6 +61,7 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
         )
         gradients[rank] = float(jax.device_get(gradient))
         half_angle = theta / 2.0
+        wires: tuple[int, ...]
         if gate_kind == "one_site_ry":
             tensor = np.asarray(
                 (np.cos(half_angle), np.sin(half_angle)),

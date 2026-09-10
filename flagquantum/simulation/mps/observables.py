@@ -117,11 +117,18 @@ def mps_heisenberg_local_scan(
         raise ValueError("Heisenberg MPS tensors and wires must have equal length")
     field_z, coupling_x, coupling_y, coupling_z = coefficients
     norm, open_x, open_y, open_z, energy = inputs
+    operator_cache: dict[tuple[torch.device, torch.dtype], dict[str, torch.Tensor]] = {}
     for wire, tensor in zip(wires, tensors):
-        operators = {
-            name: GATE_MAT_DICT[name].to(tensor.device, tensor.dtype)
-            for name in ("i", "x", "y", "z")
-        }
+        key = (tensor.device, tensor.dtype)
+        operators = operator_cache.get(key)
+        if operators is None:
+            operators = {}
+            for name in ("i", "x", "y", "z"):
+                matrix = GATE_MAT_DICT[name]
+                if not isinstance(matrix, torch.Tensor):
+                    raise ValueError("Heisenberg scans require fixed Pauli matrices.")
+                operators[name] = matrix.to(tensor.device, tensor.dtype)
+            operator_cache[key] = operators
         next_norm = transfer_mps_operator_environment(norm, tensor, operators["i"])
         next_x = transfer_mps_operator_environment(norm, tensor, operators["x"])
         next_y = transfer_mps_operator_environment(norm, tensor, operators["y"])

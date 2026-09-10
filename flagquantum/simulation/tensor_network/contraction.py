@@ -866,16 +866,14 @@ def _build_slicing_plan(
         (int(node.tensor.element_size()) for node in nodes),
         default=1,
     )
-    byte_limited_size = (
-        None
-        if max_intermediate_bytes is None
-        else int(max_intermediate_bytes) // element_size_bytes
-    )
-    if byte_limited_size is not None and byte_limited_size < 1:
-        raise ValueError(
-            f"max_intermediate_bytes={int(max_intermediate_bytes)} cannot hold "
-            f"one {element_size_bytes}-byte tensor element."
-        )
+    byte_limited_size: int | None = None
+    if max_intermediate_bytes is not None:
+        byte_limited_size = int(max_intermediate_bytes) // element_size_bytes
+        if byte_limited_size < 1:
+            raise ValueError(
+                f"max_intermediate_bytes={int(max_intermediate_bytes)} cannot hold "
+                f"one {element_size_bytes}-byte tensor element."
+            )
     effective_max_size = max_intermediate_size
     if byte_limited_size is not None:
         effective_max_size = (
@@ -892,7 +890,7 @@ def _build_slicing_plan(
         beam_width=beam_width,
     )
     if sliced_labels is None:
-        labels = ()
+        labels: tuple[int, ...] = ()
         if effective_max_size is not None:
             labels = _auto_slice_labels(
                 nodes,
@@ -916,7 +914,7 @@ def _build_slicing_plan(
     budget_satisfied = effective_max_size is None or per_slice["peak_size"] <= int(
         effective_max_size
     )
-    if not budget_satisfied:
+    if effective_max_size is not None and not budget_satisfied:
         mode = "automatic" if sliced_labels is None else "explicit"
         raise ValueError(
             f"{mode} tensor-network slicing cannot satisfy "
@@ -964,6 +962,7 @@ def _contract_nodes_sliced(
         contraction_strategy=contraction_strategy,
         beam_width=beam_width,
     )
+    result: torch.Tensor | None = None
     if not slicing.sliced_labels:
         if contraction_strategy == "beam":
             result, _ = _contract_nodes_beam(
@@ -977,7 +976,6 @@ def _contract_nodes_sliced(
         return result, slicing
 
     dims = _label_dims(nodes)
-    result: torch.Tensor | None = None
     compensation: torch.Tensor | None = None
     value_ranges = [range(dims[label]) for label in slicing.sliced_labels]
     for values in product(*value_ranges):
@@ -1044,6 +1042,8 @@ def _contract_nodes_with_slicing_plan(
             result = subtotal
             compensation = torch.zeros_like(subtotal)
         else:
+            if compensation is None:
+                raise RuntimeError("slice reduction compensation is unavailable")
             corrected = subtotal - compensation
             updated = result + corrected
             compensation = (updated - result) - corrected

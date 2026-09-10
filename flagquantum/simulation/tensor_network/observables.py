@@ -11,7 +11,6 @@ from ..matrices import GATE_MAT_DICT
 from .contraction import (
     _build_slicing_plan,
     _clone_nodes_with_offset,
-    _contract_nodes_greedy,
     _contract_nodes_sliced,
 )
 from .local import ensure_local_tensor_network_plan
@@ -21,6 +20,7 @@ from .models import (
     TensorNetworkExpectationPlan,
     TensorNetworkNode,
 )
+from .path_search import _contract_nodes_greedy
 
 _PAULI_MPO_CORE_CACHE: OrderedDict[tuple[Any, ...], tuple[torch.Tensor, ...]] = (
     OrderedDict()
@@ -34,6 +34,13 @@ def _identity_matrix_like(reference: torch.Tensor) -> torch.Tensor:
 
 def _identity_size_like(reference: torch.Tensor, size: int) -> torch.Tensor:
     return torch.eye(int(size), dtype=reference.dtype, device=reference.device)
+
+
+def _fixed_gate_matrix_like(name: str, reference: torch.Tensor) -> torch.Tensor:
+    matrix = GATE_MAT_DICT[name]
+    if not isinstance(matrix, torch.Tensor):
+        raise ValueError("Tensor-network observables require fixed gate matrices.")
+    return matrix.to(device=reference.device, dtype=reference.dtype)
 
 
 def _compress_pauli_sum_mpo(
@@ -185,7 +192,7 @@ def build_tensor_network_expectation(
         matrix = (
             _identity_matrix_like(reference)
             if name is None
-            else GATE_MAT_DICT[name].to(device=reference.device, dtype=reference.dtype)
+            else _fixed_gate_matrix_like(name, reference)
         )
         nodes.append(
             TensorNetworkNode(
@@ -237,16 +244,16 @@ def build_tensor_network_hamiltonian_expectation(
     )
     identity = _identity_matrix_like(reference)
     pauli_matrices = {
-        name: GATE_MAT_DICT[name].to(reference) for name in ("x", "y", "z")
+        name: _fixed_gate_matrix_like(name, reference) for name in ("x", "y", "z")
     }
     local_products = []
-    observable_wires = set()
+    observable_wires: set[int] = set()
     for term in terms:
         by_wire = {int(wire): str(name).lower() for wire, name in term.ops}
         observable_wires.update(by_wire)
         local_products.append(
             tuple(
-                pauli_matrices.get(by_wire.get(wire), identity)
+                pauli_matrices.get(by_wire.get(wire, "i"), identity)
                 for wire in range(ket_plan.n_wires)
             )
         )
@@ -377,14 +384,18 @@ def build_tensor_network_hamiltonian_expectations(
             )
 
     identity = _identity_matrix_like(reference)
-    matrices = {name: GATE_MAT_DICT[name].to(reference) for name in ("x", "y", "z")}
-    local_products = tuple(
-        tuple(
-            matrices.get(dict(key).get(wire), identity)
-            for wire in range(ket_plan.n_wires)
+    matrices = {
+        name: _fixed_gate_matrix_like(name, reference) for name in ("x", "y", "z")
+    }
+    local_products = []
+    for key in term_keys:
+        by_wire = dict(key)
+        local_products.append(
+            tuple(
+                matrices.get(by_wire.get(wire, "i"), identity)
+                for wire in range(ket_plan.n_wires)
+            )
         )
-        for key in term_keys
-    )
     observable_wires = tuple(sorted({wire for key in term_keys for wire, _ in key}))
     observable_label = max((*bra_outputs, *ket_outputs)) + 1
     if ket_plan.n_wires == 1:
@@ -522,10 +533,7 @@ def _expectation_batch_projection(
             operators.append(
                 _identity_matrix_like(reference)
                 if name is None
-                else GATE_MAT_DICT[name].to(
-                    device=reference.device,
-                    dtype=reference.dtype,
-                )
+                else _fixed_gate_matrix_like(name, reference)
             )
         nodes.append(
             TensorNetworkNode(

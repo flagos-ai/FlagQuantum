@@ -133,7 +133,6 @@ def build_distributed_identity(
             platform_identity=platform,
         )
 
-    blockers = ("distributed_identity_is_not_collective_conformance_evidence",)
     return DistributedIdentity(
         outer_backend=backend,
         logical_device=device,
@@ -144,7 +143,7 @@ def build_distributed_identity(
         inner_backend=backend if process_group_initialized else None,
         inner_backend_verified=bool(process_group_initialized),
         host_staging_observed=None,
-        blockers=blockers,
+        blockers=("distributed_identity_is_not_collective_conformance_evidence",),
         platform_identity=platform,
     )
 

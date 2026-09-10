@@ -56,6 +56,7 @@ from .reverse_planning import (
 from .reverse_replay import build_mps_reverse_backward
 from .reverse_transport import (
     ReverseLayerHaloPrefetch,
+    _ReverseRecordMetadata,
     all_reduce_reverse_layer_records,
     begin_reverse_layer_halo_prefetch,
     broadcast_reverse_record,
@@ -124,7 +125,7 @@ def _static_exact_qr_record(
     *,
     max_bond: int | None,
     cutoff: float,
-) -> dict[str, Any] | None:
+) -> _ReverseRecordMetadata | None:
     """Derive split metadata when exact QR makes it rank-independent.
 
     This is deliberately unavailable for SVD/truncation paths: their retained
@@ -274,12 +275,14 @@ def execute_torch_distributed_mps_reverse(
     precomputed_factorizations: dict[
         int, tuple[torch.Tensor, torch.Tensor, torch.Tensor]
     ] = {}
-    precomputed_layer_metadata: dict[int, dict[str, Any]] = {}
+    precomputed_layer_metadata: dict[int, _ReverseRecordMetadata] = {}
     prefetched_rxx_indices: set[int] = set()
     prefetched_rxx_halos: dict[int, torch.Tensor] = {}
     reserved_ry: set[int] = set()
     reserved_rxx: set[int] = set()
     selected_factorizations: set[int] = set()
+    info: Mapping[str, Any] | None
+    metadata: _ReverseRecordMetadata | None
     for instruction_index, instruction in enumerate(ir.instructions):
         if (
             compile_site_kernels
@@ -331,23 +334,23 @@ def execute_torch_distributed_mps_reverse(
                 )
                 for start in range(0, len(bucket), capacity):
                     chunk = bucket[start : start + capacity]
-                    before = tuple(
+                    site_inputs = tuple(
                         state.local_tensors[wire].detach().clone()
                         for _, _, wire in chunk
                     )
                     with torch.no_grad():
-                        after = apply_compiled_mps_one_site_bucket(
+                        site_outputs = apply_compiled_mps_one_site_bucket(
                             tuple(candidate for _, candidate, _ in chunk),
-                            before,
+                            site_inputs,
                             bsz=bsz,
                             device=resolved_device,
                             dtype=resolved_dtype,
                         )
                     for position, (candidate_index, _, wire) in enumerate(chunk):
-                        state.local_tensors[wire] = after[position].detach()
+                        state.local_tensors[wire] = site_outputs[position].detach()
                         precomputed_ry[candidate_index] = (
-                            before[position],
-                            after[position].detach(),
+                            site_inputs[position],
+                            site_outputs[position].detach(),
                         )
         if (
             compile_site_kernels
@@ -422,7 +425,7 @@ def execute_torch_distributed_mps_reverse(
                 else (None, frozenset())
             )
             prefetched_rxx_indices.update(layer_prefetched_indices)
-            buckets: dict[
+            two_site_buckets: dict[
                 tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
                 list[tuple[int, Instruction, int]],
             ] = {}
@@ -435,13 +438,13 @@ def execute_torch_distributed_mps_reverse(
                 )
                 if matrix.ndim == 2:
                     matrix = matrix.expand(bsz, -1, -1)
-                key = (
+                two_site_shapes = (
                     tuple(state.local_tensors[left_wire].shape),
                     tuple(state.local_tensors[left_wire + 1].shape),
                     tuple(matrix.shape),
                 )
-                buckets.setdefault(key, []).append(item)
-            for bucket in buckets.values():
+                two_site_buckets.setdefault(two_site_shapes, []).append(item)
+            for bucket in two_site_buckets.values():
                 _, sample_candidate, sample_wire = bucket[0]
                 sample_matrix = instruction_matrix_for_mps(
                     sample_candidate,
@@ -458,26 +461,26 @@ def execute_torch_distributed_mps_reverse(
                 )
                 for start in range(0, len(bucket), capacity):
                     chunk = bucket[start : start + capacity]
-                    before_left = tuple(
+                    left_inputs = tuple(
                         state.local_tensors[wire].detach().clone()
                         for _, _, wire in chunk
                     )
-                    before_right = tuple(
+                    right_inputs = tuple(
                         state.local_tensors[wire + 1].detach().clone()
                         for _, _, wire in chunk
                     )
                     with torch.no_grad():
                         pair_matrices = contract_mps_two_site_bucket(
                             tuple(candidate for _, candidate, _ in chunk),
-                            before_left,
-                            before_right,
+                            left_inputs,
+                            right_inputs,
                             bsz=bsz,
                             device=resolved_device,
                             dtype=resolved_dtype,
                             compiled=True,
                         )
-                    left_dim = int(before_left[0].shape[1])
-                    right_dim = int(before_right[0].shape[-1])
+                    left_dim = int(left_inputs[0].shape[1])
+                    right_dim = int(right_inputs[0].shape[-1])
                     full_rank = min(
                         int(pair_matrices.shape[-2]),
                         int(pair_matrices.shape[-1]),
@@ -499,7 +502,7 @@ def execute_torch_distributed_mps_reverse(
                         factorization,
                         input_left,
                         input_right,
-                    ) in zip(chunk, factorizations, before_left, before_right):
+                    ) in zip(chunk, factorizations, left_inputs, right_inputs):
                         pair_leaf, after_left, after_right, info = factorization
                         state.local_tensors[left_wire] = after_left.detach()
                         state.local_tensors[left_wire + 1] = after_right.detach()
@@ -570,6 +573,10 @@ def execute_torch_distributed_mps_reverse(
                                 dtype=resolved_dtype,
                             )
                             after_left, after_right = outputs
+                    if info is None:
+                        raise MPSReverseContractError(
+                            "two-site reverse preparation requires split metadata"
+                        )
                     precomputed_rxx[candidate_index] = (
                         before_left,
                         before_right,
@@ -586,7 +593,7 @@ def execute_torch_distributed_mps_reverse(
                     for candidate_index, _, left_wire in layer
                     if state.owner(left_wire) != state.owner(left_wire + 1)
                 )
-                local_layer_metadata = {
+                local_layer_metadata: dict[int, _ReverseRecordMetadata] = {
                     candidate_index: {
                         "input_shapes": (values[0].shape, values[1].shape),
                         "output_shapes": (values[2].shape, values[3].shape),
@@ -677,8 +684,8 @@ def execute_torch_distributed_mps_reverse(
                     sequence=sequence,
                     shape=global_shapes[left_wire + 1],
                 )
-        else:
-            halo = state.local_tensors[left_wire + 1] if rank == left_owner else None
+        elif rank == left_owner:
+            halo = state.local_tensors[left_wire + 1]
         metadata = None
         prospective = 0
         optional = 0
@@ -766,6 +773,10 @@ def execute_torch_distributed_mps_reverse(
                     else (None, None)
                 ),
             )
+            if info is None:
+                raise MPSReverseContractError(
+                    "two-site reverse execution requires split metadata"
+                )
             metadata = {
                 "input_shapes": (before_left.shape, before_right.shape),
                 "output_shapes": (after_left.shape, after_right.shape),
@@ -796,13 +807,18 @@ def execute_torch_distributed_mps_reverse(
                 )
         else:
             static_qr_metadata_records += 1
-            if rank == left_owner and (
-                tuple(metadata["input_shapes"]) != static_metadata["input_shapes"]
-                or tuple(metadata["output_shapes"]) != static_metadata["output_shapes"]
-            ):
-                raise MPSReverseContractError(
-                    "owner-local exact QR shapes differ from the static MPS plan"
-                )
+            if rank == left_owner:
+                if metadata is None:
+                    raise MPSReverseContractError(
+                        "compute owner is missing split metadata"
+                    )
+                if (
+                    metadata["input_shapes"] != static_metadata["input_shapes"]
+                    or metadata["output_shapes"] != static_metadata["output_shapes"]
+                ):
+                    raise MPSReverseContractError(
+                        "owner-local exact QR shapes differ from the static MPS plan"
+                    )
             metadata = static_metadata
         split = metadata["split_info"]
         full_rank = int(split.get("original_rank", split.get("rank", 0)))
@@ -811,8 +827,11 @@ def execute_torch_distributed_mps_reverse(
             if cutoff <= 0 and (max_bond is None or int(max_bond) >= full_rank)
             else "svd"
         )
-        global_shapes[left_wire] = tuple(metadata["output_shapes"][0])
-        global_shapes[left_wire + 1] = tuple(metadata["output_shapes"][1])
+        for wire, output_shape in zip(
+            (left_wire, left_wire + 1), metadata["output_shapes"]
+        ):
+            batch, left_bond, physical, right_bond = output_shape
+            global_shapes[wire] = (batch, left_bond, physical, right_bond)
         dirty_bonds.discard(left_wire)
         if left_wire + 1 < ir.n_wires - 1:
             dirty_bonds.add(left_wire + 1)
@@ -834,7 +853,7 @@ def execute_torch_distributed_mps_reverse(
     # reverse contractions do not require the final state to remain canonical.
     dirty_bonds_before_canonicalization = tuple(sorted(dirty_bonds))
     canonical_wires = _planned_canonicalization_bonds(
-        ir.n_wires, dirty_bonds, canonicalization_policy
+        ir.n_wires, dirty_bonds_before_canonicalization, canonicalization_policy
     )
     for left_wire in canonical_wires:
         left_owner, right_owner = state.owner(left_wire), state.owner(left_wire + 1)
@@ -854,8 +873,8 @@ def execute_torch_distributed_mps_reverse(
                     sequence=sequence,
                     shape=global_shapes[left_wire + 1],
                 )
-        else:
-            halo = state.local_tensors[left_wire + 1] if rank == left_owner else None
+        elif rank == left_owner:
+            halo = state.local_tensors[left_wire + 1]
         metadata = None
         prospective = 0
         if rank == left_owner:
@@ -877,6 +896,7 @@ def execute_torch_distributed_mps_reverse(
             metadata = {
                 "input_shapes": (before_left.shape, before_right.shape),
                 "output_shapes": (after_left.shape, after_right.shape),
+                "split_info": {},
             }
         if left_owner != right_owner:
             if rank == left_owner:
@@ -891,8 +911,11 @@ def execute_torch_distributed_mps_reverse(
             metadata, left_owner, next(iter(local_tensors.values()))
         )
         metadata["split_info"]["method"] = "qr"
-        global_shapes[left_wire] = tuple(metadata["output_shapes"][0])
-        global_shapes[left_wire + 1] = tuple(metadata["output_shapes"][1])
+        for wire, output_shape in zip(
+            (left_wire, left_wire + 1), metadata["output_shapes"]
+        ):
+            batch, left_bond, physical, right_bond = output_shape
+            global_shapes[wire] = (batch, left_bond, physical, right_bond)
         records.append(
             _record(
                 index=len(records),
@@ -943,7 +966,7 @@ def execute_torch_distributed_mps_reverse(
         value, adjoints = _expectation_and_adjoints(
             state,
             observable or {0: "z"},
-            adjoint_wires=objective_adjoint_wires,
+            adjoint_wires=tuple(objective_adjoint_wires),
         )
     else:
         fused_z_zz_objective = _parse_z_zz_terms(state, observable_terms) is not None
@@ -951,7 +974,7 @@ def execute_torch_distributed_mps_reverse(
             state, observable_terms, compiled_observables=compile_observables
         )
     occurrences = [0] * len(parameters)
-    owners = [set() for _ in parameters]
+    owners: list[set[int]] = [set() for _ in parameters]
     for record in tape.records:
         for parameter_index in record.parameter_indices:
             occurrences[parameter_index] += 1

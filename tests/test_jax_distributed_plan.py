@@ -2523,6 +2523,20 @@ def test_mps_accelerator_backward_evidence_rejects_cpu_only_devices(monkeypatch)
         mps_evidence._collect_jax_mps_accelerator_backward_evidence()
 
 
+def test_minimal_mps_accelerator_backward_rejects_missing_array_module(monkeypatch):
+    from types import SimpleNamespace
+
+    runtime = SimpleNamespace(
+        local_devices=lambda: (SimpleNamespace(platform="gpu"),) * 2,
+        process_count=lambda: 1,
+    )
+    monkeypatch.setattr(mps_backward, "_require_jax", lambda: (runtime, None))
+    with pytest.raises(RuntimeError, match="requires JAX and jax.numpy"):
+        mps_backward._execute_minimal_mps_sharded_backward(
+            [0.2, -0.4], execution_backend="accelerator"
+        )
+
+
 def test_minimal_mps_sharded_backward_skeleton_executes_without_full_replay():
     parameters = torch.tensor([0.2, -0.4], dtype=torch.float64)
 

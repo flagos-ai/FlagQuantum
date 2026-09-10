@@ -10,6 +10,23 @@ import flagquantum as fq
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("scalar", [True, None, 1j, "2", object()])
+def test_observable_scaling_preserves_unsupported_operand_protocol(
+    scalar: object,
+) -> None:
+    observable = fq.Z(0)
+
+    assert observable.__mul__(scalar) is NotImplemented
+    with pytest.raises(TypeError):
+        _ = observable * scalar
+
+
+@pytest.mark.parametrize("scalar", [float("nan"), float("inf"), -float("inf")])
+def test_observable_scaling_rejects_nonfinite_coefficients(scalar: float) -> None:
+    with pytest.raises(ValueError, match="coefficients must be finite"):
+        _ = scalar * fq.Z(0)
+
+
 def test_pauli_observables_and_hamiltonian_expectation() -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
 

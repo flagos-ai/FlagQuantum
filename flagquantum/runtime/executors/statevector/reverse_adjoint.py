@@ -634,7 +634,7 @@ def _explicit_sharded_adjoint(
             )
 
     skipped_cx_indices: set[int] = set()
-    cx_segment_ket_scratch = cx_segment_adjoint_scratch = None
+    cx_segment_scratch: tuple[torch.Tensor, torch.Tensor] | None = None
     for index in range(len(bound.instructions) - 1, -1, -1):
         if index in skipped_cx_indices:
             continue
@@ -662,11 +662,11 @@ def _explicit_sharded_adjoint(
                 complex_dtype=str(dtype).removeprefix("torch.")
             )
             with runtime_config(precision):
-                original_matrix = _instruction_matrix(
+                accelerated_matrix = _instruction_matrix(
                     execution_instruction, device=device, dtype=dtype
                 )
             derivative_matrix = _analytic_rotation_derivative(
-                execution_instruction, original_matrix
+                execution_instruction, accelerated_matrix
             )
             if derivative_matrix is not None:
                 evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
@@ -683,7 +683,7 @@ def _explicit_sharded_adjoint(
                 gradient = fused_complex64_local_1q_reversible_vjp(
                     reversible_state.amplitudes,
                     adjoint,
-                    original_matrix,
+                    accelerated_matrix,
                     derivative_matrix,
                     bit_position=bit_position,
                 ).to(dtype=base_parameters[active[0]].dtype)
@@ -779,11 +779,14 @@ def _explicit_sharded_adjoint(
                         plan.n_wires - wires[1] - 1 - rank_bits
                         for wires in reversed(segment_wires)
                     )
-                    if cx_segment_ket_scratch is None:
-                        cx_segment_ket_scratch = torch.empty_like(
-                            reversible_state.amplitudes
+                    if cx_segment_scratch is None:
+                        cx_segment_scratch = (
+                            torch.empty_like(reversible_state.amplitudes),
+                            torch.empty_like(adjoint),
                         )
-                        cx_segment_adjoint_scratch = torch.empty_like(adjoint)
+                    cx_segment_ket_scratch, cx_segment_adjoint_scratch = (
+                        cx_segment_scratch
+                    )
                     previous_ket = reversible_state.amplitudes
                     apply_complex64_local_cx_segment(
                         previous_ket,
@@ -794,7 +797,6 @@ def _explicit_sharded_adjoint(
                     reversible_state = replace(
                         reversible_state, amplitudes=cx_segment_ket_scratch
                     )
-                    cx_segment_ket_scratch = previous_ket
                     previous_adjoint = adjoint
                     apply_complex64_local_cx_segment(
                         previous_adjoint,
@@ -803,7 +805,7 @@ def _explicit_sharded_adjoint(
                         output=cx_segment_adjoint_scratch,
                     )
                     adjoint = cx_segment_adjoint_scratch
-                    cx_segment_adjoint_scratch = previous_adjoint
+                    cx_segment_scratch = (previous_ket, previous_adjoint)
                     evidence.peak_scratch_bytes = max(
                         evidence.peak_scratch_bytes,
                         2
@@ -847,6 +849,7 @@ def _explicit_sharded_adjoint(
                 reversible_scratch = previous_reversible_amplitudes
             del previous_reversible_state, inverse_matrix
         fused_adjoint: torch.Tensor | None = None
+        derivatives: list[torch.Tensor] = []
         if active:
             instruction = execution_instruction
             if original_matrix is None:
@@ -857,7 +860,6 @@ def _explicit_sharded_adjoint(
                     original_matrix = _instruction_matrix(
                         instruction, device=device, dtype=dtype
                     )
-            derivatives = []
             for parameter_index in active:
                 parameter = base_parameters[parameter_index]
                 if parameter.numel() != 1:
@@ -974,11 +976,7 @@ def _explicit_sharded_adjoint(
                         ).to(dtype=parameter.dtype)
                 derivatives.append(local_derivative)
                 del derivative_state, derivative_matrix
-        else:
-            derivatives = ()
         for parameter_index, gradient in zip(active, derivatives):
-            if gradient is None:
-                continue
             accumulate_parameter_gradient(parameter_index, gradient)
         if fused_adjoint is not None:
             previous_adjoint = adjoint

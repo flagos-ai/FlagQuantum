@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import torch
 import torch.distributed as dist
@@ -21,6 +21,7 @@ from ....simulation.mps.rank_local import (
 from ....simulation.mps.state import MPSState
 from .canonicalization import canonicalize_rank_owned_mps
 from .compiled_layers import (
+    _PreparedMPSOutput,
     device_memory_metadata,
     prepare_compiled_mps_layer,
     require_layer_cache_drained,
@@ -141,12 +142,14 @@ def execute_torch_distributed_mps_forward(
     rebalance_messages = rebalance_bytes = 0
     local_truncation_records: list[dict[str, Any]] = []
     history = [ownership]
-    precomputed: dict[int, tuple[torch.Tensor, ...]] = {}
+    precomputed: dict[int, _PreparedMPSOutput] = {}
     prepared: set[int] = set()
     layer_ends: dict[int, tuple[int, int, str, int]] = {}
     layer_lifecycle_records: list[dict[str, Any]] = []
     factorization_records: list[dict[str, Any]] = []
     layer_sequence = 0
+    outputs: tuple[torch.Tensor, ...]
+    split_info: Mapping[str, Any] | None
     for instruction_index, instruction in enumerate(ir.instructions):
         if (
             compile_site_kernels
@@ -185,7 +188,12 @@ def execute_torch_distributed_mps_forward(
         if len(wires) == 1:
             if rank in owners:
                 if instruction_index in precomputed:
-                    outputs = precomputed.pop(instruction_index)
+                    cached_output = precomputed.pop(instruction_index)
+                    if len(cached_output) != 1:
+                        raise MPSForwardLifetimeError(
+                            "one-site compiled MPS instruction requires one cached tensor"
+                        )
+                    outputs = cached_output
                 else:
                     outputs, _ = _apply_rank_local_instruction(
                         instruction,
@@ -202,9 +210,13 @@ def execute_torch_distributed_mps_forward(
             if rank == owner:
                 left = min(wires)
                 if instruction_index in precomputed:
-                    updated_left, updated_right, split_info = precomputed.pop(
-                        instruction_index
-                    )
+                    cached_output = precomputed.pop(instruction_index)
+                    if len(cached_output) != 3:
+                        raise MPSForwardLifetimeError(
+                            "two-site compiled MPS instruction requires two cached "
+                            "tensors and split metadata"
+                        )
+                    updated_left, updated_right, split_info = cached_output
                 else:
                     outputs, split_info = _apply_rank_local_instruction(
                         instruction,
@@ -257,7 +269,7 @@ def execute_torch_distributed_mps_forward(
                 layer_start=layer_start,
                 layer_end=instruction_index,
             )
-            record: dict[str, Any] = {
+            lifecycle_record: dict[str, Any] = {
                 "layer_sequence": sequence,
                 "kind": kind,
                 "instruction_start": layer_start,
@@ -271,9 +283,9 @@ def execute_torch_distributed_mps_forward(
                 "last_operation": f"{instruction_index}:{instruction.name}",
                 **_cuda_memory_fields(resolved_device),
             }
-            layer_lifecycle_records.append(record)
+            layer_lifecycle_records.append(lifecycle_record)
             if layer_lifecycle_callback is not None:
-                layer_lifecycle_callback(dict(record))
+                layer_lifecycle_callback(dict(lifecycle_record))
     _require_layer_cache_drained(
         precomputed,
         layer_sequence=layer_sequence,

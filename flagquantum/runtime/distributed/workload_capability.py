@@ -114,7 +114,8 @@ def _validate_claim_boundary(payload: Mapping[str, Any], label: str) -> None:
         if flag in payload:
             _require(payload[flag] is False, f"{label}: {flag} must remain false")
     environment = payload.get("environment")
-    _require(isinstance(environment, Mapping), f"{label}: missing environment")
+    if not isinstance(environment, Mapping):
+        raise FlagOSWorkloadCapabilityError(f"{label}: missing environment")
     _require(
         environment.get("worker_failures", []) == [],
         f"{label}: worker failures are present",
@@ -194,7 +195,8 @@ def _validate_conformance(
     )
 
     checks = payload.get("collective_checks")
-    _require(isinstance(checks, list), "F1: collective checks are missing")
+    if not isinstance(checks, list):
+        raise FlagOSWorkloadCapabilityError("F1: collective checks are missing")
     expected = {
         (primitive, dtype)
         for primitive in REQUIRED_FLAGOS_COLLECTIVES
@@ -211,7 +213,8 @@ def _validate_conformance(
     )
 
     statevector = payload.get("statevector_checks")
-    _require(isinstance(statevector, list), "F1: statevector checks are missing")
+    if not isinstance(statevector, list):
+        raise FlagOSWorkloadCapabilityError("F1: statevector checks are missing")
     _require(
         len(statevector) == len(REQUIRED_FLAGOS_DTYPES)
         and {item.get("dtype") for item in statevector} == set(REQUIRED_FLAGOS_DTYPES)
@@ -245,9 +248,8 @@ def _validate_conformance(
         if item.get("passed") is True:
             continue
         error = item.get("error")
-        _require(
-            isinstance(error, str) and error, "F1: failed collective lacks an error"
-        )
+        if not isinstance(error, str) or not error:
+            raise FlagOSWorkloadCapabilityError("F1: failed collective lacks an error")
         missing.append(
             {
                 "primitive": str(item["primitive"]),

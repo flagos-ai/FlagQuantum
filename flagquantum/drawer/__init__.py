@@ -2,6 +2,14 @@
 FlagQuantum circuit drawing module
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+
 from .ir_adapter import DrawableCircuit, to_drawable_circuit
 from .style import available_styles, use_style
 from .text_drawer import TextDrawer, draw_text
@@ -17,7 +25,9 @@ except ImportError:
     MPLDrawer = None  # type: ignore
 
 
-def draw(program, format="text", **kwargs):
+def draw(
+    program: object, format: str = "text", **kwargs: Any
+) -> str | tuple[Figure, Axes]:
     """
     Draw a circuit diagram
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from dataclasses import asdict, dataclass
 from importlib import resources
 from typing import Any
@@ -17,9 +18,9 @@ from .double_single import (
     double_single_sum,
 )
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover - Python 3.10
+else:  # pragma: no cover - Python 3.10
     import tomli as tomllib
 
 CONFORMANCE_VERSION = "1.0"

@@ -4,6 +4,12 @@ First off, thanks for taking the time to contribute! 🎉
 
 The following is a set of guidelines for contributing to **FlagQuantum**, hosted under [FlagOS](https://github.com/flagos-ai) on GitHub. These are mostly guidelines, not rigid rules. Use your best judgment, and feel free to propose changes to this document via a pull request.
 
+Repository content must be in English. All Python changes must follow the
+[Python engineering standard](docs/development/PYTHON_ENGINEERING_STANDARD.md),
+including precise types, behavioral tests, explicit resource ownership, and the
+existing automated formatting and static checks. These requirements take
+precedence over optional style suggestions below.
+
 #### Table of Contents
 
 - [Code of Conduct](#code-of-conduct)

@@ -8,7 +8,7 @@ slice-output reduction owned by :mod:`execution`.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 import torch
 import torch.distributed as dist
@@ -207,20 +207,19 @@ def execute_sharded_tn_contraction_dag(
             layout.semantics == "sharded" for layout in input_layouts
         )
         if not participates_in_shard_chain:
-            operation_inputs = tuple(
-                local_values.get(value_id) for value_id in operation.input_value_ids
-            )
-            if any(tensor is None for tensor in operation_inputs):
+            left_id, right_id = operation.input_value_ids
+            left_input = local_values.get(left_id)
+            right_input = local_values.get(right_id)
+            if left_input is None or right_input is None:
                 raise RuntimeError("replicated TN DAG operation lost a local input")
             if any(layout.semantics != "replicated_small" for layout in input_layouts):
                 raise RuntimeError(
                     "unsharded TN DAG operation requires locally replicated inputs"
                 )
-            left_id, right_id = operation.input_value_ids
             output = einsum_pair_by_labels(
-                operation_inputs[0],
+                left_input,
                 values_by_id[left_id].labels,
-                operation_inputs[1],
+                right_input,
                 values_by_id[right_id].labels,
                 operation.output_labels,
             )
@@ -248,8 +247,8 @@ def execute_sharded_tn_contraction_dag(
         operation_inputs: dict[str, torch.Tensor] = {}
         for value_id in operation.input_value_ids:
             layout = local_layouts[value_id]
-            tensor = local_values.get(value_id)
-            if tensor is None:
+            shard_input = local_values.get(value_id)
+            if shard_input is None:
                 raise RuntimeError(
                     f"sharded TN rank {actual_rank} lost local value {value_id}"
                 )
@@ -266,14 +265,14 @@ def execute_sharded_tn_contraction_dag(
                         world_size=actual_world_size,
                     )
                     redistributed = execute_distributed_tn_redistribution(
-                        tensor,
+                        shard_input,
                         layout,
                         destination,
                         plan_distributed_tn_redistribution(layout, destination),
                         process_group=process_group,
                     )
-                    tensor = redistributed.local_tensor
-                    local_values[value_id] = tensor
+                    shard_input = redistributed.local_tensor
+                    local_values[value_id] = shard_input
                     local_layouts[value_id] = destination
                     layout = destination
                     redistribution_count += 1
@@ -283,21 +282,21 @@ def execute_sharded_tn_contraction_dag(
                 expected_shard = next(
                     item for item in layout.shards if item.rank == actual_rank
                 )
-                if tuple(tensor.shape) != expected_shard.local_shape:
+                if tuple(shard_input.shape) != expected_shard.local_shape:
                     raise ValueError(
                         f"sharded TN value {value_id} local shape mismatch"
                     )
-                operation_inputs[value_id] = tensor
+                operation_inputs[value_id] = shard_input
             elif layout.semantics == "replicated_small":
                 operation_inputs[value_id] = (
                     partition_tn_tensor_for_shard(
-                        tensor,
+                        shard_input,
                         layout.labels,
                         shard_label=shard_label,
                         shard=shard,
                     )
                     if shard_label in layout.labels
-                    else tensor
+                    else shard_input
                 )
             else:
                 raise RuntimeError(
@@ -387,7 +386,11 @@ def prepare_sharded_tn_dag_operation(
     operation: DistributedTNContractionRecord,
     *,
     rank: int,
-) -> tuple[str, int, DistributedTNShard]:
+) -> tuple[
+    Literal["retained_output_shard", "contracted_partial_reduce"],
+    int,
+    DistributedTNShard,
+]:
     """Resolve the kernel mode, shard label, and this rank's local range."""
 
     mode, shard_label = select_sharded_pair_mode(dag, operation)
@@ -529,9 +532,9 @@ def execute_distributed_tn_contraction_dag(
 
     local_values: dict[str, torch.Tensor] = {}
     for value_id in expected_inputs:
-        tensor = local_inputs[value_id]
-        _validate_tensor(tensor, values_by_id[value_id])
-        local_values[value_id] = tensor
+        initial_tensor = local_inputs[value_id]
+        _validate_tensor(initial_tensor, values_by_id[value_id])
+        local_values[value_id] = initial_tensor
 
     final_layout = values_by_id[dag.output_value_id]
     if final_layout.nbytes > int(max_output_bytes):

@@ -40,3 +40,31 @@ def test_dense_state_dimension_must_be_a_power_of_two() -> None:
     assert infer_n_wires_from_dense_state(torch.zeros(2, 8)) == 3
     with pytest.raises(ValueError, match="power of two"):
         infer_n_wires_from_dense_state(torch.zeros(2, 6))
+
+
+@pytest.mark.parametrize("name", ("rx", "ry", "rz"))
+def test_pauli_products_reject_parameterized_gates(name: str) -> None:
+    state = torch.tensor([1, 0], dtype=torch.complex128)
+    operators = ((0, name),)
+    with pytest.raises(ValueError, match="fixed gate matrices"):
+        pauli_product_operator(operators, 1, dtype=state.dtype, device=state.device)
+    with pytest.raises(ValueError, match="fixed gate matrices"):
+        pauli_product_statevector_expectation(state, operators, 1)
+
+
+@pytest.mark.parametrize("density_mode", (False, True))
+def test_pauli_z_expectation_has_analytic_rotation_gradient(density_mode: bool) -> None:
+    theta = torch.tensor(0.7, dtype=torch.float64, requires_grad=True)
+    state = torch.stack((torch.cos(theta / 2), torch.sin(theta / 2))).to(
+        torch.complex128
+    )
+    operators = ((0, "z"),)
+    if density_mode:
+        density = state[:, None] * state.conj()[None, :]
+        value = pauli_product_density_expectation(density, operators, 1)
+    else:
+        value = pauli_product_statevector_expectation(state, operators, 1)
+
+    gradient = torch.autograd.grad(value.sum(), theta)[0]
+    torch.testing.assert_close(value.squeeze(), theta.cos())
+    torch.testing.assert_close(gradient, -theta.sin())

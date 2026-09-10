@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 import torch
 
-from .distributed_dag import DistributedTNContractionDAG
+from .distributed_dag import DistributedTNContractionDAG, DistributedTNContractionRecord
 from .partial_mesh import (
     DistributedTNMeshGroupCache,
+    DistributedTNPartialMeshLayout,
     execute_partial_mesh_forward_pair,
     plan_partial_mesh_tn_layout,
 )
@@ -195,14 +196,18 @@ class DistributedTNRematerializationProvider:
             pending.extend(operation.input_value_ids)
         return selected
 
-    def _layout(self, value_id: str):
+    def _layout(self, value_id: str) -> DistributedTNPartialMeshLayout:
         return plan_partial_mesh_tn_layout(
             self._values[value_id],
             mesh_labels=self.mesh_labels,
             mesh_shape=self.mesh_shape,
         )
 
-    def _predict_peak(self, operations, remaining_uses) -> int:
+    def _predict_peak(
+        self,
+        operations: Sequence[DistributedTNContractionRecord],
+        remaining_uses: Mapping[str, int],
+    ) -> int:
         live: dict[str, int] = {}
         peak = 0
         uses = dict(remaining_uses)

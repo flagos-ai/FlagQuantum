@@ -7,6 +7,39 @@ import flagquantum.runtime as fqr
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("mode", ["statevector", "mps", "tensor_network"])
+@pytest.mark.parametrize("use_ir", [False, True])
+def test_single_amplitude_accepts_zero_and_rejects_missing_bitstring(
+    mode: str, use_ir: bool
+) -> None:
+    circuit = fq.Circuit(2).h(0)
+    program = circuit.to_ir() if use_ir else circuit
+    with pytest.raises(ValueError, match="single_amplitude requires bitstring"):
+        fqr.run_target(program, target="single_amplitude", mode=mode)
+
+    result = fqr.run_target(program, target="single_amplitude", bitstring=0, mode=mode)
+    torch.testing.assert_close(result.values, circuit.state()[:, 0])
+
+
+@pytest.mark.parametrize("value", [None, (torch.zeros(2), {})])
+def test_statevector_target_rejects_non_tensor_result(
+    monkeypatch: pytest.MonkeyPatch, value: object
+) -> None:
+    monkeypatch.setattr(
+        "flagquantum.runtime.execution.run_native", lambda *args, **kwargs: value
+    )
+    with pytest.raises(
+        TypeError, match="statevector execution must return a torch.Tensor"
+    ):
+        fqr.run_target(fq.Circuit(2), target="full_state", mode="statevector")
+
+
+@pytest.mark.parametrize("target", ["", "probability", "FULL_STATE"])
+def test_run_target_rejects_unknown_output_names(target: str) -> None:
+    with pytest.raises(ValueError, match="unsupported output target"):
+        fqr.run_target(fq.Circuit(2), target=target)
+
+
 def test_run_target_uses_statevector_when_dense_path_fits() -> None:
     circuit = fq.Circuit(6)
     circuit.h(0).cx(0, 5).ry(2, theta=0.2)

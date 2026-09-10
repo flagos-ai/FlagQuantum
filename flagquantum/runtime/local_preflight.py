@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 import torch
 
 from .execution import run_native
+
+if TYPE_CHECKING:
+    from ..circuit import Circuit
 
 
 @dataclass(frozen=True)
@@ -36,11 +40,15 @@ class LocalFastPathPreflightReport:
         }
 
 
-def _default_local_circuit() -> Any:
+def _default_local_circuit() -> Circuit:
     from ..circuit import Circuit
 
     circuit = Circuit(4)
-    circuit.h(0).rx(1, theta=0.2).cx(0, 2).ry(3, theta=-0.4).rzz(2, 3, theta=0.3)
+    circuit.gate("h", 0)
+    circuit.gate("rx", 1, theta=0.2)
+    circuit.gate("cx", (0, 2))
+    circuit.gate("ry", 3, theta=-0.4)
+    circuit.gate("rzz", (2, 3), theta=0.3)
     return circuit
 
 
@@ -74,6 +82,9 @@ def local_fast_path_preflight(
 ) -> LocalFastPathPreflightReport:
     """Validate local execution modes without touching distributed backends."""
 
+    atol = float(atol)
+    if not math.isfinite(atol) or atol < 0:
+        raise ValueError("atol must be finite and non-negative")
     program = circuit_or_ir if circuit_or_ir is not None else _default_local_circuit()
     resolved_device = str(device)
     run_options = dict(options)
@@ -115,7 +126,9 @@ def local_fast_path_preflight(
             errors.append(f"{mode}: expected single_device_fast_path semantics")
         if plan_summary["scalability_claim_allowed"]:
             errors.append(f"{mode}: local fast path cannot allow scalability claims")
-        if error > float(atol):
+        if not math.isfinite(error):
+            errors.append(f"{mode}: state comparison produced a non-finite error")
+        elif error > float(atol):
             errors.append(
                 f"{mode}: max_abs_error {error:.3e} exceeds atol {float(atol):.3e}"
             )

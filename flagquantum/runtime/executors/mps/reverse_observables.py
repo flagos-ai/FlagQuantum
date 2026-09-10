@@ -58,6 +58,13 @@ def mps_expectation_and_adjoints(
         else {int(wire) for wire in adjoint_wires}
     )
     local_adjoint_wires = requested_adjoint_wires.intersection(state.local_tensors)
+    operators = {}
+    for wire, tensor in state.local_tensors.items():
+        name = str(observable.get(wire, "i")).lower()
+        matrix = GATE_MAT_DICT[name]
+        if not isinstance(matrix, torch.Tensor):
+            raise ValueError(f"observable {name!r} requires a fixed gate matrix")
+        operators[wire] = matrix.to(device=tensor.device, dtype=tensor.dtype)
     left_envs: dict[int, torch.Tensor] = {}
     env: torch.Tensor | None = None
     with record_function("flagquantum::mps::left_environment_scan"):
@@ -76,9 +83,7 @@ def mps_expectation_and_adjoints(
                     if wire in local_adjoint_wires:
                         left_envs[wire] = env
                     tensor = state.local_tensors[wire]
-                    operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
-                        device=tensor.device, dtype=tensor.dtype
-                    )
+                    operator = operators[wire]
                     env = transfer_mps_operator_environment(
                         env,
                         tensor,
@@ -140,9 +145,7 @@ def mps_expectation_and_adjoints(
                     if wire in local_adjoint_wires:
                         right_envs[wire] = right
                     tensor = state.local_tensors[wire]
-                    operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
-                        device=tensor.device, dtype=tensor.dtype
-                    )
+                    operator = operators[wire]
                     right = transfer_mps_operator_right_environment(
                         tensor,
                         operator,
@@ -166,9 +169,7 @@ def mps_expectation_and_adjoints(
     with record_function("flagquantum::mps::objective_adjoint"):
         for wire in sorted(local_adjoint_wires):
             tensor = state.local_tensors[wire]
-            operator = GATE_MAT_DICT[str(observable.get(wire, "i")).lower()].to(
-                device=tensor.device, dtype=tensor.dtype
-            )
+            operator = operators[wire]
             adjoints[wire] = mps_local_observable_adjoint(
                 tensor,
                 left_envs[wire],

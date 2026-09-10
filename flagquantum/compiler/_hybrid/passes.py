@@ -24,7 +24,10 @@ from .transforms import (
 class HybridProgramPass(Protocol):
     """One private transformation over a verified HybridProgram."""
 
-    name: str
+    @property
+    def name(self) -> str:
+        """Return the transformation name used in pass evidence."""
+        ...
 
     def run(
         self, program: HybridProgram, analysis: HybridProgramAnalysis

@@ -22,7 +22,7 @@ from .statevector.records import JAXStatevectorShardState
 def _gate_matrix_as_jax(
     instruction: Any, *, torch_dtype: Any, jax_dtype: Any
 ) -> tuple[Any, bool]:
-    from ..statevector.local_execution import _instruction_matrix
+    from ....simulation.statevector.operations import _instruction_matrix
 
     torch = _require_torch()
     _, jnp = _require_jax()

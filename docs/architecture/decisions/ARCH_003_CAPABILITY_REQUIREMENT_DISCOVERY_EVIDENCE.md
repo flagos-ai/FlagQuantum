@@ -1,236 +1,292 @@
-# ARCH-003：Capability Requirement、Discovery Snapshot 与 Evidence
+# ARCH-003: Capability Requirements, Discovery Snapshots, and Evidence
 
-状态：Proposed
+Status: Proposed
 
-日期：2026-09-03
+Date: 2026-09-03
 
-依据：Phase 0 架构盘点与 Phase 2 Core、Platform、Runtime 三方对账；接口存在不等于能力已实现
+Basis: Phase 0 architecture inventory and Phase 2 Core/Platform/Runtime
+reconciliation; an interface's existence does not establish implemented capability.
 
-## 上下文
+## Context
 
-现有 Compiler、Platform、Runtime、Deployment 和 Extension 均有局部 capability 类型，
-但它们分别表达编译合法性、平台发现、运行策略或接入能力，不能互相冒充。
-Phase 2 需要在不改变现有公共行为的前提下，确立唯一、可验证的跨层能力语义。
+Compiler, Platform, Runtime, Deployment, and Extension each have local capability
+types. These represent compilation legality, platform discovery, runtime policy,
+or integration capabilities and cannot stand in for one another. Phase 2 needs
+one verifiable set of cross-layer capability semantics without changing existing
+public behavior.
 
-## 决策候选
+## Decision Candidates
 
-1. 将各团队现有类型直接合并为一个巨型 capability 对象；
-2. 保留多套平行契约，由 Runtime 临时解释；
-3. 建立 Core-owned 的需求—事实谱系，现有类型通过显式 adapter 接入。
+1. Merge all existing team types into one oversized capability object.
+2. Keep parallel contracts that Runtime interprets temporarily.
+3. Establish a Core-owned requirement/fact lineage with explicit adapters for
+   existing types.
 
-选择第 3 项：它能固定语义和所有权，同时避免将不稳定的未来领域提前冻结。
+Choose option 3 to fix semantics and ownership without prematurely freezing
+unstable future domains.
 
-## 决策
+## Decision
 
-Core v1 只拥有以下唯一谱系，不再增加第四种跨层 capability 类型：
+Core v1 owns exactly this lineage, without a fourth cross-layer capability type:
 
-1. `CapabilityRequirement`：一个闭集 capability 谓词；
-2. `RequirementSet`：本次请求/编译所需谓词及逐轴 fallback 授权的不可变集合；
-3. `TargetCapabilitySnapshot`：一个 target/environment 在有限时间和 scope 内的事实快照。
+1. `CapabilityRequirement`: one predicate from a closed capability vocabulary.
+2. `RequirementSet`: an immutable collection of predicates required for this
+   request/compilation and fallback authorization for each axis.
+3. `TargetCapabilitySnapshot`: facts about one target/environment within a
+   bounded time and scope.
 
-`PlatformCapabilitySnapshotCandidate`、Runtime `BackendCapabilities`、Deployment
-`CloudBackendProfile`、扩展 `CapabilityRequest/Response` 及当前私有
-`_compiler.TargetCapabilities` 都只是各 owner 的现有输入。它们通过显式 adapter 进入上述
-谱系，不成为 Core 别名、子类或第二事实权威。`EvidenceReference` 是快照引用的值对象，
-`ExecutionObservation` 是一次 attempt 的执行记录；二者都不是 capability 类型，也不会自动
-提升长期事实。
+`PlatformCapabilitySnapshotCandidate`, Runtime `BackendCapabilities`, Deployment
+`CloudBackendProfile`, extension `CapabilityRequest/Response`, and private
+`_compiler.TargetCapabilities` remain inputs owned by their respective domains.
+Explicit adapters connect them to this lineage; they do not become Core aliases,
+subclasses, or second fact authorities. `EvidenceReference` is a value referenced
+by a snapshot, and `ExecutionObservation` records one attempt. Neither is a
+capability type or automatically promotes a fact to long-term validity.
 
-本 ADR 保持 Proposed：它批准后续内部最小实现和 adapters 的边界，但不改变 Stable Core、
-公共导出、现有序列化、失败阶段、默认选择或产品实现。
+This ADR remains Proposed. It authorizes boundaries for subsequent minimal internal
+implementations and adapters, without changing Stable Core, public exports,
+existing serialization, failure stages, default choices, or product implementations.
 
-## v1 最小契约
+## Minimal v1 Contracts
 
 ### `CapabilityRequirement`
 
-一个 requirement 只表达一个谓词：
+Each requirement expresses one predicate:
 
-- `name`：v1 闭集名称；
-- `operator`：`equals | at_least | at_most | contains_all | covers`；
-- `value`：该名称定义的 JSON-safe 类型；
-- `strength`：`mandatory | preference`；
-- `source`：`user | compiler | runtime_protocol`；
-- `minimum_evidence_level`：`basic | observable | certification`；
-- `accepted_exposures`：非空闭集，取自 fact exposure 值域。
+- `name`: a name from the closed v1 vocabulary;
+- `operator`: `equals | at_least | at_most | contains_all | covers`;
+- `value`: the JSON-safe type defined for that name;
+- `strength`: `mandatory | preference`;
+- `source`: `user | compiler | runtime_protocol`;
+- `minimum_evidence_level`: `basic | observable | certification`;
+- `accepted_exposures`: a nonempty closed subset of fact exposure values.
 
-`mandatory` 不满足时淘汰候选；`preference` 只给已满足全部 mandatory 的候选排序，不得使
-不可执行候选变得可执行，也不得形成 fallback 授权。Core v1 不提供任意表达式、回调、查询
-语言或自由 capability 名称。
+Failure to satisfy `mandatory` eliminates a candidate. A `preference` only ranks
+candidates already satisfying all mandatory predicates; it cannot make an
+unexecutable candidate executable or authorize fallback. Core v1 does not provide
+arbitrary expressions, callbacks, query languages, or free-form capability names.
 
 ### `RequirementSet`
 
-最小 envelope 为 `schema_version`、`requirement_set_id`、`requirements`、
-`fallback_authorizations` 和 `extensions`。requirements 按 canonical key 去重排序；冲突的
-mandatory 谓词在匹配 target 前失败。`requirement_set_id` 是除自身外语义 payload 的 canonical
-JSON SHA-256。
+The minimal envelope contains `schema_version`, `requirement_set_id`,
+`requirements`, `fallback_authorizations`, and `extensions`. Requirements are
+deduplicated and sorted by canonical key. Conflicting mandatory predicates fail
+before target matching. `requirement_set_id` is the SHA-256 of canonical JSON for
+the semantic payload excluding the ID itself.
 
-fallback 授权分为 `backend`、`device`、`cpu`、`precision`、`algorithm`、`approximation` 六轴，
-每轴显式布尔值且缺省为 false。一个轴不能推导另一个轴；偏好、Runtime policy、provider
-声明和现有宽泛 `allow_backend_fallback` 都不能推导 CPU 或精度降级授权。
+Fallback has six independent axes: `backend`, `device`, `cpu`, `precision`,
+`algorithm`, and `approximation`. Each has an explicit boolean, defaulting to
+false. One axis cannot imply another. Preferences, Runtime policy, provider
+declarations, and the existing broad `allow_backend_fallback` cannot imply
+permission for CPU fallback or precision reduction.
 
 ### `TargetCapabilitySnapshot`
 
-最小 envelope 为：
+The minimal envelope contains:
 
-- `schema_version`、`snapshot_id`；
-- `target_identity`：`target_id`、`target_class`、`provider`、`provider_version`、
-  `target_revision`、`environment_id`；
-- `scope`：可空的 `device_ids`、`dtype`、`kernel`、`workload_id`、`world_size`、`node_count`；
-- `captured_at`、`valid_until`；
-- `facts`、`evidence_refs`、`blockers`、`extensions`。
+- `schema_version` and `snapshot_id`;
+- `target_identity`: `target_id`, `target_class`, `provider`, `provider_version`,
+  `target_revision`, and `environment_id`;
+- `scope`: nullable `device_ids`, `dtype`, `kernel`, `workload_id`, `world_size`,
+  and `node_count`;
+- `captured_at` and `valid_until`;
+- `facts`, `evidence_refs`, `blockers`, and `extensions`.
 
-每项 fact 恰有 `name`、`value`、`support_status`、`fact_exposure`、`source` 和 `blockers`。
-`source` 只含 `kind` 与可验证 `ref`，不得放 SDK object、handle、credential 或 callable。
-`snapshot_id` 是除自身外完整语义 payload 的 canonical JSON SHA-256；展示 label 和可变 URI 不
-进入 identity。v1 所有 snapshot 都必须有明确 `valid_until`；到期、scope/identity 不匹配、
-hash 错误或证据引用不可解析时 fail closed。是否重新发现由 Platform/Provider policy 决定，
-Core 不内置全局 TTL。
+Each fact contains exactly `name`, `value`, `support_status`, `fact_exposure`,
+`source`, and `blockers`. A `source` contains only `kind` and a verifiable `ref`,
+never SDK objects, handles, credentials, or callables. `snapshot_id` is the SHA-256
+of canonical JSON for the complete semantic payload excluding the ID itself.
+Presentation labels and mutable URIs do not enter identity. Every v1 snapshot
+requires an explicit `valid_until`. Expiry, scope/identity mismatch, incorrect
+hashes, or unresolvable evidence references fail closed. Platform/Provider policy
+decides whether to rediscover; Core has no global TTL.
 
-`evidence_refs` 每项最小包含 `evidence_id`、`sha256`、`level` 和 `scope`。原始材料与审核
-verdict 留在 Evidence/Audit owner；snapshot 只引用，不复制或改写 verdict。
+Each `evidence_refs` item contains at least `evidence_id`, `sha256`, `level`, and
+`scope`. Raw material and review verdicts remain with Evidence/Audit owners;
+snapshots reference them without copying or rewriting verdicts.
 
-## 状态、暴露和证据的正交语义
+## Orthogonal Status, Exposure, and Evidence Semantics
 
-support status 回答“在此 scope 是否足以支持”：
+Support status answers whether the available basis establishes support in this scope:
 
-- `unknown`：权威来源没有答案；
-- `unmeasured`：存在候选接口或声明，但未测到所需阈值；
-- `unsupported`：适用且权威的负向结论；
-- `verified`：有匹配 identity、scope、新鲜度和值谓词的材料。
+- `unknown`: the authoritative source has no answer;
+- `unmeasured`: an interface or declaration exists, but the required threshold has
+  not been measured;
+- `unsupported`: an applicable, authoritative negative conclusion;
+- `verified`: supporting material matches identity, scope, freshness, and value
+  predicates.
 
-fact exposure 回答“值怎样获得或为何没有”：
+Fact exposure answers how a value was obtained or why it is absent:
 
-- `observed`：受控探测或 workload 观测；
-- `declared`：provider/spec 声明；
-- `not_exposed`：权威接口没有暴露字段；
-- `unknown`：来源不清、冲突或不能安全投影；
-- `not_applicable`：对当前 scope 不适用，必须有 blocker 说明依据。
+- `observed`: a controlled probe or workload observation;
+- `declared`: a provider/specification declaration;
+- `not_exposed`: the authoritative interface does not expose the field;
+- `unknown`: the source is unclear, conflicting, or cannot be projected safely;
+- `not_applicable`: inapplicable in this scope, with a blocker explaining why.
 
-这是两条正交轴，不互相推导。`declared` 不自动成为 `verified`，`not_exposed` 不等于 false 或“未发生”，
-`unsupported/observed` 是合法负向观测。`verified/declared` 只在机器授权中该闭集名称被列入
-`authoritative_static_declaration_allowed` validation profile、requirement 的
-`accepted_exposures` 包含 `declared`，且引用材料、scope 和 freshness 全部满足时合法；一条未验证
-的声明本身默认仍是 `unmeasured/declared`。容量、precision、延迟、物理 route 和“没有 fallback”
-等运行事实只接受 `observed`。`unknown`、`unmeasured`、
-`not_exposed` 以及缺失 fact 都不能满足 mandatory。`not_applicable` 只能满足明确允许“不适用”的
-专用谓词；v1 通用匹配默认不满足。
+These are two orthogonal axes; neither implies the other. `declared` does not
+become `verified` automatically. `not_exposed` is neither false nor proof that an
+event did not occur. `unsupported/observed` is a valid negative observation.
+`verified/declared` is valid only when the closed-set name is listed in the
+machine-authorized `authoritative_static_declaration_allowed` validation profile,
+the requirement accepts `declared`, and referenced material, scope, and freshness
+all satisfy the rules. An unverified declaration remains `unmeasured/declared` by
+default. Runtime facts such as capacity, precision, latency, physical routes, and
+absence of fallback require `observed`. `unknown`, `unmeasured`, `not_exposed`,
+and missing facts cannot satisfy mandatory requirements. `not_applicable` can
+satisfy only a specialized predicate explicitly permitting inapplicability;
+generic v1 matching rejects it by default.
 
-证据强度严格为 `basic < observable < certification`。匹配所需阈值取全部适用 mandatory
-requirements 和 claim gate 中的**最强等级**；候选可用证据上限取支撑这些事实的全部不可缺
-evidence references 中的**最弱等级**。只有可用上限不低于所需阈值，并且每项 fact 的 status、
-accepted exposure、scope、freshness 与值比较都通过时才满足。`verified` 只表示这一完整规则下的
-当前匹配成立，不等于 release certification。能力或发布声明的等级不得高于其
-可用证据上限，且不得隐瞒已经知道或观察到的 blocker、fallback 或退化路径。Mock、接口、
-环境变量和 CPU 分布式语义测试不能支撑真实 accelerator、QPU、生产或 scalability 声明。
+Evidence strength is strictly `basic < observable < certification`. The required
+threshold is the **strongest level** among all applicable mandatory requirements
+and claim gates. The candidate's available ceiling is the **weakest level** among
+all indispensable evidence references supporting those facts. Matching succeeds
+only when that ceiling reaches the required threshold and every fact passes
+status, accepted exposure, scope, freshness, and value comparisons. `verified`
+means a current match under this complete rule, not release certification.
+Capability or release claim levels must not exceed the available evidence ceiling
+and must not hide known or observed blockers, fallback, or degraded paths. Mocks,
+interfaces, environment variables, and CPU distributed semantic tests cannot
+support real accelerator, QPU, production, or scalability claims.
 
-## v1 闭集与精度裁决
+## Closed v1 Vocabulary and Precision Rules
 
-首个实现闭集只授权：`target.class`、`device.kind`、`device.count`、
-`memory.available_bytes`、`qubits.logical_capacity`、`qubits.physical_capacity`、
-`gates.native`、`measurements.results`、`artifacts.profiles`、`limits.maximum_shots`、
-`limits.maximum_program_operations`、`ancillas.policy`、`ancillas.maximum_compiler`，以及以下六个
-彼此独立的 precision 名称：
+The first implementation authorizes only `target.class`, `device.kind`,
+`device.count`, `memory.available_bytes`, `qubits.logical_capacity`,
+`qubits.physical_capacity`, `gates.native`, `measurements.results`,
+`artifacts.profiles`, `limits.maximum_shots`, `limits.maximum_program_operations`,
+`ancillas.policy`, `ancillas.maximum_compiler`, and six independent precision names:
 
-- `precision.native_dtype`；
-- `precision.effective_dtype`；
-- `precision.storage_dtype`；
-- `precision.parameter_dtype`；
-- `precision.accumulator_dtype`；
-- `precision.software_mechanism`。
+- `precision.native_dtype`;
+- `precision.effective_dtype`;
+- `precision.storage_dtype`;
+- `precision.parameter_dtype`;
+- `precision.accumulator_dtype`;
+- `precision.software_mechanism`.
 
-software extension 是 mechanism 轴，不是 dtype 别名。Double-Single 可以在匹配 scope 的材料
-下满足 effective complex128，但不能满足 native float64；必须保留实际 storage、
-parameter、accumulator dtype、mechanism 和误差/范围限制。`gates.native`、参数域、artifact、
-measurement、qubit、limit 和 ancilla 的 `covers`/集合/上下界语义复用当前
-`_compiler.TargetCapabilities` comparator，迁移时不得改变其 fingerprint 或旧 schema。
+Software extension is a mechanism axis, not a dtype alias. With scope-matched
+material, Double-Single can satisfy effective complex128 but cannot satisfy
+native float64. Record actual storage, parameter, and accumulator dtypes,
+mechanism, and error/range limits. The `covers`, set, and bound semantics for
+`gates.native`, parameter domains, artifacts, measurements, qubits, limits, and
+ancillas reuse the current `_compiler.TargetCapabilities` comparator. Migration
+must not change its fingerprint or old schema.
 
-精度字段采用以下唯一口径，不允许把 `float64` 与 `complex128` 当作同义词：
+Use these exact precision meanings; `float64` and `complex128` are not synonyms:
 
-- `native_dtype`：数值内核原生执行的标量类型，如 `float32`、`float64`；
-- `effective_dtype`：对用户和算法成立的逻辑复数量子态精度，如 `complex64`、`complex128`；
-- `storage_dtype`：状态表示中每个实际存储分量的标量类型；
-- `parameter_dtype`：可训练参数的标量类型；
-- `accumulator_dtype`：归约和累加的标量类型；
-- `software_mechanism`：把原生、存储精度提升为有效精度的软件机制，未使用时为 `none`。
+- `native_dtype`: the scalar type executed natively by the numerical kernel, such
+  as `float32` or `float64`;
+- `effective_dtype`: logical complex quantum-state precision valid for users and
+  algorithms, such as `complex64` or `complex128`;
+- `storage_dtype`: scalar type of each component actually stored in the state
+  representation;
+- `parameter_dtype`: scalar type of trainable parameters;
+- `accumulator_dtype`: scalar type used for reductions and accumulation;
+- `software_mechanism`: software that raises native/storage precision to effective
+  precision, or `none` when unused.
 
-因此，普通双精度状态向量路径表示为 `native=float64`、`storage=float64`、
-`effective=complex128`、`mechanism=none`；Double-Single 路径表示为
-`native=float32`、`storage=float32`、`effective=complex128`，并明确记录机制名称。
+An ordinary double-precision statevector path therefore uses `native=float64`,
+`storage=float64`, `effective=complex128`, and `mechanism=none`. Double-Single uses
+`native=float32`, `storage=float32`, `effective=complex128`, and an explicitly
+recorded mechanism name.
 
-## 匹配与 fallback
+## Matching and Fallback
 
-Core 提供无 policy 的纯比较：先验证 requirement/snapshot identity、scope、freshness 与引用，
-再逐项检查 status、exposure、evidence level 和 operator/value。比较结果返回全部 typed blockers，
-不自动降级、选择目标或执行 fallback。
+Core provides pure comparison without policy. Validate requirement/snapshot
+identity, scope, freshness, and references first, then check each fact's status,
+exposure, evidence level, and operator/value. Return all typed blockers; do not
+automatically degrade, select targets, or execute fallback.
 
-Runtime 拥有候选匹配、排序、租约与最终决策。fallback 仅在对应轴明确授权后创建替代候选；
-替代候选必须使用自己的 snapshot 对所有仍适用 mandatory 谓词重新完整匹配。CPU 永远是独立
-候选，不能作为设备解析失败的默认值，也不能复用 GPU 的 memory、precision、route 或 evidence。
-实际 fallback 必须进入 plan/result/evidence；route `not_exposed` 时不得宣称没有 CPU/host fallback。
+Runtime owns candidate matching, ranking, leases, and final decisions. It creates
+fallback candidates only with explicit authorization on the relevant axes. Each
+alternative must fully rematch all still-applicable mandatory predicates using
+its own snapshot. CPU is always an independent candidate, never a default after
+device-resolution failure. It cannot reuse GPU memory, precision, routes, or
+evidence. Record actual fallback in plans/results/evidence. A `not_exposed` route
+cannot justify claiming that CPU/host fallback did not occur.
 
-## 所有权
+## Ownership
 
-| 责任 | 唯一 owner | 边界 |
+| Responsibility | Sole owner | Boundary |
 | --- | --- | --- |
-| 程序与目标合法性 | Compiler | 从 IR/旧 target 产生 compiler-source mandatory 谓词；对 Runtime 选定 snapshot 做合法化；不做 discovery 或授权 fallback |
-| 平台/目标发现 | Compute / Remote | 产生 adapter candidate、source 与 evidence refs；不决定 workload、claim 或 target 选择 |
-| 候选匹配与 policy | Runtime | 消费 RequirementSet、snapshot、租约与授权，选择目标；不改 Compiler 合法性或伪造事实 |
-| 算法候选与成本提示 | Simulation | 给出合法 representation、资源估算、误差和 partition 提示；不选择物理设备、route 或 fallback |
-| 一次执行证据 | Runtime + executing Provider | 绑定 attempt 记录实际 target/device/precision/route/distribution/fallback；不自动回填长期 snapshot |
-| claim 审核 | Audit/Release | 验证 evidence 与声明上限；Provider 或 Core comparator 不自行认证 |
+| Program and target legality | Compiler | Produce compiler-source mandatory predicates from IR/old targets and legalize against Runtime's selected snapshot; no discovery or fallback authorization. |
+| Platform/target discovery | Compute / Remote | Produce adapter candidates, sources, and evidence references; do not decide workloads, claims, or target selection. |
+| Candidate matching and policy | Runtime | Consume RequirementSet, snapshots, leases, and authorizations to select targets; do not alter Compiler legality or invent facts. |
+| Algorithm candidates and cost hints | Simulation | Supply legal representations, resource estimates, errors, and partition hints; do not select physical devices, routes, or fallback. |
+| Evidence from one execution | Runtime + executing Provider | Bind actual target/device/precision/route/distribution/fallback to an attempt; do not automatically backfill long-term snapshots. |
+| Claim review | Audit/Release | Validate evidence and claim ceilings; Providers and Core comparators do not self-certify. |
 
-## v1 明确延后
+## Explicitly Deferred from v1
 
-dynamic control、mid-circuit measurement/reset、checkpoint/restart、realtime/session/latency、
-完整 topology/placement/link、P2P/collective/physical communication route、calibration lifecycle、
-gradient/optimizer distribution 及完整 workload predicate 不进入 v1 Core root vocabulary。
+Dynamic control, mid-circuit measurement/reset, checkpoint/restart,
+realtime/session/latency, complete topology/placement/link models,
+P2P/collective/physical communication routes, calibration lifecycle,
+gradient/optimizer distribution, and full workload predicates do not enter the
+v1 Core root vocabulary.
 
-确有跨层需要时只能使用登记的反向域名 namespace extension，携带明确 owner、schema version、
-handler、测试和退出/晋级条件。Requirement 中出现未知 namespace 或没有 matcher handler 时必须
-fail closed；snapshot 的未知 extension 可为 round-trip 保留，但不能参与满足 Core 谓词或提升
-claim。稳定后通过新的 minor/major contract proposal 晋级，禁止预先把所有不稳定域塞进 v1。
+A demonstrated cross-layer need may use only a registered reverse-domain namespace
+extension with an explicit owner, schema version, handler, tests, and exit or
+promotion conditions. Unknown requirement namespaces or missing matcher handlers
+fail closed. Unknown snapshot extensions may be retained for round-trip but
+cannot satisfy Core predicates or raise claims. Promote stable extensions through
+new minor/major contract proposals; do not preemptively include unstable domains
+in v1.
 
-## 禁止事项
+## Prohibited Practices
 
-- 禁止用 preference、provider 声明或默认 policy 推导 fallback 授权；
-- 禁止把未观测、不可见或过期的事实当作已验证能力；
-- 禁止修改历史契约、旧 fingerprint、默认选择或失败阶段来规避 adapter；
-- 禁止将未认证的硬件、QPU、多节点或性能结果写成已验证声明。
+- Do not infer fallback authorization from preferences, declarations, or default policy.
+- Unobserved, hidden, or expired facts are not verified capabilities.
+- Do not change historical contracts, fingerprints, default choices, or failure
+  stages to avoid adapters.
+- Do not present uncertified hardware, QPU, multinode, or performance results as
+  verified claims.
 
-## 兼容性
+## Compatibility
 
-### 授权与迁移
+### Authorization and Migration
 
-现有 `_compiler.TargetCapabilities`、`compare_target_capabilities`、Runtime/Platform/Deployment/
-Extension capability 类型和稳定 API 全部保持不变。批准的下一步仅是内部 Core 值对象、strict
-JSON reader/writer、canonical identity、纯 comparator、contract fakes/conformance，以及上述
-现有类型的窄 adapter。adapter 必须记录 owner、损失性 blocker 和退出条件；不可表达字段继续
-由旧权威处理，不得被静默丢弃。
+Existing `_compiler.TargetCapabilities`, `compare_target_capabilities`, Runtime/
+Platform/Deployment/Extension capability types, and stable APIs remain unchanged.
+The authorized next step is limited to internal Core values, strict JSON
+readers/writers, canonical identities, pure comparators, contract fakes/conformance,
+and narrow adapters for those existing types. Adapters must record owners,
+information-loss blockers, and exit conditions. Unrepresentable fields remain
+with their old authority and must not be silently discarded.
 
-任何根导出、稳定签名/默认值/异常、旧 schema/fingerprint、plan/result identity、默认选择或
-失败阶段变化仍需独立 API Change Proposal。真实 hardware/provider 接入和能力晋级仍走
-ARCH-006/008 认证路径；本决策不声明任何国产硬件已经验证。
+Root exports, stable signatures/defaults/exceptions, old schemas/fingerprints,
+plan/result identities, default choices, and failure-stage changes still require
+separate API Change Proposals. Real hardware/provider integration and capability
+promotion still follow ARCH-006/008 certification paths. This decision does not
+claim verification of any domestic hardware.
 
-实施顺序：Core 三类值对象与 fake → 纯 matcher → `_compiler.TargetCapabilities` 保真 adapter →
-CPU Platform adapter → Runtime matching seam 与独立 CPU candidate → 第二 Platform/remote fake
-替换测试 → 逐域 proposal。每一步保持旧路径行为，直到获批迁移完成。
+Implementation order: three Core value types and fakes; pure matcher; faithful
+`_compiler.TargetCapabilities` adapter; CPU Platform adapter; Runtime matching seam
+and independent CPU candidate; replacement tests with a second Platform/remote
+fake; domain-specific proposals. Preserve old-path behavior at every step until
+approved migration is complete.
 
-## 验收测试
+## Acceptance Tests
 
-- strict schema、canonical SHA-256、重复/冲突谓词、stale/scope/identity mismatch 负向测试；
-- mandatory/preference、五个 comparison operator、minimum evidence 与 unknown/unmeasured/
-  unsupported/not_exposed fail-closed；
-- precision 六轴与 Double-Single 非 native 测试；
-- 六轴 fallback 隔离、CPU 独立 snapshot 全量重匹配和 route visibility 测试；
-- 当前 compiler fingerprint、Stable API 与历史 contract fixture 不变；
-- 至少两个 producer adapter 通过同一 conformance，消费者不修改；
-- 国产硬件 fixture 保持 unknown/unmeasured、basic ceiling 和非空 blocker。
+- Strict schemas, canonical SHA-256, duplicate/conflicting predicates, and negative
+  stale/scope/identity mismatch cases.
+- Mandatory/preference behavior, five comparison operators, minimum evidence, and
+  fail-closed unknown/unmeasured/unsupported/not_exposed behavior.
+- Six precision axes and Double-Single's non-native precision.
+- Six-axis fallback isolation, full rematching against an independent CPU snapshot,
+  and route visibility.
+- Unchanged current compiler fingerprints, Stable API, and historical fixtures.
+- At least two producer adapters pass identical conformance without consumer changes.
+- Domestic-hardware fixtures retain unknown/unmeasured status, a basic ceiling,
+  and nonempty blockers.
 
-精确字段由 `flagquantum/core/target_capabilities.py` 定义，并由 Core、Runtime、Compiler
-和 Provider 的能力匹配测试共同验证；裁决说明
-见 `docs/development/VNEXT_PHASE2_CAPABILITIES_DECISION.md`。
+Exact fields are defined in `flagquantum/core/target_capabilities.py` and verified
+by capability matching tests across Core, Runtime, Compiler, and Provider. The
+rationale is in `docs/development/VNEXT_PHASE2_CAPABILITIES_DECISION.md`.
 
-## 未决问题
+## Open Questions
 
-- 各延后域何时达到进入 Core 闭集的稳定性和替换性条件；
-- 第二个独立 producer 通过 conformance 后，哪些 adapter 可以进入默认运行路径；
-- claim gate 与外部测评、硬件认证之间的具体证据绑定规则。
+- When deferred domains meet stability and replaceability conditions for the Core
+  closed vocabulary.
+- Which adapters may enter the default runtime after a second independent
+  producer passes conformance.
+- How claim gates bind evidence to external evaluations and hardware certification.

@@ -25,6 +25,7 @@ from flagquantum.runtime.executors.mps.reverse import _qr_forward
 from flagquantum.runtime.executors.mps.training_engine import (
     _initial_state_contract,
     _parameter_broadcast_buckets,
+    _parameter_gradient_values,
     _resolve_compile_site_kernels,
 )
 from flagquantum.runtime.executors.mps.training_records import (
@@ -312,6 +313,27 @@ def test_single_rank_sharded_mps_gather_avoids_object_collective(monkeypatch):
 
     assert tuple(gathered) == (0,)
     torch.testing.assert_close(gathered[0], mps.tensors[0])
+
+
+@pytest.mark.parametrize("start_step", [None, -1, 0, 4, 5])
+def test_adam_lbfgs_rejects_invalid_transition_before_execution(
+    monkeypatch: pytest.MonkeyPatch, start_step: int | None
+) -> None:
+    monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)
+    circuit, _ = _circuit()
+    with pytest.raises(ValueError, match="0 < lbfgs_start_step < steps"):
+        fqxd.train_distributed_mps(
+            circuit, steps=4, optimizer="adam_lbfgs", lbfgs_start_step=start_step
+        )
+
+
+def test_gradient_diagnostics_reject_missing_owned_gradient() -> None:
+    parameters = (torch.tensor(1.0, requires_grad=True),)
+    assert _parameter_gradient_values(parameters, ()) == ()
+    with pytest.raises(
+        MPSTrainingError, match="owned parameter 0: gradient is missing"
+    ):
+        _parameter_gradient_values(parameters, (0,))
 
 
 def test_requires_explicit_distributed_lifecycle():

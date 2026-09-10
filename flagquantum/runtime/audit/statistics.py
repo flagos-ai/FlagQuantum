@@ -4,7 +4,9 @@ from typing import Any, Mapping
 
 
 def attach_distributed_evidence_contract(payload: Mapping[str, Any]) -> dict[str, Any]:
-    from . import evaluate_distributed_evidence_contract
+    """Copy a payload and attach the evaluated contract and its status fields."""
+
+    from .engine import evaluate_distributed_evidence_contract
 
     out = dict(payload)
     contract = evaluate_distributed_evidence_contract(out).summary()
@@ -18,7 +20,9 @@ def attach_distributed_evidence_contract(payload: Mapping[str, Any]) -> dict[str
 
 
 def attach_distributed_scalability_audit(payload: Mapping[str, Any]) -> dict[str, Any]:
-    from . import audit_distributed_scalability
+    """Copy a payload and attach the evaluated scalability audit."""
+
+    from .release_policy import audit_distributed_scalability
 
     out = dict(payload)
     out["scalability_audit"] = audit_distributed_scalability(payload).summary()

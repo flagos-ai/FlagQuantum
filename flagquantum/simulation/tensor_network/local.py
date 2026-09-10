@@ -70,6 +70,10 @@ def build_local_tensor_network(
     compiled_structure = (
         None if program_cache is None else program_cache.get(program_key)
     )
+    if compiled_structure is not None and not isinstance(
+        compiled_structure, CompiledTNProgram
+    ):
+        raise TypeError("cached tensor-network program must be a CompiledTNProgram")
     # Binding many small node objects costs more than rebuilding descriptors on
     # CPU. Reuse the compiled template only with the fused CUDA path.
     active_structure = (

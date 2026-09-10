@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from numbers import Integral
 from typing import Any
 
 import torch
@@ -25,20 +26,25 @@ class TensorWelford:
     def update(self, value: torch.Tensor) -> None:
         value = torch.as_tensor(value)
         if self._mean is None:
+            mean = value.clone()
+            m2 = torch.zeros_like(value)
             self._count = 1
-            self._mean = value
-            self._m2 = torch.zeros_like(value)
+            self._mean = mean
+            self._m2 = m2
             return
         if value.shape != self._mean.shape:
             raise ValueError(
                 f"trajectory observable shape changed from {self._mean.shape} "
                 f"to {value.shape}"
             )
-        self._count += 1
+        count = self._count + 1
         delta = value - self._mean
-        self._mean = self._mean + delta / self._count
+        mean = self._mean + delta / count
         assert self._m2 is not None
-        self._m2 = self._m2 + delta * (value - self._mean)
+        m2 = self._m2 + delta * (value - mean)
+        self._count = count
+        self._mean = mean
+        self._m2 = m2
 
     def merge(self, other: "TensorWelford") -> None:
         """Merge another accumulator without replaying its observations."""
@@ -80,7 +86,10 @@ class TensorWelford:
     def from_state_dict(cls, state: Mapping[str, Any]) -> "TensorWelford":
         """Restore an accumulator with validation."""
 
-        count = int(state.get("count", 0))
+        raw_count = state.get("count", 0)
+        if not isinstance(raw_count, Integral) or isinstance(raw_count, bool):
+            raise ValueError("trajectory statistic count must be an integer")
+        count = int(raw_count)
         mean = state.get("mean")
         m2 = state.get("m2")
         if count < 0:
@@ -93,6 +102,8 @@ class TensorWelford:
             raise ValueError("non-empty trajectory statistics require tensor moments")
         if mean.shape != m2.shape:
             raise ValueError("trajectory statistic moments must have the same shape")
+        if mean.device != m2.device:
+            raise ValueError("trajectory statistic moments must be on the same device")
         accumulator = cls()
         accumulator._count = count
         accumulator._mean = mean

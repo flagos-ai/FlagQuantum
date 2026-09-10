@@ -1,5 +1,7 @@
 """Tests for general tensor-network circuit contraction."""
 
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -128,6 +130,16 @@ def test_persistent_distributed_plan_round_trip(tmp_path):
     assert distributed_plan_cache._load_persistent_plan(path, expected_key=key) is None
 
 
+@pytest.mark.parametrize("payload", ["null", "[]", '"cache"', "1", "true"])
+def test_persistent_plan_rejects_non_object_json(tmp_path: Path, payload: str) -> None:
+    path = tmp_path / "plan.json"
+    path.write_text(payload, encoding="utf-8")
+
+    assert (
+        distributed_plan_cache._load_persistent_plan(path, expected_key="key") is None
+    )
+
+
 def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
     expected = object()
     calls = []
@@ -197,6 +209,14 @@ def test_compiled_tn_program_reuses_topology_with_new_tensor_slots():
     assert circuit._backend_programs[("tensor_network", 1)] is program
     assert rebound.path is program.path
     assert first.plan.nodes is not second.plan.nodes
+
+
+def test_tensor_network_rejects_invalid_cached_program() -> None:
+    circuit = fq.Circuit(2).ry(0, 0.2).cx(0, 1)
+    circuit._backend_programs[("tensor_network", 1)] = object()
+
+    with pytest.raises(TypeError, match="cached tensor-network program"):
+        fqtn.run_tensor_network(circuit)
 
 
 def test_tensor_network_parameter_gradient_matches_statevector():

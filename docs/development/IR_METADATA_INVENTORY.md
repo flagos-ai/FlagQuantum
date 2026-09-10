@@ -1,49 +1,54 @@
 # FlagQuantum IR Metadata Inventory
 
-状态：Phase 0 静态 inventory 与 importer-relevant typed destination 已建立
-机器清单：`tests/fixtures/internal_ir/metadata_inventory.json`
+Status: Phase 0 static inventory and importer-relevant typed destinations established.
+Machine inventory: `tests/fixtures/internal_ir/metadata_inventory.json`
 
-## 1. 方法与边界
+## 1. Method and Scope
 
-静态 AST 扫描发现 55 个被 `metadata`-like mapping 通过字符串字面量读取/写入的 key。
-扫描覆盖 `flagquantum/**/*.py` 的 `get/pop/setdefault/subscript`，并由测试检测漂移。
+Static AST scanning found 55 keys read/written through string literals in
+metadata-like mappings. The scan covers `get/pop/setdefault/subscript` in
+`flagquantum/**/*.py`, with tests detecting drift.
 
-该数字不是“CircuitIR 有 55 个公共字段”：同名 metadata 容器存在于 Instruction、
-MeasurementNode、CircuitIR、ExecutionResult、runtime evidence 和 DeploymentPackage。
-Inventory 的目的正是防止 importer 把这些不同作用域混为一谈。
+This does not mean CircuitIR has 55 public fields. Metadata containers with the
+same name occur in Instruction, MeasurementNode, CircuitIR, ExecutionResult,
+runtime evidence, and DeploymentPackage. The inventory prevents importers from
+confusing these scopes.
 
-静态扫描也不是完整语义分析。由 dict merge、变量 key、外部 payload 或仅生产未读取的
-key 需要人工补充；当前已单独记录 `logical_state_shape`。
+Static scanning is not complete semantic analysis. Dict merges, variable keys,
+external payloads, and keys produced but never read need manual review.
+`logical_state_shape` is currently recorded separately.
 
-## 2. Importer 相关分类
+## 2. Importer-Relevant Categories
 
-- **Instruction semantics**：channel、dynamic/condition、classical bit、global phase、
-  diagonal/MPO/Pauli/Schmidt hint；
-- **Execution request**：seed、postselection、measurement format/name 和资源上限；
-- **Constraints**：batch size、runtime config，以及人工补充的 logical state shape；
-- **Compiler evidence**：routing、routing strategy 和 dependency scheduling evidence；
-- **Interop 待复核**：circuit name、interop、num_clbits、Qiskit label；
-- **不属于源 CircuitIR**：deployment/provider payload、runtime reverse records、claimability
-  与 platform evidence。
+- **Instruction semantics**: channel, dynamic/condition, classical bits, global
+  phase, and diagonal/MPO/Pauli/Schmidt hints.
+- **Execution request**: seed, postselection, measurement format/name, and resource limits.
+- **Constraints**: batch size, runtime configuration, and manually recorded logical
+  state shape.
+- **Compiler evidence**: routing, routing strategy, and dependency scheduling evidence.
+- **Interop pending review**: circuit name, interop, num_clbits, and Qiskit labels.
+- **Outside source CircuitIR**: deployment/provider payloads, runtime reverse
+  records, claimability, and platform evidence.
 
-完整 key 和分类以机器清单为准。
+The machine inventory is authoritative for complete keys and classifications.
 
-## 3. Phase 1 规则
+## 3. Phase 1 Rules
 
-1. 先确定 metadata 所属对象，再判断语义；
-2. 影响执行、合法性、结果、梯度或 identity 的 key 必须进入 typed destination；
-3. routing/provider/runtime evidence 不进入 program semantic hash；
-4. 未分类 key 不得静默丢弃或自动归为 provenance；
-5. dynamic/condition 在 `circuit_ir_v1_static` profile 中结构化拒绝；
-6. inventory 漂移测试失败时必须分类新 key，不能直接更新期望集合；
-7. 本 inventory 不冻结 public metadata API，也不把内部 key 升级为兼容承诺。
+1. Identify the metadata's owning object before classifying semantics.
+2. Keys affecting execution, legality, results, gradients, or identity need typed destinations.
+3. Routing/provider/runtime evidence does not enter program semantic hashes.
+4. Unclassified keys cannot be silently dropped or automatically treated as provenance.
+5. Dynamic/condition metadata is rejected structurally in `circuit_ir_v1_static`.
+6. When drift tests fail, classify new keys; do not simply update expected sets.
+7. This inventory neither freezes public metadata APIs nor promotes internal keys
+   to compatibility commitments.
 
-## 4. 未完成事项
+## 4. Completion Checklist
 
-- [x] repository-wide 静态 consumed-key inventory；
-- [x] importer 相关与外部 metadata 初步分层；
-- [x] 自动 drift test 输入格式确定；
-- [x] 对变量 key、dict merge 和 provider payload 完成人工二次审计；
-- [x] 为每个 importer-relevant key 定义 typed destination；
-- [x] interop 四个待复核 key 完成 semantic/provenance 决策；
-- [ ] compiler/runtime owner 批准最终分类。
+- [x] Repository-wide static consumed-key inventory.
+- [x] Initial separation of importer-relevant and external metadata.
+- [x] Input format established for automated drift tests.
+- [x] Manual secondary audit of variable keys, dict merges, and provider payloads.
+- [x] Typed destinations for every importer-relevant key.
+- [x] Semantic/provenance decisions for the four Interop keys pending review above.
+- [ ] Compiler/runtime owners approve final classification.

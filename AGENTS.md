@@ -4,6 +4,20 @@ This repository is being built into a production-grade quantum AI framework.
 Every agent working here must optimize for a coherent FlagQuantum product, not
 for isolated demos.
 
+## Repository Language and Python Quality
+
+All repository content must be written in English: source comments, docstrings,
+exceptions, documentation, tests, examples, notebook text, diagrams, and filenames.
+Translate existing material without deleting technical meaning, changing recorded
+approval status, or rewriting raw numerical evidence. Check rendered figures as
+well as text; a text scan cannot certify the language of raster images.
+
+Follow [the Python engineering standard](docs/development/PYTHON_ENGINEERING_STANDARD.md).
+Code must be readable, precisely typed, robust, testable, and maintainable without
+unnecessary abstractions. Treat the standard as acceptance criteria, not a claim
+that existing code already complies. Do not suppress errors, weaken tests, or
+create grandfathered exceptions merely to obtain a passing check.
+
 ## Product Mission
 
 FlagQuantum must become a flagship quantum AI framework with:

@@ -264,7 +264,7 @@ def _sample_pauli_product(
     axes_by_wire = {
         wire: axis for axis in ("x", "y", "z") for wire in metadata.get(axis, ())
     }
-    subset_expectations: list[torch.Tensor | None] = [None]
+    subset_expectations: list[torch.Tensor] = []
     template: torch.Tensor | None = None
     for mask in range(1, 1 << len(wires)):
         axes = {
@@ -281,7 +281,7 @@ def _sample_pauli_product(
     probabilities = []
     for outcome in range(1 << len(wires)):
         value = torch.ones_like(template)
-        for mask, term in enumerate(subset_expectations[1:], start=1):
+        for mask, term in enumerate(subset_expectations, start=1):
             parity = sum(
                 (outcome >> (len(wires) - index - 1)) & 1
                 for index in range(len(wires))
@@ -340,7 +340,7 @@ def _marginal_probabilities(
         raise CapabilityError(
             f"{type(target).__name__} does not support marginal probabilities"
         )
-    subset_expectations: list[torch.Tensor | None] = [None]
+    subset_expectations: list[torch.Tensor] = []
     template: torch.Tensor | None = None
     for mask in range(1, 1 << len(wires)):
         subset = tuple(wire for index, wire in enumerate(wires) if mask & (1 << index))
@@ -351,7 +351,7 @@ def _marginal_probabilities(
     probabilities = []
     for outcome in range(1 << len(wires)):
         value = torch.ones_like(template)
-        for mask, term in enumerate(subset_expectations[1:], start=1):
+        for mask, term in enumerate(subset_expectations, start=1):
             parity = sum(
                 (outcome >> (len(wires) - index - 1)) & 1
                 for index in range(len(wires))
@@ -391,6 +391,7 @@ def execute_measurements(
             n_wires,
         )
 
+        value: torch.Tensor | list[dict[str | int, int]]
         if kind == "expectation_identity":
             target = measurement_target()
             method = getattr(target, "expectation_ps", None)
@@ -422,7 +423,7 @@ def execute_measurements(
                 axes["z"] = wires
             value = method(**axes)
         elif kind == "probabilities":
-            value = (
+            probabilities = (
                 _density_matrix_probabilities(
                     output,
                     wires,
@@ -432,8 +433,11 @@ def execute_measurements(
                 if isinstance(output, torch.Tensor)
                 else None
             )
-            if value is None:
-                value = _marginal_probabilities(measurement_target(), wires)
+            value = (
+                _marginal_probabilities(measurement_target(), wires)
+                if probabilities is None
+                else probabilities
+            )
         elif kind in {"sample_ps", "counts_ps"}:
             target = measurement_target()
             assert request.shots is not None
@@ -452,7 +456,7 @@ def execute_measurements(
                 else None
             )
             value = samples if counts is None else counts
-            sampling_statistics = {}
+            sampling_statistics: dict[str, Any] = {}
         else:
             target = measurement_target()
             assert request.shots is not None

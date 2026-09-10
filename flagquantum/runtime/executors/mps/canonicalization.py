@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 import torch.distributed as dist
@@ -19,6 +19,9 @@ from ....simulation.mps.canonicalization import (
 from ....simulation.mps.rank_local import tensor_nbytes
 from .transport import _recv_tensor_p2p, _send_tensor_p2p
 
+if TYPE_CHECKING:
+    from .state import RankOwnedMPSState
+
 
 @dataclass(frozen=True)
 class MPSCanonicalizationMetrics:
@@ -30,15 +33,15 @@ class MPSCanonicalizationMetrics:
     temporary_bytes_by_rank: tuple[int, ...]
 
 
-def _owner(state: Any, wire: int) -> int:
-    return int(state.owner(wire))
+def _owner(state: RankOwnedMPSState, wire: int) -> int:
+    return state.owner(wire)
 
 
-def _reference(state: Any) -> torch.Tensor:
+def _reference(state: RankOwnedMPSState) -> torch.Tensor:
     return next(iter(state.local_tensors.values()))
 
 
-def _left_step(state: Any, wire: int) -> tuple[int, int, int]:
+def _left_step(state: RankOwnedMPSState, wire: int) -> tuple[int, int, int]:
     left_owner, right_owner = _owner(state, wire), _owner(state, wire + 1)
     messages = communicated = temporary = 0
     if state.rank == left_owner:
@@ -66,7 +69,7 @@ def _left_step(state: Any, wire: int) -> tuple[int, int, int]:
     return messages, communicated, temporary
 
 
-def _right_step(state: Any, wire: int) -> tuple[int, int, int]:
+def _right_step(state: RankOwnedMPSState, wire: int) -> tuple[int, int, int]:
     left_owner, right_owner = _owner(state, wire - 1), _owner(state, wire)
     messages = communicated = temporary = 0
     if state.rank == right_owner:
@@ -94,7 +97,7 @@ def _right_step(state: Any, wire: int) -> tuple[int, int, int]:
     return messages, communicated, temporary
 
 
-def _local_mixed_residual(state: Any, center: int) -> float:
+def _local_mixed_residual(state: RankOwnedMPSState, center: int) -> float:
     residual = local_mixed_canonical_residual(state.local_tensors, center)
     dist.all_reduce(residual, op=dist.ReduceOp.MAX)
     return float(residual.cpu())

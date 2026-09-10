@@ -1,8 +1,12 @@
+from types import SimpleNamespace
+from typing import Any
+
 import pytest
 import torch
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
+import flagquantum.runtime.parity as parity
 import flagquantum.simulation.mps as fqmps
 from flagquantum.errors import ExecutionError
 from flagquantum.runtime.distributed import (
@@ -27,6 +31,42 @@ pytestmark = [
     pytest.mark.distributed,
     pytest.mark.distributed_cpu,
 ]
+
+
+@pytest.mark.parametrize("atol", [float("nan"), float("inf"), float("-inf"), -1.0])
+def test_parity_rejects_invalid_tolerance(atol: float) -> None:
+    with pytest.raises(ValueError, match="atol must be finite and non-negative"):
+        validate_development_production_parity(fq.Circuit(2), atol=atol)
+
+
+def test_parity_accepts_zero_tolerance() -> None:
+    assert validate_development_production_parity(fq.Circuit(2), atol=0.0).passed
+
+
+@pytest.mark.parametrize(
+    "mode", ["distributed_statevector", "distributed_mps", "distributed_tensor_network"]
+)
+@pytest.mark.parametrize("invalid_value", [float("nan"), float("inf")])
+def test_parity_rejects_nonfinite_states(
+    monkeypatch: pytest.MonkeyPatch, mode: str, invalid_value: float
+) -> None:
+    original_run = parity.run_native
+
+    def faulty_backend(*args: Any, **kwargs: Any) -> Any:
+        result = original_run(*args, **kwargs)
+        if isinstance(result, torch.Tensor):
+            return torch.full_like(result, invalid_value)
+        state, plan = result
+        corrupted = torch.full_like(state.state(), invalid_value)
+        return SimpleNamespace(summary=state.summary, state=lambda: corrupted), plan
+
+    monkeypatch.setattr(parity, "run_native", faulty_backend)
+    circuit = fq.Circuit(3).gate("h", 0).gate("cx", (0, 1))
+    report = validate_development_production_parity(circuit, mode=mode)
+    assert not report.passed
+    assert any("non-finite" in error for error in report.errors)
+    with pytest.raises(RuntimeError, match="non-finite"):
+        require_development_production_parity(circuit, mode=mode)
 
 
 def test_distributed_backend_policy_defaults_to_development_without_torchrun(

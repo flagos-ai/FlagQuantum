@@ -1,32 +1,36 @@
-# API Change Proposal 007：扩展协议与 Alpha 冻结就绪
+# API Change Proposal 007: Extension Protocol and Alpha Freeze Readiness
 
-## 状态
+## Status
 
-**Approved, not frozen — 已批准迁入 Ecosystem，冻结状态已撤销。**
+**Approved, not frozen — migration into Ecosystem approved; previous freeze revoked.**
 
-- 目标版本：首次公开 alpha；
-- 影响接口：`flagquantum.ecosystem.extensions`；
-- 根级名称变化：无；
-- 机器可读候选：`contracts/extension-protocol-v1-candidate.json`；
-- 授权记录：API owner 于 2026-09-01 通过明确用户指令授权推进本轮实现；
-- 本授权不等于 Proposal 001–007 或整个公开 API 已正式冻结。
-- 冻结记录：API owner 于 2026-09-01 明确批准 review packet 所绑定的 Proposal 007
-  精确契约；具体插件实现和整体首次公开 Alpha freeze 仍未获批准。
-- 迁移记录：API owner 于 2026-09-07 明确授权在尚未公开发布的前提下撤销旧命名空间
-  冻结，将协议直接迁入 `flagquantum.ecosystem.extensions`，不保留兼容层。
-- 增量记录：API Change Proposal 019 于 2026-09-09 增加显式安装发现和完整线路编译器
-  契约；机器可读候选以 Proposal 019 为当前来源，本文件保留原始决策记录。
+- Target: first public alpha.
+- Affected interface: `flagquantum.ecosystem.extensions`.
+- Root name changes: none.
+- Machine candidate: `contracts/extension-protocol-v1-candidate.json`.
+- Authorization: the API owner explicitly authorized this implementation on
+  2026-09-01. This did not formally freeze Proposals 001-007 or the entire public API.
+- Freeze record: on 2026-09-01, the API owner explicitly approved the exact
+  Proposal 007 contract bound by the review packet. Concrete plugin implementations
+  and the overall first public alpha freeze remained unapproved.
+- Migration record: on 2026-09-07, before public release, the API owner explicitly
+  revoked the old namespace freeze and authorized direct migration into
+  `flagquantum.ecosystem.extensions`, without a compatibility layer.
+- Amendment: API Change Proposal 019 added explicit installed-extension discovery
+  and whole-circuit compiler contracts on 2026-09-09. Proposal 019 is now the source
+  for the machine candidate; this document retains the original decision history.
 
-## 决策
+## Decisions
 
-### 1. 稳定扩展边界，不稳定第三方实现
+### 1. Stabilize Extension Boundaries, Not Third-Party Implementations
 
-`flagquantum.ecosystem.extensions` 作为待冻结的公开命名空间，提供 manifest、能力协商、
-生命周期、任务局部注册、异常隔离和 conformance 入口。它不向 `flagquantum` 根级增加
-名称。具体 backend、provider 或 compiler pass 默认仍为 experimental，只有单独通过
-兼容性、数值、安全和维护者审查后才能获得认证。
+`flagquantum.ecosystem.extensions` is a public namespace awaiting freeze, providing
+manifests, capability negotiation, lifecycle, task-local registration, exception
+isolation, and conformance entry points. It adds no root `flagquantum` names.
+Concrete backends, providers, and compiler passes remain experimental by default;
+certification requires separate compatibility, numerical, security, and maintainer review.
 
-扩展作者只需导入：
+Extension authors need only import:
 
 ```python
 from flagquantum.ecosystem.extensions import (
@@ -37,54 +41,59 @@ from flagquantum.ecosystem.extensions import (
 )
 ```
 
-参考 backend 和 provider 位于 `examples/extensions/reference_extensions.py`。契约测试以
-AST 检查它没有导入 FlagQuantum internal/runtime/core 模块，并实际运行 backend
-conformance。
+Reference backends/providers live in `examples/extensions/reference_extensions.py`.
+Contract tests inspect its AST to reject FlagQuantum internal/runtime/core imports
+and execute backend conformance.
 
-### 2. 保留 `noise_model` 名称
+### 2. Retain `noise_model`
 
-`noise_model` 已同时进入 `fq.plan`、`fq.run`、Circuit 便捷方法、ExecutionPlan 扩展
-序列化、文档和测试。此名称准确表示传入的是模型对象，而不是噪声强度或一次噪声事件。
-在首次公开前改成 `noise` 只会增加迁移和歧义，没有足够收益，因此候选 API 保留
-`noise_model`。
+`noise_model` already appears in `fq.plan`, `fq.run`, Circuit convenience methods,
+ExecutionPlan extension serialization, docs, and tests. The name accurately
+identifies a model, not noise strength or one noise event. Renaming it to `noise`
+before release would add migration work and ambiguity without sufficient benefit.
+The candidate API retains `noise_model`.
 
-### 3. ExecutionPlan 与 DeploymentPackage 继续分离
+### 3. Keep ExecutionPlan and DeploymentPackage Separate
 
-- `ExecutionPlan` 所有本地规划身份、能力约束、缓存/恢复和精确执行；
-- `DeploymentPackage` 所有 provider 目标、可移植提交资产、路由证据和提交生命周期；
-- plan 不暴露 `submit`、provider 凭证或 job identity；
-- deployment package 不是本地 planner 的替代返回值。
+- `ExecutionPlan` owns local planning identity, capability constraints,
+  caching/recovery, and exact execution.
+- `DeploymentPackage` owns provider targets, portable submission assets, routing
+  evidence, and submission lifecycles.
+- Plans expose no `submit`, provider credentials, or job identities.
+- Deployment packages are not replacement local-planner results.
 
-二者解决的是连续但不同的生命周期。合并会同时污染本地执行的最小契约和远程部署的
-安全边界。
+These are consecutive but distinct lifecycles. Merging them would compromise both
+the minimal local contract and remote deployment's security boundary.
 
-## 候选扩展协议
+## Candidate Extension Protocol
 
-协议版本为 `1.0`。扩展必须：
+Protocol version: `1.0`. Extensions must:
 
-1. 通过 `ExtensionManifest` 声明身份、kind、API 版本和能力；
-2. 在激活前完成 capability negotiation；
-3. 以 `start`/`close` 明确管理生命周期；
-4. 通过不可变、任务局部的 registry 安装，不修改根 API 或全局 operator 表；
-5. 不把凭证放入可序列化 `ExtensionConfig`；
-6. 由 boundary 包装扩展异常并保留原始 `__cause__`；compatibility 错误进入
-   `CapabilityError`，lifecycle 错误进入 `ExecutionError`；
-7. 使用公开 conformance 入口验证 backend/provider 行为。
+1. Declare identity, kind, API version, and capabilities through `ExtensionManifest`.
+2. Negotiate capabilities before activation.
+3. Manage lifecycles explicitly through `start`/`close`.
+4. Install through immutable task-local registries without modifying root APIs or
+   global operator tables.
+5. Keep credentials out of serializable `ExtensionConfig`.
+6. Wrap extension errors at the boundary, retaining original `__cause__`.
+   Compatibility errors map to `CapabilityError`; lifecycle errors to `ExecutionError`.
+7. Verify backend/provider behavior through public conformance entry points.
 
-## 可执行验收标准
+## Executable Acceptance Criteria
 
-- [x] 扩展协议有独立机器可读候选契约；
-- [x] `flagquantum.ecosystem.extensions.__all__` 与候选契约完全一致；
-- [x] 扩展名称不进入稳定根命名空间；
-- [x] 第三方 backend 示例只导入公开扩展命名空间；
-- [x] capability、dtype/device、gradient、异常和 cleanup conformance 通过；
-- [x] `noise_model` 命名决策记录为候选稳定决策；
-- [x] ExecutionPlan/DeploymentPackage 所有权由测试和文档保护；
-- [ ] API owner 重新批准迁移后的 extension contract freeze；
-- [ ] API owner 单独批准首次公开 alpha 的整体 freeze。
+- [x] A separate machine-readable extension protocol candidate exists.
+- [x] `flagquantum.ecosystem.extensions.__all__` exactly matches the candidate.
+- [x] Extension names stay out of the stable root namespace.
+- [x] Third-party backend examples import only the public extension namespace.
+- [x] Capability, dtype/device, gradient, exception, and cleanup conformance pass.
+- [x] The `noise_model` naming decision is recorded as a candidate stable decision.
+- [x] Tests/docs protect ExecutionPlan/DeploymentPackage ownership.
+- [ ] API owner reapproves the migrated extension contract freeze.
+- [ ] API owner separately approves the overall first public alpha freeze.
 
-## 兼容策略
+## Compatibility Strategy
 
-再次冻结后，SDK `1.x` 只允许兼容性增加。破坏 protocol 方法、manifest 字段或生命周期的
-调整必须提升 SDK API major，提供明确诊断，并保留受支持版本窗口。具体扩展包的版本与
-SDK 协议版本分开演进，不能用插件版本代替协议协商。
+After refreezing, SDK `1.x` permits compatible additions only. Breaking protocol
+methods, manifest fields, or lifecycles requires a new SDK API major, explicit
+diagnostics, and a supported-version window. Extension package versions evolve
+separately from SDK protocol versions and cannot replace protocol negotiation.

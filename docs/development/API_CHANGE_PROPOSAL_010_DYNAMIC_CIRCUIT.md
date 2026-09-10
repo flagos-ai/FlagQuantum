@@ -1,20 +1,21 @@
-# API Change Proposal 010：动态线路构建契约
+# API Change Proposal 010: Dynamic Circuit Construction Contract
 
-## 状态
+## Status
 
-**Frozen by API owner — 候选稳定契约已批准并冻结。**
+**Frozen by API owner — candidate stable contract approved and frozen.**
 
-- 候选稳定命名空间：`flagquantum.dynamic`；
-- 候选稳定名称：仅 `DynamicCircuit`；
-- 根 API 变化：无；
-- 机器可读契约：`contracts/dynamic-circuit-v1-candidate.json`；
-- `run_dynamic`、provider、dialect 和原生结果继续 experimental；
-- API owner 于 2026-09-01 通过 `approve 008-010` 明确批准本契约；
-- 不修改已由 review packet 哈希绑定的总 API 候选清单。
+- Candidate stable namespace: `flagquantum.dynamic`.
+- Candidate stable name: `DynamicCircuit` only.
+- Root API changes: none.
+- Machine contract: `contracts/dynamic-circuit-v1-candidate.json`.
+- `run_dynamic`, providers, dialects, and native results remain experimental.
+- Approval: `approve 008-010`, explicitly issued by the API owner on 2026-09-01.
+- The aggregate API candidate inventory bound by review-packet hashes is unchanged.
 
-## 决策
+## Decision
 
-稳定动态程序的表达方式，不提前稳定执行实现。用户通过独立命名空间构建程序：
+Stabilize dynamic program expression without prematurely stabilizing execution.
+Users build programs through a separate namespace:
 
 ```python
 from flagquantum.dynamic import DynamicCircuit
@@ -25,34 +26,38 @@ circuit.measure(0, classical_bit=0)
 circuit.conditional("x", 1, classical_bit=0, equals=1)
 ```
 
-`measure`、`reset`、单 bit 或多 bit conjunction 条件以及 CircuitIR v1 编码进入候选
-契约。静态门沿用已经冻结的 `Circuit` operator schema。
+`measure`, `reset`, single-bit or multi-bit conjunction conditions, and CircuitIR v1
+encoding enter the candidate contract. Static gates reuse the frozen `Circuit`
+operator schema.
 
-## 为什么不稳定 DynamicExecutionResult
+## Why DynamicExecutionResult Is Not Stable
 
-当前本地 trajectory 返回 `final_states`，Qiskit Aer 路径则返回空 tensor；
-`provider_metadata` 和 `statistics` 也具有实现专属字段。现在冻结它会把后端差异固化成长期
-用户契约。
+Local trajectory execution currently returns `final_states`, while Qiskit Aer
+returns an empty tensor. `provider_metadata` and `statistics` also contain
+implementation-specific fields. Freezing them now would make backend differences
+permanent user contracts.
 
-稳定返回值继续是 `fq.ExecutionResult`。实验执行器暂时返回
-`fq.experimental.dynamic.DynamicExecutionResult`，并通过 `to_execution_result()` 显式
-投影。未来稳定 `run_dynamic` 前，必须先决定其直接返回 `ExecutionResult` 的测量、runtime、
-provenance 和 mid-circuit 数据语义。
+The stable result remains `fq.ExecutionResult`. Experimental executors temporarily
+return `fq.experimental.dynamic.DynamicExecutionResult`, explicitly projected
+through `to_execution_result()`. Before stabilizing `run_dynamic`, define the
+measurement, runtime, provenance, and mid-circuit data semantics of returning
+`ExecutionResult` directly.
 
-## 本轮修正
+## Changes in This Round
 
-1. `DynamicCircuit.state` 与父类签名对齐为 `state(*, refresh=False)`；
-2. 非法 wire、classical bit 和 condition 统一抛出 `ValidationError`；
-3. 对包含动态指令的 `state()` 调用统一抛出 `CapabilityError`；
-4. 动态指令写入后完整清理编译与 kernel cache；
-5. `DynamicCircuit` 从 experimental 顶层功能清单迁入独立候选稳定命名空间。
+1. Align `DynamicCircuit.state` with its parent: `state(*, refresh=False)`.
+2. Invalid wires, classical bits, and conditions consistently raise `ValidationError`.
+3. `state()` with dynamic instructions consistently raises `CapabilityError`.
+4. Adding dynamic instructions fully clears compilation and kernel caches.
+5. Move `DynamicCircuit` from experimental feature exports into its separate
+   candidate stable namespace.
 
-## 验收标准
+## Acceptance Criteria
 
-- [x] `flagquantum.dynamic.__all__ == ("DynamicCircuit",)`；
-- [x] 构造器和动态方法签名由机器契约保护；
-- [x] CircuitIR round trip 保留 measurement、reset 与 condition metadata；
-- [x] 错误类型进入稳定错误体系；
-- [x] stable root 不增加名称；
-- [x] 执行、部署和适配器实现未被误标为稳定；
-- [x] API owner 批准冻结 DynamicCircuit 构建契约。
+- [x] `flagquantum.dynamic.__all__ == ("DynamicCircuit",)`.
+- [x] Machine contracts protect constructor and dynamic-method signatures.
+- [x] CircuitIR round-trip preserves measurement, reset, and condition metadata.
+- [x] Errors use the stable hierarchy.
+- [x] Stable root gains no names.
+- [x] Execution, deployment, and adapter implementations are not mislabeled stable.
+- [x] API owner approved the DynamicCircuit construction contract freeze.

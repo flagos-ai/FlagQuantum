@@ -165,7 +165,7 @@ def _run_dynamic_trajectory(
             classical = [-1] * width
             true_classical = [-1] * width
             branch_trace = []
-            feedback_observations = []
+            feedback_observations: list[DynamicFeedbackObservation] = []
             feedback_decisions = []
             frame_x_wires: set[int] = set()
             for instruction_index, instruction in enumerate(circuit._instructions):
@@ -209,7 +209,7 @@ def _run_dynamic_trajectory(
                     measurement_count += 1
                     branch_trace.append((instruction_index, bit))
                     point = points_by_trigger.get(classical_bit)
-                    if point is not None:
+                    if feedback_plan is not None and point is not None:
                         if any(classical[item] < 0 for item in point.classical_bits):
                             raise RuntimeError(
                                 f"feedback point {point.name!r} reads an unmeasured bit"
@@ -239,33 +239,36 @@ def _run_dynamic_trajectory(
                                 raise ValueError(
                                     "feedback action mode is outside the plan"
                                 )
-                            if action.wire not in feedback_plan.allowed_wires:
+                            if (
+                                action.wire is None
+                                or action.wire not in feedback_plan.allowed_wires
+                            ):
                                 raise ValueError("feedback wire is outside the plan")
                             if action.wire >= circuit.n_wires:
                                 raise ValueError("feedback wire is outside the circuit")
-                        if action.mode == "physical_x":
-                            feedback_instruction = Instruction("x", (action.wire,))
-                            state = _apply_instruction(
-                                state,
-                                feedback_instruction,
-                                n_wires=circuit.n_wires,
-                            )
-                            state, applications, events = (
-                                _apply_noise_after_instruction(
+                            if action.mode == "physical_x":
+                                feedback_instruction = Instruction("x", (action.wire,))
+                                state = _apply_instruction(
                                     state,
                                     feedback_instruction,
-                                    noise_model,
                                     n_wires=circuit.n_wires,
-                                    generator=generator,
                                 )
-                            )
-                            noise_channel_applications += applications
-                            bit_flip_events += events
-                        elif action.mode == "frame_x":
-                            if action.wire in frame_x_wires:
-                                frame_x_wires.remove(action.wire)
-                            else:
-                                frame_x_wires.add(action.wire)
+                                state, applications, events = (
+                                    _apply_noise_after_instruction(
+                                        state,
+                                        feedback_instruction,
+                                        noise_model,
+                                        n_wires=circuit.n_wires,
+                                        generator=generator,
+                                    )
+                                )
+                                noise_channel_applications += applications
+                                bit_flip_events += events
+                            elif action.mode == "frame_x":
+                                if action.wire in frame_x_wires:
+                                    frame_x_wires.remove(action.wire)
+                                else:
+                                    frame_x_wires.add(action.wire)
                         feedback_decisions.append(
                             DynamicFeedbackDecision(
                                 observation=observation,

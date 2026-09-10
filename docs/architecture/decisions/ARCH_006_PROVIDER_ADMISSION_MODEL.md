@@ -1,93 +1,121 @@
-# ARCH-006：Platform/Execution Provider 两层模型与准入依赖
+# ARCH-006: Platform/Execution Provider Layers and Admission Dependencies
 
-状态：Superseded by ARCH-001 (2026-09-08 revision)
+Status: Superseded by ARCH-001 (2026-09-08 revision)
 
-> 本提案保留为设计历史。现行架构不再采用 Platform/Execution Provider 两层命名，
-> 而按控制边界使用 Compute 与 Remote；以修订后的 ARCH-001 为准。
+> Retained as design history. The current architecture uses Compute and Remote
+> control boundaries instead of the Platform/Execution Provider layer names.
+> The revised ARCH-001 is authoritative.
 
-日期：2026-09-03
-依据：细化已批准 ARCH-001；本提案不注册、认证或实现 Provider
+Date: 2026-09-03
+Basis: refinement of approved ARCH-001; this proposal does not register, certify, or implement Providers.
 
-## 上下文
+## Context
 
-PlatformRuntime、ExtensionRegistry、Deployment `QuantumProvider` 与 Runtime/Simulation 执行
-路径各自可用，但没有共同的 Core-owned 替换合同。Platform 提供设备/kernel/精度/通信事实；
-Execution Provider 接收完整执行请求。两者生命周期、失败域和证据不同，不能合成胖接口。
+PlatformRuntime, ExtensionRegistry, Deployment `QuantumProvider`, and Runtime/
+Simulation execution paths each work, but lack a shared Core-owned replacement
+contract. Platform supplies device/kernel/precision/communication facts; Execution
+Provider receives complete execution requests. Their lifecycles, failure domains,
+and evidence differ and must not be combined into an oversized interface.
 
-## 决策候选
+## Decision Candidates
 
 ### Platform Provider
 
-提供 discovery、identity、device lifecycle、memory、kernel/precision、communication/topology
-事实和受控进程内 handle。输出 capability discovery/evidence，不接收完整 execution request，
-不拥有 planner、任务轮询或用户结果。
+Supplies discovery, identity, device lifecycle, memory, kernel/precision,
+communication/topology facts, and controlled in-process handles. Produces
+capability discovery/evidence, not complete execution-request handling, planning,
+task polling, or user results.
 
 ### Execution Provider
 
-消费完整 request 与 target snapshot，最小异步协议候选为 capabilities、submit、status、result；
-handle/status 必须可序列化。cancel、calibration、realtime、gradient、checkpoint 是经 capability
-声明的窄扩展。Runtime 驱动 polling、deadline、retry/cancel orchestration 和 evidence assembly。
+Consumes complete requests and target snapshots. The proposed minimal asynchronous
+protocol has capabilities, submit, status, and result; handles/statuses must be
+serializable. Cancellation, calibration, realtime, gradients, and checkpoints are
+narrow capability-declared extensions. Runtime drives polling, deadlines,
+retry/cancel orchestration, and evidence assembly.
 
-Simulation Execution Provider 组合 Simulation Engine 与一个 Platform Provider；QPU/Remote
-Service Provider 不依赖模拟算法。ExtensionRegistry 保持唯一扩展注册与生命周期权威，不再建
-第二 registry。
+Simulation Execution Provider composes a Simulation Engine and a Platform Provider.
+QPU/Remote Service Providers do not depend on simulation algorithms.
+ExtensionRegistry remains the sole extension registration/lifecycle authority;
+no second registry is introduced.
 
-Agent Services 是 **Agent-facing deterministic application services**：它向 Agent/协议适配层
-提供确定性的 capabilities、validate、plan、preflight、execute/explain 候选操作。LLM 与
-Reasoning Layer 位于外部 Compute Service，可替换、可关闭，也可以组合这些操作，但不得绕过
-artifact/schema 校验、capability fail-closed、既定 plan identity 或 result/evidence 组装。自然
-语言解释不覆盖结构化事实。
+Agent Services are **Agent-facing deterministic application services**, offering
+candidate capabilities, validate, plan, preflight, and execute/explain operations
+to Agent/protocol adapters. The LLM and Reasoning Layer belong to an external
+Compute Service. They are replaceable, optional, and may compose these operations,
+but must not bypass artifact/schema validation, capability fail-closed behavior,
+established plan identity, or result/evidence assembly. Natural-language
+explanations do not override structured facts.
 
-## 禁止事项
+## Prohibited Practices
 
-- 不把两个层级合并成带大量 optional 方法的通用 Provider。
-- 不让 vendor object、live job、credentials 或不可序列化 stream/event 越过 adapter。
-- 不因 provider 被发现、contract conformance 通过或 A800 开发材料而宣称国产卡/QPU/生产能力。
-- 不允许 Provider 自行重写 request policy、吞掉未知状态或静默 backend/CPU fallback。
-- 不把 LLM、MCP、租户状态或长期任务控制面放入主仓库 Agent Services，也不允许外部
-  reasoning 直接调用数值实现绕过确定性服务。
+- Do not combine both layers into a generic Provider with many optional methods.
+- Vendor objects, live jobs, credentials, and nonserializable streams/events must
+  not cross adapter boundaries.
+- Discovery, contract conformance, or A800 development material cannot establish
+  domestic-accelerator, QPU, or production capability.
+- Providers cannot rewrite request policy, hide unknown states, or silently fall
+  back to another backend or CPU.
+- Do not put LLMs, MCP, tenant state, or durable task control planes in the main
+  repository's Agent Services. External reasoning cannot bypass deterministic
+  services by directly invoking numerical implementations.
 
-## 兼容性
+## Compatibility
 
-现有 PlatformRuntime、Deployment provider 与 Extension SDK 保持当前权威，先由 adapter 满足
-候选合同。稳定扩展协议的 `Any` 收紧、根导出、Deployment schema 或 exception 变化均需
-独立兼容/API 提案。native state/error 放入 namespaced extension，但标准终态和 failure
-category 必须闭合。
+Existing PlatformRuntime, Deployment providers, and Extension SDK remain
+currently authoritative; adapters first satisfy candidate contracts. Tightening
+`Any` in stable extension protocols, root exports, Deployment schema changes, or
+exception changes require separate compatibility/API proposals. Native states and
+errors use namespaced extensions, while standard terminal states and failure
+categories remain closed sets.
 
-## 准入依赖与迁移顺序
+## Admission Dependencies and Migration Sequence
 
-1. 先批准 ARCH-002～005 对应 artifact、capability、request、result/evidence 版本化合同。
-2. Core 提供两个窄 protocol、fake、failure taxonomy 和 conformance suite。
-3. CPU Platform 与 Local Simulation 先通过；证明同一 Simulation Engine 可替换 Platform。
-4. Remote/QPU contract fake 通过；证明 Runtime driver 可替换 Execution Provider。
-5. 逐个接入真实 adapter；每个都提交 capability-specific 环境、失败、回退和证据材料。
-6. 真实硬件/服务审核通过后才更新 capability maturity；最后退出旧 provider lifecycle/result。
+1. Approve versioned artifact, capability, request, and result/evidence contracts
+   from ARCH-002 through ARCH-005.
+2. Core supplies two narrow protocols, fakes, failure taxonomy, and conformance tests.
+3. CPU Platform and Local Simulation pass first, proving that one Simulation
+   Engine can use interchangeable Platforms.
+4. Remote/QPU contract fakes pass, proving Runtime driver interchangeability across
+   Execution Providers.
+5. Add real adapters individually, each with capability-specific environment,
+   failure, fallback, and evidence material.
+6. Update capability maturity only after real hardware/service review. Retire old
+   provider lifecycles/results last.
 
-### 各团队进入实现阶段的条件
+### Conditions for Teams to Begin Implementation
 
-| 团队 | 后续准入条件 |
+| Team | Admission conditions |
 | --- | --- |
-| Core | 五份 ADR 经评审，逐项确认哪些新增类型仅为内部候选、哪些需要 API Change Proposal；先交付版本化值对象、fake 与 conformance，不改稳定导出。 |
-| Compiler | artifact/capability/request 合同已落基线；新实现只产出 Core-owned artifact/decision，并维持当前稳定 plan、失败与 identity 行为。 |
-| Runtime | request/result/evidence 及 provider fake 已落基线；attempt driver 不导入 Compiler 实现，不承担 durable task 控制面。 |
-| Simulation | Simulation 请求/结果投影和 Platform fake 已批准；首个 local statevector 切片保留 autograd、dtype/device 和 fail-closed 行为。 |
-| Platform | capability 四态、JSON-safe identity/handle 和证据上限已批准；真实设备测试按具体硬件、kernel、dtype、通信范围提交。 |
-| Execution | handle/status/failure/result/evidence 合同及 Runtime driver fake 已通过；真实 provider 另需 sandbox、位序、幂等、取消与校准证据。 |
-| Ecosystem | Core metadata 值代数和 wire/bit/parameter 语义已批准；adapter 不泄漏外部对象，执行代码迁到 Execution Provider 边界。 |
-| Agent | capability vocabulary 和 application-service schema 已批准；服务只消费 Core snapshot/request/result，协议、租户和长期任务仍留在外部服务。 |
+| Core | Review the five ADRs; identify internal candidate types and changes needing API Change Proposals. Deliver versioned values, fakes, and conformance first, without changing stable exports. |
+| Compiler | Artifact/capability/request contracts are on the baseline. New implementations produce only Core-owned artifacts/decisions, preserving stable plans, failures, and identities. |
+| Runtime | Request/result/evidence contracts and provider fakes are on the baseline. Attempt drivers neither import Compiler implementations nor own durable task control planes. |
+| Simulation | Simulation request/result projections and a Platform fake are approved. The first local statevector slice preserves autograd, dtype/device, and fail-closed behavior. |
+| Platform | Four capability states, JSON-safe identities/handles, and evidence ceilings are approved. Submit real-device tests for specific hardware, kernels, dtypes, and communication scopes. |
+| Execution | Handle/status/failure/result/evidence contracts and a Runtime driver fake pass. Real providers additionally require sandbox, bit-order, idempotency, cancellation, and calibration evidence. |
+| Ecosystem | Core metadata values and wire/bit/parameter semantics are approved. Adapters do not leak external objects; execution moves to the Execution Provider boundary. |
+| Agent | Capability vocabulary and application-service schemas are approved. Services consume only Core snapshots/requests/results; protocols, tenants, and durable tasks remain external. |
 
-## 验收测试
+## Acceptance Tests
 
-- Platform：JSON-safe identity、unknown/unmeasured、生命周期清理、无静默设备替换；
-- Execution：五态、not-ready、timeout、幂等、取消竞态、可恢复 handle、identity mismatch；
-- 同一 Engine 在 CPU 与 fake platform 间替换，消费者不变；
-- Runtime driver 在 Local Simulation 与 remote fake 间替换，消费者不变；
-- 非对称 counts/bit order、provider recompilation、calibration snapshot 与 executed artifact 证据；
-- 真实 accelerator/multinode/QPU 准入必须运行对应硬件测试和审计，Mock 不计。
+- Platform: JSON-safe identity, unknown/unmeasured states, lifecycle cleanup, and
+  no silent device substitution.
+- Execution: five states, not-ready, timeout, idempotency, cancellation races,
+  recoverable handles, and identity mismatches.
+- One Engine switches between CPU and fake Platforms without consumer changes.
+- A Runtime driver switches between Local Simulation and a remote fake without
+  consumer changes.
+- Asymmetric counts/bit order, provider recompilation, calibration snapshots, and
+  executed-artifact evidence.
+- Real accelerator/multinode/QPU admission requires corresponding hardware tests
+  and audits; mocks do not count.
 
-## 未决问题
+## Open Questions
 
-- Core protocol 使用同步还是 async-neutral 端口，以及 streaming/realtime 的独立边界；
-- provider handle 的恢复期限、幂等键作用域和 cancel-after-terminal 语义；
-- Platform stream/event 受控 handle、topology source 与通信 provider 的责任分界；
-- 首个真实 QPU sandbox、国产设备和多节点认证的环境及审批主体。
+- Synchronous versus async-neutral Core protocol ports, and separate streaming/
+  realtime boundaries.
+- Handle recovery periods, idempotency-key scope, and cancel-after-terminal semantics.
+- Controlled Platform stream/event handles, topology sources, and communication
+  provider ownership.
+- Environments and approving parties for the first real QPU sandbox, domestic
+  device, and multinode certification.

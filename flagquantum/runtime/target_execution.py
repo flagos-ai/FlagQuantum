@@ -7,7 +7,12 @@ from typing import Any, Mapping, Sequence
 
 import torch
 
-from .planner.backend_selection import BackendSelection, select_backend_by_cost
+from ..core.ir import ensure_circuit_ir
+from .planner.backend_selection import (
+    BackendSelection,
+    _validated_output_target,
+    select_backend_by_cost,
+)
 
 
 @dataclass(frozen=True)
@@ -42,12 +47,14 @@ def _statevector_target(
     from .execution import run_native
 
     state = run_native(circuit, mode="statevector", **dict(options))
+    if not isinstance(state, torch.Tensor):
+        raise TypeError("statevector execution must return a torch.Tensor")
     if target == "full_state":
         return state
     if target in {"single_amplitude", "few_amplitudes"}:
         from ..simulation.tensor_network.entrypoints import _normalize_bitstring
 
-        n_wires = int(circuit.to_ir().n_wires)
+        n_wires = ensure_circuit_ir(circuit).n_wires
         indices = torch.tensor(
             [
                 int("".join(map(str, _normalize_bitstring(bits, n_wires))), 2)
@@ -93,10 +100,14 @@ def run_target(
 ) -> TargetExecutionResult:
     """Select and execute a backend without turning sparse output into full state."""
 
-    targets = (bitstring,) if target == "single_amplitude" else tuple(bitstrings or ())
+    targets: tuple[int | str | Sequence[int], ...]
+    if target == "single_amplitude":
+        if bitstring is None:
+            raise ValueError("single_amplitude requires bitstring")
+        targets = (bitstring,)
+    else:
+        targets = tuple(bitstrings or ())
     observable_batch = tuple(observables or ())
-    if target == "single_amplitude" and bitstring is None:
-        raise ValueError("single_amplitude requires bitstring")
     if target == "few_amplitudes" and not targets:
         raise ValueError("few_amplitudes requires at least one bitstring")
     if target == "local_observables" and not observable_batch:
@@ -108,7 +119,7 @@ def run_target(
     )
     selection = select_backend_by_cost(
         circuit_or_ir,
-        target=target,
+        target=_validated_output_target(target),
         target_count=target_count,
         require_gradients=require_gradients,
         world_size=world_size,
@@ -164,13 +175,14 @@ def run_target(
                 distributed_tensor_network_expectations,
             )
 
-            result = distributed_tensor_network_expectations(
+            expectation_result = distributed_tensor_network_expectations(
                 circuit_or_ir,
                 observable_batch,
                 world_size=world_size,
                 **options,
             )
-            values, execution_summary = result.values, result.summary()
+            values = expectation_result.values
+            execution_summary = expectation_result.summary()
         else:
             raise ValueError("tensor_network target execution requires sparse output")
     elif backend == "mps":

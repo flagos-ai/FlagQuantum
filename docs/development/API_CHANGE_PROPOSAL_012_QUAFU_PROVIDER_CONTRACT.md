@@ -1,77 +1,88 @@
-# API Change Proposal 012：Quafu Provider 与门户任务契约收敛
+# API Change Proposal 012: Quafu Provider and Portal Task Contracts
 
-## 状态
+## Status
 
-**Draft — 核心能力在当前 API 收敛分支实施，受保护合同变更仍需 API-owner 批准。**
+**Draft — core capabilities are being implemented on the current API consolidation branch; protected contract changes still require API-owner approval.**
 
-- 目标版本：首次公开 alpha；
-- 机器契约：`contracts/quafu-provider-contract-v1-candidate.json`；
-- 输入依据：`flagquantum-quafu-adapter` Issue #4 与 PR #3；
-- 根级稳定 API 变化：无；
-- `ExecutionResult`、`ExecutionPlan`、`CircuitIR` 和 `DeploymentPackage` schema：不变；
-- FlagQuantum 执行、噪声和结果转换代码只进入当前 FlagQuantum 分支；共享 adapter 仓
-  只保留 OpenAPI、Schema、Mock、文档和必要的薄绑定，不复制 FlagQuantum 实现源码；
-- 新增稳定类型、字段或异常合同仍需独立批准。
+- Target version: first public alpha.
+- Machine-readable contract: `contracts/quafu-provider-contract-v1-candidate.json`.
+- Inputs: `flagquantum-quafu-adapter` Issue #4 and PR #3.
+- Stable root-level API changes: none.
+- `ExecutionResult`, `ExecutionPlan`, `CircuitIR`, and `DeploymentPackage` schemas:
+  unchanged.
+- FlagQuantum execution, noise, and result-conversion code belongs only in the
+  current FlagQuantum branch. The shared adapter repository contains OpenAPI,
+  schemas, mocks, documentation, and necessary thin bindings; it must not copy
+  FlagQuantum implementation source.
+- New stable types, fields, or exception contracts require separate approval.
 
-## 问题
+## Problem
 
-API 收敛分支已经区分本地 `ExecutionPlan` 与 provider-facing
-`DeploymentPackage`，也建立了扩展协议和部署资产身份链，但 Quafu 对接仍存在五类缝隙：
+The API consolidation branch distinguishes local `ExecutionPlan` objects from
+provider-facing `DeploymentPackage` objects and establishes an extension protocol
+and deployment artifact identity chain. Five gaps remain in Quafu integration:
 
-1. FlagQuantum 本地 counts 按 measurement wire 顺序编码，而门户使用 Qiskit
-   classical-string 顺序；
-2. provider task 只有字符串状态和通用异常，没有稳定终态、错误分类和 result 失败语义；
-3. backend capability 没有表达 shots 有效区间和 QASM 子集版本；
-4. result metadata 没有统一要求执行者、耗时、校准快照和噪声模型身份；
-5. Quafu adapter 真实路径仍依赖已经从 API 收敛分支移除的
-   `fq.experimental.QPUTwin`。
+1. FlagQuantum local counts follow measurement wire order, while the portal uses
+   Qiskit classical-string order.
+2. Provider tasks expose string statuses and generic exceptions without stable
+   terminal states, error categories, or result failure semantics.
+3. Backend capabilities do not express valid shot ranges or QASM subset versions.
+4. Result metadata has no uniform requirements for the executor, duration,
+   calibration snapshot, or noise model identity.
+5. The real Quafu adapter path still depends on `fq.experimental.QPUTwin`, which
+   was removed from the API consolidation branch.
 
-另外，旧实现仍向任务请求写入已废弃的顶层 `compile` 布尔字段，
-且未将逻辑线路与有序物理比特映射绑定，会使已编译线路的提交语义不完整。
+The old implementation also writes the deprecated top-level `compile` boolean
+into task requests and fails to bind the logical circuit to an ordered physical
+qubit mapping, leaving compiled-circuit submission semantics incomplete.
 
-## 决策
+## Decisions
 
-### 0. 已编译线路提交契约
+### 0. Compiled-Circuit Submission Contract
 
-QSteed 等本地编译器输出的 OpenQASM 必须继续使用连续逻辑序号
-`q[0]...q[N-1]`，不得将物理比特号写入 QASM。提交时三项信息缺一不可：
+OpenQASM emitted by a local compiler such as QSteed must retain contiguous logical
+indices `q[0]...q[N-1]`. Physical qubit IDs must not be written into QASM. Submission
+requires all three of the following:
 
-- `circuit`：使用逻辑序号的完整 OpenQASM 2.0；
-- `options.compiler=None`：明确表示不请求云端再编译；
-- `options.target_qubits`：长度为 N 的有序物理比特列表，第 i 项对应逻辑
-  `q[i]`。
+- `circuit`: complete OpenQASM 2.0 using logical indices.
+- `options.compiler=None`: explicitly request no additional cloud compilation.
+- `options.target_qubits`: an ordered list of N physical qubits; item i maps to
+  logical `q[i]`.
 
-顶层 `compile` 布尔字段已废弃，FlagQuantum 不再发送、接受或记录该字段。
-物理映射缺失、重复、长度不匹配，或 QASM 寄存器宽度与之
-不一致时，Provider 必须在网络请求前失败。
+The top-level `compile` boolean is deprecated. FlagQuantum no longer sends,
+accepts, or records it. Missing or duplicate physical mappings, incorrect mapping
+lengths, or inconsistent QASM register widths must fail before a network request.
 
-### 1. 三层比特序必须分别命名
+### 1. Name Each of the Three Bit-Ordering Layers
 
-不得再使用未限定含义的“bit order”。候选合同区分：
+Do not use the unqualified term "bit order." The candidate contract distinguishes:
 
-| 层 | 规范 |
+| Layer | Convention |
 | --- | --- |
-| FlagQuantum sample/counts measurement | `measurement_wires_left_to_right`，字符串位置依次对应请求中的 wires |
-| OpenQASM classical register | `classical_msb_left`，字符串从最高 classical bit 到 `c[0]` |
+| FlagQuantum sample/counts measurement | `measurement_wires_left_to_right`: string positions follow the requested wires |
+| OpenQASM classical register | `classical_msb_left`: the string runs from the highest classical bit to `c[0]` |
 | Quafu portal `result.counts` | `classical_msb_left` |
 
-例如 `x q[0]`、`measure q[0] -> c[0]`、`measure q[1] -> c[1]`：
+For `x q[0]`, `measure q[0] -> c[0]`, and `measure q[1] -> c[1]`:
 
-- FlagQuantum 对 wires `(0, 1)` 的本地 counts 是 `"10"`；
-- Quafu portal counts 是 `"01"`。
+- FlagQuantum local counts for wires `(0, 1)` contain `"10"`.
+- Quafu portal counts contain `"01"`.
 
-这不是允许静默不一致，而是要求 provider boundary 做显式转换。Quafu deployment result
-必须在 metadata 中携带 `counts_bit_order="classical_msb_left"`。合同测试必须使用不对称
-线路，Bell/GHZ 等对称线路不能作为比特序证据。
+The provider boundary must convert explicitly; these conventions do not permit
+silent inconsistencies. Quafu deployment result metadata must include
+`counts_bit_order="classical_msb_left"`. Contract tests must use asymmetric
+circuits: symmetric Bell/GHZ circuits cannot establish bit ordering.
 
-本提案不改变 Proposal 004 已冻结的本地 `MeasurementResult` 值语义。未来若要将
-bit-order 字段提升为稳定 `MeasurementResult` 或 `DeploymentResult` 字段，必须另行批准。
+This proposal does not change local `MeasurementResult` value semantics frozen
+by Proposal 004. Promoting a bit-order field into a stable `MeasurementResult` or
+`DeploymentResult` field would require separate approval.
 
-### 2. 私有部署环境迁移到收敛后的执行入口
+### 2. Migrate Private Deployments to the Consolidated Execution Entry Points
 
-真实 FlagQuantum 模拟实现不得进入共享 adapter 仓，也不得依赖
-`fq.experimental.QPUTwin` 或任何未进入 experimental 可发现面的内部名称。部署环境
-安装当前 FlagQuantum 分支后，真实模拟路径为：
+The real FlagQuantum simulator implementation must not enter the shared adapter
+repository or depend on `fq.experimental.QPUTwin` or any internal name outside
+the discoverable experimental surface. After installing the current FlagQuantum
+branch in the deployment environment, the real simulation path is:
 
 ```text
 normalized Quafu calibration
@@ -81,18 +92,20 @@ normalized Quafu calibration
   -> portal counts
 ```
 
-共享 adapter 只负责把已验证请求交给私有 FlagQuantum 服务，并按双方合同返回结果；
-不得复制噪声模型、密度矩阵执行器、GPU 调度或其他 FlagQuantum 源码。噪声模型
-identity 作为 `noise_model_version`；校准规范化内容的稳定 hash 作为
-`calibration_version`。
+The shared adapter forwards validated requests to the private FlagQuantum service
+and returns results according to the shared contract. It must not copy noise
+models, density-matrix executors, GPU scheduling, or other FlagQuantum source.
+Use the noise model identity as `noise_model_version` and the stable hash of
+normalized calibration content as `calibration_version`.
 
-### 3. Provider task 状态与错误分类
+### 3. Provider Task States and Error Categories
 
-目标五态为 `Pending / Running / Finished / Failed / Cancelled`。平台原生状态可以更多，
-但 adapter 必须保留原始状态并映射到目标五态。`submit` 成功只表示任务已受理，不表示
-执行成功。
+The target states are `Pending / Running / Finished / Failed / Cancelled`.
+Platforms may expose more native states, but adapters must preserve the original
+state and map it to these five. Successful `submit` means acceptance, not
+successful execution.
 
-候选错误分类采用门户现有命名：
+Candidate error categories use the portal's existing names:
 
 ```text
 precheck.badCircuit
@@ -110,71 +123,80 @@ runtime.rejected
 runtime.internal
 ```
 
-在稳定异常类型获批前，adapter 可以先在 HTTP schema 中提供 `error_category`；核心
-`QuafuProvider` 不得通过改变现有公开异常类型抢跑冻结流程。
+Before stable exception types are approved, adapters may expose `error_category`
+in the HTTP schema. Core `QuafuProvider` must not bypass the freeze process by
+changing existing public exception types.
 
-### 4. Result 与 capability 最小合同
+### 4. Minimum Result and Capability Contract
 
-Quafu portal result metadata 至少应包含：
+Quafu portal result metadata should contain at least:
 
-- `backend`：实际执行者；
-- `duration_ms`；
-- `calibration_version`；
-- `noise_model_version`；
-- `counts_bit_order`；
-- 实际使用的物理比特集合；
-- deployment artifact identity 或 program digest。
+- `backend`: the actual executor.
+- `duration_ms`.
+- `calibration_version`.
+- `noise_model_version`.
+- `counts_bit_order`.
+- The physical qubits actually used.
+- Deployment artifact identity or program digest.
 
-Backend capability 后续应显式表达 `min_shots`、`max_shots`、shots 步长、QASM profile、
-basis gates、coupling map 和动态线路能力。首次实施可放在 provider-specific metadata，
-但不得把自由 metadata 宣称为永久稳定 schema。
+Backend capabilities should subsequently express `min_shots`, `max_shots`, shot
+increments, QASM profile, basis gates, coupling map, and dynamic-circuit support.
+The first implementation may use provider-specific metadata, but must not present
+free-form metadata as a permanently stable schema.
 
-### 5. 校准策略只有一个事实来源
+### 5. Calibration Policy Has One Source of Truth
 
-Adapter 负责把 Quafu 原始 payload 规范化为带 provenance 的快照，核心转换器消费该快照：
+The adapter normalizes raw Quafu payloads into snapshots with provenance; the core
+converter consumes those snapshots:
 
-- 无效或冻结 qubit/coupler 不进入可用集合；
-- `T2 > 2*T1` 若采用截断，必须记录原值、修正值和规则版本；
-- 缺失读出数据若使用估计值，必须标记 `estimated`，不能伪装为测量校准；
-- 每次结果必须能追溯到规范化快照 hash；
-- 同一快照不得在 adapter 与核心路径采用不同修正规则。
+- Invalid or frozen qubits/couplers are excluded from the available set.
+- If `T2 > 2*T1` is clipped, record the original value, corrected value, and rule version.
+- Estimates used for missing readout data must be marked `estimated`, never
+  represented as measured calibration.
+- Every result must be traceable to the normalized snapshot hash.
+- The adapter and core paths must not apply different corrections to the same snapshot.
 
-## 分阶段实施
+## Phased Implementation
 
-### P0：首次 Mock/真实后端联调前
+### P0: Before the First Mock/Real-Backend Integration Exercise
 
-- [x] 用不对称线路冻结 portal counts 顺序；
-- [x] 当前 FlagQuantum 分支支持带 readout noise 的 density probability measurement；
-- [ ] 私有部署绑定移除对 `fq.experimental.QPUTwin` 的依赖；
-- [ ] 私有服务输出 `counts_bit_order`、`calibration_version`、`noise_model_version`；
-- [ ] 保持提交成功与执行终态分离；
-- [ ] 在不向 adapter 仓复制源码的环境中运行真实端到端合同测试。
+- [x] Freeze portal counts ordering using asymmetric circuits.
+- [x] Support density probability measurements with readout noise on the current
+  FlagQuantum branch.
+- [ ] Remove the private deployment binding's dependency on `fq.experimental.QPUTwin`.
+- [ ] Emit `counts_bit_order`, `calibration_version`, and `noise_model_version`
+  from the private service.
+- [ ] Keep submission success separate from terminal execution status.
+- [ ] Run real end-to-end contract tests without copying source into the adapter repository.
 
-P0 实施期间，验证发现 density-matrix 输出被 measurement 层误识别为
-statevector，导致 probability request reshape 失败。API 收敛分支已在不改变公开签名的
-前提下修复：density probability 直接读取密度矩阵对角线，应用 NoiseModel readout
-confusion，再按 measurement wires 顺序生成边际概率。该行为由 API contract test 保护。
+P0 verification found that the measurement layer misidentified density-matrix
+output as a statevector, causing probability request reshaping to fail. The API
+consolidation branch fixed this without changing public signatures: density
+probability reads the density matrix diagonal, applies NoiseModel readout
+confusion, and produces marginal probabilities in measurement wire order. An API
+contract test protects this behavior.
 
-### P1：门户契约冻结前
+### P1: Before the Portal Contract Freeze
 
-- [ ] 冻结 `/result` 在 Failed/Cancelled 下的状态码和错误体；
-- [ ] 增加 `error_category` schema；
-- [ ] 冻结 cancel 状态转换图；
-- [ ] 冻结 QASM 子集与寄存器约束；
-- [ ] 对齐 shots 能力声明与网关实际范围。
+- [ ] Freeze `/result` status codes and error bodies for Failed/Cancelled tasks.
+- [ ] Add the `error_category` schema.
+- [ ] Freeze the cancellation state-transition graph.
+- [ ] Freeze the QASM subset and register constraints.
+- [ ] Align declared shot capabilities with actual gateway limits.
 
-### P2：Provider 产品化
+### P2: Provider Productization
 
-- [ ] 实现公共 provider conformance suite；
-- [ ] 归一平台原生状态并保留原始值；
-- [ ] 使用快窗口加长尾退避的轮询策略；
-- [ ] 记录 provider 二次编译后的实际映射和校准快照；
-- [ ] 持久化任务、结果、配额和审计记录。
+- [ ] Implement a shared provider conformance suite.
+- [ ] Normalize native platform states while preserving their original values.
+- [ ] Use frequent initial polling followed by backoff for longer-running tasks.
+- [ ] Record the actual mapping and calibration snapshot after provider recompilation.
+- [ ] Persist tasks, results, quotas, and audit records.
 
-## 验收边界
+## Acceptance Boundaries
 
-- Mock 合同通过不证明噪声精度或硬件能力；
-- CPU 合同测试不证明生产吞吐和容量；
-- provider 返回的 counts 必须先通过 shot accounting 和 bit-order conformance；
-- adapter 与核心包的兼容窗口必须由真实安装测试验证；
-- 未经批准，不修改 `docs/public_api_v1.json`、稳定根签名或受保护序列化 schema。
+- Passing mock contracts does not establish noise accuracy or hardware capability.
+- CPU contract tests do not establish production throughput or capacity.
+- Provider counts must pass shot accounting and bit-order conformance first.
+- Verify the adapter/core package compatibility window through real installation tests.
+- Do not change `docs/public_api_v1.json`, stable root signatures, or protected
+  serialized schemas without approval.

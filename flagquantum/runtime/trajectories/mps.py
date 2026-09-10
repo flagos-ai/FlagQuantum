@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import math
 import os
+from pathlib import Path
 from typing import Any, Callable
 
 import torch
@@ -78,6 +80,8 @@ def run_noisy_mps_runtime(
         raise ValueError("min_trajectories must be in [1, trajectories]")
     if target_standard_error is not None:
         target_standard_error = float(target_standard_error)
+        if not math.isfinite(target_standard_error):
+            raise ValueError("target_standard_error must be finite and positive")
         if target_standard_error <= 0:
             raise ValueError("target_standard_error must be positive")
         if world_size != 1:
@@ -116,8 +120,8 @@ def run_noisy_mps_runtime(
     failures: list[TrajectoryFailure] = []
     completed_ids: list[int] = []
     noise_model_identity = getattr(noise_model, "identity", None)
-    if resume:
-        checkpoint = load_trajectory_checkpoint(checkpoint_path)
+    if resume and checkpoint_path is not None:
+        checkpoint = load_trajectory_checkpoint(Path(checkpoint_path))
         if checkpoint.requested_count != int(trajectories):
             raise ValueError("checkpoint requested trajectory count does not match")
         if checkpoint.base_seed != int(seed):
@@ -175,7 +179,7 @@ def run_noisy_mps_runtime(
                 ),
                 noise_model_identity=noise_model_identity,
             ),
-            checkpoint_path,
+            Path(checkpoint_path),
         )
 
     for trajectory_id in () if target_reached() else pending_ids:

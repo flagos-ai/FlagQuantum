@@ -1,6 +1,7 @@
 """Tests for native FlagQuantum noise and density-matrix execution."""
 
 import math
+from pathlib import Path
 
 import pytest
 import torch
@@ -258,10 +259,30 @@ def test_public_batched_statevector_plan_records_adaptive_policy():
     assert result.native().statistics.count == 8
 
 
-def test_batched_statevector_checkpoint_resume_matches_continuous(tmp_path):
+@pytest.mark.parametrize("target", [float("nan"), float("inf"), float("-inf")])
+def test_batched_statevector_rejects_nonfinite_error_target(target: float) -> None:
+    with pytest.raises(ValueError, match="finite and positive"):
+        run_noisy_statevector(
+            fq.Circuit(1),
+            fqn.NoiseModel(),
+            trajectories=4,
+            target_standard_error=target,
+        )
+
+
+@pytest.mark.parametrize("custom_path", [False, True])
+def test_batched_statevector_checkpoint_resume_matches_continuous(
+    tmp_path: Path, custom_path: bool
+) -> None:
     circuit = fq.Circuit(2).h(0).cx(0, 1)
     model = fqn.NoiseModel().add("cx", depolarizing_channel(0.2))
-    checkpoint_path = tmp_path / "statevector.pt"
+    path = tmp_path / "statevector.pt"
+
+    class CheckpointPath:
+        def __fspath__(self) -> str:
+            return str(path)
+
+    checkpoint_path = CheckpointPath() if custom_path else path
     continuous = run_noisy_statevector(
         circuit, model, trajectories=24, trajectory_batch_size=4, seed=43
     )

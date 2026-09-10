@@ -208,7 +208,7 @@ def _local_layers(
     for index, term in enumerate(hamiltonian.terms):
         coefficient = _real_scalar(term.coefficient, label=f"term[{index}].coefficient")
         ops = tuple(term.ops)
-        if len(ops) == 0:
+        if not ops:
             continue
         if len(ops) > 2:
             raise ValueError("TEBD supports only one-site and two-site Pauli terms.")
@@ -221,14 +221,14 @@ def _local_layers(
             )
         local = torch.ones(1, 1, dtype=dtype, device=device)
         for _, name in ops:
-            local = torch.kron(
-                local,
-                GATE_MAT_DICT[name].to(device=device, dtype=dtype),
-            )
+            matrix = GATE_MAT_DICT[name]
+            if not isinstance(matrix, torch.Tensor):
+                raise ValueError("TEBD Pauli terms require fixed gate matrices.")
+            local = torch.kron(local, matrix.to(device=device, dtype=dtype))
         local = coefficient * local
         target = one_site if len(wires) == 1 else two_site
         key = wires[0]
-        target[key] = target.get(key, torch.zeros_like(local)) + local
+        target[key] = target[key] + local if key in target else local
 
     layers: list[tuple[tuple[int, torch.Tensor], ...]] = []
     if one_site:

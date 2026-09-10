@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("script")
     parser.add_argument("output")
@@ -37,7 +37,8 @@ def main():
         json.dumps(
             {"run_id": run_id, "value": value, "worker": worker}, allow_nan=False
         )
-        + "\n"
+        + "\n",
+        encoding="utf-8",
     )
     temporary.replace(result)
 

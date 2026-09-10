@@ -1109,7 +1109,8 @@ def match_target_capability_candidates(
             )
         )
 
-    eligible = tuple(item for item in evaluations if item.executable)
+    completed_evaluations = tuple(evaluations)
+    eligible = tuple(item for item in completed_evaluations if item.executable)
     selected = min(eligible, key=lambda item: item.score) if eligible else None
     if selected is None:
         blockers = tuple(blocker for item in evaluations for blocker in item.blockers)
@@ -1122,7 +1123,7 @@ def match_target_capability_candidates(
             )
         decision_id = _decision_identity(
             requirements,
-            tuple(evaluations),
+            completed_evaluations,
             None,
             blockers,
             evaluated_at=evaluation_time,
@@ -1131,7 +1132,7 @@ def match_target_capability_candidates(
         )
         return TargetCapabilityDecision(
             requirement_set_id=requirements.requirement_set_id,
-            evaluations=evaluations,
+            evaluations=completed_evaluations,
             selected=None,
             blockers=blockers,
             decision_id=decision_id,
@@ -1144,7 +1145,7 @@ def match_target_capability_candidates(
 
     decision_id = _decision_identity(
         requirements,
-        tuple(evaluations),
+        completed_evaluations,
         selected,
         (),
         evaluated_at=evaluation_time,
@@ -1171,7 +1172,7 @@ def match_target_capability_candidates(
         )
     return TargetCapabilityDecision(
         requirement_set_id=requirements.requirement_set_id,
-        evaluations=evaluations,
+        evaluations=completed_evaluations,
         selected=selected,
         blockers=(),
         fallback_record=fallback_record,

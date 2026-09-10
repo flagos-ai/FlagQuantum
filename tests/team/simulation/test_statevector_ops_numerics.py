@@ -4,7 +4,9 @@ import pytest
 import torch
 
 import flagquantum.simulation.statevector.operations as statevector_ops
+from flagquantum import Circuit
 from flagquantum.core import Instruction
+from flagquantum.simulation.statevector.local import _rotation_region_angles
 from flagquantum.simulation.statevector.operations import (
     _apply_diagonal_gate_eager,
     _apply_local_gate_eager,
@@ -18,6 +20,59 @@ from flagquantum.simulation.statevector.operations import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_rotation_region_angles_preserve_values_and_gradients() -> None:
+    circuit = Circuit(1)
+    theta = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+    step = statevector_ops._StatevectorFusedGateStep(
+        instructions=(Instruction("rx", (0,), params={"theta": theta}),),
+        wires=(0,),
+        layout=((), ()),
+    )
+    angles = _rotation_region_angles(
+        circuit, (step, step), torch.zeros(2, 2, dtype=torch.complex128), None
+    )
+    assert angles is not None
+    torch.testing.assert_close(angles, theta.expand(2, 2, 1))
+    torch.testing.assert_close(
+        torch.autograd.grad(angles.sum(), theta)[0], theta.new_tensor(4)
+    )
+
+
+def test_rotation_region_angles_decline_unparameterized_gate() -> None:
+    step = statevector_ops._StatevectorFusedGateStep(
+        instructions=(Instruction("h", (0,)),), wires=(0,), layout=((), ())
+    )
+    assert (
+        _rotation_region_angles(
+            Circuit(1), (step,), torch.zeros(1, 2, dtype=torch.complex128), None
+        )
+        is None
+    )
+
+
+def test_rotation_sequence_rejects_empty_topology() -> None:
+    with pytest.raises(ValueError, match="RX/RY/RZ topology"):
+        statevector_ops._batched_rotation_sequence_matrices(
+            torch.empty(2, 1, 0), names=(), dtype=torch.complex64
+        )
+
+
+def test_rotation_sequence_matches_closed_form_values_and_gradients() -> None:
+    angles = torch.linspace(-0.7, 0.9, 18, dtype=torch.float64).reshape(2, 3, 3)
+    angles.requires_grad_()
+    actual = statevector_ops._batched_rotation_sequence_matrices(
+        angles, names=("rx", "ry", "rz"), dtype=torch.complex128
+    )
+    expected = statevector_ops._batched_rx_ry_rz_matrices(angles)
+    actual_gradient = torch.autograd.grad(actual.real.sum(), angles, retain_graph=True)[
+        0
+    ]
+    expected_gradient = torch.autograd.grad(expected.real.sum(), angles)[0]
+
+    torch.testing.assert_close(actual, expected)
+    torch.testing.assert_close(actual_gradient, expected_gradient)
 
 
 def test_zero_basis_indices_preserve_wire_order():

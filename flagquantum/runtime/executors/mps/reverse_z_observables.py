@@ -262,12 +262,12 @@ def site_sharded_z_zz_objective_pipeline(
         for state in states
     ):
         raise ValueError("pipeline states must share rank ownership and wire count")
-    parsed_slots = tuple(
-        parse_mps_z_zz_terms(state, slot_terms)
-        for state, slot_terms in zip(states, terms)
-    )
-    if any(parsed is None for parsed in parsed_slots):
-        raise ValueError("pipeline supports only Z and adjacent-ZZ MSE terms")
+    parsed_slots = []
+    for state, slot_terms in zip(states, terms):
+        parsed = parse_mps_z_zz_terms(state, slot_terms)
+        if parsed is None:
+            raise ValueError("pipeline supports only Z and adjacent-ZZ MSE terms")
+        parsed_slots.append(parsed)
     if len(states) == 1:
         return (
             mps_fused_z_zz_mse_and_adjoints(

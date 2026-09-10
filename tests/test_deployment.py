@@ -23,6 +23,16 @@ from flagquantum.remote import validate_deployment_result
 from flagquantum.testing import InMemoryRemoteTarget
 
 
+@pytest.mark.parametrize("result", (None, {"n_wires": 1, "instructions": ()}))
+def test_qcis_export_rejects_invalid_ir_adapter_result(result: object) -> None:
+    class InvalidIRAdapter:
+        def to_ir(self) -> object:
+            return result
+
+    with pytest.raises(TypeError, match=r"to_ir\(\) to return a CircuitIR"):
+        emit_qcis(InvalidIRAdapter())
+
+
 def test_create_deployment_package_exports_qasm_and_metadata():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)

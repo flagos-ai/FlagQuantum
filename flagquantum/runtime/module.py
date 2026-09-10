@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 CircuitBuilder = Callable[..., Circuit | CircuitIR]
 
 
-class Module(torch.nn.Module):  # type: ignore[misc]
+class Module(torch.nn.Module):
     """A normal ``torch.nn.Module`` whose quantum execution is policy-driven.
 
     ``circuit`` receives the owned parameter tensor, and optionally the input
@@ -287,6 +287,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
     ) -> Circuit | CircuitIR:
         from ..core.runtime_config import runtime_config
 
+        program: Circuit | CircuitIR
         with runtime_config(complex_dtype=self.precision.complex_dtype):
             if isinstance(self.circuit_builder, Circuit):
                 if inputs is not None:
@@ -414,7 +415,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             for key, value in instruction.params.items()
             if isinstance(value, torch.Tensor)
         )
-        bound = type(template)(**dict(template.circuit_param))
+        bound = type(template)(**template.circuit_param)
         bound._parameter_bindings = self._builder_bindings
         slot_index = 0
         compiled_instructions: list[CompiledInstruction] = []
@@ -471,7 +472,10 @@ class Module(torch.nn.Module):  # type: ignore[misc]
     def _invoke_circuit_builder(
         self, parameters: Any, inputs: torch.Tensor | None
     ) -> Circuit | CircuitIR:
-        signature = inspect.signature(self.circuit_builder)
+        builder = self.circuit_builder
+        if not callable(builder):
+            raise TypeError("module circuit builder must be callable")
+        signature = inspect.signature(builder)
         positional = tuple(
             item
             for item in signature.parameters.values()
@@ -482,8 +486,8 @@ class Module(torch.nn.Module):  # type: ignore[misc]
             )
         )
         if len(positional) >= 2:
-            return self.circuit_builder(parameters, inputs)
-        return self.circuit_builder(parameters)
+            return builder(parameters, inputs)
+        return builder(parameters)
 
     def _parameter_tensors(self) -> tuple[torch.Tensor, ...]:
         if self.named_parameter_groups is not None:
@@ -736,6 +740,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         selected_backend = requested_backend
         compatibility: dict[str, Any] = {"fallback_used": False}
         wires = self.policy.observable_wires or (0,)
+        runtime: Mapping[str, Any]
         if requested_backend == "jax":
             try:
                 if self.policy.observable == "z" and len(wires) > 1:
@@ -748,13 +753,14 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                         "JAX execution of named parameter groups requires an "
                         "explicit flattening policy"
                     )
+                builder = self.circuit_builder
+                if not callable(builder):
+                    raise TypeError("JAX module circuit builder must be callable")
                 accepts_inputs = (
                     len(
                         tuple(
                             item
-                            for item in inspect.signature(
-                                self.circuit_builder
-                            ).parameters.values()
+                            for item in inspect.signature(builder).parameters.values()
                             if item.kind
                             in (
                                 inspect.Parameter.POSITIONAL_ONLY,
@@ -783,7 +789,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                     if not isinstance(circuit, Circuit):
                         raise TypeError("JAX module builder must return a Circuit")
                     self._jax_kernel = compile_quantum_kernel(
-                        self.circuit_builder,
+                        builder,
                         selected_parameters.detach(),
                         backend="jax",
                         interface="torch",
@@ -886,8 +892,10 @@ class Module(torch.nn.Module):  # type: ignore[misc]
                 from ..simulation.tensor_network.entrypoints import run_tensor_network
 
                 state = None
-                backend_state = run_tensor_network(circuit, dense_observable_wires=12)
-                values = backend_state.expectation_z(wires)
+                tensor_network_state = run_tensor_network(
+                    circuit, dense_observable_wires=12
+                )
+                values = tensor_network_state.expectation_z(wires)
                 executor = "pytorch_native_tensor_network"
             else:
                 raise ExecutionError(f"unhandled fq.Module mode {self.policy.mode!r}")
@@ -1087,7 +1095,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         )
 
         return save_training_checkpoint(
-            path,
+            Path(path),
             module=self,
             optimizer=optimizer,
             seed=seed_contract,
@@ -1105,7 +1113,7 @@ class Module(torch.nn.Module):  # type: ignore[misc]
         from .training_state import load_training_checkpoint
 
         return load_training_checkpoint(
-            path,
+            Path(path),
             module=self,
             optimizer=optimizer,
             precision=self.precision,

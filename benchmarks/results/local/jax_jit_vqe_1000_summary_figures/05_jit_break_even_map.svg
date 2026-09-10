@@ -4,8 +4,8 @@
 <rect x="24" y="24" width="8" height="104" rx="4" fill="#54319B"/>
 <style>text{font-family:Inter,"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#334155}.tag{font-size:12px;font-weight:700;fill:#54319B;letter-spacing:1px}.title{font-size:29px;font-weight:750;fill:#172B4D}.sub{font-size:13px;fill:#64748B}.axis{font-size:13px;font-weight:600;fill:#475569}.cell{font-size:18px;font-weight:750}.detail{font-size:11px;fill:#334155}.panel{font-size:17px;font-weight:700;fill:#172B4D}.note{font-size:14px;font-weight:650;fill:#30245C}</style>
 <text x="58" y="55" class="tag">FLAGQUANTUM · TFIM VQE · FROZEN 1000-STEP VIEW</text>
-<text x="58" y="91" class="title">JAX JIT累计耗时回本步数</text>
-<text x="58" y="119" class="sub">累计JAX墙钟首次低于PyTorch所需的同形状训练步数 · 数值越大表示冷编译越难回本</text>
+<text x="58" y="91" class="title">JAX JIT cumulative-time break-even steps</text>
+<text x="58" y="119" class="sub">Same-shape steps until cumulative JAX time first beats PyTorch · Larger values mean later cold-compile break-even</text>
 <text x="354.0" y="174" text-anchor="middle" class="axis">DEPTH 2</text>
 <text x="572.0" y="174" text-anchor="middle" class="axis">DEPTH 4</text>
 <text x="790.0" y="174" text-anchor="middle" class="axis">DEPTH 8</text>
@@ -90,5 +90,5 @@
 <text x="1444.0" y="671" text-anchor="middle" class="detail">optimizer steps</text>
 <line x1="58" y1="824" x2="1622" y2="824" stroke="#E2E8F0"/>
 <circle cx="74" cy="850" r="5" fill="#54319B"/>
-<text x="90" y="855" class="note">结论：小中规模通常约百步回本；20 qubit需数百步，深层配置逼近完整训练后期。</text>
+<text x="90" y="855" class="note">Small/medium cases typically break even in about 100 steps; 20-qubit cases take hundreds, with deep circuits near the training horizon.</text>
 </svg>

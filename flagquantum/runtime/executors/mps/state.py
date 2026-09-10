@@ -119,15 +119,18 @@ def normalize_rank_owned_initial_tensors(
             batch_size = int(tensor.shape[0])
         elif int(tensor.shape[0]) != batch_size:
             raise MPSReverseContractError("initial MPS batch dimensions differ")
-        shapes[wire] = tuple(int(value) for value in tensor.shape)
+        batch, left, physical, right = tensor.shape
+        shapes[wire] = (int(batch), int(left), int(physical), int(right))
         local[wire] = tensor.detach().clone()
     shape_table = torch.zeros((n_wires, 4), dtype=torch.int64, device=device)
     for wire, shape in shapes.items():
         shape_table[wire] = torch.tensor(shape, dtype=torch.int64, device=device)
     dist.all_reduce(shape_table, op=dist.ReduceOp.SUM)
     global_shapes = {
-        wire: tuple(int(value) for value in shape_table[wire].cpu().tolist())
-        for wire in range(n_wires)
+        wire: (int(batch), int(left), int(physical), int(right))
+        for wire, (batch, left, physical, right) in enumerate(
+            shape_table.cpu().tolist()
+        )
     }
     if set(global_shapes) != set(range(n_wires)):
         raise MPSReverseContractError(
@@ -402,7 +405,7 @@ def _weighted_ownership(
 class ReverseMPSInitialization:
     state: RankOwnedMPSState
     ownership: tuple[tuple[int, ...], ...]
-    global_shapes: dict[int, tuple[int, ...]]
+    global_shapes: dict[int, tuple[int, int, int, int]]
     batch_size: int
     device: torch.device
     dtype: torch.dtype

@@ -8,10 +8,12 @@ import resource
 import signal
 import threading
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import timedelta
 from pathlib import Path
+from types import FrameType
 from typing import Any, Callable, Literal
 
 import torch
@@ -58,7 +60,7 @@ class _OperationTimeoutError(TimeoutError):
 
 
 @contextmanager
-def _operation_deadline(timeout_seconds: float):
+def _operation_deadline(timeout_seconds: float) -> Iterator[None]:
     """Interrupt a blocking main-thread runtime operation at its deadline."""
 
     if threading.current_thread() is not threading.main_thread():
@@ -66,7 +68,7 @@ def _operation_deadline(timeout_seconds: float):
         return
     previous_handler = signal.getsignal(signal.SIGALRM)
 
-    def expired(signum: int, frame: Any) -> None:
+    def expired(signum: int, frame: FrameType | None) -> None:
         raise _OperationTimeoutError(f"operation exceeded {timeout_seconds} seconds")
 
     signal.signal(signal.SIGALRM, expired)

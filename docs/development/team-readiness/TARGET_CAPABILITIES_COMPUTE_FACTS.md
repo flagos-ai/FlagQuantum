@@ -1,169 +1,184 @@
-# TargetCapabilities 的 Platform 事实映射
+# Mapping Platform Facts to TargetCapabilities
 
-状态日期：2026-09-06
-负责团队：Compute
-基线：`vnext-phase1-contract-foundation`
+Status date: 2026-09-06
+Responsible team: Compute
+Baseline: `vnext-phase1-contract-foundation`
 
-## 结论
+## Conclusion
 
-现有 `flagquantum.compute.PlatformRuntime` 能真实观察的通用事实只有：provider
-身份与版本、当前进程的 installed/activated/available、设备枚举与名称、部分设备总内存、
-部分 allocator 内存，以及 stream/event/RNG/synchronize 句柄能否被调用。它没有 dtype、
-原生双精度、Double-Single、kernel 驻留、拓扑、P2P、集合通信、节点间通信或 CPU fallback
-事实字段。
+`flagquantum.compute.PlatformRuntime` can observe provider identity/version,
+process-local installed/activated/available state, enumerated devices/names, some
+total and allocator memory, and whether stream/event/RNG/synchronization handles
+are callable. It has no fact fields for dtype, native double precision,
+Double-Single, kernel residency, topology, P2P, collectives, internode communication,
+or CPU fallback.
 
-因此 Platform 不能把 `_compiler.TargetCapabilities`、`BackendCapabilities.dtypes`、扩展
-`CapabilityResponse`、方法存在、环境变量或厂商 metadata 直接提升为硬件支持。首版
-Platform→Core 投影必须同时保留 `support_status`、`fact_exposure`、`evidence_level` 三条正交
-轴；缺失字段输出 `unknown/not_exposed` 和 blocker，而不是补成 `false`、零、空拓扑或
-“未发生回退”。本轮新增的是 Platform-owned CPU 窄适配
-`cpu_platform_to_target_capability_snapshot`；它只接收注入式 probe、时间和 evidence，
-不新增 Provider 注册体系、不改变现有 Platform API/default 行为，也不触碰受保护 Core/API。
-后续增加的 CUDA 投影严格限于实际通过的单卡
-`statevector_local_p0/complex128` 范围，不外推到其他 workload、多卡、通信或无 CPU 回退。
+Platform cannot promote `_compiler.TargetCapabilities`, `BackendCapabilities.dtypes`,
+extension `CapabilityResponse`, method presence, environment variables, or vendor
+metadata into hardware support. Initial Platform-to-Core projection preserves
+three orthogonal axes: `support_status`, `fact_exposure`, `evidence_level`. Missing
+fields become `unknown/not_exposed` with blockers, not false, zero, empty topology,
+or assertions of no fallback.
 
-代码路径分类为 `single_device_fast_path` 的 discovery 特征映射。引用的分片和通信材料仅说明
-已有证据边界，不形成新的硬件或可扩展性证据。
+This slice adds Platform-owned `cpu_platform_to_target_capability_snapshot`, a
+narrow adapter accepting injected probes, time, and evidence. It introduces no
+Provider registration system, changes no Platform API/defaults, and touches no
+protected Core/API contracts. Subsequent CUDA projection is restricted to the
+actually passed single-card `statevector_local_p0/complex128` scope, without
+extrapolation to other workloads, multicard execution, communication, or absence
+of CPU fallback.
 
-## 三个不可合并的维度
+Classification: `single_device_fast_path` discovery characterization. Cited sharding/
+communication records describe existing evidence boundaries, not new hardware or
+scalability evidence.
 
-| 维度 | 值域 | 回答的问题 | 本切片的失败关闭规则 |
+## Three Independent Dimensions
+
+| Dimension | Values | Question answered | Fail-closed rule |
 | --- | --- | --- | --- |
-| support status | `unknown` / `unmeasured` / `unsupported` / `verified` | 当前目标对具体能力是否支持 | 只有与目标、设备、dtype、kernel/workload 范围匹配的观测才能进入 `verified`；声明最多为 `unmeasured` |
-| fact exposure | `observed` / `declared` / `not_exposed` / `unknown` / `not_applicable` | 值从何而来，或为何没有值 | SDK 未给字段为 `not_exposed`；来源不清为 `unknown`；`not_applicable` 必须提供适用性依据 |
-| evidence level | `basic` / `observable` / `certification` | 证据强度上限 | 身份、版本、发现、接口调用和厂商声明默认只到 `basic`；workload-bound 路径观测才可能是 `observable`；批准矩阵和审计后才可能是 `certification` |
+| Support status | `unknown` / `unmeasured` / `unsupported` / `verified` | Does this target support this capability? | Only observations matching target/device/dtype/kernel/workload scope qualify as verified; declarations are at most unmeasured |
+| Fact exposure | `observed` / `declared` / `not_exposed` / `unknown` / `not_applicable` | Where did the value come from, or why is it absent? | Missing SDK field: not_exposed; unclear origin: unknown; not_applicable requires justification |
+| Evidence level | `basic` / `observable` / `certification` | What is the evidence ceiling? | Identity, version, discovery, calls, vendor declarations default to basic; workload-bound observations may reach observable; approved matrices/audits are required for certification |
 
-`support_status` 描述的是能力结论，不是“这次探测调用是否成功”。因此明确的
-`available=false` 负向探测应为 `unsupported/observed/basic`；只有
-`available=true` 才是 `verified/observed/basic`。这项生命周期结论仍不得传播为 dtype、
-kernel、通信或无回退结论。
+Support status describes capability, not whether the probe call succeeded.
+An explicit `available=false` observation is `unsupported/observed/basic`;
+`available=true` is `verified/observed/basic`. Neither lifecycle conclusion
+propagates to dtype, kernels, communication, or absence of fallback.
 
-### Fact exposure 逐项对账
+### Fact Exposure Reconciliation
 
-| exposure | 当前可接受来源/例子 | support status 可能值 | 约束 |
+| Exposure | Acceptable sources/examples | Possible support status | Constraint |
 | --- | --- | --- | --- |
-| `observed` | 生命周期探测、内存 API 数值、绑定 workload 的 operator/route probe | `verified` 或 `unsupported` | 正/负结论都必须绑定实际 scope；观测到失败不能写成 unknown |
-| `declared` | provider JSON-safe metadata、backend dtype 候选、外部 attestation 声明 | 默认 `unmeasured` | 声明不能因 provider available 而晋级 verified |
-| `not_exposed` | CPU 内存、当前 PlatformRuntime 的 dtype/topology/P2P/collective/kernel residency/fallback 字段 | `unknown` | Core nullable-fact 修复后，CPU adapter 生成 `value=null`、`unknown/not_exposed` 和非空 blocker；不得补 false、0 或空集合 |
-| `unknown` | 来源不明、不可序列化 SDK 对象、冲突或无法归因的 route 值 | `unknown` | 丢弃 vendor object，只保留可移植 blocker |
-| `not_applicable` | 例如 snapshot 明确限定 `world_size=1` 时该 scope 的 collective 事实 | `unknown` | 必须有 applicability reason；不能替代 unsupported 或 unmeasured |
+| `observed` | Lifecycle probes, memory API values, workload-bound operator/route probes | `verified` or `unsupported` | Bind positive and negative conclusions to actual scope; observed failures are not unknown |
+| `declared` | JSON-safe provider metadata, backend dtype candidates, external attestations | Default `unmeasured` | Provider availability cannot promote declarations |
+| `not_exposed` | CPU memory; missing Platform dtype/topology/P2P/collective/residency/fallback fields | `unknown` | After Core nullable-fact support, emit null with unknown/not_exposed and nonempty blockers; never false/zero/empty sets |
+| `unknown` | Unclear sources, unserializable SDK objects, conflicting/unattributed routes | `unknown` | Discard vendor objects; retain portable blockers |
+| `not_applicable` | Collective facts in a snapshot explicitly scoped to `world_size=1`, for example | `unknown` | Requires applicability reasons; not a substitute for unsupported/unmeasured |
 
-另外必须分别表示：
+Also distinguish:
 
-- **API 模型支持**：类型、方法或请求词汇允许表达某能力；不说明设备可用。
-- **当前环境可用**：当前进程的 provider/device 被探测到；不说明某 dtype/kernel/workload
-  通过。
-- **已验证证据**：绑定 provider、物理设备、版本、代码 revision、workload、时间与 digest
-  的结果；只能支持材料覆盖的范围。
+- **API model support:** vocabulary/types/methods can express a capability; devices
+  may still be unavailable.
+- **Current environment availability:** providers/devices were discovered in this
+  process; a dtype/kernel/workload may still be unsupported.
+- **Verified evidence:** results bound to provider, physical device, versions, code
+  revision, workload, time, and digest; valid only within their scope.
 
-## 当前可观测字段表
+## Currently Observable Fields
 
-| 能力域 | 当前通用来源 | 可输出的事实 | 默认三轴映射 | 不可推导 |
+| Domain | Generic source | Observable fact | Default axes | Cannot infer |
 | --- | --- | --- | --- | --- |
-| 身份 | `PlatformIdentity` | provider、device type、PyTorch/provider 版本、vendor 字符串 | 值存在时 `verified/observed/basic` 仅表示身份观测 | vendor 身份不是硬件能力或国产卡认证 |
-| 生命周期 | `installed/activated/is_available` | 当前进程状态 | `true` 为 `verified/observed/basic`；明确的 `false` 为 `unsupported/observed/basic` | available 不等于 kernel、dtype、通信 verified |
-| 设备发现 | `discover()/PlatformDevice` | logical device、index、name、available | 枚举结果为 `verified/observed/basic` | 名称不得用于厂商类别或能力推断 |
-| 设备内存 | `PlatformDevice.memory_bytes`、`MemorySnapshot` | CUDA 通常可给 total/allocated/reserved/free；FlagOS 取决于公开 SDK；CPU 全缺失 | 数值存在为 `verified/observed/basic`；缺失为 `unknown/not_exposed/basic` | 缺失不是零；不代表容量、峰值、workspace 或 workload 可装入 |
-| stream/event | `stream()` / `event()` | 受控调用可返回句柄 | 仅能说 API 调用已观测；语义、计时、并发和 kernel 归属仍需独立事实 | 方法存在不证明 timing、异步执行或设备驻留；句柄不可进入 snapshot |
-| dtype | `BackendCapabilities.dtypes`、operator probe、artifact | 通用 backend 候选；probe/artifact 覆盖的逐算子事实 | backend 列表是 declared/unmeasured；通过的 runtime probe 可按其 operator/dtype 范围 verified | 不能从 `cuda`、`flagos` 或张量类型推断全设备 dtype 支持 |
-| 原生双精度 | 无 Platform 字段；硬件/算子材料 | 特定 workload 的 float64/complex128 运行结果 | 无材料为 `unknown/not_exposed/basic`；材料必须记录原生路径后才可 observed | A800 上 complex128 结果不证明所有 CUDA，也不证明 FlagOS 国产卡原生 FP64 |
-| 软件扩展精度 | Double-Single 合同、实现与 A800 artifacts | 受限 P0-P5 路径上的 high/low FP32 表示 | API/算法存在为 declared/unmeasured；具体 artifact 按覆盖范围升级 | 不等同通用 FP64/complex128；不证明普通 autograd/torch.optim 全链路 |
-| kernel 驻留 | operator probes、workload evidence | 逐 operator/dtype 的 forward/backward 或逻辑设备驻留 | 必须绑定 probe/profile/workload；PlatformRuntime 单独为 `unknown/not_exposed` | provider 可用、stream 存在、输出 device label 都不足以证明无 host kernel/fallback |
-| 拓扑/P2P | benchmark/runner 的 rank placement、topology fingerprint | 仅 artifact 记录的节点、rank、链接信息 | 无当前快照来源时 `unknown/not_exposed/basic` | 设备数不能推出 P2P；拓扑指纹不能自动推出带宽或 collective route |
-| 节点内集合通信 | Runtime distributed conformance/artifact | 指定 backend、collective、dtype、world size 的结果 | 按矩阵单元映射；失败可为 `unsupported/observed`，未测为 `unmeasured` | `torch.distributed` 或 process group 初始化不证明所有集合通信 |
-| 节点间通信 | 多节点 runner/artifact | 指定网络/backend/topology/workload 的结果 | 无匹配材料为 `unknown/not_exposed/basic` | 单节点 NCCL/FlagOS 材料不得晋级多节点 |
-| CPU fallback | workload route audit/result evidence | requested/selected path、fallback allowed/used/reason | 真正观测后才可 `verified/observed/observable`；route 未暴露则 `unknown/not_exposed` | `not_exposed` 不能反证 `fallback_used=false` |
+| Identity | `PlatformIdentity` | Provider, device type, Torch/provider versions, vendor string | Existing values: verified/observed/basic identity only | Hardware capability or domestic certification |
+| Lifecycle | installed/activated/is_available | Current process state | True: verified/observed/basic; explicit false: unsupported/observed/basic | Kernel/dtype/communication support |
+| Discovery | `discover()/PlatformDevice` | Logical device, index, name, availability | Enumeration: verified/observed/basic | Vendor classification or capability from names |
+| Device memory | `PlatformDevice.memory_bytes`, `MemorySnapshot` | CUDA usually total/allocated/reserved/free; FlagOS depends on public SDK; CPU absent | Values: verified/observed/basic; absent: unknown/not_exposed/basic | Missing is not zero; no capacity, peak, workspace, or workload-fit guarantee |
+| Stream/event | `stream()` / `event()` | Controlled calls return handles | API call observation only; independent semantics/timing/concurrency/residency facts needed | Timing, asynchronous execution, device residency; handles cannot enter snapshots |
+| Dtype | Backend candidates, probes, artifacts | Backend candidates and observed operator/dtype cells | Registry declarations: unmeasured/declared; passed runtime probes: verified within scope | Universal device dtype support from labels/tensor types |
+| Native double precision | No Platform field; hardware/operator records | Workload-specific float64/complex128 execution | Without records: unknown/not_exposed/basic; observed requires native-path attribution | All CUDA or domestic FlagOS FP64 from A800 complex128 |
+| Software precision | Double-Single contracts/implementation/A800 artifacts | Restricted P0–P5 high/low FP32 representations | API/algorithm presence: unmeasured/declared; artifacts may promote exact scope | General FP64/complex128 equivalence or full autograd/torch.optim support |
+| Kernel residency | Operator probes/workload evidence | Per-operator/dtype forward/backward or logical residency | Bind probe/profile/workload; Platform alone: unknown/not_exposed | No host kernels/fallback from availability, streams, or output labels |
+| Topology/P2P | Runner rank placement/topology fingerprints | Artifact-recorded nodes, ranks, links | No current snapshot source: unknown/not_exposed/basic | P2P from device count; bandwidth/routes from fingerprints |
+| Intranode collectives | Runtime conformance/artifacts | Backend/collective/dtype/world-size cells | Per-cell evidence; failures may be unsupported/observed; untested is unmeasured | All collectives from process-group initialization |
+| Internode communication | Multinode runners/artifacts | Network/backend/topology/workload results | No matching record: unknown/not_exposed/basic | Multinode support from single-node NCCL/FlagOS |
+| CPU fallback | Workload route audits/results | Requested/selected paths, authorization/use/reason | Actual observation: verified/observed/observable; hidden routes: unknown/not_exposed | `fallback_used=false` from not_exposed |
 
-## 平台事实矩阵
+## Platform Fact Matrix
 
-| 平台 | API 模型 | 当前实现可观察 | 已验证范围 | 不能保证 |
+| Platform | API model | Currently observable | Verified scope | No guarantee |
 | --- | --- | --- | --- | --- |
-| CPU | 完整 Platform 生命周期；PyTorch backend 列出 complex64/complex128 | 单一 CPU、同步、host event、null stream、RNG；内存字段为空 | 本地 CPU 数值/训练和 operator probe 测试覆盖的具体路径 | Platform 不提供 CPU 内存、NUMA、拓扑、通信、逐 kernel 原生 FP64 或 fallback 事实 |
-| NVIDIA CUDA | CUDA discovery、memory、stream/event、RNG；Runtime 有 NCCL 路径 | 当前 CUDA 进程的设备名/显存/allocator；可创建 CUDA handle | 已签入 A100/A800 artifact 覆盖的设备、版本、dtype、workload、world size | 所有 NVIDIA 型号、所有 kernel/dtype、event timing、P2P/多节点、无 CPU fallback 的普遍保证 |
-| FlagOS | Torch-FL 懒激活和 `torch.flagos` 设备生命周期；Runtime 有 `backend=flagos` 路径 | SDK 实际暴露的设备、可选内存、stream/event/RNG、runtime identity | 已签入材料是 CUDA-backed Torch-FL 在 NVIDIA A800 上的开发证据 | 国产物理卡、FlagCX 内层 route、无 host staging、全 collective、FlagOS 多节点和生产支持 |
-| 国产真实卡 | 有 attestation 驱动 P0-P5 候选 harness | 仓库当前无已签入真实卡 observation | 无经评审的真实国产卡结果 | 厂商、型号、驱动、原生 FP64、Double-Single、kernel 驻留、P2P、collective、多节点和无回退均未知 |
-| 其他厂商/环境 hint | Extension/Platform 类型和 `FLAGQUANTUM_ACCELERATOR` 可表达名称 | hint 仅产生 `available=false` 的 unknown accelerator | Mock 只验证隔离和失败关闭 | 任何真实硬件支持 |
+| CPU | Full lifecycle; backend lists complex64/complex128 | One CPU, sync, host events, null streams, RNG; memory absent | Paths covered by local numerical/training/operator tests | Platform CPU memory, NUMA, topology, communication, per-kernel native FP64, fallback facts |
+| NVIDIA CUDA | Discovery, memory, streams/events, RNG; Runtime NCCL | Current devices/names/memory/allocator and CUDA handles | Devices/versions/dtypes/workloads/world sizes in checked-in A100/A800 artifacts | Every NVIDIA model/kernel/dtype, timing, P2P/multinode, universal no-CPU-fallback |
+| FlagOS | Lazy Torch-FL lifecycle; Runtime backend=flagos | SDK-exposed devices, optional memory, streams/events/RNG, identity | Checked-in CUDA-backed Torch-FL on A800 development evidence | Domestic cards, FlagCX routes, no host staging, all collectives, multinode, production |
+| Real domestic cards | Attested P0–P5 candidate harness | No checked-in real-card observations | No reviewed real-card result | Vendor/model/driver, native FP64, Double-Single, residency, communication, topology, no-fallback all unknown |
+| Other vendors/hints | Extension/Platform names and `FLAGQUANTUM_ACCELERATOR` | Hints produce unavailable unknown accelerators | Mocks verify isolation/rejection | Any real hardware support |
 
-### 精度边界
+### Precision Boundaries
 
-`BackendCapabilities.dtypes=(complex64, complex128)` 是 PyTorch 执行模型的候选集合，不是
-per-device hardware discovery。`CapabilityEvidence` 只有 `runtime_probe` 或 `hardware_ci`
-通过时才把具体 operator/dtype 单元视为 verified，并且不能外推到未探测 kernel。
+`BackendCapabilities.dtypes=(complex64, complex128)` is an execution-model candidate
+set, not per-device discovery. `CapabilityEvidence` verifies operator/dtype cells
+only after passed `runtime_probe` or `hardware_ci`, never unprobed kernels.
 
-Double-Single 是软件扩展精度，必须独立于 `native_fp64/native_complex128`。现有 P3/P4/P5
-分别覆盖 full-state high/low、受限设备侧门生成和显式 Double-Single SGD；其 FP32 指数范围、
-受限门集合、普通 autograd FP32 边界及非 `torch.optim` 限制必须随事实保留。
+Double-Single is software precision, independent of `native_fp64/native_complex128`.
+P3/P4/P5 cover full-state high/low, bounded device gate generation, and explicit
+Double-Single SGD respectively. Preserve FP32 exponent range, gate restrictions,
+ordinary autograd FP32 delivery, and non-`torch.optim` limitations with these facts.
 
-### 通信与 fallback 边界
+### Communication and Fallback Boundaries
 
-`PlatformRuntime` 没有 process group、P2P、collective、rank placement 或 topology 方法。
-`build_distributed_identity()` 也明确区分 outer backend 与 inner route：FlagOS process group
-初始化仍把 `inner_backend`、FlagCX 和 host staging 保留为未知，并关闭 communication claim。
-CPU fallback 只可由执行路径观测或经审计的 provider attestation 给出；设备标签和成功结果
-不能反推没有 host execution。
+PlatformRuntime has no process-group, P2P, collective, rank-placement, or topology
+methods. `build_distributed_identity()` separates outer backend and inner route:
+FlagOS initialization leaves inner backend, FlagCX, and host staging unknown and
+disables communication claims. CPU fallback facts require execution observation
+or audited provider attestation. Labels and successful results cannot establish
+absence of host execution.
 
-## 证据来源与解释上限
+## Evidence Sources and Ceilings
 
-| 来源 | 可证明 | 不可证明 |
+| Source | Establishes | Does not establish |
 | --- | --- | --- |
-| `tests/unit/test_platform_runtime.py` | CPU 生命周期、CUDA discovery fake、FlagOS lazy/public API 适配和厂商名不参与分类 | 真实 CUDA、FlagOS 或国产硬件执行 |
-| `flagquantum/compute/cpu_target_capabilities.py` | 注入式 CPU device/count/memory/precision 观察到 Core v1 snapshot；独立 CPU identity/scope；TTL/evidence 传递；缺失事实 blocker | 不发现 CUDA/FlagOS/QPU；不产生 requirements、fallback 或性能/硬件声明 |
-| `tests/team/compute/test_cpu_target_capabilities.py` | CPU adapter 的 source/evidence round-trip、unavailable/missing/negative probe、TTL/scope 和默认行为不变 | 任何硬件能力；fake probe 不是真实硬件证据 |
-| `cuda_target_capabilities.py` + `probe_cuda_target_capabilities.py` | 单卡 CUDA 实际完成算子预检、状态向量、数值与梯度校验后生成 workload-bound Core snapshot | 不证明隐藏 CPU fallback 缺失、多卡、多节点、通信、性能或国产算力 |
-| `artifacts/cuda_target_capabilities_a800_jp17{1,2}_20260906.json` | 两台节点各一张 NVIDIA A800 上的同口径 PyTorch CUDA `complex128` 可观测证据；替换后能力合同和数值指标一致 | 不是认证证据；不能外推到其他设备、版本或 workload |
-| `tests/team/compute/test_target_capability_facts.py` | 候选投影的三轴分离；缺 SDK 字段保持 unknown；声明不晋级；对象不泄漏 | 任何硬件能力；test-only fixture 不是 Core 合同 |
-| `runtime/operator_probes.py` + `CapabilityEvidence` | 特定 provider/device/profile/operator/dtype 的 forward/backward probe | 未探测算子、通信、拓扑、物理 route 或生产等级 |
-| `artifacts/flagos_cuda_reference_a800_20260824.json` | NVIDIA A800 上单 `flagos:0` CUDA-backed Torch-FL 参考路径 | 国产卡、原生 FlagOS 硬件、无 host fallback |
-| `artifacts/flagos_workload_capability_f4_20260826.json` | 单节点 2/4/8 卡 FlagOS-on-A800 指定 dtype/workload 开发矩阵及 reduce-scatter 缺口 | FlagCX route、host staging、多节点、认证/发布声明 |
-| `artifacts/flagos_statevector_capacity_f5_a800_20260827.json` | 记录范围内 32-qubit complex128 单卡/复制 OOM 与 8-rank 分片完成 | 通用容量、反向/优化器容量、国产卡或生产扩展性 |
-| `artifacts/flagos_transport_observability_f6_a800_20260827.json` | 单节点四类 collective、两种 complex dtype 的逻辑设备结果 | 内层通信实现、无 host staging、性能和多节点 |
-| `artifacts/split_real_imag_*_a800_*.json` | 指定 A800 CUDA/FlagOS-on-CUDA P0-P5 Double-Single 开发路径 | 一般 FP64 等价、所有门/优化器、收敛、国产卡和生产能力 |
-| `tools/validate_domestic_single_card.py` | 外部 attestation、P0-P5、no-fallback 候选证据的严格验收规则 | 当前已有国产卡证据；通过候选仍不等于 hardware certification |
+| `tests/unit/test_platform_runtime.py` | CPU lifecycle, CUDA discovery fakes, FlagOS lazy/public API adaptation, no vendor-name classification | Real CUDA/FlagOS/domestic execution |
+| `flagquantum/compute/cpu_target_capabilities.py` | Injected CPU device/count/memory/precision projection, independent identity/scope, TTL/evidence propagation, missing-fact blockers | CUDA/FlagOS/QPU discovery, requirements/fallback, performance/hardware claims |
+| `tests/team/compute/test_cpu_target_capabilities.py` | Source/evidence round trips, unavailable/missing/negative probes, TTL/scope, unchanged defaults | Hardware capability; fake probes are not hardware evidence |
+| `cuda_target_capabilities.py` + `probe_cuda_target_capabilities.py` | Workload-bound snapshots after real single-card probes, statevector, numerical/gradient checks | No hidden CPU fallback, multicard/multinode, communication, performance, domestic compute |
+| `artifacts/cuda_target_capabilities_a800_jp17{1,2}_20260906.json` | Comparable observable PyTorch CUDA complex128 evidence on one A800 per node; equivalent contracts/metrics after replacement | Certification or other devices/versions/workloads |
+| `tests/team/compute/test_target_capability_facts.py` | Three-axis separation, missing fields unknown, no declaration promotion/object leakage | Hardware capability; test fixtures are not Core contracts |
+| `runtime/operator_probes.py` + `CapabilityEvidence` | Provider/device/profile/operator/dtype forward/backward probes | Unprobed operators, communication, topology, physical routes, production level |
+| `artifacts/flagos_cuda_reference_a800_20260824.json` | Single flagos:0 CUDA-backed Torch-FL reference on A800 | Domestic/native FlagOS hardware, no host fallback |
+| `artifacts/flagos_workload_capability_f4_20260826.json` | Single-node 2/4/8-card FlagOS-on-A800 matrix and reduce-scatter gap | FlagCX routes, host staging, multinode, certification/release |
+| `artifacts/flagos_statevector_capacity_f5_a800_20260827.json` | Scoped 32-qubit complex128 single/replicated OOM versus eight-rank completion | General/backward/optimizer capacity, domestic hardware, production scalability |
+| `artifacts/flagos_transport_observability_f6_a800_20260827.json` | Single-node four-collective logical-device results for two complex dtypes | Inner transport, no host staging, performance, multinode |
+| `artifacts/split_real_imag_*_a800_*.json` | Specified A800 CUDA/FlagOS-on-CUDA P0–P5 development paths | General FP64 equivalence, all gates/optimizers, convergence, domestic/production capability |
+| `tools/validate_domestic_single_card.py` | Strict attestation/P0–P5/no-fallback candidate acceptance | Existing domestic-card evidence; candidate success is not hardware certification |
 
-`a800-node-0` 与 `a800-node-1` 是 NVIDIA A800 节点。会话中可用性或临时运行不能替代签入、
-带 digest 和 revision 的审核 artifact；即使在这两节点成功，也只能形成 NVIDIA CUDA 范围的
-证据，不能形成国产硬件或 FlagOS 证据。
+`a800-node-0` and `a800-node-1` are NVIDIA A800 nodes. Session availability or
+transient runs cannot replace reviewed checked-in artifacts with digests/revisions.
+Success on those nodes establishes only NVIDIA CUDA scope, not domestic hardware
+or FlagOS evidence.
 
-## CPU Platform 窄适配实现
+## Narrow CPU Adapter Implementation
 
-`flagquantum.compute.cpu_target_capabilities` 是首个实现切片。调用者注入
-`CPUCapabilityProbe`，其 `observe()` 返回 `CPUCapabilityObservation`，同时提供独立的
-`target_id`、`provider_version`、`target_revision`、`environment_id`、probe `source_ref` 和
-静态 `target_class_source_ref`。适配器
-固定 `target_class=local_runtime`、`provider=pytorch_cpu`，并用实际 `device_ids` 建立 scope；
-同时生成 `target.class=local_runtime` 的权威静态声明 fact，使 Compiler 与 CPU candidate 可匹配。
+`flagquantum.compute.cpu_target_capabilities` is the first implementation slice.
+Callers inject `CPUCapabilityProbe`; `observe()` returns `CPUCapabilityObservation`.
+They also supply independent target ID, provider version, target revision,
+environment ID, probe `source_ref`, and static `target_class_source_ref`.
+The adapter fixes `target_class=local_runtime`, `provider=pytorch_cpu`, and uses
+observed device IDs for scope. It emits an authoritative static
+`target.class=local_runtime` fact for Compiler/CPU matching.
 
-- `available=true` 且设备数量/ID 经 probe 观察时，`device.kind`、`device.count` 为
-  `verified/observed`；这些 observed facts 及内存、显式 precision probe 结果必须由至少
-  `observable` 级 probe evidence 支撑。纯静态 `target.class` 可由 `basic` evidence 支撑。
-- `available=false, device_count=0` 生成 `device.count=0` 的
-  `unsupported/observed` fact 和 `cpu_unavailable` blocker；它不会被替换成 CPU 之外的目标。
-- 内存或 precision 缺失时不填 0、空字符串或伪造 dtype。由于 Core v1 当前 typed fact value
-  nullable，生成 `value=null`、`unknown/not_exposed` 与非空 blocker；Core matcher 会按
-  fact status fail closed。
-- probe 明确给出 `unsupported`/`unmeasured` 的 precision 时保留原状态和非空 blocker；
-  adapter 不把 declared、Python dtype、`BackendCapabilities` 或 provider identity 升成 verified。
-- 精度 `verified` 仅接受 `observed` exposure；`verified/declared` 会在 probe value object 层拒绝。
-- `captured_at` 与正 TTL 由调用者注入，evidence refs 原样以 Core `EvidenceReference` 传入；
-  adapter 不制造 evidence digest，不把 `stream/event` handle 放入 snapshot。
+- Observed available devices produce verified/observed `device.kind` and
+  `device.count`. These facts, memory, and explicit precision observations require
+  at least observable probe evidence; static target.class may use basic evidence.
+- `available=false, device_count=0` emits unsupported/observed device.count=0 and
+  `cpu_unavailable`, never substitution with another target.
+- Missing memory/precision yields null, unknown/not_exposed, and nonempty blockers,
+  not zero, empty strings, or invented dtypes. Core rejects based on fact status.
+- Explicit unsupported/unmeasured precision preserves its status and blockers;
+  declarations, Python dtypes, registry entries, and identity never become verified.
+- Verified precision requires observed exposure; probe values reject verified/declared.
+- Callers inject captured_at, positive TTL, and unchanged Core EvidenceReferences.
+  The adapter invents no digests and retains no stream/event handles in snapshots.
 
-该适配器只生产 `TargetCapabilitySnapshot`，不生产 `CapabilityRequirement`，不选择目标，
-不实现 Runtime fallback，不影响 `get_platform_runtime()`、平台 registry 或默认 backend。
+The adapter produces snapshots only, not requirements, target selection, or Runtime
+fallback. It does not affect `get_platform_runtime()`, registries, or default backends.
 
-## CUDA 单卡观测切片
+## Single-Card CUDA Observation Slice
 
-`cuda_statevector_capability_snapshot` 只投影已通过的单设备
-`statevector_local_p0/complex128` 证据。配套工具要求进程仅可见一张 CUDA 卡，并实际完成
-算子预检、状态向量执行、双精度数值与梯度对照后才生成 snapshot。当前 A800 结果为
-`observable` 开发证据；artifact 明确保留隐藏 CPU fallback、多卡、多节点和生产性能未验证的
-blocker，因此不能解释为通用 CUDA、FlagOS 或国产硬件认证。
-`a800-node-0` 与 `a800-node-1` 的独立设备 UUID 和 snapshot identity 不同，但精度事实、
-workload scope、数值指标和 blocker 相同，构成不修改消费方的首个物理节点替换验证。
+`cuda_statevector_capability_snapshot` projects only passed single-device
+`statevector_local_p0/complex128` evidence. The tool requires exactly one visible
+CUDA card and real operator preflight, statevector execution, double-precision
+numerical checks, and gradient comparisons before snapshot creation. Current A800
+results are observable development evidence. Blockers explicitly retain unverified
+hidden CPU fallback, multicard/multinode behavior, and production performance;
+this is not general CUDA, FlagOS, or domestic certification.
 
-## Platform→Core 最小投影提案
+Independent UUIDs/snapshot identities differ between `a800-node-0` and
+`a800-node-1`, while precision facts, workload scope, metrics, and blockers match.
+This is the first physical-node replacement verification without consumer changes.
 
-以下仅供 Integration/Core 评审。Core 应拥有最终 schema、枚举和序列化规则；Platform 只做
-现有 `PlatformRuntime`/SDK 到该合同的 adapter，不建立 registry。
+## Minimum Platform-to-Core Projection Proposal
+
+Review input only. Core owns final schemas, enums, and serialization. Platform
+adapts current PlatformRuntime/SDK sources without introducing a registry.
 
 ```text
 PlatformCapabilitySnapshotCandidate
@@ -188,56 +203,62 @@ PlatformCapabilitySnapshotCandidate
   snapshot_blockers[]
 ```
 
-首批闭集 fact name 建议为：`storage_dtypes`、`compute_dtypes`、
-`accumulation_dtypes`、`native_fp64`、`native_complex128`、
-`software_precision_modes`、`device_memory_*`、`stream_semantics`、
-`event_semantics`、`kernel_residency`、`topology`、`p2p`、
-`intra_node_collectives`、`inter_node_communication`、`cpu_fallback_used`。
+Proposed initial fact names: `storage_dtypes`, `compute_dtypes`,
+`accumulation_dtypes`, `native_fp64`, `native_complex128`,
+`software_precision_modes`, `device_memory_*`, `stream_semantics`,
+`event_semantics`, `kernel_residency`, `topology`, `p2p`,
+`intra_node_collectives`, `inter_node_communication`, `cpu_fallback_used`.
 
-投影规则：
+Projection rules:
 
-1. Platform identity 只作为 identity，不触发 capability promotion。
-2. provider metadata 只能作为 JSON-safe `declared/basic` 输入；对象、callable、live handle 和
-   未知自由字段不进入 Core snapshot。
-3. SDK 字段缺失在候选层输出 `value=null`、`support_status=unknown`、
-   `fact_exposure=not_exposed` 和具体 blocker；顶层 blocker 只保留整张 snapshot 不可用的
-   全局问题。Core matcher 对 nullable non-verified fact 失败关闭。
-4. `available=true` 只验证环境可用；不传播到 dtype、kernel、通信或 fallback。
-5. `unsupported` 需要一次适用且权威的负向探测；未运行探测只能是 `unmeasured` 或 `unknown`。
-6. `not_applicable` 必须携带 applicability reason；不能用它隐藏未实现或未测能力。
-7. `observed` 值必须绑定 source、scope 和时间；snapshot 过期后不能继续作为当前环境事实。
-8. claim 上限取所有所需 fact/evidence 的最低等级；任一 required fact 为 unknown、unmeasured、
-   not_exposed 或 stale 时，preflight 失败关闭。
-9. stream/event 等 vendor handle 留在 Platform adapter 内，以 Core-owned opaque handle id 或局部
-   回调使用；不可序列化对象不进入 Runtime result、Simulation state 或用户 API。
-10. CPU fallback 未观测且 route 不暴露时必须保留 unknown blocker，严禁填 `false`。
-11. Core consumer 只有在所有 required fact 均为 `verified/observed`、未 stale，且证据等级达到
-    claim 最低门槛时才可放行；`unsupported`、`unmeasured`、`unknown`、`not_exposed` 与
-    无适用性理由的 `not_applicable` 一律失败关闭。
+1. Platform identity remains identity, without capability promotion.
+2. Provider metadata is JSON-safe declared/basic input only. Objects, callables,
+   live handles, and unknown free-form fields stay outside Core snapshots.
+3. Missing SDK fields yield null, unknown/not_exposed, and specific blockers.
+   Snapshot-level blockers cover global unavailability only. Core rejects nullable
+   nonverified facts.
+4. available=true verifies environment availability only, not other domains.
+5. Unsupported requires an applicable authoritative negative probe; unrun probes
+   remain unmeasured/unknown.
+6. Not-applicable requires reasons, never concealment of missing implementation/tests.
+7. Observations bind source, scope, time; stale snapshots are not current facts.
+8. Claim ceilings use the weakest required fact/evidence level. Unknown,
+   unmeasured, not-exposed, or stale requirements fail preflight.
+9. Vendor handles remain adapter-private, used through Core-owned opaque IDs or
+   local callbacks. Unserializable objects stay outside Runtime results, Simulation
+   state, and user APIs.
+10. Unobserved CPU fallback with hidden routes retains unknown blockers, never false.
+11. Core admits only required verified/observed, fresh facts with sufficient
+    evidence. Unsupported, unmeasured, unknown, not-exposed, and unjustified
+    not-applicable cases fail closed.
 
-## 厂商泄漏复核
+## Vendor Leakage Review
 
-1. `runtime/distributed/flagos_runtime.py` 在 Platform 边界外直接读取
-   `torch.flagos.set_device/current_device`。这是明确的边界债务；应在批准的合同中下沉为
-   Platform 设备选择能力，本切片不改契约。
-2. Runtime/Simulation 的 CUDA fast path 多处直接使用 `torch.cuda`；这些是已登记的既有
-   architecture ceiling。它们会妨碍替换为其他平台，不能作为通用 capability snapshot 来源。
-3. `compute/flaggems.py` 把 FlagGems `vendor_name` 降为字符串，未泄漏 vendor object，
-   但其 operator catalog 是声明/探测输入，不是平台硬件认证。
-4. `PlatformRuntime.stream/event -> Any` 与 identity/device `metadata: Any` 尚未在合同层强制
-   JSON-safe。现实现可返回 PyTorch/provider handle；它们必须止于 adapter，投影只接受标量、
-   闭集字符串列表与受控引用。
-5. 未发现 `torch_fl` import 进入根用户 API 或 Simulation；根 API 暴露通用
-   `AcceleratorInfo`，不会传递 Torch-FL/Hygon SDK 对象。
+1. `runtime/distributed/flagos_runtime.py` directly accesses
+   `torch.flagos.set_device/current_device` outside Platform. Move this under an
+   approved device-selection contract later; this slice changes no contract.
+2. Runtime/Simulation CUDA fast paths use registered per-file architecture ceilings.
+   They impede platform replacement and are not generic snapshot sources.
+3. `compute/flaggems.py` converts vendor_name to a string, without object leakage;
+   its operator catalog is declaration/probe input, not hardware certification.
+4. Stream/event returns and identity/device metadata still allow Any rather than
+   contractual JSON safety. Torch/provider handles must stop at adapters;
+   projections accept only scalars, closed string lists, controlled references.
+5. No torch_fl imports were found in root user APIs or Simulation. Generic
+   AcceleratorInfo does not carry Torch-FL/Hygon SDK objects.
 
-## 当前不可保证项
+## Currently Unproven
 
-- 任一国产真实卡已经通过验证或获得硬件认证；
-- 国产卡原生 FP64/complex128、Double-Single 全路径、设备 kernel 驻留或无 CPU/CUDA 回退；
-- FlagCX 内层 route、无 host staging、完整 complex collective/P2P；
-- FlagOS 多节点，或国产多卡/多节点 rank placement、拓扑、网络与容错；
-- 仅由 CUDA/FlagOS available、设备名、环境 hint、Mock 或接口存在推出任何 workload 支持；
-- 未签入远程节点临时结果可作为 release、production、certification 或国产算力证据。
+- Any verified/certified real domestic card.
+- Domestic native FP64/complex128, complete Double-Single paths, kernel residency,
+  or absence of CPU/CUDA fallback.
+- FlagCX inner routes, no host staging, complete complex collectives/P2P.
+- FlagOS multinode or domestic multi-GPU/multinode placement, topology, networking,
+  fault tolerance.
+- Workload support inferred only from availability, names, hints, mocks, interfaces.
+- Unchecked-in transient remote results as release, production, certification, or
+  domestic-compute evidence.
 
-在这些缺口关闭前，准确表述仍是：“CPU 是真实本地路径；NVIDIA CUDA 有范围受限的真实
-硬件材料；FlagOS 有 CUDA-backed NVIDIA A800 的适配开发证据；国产真实卡能力未知且未验证。”
+The accurate description remains: CPU is a real local path; NVIDIA CUDA has
+scope-limited hardware evidence; FlagOS has adaptation development evidence on
+CUDA-backed A800; real domestic-card capability is unknown and unverified.

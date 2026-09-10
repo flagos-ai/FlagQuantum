@@ -122,6 +122,22 @@ def _interaction_metrics(ir: CircuitIR) -> tuple[int, float, int]:
     )
 
 
+def _validated_output_target(target: str) -> OutputTarget:
+    """Validate an output name and retain its finite target type."""
+    supported_targets: tuple[OutputTarget, ...] = (
+        "full_state",
+        "expectation",
+        "local_observables",
+        "single_amplitude",
+        "few_amplitudes",
+        "samples",
+    )
+    for supported in supported_targets:
+        if target == supported:
+            return supported
+    raise ValueError(f"unsupported output target: {target!r}")
+
+
 def select_backend_by_cost(
     circuit_or_ir: Any,
     *,
@@ -145,15 +161,7 @@ def select_backend_by_cost(
     are preserved, but the returned warning makes predicted degradation visible.
     """
 
-    if target not in {
-        "full_state",
-        "expectation",
-        "local_observables",
-        "single_amplitude",
-        "few_amplitudes",
-        "samples",
-    }:
-        raise ValueError(f"unsupported output target: {target!r}")
+    _validated_output_target(target)
     if int(target_count) < 1:
         raise ValueError("target_count must be >= 1")
     aliases = {

@@ -21,6 +21,10 @@ repos:
         args: ["--fix"]
   - repo: local
     hooks:
+      - id: english-repository-content
+        name: English repository content
+        entry: python tools/check_repository_language.py
+        language: system
       - id: architecture-boundaries
         name: architecture boundaries
         entry: python tools/check_architecture.py

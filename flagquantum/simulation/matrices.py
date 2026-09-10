@@ -1,7 +1,7 @@
 """PyTorch gate matrices used by FlagQuantum simulation engines."""
 
 import math
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable
 
 import torch
 
@@ -13,11 +13,17 @@ from ..core.runtime_config import get_runtime_config
 
 
 def _complex_dtype() -> torch.dtype:
-    return getattr(torch, get_runtime_config().complex_dtype)
+    return (
+        torch.complex128
+        if get_runtime_config().complex_dtype == "complex128"
+        else torch.complex64
+    )
 
 
 def _real_dtype() -> torch.dtype:
-    return getattr(torch, get_runtime_config().real_dtype)
+    return (
+        torch.float64 if get_runtime_config().real_dtype == "float64" else torch.float32
+    )
 
 
 def _fixed_gate(matrix: Any) -> torch.Tensor:
@@ -30,21 +36,22 @@ def _fixed_gate(matrix: Any) -> torch.Tensor:
 # ============================================================================
 
 
-def _to_complex(
-    tensor: Union[torch.Tensor, Any, complex, float],
-) -> torch.Tensor:
+def _to_complex(tensor: Any) -> torch.Tensor:
     """Convert a tensor to the current global complex precision."""
-    if not isinstance(tensor, torch.Tensor):
-        tensor = torch.tensor(tensor)
-    return tensor.to(dtype=_complex_dtype())
+    value = tensor if isinstance(tensor, torch.Tensor) else torch.tensor(tensor)
+    return value.to(dtype=_complex_dtype())
 
 
-def _create_2x2_matrix(a, b, c, d) -> torch.Tensor:
+def _create_2x2_matrix(
+    a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, d: torch.Tensor
+) -> torch.Tensor:
     """Create a batch of 2x2 matrices from four tensors."""
     return torch.cat((a, b, c, d), dim=-1).reshape(*a.shape[:-1], 2, 2)
 
 
-def _create_4x4_matrix(a, b, c, d) -> torch.Tensor:
+def _create_4x4_matrix(
+    a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, d: torch.Tensor
+) -> torch.Tensor:
     """Create a batch of 4x4 matrices from four tensor blocks."""
     top = torch.cat([a, b], dim=-1)
     bottom = torch.cat([c, d], dim=-1)
@@ -455,7 +462,7 @@ FREDKIN_MATRIX[5:7, 5:7] = _fixed_gate([[0, 1], [1, 0]])
 # Gate Dictionary
 # ============================================================================
 
-GATE_MAT_DICT: Dict[str, Union[torch.Tensor, Callable]] = {
+GATE_MAT_DICT: dict[str, torch.Tensor | Callable[[torch.Tensor], torch.Tensor]] = {
     # Identity and Pauli
     "i": I_MATRIX,
     "x": X_MATRIX,

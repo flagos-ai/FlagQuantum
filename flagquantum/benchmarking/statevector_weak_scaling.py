@@ -5,13 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from .statevector_weak_scaling_report import build_report
-
-try:
+if TYPE_CHECKING or __package__:
     from .contract import runtime_metadata, write_json_atomic
-except ImportError:  # direct script execution
+    from .statevector_weak_scaling_report import build_report
+else:  # Direct script execution resolves sibling modules.
     from contract import runtime_metadata, write_json_atomic
+    from statevector_weak_scaling_report import build_report
 
 
 def main() -> int:

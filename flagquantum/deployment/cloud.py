@@ -267,7 +267,8 @@ def create_deployment_package(
     )
     if execution_target and not target_bound:
         raise ValueError("compiled execution_target does not match deployment backend")
-    if target_bound:
+    required_options: dict[str, Any] | None = None
+    if target_bound and execution_target is not None:
         target_qubits = execution_target.get("target_qubits")
         if execution_target.get("compiler", "missing") is not None:
             raise ValueError("compiled Quafu target requires compiler=None")
@@ -277,6 +278,10 @@ def create_deployment_package(
             or len(target_qubits) != ir.n_wires
         ):
             raise ValueError("compiled target must map every logical wire")
+        required_options = {
+            "compiler": execution_target.get("compiler"),
+            "target_qubits": list(target_qubits),
+        }
     existing_routing = ir.metadata.get("routing")
     routing_reused = bool(
         target_bound
@@ -299,19 +304,15 @@ def create_deployment_package(
         )
     )
     qasm = emit_openqasm(compiled_ir, version=qasm_version)
-    package_metadata = {
+    package_metadata: dict[str, Any] = {
         "source": "flagquantum",
         "compiled": True,
         "target_provider": backend.provider,
         "target_backend": backend.name,
     }
     package_metadata.update(dict(metadata or {}))
-    if target_bound:
+    if required_options is not None:
         provider_options = dict(package_metadata.get("provider_options", {}))
-        required_options = {
-            "compiler": execution_target.get("compiler"),
-            "target_qubits": list(target_qubits),
-        }
         for key, value in required_options.items():
             if key in provider_options and provider_options[key] != value:
                 raise ValueError(
@@ -574,10 +575,13 @@ def _grouped_hamiltonian_statistics(
         coefficients: list[tuple[float, tuple[tuple[int, str], ...]]] = []
         for term_index in group.term_indices:
             term = plan.hamiltonian.terms[term_index]
-            coefficient = torch.as_tensor(term.coefficient)
-            if coefficient.is_complex() and torch.abs(coefficient.imag) > 1e-12:
+            coefficient_tensor = torch.as_tensor(term.coefficient)
+            if (
+                coefficient_tensor.is_complex()
+                and torch.abs(coefficient_tensor.imag) > 1e-12
+            ):
                 raise ValueError("measured Hamiltonian coefficients must be real")
-            coefficients.append((float(coefficient.real), term.ops))
+            coefficients.append((float(coefficient_tensor.real), term.ops))
 
         mean = 0.0
         second_moment = 0.0

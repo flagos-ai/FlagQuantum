@@ -8,7 +8,6 @@ import torch
 
 from .contraction import (  # noqa: E402
     _build_slicing_plan,
-    _contract_nodes_greedy,
     _contract_nodes_sliced,
 )
 from .local import (  # noqa: E402
@@ -36,6 +35,7 @@ from .observables import (
 from .observables import (
     tensor_network_expectations as _tensor_network_expectations,
 )
+from .path_search import _contract_nodes_greedy
 from .state import (  # noqa: E402
     TensorNetworkState,
 )

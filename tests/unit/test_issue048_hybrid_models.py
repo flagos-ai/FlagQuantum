@@ -20,6 +20,35 @@ INPUTS = torch.tensor([[-1.0, -0.5], [-0.7, 0.8], [0.6, -0.9], [0.9, 0.7]])
 TARGETS = torch.tensor([-1.0, -1.0, 1.0, 1.0])
 
 
+@pytest.mark.parametrize(
+    "model_type", [HybridQuantumClassifier, VariationalEnergyModel]
+)
+def test_deployment_rejects_missing_quantum_parameter_tensor(
+    model_type: type[HybridQuantumClassifier] | type[VariationalEnergyModel],
+) -> None:
+    model = model_type()
+    model.quantum.register_parameter("parameters_tensor", None)
+    with pytest.raises(ValueError, match="requires a quantum parameter tensor"):
+        model.deployment_parameters()
+
+
+@pytest.mark.parametrize(
+    "model_type", [HybridQuantumClassifier, VariationalEnergyModel]
+)
+def test_deployment_quantum_parameters_are_detached_and_independent(
+    model_type: type[HybridQuantumClassifier] | type[VariationalEnergyModel],
+) -> None:
+    model = model_type()
+    parameters = model.quantum.parameters_tensor
+    assert parameters is not None
+    before = parameters.detach().clone()
+    exported = model.deployment_parameters()["quantum_parameters"]
+    assert not exported.requires_grad
+    torch.testing.assert_close(exported, before)
+    exported.add_(1)
+    torch.testing.assert_close(parameters, before)
+
+
 def train_classifier(
     model: HybridQuantumClassifier, optimizer: torch.optim.Optimizer, steps: int
 ) -> tuple[float, float]:
@@ -141,6 +170,28 @@ def test_variational_energy_same_model_switches_native_and_jax_policy() -> None:
     torch.testing.assert_close(jax_gradient, native_gradient, atol=3e-5, rtol=3e-5)
     result = jax.quantum.execute()
     assert result.compatibility["selected_backend"] == "jax"
+
+
+def test_energy_model_preserves_quantum_forward_hooks_and_gradients() -> None:
+    model = VariationalEnergyModel()
+    baseline = model()
+    with model.quantum.register_forward_hook(lambda module, inputs, output: output + 1):
+        actual = model()
+    torch.testing.assert_close(actual, baseline + 1)
+    parameters = model.quantum.parameters_tensor
+    assert parameters is not None
+    expected_gradient = torch.autograd.grad(baseline, parameters)[0]
+    actual_gradient = torch.autograd.grad(actual, parameters)[0]
+    torch.testing.assert_close(actual_gradient, expected_gradient)
+
+
+def test_energy_model_rejects_non_tensor_quantum_output() -> None:
+    model = VariationalEnergyModel()
+    with model.quantum.register_forward_hook(
+        lambda module, inputs, output: {"value": output}
+    ):
+        with pytest.raises(TypeError, match="quantum energy layer must return"):
+            model()
 
 
 def test_classifier_policy_switch_does_not_change_model_class() -> None:

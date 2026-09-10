@@ -1,0 +1,15 @@
+{
+  "source": "historical_replay",
+  "status": "completed",
+  "task_id": "2609091513234674683",
+  "target": "quafu:Dongling",
+  "date": "2026-09-09",
+  "shots": 1024,
+  "counts": {
+    "00": 443,
+    "01": 114,
+    "10": 103,
+    "11": 364
+  },
+  "evidence": "../../../artifacts/development/quafu_explicit_mapping_dongling_20260909.json"
+}

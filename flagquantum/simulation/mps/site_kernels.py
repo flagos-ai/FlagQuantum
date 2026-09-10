@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections import OrderedDict
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -70,7 +70,9 @@ class SiteKernelBucket:
 
 _STATS = SiteKernelStats()
 _POLICY = SiteKernelCachePolicy()
-_CACHE: OrderedDict[tuple[Any, ...], tuple[Callable[..., Any], int]] = OrderedDict()
+_CACHE: OrderedDict[tuple[Any, ...], tuple[Callable[..., torch.Tensor], int]] = (
+    OrderedDict()
+)
 _CACHE_ACCOUNTED_BYTES = 0
 _EVENTS: list[dict[str, Any]] = []
 _MAX_EVENTS = 4096
@@ -176,7 +178,7 @@ def _supported_shape(kind: str, args: Sequence[torch.Tensor]) -> bool:
     return False
 
 
-def _compile(eager: Callable[..., Any]) -> Callable[..., Any]:
+def _compile(eager: Callable[..., torch.Tensor]) -> Callable[..., torch.Tensor]:
     if not hasattr(torch, "compile"):
         raise RuntimeError("torch.compile is unavailable")
     kwargs: dict[str, Any] = {"fullgraph": True, "dynamic": False}
@@ -187,7 +189,7 @@ def _compile(eager: Callable[..., Any]) -> Callable[..., Any]:
     return torch.compile(eager, **kwargs)
 
 
-def _recompile_limit_context():
+def _recompile_limit_context() -> AbstractContextManager[object]:
     """Keep Dynamo's code-object limit consistent with the bounded shape cache."""
 
     try:
@@ -199,18 +201,24 @@ def _recompile_limit_context():
         # the 33rd valid ISSUE-108 RXX shape while our own 32-entry LRU remains
         # within policy.
         specialization_limit = 4 * _POLICY.max_entries
-        return config.patch(
+        context = config.patch(
             recompile_limit=max(int(config.recompile_limit), specialization_limit),
             accumulated_recompile_limit=max(
                 int(config.accumulated_recompile_limit), specialization_limit
             ),
         )
+        if not isinstance(context, AbstractContextManager):
+            raise TypeError("Dynamo configuration patch must be a context manager.")
+        return context
     except (ImportError, AttributeError):
         return nullcontext()
 
 
 def _insert_cache(
-    key: tuple[Any, ...], compiled: Callable[..., Any], accounted: int, kind: str
+    key: tuple[Any, ...],
+    compiled: Callable[..., torch.Tensor],
+    accounted: int,
+    kind: str,
 ) -> None:
     global _CACHE_ACCOUNTED_BYTES
     while _CACHE and (
@@ -239,7 +247,14 @@ def _metrics_count() -> int:
         return 0
 
 
-def _run(eager, args, *, kind: str, compiled: bool, prewarm: bool = False):
+def _run(
+    eager: Callable[..., torch.Tensor],
+    args: Sequence[torch.Tensor],
+    *,
+    kind: str,
+    compiled: bool,
+    prewarm: bool = False,
+) -> torch.Tensor:
     if not compiled:
         return eager(*args)
     key = _cache_key(kind, args)
@@ -258,7 +273,7 @@ def _run(eager, args, *, kind: str, compiled: bool, prewarm: bool = False):
         return eager(*args)
     cached = _CACHE.get(key)
     cold = cached is None
-    if cold:
+    if cached is None:
         _STATS.cache_misses += 1
         _log_event("miss", kind=kind, key=key)
         kernel = _compile(eager)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from ..contracts import INTEROP_API_VERSION
 from .conversion import export_qiskit, import_qiskit
@@ -19,18 +19,12 @@ class QiskitAdapter:
     def import_program(
         self, artifact: Any, *, allow_lossy: bool = False
     ) -> QiskitImportResult:
-        return cast(
-            QiskitImportResult,
-            import_qiskit(artifact, allow_lossy=allow_lossy),
-        )
+        return import_qiskit(artifact, allow_lossy=allow_lossy)
 
     def export_program(
         self, program: Any, *, allow_lossy: bool = False
     ) -> QiskitExportResult:
-        return cast(
-            QiskitExportResult,
-            export_qiskit(program, allow_lossy=allow_lossy),
-        )
+        return export_qiskit(program, allow_lossy=allow_lossy)
 
 
 QISKIT_ADAPTER = QiskitAdapter()

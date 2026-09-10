@@ -1085,11 +1085,11 @@ def _compare_values(
     operator: ComparisonOperator, available: Any, required: Any
 ) -> bool:
     if operator is ComparisonOperator.EQUALS:
-        return available == required
+        return bool(available == required)
     if operator is ComparisonOperator.AT_LEAST:
-        return available >= required
+        return bool(available >= required)
     if operator is ComparisonOperator.AT_MOST:
-        return available <= required
+        return bool(available <= required)
     if operator is ComparisonOperator.CONTAINS_ALL:
         try:
             return all(item in available for item in required)
@@ -1120,7 +1120,7 @@ def _covers(available: Any, required: Any) -> bool:
         if not isinstance(available, tuple):
             return False
         return all(item in available for item in required)
-    return available == required
+    return bool(available == required)
 
 
 def _freeze_extensions(value: Any) -> _FrozenJSONObject:

@@ -31,7 +31,7 @@ class _CPUEvent:
 class CPUPlatformRuntime:
     name = "pytorch_cpu"
     device_type = "cpu"
-    optional_dependency = None
+    optional_dependency: str | None = None
 
     def installed(self) -> bool:
         return True
@@ -103,7 +103,7 @@ class CPUPlatformRuntime:
 class CUDAPlatformRuntime:
     name = "pytorch_cuda"
     device_type = "cuda"
-    optional_dependency = None
+    optional_dependency: str | None = None
 
     def installed(self) -> bool:
         return hasattr(torch, "cuda")

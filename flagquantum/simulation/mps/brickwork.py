@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import lru_cache
-from typing import Sequence
+from typing import Callable, Sequence
 
 import torch
 import torch.nn.functional as functional
@@ -76,7 +76,12 @@ def _rxx_bucket_eager(
 
 
 @lru_cache(maxsize=1)
-def _compiled_kernels():
+def _compiled_kernels() -> tuple[
+    Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    Callable[
+        [torch.Tensor, torch.Tensor, torch.Tensor], tuple[torch.Tensor, torch.Tensor]
+    ],
+]:
     if not hasattr(torch, "compile"):
         return _ry_bucket_eager, _rxx_bucket_eager
     # Exact MPS sweeps visit a bounded family of bond shapes. Each shape gets
@@ -198,9 +203,6 @@ def run_batched_brickwork_mps(
     )
 
 
-__all__ = ("run_batched_brickwork_mps",)
-
-
 def _environment_step_real(
     env: torch.Tensor, tensor: torch.Tensor, ket_tensor: torch.Tensor | None = None
 ) -> torch.Tensor:
@@ -233,7 +235,9 @@ def _real_observable_scan_eager(
     )
     initial[:, 0, 0, 0] = 1
 
-    def step(carry, tensor):
+    def step(
+        carry: torch.Tensor, tensor: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         updated = _environment_step_real(carry, tensor)
         return updated, updated.clone()
 
@@ -268,10 +272,14 @@ def _real_observable_scan_eager(
 
 
 @lru_cache(maxsize=8)
-def _compiled_observable_scan(targets: tuple[int, ...]):
+def _compiled_observable_scan(
+    targets: tuple[int, ...],
+) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
     torch._dynamo.config.recompile_limit = max(64, torch._dynamo.config.recompile_limit)
 
-    def fixed_targets(padded_tensors):
+    def fixed_targets(
+        padded_tensors: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         return _real_observable_scan_eager(padded_tensors, targets)
 
     return torch.compile(

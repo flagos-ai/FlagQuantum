@@ -1,23 +1,27 @@
-# IR-003：Program、Compilation 与 Execution Identity 分层
+# IR-003: Program, Compilation, and Execution Identity Layers
 
-状态：Approved
-日期：2026-09-01
-适用阶段：Phase 1 identity；Phase 2–3 cache/artifact 扩展
+Status: Approved
+Date: 2026-09-01
+Applicable phases: Phase 1 identity; Phase 2-3 cache/artifact extensions.
 
-批准记录：API owner 于 2026-09-01 通过明确指令批准 IR-001～003。批准范围仅限 identity
-分层和 Phase 1 内部 program identity 研究；不授权替换现有 ExecutionPlan、deployment、
-checkpoint 或公共 result identity。Phase 2–3 使用仍需对应 owner 复核。
+Approval record: the API owner explicitly approved IR-001 through IR-003 on
+2026-09-01. Approval covers identity layering and Phase 1 internal program
+identity research only. It does not authorize replacing existing ExecutionPlan,
+deployment, checkpoint, or public result identities. Phase 2-3 use still requires
+review by the corresponding owners.
 
-## 背景
+## Background
 
-当前 `CircuitIR.content_hash` 覆盖整个公共 payload，包括 measurements、metadata、dtype
-和 shape；ExecutionPlan 与 deployment 也建立在现有 hash/contract 上。长期架构需要避免
-仅改变 shots 就触发 placement/routing，同时必须避免 target、pipeline 或 capability
-变化时复用错误 artifact。Phase 1 不能替换任何现有公共 identity。
+`CircuitIR.content_hash` currently covers the complete public payload, including
+measurements, metadata, dtype, and shape. ExecutionPlan and deployment rely on
+existing hashes/contracts. The long-term architecture must avoid rerunning
+placement/routing merely because shots change, while preventing reuse of incorrect
+artifacts after target, pipeline, or capability changes. Phase 1 cannot replace
+any existing public identity.
 
-## 决策
+## Decision
 
-内部 identity 分三层：
+Internal identities have three layers:
 
 ```text
 program_identity
@@ -41,70 +45,73 @@ execution_identity
     + execution policy
 ```
 
-Phase 1 只实现内部 `program_identity`，并同时保存：
+Phase 1 implements internal `program_identity` only, retaining:
 
-- `source_circuit_ir_hash`：现有公共 `CircuitIR.content_hash`；
-- `internal_program_identity`：仅用于 differential evidence 和未来 cache 研究；
-- `identity_schema_version`：内部版本，不对用户承诺兼容。
+- `source_circuit_ir_hash`: existing public `CircuitIR.content_hash`;
+- `internal_program_identity`: used only for differential evidence and future
+  cache research;
+- `identity_schema_version`: an internal version with no user compatibility promise.
 
-两者不得互相冒充。现有 ExecutionPlan、DeploymentPackage、checkpoint 和 public result
-继续使用当前合同要求的 identity。
+These identities cannot substitute for one another. Existing ExecutionPlan,
+DeploymentPackage, checkpoints, and public results retain contract-required identities.
 
-## Phase 1 program identity 规则
+## Phase 1 Program Identity Rules
 
-纳入：
+Include:
 
-- operation schema/version、顺序和嵌套结构；
-- qubit/value dataflow；
-- opcode、typed operands/results、参数和值；
-- 影响量子或数值语义的 typed attributes；
-- 经 ADR 明确属于 program semantics 的 dtype/precision constraint。
+- operation schemas/versions, ordering, and nested structure;
+- qubit/value dataflow;
+- opcodes, typed operands/results, parameters, and values;
+- typed attributes affecting quantum or numerical semantics;
+- dtype/precision constraints explicitly classified as program semantics by an ADR.
 
-不纳入：
+Exclude:
 
-- source location、diagnostic、wall time；
-- shots、seed、queue、credential、account；
-- routing、target、compiler pipeline；
-- 非语义 provenance/debug metadata；
-- execution request，除非未来 ADR 明确某 terminal operation 是程序组成部分。
+- source locations, diagnostics, and wall time;
+- shots, seeds, queues, credentials, and accounts;
+- routing, targets, and compiler pipelines;
+- nonsemantic provenance/debug metadata;
+- execution requests, unless a future ADR makes a terminal operation part of the program.
 
-待 IR-001 metadata inventory 后仍无法分类的字段不得被静默排除。
+Fields still unclassified after the IR-001 metadata inventory must not be silently excluded.
 
-## 确定性要求
+## Determinism Requirements
 
-- canonical ordering 不依赖 Python object address、dict insertion accident 或进程 seed；
-- 相同输入、相同 importer/schema 版本产生相同 identity；
-- semantic 变化必须改变 program identity；
-- source location 和非语义 provenance 变化不得改变 program identity；
-- identity 算法、schema version 和 canonical encoder 必须进入 evidence；
-- Phase 1 不承诺跨版本内部 identity 稳定。
+- Canonical ordering cannot depend on Python object addresses, accidental dict
+  insertion order, or process seeds.
+- Identical inputs and importer/schema versions produce identical identities.
+- Semantic changes must change program identity.
+- Source locations and nonsemantic provenance must not change program identity.
+- Evidence records the identity algorithm, schema version, and canonical encoder.
+- Phase 1 does not promise internal identity stability across versions.
 
-## 否决方案
+## Rejected Alternatives
 
-### 直接复用 CircuitIR.content_hash 作为全部 identity
+### Reuse CircuitIR.content_hash for Every Identity
 
-否决原因：当前公共 payload 混合 program、request、constraints 和 metadata，无法支持正确
-的编译/执行缓存分层。
+The current public payload mixes programs, requests, constraints, and metadata,
+preventing correct compilation/execution cache layering.
 
-### Phase 1 立即替换 ExecutionPlan identity
+### Replace ExecutionPlan Identity in Phase 1
 
-否决原因：会改变已保护执行合同，且 TargetIR/artifact 尚未存在。
+This would change a protected execution contract before TargetIR/artifacts exist.
 
-### 排除全部 metadata
+### Exclude All Metadata
 
-否决原因：当前部分 metadata 影响 channel、dynamic、condition、runtime 和 routing 语义。
+Some current metadata affects channel, dynamic, condition, runtime, and routing semantics.
 
-## 兼容与回滚
+## Compatibility and Rollback
 
-内部 identity 初期只写入测试/evidence，不进入公共 result、checkpoint、deployment 或
-provider payload。删除内部 identity 不影响现有 cache key 和用户数据。
+Initially, internal identities appear only in tests/evidence, not public results,
+checkpoints, deployments, or provider payloads. Removing them leaves existing
+cache keys and user data unaffected.
 
-## 验收
+## Acceptance
 
-- source hash 与 internal identity 明确并存；
-- identity mutation tests 覆盖纳入/排除字段；
-- 跨进程和固定平台确定性测试通过；
-- 不修改现有 plan/deployment/checkpoint identity；
-- [x] API owner 批准 identity 分层；
-- [ ] compiler owner 在实现评审中确认 canonical encoding；
-- [ ] runtime owner 在 Phase 2–3 前确认 compilation/execution identity 接入。
+- Source hashes and internal identities coexist explicitly.
+- Identity mutation tests cover included and excluded fields.
+- Cross-process and fixed-platform determinism tests pass.
+- Existing plan/deployment/checkpoint identities remain unchanged.
+- [x] API owner approved identity layering.
+- [ ] Compiler owner confirms canonical encoding during implementation review.
+- [ ] Runtime owner confirms compilation/execution identity integration before Phase 2-3.

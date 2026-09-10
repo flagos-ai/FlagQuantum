@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 from ..errors import SerializationError, ValidationError
 from .operator_schema import (
@@ -254,7 +254,7 @@ class CircuitIR:
             raise IRSerializationError("serialized CircuitIR must be a JSON object")
         return cls.from_dict(payload)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Instruction]:
         return iter(self.instructions)
 
     def __len__(self) -> int:

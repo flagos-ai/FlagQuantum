@@ -264,6 +264,26 @@ def test_distributed_statevector_pair_exchange_uses_touched_sharded_wire():
     assert second_edges == {(0, 1), (2, 3)}
 
 
+def test_repeated_topology_edge_preserves_segments_and_sums_bytes() -> None:
+    circuit = fq.Circuit(4)
+    circuit.x(3).h(0).x(3).h(1).x(3)
+    plan = plan_distributed_statevector(circuit, world_size=2)
+    segments = [
+        segment
+        for segment in plan.execution_segments
+        if segment.communication == "pair_exchange"
+    ]
+
+    assert len(segments) == 3
+    assert len(plan.topology.edges) == 1
+    edge = plan.topology.edges[0]
+    assert (edge.src_rank, edge.dst_rank) == (0, 1)
+    assert edge.segment_indices == tuple(segment.index for segment in segments)
+    assert edge.estimated_transfer_bytes == sum(
+        segment.estimated_transfer_bytes for segment in segments
+    )
+
+
 def test_distributed_statevector_performance_estimate():
     circuit = fq.Circuit(5)
     circuit.x(4).rx(4, theta=0.2).cx(0, 4)

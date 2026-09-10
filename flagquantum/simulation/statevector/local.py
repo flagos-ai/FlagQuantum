@@ -14,6 +14,7 @@ import torch
 from ...core.ir import CircuitIR, Instruction
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
+from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .operations import (
@@ -29,7 +30,6 @@ from .operations import (
     _bits_from_indices,
     _compile_statevector_program,
     _fused_gate_matrix,
-    _gate_matrix,
     _gate_parameter_tensor,
     _StatevectorCXSequenceStep,
     _StatevectorFusedGateStep,
@@ -86,6 +86,28 @@ def _gate_parameters(
         if cached is not None:
             circuit._statevector_constant_parameters[key] = cached
     return cached
+
+
+def _rotation_region_angles(
+    circuit: Circuit,
+    steps: Sequence[_StatevectorFusedGateStep],
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+) -> torch.Tensor | None:
+    """Collect batched angles, or decline fusion when a parameter is unavailable."""
+    regions: list[torch.Tensor] = []
+    for step in steps:
+        parameters = tuple(
+            _gate_parameters(circuit, instruction, state, parameter_bindings)
+            for instruction in step.instructions
+        )
+        angles: list[torch.Tensor] = []
+        for parameter in parameters:
+            if parameter is None:
+                return None
+            angles.append(parameter[:, 0])
+        regions.append(torch.stack(angles, dim=-1))
+    return torch.stack(regions, dim=0) if regions else None
 
 
 def _cx_sequence_masks(
@@ -230,29 +252,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         )
         batched_rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
         if rx_ry_rz_steps:
-            region_angles = []
-            for step in rx_ry_rz_steps:
-                parameters = tuple(
-                    _gate_parameters(
-                        circuit,
-                        instruction,
-                        output,
-                        parameter_bindings,
-                    )
-                    for instruction in step.instructions
+            region_angles = _rotation_region_angles(
+                circuit, rx_ry_rz_steps, output, parameter_bindings
+            )
+            if region_angles is not None:
+                matrices = _batched_rx_ry_rz_matrices(region_angles).to(
+                    dtype=output.dtype
                 )
-                if any(parameter is None for parameter in parameters):
-                    region_angles = []
-                    break
-                region_angles.append(
-                    torch.stack(
-                        tuple(parameter[:, 0] for parameter in parameters), dim=-1
-                    )
-                )
-            if region_angles:
-                matrices = _batched_rx_ry_rz_matrices(
-                    torch.stack(region_angles, dim=0)
-                ).to(dtype=output.dtype)
                 batched_rx_ry_rz_matrices = {
                     id(step): matrices[index]
                     for index, step in enumerate(rx_ry_rz_steps)
@@ -275,28 +281,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 if isinstance(step, _StatevectorFusedGateStep)
                 and tuple(item.name for item in step.instructions) == names
             )
-            region_angles = []
-            for step in rotation_steps:
-                parameters = tuple(
-                    _gate_parameters(
-                        circuit,
-                        instruction,
-                        output,
-                        parameter_bindings,
-                    )
-                    for instruction in step.instructions
-                )
-                if any(parameter is None for parameter in parameters):
-                    region_angles = []
-                    break
-                region_angles.append(
-                    torch.stack(
-                        tuple(parameter[:, 0] for parameter in parameters), dim=-1
-                    )
-                )
-            if region_angles:
+            region_angles = _rotation_region_angles(
+                circuit, rotation_steps, output, parameter_bindings
+            )
+            if region_angles is not None:
                 matrices = _batched_rotation_sequence_matrices(
-                    torch.stack(region_angles, dim=0),
+                    region_angles,
                     names=names,
                     dtype=output.dtype,
                 )

@@ -237,18 +237,17 @@ def cuda_factorization_memory_snapshot(
             reserved_bytes=0,
         )
     memory = get_platform_runtime(device.type).memory_snapshot(device)
-    if None in (
-        memory.free_bytes,
-        memory.total_bytes,
-        memory.allocated_bytes,
-        memory.reserved_bytes,
-    ):
+    free = memory.free_bytes
+    total = memory.total_bytes
+    allocated = memory.allocated_bytes
+    reserved = memory.reserved_bytes
+    if free is None or total is None or allocated is None or reserved is None:
         raise MPSFactorizationMemoryError("CUDA memory snapshot is unavailable")
     return FactorizationMemorySnapshot(
-        free_bytes=int(memory.free_bytes),
-        total_bytes=int(memory.total_bytes),
-        allocated_bytes=int(memory.allocated_bytes),
-        reserved_bytes=int(memory.reserved_bytes),
+        free_bytes=int(free),
+        total_bytes=int(total),
+        allocated_bytes=int(allocated),
+        reserved_bytes=int(reserved),
     )
 
 

@@ -1,47 +1,52 @@
-# IR-006：Phase 1 可逆静态范围
+# IR-006: Phase 1 Reversible Static Scope
 
-状态：Approved
-日期：2026-09-01
-适用阶段：Phase 1 importer、round-trip 与 differential bridge
+Status: Approved
+Date: 2026-09-01
+Applicable phase: Phase 1 importer, round-trip, and differential bridge.
 
-批准记录：API owner 于 2026-09-01 通过明确指令批准 IR-004～006。批准范围仅限内部
-`circuit_ir_v1_static` profile；不把 dynamic、timing、pulse 或 provider-native 能力
-升级为已支持，也不授权替换默认 runtime。
+Approval record: the API owner explicitly approved IR-004 through IR-006 on
+2026-09-01. Approval covers only the internal `circuit_ir_v1_static` profile. It
+neither promotes dynamic, timing, pulse, or provider-native capabilities to
+supported status nor authorizes replacing the default runtime.
 
-## 背景
+## Background
 
-“CircuitIR -> QuantumIR -> CircuitIR round-trip”必须有精确支持范围。把所有能构造的
-CircuitIR 都描述为可逆，会误纳入 dynamic metadata、provider evidence、未知扩展和当前
-没有强类型模型的语义。
+CircuitIR-to-QuantumIR-to-CircuitIR round-trip needs a precise support boundary.
+Describing every constructible CircuitIR as reversible would incorrectly include
+dynamic metadata, provider evidence, unknown extensions, and semantics lacking
+typed models.
 
-## 决策
+## Decision
 
-Phase 1 profile 命名为内部 `circuit_ir_v1_static`，支持：
+The internal Phase 1 profile is named `circuit_ir_v1_static` and supports:
 
-- 当前 `OPERATOR_SCHEMAS` 注册的 35 个 canonical opcode；
-- unitary 与 channel schema，但 channel 必须满足当前 typed semantic marker 规则；
-- IR-004 批准范围内的 concrete custom unitary；
-- Python/static scalar、Parameter、ParameterExpression 和 IR-005 binding 类型；
-- n_wires、instruction ordering、wire ordering、dtype 和 shape constraints；
-- observables 与 request 型 measurements，通过 IR-001 组合对象拆分并重组；
-- 已分类且具有 typed destination 的 metadata。
+- the 35 canonical opcodes currently registered in `OPERATOR_SCHEMAS`;
+- unitary and channel schemas, with channels satisfying current typed semantic
+  marker rules;
+- concrete custom unitaries within IR-004's approved scope;
+- Python/static scalars, Parameter, ParameterExpression, and IR-005 binding types;
+- n_wires, instruction order, wire order, dtype, and shape constraints;
+- observables and request-style measurements, split and reassembled through
+  IR-001's composite object;
+- classified metadata with typed destinations.
 
-Phase 1 明确拒绝：
+Phase 1 explicitly rejects:
 
-- `is_dynamic`、condition/conditions、classical bit feedback；
-- function、call、loop、branch、region 和 controller program；
-- timing、pulse、calibration 和 provider-native instruction；
-- 未分类且可能影响语义/identity 的 metadata；
-- IR-004 范围外 matrix；
-- 无法确定性编码或无法保持梯度的参数；
-- 任何需要 lossy conversion 才能降回 CircuitIR schema 1.0 的结构。
+- `is_dynamic`, condition/conditions, and classical-bit feedback;
+- functions, calls, loops, branches, regions, and controller programs;
+- timing, pulses, calibration, and provider-native instructions;
+- unclassified metadata that could affect semantics/identity;
+- matrices outside IR-004's scope;
+- parameters without deterministic encoding or gradient preservation;
+- any structure requiring lossy conversion back to CircuitIR schema 1.0.
 
-Round-trip 成功标准是 canonical `CircuitIR.to_dict()` 精确相等；编译优化后的语义等价
-不属于 Phase 1 round-trip 定义。
+Successful round-trip requires exact equality of canonical `CircuitIR.to_dict()`
+payloads. Semantic equivalence after compilation optimization is outside Phase 1's
+round-trip definition.
 
-## 支持状态
+## Support States
 
-Importer 对每个输入返回且仅返回一种状态：
+The importer returns exactly one status per input:
 
 ```text
 supported_exact
@@ -49,25 +54,26 @@ unsupported_with_diagnostics
 invalid_input
 ```
 
-不允许 `best_effort`、隐式忽略 metadata 或默认 lossy 模式。
+No `best_effort`, implicit metadata omission, or default lossy mode is allowed.
 
-## 否决方案
+## Rejected Alternatives
 
-- **所有 CircuitIR 均支持**：与当前 metadata/dynamic 事实不符；
-- **只支持纯 unitary gate**：无法覆盖当前 channel 和 execution-request 边界；
-- **允许 silent lossy**：破坏科学语义与 round-trip 可信度。
+- **Support every CircuitIR**: contradicts current metadata/dynamic behavior.
+- **Support only unitary gates**: omits current channel and execution-request boundaries.
+- **Allow silent loss**: undermines scientific semantics and round-trip trust.
 
-## 兼容与回滚
+## Compatibility and Rollback
 
-Profile 是内部 importer 能力标签，不进入公共 API。删除 importer/profile 不影响 legacy
-path。未来扩大范围必须增加 fixture、diagnostic、differential evidence 和 ADR 修订。
+The profile is an internal importer capability label, not public API. Removing the
+importer/profile leaves legacy paths unaffected. Expanding scope requires
+fixtures, diagnostics, differential evidence, and an ADR revision.
 
-## 验收
+## Acceptance
 
-- 35-opcode manifest 覆盖测试通过；
-- supported fixture canonical payload 精确 round-trip；
-- dynamic/unknown/lossy fixture fail closed；
-- request 拆分重组不改变 ordering、shots 或 metadata；
-- public schema/API 无变化；
-- [x] API owner 批准 profile 范围；
-- [ ] compiler/runtime owner 在实现评审中确认 importer 与 differential bridge 细节。
+- The 35-opcode manifest has passing coverage.
+- Supported fixtures round-trip canonical payloads exactly.
+- Dynamic/unknown/lossy fixtures fail closed.
+- Request splitting/reassembly preserves ordering, shots, and metadata.
+- Public schemas/APIs remain unchanged.
+- [x] API owner approved the profile scope.
+- [ ] Compiler/runtime owners confirm importer and differential bridge details during review.

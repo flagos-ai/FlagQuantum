@@ -215,11 +215,15 @@ class TensorNetworkContractionPlan:
     def greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return the native greedy pairwise contraction path."""
 
+        from .path_search import _contract_nodes_greedy
+
         _, steps = _contract_nodes_greedy(self.nodes, self.output_labels, dry_run=True)
         return steps
 
     def memory_greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return a memory-first greedy path that minimizes peak intermediates."""
+
+        from .path_search import _contract_nodes_greedy
 
         _, steps = _contract_nodes_greedy(
             self.nodes, self.output_labels, dry_run=True, objective="memory"
@@ -229,6 +233,8 @@ class TensorNetworkContractionPlan:
     def quality_greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return a connected-first greedy path for large sparse networks."""
 
+        from .path_search import _contract_nodes_greedy
+
         _, steps = _contract_nodes_greedy(
             self.nodes, self.output_labels, dry_run=True, objective="quality"
         )
@@ -237,15 +243,21 @@ class TensorNetworkContractionPlan:
     def quality_multistart_path(self) -> tuple[PairContractionStep, ...]:
         """Return the best deterministic connected-first multi-start path."""
 
+        from .path_search import _contract_nodes_quality_multistart
+
         return _contract_nodes_quality_multistart(self.nodes, self.output_labels)
 
     def quality_reconfigured_path(self) -> tuple[PairContractionStep, ...]:
         """Return a multi-start path with bounded exact subtree replacement."""
 
+        from .path_search import _contract_nodes_quality_reconfigured
+
         return _contract_nodes_quality_reconfigured(self.nodes, self.output_labels)
 
     def beam_path(self, *, beam_width: int = 8) -> tuple[PairContractionStep, ...]:
         """Return a beam-search contraction path."""
+
+        from .path_search import _contract_nodes_beam
 
         _, steps = _contract_nodes_beam(
             self.nodes, self.output_labels, dry_run=True, beam_width=beam_width
@@ -254,6 +266,8 @@ class TensorNetworkContractionPlan:
 
     def optimal_path(self, *, max_nodes: int = 7) -> tuple[PairContractionStep, ...]:
         """Return an exact small-network path, falling back to beam for larger networks."""
+
+        from .path_search import _contract_nodes_optimal
 
         _, steps = _contract_nodes_optimal(
             self.nodes, self.output_labels, dry_run=True, max_nodes=max_nodes
@@ -270,6 +284,8 @@ class TensorNetworkContractionPlan:
         beam_width: int = 8,
     ) -> TensorNetworkContractionProfile:
         """Return a detailed native contraction profile for planning and benchmarking."""
+
+        from .contraction import _contraction_profile
 
         return _contraction_profile(
             self.nodes,
@@ -303,6 +319,8 @@ class TensorNetworkContractionPlan:
     ) -> TensorNetworkSlicingPlan:
         """Plan internal-edge slicing for bounded-memory contraction."""
 
+        from .contraction import _build_slicing_plan
+
         return _build_slicing_plan(
             self.nodes,
             self.output_labels,
@@ -325,6 +343,8 @@ class TensorNetworkContractionPlan:
     ) -> TensorNetworkSlicingPlan:
         """Jointly plan contraction and slicing with optional cotengra."""
 
+        from .contraction import _cotengra_slicing_plan
+
         return _cotengra_slicing_plan(
             self.nodes,
             self.output_labels,
@@ -340,6 +360,8 @@ class TensorNetworkContractionPlan:
     def contract_slicing_plan(self, slicing: TensorNetworkSlicingPlan) -> torch.Tensor:
         """Execute a precomputed native or external slicing plan."""
 
+        from .contraction import _contract_nodes_with_slicing_plan
+
         return _contract_nodes_with_slicing_plan(
             self.nodes, self.output_labels, slicing
         )
@@ -351,6 +373,8 @@ class TensorNetworkContractionPlan:
         target_slices: int,
     ) -> TensorNetworkSlicingPlan:
         """Add low-cost slice axes to an imported contraction path."""
+
+        from .contraction import _reslice_external_slicing_plan
 
         return _reslice_external_slicing_plan(
             self.nodes,
@@ -368,6 +392,13 @@ class TensorNetworkContractionPlan:
         sliced_labels: Sequence[int] | None = None,
         beam_width: int = 8,
     ) -> torch.Tensor:
+        from .contraction import _contract_nodes_sliced
+        from .path_search import (
+            _contract_nodes_beam,
+            _contract_nodes_greedy,
+            _contract_nodes_optimal,
+        )
+
         if strategy in {"greedy", "memory_greedy", "quality_greedy"}:
             objective = {
                 "greedy": "balanced",
@@ -511,6 +542,8 @@ class CompiledTNObservableProgram:
     def bind(
         self, ket_plan: TensorNetworkContractionPlan
     ) -> TensorNetworkExpectationPlan:
+        from .contraction import _clone_nodes_with_offset
+
         if ket_plan.n_wires != self.n_wires:
             raise RuntimeError("compiled TN observable qubit count changed")
         max_label = max(
@@ -544,9 +577,10 @@ class CompiledTNObservableProgram:
         matrices = _Z_OBSERVABLE_NODE_CACHE.get(key)
         if matrices is None:
             identity = _identity_matrix_like(reference)
-            z_matrix = GATE_MAT_DICT["z"].to(
-                device=reference.device, dtype=reference.dtype
-            )
+            z_gate = GATE_MAT_DICT["z"]
+            if not isinstance(z_gate, torch.Tensor):
+                raise ValueError("Z observables require a fixed gate matrix.")
+            z_matrix = z_gate.to(device=reference.device, dtype=reference.dtype)
             built = []
             for wire in range(self.n_wires):
                 batch = identity.expand(len(self.wires), 2, 2).clone()
@@ -602,11 +636,15 @@ class TensorNetworkExpectationPlan:
     def greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return the native greedy pairwise contraction path."""
 
+        from .path_search import _contract_nodes_greedy
+
         _, steps = _contract_nodes_greedy(self.nodes, self.output_labels, dry_run=True)
         return steps
 
     def memory_greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return a memory-first greedy path for direct expectation contraction."""
+
+        from .path_search import _contract_nodes_greedy
 
         _, steps = _contract_nodes_greedy(
             self.nodes, self.output_labels, dry_run=True, objective="memory"
@@ -616,6 +654,8 @@ class TensorNetworkExpectationPlan:
     def quality_greedy_path(self) -> tuple[PairContractionStep, ...]:
         """Return a connected-first path for direct expectation contraction."""
 
+        from .path_search import _contract_nodes_greedy
+
         _, steps = _contract_nodes_greedy(
             self.nodes, self.output_labels, dry_run=True, objective="quality"
         )
@@ -624,15 +664,21 @@ class TensorNetworkExpectationPlan:
     def quality_multistart_path(self) -> tuple[PairContractionStep, ...]:
         """Return the best deterministic expectation multi-start path."""
 
+        from .path_search import _contract_nodes_quality_multistart
+
         return _contract_nodes_quality_multistart(self.nodes, self.output_labels)
 
     def quality_reconfigured_path(self) -> tuple[PairContractionStep, ...]:
         """Return an expectation path with bounded exact subtree replacement."""
 
+        from .path_search import _contract_nodes_quality_reconfigured
+
         return _contract_nodes_quality_reconfigured(self.nodes, self.output_labels)
 
     def beam_path(self, *, beam_width: int = 8) -> tuple[PairContractionStep, ...]:
         """Return a beam-search path for direct expectation contraction."""
+
+        from .path_search import _contract_nodes_beam
 
         _, steps = _contract_nodes_beam(
             self.nodes, self.output_labels, dry_run=True, beam_width=beam_width
@@ -641,6 +687,8 @@ class TensorNetworkExpectationPlan:
 
     def optimal_path(self, *, max_nodes: int = 7) -> tuple[PairContractionStep, ...]:
         """Return an exact small-network expectation path, falling back to beam."""
+
+        from .path_search import _contract_nodes_optimal
 
         _, steps = _contract_nodes_optimal(
             self.nodes, self.output_labels, dry_run=True, max_nodes=max_nodes
@@ -657,6 +705,8 @@ class TensorNetworkExpectationPlan:
         beam_width: int = 8,
     ) -> TensorNetworkContractionProfile:
         """Return a detailed native expectation contraction profile."""
+
+        from .contraction import _contraction_profile
 
         return _contraction_profile(
             self.nodes,
@@ -690,6 +740,8 @@ class TensorNetworkExpectationPlan:
     ) -> TensorNetworkSlicingPlan:
         """Plan internal-edge slicing for direct expectation contraction."""
 
+        from .contraction import _build_slicing_plan
+
         return _build_slicing_plan(
             self.nodes,
             self.output_labels,
@@ -712,6 +764,8 @@ class TensorNetworkExpectationPlan:
     ) -> TensorNetworkSlicingPlan:
         """Jointly plan expectation contraction and slicing with cotengra."""
 
+        from .contraction import _cotengra_slicing_plan
+
         return _cotengra_slicing_plan(
             self.nodes,
             self.output_labels,
@@ -727,6 +781,8 @@ class TensorNetworkExpectationPlan:
     def contract_slicing_plan(self, slicing: TensorNetworkSlicingPlan) -> torch.Tensor:
         """Execute a precomputed native or external slicing plan."""
 
+        from .contraction import _contract_nodes_with_slicing_plan
+
         return _contract_nodes_with_slicing_plan(
             self.nodes, self.output_labels, slicing
         )
@@ -738,6 +794,8 @@ class TensorNetworkExpectationPlan:
         target_slices: int,
     ) -> TensorNetworkSlicingPlan:
         """Add low-cost slice axes to an imported expectation path."""
+
+        from .contraction import _reslice_external_slicing_plan
 
         return _reslice_external_slicing_plan(
             self.nodes,
@@ -755,6 +813,13 @@ class TensorNetworkExpectationPlan:
         sliced_labels: Sequence[int] | None = None,
         beam_width: int = 8,
     ) -> torch.Tensor:
+        from .contraction import _contract_nodes_sliced
+        from .path_search import (
+            _contract_nodes_beam,
+            _contract_nodes_greedy,
+            _contract_nodes_optimal,
+        )
+
         if strategy in {"greedy", "memory_greedy", "quality_greedy"}:
             objective = {
                 "greedy": "balanced",
@@ -818,60 +883,6 @@ class TensorNetworkExpectationPlan:
             "beam_cost": self.contraction_profile("beam").estimated_cost,
             "beam_peak_size": self.contraction_profile("beam").peak_size,
         }
-
-
-def _contraction_call(name: str, *args: Any, **kwargs: Any) -> Any:
-    from . import contraction
-
-    return getattr(contraction, name)(*args, **kwargs)
-
-
-def _build_slicing_plan(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_build_slicing_plan", *args, **kwargs)
-
-
-def _clone_nodes_with_offset(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_clone_nodes_with_offset", *args, **kwargs)
-
-
-def _contraction_profile(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contraction_profile", *args, **kwargs)
-
-
-def _cotengra_slicing_plan(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_cotengra_slicing_plan", *args, **kwargs)
-
-
-def _reslice_external_slicing_plan(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_reslice_external_slicing_plan", *args, **kwargs)
-
-
-def _contract_nodes_beam(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_beam", *args, **kwargs)
-
-
-def _contract_nodes_greedy(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_greedy", *args, **kwargs)
-
-
-def _contract_nodes_quality_multistart(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_quality_multistart", *args, **kwargs)
-
-
-def _contract_nodes_with_slicing_plan(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_with_slicing_plan", *args, **kwargs)
-
-
-def _contract_nodes_quality_reconfigured(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_quality_reconfigured", *args, **kwargs)
-
-
-def _contract_nodes_optimal(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_optimal", *args, **kwargs)
-
-
-def _contract_nodes_sliced(*args: Any, **kwargs: Any) -> Any:
-    return _contraction_call("_contract_nodes_sliced", *args, **kwargs)
 
 
 def _identity_matrix_like(reference: torch.Tensor) -> torch.Tensor:

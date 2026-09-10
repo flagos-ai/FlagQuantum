@@ -25,9 +25,14 @@ from .factorization import (
 )
 from .state import RankOwnedMPSState
 
+_PreparedMPSOutput = (
+    tuple[torch.Tensor]
+    | tuple[torch.Tensor, torch.Tensor, dict[str, float | int | str]]
+)
+
 
 def require_layer_cache_drained(
-    precomputed: dict[int, tuple[torch.Tensor, ...]],
+    precomputed: dict[int, _PreparedMPSOutput],
     *,
     layer_sequence: int,
     layer_start: int,
@@ -72,7 +77,7 @@ def prepare_compiled_mps_layer(
     factorization_memory_provider: MemoryProvider,
 ) -> tuple[
     tuple[tuple[int, Instruction, tuple[int, ...]], ...],
-    dict[int, tuple[torch.Tensor, ...]],
+    dict[int, _PreparedMPSOutput],
     tuple[dict[str, Any], ...],
 ]:
     """Prepare one disjoint rotation layer in a bounded tensor scope."""
@@ -87,7 +92,7 @@ def prepare_compiled_mps_layer(
         used.update(wires)
         layer.append((index, candidate, wires))
 
-    precomputed: dict[int, tuple[torch.Tensor, ...]] = {}
+    precomputed: dict[int, _PreparedMPSOutput] = {}
     factorization_records: list[dict[str, Any]] = []
     if first.name == "ry":
         buckets: dict[
@@ -122,7 +127,7 @@ def prepare_compiled_mps_layer(
                     precomputed[index] = (value,)
                     state.local_tensors[wires[0]] = value
     elif first.name in {"rxx", "ryy", "rzz"}:
-        buckets: dict[
+        two_site_buckets: dict[
             tuple[tuple[int, ...], tuple[int, ...]],
             list[tuple[int, Instruction, tuple[int, ...]]],
         ] = {}
@@ -130,12 +135,12 @@ def prepare_compiled_mps_layer(
             _, _, wires = item
             left = min(wires)
             if state.owner(left) == state.rank and state.owner(left + 1) == state.rank:
-                key = (
+                shape_pair = (
                     tuple(state.local_tensors[left].shape),
                     tuple(state.local_tensors[left + 1].shape),
                 )
-                buckets.setdefault(key, []).append(item)
-        for bucket in buckets.values():
+                two_site_buckets.setdefault(shape_pair, []).append(item)
+        for bucket in two_site_buckets.values():
             _, sample, sample_wires = bucket[0]
             sample_left = min(sample_wires)
             sample_matrix = _instruction_matrix_for_mps(

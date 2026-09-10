@@ -18,6 +18,8 @@ def run_local_noisy_mps_trajectory(
 
     for instruction in lowered_ir:
         if instruction.metadata.get("is_channel"):
+            if instruction.matrix is None:
+                raise ValueError("noise channel instruction requires Kraus matrices")
             mps.apply_channel_trajectory(
                 instruction.matrix,
                 instruction.wires,

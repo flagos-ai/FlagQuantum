@@ -175,6 +175,10 @@ def run_noisy_trajectory_batch(
             )
             state = apply_matrix_batched(state, matrix, instruction.wires, ir.n_wires)
             continue
+        if instruction.matrix is None:
+            raise ValueError(
+                f"Noise channel {instruction.name!r} requires Kraus matrices."
+            )
         operators = tuple(
             torch.as_tensor(operator, device=initial.device, dtype=initial.dtype)
             for operator in instruction.matrix

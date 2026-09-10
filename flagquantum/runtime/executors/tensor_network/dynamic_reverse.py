@@ -14,6 +14,7 @@ import torch
 from .distributed_dag import DistributedTNContractionDAG
 from .partial_mesh import (
     DistributedTNMeshGroupCache,
+    DistributedTNPartialMeshLayout,
     execute_partial_mesh_reverse_pair,
     execute_partial_mesh_tn_redistribution,
     plan_partial_mesh_tn_layout,
@@ -178,7 +179,7 @@ def plan_dynamic_tn_reverse_segment(
     values = {value.value_id: value for value in forward.values}
     if str(start_output_value_id) not in by_output:
         raise ValueError("dynamic reverse segment start value has no reverse record")
-    records = []
+    records: list[DistributedTNReverseRecord] = []
     start_value_id = str(start_output_value_id)
     expected = _reachable_contribution_counts(reverse, start_value_id)
     received: Counter[str] = Counter()
@@ -292,6 +293,7 @@ def execute_dynamic_tn_reverse_segment(
         source_forward_tape,
         source_output_cotangent,
         resume_from,
+        device=device,
         allow_missing=source_forward_provider is not None,
     )
     redistribution_count = (
@@ -312,7 +314,9 @@ def execute_dynamic_tn_reverse_segment(
         for value_id in record.input_value_ids:
             remaining[value_id] += 1
 
-    def remesh(value_id: str, tensor: torch.Tensor):
+    def remesh(
+        value_id: str, tensor: torch.Tensor
+    ) -> tuple[DistributedTNPartialMeshLayout, torch.Tensor]:
         nonlocal redistribution_count, sent, received
         logical = values[value_id]
         source = plan_partial_mesh_tn_layout(
@@ -340,9 +344,9 @@ def execute_dynamic_tn_reverse_segment(
     expected = _reachable_contribution_counts(reverse, start)
     if resume_from is None:
         assert source_output_cotangent is not None
-        output_layout, output_cotangent = remesh(start, source_output_cotangent)
+        seed_layout, output_cotangent = remesh(start, source_output_cotangent)
         cotangents = {start: output_cotangent}
-        cotangent_layouts = {start: output_layout}
+        cotangent_layouts = {start: seed_layout}
         executed = []
         collective_count = collective_bytes = accumulated = released = 0
         peak_cache = 0
@@ -635,6 +639,7 @@ def _validate_rank_tensor_preflight(
     source_output_cotangent: torch.Tensor | None,
     resume_from: DistributedTNDynamicReverseSegmentResult | None,
     *,
+    device: torch.device,
     allow_missing: bool,
 ) -> None:
     """Collectively reject missing or incompatible local tensors."""
@@ -653,12 +658,7 @@ def _validate_rank_tensor_preflight(
         invalid = invalid or (
             tuple(tensor.shape) != layout.local_shape
             or str(tensor.dtype) != values[value_id].dtype
-            or tensor.device
-            != (
-                source_output_cotangent.device
-                if source_output_cotangent is not None
-                else next(iter(resume_from.cotangents.values())).device
-            )
+            or tensor.device != device
         )
     if resume_from is None:
         assert source_output_cotangent is not None
@@ -680,11 +680,6 @@ def _validate_rank_tensor_preflight(
                 mesh_shape=segment.mesh_shape,
             )
             invalid = invalid or tuple(tensor.shape) != layout.local_shape
-    device = (
-        source_output_cotangent.device
-        if source_output_cotangent is not None
-        else next(iter(resume_from.cotangents.values())).device
-    )
     status = torch.tensor(
         int(invalid),
         dtype=torch.uint8,

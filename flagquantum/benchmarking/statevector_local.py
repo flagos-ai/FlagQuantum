@@ -63,7 +63,7 @@ def build_workload(
 
 
 def sequential_reference(circuit: fq.Circuit) -> torch.Tensor:
-    state = circuit.initial_state()
+    state: torch.Tensor = circuit.initial_state()
     for instruction in circuit.to_ir().instructions:
         matrix = gate_matrix(
             instruction,

@@ -1,23 +1,25 @@
-# IR-001：程序语义与执行请求边界
+# IR-001: Program Semantics and Execution Request Boundaries
 
-状态：Approved
-日期：2026-09-01
-适用阶段：Phase 1 importer 与受限 round-trip
+Status: Approved
+Date: 2026-09-01
+Applicable phase: Phase 1 importer and restricted round-trip.
 
-批准记录：API owner 于 2026-09-01 通过明确指令批准 IR-001～003。批准范围仅限本文的
-内部程序/执行请求边界，不修改公共 `CircuitIR`、`fq.plan`、`fq.run` 或 measurement
-冲突规则；Phase 1 实现仍须满足 Phase 0 退出门。
+Approval record: the API owner explicitly approved IR-001 through IR-003 on
+2026-09-01. Approval covers only this internal program/request boundary. It does
+not change public `CircuitIR`, `fq.plan`, `fq.run`, or measurement conflict rules.
+Phase 1 implementation remains subject to the Phase 0 exit gate.
 
-## 背景
+## Background
 
-公共 `CircuitIR` schema 1.0 同时携带 instructions、observables 和 measurements。当前
-planner/runtime 已定义唯一 request 来源和冲突规则；Interop 也明确把 observable 与
-measurement 视为执行边界信息。内部 QuantumIR 需要区分程序本身与“本次执行返回
-什么”，但不能修改公共 schema 或改变 `fq.plan/fq.run` 行为。
+Public `CircuitIR` schema 1.0 carries instructions, observables, and measurements.
+Current planners/runtimes already define the sole request source and conflict
+rules. Interop also classifies observables and measurements as execution-boundary
+information. Internal QuantumIR must separate the program from what this execution
+returns without changing public schemas or `fq.plan/fq.run` behavior.
 
-## 决策
+## Decision
 
-`CircuitIR` importer 返回一个内部、不可公开的组合结果：
+The `CircuitIR` importer returns an internal, nonpublic composite:
 
 ```text
 ImportedCircuitProgram
@@ -28,54 +30,56 @@ ImportedCircuitProgram
   diagnostics: tuple[Diagnostic, ...]
 ```
 
-归属规则：
+Ownership rules:
 
-- `n_wires` 和 `instructions` 进入 `QuantumModule`；
-- `observables` 和 request 型 `measurements` 进入 `InternalExecutionRequest`；
-- `dtype`、`shape`、batch/runtime 限制进入 typed `ImportConstraints`；
-- schema version、源 content hash 进入 `SourceIdentity`；
-- routing 等编译证据进入 provenance，不进入源 program semantic hash；
-- instruction `is_channel`、`is_dynamic`、`condition` 等影响语义的 metadata 必须进入
-  typed operation/diagnostic，不能降为普通 provenance。
+- `n_wires` and `instructions` enter `QuantumModule`.
+- `observables` and request-style `measurements` enter `InternalExecutionRequest`.
+- `dtype`, `shape`, and batch/runtime limits enter typed `ImportConstraints`.
+- Schema version and source content hash enter `SourceIdentity`.
+- Routing and other compilation evidence enter provenance, not the source program
+  semantic hash.
+- Semantic instruction metadata such as `is_channel`, `is_dynamic`, and `condition`
+  must enter typed operations/diagnostics, not ordinary provenance.
 
-Phase 1 静态范围内，dynamic instruction 返回结构化 unsupported diagnostic。显式
-terminal measurement operation 与 execution request 的统一留到 ProgramIR/dynamic ADR，
-Phase 1 不借机扩大能力。
+Within Phase 1's static scope, dynamic instructions return structured unsupported
+diagnostics. Unifying explicit terminal measurement operations with execution
+requests awaits a ProgramIR/dynamic ADR; Phase 1 does not expand capability here.
 
-## 保持的公共规则
+## Preserved Public Rules
 
-- public `CircuitIR` 不变；
-- `fq.plan(..., measurements=...)` 与 IR 内 measurements 冲突时继续失败；
-- shots/seed/options 不进入 program identity；
-- importer 不自行合并、替换或推断 request；
-- `fq.run` 默认不调用 importer；
-- 无法无损拆分时 fail closed。
+- Public `CircuitIR` remains unchanged.
+- Conflicts between `fq.plan(..., measurements=...)` and IR measurements still fail.
+- Shots, seeds, and options do not enter program identity.
+- The importer does not merge, replace, or infer requests itself.
+- `fq.run` does not invoke the importer by default.
+- Fail closed when a lossless split is impossible.
 
-## 否决方案
+## Rejected Alternatives
 
-### 把 observables/measurements 全部留在 QuantumModule
+### Keep All Observables/Measurements in QuantumModule
 
-否决原因：会继续混淆程序与执行请求，并使 shots 变化污染 program identity 和编译缓存。
+This would continue mixing programs and requests and allow shot changes to
+contaminate program identity and compilation caches.
 
-### 修改 CircuitIR schema 1.0
+### Change CircuitIR Schema 1.0
 
-否决原因：破坏受保护序列化合同，超出 Phase 0–1 授权。
+This would break the protected serialization contract and exceed Phase 0-1 authorization.
 
-### 用自由格式 metadata 携带 request
+### Carry Requests in Free-Form Metadata
 
-否决原因：无法验证类型、冲突、identity 和 round-trip。
+Types, conflicts, identities, and round-trip behavior could not be verified reliably.
 
-## 兼容与回滚
+## Compatibility and Rollback
 
-该对象仅存在于 `_compiler`。删除 importer 即可回滚；公共对象、缓存、部署产物和用户
-数据均不依赖它。
+This object exists only in `_compiler`. Removing the importer rolls it back;
+public objects, caches, deployment artifacts, and user data do not depend on it.
 
-## 验收
+## Acceptance
 
-- public API snapshot 不变；
-- request/constraint/source 均有不可变 typed model；
-- 当前 measurement 冲突测试继续通过；
-- static round-trip 对支持范围精确；
-- dynamic、未知语义 metadata 和 lossy 情况结构化失败；
-- [x] API owner 批准架构决策；
-- [ ] compiler owner 在实现评审中确认 typed model 与 importer 细节。
+- Public API snapshots remain unchanged.
+- Requests, constraints, and sources have immutable typed models.
+- Existing measurement conflict tests pass.
+- Static round-trip is exact within the supported scope.
+- Dynamic, unknown semantic metadata, and lossy cases fail with structured diagnostics.
+- [x] API owner approved the architecture decision.
+- [ ] Compiler owner confirms typed model and importer details during implementation review.

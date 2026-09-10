@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Mapping
 
-from .model import ReadoutError
+from .model import ReadoutError, _decode_readout_error
 
 
 @dataclass(frozen=True)
@@ -161,12 +161,7 @@ class DeviceNoiseProfile:
                 readout_error=(
                     None
                     if item.get("readout_error") is None
-                    else ReadoutError(
-                        tuple(
-                            tuple(float(value) for value in row)
-                            for row in item["readout_error"]
-                        )
-                    )
+                    else _decode_readout_error(item["readout_error"])
                 ),
             )
             for item in payload.get("qubits", ())

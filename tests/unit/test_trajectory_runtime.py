@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -20,6 +22,71 @@ from flagquantum.runtime.trajectories import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_statistics_restore_rejects_moments_on_different_devices() -> None:
+    mean = torch.ones(2, dtype=torch.float64)
+    m2 = torch.zeros(2, dtype=torch.float64, device="meta")
+    with pytest.raises(ValueError, match="same device"):
+        TensorWelford.from_state_dict({"count": 1, "mean": mean, "m2": m2})
+
+
+def test_failed_statistics_update_preserves_accumulator() -> None:
+    accumulator = TensorWelford()
+    accumulator.update(torch.tensor([1.0, 3.0]))
+    before = accumulator.finalize()
+    with pytest.raises(RuntimeError):
+        accumulator.update(torch.ones(2, device="meta"))
+    after = accumulator.finalize()
+    assert after.count == before.count
+    torch.testing.assert_close(after.mean, before.mean)
+    torch.testing.assert_close(after.variance, before.variance)
+
+    accumulator.update(torch.tensor([5.0, 7.0]))
+    recovered = accumulator.finalize()
+    assert recovered.count == 2
+    torch.testing.assert_close(recovered.mean, torch.tensor([3.0, 5.0]))
+    torch.testing.assert_close(recovered.variance, torch.tensor([4.0, 4.0]))
+
+
+@pytest.mark.parametrize("count", [1.5, True, "1", float("nan"), float("inf")])
+def test_statistics_restore_rejects_noninteger_count(count: object) -> None:
+    with pytest.raises(ValueError, match="count must be an integer"):
+        TensorWelford.from_state_dict(
+            {"count": count, "mean": torch.ones(2), "m2": torch.zeros(2)}
+        )
+
+
+def test_online_statistics_owns_first_sample_when_buffer_is_reused() -> None:
+    accumulator = TensorWelford()
+    buffer = torch.tensor([1.0, 3.0], dtype=torch.float64)
+    first_sample = buffer.clone()
+    accumulator.update(buffer)
+    buffer.copy_(torch.tensor([5.0, 7.0], dtype=torch.float64))
+    torch.testing.assert_close(accumulator.finalize().mean, first_sample)
+
+    accumulator.update(buffer)
+    samples = torch.stack((first_sample, buffer))
+    statistics = accumulator.finalize()
+    assert statistics.count == 2
+    torch.testing.assert_close(statistics.mean, samples.mean(dim=0))
+    torch.testing.assert_close(statistics.variance, samples.var(dim=0, unbiased=False))
+
+
+@pytest.mark.parametrize("target", [float("nan"), float("inf"), float("-inf")])
+def test_adaptive_mps_rejects_nonfinite_target_before_execution(target: float) -> None:
+    from flagquantum.runtime.trajectories.mps import run_noisy_mps_runtime
+
+    def unexpected_execution(*args: object, **kwargs: object) -> None:
+        pytest.fail("invalid tolerance must be rejected before trajectory execution")
+
+    with pytest.raises(ValueError, match="finite and positive"):
+        run_noisy_mps_runtime(
+            fq.Circuit(1),
+            trajectories=4,
+            target_standard_error=target,
+            trajectory_executor=unexpected_execution,
+        )
 
 
 def test_noisy_mps_wrapper_delegates_runtime_lifecycle(monkeypatch):
@@ -421,10 +488,19 @@ def test_checkpoint_rejects_statistics_count_mismatch():
         )
 
 
-def test_noisy_mps_checkpoint_resume_matches_single_pass(tmp_path):
+@pytest.mark.parametrize("custom_path", [False, True])
+def test_noisy_mps_checkpoint_resume_matches_single_pass(
+    tmp_path: Path, custom_path: bool
+) -> None:
     circuit = fq.Circuit(1).x(0)
     model = fqn.NoiseModel().add("x", bit_flip_channel(0.37))
-    checkpoint_path = tmp_path / "mps-trajectories.pt"
+    path = tmp_path / "mps-trajectories.pt"
+
+    class CheckpointPath:
+        def __fspath__(self) -> str:
+            return str(path)
+
+    checkpoint_path = CheckpointPath() if custom_path else path
 
     reference = fqr.run_noisy_mps(
         circuit,
@@ -474,7 +550,7 @@ def test_noisy_mps_checkpoint_resume_matches_single_pass(tmp_path):
         final.expectation_z_variance,
         reference.expectation_z_variance,
     )
-    assert load_trajectory_checkpoint(checkpoint_path).pending_ids() == ()
+    assert load_trajectory_checkpoint(path).pending_ids() == ()
 
 
 def test_resumed_noisy_mps_rejects_state_retention(tmp_path):

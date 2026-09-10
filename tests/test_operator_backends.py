@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from types import SimpleNamespace
 
+import pytest
 import torch
 
 import flagquantum as fq
@@ -49,6 +50,19 @@ def _install_fake_flaggems(monkeypatch, keys=("mm", "bmm", "sum", "einsum")):
 
 def _raise_current_registrar_error():
     raise AttributeError("'NoneType' object has no attribute 'get_all_keys'")
+
+
+def test_replacement_plan_accepts_one_shot_operator_iterators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_fake_flaggems(monkeypatch, keys=("mm", "where_self"))
+    requested = iter((" mm ", "where.self", "mm", "", "where_self"))
+
+    plan = plan_operator_replacements(requested_ops=requested)
+
+    assert plan.requested_ops == ("mm", "where_self")
+    assert plan.runtime_replaceable_ops == ("mm", "where_self")
+    assert tuple(requested) == ()
 
 
 def test_flaggems_preflight_reports_unavailable_without_importable_module(monkeypatch):

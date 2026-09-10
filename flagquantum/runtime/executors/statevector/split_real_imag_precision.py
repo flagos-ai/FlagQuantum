@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass
-from typing import Any, Mapping, Sequence, cast
+from typing import Any, Mapping, Sequence
 
 import torch
 
@@ -145,7 +145,7 @@ class SplitRealImagPrecisionExpectationResult:
         return self.value.to("cpu").to_float64().detach()
 
     def summary(self) -> dict[str, Any]:
-        summary = cast(dict[str, Any], self.state.summary())
+        summary = self.state.summary()
         summary.update(
             {
                 "schema": "flagquantum_split_real_imag_precision_expectation_v1",

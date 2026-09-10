@@ -1,20 +1,21 @@
-# FlagQuantum IR Phase 2 准入与 Batch A 授权包
+# FlagQuantum IR Phase 2 Entry and Batch A Authorization Packet
 
-状态：**Ready for owner review — 未授权实现**
-日期：2026-09-02
-前置条件：Phase 1 已完成，当前结果见 [IR 实现状态](IR_IMPLEMENTATION_STATUS.md)
+Status: **Ready for owner review — implementation is not authorized**
+Date: 2026-09-02
+Prerequisite: Phase 1 complete; current results in [IR Implementation Status](IR_IMPLEMENTATION_STATUS.md).
 
-## 1. 本轮目标
+## 1. Objective
 
-Phase 2 迁移现有静态编译能力，但继续保持内部、显式 opt-in 和可整体回滚。首批只迁移
-`optimize` 中最小的 canonicalization 子集，不接入 `fq.run`、`fq.plan`、
-`compile_for_backend` 或 deployment 默认路径。
+Phase 2 migrates existing static compilation capabilities while remaining
+internal, explicitly opt-in, and fully reversible. The first batch migrates only
+the smallest canonicalization subset of `optimize`. It does not connect to default
+`fq.run`, `fq.plan`, `compile_for_backend`, or deployment paths.
 
-本轮不是重新设计公共 compiler API，也不以删除 legacy compiler 为目标。
+This round neither redesigns public compiler APIs nor targets legacy compiler removal.
 
-## 2. 事实基线
+## 2. Baseline Facts
 
-现有静态编译链包含：
+The existing static compilation chain is:
 
 ```text
 CircuitIR
@@ -27,26 +28,27 @@ CircuitIR
   -> DeploymentPackage
 ```
 
-Phase 1 已提供 immutable QuantumIR、verifier、pass contract、restricted lowering、
-differential bridge 和性能门，但当前 canonicalization pass 只是无变化扫描，不包含上述
-legacy 优化语义。
+Phase 1 provides immutable QuantumIR, a verifier, pass contracts, restricted
+lowering, a differential bridge, and performance gates. Its current canonicalization
+pass is only a no-change scan; it does not implement the legacy optimizations above.
 
-## 3. Phase 2 批次
+## 3. Phase 2 Batches
 
-| 批次 | 范围 | 退出证据 |
+| Batch | Scope | Exit evidence |
 | --- | --- | --- |
-| A | identity/零旋转移除、自逆门抵消、相邻旋转合并 | 独立 golden、幂等性、state/expectation/gradient parity、确定性 identity |
-| B | 目标门集 decomposition | 每条 rewrite 的精确 gate-set 合同、参数和梯度差分 |
-| C | placement/routing | 全门合法、逻辑—物理映射、非对称位序、独立性能基线 |
-| D | OpenQASM 2、受限 OpenQASM 3 static profile、QCIS emitter | parse/golden、字符级确定性、语义 fixture |
-| E | pipeline cache、diagnostics、compilation identity | cache key、失效、错误路径和可观测性 |
-| F | legacy/new deployment corpus 与 Quafu 静态用例 | 完整差分、性能门、默认路径零影响、Phase 2 退出审查 |
+| A | Identity/zero-rotation removal, self-inverse cancellation, adjacent rotation merging | Independent goldens, idempotency, state/expectation/gradient parity, deterministic identities. |
+| B | Target gate-set decomposition | Exact gate-set contracts per rewrite; parameter and gradient differentials. |
+| C | Placement/routing | All gates legal, logical/physical mapping, asymmetric bit order, independent performance baseline. |
+| D | OpenQASM 2, restricted OpenQASM 3 static profile, QCIS emission | Parsing/goldens, character-level determinism, semantic fixtures. |
+| E | Pipeline cache, diagnostics, compilation identity | Cache keys, invalidation, error paths, observability. |
+| F | Legacy/new deployment corpus and Quafu static cases | Complete differentials, performance gates, no default-path impact, Phase 2 exit review. |
 
-批次不得并行抢跑。Routing 和 emitter 必须在前序 rewrite 语义稳定后分别建立自己的基线。
+Batches must not start early in parallel. Routing and emitters establish their own
+baselines only after preceding rewrite semantics stabilize.
 
-## 4. Batch A 允许范围
+## 4. Permitted Batch A Scope
 
-仅允许在以下私有表面实现：
+Implementation is limited to these private surfaces:
 
 ```text
 flagquantum/_compiler/passes/
@@ -58,81 +60,90 @@ docs/development/
 contracts/
 ```
 
-Batch A 必须：
+Batch A must:
 
-- 使用线性 qubit value 的显式重连，不能通过跳过 verifier 伪造删除；
-- 对不可证明安全的参数、tensor、custom unitary、channel 或 measurement fail closed；
-- 保留 wire、参数 identity、dtype、batch shape、measurement 和 execution request；
-- 数值旋转仅按 legacy `_is_zero` 行为处理，trainable tensor 不得折叠；
-- 参数表达式合并必须保持 autograd；
-- 每个 pass 具有独立 descriptor、确定性 digest 和统计信息；
-- restricted lowering 后与稳定 `optimize` 做结构与科学语义差分；
-- 默认公共路径不 import 或执行 Phase 2 pass。
+- Explicitly reconnect linear qubit values; skipping verification cannot stand in
+  for valid removal.
+- Fail closed for parameters, tensors, custom unitaries, channels, or measurements
+  whose safe handling cannot be proved.
+- Preserve wires, parameter identity, dtype, batch shape, measurements, and requests.
+- Treat numerical rotations only according to legacy `_is_zero`; do not fold
+  trainable tensors.
+- Preserve autograd when merging parameter expressions.
+- Give each pass an independent descriptor, deterministic digest, and statistics.
+- Compare structure and scientific semantics with stable `optimize` after restricted lowering.
+- Keep Phase 2 passes out of imports and execution on default public paths.
 
-## 5. 明确禁止
+## 5. Explicit Prohibitions
 
-本准入包不授权：
+This packet does not authorize:
 
-- 修改 Stable Core、根级导出、`CircuitIR` 1.0 或公共序列化 schema；
-- 修改 `fq.run`、`fq.plan`、`compile_for_backend`、`DeploymentPackage` 的默认行为；
-- 使用环境变量或 import side effect 静默切换编译器；
-- 删除、转发或弃用 legacy compiler；
-- 启动 Batch B–F；
-- 迁移 routing、QASM/QCIS emitter 或 Provider codegen；
-- 引入 TargetIR、ProgramIR、公共 PassManager 或新的稳定 API；
-- 将 Quafu/backend ID、credential、queue、job 或价格写入程序 IR；
-- 为通过测试而修改公共快照、Phase 0 基线或已批准预算。
+- Stable Core, root exports, `CircuitIR` 1.0, or public serialization schema changes.
+- Default behavior changes to `fq.run`, `fq.plan`, `compile_for_backend`, or
+  `DeploymentPackage`.
+- Silent compiler switches through environment variables or import side effects.
+- Removing, forwarding, or deprecating the legacy compiler.
+- Starting Batches B-F.
+- Migrating routing, QASM/QCIS emitters, or Provider codegen.
+- TargetIR, ProgramIR, public PassManager, or new stable APIs.
+- Quafu/backend IDs, credentials, queues, jobs, or pricing in program IR.
+- Changing public snapshots, Phase 0 baselines, or approved budgets to pass tests.
 
-## 6. 差分 Oracle
+## 6. Differential Oracles
 
-Batch A 至少验证：
+Batch A must verify at least:
 
-| 轴 | Oracle |
+| Axis | Oracle |
 | --- | --- |
-| 结构 | legacy/new 降低结果 canonical instruction 序列精确一致 |
-| state | 继承现有 backend/dtype 容差并显式处理全局相位 |
-| expectation | 继承现有 dtype 合同 |
-| gradient | forward 和参数梯度同时比较 |
-| ordering | wire、measurement、result ordering 精确一致 |
-| identity | 相同输入和 pipeline 得到相同 program/pipeline identity |
-| failure | unsupported 输入结构化拒绝，不 fallback |
-| default path | `fq.run/fq.plan/compile_for_backend` 不加载新 pass |
+| Structure | Exact canonical instruction sequences after legacy/new lowering. |
+| State | Existing backend/dtype tolerances with explicit global-phase handling. |
+| Expectation | Existing dtype contracts. |
+| Gradient | Compare both forward values and parameter gradients. |
+| Ordering | Exact wire, measurement, and result ordering. |
+| Identity | Identical inputs/pipelines produce identical program/pipeline identities. |
+| Failure | Structured rejection of unsupported inputs without fallback. |
+| Default path | `fq.run/fq.plan/compile_for_backend` do not load new passes. |
 
-禁止创建覆盖所有 backend/dtype 的单一宽松容差。
+Do not introduce one loose tolerance covering every backend and dtype.
 
-## 7. 性能预算候选
+## 7. Performance Budget Candidates
 
-当前机器回归预算：`tests/fixtures/internal_ir/phase2_batch_a_performance_budget.json`。
+Current machine regression budget:
+`tests/fixtures/internal_ir/phase2_batch_a_performance_budget.json`.
 
-预算覆盖 import + verify + 已批准 pass + restricted lowering + lowered-result verification：
+It covers import + verify + approved passes + restricted lowering + lowered-result verification:
 
-| Gates | p95 上限 | Peak host memory 上限 |
+| Gates | p95 limit | Peak host memory limit |
 | ---: | ---: | ---: |
 | 10 | 1.25 ms | 1.25 MiB |
 | 100 | 2.0 ms | 1.25 MiB |
 | 1,000 | 15 ms | 2 MiB |
 | 10,000 | 140 ms | 14 MiB |
 
-Routing、emitter 和 deployment construction 不得套用该预算，进入对应批次前必须采集独立
-基线。预算超限只能优化、缩小范围或记录 blocker，不能自动放宽。
+Routing, emission, and deployment construction cannot reuse this budget. Each needs
+an independent baseline before its batch starts. Budget failures require
+optimization, reduced scope, or blockers; limits cannot be relaxed automatically.
 
-## 8. 回滚
+## 8. Rollback
 
-Batch A 保持 opt-in。任何语义、梯度、identity、性能或默认路径门失败时：
+Batch A remains opt-in. If any semantic, gradient, identity, performance, or
+default-path gate fails:
 
-1. 停止进入下一批；
-2. 保留 legacy compiler 为唯一默认路径；
-3. 删除或禁用 Phase 2 pass 和对应 opt-in pipeline；
-4. 保留失败 fixture、诊断和审计记录；
-5. 不修改公共合同吸收差异。
+1. Stop before the next batch.
+2. Keep the legacy compiler as the sole default path.
+3. Remove or disable Phase 2 passes and their opt-in pipeline.
+4. Preserve failing fixtures, diagnostics, and audit records.
+5. Do not change public contracts to absorb differences.
 
-## 9. 审批语义
+## 9. Approval Semantics
 
-普通 `do`、`continue` 或 Phase 1 授权不等价于 Phase 2 授权。具备权限的 owner 只有在
-接受机器 candidate、差分范围、性能预算和回滚条件后，才可使用：
+Ordinary `do`, `continue`, or Phase 1 authorization does not authorize Phase 2.
+After accepting the machine candidate, differential scope, performance budgets,
+and rollback conditions, an authorized owner may use:
 
 ```text
 approve IR-PHASE2-ENTRY-BATCH-A
 ```
 
-该口令只授权 Batch A。Batch B–F、公共路径切换和 legacy 退役均需后续独立证据与授权。
+This authorizes Batch A only. Batches B-F, public-path switching, and legacy
+retirement require separate subsequent evidence and authorization.
