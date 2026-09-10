@@ -66,6 +66,42 @@ def _validate_bound_instruction(instruction: Instruction) -> None:
         raise ValueError("hybrid dynamic CircuitIR must be bound before execution")
 
 
+def _validated_condition_clauses(
+    instruction: Instruction,
+    instruction_index: int,
+    measured: set[int],
+) -> tuple[tuple[tuple[int, int], ...], ...]:
+    clauses: tuple[tuple[tuple[int, int], ...], ...] = instruction_condition_clauses(
+        instruction
+    )
+    if any(
+        bit < 0 or expected not in {0, 1}
+        for clause in clauses
+        for bit, expected in clause
+    ) or any(len({bit for bit, _ in clause}) != len(clause) for clause in clauses):
+        raise ValueError(
+            "classical condition clauses require unique bits and binary values"
+        )
+    if any(tuple(sorted(clause)) != clause for clause in clauses):
+        raise ValueError("classical condition clauses must be canonically ordered")
+    if "condition_clauses" in instruction.metadata and (
+        len(clauses) < 2
+        or tuple(sorted(clauses, key=lambda item: (len(item), item))) != clauses
+        or len(set(clauses)) != len(clauses)
+        or any(
+            set(left).issubset(right)
+            for clause_index, left in enumerate(clauses)
+            for right in clauses[clause_index + 1 :]
+        )
+    ):
+        raise ValueError("condition_clauses must be canonical, distinct, and minimal")
+    if any(bit not in measured for clause in clauses for bit, _ in clause):
+        raise ValueError(
+            f"instruction {instruction_index} reads a classical bit before measurement"
+        )
+    return clauses
+
+
 def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
     ir = ensure_circuit_ir(circuit_or_ir)
     _validate_session_header(ir)
@@ -73,34 +109,7 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
     rotation_count = 0
     for index, instruction in enumerate(ir.instructions):
         _validate_bound_instruction(instruction)
-        clauses = instruction_condition_clauses(instruction)
-        if any(
-            bit < 0 or expected not in {0, 1}
-            for clause in clauses
-            for bit, expected in clause
-        ) or any(len({bit for bit, _ in clause}) != len(clause) for clause in clauses):
-            raise ValueError(
-                "classical condition clauses require unique bits and binary values"
-            )
-        if any(tuple(sorted(clause)) != clause for clause in clauses):
-            raise ValueError("classical condition clauses must be canonically ordered")
-        if "condition_clauses" in instruction.metadata and (
-            len(clauses) < 2
-            or tuple(sorted(clauses, key=lambda item: (len(item), item))) != clauses
-            or len(set(clauses)) != len(clauses)
-            or any(
-                set(left).issubset(right)
-                for index, left in enumerate(clauses)
-                for right in clauses[index + 1 :]
-            )
-        ):
-            raise ValueError(
-                "condition_clauses must be canonical, distinct, and minimal"
-            )
-        if any(bit not in measured for clause in clauses for bit, _ in clause):
-            raise ValueError(
-                f"instruction {index} reads a classical bit before measurement"
-            )
+        clauses = _validated_condition_clauses(instruction, index, measured)
         if instruction.name == "measure":
             if clauses:
                 raise ValueError(
