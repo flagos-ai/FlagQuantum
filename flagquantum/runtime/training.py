@@ -59,6 +59,34 @@ class TrainingResult:
         }
 
 
+def _validate_training_request(
+    module: Module,
+    optimizer: torch.optim.Optimizer,
+    objective: TrainingObjective,
+    steps: int,
+    log_interval: int | None,
+    callback: TrainingCallback | None,
+) -> None:
+    if not isinstance(module, Module):
+        raise TypeError("fq.train() requires an fq.Module")
+    if not isinstance(optimizer, torch.optim.Optimizer):
+        raise TypeError("fq.train() optimizer must be a torch.optim.Optimizer")
+    if not callable(objective):
+        raise TypeError("fq.train() objective must be callable")
+    if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
+        raise ValidationError("fq.train() steps must be a positive integer")
+    if log_interval is not None and (
+        not isinstance(log_interval, int)
+        or isinstance(log_interval, bool)
+        or log_interval <= 0
+    ):
+        raise ValidationError(
+            "fq.train() log_interval must be a positive integer or None"
+        )
+    if callback is not None and not callable(callback):
+        raise TypeError("fq.train() callback must be callable or None")
+
+
 def train(
     module: Module,
     *,
@@ -96,24 +124,14 @@ def train(
         2
     """
 
-    if not isinstance(module, Module):
-        raise TypeError("fq.train() requires an fq.Module")
-    if not isinstance(optimizer, torch.optim.Optimizer):
-        raise TypeError("fq.train() optimizer must be a torch.optim.Optimizer")
-    if not callable(objective):
-        raise TypeError("fq.train() objective must be callable")
-    if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
-        raise ValidationError("fq.train() steps must be a positive integer")
-    if log_interval is not None and (
-        not isinstance(log_interval, int)
-        or isinstance(log_interval, bool)
-        or log_interval <= 0
-    ):
-        raise ValidationError(
-            "fq.train() log_interval must be a positive integer or None"
-        )
-    if callback is not None and not callable(callback):
-        raise TypeError("fq.train() callback must be callable or None")
+    _validate_training_request(
+        module,
+        optimizer,
+        objective,
+        steps,
+        log_interval,
+        callback,
+    )
 
     module.train()
     defer_loss_history = callback is None and log_interval is None
