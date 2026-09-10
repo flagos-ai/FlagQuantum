@@ -31,6 +31,8 @@ implemented hardware support.
 Start in [jiuding.py](jiuding.py) for the client,
 [_worker.py](_worker.py) for batch results, or
 [_workspace_executor.py](_workspace_executor.py) for resident execution.
+The `execution.py` module owns the `fq.run` boundary validation and resident
+client reuse; `JiudingClient.run` owns only workspace execution.
 Run offline checks from the repository root:
 
 ```bash

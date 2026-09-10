@@ -157,11 +157,18 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
     expected = object()
     captured = {}
 
-    def run(program, *, target, outputs=None, shots=None):
+    def run(program, *, target, outputs=None, shots=None, **controls):
+        assert controls == {
+            "options": None,
+            "noise_model": None,
+            "compiler": None,
+            "target_qubits": None,
+            "name": None,
+        }
         captured.update(program=program, target=target, outputs=outputs, shots=shots)
         return expected
 
-    monkeypatch.setattr("flagquantum.remote.compute.jiuding.run", run)
+    monkeypatch.setattr("flagquantum.remote.compute.execution.execute_jiuding", run)
 
     output = fq.expectation(fq.Z(0))
     result = fq.run(circuit, target="jiuding:gpu", outputs=output)
@@ -179,11 +186,18 @@ def test_fq_run_passes_jiuding_sampling_controls(monkeypatch):
     expected = object()
     captured = {}
 
-    def run(program, *, target, outputs=None, shots=None):
+    def run(program, *, target, outputs=None, shots=None, **controls):
+        assert controls == {
+            "options": None,
+            "noise_model": None,
+            "compiler": None,
+            "target_qubits": None,
+            "name": None,
+        }
         captured.update(target=target, outputs=outputs, shots=shots)
         return expected
 
-    monkeypatch.setattr("flagquantum.remote.compute.jiuding.run", run)
+    monkeypatch.setattr("flagquantum.remote.compute.execution.execute_jiuding", run)
     output = fq.counts()
 
     result = fq.run(
@@ -207,8 +221,17 @@ def test_fq_run_passes_jiuding_sampling_controls(monkeypatch):
         ("compiler", "flagquantum", "does not accept compiler"),
         ("target_qubits", (0,), "does not accept target_qubits"),
         ("name", "bell", "does not accept name"),
+        ("options", object(), "options and noise_model"),
+        ("noise_model", object(), "options and noise_model"),
     ],
 )
 def test_fq_run_jiuding_rejects_unsupported_controls(keyword, value, message):
     with pytest.raises(TypeError, match=message):
         fq.run(fq.Circuit(1), target="jiuding:gpu", **{keyword: value})
+
+
+def test_fq_run_jiuding_rejects_local_execution_plan():
+    plan = fq.plan(fq.Circuit(1))
+
+    with pytest.raises(TypeError, match="not an ExecutionPlan"):
+        fq.run(plan, target="jiuding:cpu")

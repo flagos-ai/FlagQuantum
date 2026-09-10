@@ -14,7 +14,7 @@ import flagquantum as fq
 import flagquantum.remote.compute as remote_compute
 from flagquantum.remote.compute import _managed_program as managed
 from flagquantum.remote.compute import _workspace_executor as executor
-from flagquantum.remote.compute import jiuding
+from flagquantum.remote.compute import execution
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
@@ -31,7 +31,7 @@ def _run_submit_example(monkeypatch, *arguments: str) -> None:
 
 def test_fq_run_executes_bell_measurements_through_jiuding(monkeypatch) -> None:
     monkeypatch.setenv("JIUDING_WORKSPACE", "golden-path")
-    monkeypatch.setattr(jiuding, "_DEFAULT_CLIENTS", {})
+    monkeypatch.setattr(execution, "_CLIENTS", {})
     monkeypatch.setattr(JiudingClient, "start_executor", lambda self, **kwargs: None)
 
     def execute_locally(self, request, *, port, timeout):

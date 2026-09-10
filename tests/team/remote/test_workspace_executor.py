@@ -321,9 +321,9 @@ def test_run_statevector_returns_normal_execution_result(monkeypatch):
 
 
 def test_default_workspace_client_is_reused(monkeypatch):
-    from flagquantum.remote.compute import jiuding
+    from flagquantum.remote.compute import execution
 
-    jiuding._DEFAULT_CLIENTS.clear()
+    execution._CLIENTS.clear()
     monkeypatch.setenv("JIUDING_WORKSPACE", "flagquantum-runtime")
     clients = []
 
@@ -334,11 +334,11 @@ def test_default_workspace_client_is_reused(monkeypatch):
     monkeypatch.setattr(JiudingClient, "run", execute)
     circuit = fq.Circuit(1)
 
-    assert jiuding.run(circuit, target="jiuding:gpu") is circuit
-    assert jiuding.run(circuit, target="jiuding:gpu") is circuit
+    assert execution.execute_jiuding(circuit, target="jiuding:gpu") is circuit
+    assert execution.execute_jiuding(circuit, target="jiuding:gpu") is circuit
     assert clients[0] is clients[1]
     assert clients[0].workspace_name == "flagquantum-runtime"
-    jiuding._DEFAULT_CLIENTS.clear()
+    execution._CLIENTS.clear()
 
 
 def test_client_reconstructs_remote_measurement_results(monkeypatch):

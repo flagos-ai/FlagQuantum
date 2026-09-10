@@ -143,27 +143,18 @@ def run(
 
     provider_name, separator, _ = (target or "").partition(":")
     if target is not None and separator == ":" and provider_name.lower() == "jiuding":
-        if compiler is not None:
-            raise TypeError("Jiuding workspace execution does not accept compiler")
-        if target_qubits is not None:
-            raise TypeError("Jiuding workspace execution does not accept target_qubits")
-        if options is not None or noise_model is not None:
-            raise TypeError(
-                "options and noise_model are not yet supported by Jiuding workspace execution"
-            )
-        if name is not None:
-            raise TypeError("Jiuding workspace execution does not accept name")
-        if isinstance(program_or_plan, ExecutionPlan):
-            raise TypeError(
-                "Jiuding workspace execution requires a Circuit or CircuitIR, not an ExecutionPlan"
-            )
-        from .remote.compute.jiuding import run as run_jiuding
+        from .remote.compute.execution import execute_jiuding
 
-        return run_jiuding(
+        return execute_jiuding(
             program_or_plan,
             target=target,
             outputs=outputs,
             shots=shots,
+            options=options,
+            noise_model=noise_model,
+            compiler=compiler,
+            target_qubits=target_qubits,
+            name=name,
         )
 
     if compiler is None or target is None:

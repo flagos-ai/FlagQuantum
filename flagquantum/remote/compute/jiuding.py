@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from ...observables import OutputRequest
     from ...runtime.result import ExecutionResult
 
-_DEFAULT_CLIENTS: dict[str, "JiudingClient"] = {}
 _MAX_BATCH_ITEMS = 256
 _SUPPORTED_RESIDENT_MEASUREMENTS = {
     "counts",
@@ -1230,20 +1229,3 @@ class JiudingClient(_ProgramSubmissionMixin):
                 self._request(
                     "/api/v1/job/cancel", {"jobIds": [job["id"]]}, self._headers()
                 )
-
-
-def run(
-    program: Any,
-    *,
-    target: str,
-    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
-    shots: int | None = None,
-) -> ExecutionResult:
-    """Execute through the process-local resident Jiuding workspace client."""
-
-    workspace = os.environ.get("JIUDING_WORKSPACE", "").strip()
-    client = _DEFAULT_CLIENTS.get(workspace)
-    if client is None:
-        client = JiudingClient(workspace=workspace or None)
-        _DEFAULT_CLIENTS[workspace] = client
-    return client.run(program, target=target, outputs=outputs, shots=shots)
