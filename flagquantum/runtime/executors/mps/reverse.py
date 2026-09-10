@@ -454,10 +454,16 @@ def _static_exact_qr_record(
 
 def _validate_reverse_request(
     *,
+    instructions: Sequence[Instruction],
     gradient_policy: str,
     degeneracy_tolerance: float,
     initial_bond_dimension: int,
+    initial_mps_tensors_provided: bool,
+    initial_mps_left_canonical: bool,
     canonicalization_policy: str,
+    compile_site_kernels: bool,
+    gradient_owner_ranks: Sequence[int] | None,
+    world_size: int,
     observable: Mapping[int, str] | None,
     observable_terms: Sequence[tuple[Mapping[int, str], torch.Tensor | float]] | None,
     hamiltonian_terms: Sequence[tuple[Mapping[int, str], torch.Tensor | float]] | None,
@@ -470,6 +476,23 @@ def _validate_reverse_request(
         raise ValueError("initial_bond_dimension must be positive")
     if canonicalization_policy not in {"none", "dirty", "full"}:
         raise ValueError("canonicalization_policy must be none, dirty or full")
+    if initial_mps_left_canonical and not initial_mps_tensors_provided:
+        raise MPSReverseContractError(
+            "initial_mps_left_canonical requires initial_mps_tensors"
+        )
+    if gradient_owner_ranks is not None and any(
+        int(owner) < 0 or int(owner) >= world_size for owner in gradient_owner_ranks
+    ):
+        raise ValueError("gradient owner rank is outside the process group")
+    if compile_site_kernels and any(
+        instruction.name in {"rxx", "ryy", "rzz"}
+        and tuple(map(int, instruction.wires))
+        != tuple(sorted(map(int, instruction.wires)))
+        for instruction in instructions
+    ):
+        raise MPSReverseContractError(
+            "compiled site-sharded two-site rotations require ascending adjacent wire order"
+        )
     if (
         sum(
             item is not None
@@ -553,11 +576,19 @@ def execute_torch_distributed_mps_reverse(
 
     if not dist.is_initialized():
         raise RuntimeError("distributed MPS reverse requires torch.distributed")
+    ir = ensure_circuit_ir(circuit_or_ir)
+    rank, world = dist.get_rank(), dist.get_world_size()
     _validate_reverse_request(
+        instructions=ir.instructions,
         gradient_policy=gradient_policy,
         degeneracy_tolerance=degeneracy_tolerance,
         initial_bond_dimension=initial_bond_dimension,
+        initial_mps_tensors_provided=initial_mps_tensors is not None,
+        initial_mps_left_canonical=initial_mps_left_canonical,
         canonicalization_policy=canonicalization_policy,
+        compile_site_kernels=compile_site_kernels,
+        gradient_owner_ranks=gradient_owner_ranks,
+        world_size=world,
         observable=observable,
         observable_terms=observable_terms,
         hamiltonian_terms=hamiltonian_terms,
@@ -566,22 +597,7 @@ def execute_torch_distributed_mps_reverse(
     save_exact_factorizations = (
         policy.save_two_site_factorizations or gradient_policy == "exact"
     )
-    ir = ensure_circuit_ir(circuit_or_ir)
-    if compile_site_kernels and any(
-        instruction.name in {"rxx", "ryy", "rzz"}
-        and tuple(map(int, instruction.wires))
-        != tuple(sorted(map(int, instruction.wires)))
-        for instruction in ir.instructions
-    ):
-        raise MPSReverseContractError(
-            "compiled site-sharded two-site rotations require ascending adjacent wire order"
-        )
     parameters, instruction_parameter_indices = build_mps_parameter_layout(ir)
-    rank, world = dist.get_rank(), dist.get_world_size()
-    if gradient_owner_ranks is not None and any(
-        int(owner) < 0 or int(owner) >= world for owner in gradient_owner_ranks
-    ):
-        raise ValueError("gradient owner rank is outside the process group")
     initialization = initialize_reverse_mps_state(
         ir,
         rank=rank,
@@ -613,11 +629,6 @@ def execute_torch_distributed_mps_reverse(
     layer_halo_intra_node_bytes = 0
     layer_halo_inter_node_bytes = 0
     layer_halo_wait_seconds = 0.0
-
-    if initial_mps_left_canonical and initial_mps_tensors is None:
-        raise MPSReverseContractError(
-            "initial_mps_left_canonical requires initial_mps_tensors"
-        )
 
     precomputed_ry: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
     precomputed_rxx: dict[
