@@ -264,6 +264,26 @@ def _reset_instruction(
     return state, bit
 
 
+def _active_trajectory(
+    instruction: Instruction, classical: list[int]
+) -> tuple[bool, bool]:
+    """Return whether one trajectory executes an instruction and is conditional."""
+
+    clauses = instruction_condition_clauses(instruction)
+    for bit_index in {bit for clause in clauses for bit, _ in clause}:
+        if classical[bit_index] < 0:
+            raise RuntimeError(f"classical bit {bit_index} was read before measurement")
+    if not clauses:
+        return True, False
+    return (
+        any(
+            all(classical[bit] == expected for bit, expected in clause)
+            for clause in clauses
+        ),
+        True,
+    )
+
+
 def _run_dynamic_trajectory(
     circuit: DynamicCircuit,
     *,
@@ -310,22 +330,11 @@ def _run_dynamic_trajectory(
             feedback_decisions = []
             frame_x_wires: set[int] = set()
             for instruction_index, instruction in enumerate(circuit._instructions):
-                clauses = instruction_condition_clauses(instruction)
-                for bit_index, _expected in {
-                    term for clause in clauses for term in clause
-                }:
-                    if classical[bit_index] < 0:
-                        raise RuntimeError(
-                            f"classical bit {bit_index} was read before measurement"
-                        )
-                skip = bool(clauses) and not any(
-                    all(classical[bit] == expected for bit, expected in clause)
-                    for clause in clauses
-                )
-                if skip:
+                active, conditional = _active_trajectory(instruction, classical)
+                if not active:
                     conditional_skipped += 1
                     continue
-                if clauses:
+                if conditional:
                     conditional_applied += 1
                 if instruction.name == "measure":
                     state, true_bit, bit, classical_bit, count = _measure_instruction(
