@@ -26,6 +26,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from ._program_submission import _ProgramSubmissionMixin, decode_job_result
 from ._workspace_results import decode_tensor, measurement_result
 
 _DEFAULT_CLIENTS: dict[str, "JiudingClient"] = {}
@@ -93,7 +94,7 @@ class _NoRedirect(HTTPRedirectHandler):
         return None
 
 
-class JiudingClient:
+class JiudingClient(_ProgramSubmissionMixin):
     """Use injected credentials and discover the current workspace's queue.
 
     ``workspace`` is optional inside a platform pod; outside it, specify a
@@ -1065,6 +1066,7 @@ class JiudingClient:
         record = {
             "run_id": run_id,
             "experimentName": body["name"],
+            "entrypoint": str(script),
             "endpoint": self.endpoint,
             "queueId": w["queueId"],
             "workspace": w["name"],
@@ -1195,10 +1197,16 @@ class JiudingClient:
         while True:
             jobs = self.status(receipt)
             if jobs and all(j["status"] == "Succeed" for j in jobs):
-                result = json.loads(Path(receipt["result_path"]).read_text())
-                if result.get("run_id") != receipt["run_id"]:
-                    raise RuntimeError("Result does not belong to this submission")
-                return result["value"]
+                if receipt.get("artifact_transport") == "workspace_ssh":
+                    from ._managed_program import read_managed_result
+
+                    value = read_managed_result(self, receipt)
+                else:
+                    result = json.loads(Path(receipt["result_path"]).read_text())
+                    if result.get("run_id") != receipt["run_id"]:
+                        raise RuntimeError("Result does not belong to this submission")
+                    value = result["value"]
+                return decode_job_result(value, receipt)
             if any(
                 j["status"]
                 not in ("Pending", "Scheduling", "Starting", "Running", "Succeed")

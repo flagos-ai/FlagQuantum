@@ -1,0 +1,44 @@
+{
+  "schema": "flagquantum.jiuding_development_evidence",
+  "date": "2026-09-10",
+  "implementation_commit": "7939533e",
+  "scope": "Direct Circuit submission as an isolated single-GPU Jiuding Job",
+  "experimentId": "95a65e28-3509-4b5f-bc6a-dca25d8cf4e7",
+  "jobId": "2528141e-dc83-4f65-851e-8c9b79bd99d8",
+  "status": "Succeed",
+  "image": "flagquantum-runtime:v0.2.0-cu128-a100",
+  "resources": {
+    "target": "jiuding:gpu",
+    "acceleratorModel": "NVIDIA_A100-SXM4-40GB",
+    "acceleratorCount": 1,
+    "cpuCores": 4,
+    "memGib": 8
+  },
+  "program": {
+    "description": "Two-qubit Bell state",
+    "shots": 1024,
+    "outputs": "counts"
+  },
+  "result": {
+    "counts": {
+      "00": 535,
+      "11": 489
+    },
+    "unexpectedOutcomeCount": 0,
+    "device": "cuda:0",
+    "accelerator": "NVIDIA A100-SXM4-40GB",
+    "numericalExecutionSeconds": 0.6079671811312437,
+    "platformJobSeconds": 13.526,
+    "cpuFallbackUsed": false,
+    "statevectorTransferred": false,
+    "resultTransfer": "device_to_host",
+    "countsAggregation": "host"
+  },
+  "claims": {
+    "directProgramSubmissionValidated": true,
+    "standardExecutionResultValidated": true,
+    "singleGpuForwardValidated": true,
+    "statisticalBellCorrelationValidated": true,
+    "scalabilityClaimAllowed": false
+  }
+}

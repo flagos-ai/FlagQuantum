@@ -3,8 +3,8 @@
 This directory owns experimental adapters to external CPU/GPU job systems.
 Jiuding currently supports explicit development-workspace creation and
 start/stop control, one CPU or single-GPU task instance, automatic workspace
-context discovery, create-and-start submission, status, waiting, shared JSON
-results, stopping active jobs, and a loopback-only resident statevector
+context discovery, direct program submission with workspace-managed artifacts,
+status, waiting, shared JSON results, stopping active jobs, and a loopback-only resident statevector
 executor for low-latency work in an already-running workspace. The resident
 path supports exact measurements, sampled outputs, and bounded measurement
 batches in one transport request. It uses the standard library and direct
@@ -17,10 +17,10 @@ distributed launch, or the QPU shots/counts contracts. No Stable Core exports
 are added. These adapter-specific interfaces are not frozen.
 
 Start with `JiudingClient` in `jiuding.py` and
-`examples/remote/jiuding_submit.py`. A user script defines `main()` returning a
-JSON-serializable value; `_worker.py` calls it and writes a run-bound artifact.
-Complex functions and local imports can live in that script's shared project.
-The caller must provision the shared code and a compatible image first.
+`examples/remote/jiuding_submit_program.py`. `submit_program()` accepts a
+Circuit directly and manages its source and result artifacts through the
+selected workspace. The lower-level `submit()` accepts a shared user script
+whose `main()` returns a JSON-serializable value.
 
 Read `docs/guides/JIUDING.md` for the supported journey and limits. Run
 `python -m pytest tests/team/remote/test_jiuding.py
