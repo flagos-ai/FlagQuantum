@@ -38,8 +38,7 @@ def _contains_trainable(value: Any) -> bool:
     return False
 
 
-def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
-    ir = ensure_circuit_ir(circuit_or_ir)
+def _validate_session_header(ir: CircuitIR) -> None:
     if ir.metadata.get("hybrid_dynamic_session") is not True:
         raise ValueError("CircuitIR is not a compiler-lowered hybrid dynamic session")
     if set(ir.metadata) != _SESSION_METADATA:
@@ -52,6 +51,11 @@ def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
         raise ValueError(
             "hybrid dynamic session returns trajectory data, not static measurements"
         )
+
+
+def _validate_session_ir(circuit_or_ir: Any) -> tuple[CircuitIR, int]:
+    ir = ensure_circuit_ir(circuit_or_ir)
+    _validate_session_header(ir)
     measured: set[int] = set()
     rotation_count = 0
     for index, instruction in enumerate(ir.instructions):
