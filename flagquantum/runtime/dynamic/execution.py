@@ -124,15 +124,6 @@ def _run_dynamic_trajectory(
 ) -> DynamicExecutionResult:
     """Execute independent statevector trajectories with classical feedback."""
 
-    if not isinstance(circuit, DynamicCircuit):
-        raise TypeError("run_dynamic requires an experimental DynamicCircuit")
-    if int(shots) <= 0:
-        raise ValueError("shots must be a positive integer")
-    for instruction in circuit._instructions:
-        for value in instruction.params.values():
-            if isinstance(value, torch.Tensor) and value.requires_grad:
-                raise RuntimeError("dynamic trajectory execution is not differentiable")
-
     width = classical_width(circuit)
     started = perf_counter()
     branch_counts: Counter[str] = Counter()
