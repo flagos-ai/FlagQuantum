@@ -25,6 +25,7 @@ from ....simulation.mps.reverse import (
     factor_mps_reverse_pair_bucket,
 )
 from ....simulation.mps.site_kernels import site_kernel_bucket_capacity
+from .compiled_layers import collect_compiled_mps_layer
 from .errors import NonlocalMPSCompilationError
 from .factorization import mps_qr_forward
 from .records import (
@@ -310,15 +311,12 @@ def execute_torch_distributed_mps_reverse(
             and instruction.name == "ry"
             and instruction_index not in reserved_ry
         ):
-            layer = []
-            used_wires = set()
-            for candidate_index in range(instruction_index, len(ir.instructions)):
-                candidate = ir.instructions[candidate_index]
-                wire = int(candidate.wires[0]) if len(candidate.wires) == 1 else -1
-                if candidate.name != "ry" or wire in used_wires:
-                    break
-                used_wires.add(wire)
-                layer.append((candidate_index, candidate, wire))
+            layer = tuple(
+                (index, candidate, wires[0])
+                for index, candidate, wires in collect_compiled_mps_layer(
+                    ir.instructions, instruction_index
+                )
+            )
             for candidate_index, _, wire in layer:
                 owner = state.owner(wire)
                 checkpoint_budget.reserve(
@@ -378,19 +376,12 @@ def execute_torch_distributed_mps_reverse(
             and instruction.name in {"rxx", "ryy", "rzz"}
             and instruction_index not in reserved_rxx
         ):
-            layer = []
-            used_wires = set()
-            for candidate_index in range(instruction_index, len(ir.instructions)):
-                candidate = ir.instructions[candidate_index]
-                candidate_wires = tuple(int(wire) for wire in candidate.wires)
-                if (
-                    candidate.name != instruction.name
-                    or len(candidate_wires) != 2
-                    or used_wires.intersection(candidate_wires)
-                ):
-                    break
-                used_wires.update(candidate_wires)
-                layer.append((candidate_index, candidate, min(candidate_wires)))
+            layer = tuple(
+                (index, candidate, min(wires))
+                for index, candidate, wires in collect_compiled_mps_layer(
+                    ir.instructions, instruction_index
+                )
+            )
             layer_reservations = []
             for candidate_index, _, left_wire in layer:
                 left_owner, right_owner = (
