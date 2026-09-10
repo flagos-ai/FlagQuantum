@@ -91,7 +91,6 @@ _multi_observable_mse_and_adjoints = mps_multi_observable_mse_and_adjoints
 _expectation_and_adjoints = mps_expectation_and_adjoints
 _parse_heisenberg_hamiltonian_terms = parse_mps_heisenberg_terms
 _parse_z_zz_terms = parse_mps_z_zz_terms
-_planned_canonicalization_bonds = plan_mps_canonicalization_bonds
 _qr_forward = mps_qr_forward
 _recv = receive_reverse_tensor
 _recv_static = receive_static_reverse_tensor
@@ -967,7 +966,7 @@ def execute_torch_distributed_mps_reverse(
     # the supplied initial state is certified left-canonical; expectation and
     # reverse contractions do not require the final state to remain canonical.
     dirty_bonds_before_canonicalization = tuple(sorted(dirty_bonds))
-    canonical_wires = _planned_canonicalization_bonds(
+    canonical_wires = plan_mps_canonicalization_bonds(
         ir.n_wires, dirty_bonds_before_canonicalization, canonicalization_policy
     )
     for left_wire in canonical_wires:
