@@ -207,6 +207,42 @@ def _measure_instruction(
     return state, true_bit, int(observed.item()), classical_bit, readout_errors
 
 
+def _sample_trajectory(
+    state: torch.Tensor,
+    n_wires: int,
+    noise_model: NoiseModel | None,
+    frame_x_wires: set[int],
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, int]:
+    """Sample a final state with readout noise and Pauli-frame corrections."""
+
+    basis_index = int(
+        torch.multinomial(
+            torch.abs(state.reshape(-1)) ** 2,
+            1,
+            generator=generator,
+        ).item()
+    )
+    sample = torch.tensor(
+        [(basis_index >> (n_wires - wire - 1)) & 1 for wire in range(n_wires)],
+        dtype=torch.int64,
+        device=state.device,
+    )
+    readout_errors = 0
+    for wire in range(n_wires):
+        observed, count = _apply_readout_error(
+            sample[wire : wire + 1],
+            wire,
+            noise_model,
+            generator=generator,
+        )
+        sample[wire] = observed[0]
+        readout_errors += count
+    for wire in frame_x_wires:
+        sample[wire] ^= 1
+    return sample, readout_errors
+
+
 def _run_dynamic_trajectory(
     circuit: DynamicCircuit,
     *,
@@ -342,33 +378,15 @@ def _run_dynamic_trajectory(
                     )
                     noise_channel_applications += applications
                     bit_flip_events += events
-            index = int(
-                torch.multinomial(
-                    torch.abs(state.reshape(-1)) ** 2,
-                    1,
-                    generator=generator,
-                ).item()
-            )
             final_states.append(state.reshape(-1))
-            sample = torch.tensor(
-                [
-                    (index >> (circuit.n_wires - wire - 1)) & 1
-                    for wire in range(circuit.n_wires)
-                ],
-                dtype=torch.int64,
-                device=state.device,
+            sample, count = _sample_trajectory(
+                state,
+                circuit.n_wires,
+                noise_model,
+                frame_x_wires,
+                generator,
             )
-            for wire in range(circuit.n_wires):
-                observed, count = _apply_readout_error(
-                    sample[wire : wire + 1],
-                    wire,
-                    noise_model,
-                    generator=generator,
-                )
-                sample[wire] = observed[0]
-                readout_errors += count
-            for wire in frame_x_wires:
-                sample[wire] ^= 1
+            readout_errors += count
             final_samples.append(sample.tolist())
             classical_rows.append(classical)
             if feedback_plan is not None:
