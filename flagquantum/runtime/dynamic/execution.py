@@ -598,6 +598,38 @@ def _run_dynamic_batched(
     )
 
 
+def _require_nondifferentiable_parameters(circuit: DynamicCircuit) -> None:
+    for instruction in circuit._instructions:
+        if any(
+            isinstance(value, torch.Tensor) and value.requires_grad
+            for value in instruction.params.values()
+        ):
+            raise RuntimeError("dynamic trajectory execution is not differentiable")
+
+
+def _use_batched_execution(
+    circuit: DynamicCircuit,
+    *,
+    shots: int,
+    strategy: str,
+    max_batched_bytes: int,
+    feedback_plan: DynamicFeedbackPlan | None,
+) -> bool:
+    element_size = torch.empty((), dtype=circuit.dtype).element_size()
+    estimated_bytes = shots * (2**circuit.n_wires) * element_size * 3
+    batched_compatible = circuit.bsz == 1 and estimated_bytes <= max_batched_bytes
+    if strategy == "batched" and not batched_compatible:
+        reason = (
+            "batch size must be one" if circuit.bsz != 1 else "memory budget exceeded"
+        )
+        raise ValueError(f"batched dynamic execution unavailable: {reason}")
+    if feedback_plan is not None:
+        return False
+    return strategy == "batched" or (
+        strategy == "auto" and shots >= 32 and batched_compatible
+    )
+
+
 def run_dynamic(
     circuit: DynamicCircuit,
     *,
@@ -618,10 +650,7 @@ def run_dynamic(
         raise TypeError("run_dynamic requires an experimental DynamicCircuit")
     if int(shots) <= 0:
         raise ValueError("shots must be a positive integer")
-    for instruction in circuit._instructions:
-        for value in instruction.params.values():
-            if isinstance(value, torch.Tensor) and value.requires_grad:
-                raise RuntimeError("dynamic trajectory execution is not differentiable")
+    _require_nondifferentiable_parameters(circuit)
     _validate_dynamic_noise(circuit, noise_model)
     if _feedback_plan is not None:
         if not isinstance(_feedback_plan, DynamicFeedbackPlan):
@@ -632,20 +661,13 @@ def run_dynamic(
             )
         _validate_feedback_plan(circuit, _feedback_plan)
 
-    element_size = torch.empty((), dtype=circuit.dtype).element_size()
-    estimated_bytes = int(shots) * (2**circuit.n_wires) * element_size * 3
-    batched_compatible = circuit.bsz == 1 and estimated_bytes <= max_batched_bytes
-    if strategy == "batched" and not batched_compatible:
-        reason = (
-            "batch size must be one" if circuit.bsz != 1 else "memory budget exceeded"
-        )
-        raise ValueError(f"batched dynamic execution unavailable: {reason}")
-    use_batched = strategy == "batched" or (
-        strategy == "auto" and int(shots) >= 32 and batched_compatible
-    )
-    if _feedback_plan is not None:
-        use_batched = False
-    if use_batched:
+    if _use_batched_execution(
+        circuit,
+        shots=int(shots),
+        strategy=strategy,
+        max_batched_bytes=max_batched_bytes,
+        feedback_plan=_feedback_plan,
+    ):
         return _run_dynamic_batched(
             circuit,
             shots=int(shots),
