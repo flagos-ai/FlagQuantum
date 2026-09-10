@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase40_directional_evidence_v2_complete",
+  "status": "phase41_directional_evidence_handoff_complete",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -1229,7 +1229,7 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE38_EVIDENCE.md"
   },
   "phase38_proposal_completed": true,
-  "phase38_implementation_completed": false,
+  "phase38_implementation_completed": true,
   "phase39": {
     "stage": "directional_topology_layout_compiler_implementation",
     "directed_topology": "flagquantum.compiler.directed_topology.DirectedCouplingMap",
@@ -1269,6 +1269,23 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE40_EVIDENCE.md"
   },
   "phase40_core_compiler_completed": true,
+  "phase41": {
+    "stage": "directional_evidence_v2_runtime_deployment_handoff",
+    "runtime_verifier": "flagquantum.runtime.compilation_evidence.verify_compilation_evidence_handoff",
+    "deployment_dry_run": "flagquantum.deployment.artifact_dry_run.prepare_artifact_deployment",
+    "actual_source_required": true,
+    "actual_target_snapshot_required": true,
+    "actual_executable_artifact_required": true,
+    "evidence_rewritten": false,
+    "provider_submission_added": false,
+    "credentials_or_job_state_added": false,
+    "program_artifact_v1_changed": false,
+    "program_artifact_v2_changed": false,
+    "public_root_export": false,
+    "default_path_change": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE41_EVIDENCE.md"
+  },
+  "phase41_runtime_deployment_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

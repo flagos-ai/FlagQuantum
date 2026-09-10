@@ -1166,3 +1166,9 @@ encoding, explicit 1.0/2.0 reader dispatch, directed topology and rewrite-group
 validation, and Compiler construction/verification from actual retained
 objects. Version 1.0 remains unchanged. Runtime and Deployment version-2
 handoff support remains a separate final slice.
+
+Phase 41 completes that slice. Runtime validates either evidence version
+against the actual fully bound source, target snapshot, and executable artifact.
+Deployment may carry the same immutable bundle through its side-effect-free
+dry run after Runtime verification. Neither layer rewrites evidence or performs
+provider submission, and ProgramArtifact v1/v2 remain unchanged.

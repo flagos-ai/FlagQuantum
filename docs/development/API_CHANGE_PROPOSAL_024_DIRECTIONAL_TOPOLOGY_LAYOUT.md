@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved on 2026-09-10; Core and Compiler implementation complete.**
+**Approved on 2026-09-10; implementation and evidence handoff complete.**
 
 Date: 2026-09-10
 
@@ -14,7 +14,9 @@ implementation adds the private directed topology model, explicit placement,
 direction-correct CX legalization, final legality verification, physical-plan
 2.0 lineage, artifact-to-artifact compilation, strict Core evidence 2.0,
 explicit version dispatch, and Compiler construction/verification. The
-Runtime/Deployment handoff remains pending.
+Runtime now verifies version 2.0 against the actual source, snapshot, and
+executable artifact, and Deployment carries only that verified evidence in its
+side-effect-free dry run.
 
 ## Problem
 
@@ -173,7 +175,7 @@ limits. It does not claim:
 5. **Complete:** extend physical-plan validation and deterministic identity without adding a
    second instruction authority.
 6. **Complete:** implement strict Core evidence version 2.0 and retain pinned 1.0 fixtures.
-7. Add Runtime and Deployment verification in a separate bounded handoff.
+7. **Complete:** add Runtime and Deployment verification in a separate bounded handoff.
 8. Keep all new entry points non-root until naming and lifecycle review.
 
 ## Acceptance

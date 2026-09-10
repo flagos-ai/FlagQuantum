@@ -37,6 +37,11 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
+from flagquantum.errors import ExecutionError
+from flagquantum.runtime.compilation_evidence import (
+    verify_compilation_evidence_handoff,
+)
 from flagquantum.simulation.statevector.local import run_local_statevector
 
 pytestmark = pytest.mark.integration
@@ -323,3 +328,31 @@ def test_directed_plan_reaches_executable_artifact_without_a_second_ir() -> None
     assert restored == bundle
     assert restored.physical_plan.plan_identity == result.physical_plan.plan_identity
     verify_compilation_evidence_bundle(restored, result, snapshot=_snapshot())
+    verify_compilation_evidence_handoff(
+        restored,
+        artifact,
+        result.executable_artifact,
+        snapshot=_snapshot(),
+    )
+    prepared = prepare_artifact_deployment(
+        result.executable_artifact,
+        snapshot=_snapshot(),
+        source=artifact,
+        compilation_evidence=restored,
+        provider="flagquantum.test",
+        target_id="phase39-target",
+        shots=128,
+        evaluated_at=_NOW,
+    )
+    assert prepared.compilation_evidence is restored
+    assert prepared.compilation_evidence_identity == restored.bundle_identity
+    with pytest.raises(ExecutionError, match="source lineage"):
+        verify_compilation_evidence_handoff(
+            restored,
+            ProgramArtifactV2.from_circuit_ir(
+                CircuitIR(1, (Instruction("h", (0,)),), dtype="complex128"),
+                producer="wrong-source",
+            ),
+            result.executable_artifact,
+            snapshot=_snapshot(),
+        )

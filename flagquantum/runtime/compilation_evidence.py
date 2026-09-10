@@ -10,12 +10,13 @@ from ..core._artifacts import (
     ProgramArtifactV2,
 )
 from ..core._compilation_evidence import CompilationEvidenceBundle
+from ..core._compilation_evidence_v2 import CompilationEvidenceBundleV2
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import ExecutionError
 
 
 def verify_compilation_evidence_handoff(
-    bundle: CompilationEvidenceBundle,
+    bundle: CompilationEvidenceBundle | CompilationEvidenceBundleV2,
     source: ProgramArtifactV2 | CircuitArtifactBindingResult,
     artifact: ProgramArtifactV2,
     *,
@@ -23,8 +24,8 @@ def verify_compilation_evidence_handoff(
 ) -> None:
     """Verify bundle lineage against actual source, target, and output objects."""
 
-    if not isinstance(bundle, CompilationEvidenceBundle):
-        raise TypeError("bundle must be a CompilationEvidenceBundle")
+    if not isinstance(bundle, (CompilationEvidenceBundle, CompilationEvidenceBundleV2)):
+        raise TypeError("bundle must be a compilation evidence bundle")
     if isinstance(source, CircuitArtifactBindingResult):
         circuit_artifact = source.bound_artifact
         source_identity = source.source_artifact_identity

@@ -7,6 +7,7 @@ from datetime import datetime
 
 from ..core._artifacts import CircuitArtifactBindingResult, ProgramArtifactV2
 from ..core._compilation_evidence import CompilationEvidenceBundle
+from ..core._compilation_evidence_v2 import CompilationEvidenceBundleV2
 from ..core.target_capabilities import CapabilityMatchResult, TargetCapabilitySnapshot
 from ..errors import ExecutionError
 from ..runtime.artifact_preflight import preflight_executable_artifact
@@ -22,7 +23,9 @@ class ArtifactDeploymentDryRun:
     target_id: str
     shots: int
     capability_match: CapabilityMatchResult = field(repr=False)
-    compilation_evidence: CompilationEvidenceBundle | None = field(
+    compilation_evidence: (
+        CompilationEvidenceBundle | CompilationEvidenceBundleV2 | None
+    ) = field(
         default=None,
         repr=False,
     )
@@ -60,7 +63,9 @@ def prepare_artifact_deployment(
     *,
     snapshot: TargetCapabilitySnapshot,
     source: ProgramArtifactV2 | CircuitArtifactBindingResult | None = None,
-    compilation_evidence: CompilationEvidenceBundle | None = None,
+    compilation_evidence: (
+        CompilationEvidenceBundle | CompilationEvidenceBundleV2 | None
+    ) = None,
     provider: str,
     target_id: str,
     shots: int,
