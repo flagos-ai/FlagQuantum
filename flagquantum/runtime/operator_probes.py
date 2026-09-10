@@ -63,6 +63,14 @@ def _execute_probe(
             requires_grad=requires_grad,
         )
 
+    def make_real(values: list[list[float]]) -> torch.Tensor:
+        return torch.tensor(
+            values,
+            dtype=_real_dtype_for(dtype),
+            device=device,
+            requires_grad=requires_grad,
+        )
+
     if operator == "aten::zeros":
         return torch.zeros((2, 4), dtype=dtype, device=device), ()
     if operator == "aten::ones_like":
@@ -103,19 +111,8 @@ def _execute_probe(
         tensor = make((2, 3))
         return tensor.unsqueeze(-1), (tensor,)
     if operator == "aten::mul":
-        real_dtype = _real_dtype_for(dtype)
-        left = torch.tensor(
-            [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
-        right = torch.tensor(
-            [[-0.1, 0.2, -0.3], [0.4, -0.5, 0.6]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+        left = make_real([[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]])
+        right = make_real([[-0.1, 0.2, -0.3], [0.4, -0.5, 0.6]])
         return left * right, (left, right)
     if operator == "aten::reciprocal":
         tensor = make((2, 3)).abs() + 0.5
@@ -152,47 +149,16 @@ def _execute_probe(
         right = make((2, 3))
         return torch.cat((left, right), dim=1), (left, right)
     if operator == "aten::_to_copy":
-        real_dtype = _real_dtype_for(dtype)
-        tensor = torch.tensor(
-            [[0.25, -0.5, 0.75]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+        tensor = make_real([[0.25, -0.5, 0.75]])
         return tensor.to(dtype=dtype), (tensor,)
     if operator == "aten::complex":
-        real_dtype = _real_dtype_for(dtype)
-        real = torch.tensor(
-            [[0.25, -0.5, 0.75]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
-        imag = torch.tensor(
-            [[-0.1, 0.2, -0.3]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+        real = make_real([[0.25, -0.5, 0.75]])
+        imag = make_real([[-0.1, 0.2, -0.3]])
         return torch.complex(real, imag), (real, imag)
-    if operator == "aten::cos":
-        real_dtype = _real_dtype_for(dtype)
-        tensor = torch.tensor(
-            [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
-        return torch.cos(tensor), (tensor,)
-    if operator == "aten::sin":
-        real_dtype = _real_dtype_for(dtype)
-        tensor = torch.tensor(
-            [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
-        return torch.sin(tensor), (tensor,)
+    if operator in {"aten::cos", "aten::sin"}:
+        tensor = make_real([[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]])
+        output = torch.cos(tensor) if operator == "aten::cos" else torch.sin(tensor)
+        return output, (tensor,)
     if operator == "aten::exp":
         tensor = make((2, 3))
         return torch.exp(tensor), (tensor,)
@@ -200,30 +166,13 @@ def _execute_probe(
         tensor = make((2, 3))
         return torch.conj(tensor), (tensor,)
     if operator in {"aten::real", "aten::imag"}:
-        real_dtype = _real_dtype_for(dtype)
-        real = torch.tensor(
-            [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
-        imag = torch.tensor(
-            [[-0.1, 0.2, -0.3], [0.4, -0.5, 0.6]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+        real = make_real([[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]])
+        imag = make_real([[-0.1, 0.2, -0.3], [0.4, -0.5, 0.6]])
         tensor = torch.complex(real, imag)
         output = tensor.real if operator == "aten::real" else tensor.imag
         return output, (real, imag)
     if operator == "aten::neg":
-        real_dtype = _real_dtype_for(dtype)
-        tensor = torch.tensor(
-            [[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]],
-            dtype=real_dtype,
-            device=device,
-            requires_grad=requires_grad,
-        )
+        tensor = make_real([[0.2, -0.3, 0.4], [0.5, -0.6, 0.7]])
         return torch.neg(tensor), (tensor,)
     if operator == "aten::abs":
         tensor = make((2, 3))
