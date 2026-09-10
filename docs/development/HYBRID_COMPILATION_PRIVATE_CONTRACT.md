@@ -908,3 +908,26 @@ Directed couplings, physical ancilla allocation, placement, calibration,
 fidelity-aware routing, crosstalk, duration, parallel schedule, and provider
 execution remain outside the contract. No TargetIR, public API, default-path
 change, or performance claim is authorized.
+
+## Phase 28 dependency-preserving logical-scheduling authorization
+
+Phase 28 may construct immutable scheduling evidence over the final legalized
+Core-owned `CircuitIR`. It uses deterministic ASAP placement with per-wire
+source-order dependencies and explicit classical producer-to-consumer edges.
+The evidence records instruction indices rather than copying instructions into
+a second executable representation, and it binds the final circuit content and
+selected target-snapshot identity.
+
+Dynamic measurement and reset operations, conditioned operations, and channel
+instructions are conservative global barriers. Classical conditions must be
+well-formed binary bit/value pairs, and every referenced bit must have a prior
+measurement producer. Empty programs have depth zero; nonempty layers contain
+no repeated wire. An optional non-negative maximum logical depth fails closed
+after routing and native decomposition have established the actual final
+program.
+
+Depth is a logical unit-layer count only. This phase does not infer gate
+duration, measurement or feedback latency, concurrent hardware support,
+crosstalk, fidelity, calibration, pulse timing, or makespan. It does not emit a
+target program, execute the schedule, create TargetIR, add public exports,
+change the default path, or make a performance claim.

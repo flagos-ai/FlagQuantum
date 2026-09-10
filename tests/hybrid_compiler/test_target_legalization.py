@@ -132,6 +132,9 @@ def test_legalization_preserves_circuit_and_is_deterministic() -> None:
     assert {item.opcode for item in first.lowering_capabilities} == {"h", "cx"}
     assert first.legalization_identity == second.legalization_identity
     assert len(first.legalization_identity) == 64
+    assert first.schedule.program is circuit
+    assert first.schedule.layers == ((0,), (1,))
+    assert first.schedule.target_snapshot_id == snapshot.snapshot_id
 
 
 @pytest.mark.parametrize(
@@ -262,3 +265,33 @@ def test_topology_routing_precedes_native_gate_and_resource_legalization() -> No
         CouplingMap.line(3).has_edge(*item.wires)
         for item in result.program.instructions
     )
+    assert sum(len(layer) for layer in result.schedule.layers) == len(
+        result.program.instructions
+    )
+
+
+def test_final_legalized_program_is_scheduled_and_depth_is_bounded() -> None:
+    circuit = CircuitIR(
+        2,
+        (Instruction("h", (0,)), Instruction("h", (1,))),
+        dtype="complex128",
+    )
+    result = legalize_circuit_for_target(
+        circuit,
+        backend="pytorch",
+        snapshot=_snapshot(),
+        evaluated_at=_NOW,
+        max_schedule_depth=1,
+    )
+
+    assert result.schedule.program is result.program
+    assert result.schedule.layers == ((0, 1),)
+
+    with pytest.raises(TargetLegalizationError, match="depth 1 exceeds maximum 0"):
+        legalize_circuit_for_target(
+            circuit,
+            backend="pytorch",
+            snapshot=_snapshot(),
+            evaluated_at=_NOW,
+            max_schedule_depth=0,
+        )

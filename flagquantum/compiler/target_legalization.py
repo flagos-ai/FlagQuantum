@@ -33,6 +33,11 @@ from .operator_lowering import (
     UnsupportedLoweringError,
 )
 from .routing import CouplingMap
+from .schedule_legalization import (
+    CircuitSchedule,
+    ScheduleLegalizationError,
+    schedule_circuit_dependencies,
+)
 from .topology_legalization import (
     TopologyLegalizationError,
     TopologyLegalizationResult,
@@ -56,6 +61,7 @@ class TargetLegalizationResult:
     native_gate_legalization: NativeGateLegalizationResult
     lowering_capabilities: tuple[LoweringCapability, ...]
     capability_match: CapabilityMatchResult
+    schedule: CircuitSchedule
     legalization_identity: str
 
 
@@ -145,6 +151,7 @@ def _legalization_identity(
     lowerings: tuple[LoweringCapability, ...],
     native_gate_legalization: NativeGateLegalizationResult,
     topology_legalization: TopologyLegalizationResult | None,
+    schedule: CircuitSchedule,
 ) -> str:
     payload = {
         "backend": backend,
@@ -159,6 +166,7 @@ def _legalization_identity(
             if topology_legalization is None
             else topology_legalization.legalization_identity
         ),
+        "schedule_identity": schedule.schedule_identity,
         "lowerings": [
             {
                 "opcode": item.opcode,
@@ -183,6 +191,7 @@ def legalize_circuit_for_target(
     coupling_map: CouplingMap | None = None,
     routing_strategy: str = "auto",
     max_routing_added_operations: int = 256,
+    max_schedule_depth: int | None = None,
 ) -> TargetLegalizationResult:
     """Require an exact backend lowering and a matching target snapshot.
 
@@ -238,6 +247,15 @@ def legalize_circuit_for_target(
             f"target capability snapshot cannot legalize CircuitIR: {details}"
         )
 
+    try:
+        schedule = schedule_circuit_dependencies(
+            ir,
+            target_snapshot_id=snapshot.snapshot_id,
+            max_depth=max_schedule_depth,
+        )
+    except ScheduleLegalizationError as error:
+        raise TargetLegalizationError(str(error)) from error
+
     return TargetLegalizationResult(
         program=ir,
         backend=normalized_backend,
@@ -247,6 +265,7 @@ def legalize_circuit_for_target(
         native_gate_legalization=native_gate_legalization,
         lowering_capabilities=lowerings,
         capability_match=match,
+        schedule=schedule,
         legalization_identity=_legalization_identity(
             ir,
             normalized_backend,
@@ -255,6 +274,7 @@ def legalize_circuit_for_target(
             lowerings,
             native_gate_legalization,
             topology_legalization,
+            schedule,
         ),
     )
 

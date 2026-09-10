@@ -1,7 +1,7 @@
 {
   "schema": "flagquantum.hybrid_compilation_private_contract",
   "version": "0.1",
-  "status": "phase27_bounded_topology_legalization_verified",
+  "status": "phase28_dependency_preserving_logical_scheduling_verified",
   "owner": "compiler",
   "approval_basis": "repository_owner_direction_2026_09_09",
   "implementation_plan": "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
@@ -913,6 +913,43 @@
     "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE27_EVIDENCE.md"
   },
   "phase27_completed": true,
+  "phase28": {
+    "stage": "dependency_preserving_logical_scheduling",
+    "input_ir": "flagquantum.core.ir.CircuitIR",
+    "output_artifact": "immutable_instruction_index_schedule_evidence",
+    "scheduling_policy": "deterministic_asap_logical_unit_layers",
+    "dependency_types": [
+      "per_wire_source_order",
+      "classical_measurement_producer_to_condition_consumer",
+      "conservative_global_barrier"
+    ],
+    "global_barriers": [
+      "dynamic_operations",
+      "conditioned_operations",
+      "channels"
+    ],
+    "condition_policy": "binary_pairs_and_prior_measurement_required",
+    "maximum_depth_policy": "optional_non_negative_fail_closed",
+    "pipeline_position": "after_routing_native_legalization_and_resource_matching",
+    "audit_identity_inputs": [
+      "final_circuit_content_hash",
+      "target_snapshot_id",
+      "instruction_layers",
+      "explicit_predecessors_and_dependency_kinds"
+    ],
+    "gate_duration_semantics": false,
+    "measurement_feedback_latency": false,
+    "crosstalk_or_fidelity_scheduling": false,
+    "pulse_scheduling": false,
+    "schedule_execution": false,
+    "target_ir_added": false,
+    "public_root_export": false,
+    "stable_api_change": false,
+    "default_path_change": false,
+    "performance_claim": false,
+    "evidence_report": "docs/development/HYBRID_COMPILATION_PHASE28_EVIDENCE.md"
+  },
+  "phase28_completed": true,
   "rules": {
     "candidate_is_public_contract": false,
     "whole_api_freeze_implied": false,

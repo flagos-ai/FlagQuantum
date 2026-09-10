@@ -993,6 +993,32 @@ Exit gate:
 - no directed coupling, placement, calibration-aware routing, scheduling,
   TargetIR, public API, or performance claim is added.
 
+### Phase 28 — dependency-preserving logical scheduling
+
+Construct a deterministic ASAP schedule over the final legalized `CircuitIR`
+without creating another executable IR. Record instruction indices by logical
+unit-time layer and explicit predecessor evidence. Preserve source order on
+every wire and add cross-wire dependencies from classical-bit producers to all
+conditioned consumers.
+
+Treat dynamic operations, conditioned operations, and channels as conservative
+global barriers because target duration, crosstalk, and concurrent-operation
+evidence are not yet represented. Bind the schedule identity to the final
+circuit content and selected target snapshot. Allow callers to impose an
+explicit maximum logical depth and fail closed when it is exceeded.
+
+Exit gate:
+
+- independent gates share one deterministic ASAP layer;
+- operations touching the same wire retain source order;
+- condition consumers depend on every referenced prior measurement, including
+  measurements on other wires;
+- malformed conditions and reads before measurement fail closed;
+- logical-depth policy is checked on the final routed and decomposed circuit;
+- repeated construction produces the same schedule identity;
+- no gate duration, latency, crosstalk, fidelity, pulse, provider execution,
+  TargetIR, public API, default-path, or performance claim is added.
+
 ## 12. File and team ownership plan
 
 Expected Compiler-owned implementation (files are added only when their phase
@@ -1148,3 +1174,4 @@ Stop implementation and return to Integration review if:
 - [x] Phase 25 capability-driven target legality implemented and verified
 - [x] Phase 26 evidenced native-gate legalization implemented and verified
 - [x] Phase 27 bounded topology legalization implemented and verified
+- [x] Phase 28 dependency-preserving logical scheduling implemented and verified

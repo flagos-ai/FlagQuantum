@@ -1005,7 +1005,9 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
     contract = _contract()
     phase27 = contract["phase27"]
 
-    assert contract["status"] == "phase27_bounded_topology_legalization_verified"
+    assert contract["status"] == (
+        "phase28_dependency_preserving_logical_scheduling_verified"
+    )
     assert phase27["input_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["output_ir"] == "flagquantum.core.ir.CircuitIR"
     assert phase27["topology_source"] == ("caller_supplied_compiler_coupling_map")
@@ -1049,3 +1051,48 @@ def test_phase27_adds_bounded_topology_legality_without_target_ir() -> None:
         "docs/development/HYBRID_COMPILATION_PHASE27_EVIDENCE.md"
     )
     assert contract["phase27_completed"] is True
+
+
+def test_phase28_adds_dependency_preserving_logical_schedule_evidence() -> None:
+    contract = _contract()
+    phase28 = contract["phase28"]
+
+    assert contract["status"] == (
+        "phase28_dependency_preserving_logical_scheduling_verified"
+    )
+    assert phase28["input_ir"] == "flagquantum.core.ir.CircuitIR"
+    assert phase28["output_artifact"] == (
+        "immutable_instruction_index_schedule_evidence"
+    )
+    assert phase28["scheduling_policy"] == ("deterministic_asap_logical_unit_layers")
+    assert phase28["dependency_types"] == [
+        "per_wire_source_order",
+        "classical_measurement_producer_to_condition_consumer",
+        "conservative_global_barrier",
+    ]
+    assert phase28["global_barriers"] == [
+        "dynamic_operations",
+        "conditioned_operations",
+        "channels",
+    ]
+    assert phase28["condition_policy"] == (
+        "binary_pairs_and_prior_measurement_required"
+    )
+    assert phase28["maximum_depth_policy"] == ("optional_non_negative_fail_closed")
+    assert phase28["pipeline_position"] == (
+        "after_routing_native_legalization_and_resource_matching"
+    )
+    assert phase28["gate_duration_semantics"] is False
+    assert phase28["measurement_feedback_latency"] is False
+    assert phase28["crosstalk_or_fidelity_scheduling"] is False
+    assert phase28["pulse_scheduling"] is False
+    assert phase28["schedule_execution"] is False
+    assert phase28["target_ir_added"] is False
+    assert phase28["public_root_export"] is False
+    assert phase28["stable_api_change"] is False
+    assert phase28["default_path_change"] is False
+    assert phase28["performance_claim"] is False
+    assert phase28["evidence_report"] == (
+        "docs/development/HYBRID_COMPILATION_PHASE28_EVIDENCE.md"
+    )
+    assert contract["phase28_completed"] is True
