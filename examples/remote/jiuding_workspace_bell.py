@@ -6,7 +6,7 @@ import time
 import torch
 
 import flagquantum as fq
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute import JiudingClient
 
 
 def main() -> None:

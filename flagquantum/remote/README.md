@@ -19,6 +19,10 @@ compute implementation. Run `python -m pytest
 tests/test_amazon_braket_provider.py tests/test_cloud_providers.py
 tests/test_quafu_calibration.py -q`.
 
-The first classical compute adapter now lives under [`compute/`](compute/README.md).
-Its experimental Jiuding path submits one CPU Python task from an existing
+Import QPU providers from `flagquantum.remote.qpu` and `JiudingClient` from
+`flagquantum.remote.compute`. The categories remain separate at the public
+boundary; neither is flattened into another generic remote backend API.
+
+The first classical compute adapter lives under [`compute/`](compute/README.md).
+Its experimental Jiuding path submits CPU or GPU work from an existing
 workspace and reads a shared result; it does not extend the QPU result model.

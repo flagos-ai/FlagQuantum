@@ -1,6 +1,13 @@
 # Remote compute
 
 This directory owns experimental adapters to external CPU/GPU job systems.
+
+Use the categorized public entry point:
+
+```python
+from flagquantum.remote.compute import JiudingClient
+```
+
 Jiuding currently supports explicit development-workspace creation and
 start/stop control, one CPU or single-GPU task instance, automatic workspace
 context discovery, direct program submission with workspace-managed artifacts,
@@ -16,7 +23,7 @@ It does not own circuit execution, numerical backend selection, gradients,
 distributed launch, or the QPU shots/counts contracts. No Stable Core exports
 are added. These adapter-specific interfaces are not frozen.
 
-Start with `JiudingClient` in `jiuding.py` and
+Start with `JiudingClient` from `flagquantum.remote.compute` and
 `examples/remote/jiuding_submit_program.py`. `submit_program()` accepts a
 Circuit directly and manages its source and result artifacts through the
 selected workspace. The lower-level `submit()` accepts a shared user script
@@ -28,5 +35,6 @@ tests/team/remote/test_workspace_executor.py -q` for offline behavior tests.
 No test in those files creates real tasks. The Bell example provides a
 small CPU numerical check for live acceptance; `jiuding_bell_gpu.py` checks
 CUDA execution with one visible GPU; `jiuding_workspace_bell.py` exercises the
-resident path. A new provider-wide contract, root export or distributed claim
+resident path. A new provider-wide contract, `flagquantum.remote` root export,
+or distributed claim
 requires a separate reviewed change.

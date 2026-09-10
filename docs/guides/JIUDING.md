@@ -32,7 +32,7 @@ client uses an existing visible workspace only to identify the project, queue,
 cluster and storage context; the new workspace is a separate platform resource.
 
 ```python
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute import JiudingClient
 
 client = JiudingClient(workspace="fq-image-build-upload")
 created = client.create_workspace(
@@ -63,7 +63,7 @@ FlagQuantum engine under `torchrun` and retain its distribution evidence.
 
 ```python
 from pathlib import Path
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute import JiudingClient
 
 client = JiudingClient()  # matches current pod to one visible workspace
 print(client.images())   # images observed in this queue's existing jobs
@@ -131,7 +131,7 @@ Submit a circuit directly when it should run as an independent Jiuding Job:
 
 ```python
 import flagquantum as fq
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute import JiudingClient
 
 client = JiudingClient(workspace="my-workspace")
 receipt = client.submit_program(
@@ -227,7 +227,7 @@ through one resident transport request:
 
 ```python
 import flagquantum as fq
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute import JiudingClient
 
 circuits = [fq.Circuit(1).ry(0, theta=value) for value in (0.1, 0.2, 0.3)]
 with JiudingClient(workspace="example-resident-a100") as client:

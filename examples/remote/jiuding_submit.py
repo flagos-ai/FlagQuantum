@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.remote.compute import JiudingClient
 
 
 def main():

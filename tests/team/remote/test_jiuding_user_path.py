@@ -11,6 +11,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.remote.compute as remote_compute
 from flagquantum.remote.compute import _managed_program as managed
 from flagquantum.remote.compute import _workspace_executor as executor
 from flagquantum.remote.compute import jiuding
@@ -150,7 +151,7 @@ def test_command_line_example_restores_without_submitting(monkeypatch, capsys) -
             assert timeout == 600
             return SimpleNamespace(counts=[{"00": 512, "11": 512}])
 
-    monkeypatch.setattr(jiuding, "JiudingClient", Client)
+    monkeypatch.setattr(remote_compute, "JiudingClient", Client)
     _run_submit_example(
         monkeypatch,
         "--workspace",
@@ -180,7 +181,7 @@ def test_command_line_example_detaches_after_submission(monkeypatch, capsys) -> 
         def result(self, receipt, *, timeout):
             raise AssertionError("detach mode must not wait for a result")
 
-    monkeypatch.setattr(jiuding, "JiudingClient", Client)
+    monkeypatch.setattr(remote_compute, "JiudingClient", Client)
     _run_submit_example(
         monkeypatch,
         "--workspace",
