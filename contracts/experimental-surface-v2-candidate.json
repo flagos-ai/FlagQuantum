@@ -10,6 +10,7 @@
     "modified": false
   },
   "top_level_namespaces": [
+    "artifacts",
     "distributed",
     "dynamic",
     "execution",
@@ -20,6 +21,14 @@
     "simulation"
   ],
   "discoverable_exports": {
+    "artifacts": [
+      "CompilationEvidence",
+      "ProgramArtifact",
+      "dump_compilation_evidence",
+      "dump_program_artifact",
+      "load_compilation_evidence",
+      "load_program_artifact"
+    ],
     "distributed": [
       "train_distributed_mps",
       "train_distributed_statevector"
@@ -39,6 +48,15 @@
     "planning": [],
     "simulation": ["run_tebd"]
   },
+  "surface_metrics_scope": "Historical Proposal 011 reduction; excludes subsequent approved additive domains.",
+  "approved_additions": [
+    {
+      "proposal": "docs/development/API_CHANGE_PROPOSAL_026_ARTIFACT_PUBLIC_LIFECYCLE.md",
+      "namespace": "artifacts",
+      "discoverable_feature_exports": 6
+    }
+  ],
+  "current_total_discoverable_feature_exports": 16,
   "surface_metrics": {
     "previous_discoverable_feature_exports": 114,
     "current_discoverable_feature_exports": 10,
